@@ -1,0 +1,2 @@
+# sds
+stratos decentralized storage
