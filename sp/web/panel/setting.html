@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Setting - sp console panel</title>
+    <link rel="stylesheet" href="statics/css/bootstrap.min.css">
+    <link rel="stylesheet" href="statics/css/main.css">
+</head>
+<body>
+
+<header><a href="/">Welcome to sp console panel !</a><a href="javascript:void(0)" id="logout" class="float-right">log out</a></header>
+
+<div class="container-fluid">
+
+    <div class="row">
+
+        <div class="col-1">
+
+            <div class="list-group">
+                <a href="/pp.html" class="list-group-item list-group-item-action">pp list</a>
+                <a href="/files.html" class="list-group-item list-group-item-action">files</a>
+                <a href="/setting.html" class="list-group-item list-group-item-action active">setting</a>
+            </div>
+
+        </div>
+
+        <div class="col-11">
+
+            <div id="alert"></div>
+
+            <div class="row">
+
+                <div class="col-5">
+
+                    <form id="form">
+                        <div class="form-group">
+                            <label for="missing_wallet_address">backup dismiss wallet address</label>
+                            <textarea class="form-control" id="missing_wallet_address" name="missing_wallet_address" rows="6"></textarea>
+                            <small class="form-text text-muted">
+                                support multiple wallet address by using ',' separator。eg: 0x1111...111, 0x2222...222
+                            </small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Save Setting</button>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script src="statics/js/jquery-3.3.1.min.js"></script>
+<script src="statics/js/bootstrap.min.js"></script>
+<script src="statics/js/main.js"></script>
+<script type="text/javascript">
+$(function() {
+
+    API.call("GET", "/sys", {}, function(response) {
+        if (response.errcode == 200) {
+            mbwa = response.data.MissingBackupWalletAddr
+        }
+        $('[name=missing_wallet_address]').val(response.data.MissingBackupWalletAddr)
+    })
+
+    $("#form").submit(function() {
+
+        data = {
+            missing_wallet_address: $('[name=missing_wallet_address]').val()
+        }
+
+        API.call("POST", "/sys", data, function(response) {
+            if (response.errcode == 200) {
+
+                tips("#alert", "success", "success!")
+            }
+        })
+
+        return false
+    })
+})
+</script>
+</body>
+</html>

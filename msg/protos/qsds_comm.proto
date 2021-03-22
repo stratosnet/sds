@@ -1,0 +1,143 @@
+syntax = "proto3";
+
+//for future protoc-gen-go requirement
+//option go_package = "github.com/qsnetwork/qsds/msg/protos";
+
+// j
+package protos;
+
+
+message Result {
+    ResultState state = 1;
+    string msg = 2;
+}
+
+enum ResultState {
+    RES_SUCCESS = 0; 
+    RES_FAIL = 1;
+}
+
+enum DownloadWrongType {
+    LOSESLICE = 0;
+    OVERTIME = 1;
+}
+
+
+enum AlbumType {
+    ALL = 0;
+    VIDEO = 1;
+    MUSIC = 2;
+    OTHER = 3;
+}
+
+
+enum AlbumSortType {
+    LATEST = 0;
+    VISITS = 1;  // most visit
+}
+
+enum FileSortType {
+    DEF  = 0;  // default
+    TIME = 1;  // time
+    SIZE = 2;  // file size
+    NAME = 3;  // name alphabet
+}
+
+enum MsgType {
+    DEFAULT = 0;
+}
+
+
+message PPBaseInfo {
+     string wallet_address = 1;
+     string network_address = 2;
+}
+
+
+message FileInfo { 
+     uint64 file_size = 1;
+     string file_hash = 2;
+     string file_name = 3;
+     uint64 create_time = 4;
+     bool   is_directory = 5;
+     string storage_path = 6;
+     bool   is_private = 7;
+     string owner_wallet_address = 8;
+     string share_link = 9;
+     uint64 sort_id = 10;
+}
+
+// slice number and pp address
+message SliceNumAddr {
+     uint64 slice_number = 1;
+     SliceOffset slice_offset = 2;
+     PPBaseInfo pp_info = 3;
+}
+
+
+message SliceOffsetInfo {
+     string slice_hash = 1;
+     SliceOffset slice_offset = 2;
+}
+message SliceOffset {
+     uint64 slice_offset_start = 1;
+     uint64 slice_offset_end = 2;
+}
+
+
+message FileIndexes{
+    //  string file_hash = 1; // file hash
+    string file_path = 1; //  spb://accunt/fileHash|fileName
+    string wallet_address = 2;
+    string save_path = 3;
+}
+
+message DownloadSliceInfo {
+     SliceStorageInfo slice_storage_info = 1;
+     uint64 slice_number = 2;
+     PPBaseInfo storage_pp_info = 3;
+     PPBaseInfo backups_pp_info = 4;
+     bool visit_result = 5;
+     string task_id= 6;
+     SliceOffset slice_offset= 7;
+}
+
+message SliceStorageInfo {
+     uint64 slice_size = 1; //
+     string slice_hash = 2; //
+}
+
+message ShareLinkInfo{
+    string name     = 1;
+    string file_hash     = 2;
+    uint64 link_time     = 3;
+    uint64 file_size     = 4;
+    uint64 link_time_exp = 5;
+    string share_id      = 6;
+    bool   is_directory = 7;
+    string share_link      = 8;    
+    bool is_private = 9;
+    string share_link_password = 10;
+    string owner_wallet_address = 11;
+}
+
+message AlbumInfo {
+    string album_id = 1; // id
+    string album_name = 2; // name
+    string album_blurb = 3; // abstract
+    int64 album_visit = 4; //
+    int64 album_time = 5; // creation time
+    string album_cover_link = 6; //
+    bool is_private = 7; //
+    AlbumType album_type = 8;
+}
+
+message AlbumNumber {
+    int64 all = 1;
+    int64 video = 2;
+    int64 music = 3;
+    int64 other = 4;
+}
+
+
+

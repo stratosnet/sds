@@ -1,0 +1,841 @@
+syntax = "proto3";
+
+//for future protoc-gen-go requirement
+//option go_package = "github.com/qsnetwork/qsds/msg/protos";
+
+package protos;
+// j
+import "qsds_comm.proto";
+
+// upload -----------------------------------
+
+
+
+message ReqGetPPList {
+     PPBaseInfo my_address = 1;
+     
+}
+
+message RspGetPPList{
+    repeated PPBaseInfo pp_list = 1;
+    Result result = 2;
+}
+
+
+message ReqRegister {
+     PPBaseInfo address = 1;
+     bytes public_key = 2;
+     PPBaseInfo my_address = 3; //middleman pp address
+}
+
+message RspRegister {
+    Result result = 1; // if register success or not
+    string wallet_address = 2;
+    bool   isPP = 3;
+}
+
+message ReqMining {
+     PPBaseInfo address = 1;
+     bytes public_key = 2; // publickey
+     bytes sign = 3; //signature
+}
+
+message RspMining {
+     Result result = 1; 
+}
+
+message ReqUploadFile {
+     FileInfo file_info = 1;
+     PPBaseInfo my_address = 2;
+     bytes sign = 3;
+     string req_id = 4;
+     bool is_cover = 5;
+}
+
+message RspUploadFile {
+    string storage_cer = 1; // storage certificate
+    repeated SliceNumAddr pp_list = 2; // slice number and pp address list
+    string file_hash = 3; 
+    string task_id = 4; //
+    int64 total_slice = 5; //
+    Result result = 6; // accept upload or not
+    string req_id = 7;//
+    string owner_wallet_address = 8;
+}
+
+message ReqUploadFileSlice {
+     SliceNumAddr slice_num_addr = 1; //
+     uint32             file_crc = 2; //
+     SliceOffsetInfo    slice_info = 3; //
+     bytes              data = 4; //
+     string             file_hash = 5; //
+     string             wallet_address = 6; //
+     string             task_id = 7; //
+     uint64              slice_size = 8; //
+}
+
+message RspUploadFileSlice {
+     Result result                   = 1; //
+     SliceNumAddr slice_num_addr    = 2; //
+     string file_hash               = 3; //
+     string     			slice_hash = 4; //
+     string             wallet_address = 5; //
+     uint64             slice_size = 6; //
+     string             task_id = 7; //
+}
+
+
+message UploadSpeedOfProgress {
+     string file_hash = 1; //
+     uint64 slice_size = 2; //
+}
+
+message ReportUploadSliceResult {
+     SliceNumAddr slice_num_addr = 1; //
+     string     slice_hash = 2; //
+     string     file_hash = 3; //
+     bool       upload_success = 4;
+     bool       isPP = 5; //
+     uint64     slice_size = 6; //
+     bytes      sign = 7;
+     string     task_id = 8;
+     string     wallet_address = 9;
+}
+
+message RspReportUploadSliceResult {
+     Result result = 1;
+     SliceNumAddr slice_num_addr = 2;
+}
+
+
+
+message ReqFindMyFileList {
+    string wallet_address = 1;
+    string file_name = 2; // return all if file name is empty
+    string directory = 3; // return first level directory if left empty
+    string req_id = 4;//
+    FileSortType file_type = 5;
+     bool is_up = 6;
+     string keyword = 7;
+    
+}
+
+message RspFindMyFileList {
+    repeated FileInfo file_info = 1;
+    string wallet_address = 2;
+    string req_id = 3;//
+    Result result = 4;
+}
+
+message ReqFindDirectoryTree {
+    string wallet_address = 1;
+    string path_hash = 2;
+    string req_id = 3; //
+}
+
+message RspFindDirectoryTree {
+    string wallet_address = 1;
+    string directory = 2;
+    repeated FileInfo file_info = 3;
+    string req_id = 4;
+    Result result = 5;
+}
+
+//get file and download -----------------------------------
+
+
+message ReqFileStorageInfo {
+     FileIndexes file_indexes = 1;
+     bytes sign = 2;
+     string req_id = 3;
+}
+
+message RspFileStorageInfo {
+    string visit_cer = 1;
+    string wallet_address = 2;
+    repeated DownloadSliceInfo slice_info = 3;
+    string     file_hash = 4;
+    string     file_name = 5;
+    Result result = 6;
+    string req_id = 7;
+    string save_path = 8;
+    uint64 file_size = 9;
+}
+
+
+message ReqDownloadSlice {
+     SliceOffsetInfo    slice_info = 1;
+     string             wallet_address = 2;
+     string             file_hash = 3;
+     string             task_id = 4;
+     string             save_path = 5;
+}
+
+message RspDownloadSlice {
+     SliceOffsetInfo slice_info = 1;
+     uint32 file_crc = 2;
+     string file_hash = 3;
+     bytes  data = 4;
+     string wallet_address = 5;
+     string task_id = 6;
+     uint64 slice_size = 7;
+     bool   needReport = 8; // used for passagePP whether the last slice
+     string save_path = 9;
+     Result result = 10;
+}
+
+message ReqDownloadSloceWrong {
+    string wallet_address = 1;
+    string task_id = 2;
+    string slice_hash = 3;
+    DownloadWrongType type = 4;
+    string save_path = 5;
+}
+
+message RspDownloadSloceWrong {
+    string wallet_address = 1;
+    string file_hash = 2;
+    string task_id = 3;
+    DownloadSliceInfo new_slice_info = 4;
+    string             save_path = 5;
+    Result result = 6;
+}
+
+message ReqDownloadSlocePause {
+    string wallet_address = 1;
+    string file_hash = 2;
+    string req_id = 3;
+}
+message RspDownloadSlocePause {
+    string wallet_address = 1;
+    string file_hash = 2;
+    string req_id = 3;
+    Result result = 4;
+}
+
+message ReqReportDownloadResult {
+     bool isPP = 1; // p doesn't need DownloadSliceInfo
+     DownloadSliceInfo slice_info = 2;
+     string file_hash = 3;
+     string wallet_address = 4; //dowloader address
+     bytes  sign = 5;
+     string task_id = 6;
+     string my_wallet_address = 7; // PP's address
+}
+
+message RspReportDownloadResult {
+     Result result = 1; 
+     DownloadSliceInfo slice_info = 2;
+}
+
+message ReqReportTaskBP {
+    string task_id = 1;
+    PPBaseInfo reporter = 2;
+    uint64 traffic = 3;
+}
+
+message ReqGetBPList {
+    PPBaseInfo my_address = 1;
+}
+
+
+message RspGetBPList {
+    Result result = 1;
+    repeated PPBaseInfo bp_list = 2;
+}
+
+message ReqRegisterNewPP {
+     string  wallet_address = 1;
+     uint64  disk_size = 2;
+     uint64  memory_size = 3;
+     string  os_and_ver = 4;
+     string  cpu_info = 5;
+     string  mac_address = 6;
+     uint32  version = 7;
+     bytes  pub_key = 8;
+     bytes  sign = 9;
+}
+
+message RspRegisterNewPP {
+     Result result = 1;
+
+}
+
+
+message ReqDeleteFile {
+    string wallet_address = 1;
+    string file_hash = 2;
+    bytes  sign = 3;
+    string req_id = 4;
+}
+
+message RspDeleteFile {
+    string wallet_address = 1;
+    string file_hash = 2;
+    Result result = 3;
+    string req_id = 4;
+}
+
+
+// file transfer
+// SP notify new PP to get file from storing PP，slice info are included
+// new pp transfer to old pp, slice infor are not included,
+message ReqTransferNotice {
+     SliceStorageInfo slice_storage_info = 1;
+     string transfer_cer = 2;
+     bool from_sp = 3;
+     PPBaseInfo storage_pp_info = 4;
+}
+message RspTransferNotice {
+     Result result = 1;
+     string transfer_cer = 2;
+     PPBaseInfo storage_pp_info = 3;
+}
+
+
+//  storagePP-SP
+message ReqValidateTransferCer {
+     string transfer_cer = 1; 
+     PPBaseInfo new_pp = 2; 
+     PPBaseInfo original_pp = 3; 
+}
+ //  SP-PP PP-PP	
+message RspValidateTransferCer {
+     Result result = 1; 
+     string transfer_cer = 2;
+     
+}
+
+
+message ReqTransferDownload {
+    string transfer_cer = 1; 
+}
+
+
+message RspTransferDownload {
+    string transfer_cer = 1; 
+    bytes  data = 2; 
+    uint64 offset = 3; 
+    uint64 slice_size = 4; 
+    Result result = 5;
+}
+
+
+message RspTransferDownloadResult {
+    string transfer_cer = 1; 
+    Result result = 2; 
+}
+
+
+
+message ReqReportTransferResult {
+     string transfer_cer = 1; 
+     PPBaseInfo new_pp = 2; 
+     Result result = 3;    
+     bool is_new = 4; 
+}
+
+message RspReportTransferResult {
+     Result result = 1;  
+     string transfer_cer = 2; 
+
+}
+
+// sp - pp get storage info
+message ReqGetHDInfo {
+    string wallet_address = 1; 
+}
+
+message RspGetHDInfo {
+    uint64 disk_size = 1;  
+    uint64 disk_free = 2 ;  
+    string wallet_address = 3; 
+}
+
+
+// 
+message ReqSendChatMessages {
+    string wallet_address = 1;
+    string message = 2;
+    MsgType type = 3; 
+}
+message RspSendChatMessages {
+    Result result = 1;
+}
+
+// sp 
+message ReqDeleteSlice {
+    string wallet_address = 1;  
+    string slice_hash = 2; // 
+    // bytes  sign = 3; //SP signature  wallet address + hash
+}
+
+message RspDeleteSlice {
+    string wallet_address = 1;
+    string slice_hash = 2;
+    Result result = 3;
+}
+
+// 
+message ReqMakeDirectory {
+    string wallet_address = 1;  
+    string directory = 2; 
+    string req_id = 3; 
+}
+
+message RspMakeDirectory {
+    string wallet_address = 1;  
+    string req_id = 2; 
+    Result result = 3;
+}
+
+
+message ReqRemoveDirectory {
+    string wallet_address = 1;  
+    string directory = 2; 
+    string req_id = 3; 
+}
+message RspRemoveDirectory {
+    string wallet_address = 1;  
+    string req_id = 2; 
+    Result result = 3;
+}
+
+
+message ReqMoveFileDirectory {
+    string wallet_address = 1;
+    string req_id = 2; 
+    string directory_target = 3; 
+    string directory_original = 4;
+    string file_hash = 5; 
+
+}
+
+message RspMoveFileDirectory {
+    string wallet_address = 1;
+    string req_id = 2; 
+    string file_path = 3; 
+    Result result = 4;
+}
+
+
+
+// BP msg ###################
+
+message ReqBLSPublicKey {
+    string msg = 1;
+    string id  = 2;
+}
+
+// get bp BLS public key
+message RspBPBLSPublicKey {
+    ReqRegister bp_info = 1;
+    int64 code = 2;
+    string id  = 3;
+}
+
+
+message ReqBalance {
+    string wallet_address = 1;
+    string id  = 2;
+}
+
+
+message RspBalance {
+    float balance = 1;
+    int64 code = 2;
+    string id  = 3;
+}
+
+
+message ReqTransaction {
+    string transaction_hash = 1;
+    int64 code = 2;
+    string id  = 3;
+}
+
+
+message RspTransaction {
+    string rest = 1;
+    int64 code = 2;
+    string id  = 3;
+}
+
+
+message ReqBlockInfo {
+    string block_hash = 1;
+    string id  = 3;
+}
+
+
+message RspBlockInfo {
+    bytes block_info = 1;
+    int64 code = 2;
+    string id  = 3;
+}
+
+
+message ReqBlockCheck{
+    int64 block_height = 1;
+    string id  = 3;
+}
+
+
+message RspBlockCheck {
+    repeated BlockCheckInfo block_list = 1;
+    int64 code = 2;
+    string id  = 3;
+}
+
+
+message BlockCheckInfo {
+    int64 block_height = 1;
+    string block_hash = 2;
+    string id  = 3;
+}
+
+
+// 
+message ReqDownloadTaskInfo {
+    string task_id = 1; 
+    string id  = 2;
+}
+
+message RspDownloadTaskInfo {
+    string task_id = 1; 
+    uint64 slice_size = 2; 
+    string slice_hash = 3; 
+    uint64 slice_number = 4; 
+    string storage_wallet_address = 5; 
+    repeated string wallet_address_list = 6; 
+    uint64 time = 7; 
+    Result result = 8;
+    string id  = 9;
+}
+
+message ReqShareLink {
+    string wallet_address = 1;
+    string req_id = 2;
+}
+
+message RspShareLink {
+    repeated ShareLinkInfo share_info = 1;
+    string req_id        = 2;
+    string wallet_address = 3; //
+    Result result = 4; 
+}
+
+message ReqShareFile {
+    string file_hash  = 1;
+    bool   is_private     = 2;
+    int64  share_time = 3;
+    string req_id = 4;
+    string wallet_address = 5; 
+    string path_hash = 6;// share whole directory if this field is non-empty
+}
+
+
+message RspShareFile {
+    string share_link     = 1;
+    string share_password = 2;
+    string wallet_address = 3;
+    string share_id = 4;
+    string req_id = 5;
+    Result result = 6;  
+}
+
+message ReqDeleteShare {
+    string share_id    = 1;
+    string wallet_address = 2; //
+    string req_id = 3;
+}
+
+message RspDeleteShare {
+    string share_id    = 1;
+    string wallet_address = 2; //
+    string req_id = 3;
+    Result result = 4; 
+}
+
+
+message ReqGetShareFile {
+    string keyword    = 1; //
+    string wallet_address = 2; //
+    string req_id = 3;
+    string share_password = 4;// 提取码
+}
+
+
+message RspGetShareFile {
+    string wallet_address = 1; //
+    string req_id = 2;
+    Result result = 3;  // if failed, wrong share password
+    bool is_private = 4; 
+    repeated FileInfo file_info = 5; 
+}
+
+
+//
+message ReqSaveFile {
+    string file_hash = 1;
+    string file_owner_wallet_address = 2; //
+    string wallet_address = 3; //
+    string req_id = 4;
+}
+
+message RspSaveFile {
+    string file_path = 1;
+    string wallet_address = 2; //
+    string req_id = 3;
+    Result result = 4; 
+    string file_hash = 5;
+}
+
+// 
+message ReqSaveFolder {
+    string folder_hash = 1;
+    string folder_owner_wallet_address = 2; //
+    string wallet_address = 3; //
+    string req_id = 4;
+}
+
+message RspSaveFolder {
+    string folder_path = 1;
+    string wallet_address = 2; //
+    string req_id = 3;
+    Result result = 4; 
+    string folder_hash = 5;
+}
+
+
+// 
+message ReqCreateAlbum {
+    string wallet_address = 1; //
+    string req_id = 2;
+    repeated FileInfo file_info = 3; 
+    string album_name = 4; 
+    string album_blurb = 5; 
+    string album_cover_hash = 6; // album cover file hash
+    AlbumType album_type = 7; 
+    bool is_private = 8; 
+}
+
+message RspCreateAlbum {
+    string album_id = 1;
+    string wallet_address = 2; //
+    string req_id = 3;
+    Result result = 4; 
+}
+
+
+message ReqEditAlbum {
+    string wallet_address = 1; //
+    string req_id = 2;
+    string album_id = 3;
+    bool   is_private = 4; 
+    repeated FileInfo change_files = 5;  // optional add files
+    string album_cover_hash = 7; // optinal album cover file hash 
+    string album_name = 8; // optional  album name 
+    string album_blurb = 9; // optional  album abstract
+}
+message RspEditAlbum {
+    string wallet_address = 1; //
+    string req_id = 2;
+    string album_id = 3;
+    Result result = 4; 
+}
+
+message ReqAlbumContent {
+    string wallet_address = 1; //
+    string req_id = 2;
+    string album_id = 3;
+}
+message RspAlbumContent {
+    string wallet_address = 1; //
+    string owner_wallet_address = 2; //
+    string req_id = 3;
+    string album_id = 4;
+    AlbumInfo album_info = 5; // 
+    repeated FileInfo file_info = 6;
+    bool is_collection = 7; 
+    Result result = 8;
+
+}
+
+
+message ReqSearchAlbum {
+    AlbumType album_type = 1; 
+    string keyword = 2; 
+    AlbumSortType AlbumSortType = 3; 
+    string wallet_address = 4; //
+    string req_id = 5;
+    uint64 page = 6; 
+    uint64 number = 7; 
+}
+message RspSearchAlbum {
+    string wallet_address = 1; //
+    string req_id = 2;
+    repeated AlbumInfo album_info = 3; // 
+    Result result = 4;
+    uint64 page = 5; 
+    uint64 total = 6;
+}
+
+message ReqFindMyAlbum {
+    string wallet_address = 1; //
+    string req_id = 2;
+    AlbumType album_type = 3; 
+    uint64 page = 4; 
+    uint64 number = 5; 
+    string keyword = 6;
+}
+
+message RspFindMyAlbum {
+    string wallet_address = 1; //
+    string req_id = 2;
+    repeated  AlbumInfo album_info = 3;
+    Result result = 4;
+    uint64 total = 5;
+}
+
+message ReqCollectionAlbum {
+    string wallet_address = 1; //
+    string req_id = 2;
+    string album_id = 3;
+    bool is_collection = 4; 
+}
+
+message RspCollectionAlbum {
+    string wallet_address = 1; //
+    string req_id = 2;
+    string album_id = 3;
+    Result result = 4;
+    bool is_collection = 5; 
+}
+
+
+message ReqAbstractAlbum {
+    string wallet_address = 1; //
+    string req_id = 2;
+}
+
+message RspAbstractAlbum {
+    string wallet_address = 1; //
+    string req_id = 2;
+    AlbumNumber my_album = 3;
+    AlbumNumber collection_album = 4;
+    Result result = 5;
+}
+
+
+message ReqMyCollectionAlbum {
+    AlbumType album_type = 1; 
+    string wallet_address = 2; //
+    string req_id = 3;
+    uint64 page = 4; 
+    uint64 number = 5; 
+    string keyword = 6;
+}
+message RspMyCollectionAlbum {
+    string wallet_address = 1; //
+    string req_id = 2;
+    repeated AlbumInfo album_info = 3; // 
+    Result result = 4;
+    uint64 page = 5; 
+}
+
+
+message ReqDeleteAlbum {
+    string album_id = 1;
+    string wallet_address = 2; //
+    string req_id = 3;
+}
+
+message RspDeleteAlbum {
+    string album_id = 1;
+    string wallet_address = 2; //
+    string req_id = 3;
+    Result result = 4;
+}
+
+
+message ReqConfig {
+    string wallet_address = 1; //
+    string req_id = 2;
+    string network_address = 3; 
+}
+
+message RspConfig {
+    string invitation_code = 1;
+    string req_id = 2;
+    uint64   invite = 3;
+    bool is_upgrade = 4;
+    uint64 free_capacity = 5;  
+    Result result = 6;
+    string wallet_address = 7; 
+    uint64 capacity = 8;
+}
+
+message ReqInvite {
+    string wallet_address = 1; // wallet used the invitation code
+    string invitation_code = 2; // invitation code
+    string req_id = 3;
+}
+
+message RspInvite {
+    Result result = 1;
+    uint64 capacity_delta = 2; 
+    uint64 current_capacity = 3; 
+    string req_id = 4;
+    string wallet_address = 5; // 
+}
+
+message ReqGetReward {
+    string wallet_address = 1; 
+    string req_id = 2;
+}
+
+message RspGetReward {
+    Result result = 1;
+    string req_id = 2;
+    string wallet_address = 3; 
+    uint64 current_capacity = 4; 
+}
+
+message ReqGetCapacity {
+    string wallet_address = 1;
+    string req_id = 2;
+}
+
+message RspGetCapacity {
+    Result result = 1;
+    string req_id = 2;
+    string wallet_address = 3;
+    uint64 capacity = 4;
+    uint64 free_capacity = 5;
+}
+
+message ReqFileSort {
+    repeated FileInfo files = 1;
+    string req_id = 2;
+    string wallet_address = 3;
+    string album_id = 4;
+}
+
+message RspFileSort {
+    string req_id = 1;
+    string wallet_address = 2;
+    Result result = 3;
+}
+
+message ReqFindDirectory {
+    string wallet_address = 1;
+    string req_id = 2;
+}
+
+message RspFindDirectory {
+    repeated FileInfo file_info = 1;
+    string wallet_address = 2;
+    string req_id = 3;
+    Result result = 4;
+}

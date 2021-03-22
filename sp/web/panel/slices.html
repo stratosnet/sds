@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>slices - sp console panel</title>
+    <link rel="stylesheet" href="statics/css/bootstrap.min.css">
+    <link rel="stylesheet" href="statics/css/main.css">
+</head>
+<body>
+
+<header><a href="/">Welcome to sp console panel !</a><a href="javascript:void(0)" id="logout" class="float-right">log out</a></header>
+
+<div class="container-fluid">
+
+    <div class="row">
+
+        <div class="col-1">
+
+            <div class="list-group">
+                <a href="/pp.html" class="list-group-item list-group-item-action">pp list</a>
+                <a href="/files.html" class="list-group-item list-group-item-action active">files</a>
+                <a href="/setting.html" class="list-group-item list-group-item-action">setting</a>
+            </div>
+
+        </div>
+
+        <div class="col-11">
+
+            <table class="table table-bordered table-hover">
+                <thead>
+                <tr>
+                    <th style="width:3%" scope="col">#ID</th>
+                    <th style="width:24%" scope="col">slice_hash</th>
+                    <th style="width:9%" scope="col">info</th>
+                    <th style="width:25%" scope="col">storage</th>
+                    <th style="width:4%" scope="col">state</th>
+                    <th style="width:7%" scope="col">operation</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+    </div>
+
+</div>
+
+<span clas="oi"></span>
+<script src="statics/js/jquery-3.3.1.min.js"></script>
+<script src="statics/js/bootstrap.min.js"></script>
+<script src="statics/js/main.js"></script>
+<script src="statics/js/table.js"></script>
+<script type="text/javascript">
+    $(function() {
+
+        hash = API.param("hash")
+
+        if (hash == "") {
+            API._redirect("/files.html")
+        } else {
+            API.call("GET", "/file/"+API.param("hash")+"/slice", {}, function(response) {
+                if (response.errcode == 200 && response.data.length > 0) {
+                    $.each(response.data, function(idx, row) {
+
+                        item = row.file_slice
+
+                        info = "<ul style=\"margin: 0;\">"
+                        info += "<li>number: "+item.SliceNumber+"</li>"
+                        info += "<li>size: "+item.SliceSize+"</li>"
+                        info += "<li>offset start: "+item.SliceOffsetStart+"</li>"
+                        info += "<li>offset end: "+item.SliceOffsetEnd+"</li>"
+                        info += "</ul>"
+
+                        storage = "<ul>"
+                        storage += "</ul>"
+
+                        $.each(row.store.split(","), function(idx, s) {
+                            storage += "<li>"+s+"</li>"
+                        })
+
+                        state = item.Status == 0 ? "<span class=\"text-success\">normal</span>" : "<span class=\"text-danger\">exception</span>"
+                        operation = "<a href=\"\" class=\"badge badge-info\">transfer</a>&nbsp;&nbsp;"
+                        operation += "<a href=\"\" class=\"badge badge-danger\">delete</a>"
+
+                        row = [item.Id, item.SliceHash, info, storage, state, operation]
+
+                        $("tbody").addRow(row)
+                    })
+                }
+            })
+        }
+    })
+</script>
+</body>
+</html>
