@@ -1,10 +1,10 @@
 package event
 
 import (
-	"github.com/qsnetwork/qsds/msg/protos"
-	"github.com/qsnetwork/qsds/pp/setting"
-	"github.com/qsnetwork/qsds/utils"
-	"github.com/qsnetwork/qsds/utils/httpserv"
+	"github.com/qsnetwork/sds/msg/protos"
+	"github.com/qsnetwork/sds/pp/setting"
+	"github.com/qsnetwork/sds/utils"
+	"github.com/qsnetwork/sds/utils/httpserv"
 	"io/ioutil"
 	"net/http"
 	"os"

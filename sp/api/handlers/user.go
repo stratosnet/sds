@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"net/http"
-	"github.com/qsnetwork/qsds/sp/api/core"
+	"github.com/qsnetwork/sds/sp/api/core"
 )
 
 // User 用户接口

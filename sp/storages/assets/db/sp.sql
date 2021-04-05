@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 5.7.23, for macos10.13 (x86_64)
 --
--- Host: localhost    Database: spacebook_sp
+-- Host: localhost    Database: sds_sp
 -- ------------------------------------------------------
 -- Server version	5.7.23
 
@@ -16,7 +16,7 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Current Database: `spacebook_sp`
+-- Current Database: `sds_sp`
 --
 
 CREATE DATABASE /*!32312 IF NOT EXISTS*/ `spacebook_sp` /*!40100 DEFAULT CHARACTER SET utf8 */;

@@ -3,8 +3,8 @@ package setting
 
 import (
 	"encoding/csv"
-	"github.com/qsnetwork/qsds/msg/protos"
-	"github.com/qsnetwork/qsds/utils"
+	"github.com/qsnetwork/sds/msg/protos"
+	"github.com/qsnetwork/sds/utils"
 	"math/rand"
 	"os"
 )

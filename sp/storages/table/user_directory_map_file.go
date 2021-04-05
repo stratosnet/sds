@@ -1,8 +1,8 @@
 package table
 
 import (
-	"github.com/qsnetwork/qsds/utils"
-	"github.com/qsnetwork/qsds/utils/database"
+	"github.com/qsnetwork/sds/utils"
+	"github.com/qsnetwork/sds/utils/database"
 	"time"
 )
 

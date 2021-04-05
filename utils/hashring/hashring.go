@@ -13,7 +13,7 @@ import (
 	"sync"
 
 	"github.com/HuKeping/rbtree"
-	"github.com/qsnetwork/qsds/utils"
+	"github.com/qsnetwork/sds/utils"
 )
 
 // Node
@@ -207,7 +207,7 @@ func (r *HashRing) GetNode(key string) (uint32, string) {
 
 // GetNodeMissNodeID get node excluded given NodeIDs
 // @params key
-func (r *HashRing) GetNodeMissNodeIDs(key string, NodeIDs []string) (uint32, string) {
+func (r *HashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string) (uint32, string) {
 
 	if len(NodeIDs) <= 0 {
 		return r.GetNode(key)

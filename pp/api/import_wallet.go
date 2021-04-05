@@ -2,11 +2,11 @@ package api
 
 import (
 	"fmt"
-	"github.com/qsnetwork/qsds/pp/peers"
-	"github.com/qsnetwork/qsds/pp/setting"
-	"github.com/qsnetwork/qsds/utils"
-	"github.com/qsnetwork/qsds/utils/crypto"
-	"github.com/qsnetwork/qsds/utils/httpserv"
+	"github.com/qsnetwork/sds/pp/peers"
+	"github.com/qsnetwork/sds/pp/setting"
+	"github.com/qsnetwork/sds/utils"
+	"github.com/qsnetwork/sds/utils/crypto"
+	"github.com/qsnetwork/sds/utils/httpserv"
 	"net/http"
 )
 

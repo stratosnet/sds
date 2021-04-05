@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/qsnetwork/qsds/msg/header"
-	"github.com/qsnetwork/qsds/msg/protos"
-	"github.com/qsnetwork/qsds/sp/common"
-	"github.com/qsnetwork/qsds/sp/storages/table"
-	"github.com/qsnetwork/qsds/utils"
-	"github.com/qsnetwork/qsds/utils/hashring"
+	"github.com/qsnetwork/sds/msg/header"
+	"github.com/qsnetwork/sds/msg/protos"
+	"github.com/qsnetwork/sds/sp/common"
+	"github.com/qsnetwork/sds/sp/storages/table"
+	"github.com/qsnetwork/sds/utils"
+	"github.com/qsnetwork/sds/utils/hashring"
 	"strconv"
 	"time"
 )
@@ -169,7 +169,7 @@ func (m *MsgHandler) BackupPP(walletAddress string) {
 
 			key := fs.SliceHash + "#" + strconv.FormatUint(fs.SliceNumber, 10) + "#" + strconv.Itoa(index)
 
-			_, newStorePPWalletAddress := m.server.HashRing.GetNodeMissNodeIDs(key, m.server.System.MissingBackupWalletAddr)
+			_, newStorePPWalletAddress := m.server.HashRing.GetNodeExcludedNodeIDs(key, m.server.System.MissingBackupWalletAddr)
 
 			if newStorePPWalletAddress != "" &&
 				fs.WalletAddress != newStorePPWalletAddress {

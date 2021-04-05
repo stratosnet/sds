@@ -1,0 +1,37 @@
+Version: 1
+
+Net:
+  Host: 0.0.0.0
+  Port: 8888
+
+HashRing:
+  VirtualNodeNum: 20
+
+FileStorage:
+  SliceBlockSize: 33554432
+
+Cache:
+  Engine: redis
+  Host: localhost
+  Port: 6379
+  Pass: redispasss
+  DB: 0
+  LifeTime: 60
+
+Database:
+  Driver: mysql
+  Host: localhost
+  Port: 3306
+  User: root
+  Pass: password
+  DbName: dbname
+  Debug: true
+  LogFile: path_to_log
+
+BpList:
+  - { NetworkAddress: 192.168.1.100:7788, WalletAddress: 0x1111111111111111111111111111111111111111 }
+  - { NetworkAddress: 192.168.1.101:7788, WalletAddress: 0x2222222222222222222222222222222222222222 }
+
+Ecdsa:
+  PrivateKeyPath: path_to_privatekey
+  PrivateKeyPass: privatekey_password

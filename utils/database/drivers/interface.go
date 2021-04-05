@@ -2,8 +2,8 @@ package drivers
 
 import (
 	"database/sql"
-	"github.com/qsnetwork/qsds/utils/cache"
-	"github.com/qsnetwork/qsds/utils/database/config"
+	"github.com/qsnetwork/sds/utils/cache"
+	"github.com/qsnetwork/sds/utils/database/config"
 )
 
 // DBDriver interface

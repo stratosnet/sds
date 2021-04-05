@@ -1,7 +1,7 @@
 package table
 
 import (
-	"github.com/qsnetwork/qsds/utils/database"
+	"github.com/qsnetwork/sds/utils/database"
 )
 
 // FileDownload

@@ -2,10 +2,10 @@ package setting
 
 import (
 	"fmt"
-	"github.com/qsnetwork/qsds/framework/client/cf"
-	"github.com/qsnetwork/qsds/pp/client"
-	"github.com/qsnetwork/qsds/pp/serv"
-	"github.com/qsnetwork/qsds/utils"
+	"github.com/qsnetwork/sds/framework/client/cf"
+	"github.com/qsnetwork/sds/pp/client"
+	"github.com/qsnetwork/sds/pp/serv"
+	"github.com/qsnetwork/sds/utils"
 	"time"
 
 	"github.com/alex023/clock"

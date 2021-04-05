@@ -2,10 +2,10 @@ package drivers
 
 import (
 	"errors"
-	"github.com/qsnetwork/qsds/utils"
-	"github.com/qsnetwork/qsds/utils/database/config"
-	"github.com/qsnetwork/qsds/utils/database/rows"
-	"github.com/qsnetwork/qsds/utils/database/sql"
+	"github.com/qsnetwork/sds/utils"
+	"github.com/qsnetwork/sds/utils/database/config"
+	"github.com/qsnetwork/sds/utils/database/rows"
+	"github.com/qsnetwork/sds/utils/database/sql"
 
 	_ "github.com/mattn/go-sqlite3"
 )

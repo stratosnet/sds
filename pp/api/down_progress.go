@@ -1,12 +1,12 @@
 package api
 
 import (
-	"github.com/qsnetwork/qsds/framework/client/cf"
-	"github.com/qsnetwork/qsds/pp/client"
-	"github.com/qsnetwork/qsds/pp/file"
-	"github.com/qsnetwork/qsds/pp/setting"
-	"github.com/qsnetwork/qsds/utils"
-	"github.com/qsnetwork/qsds/utils/httpserv"
+	"github.com/qsnetwork/sds/framework/client/cf"
+	"github.com/qsnetwork/sds/pp/client"
+	"github.com/qsnetwork/sds/pp/file"
+	"github.com/qsnetwork/sds/pp/setting"
+	"github.com/qsnetwork/sds/utils"
+	"github.com/qsnetwork/sds/utils/httpserv"
 	"net/http"
 )
 

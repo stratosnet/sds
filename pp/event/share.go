@@ -3,12 +3,12 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/qsnetwork/qsds/framework/spbf"
-	"github.com/qsnetwork/qsds/msg/header"
-	"github.com/qsnetwork/qsds/msg/protos"
-	"github.com/qsnetwork/qsds/pp/client"
-	"github.com/qsnetwork/qsds/pp/setting"
-	"github.com/qsnetwork/qsds/utils"
+	"github.com/qsnetwork/sds/framework/spbf"
+	"github.com/qsnetwork/sds/msg/header"
+	"github.com/qsnetwork/sds/msg/protos"
+	"github.com/qsnetwork/sds/pp/client"
+	"github.com/qsnetwork/sds/pp/setting"
+	"github.com/qsnetwork/sds/utils"
 	"net/http"
 )
 
@@ -82,7 +82,7 @@ func ReqShareFile(ctx context.Context, conn spbf.WriteCloser) {
 	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
 }
 
-// RspShareFile 创建分享文件响应
+// RspShareFile
 func RspShareFile(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspShareFile
 	if unmarshalData(ctx, &target) {
@@ -101,19 +101,19 @@ func RspShareFile(ctx context.Context, conn spbf.WriteCloser) {
 	}
 }
 
-// ReqDeleteShare 请求删除分享
+// ReqDeleteShare
 func ReqDeleteShare(ctx context.Context, conn spbf.WriteCloser) {
 	// pp send to SP
 	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
 }
 
-// RspDeleteShare 请求删除分享响应
+// RspDeleteShare
 func RspDeleteShare(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspDeleteShare
 	if unmarshalData(ctx, &target) {
 		if target.WalletAddress == setting.WalletAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
-				fmt.Println("取消分享成功:", target.ShareId)
+				fmt.Println("cancel share success:", target.ShareId)
 			} else {
 				fmt.Println("action  failed", target.Result.Msg)
 			}

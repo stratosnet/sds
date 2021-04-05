@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/qsnetwork/qsds/pp/peers"
-	"github.com/qsnetwork/qsds/pp/setting"
+	"github.com/qsnetwork/sds/pp/peers"
+	"github.com/qsnetwork/sds/pp/setting"
 )
 
 func main() {

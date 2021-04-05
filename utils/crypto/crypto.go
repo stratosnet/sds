@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/qsnetwork/qsds/utils/crypto/secp256k1"
-	"github.com/qsnetwork/qsds/utils/crypto/sha3"
-	"github.com/qsnetwork/qsds/utils/types"
+	"github.com/qsnetwork/sds/utils/crypto/secp256k1"
+	"github.com/qsnetwork/sds/utils/crypto/sha3"
+	"github.com/qsnetwork/sds/utils/types"
 	"math/big"
 	"reflect"
 )

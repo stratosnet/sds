@@ -3,9 +3,9 @@ package table
 import (
 	"errors"
 	"path/filepath"
-	"github.com/qsnetwork/qsds/msg/protos"
-	"github.com/qsnetwork/qsds/sp/tools"
-	"github.com/qsnetwork/qsds/utils/database"
+	"github.com/qsnetwork/sds/msg/protos"
+	"github.com/qsnetwork/sds/sp/tools"
+	"github.com/qsnetwork/sds/utils/database"
 	"strings"
 	"time"
 )

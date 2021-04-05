@@ -2,11 +2,11 @@ package task
 
 import (
 	"fmt"
-	"github.com/qsnetwork/qsds/msg/protos"
-	"github.com/qsnetwork/qsds/pp/client"
-	"github.com/qsnetwork/qsds/pp/file"
-	"github.com/qsnetwork/qsds/pp/setting"
-	"github.com/qsnetwork/qsds/utils"
+	"github.com/qsnetwork/sds/msg/protos"
+	"github.com/qsnetwork/sds/pp/client"
+	"github.com/qsnetwork/sds/pp/file"
+	"github.com/qsnetwork/sds/pp/setting"
+	"github.com/qsnetwork/sds/utils"
 	"io/ioutil"
 	"os"
 	"strings"

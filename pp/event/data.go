@@ -1,14 +1,14 @@
 package event
 
 import (
-	"github.com/qsnetwork/qsds/msg"
-	"github.com/qsnetwork/qsds/msg/header"
-	"github.com/qsnetwork/qsds/msg/protos"
-	"github.com/qsnetwork/qsds/pp/file"
-	"github.com/qsnetwork/qsds/pp/setting"
-	"github.com/qsnetwork/qsds/pp/task"
-	"github.com/qsnetwork/qsds/utils"
-	"github.com/qsnetwork/qsds/utils/crypto"
+	"github.com/qsnetwork/sds/msg"
+	"github.com/qsnetwork/sds/msg/header"
+	"github.com/qsnetwork/sds/msg/protos"
+	"github.com/qsnetwork/sds/pp/file"
+	"github.com/qsnetwork/sds/pp/setting"
+	"github.com/qsnetwork/sds/pp/task"
+	"github.com/qsnetwork/sds/utils"
+	"github.com/qsnetwork/sds/utils/crypto"
 	"path"
 
 	"github.com/golang/protobuf/proto"

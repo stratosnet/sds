@@ -5,15 +5,15 @@ import (
 	"encoding/hex"
 	"math"
 	"path/filepath"
-	"github.com/qsnetwork/qsds/framework/spbf"
-	"github.com/qsnetwork/qsds/msg/header"
-	"github.com/qsnetwork/qsds/msg/protos"
-	"github.com/qsnetwork/qsds/sp/net"
-	"github.com/qsnetwork/qsds/sp/storages/data"
-	"github.com/qsnetwork/qsds/sp/storages/table"
-	"github.com/qsnetwork/qsds/sp/tools"
-	"github.com/qsnetwork/qsds/utils"
-	"github.com/qsnetwork/qsds/utils/crypto"
+	"github.com/qsnetwork/sds/framework/spbf"
+	"github.com/qsnetwork/sds/msg/header"
+	"github.com/qsnetwork/sds/msg/protos"
+	"github.com/qsnetwork/sds/sp/net"
+	"github.com/qsnetwork/sds/sp/storages/data"
+	"github.com/qsnetwork/sds/sp/storages/table"
+	"github.com/qsnetwork/sds/sp/tools"
+	"github.com/qsnetwork/sds/utils"
+	"github.com/qsnetwork/sds/utils/crypto"
 	"strconv"
 	"time"
 )
@@ -114,7 +114,7 @@ func (e *UploadFile) Handle(ctx context.Context, conn spbf.WriteCloser) {
 			if e.GetServer().HashRing.NodeCount <= 1 {
 				missingNodeIds = []string{}
 			}
-			if _, NodeID := e.GetServer().HashRing.GetNodeMissNodeIDs(key, missingNodeIds); NodeID != "" {
+			if _, NodeID := e.GetServer().HashRing.GetNodeExcludedNodeIDs(key, missingNodeIds); NodeID != "" {
 
 				node := e.GetServer().HashRing.Node(NodeID)
 

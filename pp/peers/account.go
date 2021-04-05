@@ -3,9 +3,9 @@ package peers
 import (
 	"errors"
 	"fmt"
-	"github.com/qsnetwork/qsds/pp/setting"
-	"github.com/qsnetwork/qsds/utils"
-	"github.com/qsnetwork/qsds/utils/crypto"
+	"github.com/qsnetwork/sds/pp/setting"
+	"github.com/qsnetwork/sds/utils"
+	"github.com/qsnetwork/sds/utils/crypto"
 	"io/ioutil"
 )
 

@@ -3,12 +3,12 @@ package events
 import (
 	"context"
 	"path/filepath"
-	"github.com/qsnetwork/qsds/framework/spbf"
-	"github.com/qsnetwork/qsds/msg/header"
-	"github.com/qsnetwork/qsds/msg/protos"
-	"github.com/qsnetwork/qsds/sp/net"
-	"github.com/qsnetwork/qsds/sp/storages/table"
-	"github.com/qsnetwork/qsds/utils"
+	"github.com/qsnetwork/sds/framework/spbf"
+	"github.com/qsnetwork/sds/msg/header"
+	"github.com/qsnetwork/sds/msg/protos"
+	"github.com/qsnetwork/sds/sp/net"
+	"github.com/qsnetwork/sds/sp/storages/table"
+	"github.com/qsnetwork/sds/utils"
 	"strings"
 	"time"
 )

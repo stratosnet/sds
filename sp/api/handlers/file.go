@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"net/http"
-	"github.com/qsnetwork/qsds/sp/api/core"
-	"github.com/qsnetwork/qsds/sp/storages/table"
-	"github.com/qsnetwork/qsds/utils/database"
+	"github.com/qsnetwork/sds/sp/api/core"
+	"github.com/qsnetwork/sds/sp/storages/table"
+	"github.com/qsnetwork/sds/utils/database"
 
 	"github.com/gorilla/mux"
 )

@@ -1,0 +1,8 @@
+Driver: mysql
+Host: localhost
+Port: 3306
+User: root
+Pass: admin
+DbName: test
+Debug: true
+LogFile: tmp/logs/database.log

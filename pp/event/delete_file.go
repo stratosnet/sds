@@ -3,14 +3,14 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/qsnetwork/qsds/framework/client/cf"
-	"github.com/qsnetwork/qsds/framework/spbf"
-	"github.com/qsnetwork/qsds/msg/header"
-	"github.com/qsnetwork/qsds/msg/protos"
-	"github.com/qsnetwork/qsds/pp/client"
-	"github.com/qsnetwork/qsds/pp/file"
-	"github.com/qsnetwork/qsds/pp/setting"
-	"github.com/qsnetwork/qsds/utils"
+	"github.com/qsnetwork/sds/framework/client/cf"
+	"github.com/qsnetwork/sds/framework/spbf"
+	"github.com/qsnetwork/sds/msg/header"
+	"github.com/qsnetwork/sds/msg/protos"
+	"github.com/qsnetwork/sds/pp/client"
+	"github.com/qsnetwork/sds/pp/file"
+	"github.com/qsnetwork/sds/pp/setting"
+	"github.com/qsnetwork/sds/utils"
 	"net/http"
 )
 
@@ -35,14 +35,10 @@ func RspDeleteFile(ctx context.Context, conn spbf.WriteCloser) {
 	if unmarshalData(ctx, &target) {
 		if target.WalletAddress == setting.WalletAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
-				fmt.Println("删除成功 ", target.Result.Msg)
-
+				fmt.Println("delete success ", target.Result.Msg)
 			} else {
-
-				fmt.Println("删除失败 ", target.Result.Msg)
-
+				fmt.Println("delete failed ", target.Result.Msg)
 			}
-			utils.DebugLog("aaaaaa>>>>>>", target.ReqId)
 			putData(target.ReqId, HTTPDeleteFile, &target)
 		} else {
 			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))

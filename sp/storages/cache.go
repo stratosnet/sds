@@ -1,7 +1,7 @@
 package storages
 
 import (
-	"github.com/qsnetwork/qsds/utils/cache"
+	"github.com/qsnetwork/sds/utils/cache"
 	"sync"
 	"time"
 )

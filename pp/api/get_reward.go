@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/qsnetwork/qsds/pp/event"
+	"github.com/qsnetwork/sds/pp/event"
 	"net/http"
 
 	"github.com/google/uuid"

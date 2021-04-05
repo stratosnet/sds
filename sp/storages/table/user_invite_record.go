@@ -1,6 +1,6 @@
 package table
 
-import "github.com/qsnetwork/qsds/utils/database"
+import "github.com/qsnetwork/sds/utils/database"
 
 type UserInviteRecord struct {
 	Id             uint32

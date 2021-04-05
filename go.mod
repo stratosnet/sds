@@ -1,4 +1,4 @@
-module github.com/qsnetwork/qsds
+module github.com/qsnetwork/sds
 
 go 1.14
 

@@ -1,8 +1,8 @@
 package file
 
 import (
-	"github.com/qsnetwork/qsds/pp/setting"
-	"github.com/qsnetwork/qsds/utils"
+	"github.com/qsnetwork/sds/pp/setting"
+	"github.com/qsnetwork/sds/utils"
 	"io/ioutil"
 	"os"
 	"runtime"
