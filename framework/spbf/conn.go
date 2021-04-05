@@ -3,10 +3,10 @@ package spbf
 // server readloop writeloop handleloop
 import (
 	"context"
-	message "github.com/qsnetwork/qsds/msg"
-	"github.com/qsnetwork/qsds/msg/header"
-	"github.com/qsnetwork/qsds/utils"
-	"github.com/qsnetwork/qsds/utils/cmem"
+	message "github.com/qsnetwork/sds/msg"
+	"github.com/qsnetwork/sds/msg/header"
+	"github.com/qsnetwork/sds/utils"
+	"github.com/qsnetwork/sds/utils/cmem"
 	"io"
 	"net"
 	"reflect"

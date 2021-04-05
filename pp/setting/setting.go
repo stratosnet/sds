@@ -2,8 +2,8 @@ package setting
 
 import (
 	"fmt"
-	"github.com/qsnetwork/qsds/framework/client/cf"
-	"github.com/qsnetwork/qsds/utils"
+	"github.com/qsnetwork/sds/framework/client/cf"
+	"github.com/qsnetwork/sds/utils"
 	"io/ioutil"
 	"os"
 	"runtime"

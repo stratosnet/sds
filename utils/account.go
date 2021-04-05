@@ -15,9 +15,9 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"github.com/qsnetwork/qsds/utils/crypto"
-	"github.com/qsnetwork/qsds/utils/crypto/math"
-	"github.com/qsnetwork/qsds/utils/types"
+	"github.com/qsnetwork/sds/utils/crypto"
+	"github.com/qsnetwork/sds/utils/crypto/math"
+	"github.com/qsnetwork/sds/utils/types"
 
 	"github.com/pborman/uuid"
 	"golang.org/x/crypto/pbkdf2"

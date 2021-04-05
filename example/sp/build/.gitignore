@@ -1,0 +1,10 @@
+# Created by .ignore support plugin (hsz.mobi)
+
+ca/
+tmp/
+configs/api.yaml
+configs/sp.yaml
+test.log
+scripts
+SP_NET
+SP_API

@@ -4,10 +4,10 @@ package drivers
 // only include query, delete, update and batch insert
 
 import (
-	"github.com/qsnetwork/qsds/utils"
-	"github.com/qsnetwork/qsds/utils/database/config"
-	"github.com/qsnetwork/qsds/utils/database/rows"
-	"github.com/qsnetwork/qsds/utils/database/sql"
+	"github.com/qsnetwork/sds/utils"
+	"github.com/qsnetwork/sds/utils/database/config"
+	"github.com/qsnetwork/sds/utils/database/rows"
+	"github.com/qsnetwork/sds/utils/database/sql"
 	"os"
 	"path/filepath"
 	"strconv"

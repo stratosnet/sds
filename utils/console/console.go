@@ -2,7 +2,7 @@ package console
 
 import (
 	"fmt"
-	"github.com/qsnetwork/qsds/utils/cmd"
+	"github.com/qsnetwork/sds/utils/cmd"
 )
 
 // getPassPhrase retrieves the password associated with an account, either fetched

@@ -1,8 +1,8 @@
 package task
 
 import (
-	"github.com/qsnetwork/qsds/msg/protos"
-	"github.com/qsnetwork/qsds/pp/file"
+	"github.com/qsnetwork/sds/msg/protos"
+	"github.com/qsnetwork/sds/pp/file"
 )
 
 // TransferTaskMap

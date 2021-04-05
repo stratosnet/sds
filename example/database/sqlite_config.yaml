@@ -1,0 +1,4 @@
+Driver: sqlite
+Dns: examples/database/db/sqlite.db
+Debug: true
+LogFile: tmp/logs/database.log

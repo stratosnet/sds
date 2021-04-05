@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/qsnetwork/qsds/utils"
+	"github.com/qsnetwork/sds/utils"
 )
 
 // Connect config

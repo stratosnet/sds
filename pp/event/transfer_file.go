@@ -3,14 +3,14 @@ package event
 // Author j
 import (
 	"context"
-	"github.com/qsnetwork/qsds/framework/spbf"
-	"github.com/qsnetwork/qsds/msg"
-	"github.com/qsnetwork/qsds/msg/header"
-	"github.com/qsnetwork/qsds/msg/protos"
-	"github.com/qsnetwork/qsds/pp/serv"
-	"github.com/qsnetwork/qsds/pp/setting"
-	"github.com/qsnetwork/qsds/pp/task"
-	"github.com/qsnetwork/qsds/utils"
+	"github.com/qsnetwork/sds/framework/spbf"
+	"github.com/qsnetwork/sds/msg"
+	"github.com/qsnetwork/sds/msg/header"
+	"github.com/qsnetwork/sds/msg/protos"
+	"github.com/qsnetwork/sds/pp/serv"
+	"github.com/qsnetwork/sds/pp/setting"
+	"github.com/qsnetwork/sds/pp/task"
+	"github.com/qsnetwork/sds/utils"
 
 	"github.com/golang/protobuf/proto"
 )

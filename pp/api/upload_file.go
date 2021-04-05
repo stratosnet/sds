@@ -2,12 +2,12 @@ package api
 
 import (
 	"fmt"
-	"github.com/qsnetwork/qsds/msg/header"
-	"github.com/qsnetwork/qsds/pp/event"
-	"github.com/qsnetwork/qsds/pp/file"
-	"github.com/qsnetwork/qsds/pp/setting"
-	"github.com/qsnetwork/qsds/utils"
-	"github.com/qsnetwork/qsds/utils/httpserv"
+	"github.com/qsnetwork/sds/msg/header"
+	"github.com/qsnetwork/sds/pp/event"
+	"github.com/qsnetwork/sds/pp/file"
+	"github.com/qsnetwork/sds/pp/setting"
+	"github.com/qsnetwork/sds/utils"
+	"github.com/qsnetwork/sds/utils/httpserv"
 	"net/http"
 	"path/filepath"
 	"strings"
