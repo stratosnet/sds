@@ -15,7 +15,7 @@ import (
 
 // Alloc memory space
 func Alloc(size uintptr) *[]byte {
-	return (*[]byte)(C.mymalloc(_Ctype_int(size)))
+	return (*[]byte)(C.mymalloc((C.int)(int(size))))
 }
 
 // Free free memory space

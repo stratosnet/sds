@@ -4,11 +4,11 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/qsnetwork/sds/framework/spbf"
-	"github.com/qsnetwork/sds/msg/header"
-	"github.com/qsnetwork/sds/msg/protos"
-	"github.com/qsnetwork/sds/pp/setting"
-	"github.com/qsnetwork/sds/utils"
+	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
 )
 
 // RegisterNewPP P-SP P register to become PP

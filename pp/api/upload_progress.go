@@ -1,12 +1,12 @@
 package api
 
 import (
-	"github.com/qsnetwork/sds/framework/client/cf"
-	"github.com/qsnetwork/sds/pp/client"
-	"github.com/qsnetwork/sds/pp/event"
-	"github.com/qsnetwork/sds/pp/setting"
-	"github.com/qsnetwork/sds/utils"
-	"github.com/qsnetwork/sds/utils/httpserv"
+	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/event"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/httpserv"
 	"net/http"
 )
 

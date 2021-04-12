@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/peterh/liner"
-	"github.com/qsnetwork/sds/utils/cmd"
+	"github.com/stratosnet/sds/utils/cmd"
 )
 
 var (

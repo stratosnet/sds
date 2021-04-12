@@ -1,4 +1,4 @@
-module github.com/qsnetwork/sds
+module github.com/stratosnet/sds
 
 go 1.14
 

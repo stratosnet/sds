@@ -2,10 +2,10 @@ package client
 
 
 import (
-	"github.com/qsnetwork/sds/framework/client/cf"
-	"github.com/qsnetwork/sds/framework/spbf"
-	"github.com/qsnetwork/sds/msg"
-	"github.com/qsnetwork/sds/utils"
+	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/msg"
+	"github.com/stratosnet/sds/utils"
 	"net"
 	"sync"
 )

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/qsnetwork/sds/utils"
+	"github.com/stratosnet/sds/utils"
 )
 
 // HTTPServ Http server

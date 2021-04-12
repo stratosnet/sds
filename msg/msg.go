@@ -1,6 +1,6 @@
 package msg
 
-import "github.com/qsnetwork/sds/msg/header"
+import "github.com/stratosnet/sds/msg/header"
 
 // RelayMsgBuf application layer internal buffer for msg，
 type RelayMsgBuf struct {

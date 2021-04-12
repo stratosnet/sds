@@ -8,7 +8,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/qsnetwork/sds/utils/crypto"
+	"github.com/stratosnet/sds/utils/crypto"
 )
 
 // CalcCRC32

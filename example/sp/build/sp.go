@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/qsnetwork/sds/sp"
+	"github.com/stratosnet/sds/sp"
 )
 
 func main() {

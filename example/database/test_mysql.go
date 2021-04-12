@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/qsnetwork/sds/utils/cache"
-	"github.com/qsnetwork/sds/utils/database"
+	"github.com/stratosnet/sds/utils/cache"
+	"github.com/stratosnet/sds/utils/database"
 )
 
 func main() {

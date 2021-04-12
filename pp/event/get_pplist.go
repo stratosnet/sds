@@ -3,12 +3,12 @@ package event
 // Author j
 import (
 	"context"
-	"github.com/qsnetwork/sds/framework/spbf"
-	"github.com/qsnetwork/sds/msg/header"
-	"github.com/qsnetwork/sds/msg/protos"
-	"github.com/qsnetwork/sds/pp/client"
-	"github.com/qsnetwork/sds/pp/setting"
-	"github.com/qsnetwork/sds/utils"
+	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
 	"time"
 
 	"github.com/alex023/clock"

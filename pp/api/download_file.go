@@ -1,11 +1,11 @@
 package api
 
 import (
-	"github.com/qsnetwork/sds/msg/protos"
-	"github.com/qsnetwork/sds/pp/event"
-	"github.com/qsnetwork/sds/pp/setting"
-	"github.com/qsnetwork/sds/utils"
-	"github.com/qsnetwork/sds/utils/httpserv"
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/event"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/httpserv"
 	"net/http"
 	"os"
 

@@ -5,7 +5,7 @@
 // source: qsds_comm.proto
 
 //for future protoc-gen-go requirement
-//option go_package = "github.com/qsnetwork/sds/msg/protos";
+//option go_package = "github.com/stratosnet/sds/msg/protos";
 
 // j
 

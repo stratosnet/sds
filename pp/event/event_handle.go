@@ -3,14 +3,14 @@ package event
 // client pp event handler
 import (
 	"context"
-	"github.com/qsnetwork/sds/framework/client/cf"
-	"github.com/qsnetwork/sds/framework/spbf"
-	"github.com/qsnetwork/sds/msg"
-	"github.com/qsnetwork/sds/msg/header"
-	"github.com/qsnetwork/sds/pp/client"
-	"github.com/qsnetwork/sds/pp/serv"
-	"github.com/qsnetwork/sds/pp/setting"
-	"github.com/qsnetwork/sds/utils"
+	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/msg"
+	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/serv"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"

@@ -2,9 +2,9 @@ package file
 
 import (
 	"encoding/csv"
-	"github.com/qsnetwork/sds/msg/protos"
-	"github.com/qsnetwork/sds/pp/setting"
-	"github.com/qsnetwork/sds/utils"
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
 	"io/ioutil"
 	"os"
 	"path"

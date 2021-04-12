@@ -2,8 +2,8 @@ package database
 
 import (
 	"errors"
-	"github.com/qsnetwork/sds/utils/cache"
-	"github.com/qsnetwork/sds/utils/database/config"
+	"github.com/stratosnet/sds/utils/cache"
+	"github.com/stratosnet/sds/utils/database/config"
 	"time"
 )
 

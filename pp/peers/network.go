@@ -2,8 +2,8 @@ package peers
 
 import (
 	"fmt"
-	"github.com/qsnetwork/sds/pp/setting"
-	"github.com/qsnetwork/sds/utils"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
 	"net"
 )
 

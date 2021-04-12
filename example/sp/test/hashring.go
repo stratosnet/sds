@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/qsnetwork/sds/utils/hashring"
+	"github.com/stratosnet/sds/utils/hashring"
 	"strconv"
 )
 

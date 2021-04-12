@@ -2,12 +2,12 @@ package api
 
 import (
 	"fmt"
-	"github.com/qsnetwork/sds/msg/header"
-	"github.com/qsnetwork/sds/pp/event"
-	"github.com/qsnetwork/sds/pp/file"
-	"github.com/qsnetwork/sds/pp/setting"
-	"github.com/qsnetwork/sds/utils"
-	"github.com/qsnetwork/sds/utils/httpserv"
+	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/pp/event"
+	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/httpserv"
 	"net/http"
 	"path/filepath"
 	"strings"
