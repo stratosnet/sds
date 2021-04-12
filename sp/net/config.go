@@ -1,8 +1,8 @@
 package net
 
 import (
-	"github.com/qsnetwork/sds/utils/cache"
-	"github.com/qsnetwork/sds/utils/database/config"
+	"github.com/stratosnet/sds/utils/cache"
+	"github.com/stratosnet/sds/utils/database/config"
 )
 
 // Config server config struct

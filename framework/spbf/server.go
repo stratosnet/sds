@@ -3,8 +3,8 @@ package spbf
 
 import (
 	"context"
-	"github.com/qsnetwork/sds/msg"
-	"github.com/qsnetwork/sds/utils"
+	"github.com/stratosnet/sds/msg"
+	"github.com/stratosnet/sds/utils"
 	"net"
 
 	"sync"

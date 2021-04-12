@@ -3,9 +3,9 @@ package sql
 import (
 	"database/sql"
 	"errors"
-	"github.com/qsnetwork/sds/utils"
-	"github.com/qsnetwork/sds/utils/cache"
-	"github.com/qsnetwork/sds/utils/database/rows"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/cache"
+	"github.com/stratosnet/sds/utils/database/rows"
 	"strconv"
 	"strings"
 	"time"

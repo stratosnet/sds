@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"net/http"
-	"github.com/qsnetwork/sds/sp/api/core"
+	"github.com/stratosnet/sds/sp/api/core"
 )
 
 type Data struct {

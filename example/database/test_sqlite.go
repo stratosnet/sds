@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/qsnetwork/sds/utils/database"
+	"github.com/stratosnet/sds/utils/database"
 )
 
 func main() {

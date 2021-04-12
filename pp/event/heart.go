@@ -4,9 +4,9 @@ package event
 
 import (
 	"context"
-	"github.com/qsnetwork/sds/framework/spbf"
-	"github.com/qsnetwork/sds/msg"
-	"github.com/qsnetwork/sds/msg/header"
+	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/msg"
+	"github.com/stratosnet/sds/msg/header"
 )
 
 // SendHeartBeat

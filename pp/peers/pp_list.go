@@ -1,9 +1,9 @@
 package peers
 
 import (
-	"github.com/qsnetwork/sds/pp/client"
-	"github.com/qsnetwork/sds/pp/event"
-	"github.com/qsnetwork/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/event"
+	"github.com/stratosnet/sds/pp/setting"
 )
 
 // InitPPList

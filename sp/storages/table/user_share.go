@@ -3,8 +3,8 @@ package table
 import (
 	"errors"
 	"path/filepath"
-	"github.com/qsnetwork/sds/msg/protos"
-	"github.com/qsnetwork/sds/utils/database"
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/utils/database"
 	"strings"
 	"time"
 )

@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"net/http"
-	"github.com/qsnetwork/sds/sp/api/core"
-	"github.com/qsnetwork/sds/sp/storages/data"
-	"github.com/qsnetwork/sds/sp/storages/table"
+	"github.com/stratosnet/sds/sp/api/core"
+	"github.com/stratosnet/sds/sp/storages/data"
+	"github.com/stratosnet/sds/sp/storages/table"
 	"strings"
 	"time"
 )

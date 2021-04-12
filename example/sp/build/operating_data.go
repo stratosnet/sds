@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/qsnetwork/sds/sp/net"
-	"github.com/qsnetwork/sds/sp/scripts"
-	"github.com/qsnetwork/sds/utils"
-	"github.com/qsnetwork/sds/utils/database"
 	"time"
+
+	"github.com/stratosnet/sds/sp/net"
+	"github.com/stratosnet/sds/sp/scripts"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/database"
 )
 
 func main() {

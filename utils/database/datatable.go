@@ -2,8 +2,8 @@ package database
 
 import (
 	"errors"
-	"github.com/qsnetwork/sds/utils"
-	"github.com/qsnetwork/sds/utils/database/drivers"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/database/drivers"
 	"reflect"
 	"sync"
 )

@@ -1,14 +1,14 @@
 package event
 
 import (
-	"github.com/qsnetwork/sds/msg"
-	"github.com/qsnetwork/sds/msg/header"
-	"github.com/qsnetwork/sds/msg/protos"
-	"github.com/qsnetwork/sds/pp/file"
-	"github.com/qsnetwork/sds/pp/setting"
-	"github.com/qsnetwork/sds/pp/task"
-	"github.com/qsnetwork/sds/utils"
-	"github.com/qsnetwork/sds/utils/crypto"
+	"github.com/stratosnet/sds/msg"
+	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/crypto"
 	"path"
 
 	"github.com/golang/protobuf/proto"

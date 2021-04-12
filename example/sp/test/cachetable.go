@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/qsnetwork/sds/sp/storages/table"
-	"github.com/qsnetwork/sds/utils/cache"
-	"github.com/qsnetwork/sds/utils/database"
-	"github.com/qsnetwork/sds/utils/database/config"
+	"github.com/stratosnet/sds/sp/storages/table"
+	"github.com/stratosnet/sds/utils/cache"
+	"github.com/stratosnet/sds/utils/database"
+	"github.com/stratosnet/sds/utils/database/config"
 	"time"
 )
 

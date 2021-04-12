@@ -2,7 +2,7 @@ package spbf
 
 
 import (
-	"github.com/qsnetwork/sds/utils"
+	"github.com/stratosnet/sds/utils"
 	"hash/fnv"
 	"unsafe"
 )

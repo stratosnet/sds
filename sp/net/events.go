@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/qsnetwork/sds/framework/spbf"
-	"github.com/qsnetwork/sds/msg"
-	"github.com/qsnetwork/sds/msg/header"
-	"github.com/qsnetwork/sds/utils"
+	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/msg"
+	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/utils"
 	"reflect"
 )
 

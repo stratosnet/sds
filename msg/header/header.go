@@ -2,7 +2,7 @@ package header
 
 // Author j & cc
 import (
-	"github.com/qsnetwork/sds/utils"
+	"github.com/stratosnet/sds/utils"
 )
 
 // MessageHead

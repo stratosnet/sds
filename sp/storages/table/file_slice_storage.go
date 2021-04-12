@@ -1,7 +1,7 @@
 package table
 
 import (
-	"github.com/qsnetwork/sds/utils/database"
+	"github.com/stratosnet/sds/utils/database"
 )
 
 // FileSliceStorage map for file slice and storage pp

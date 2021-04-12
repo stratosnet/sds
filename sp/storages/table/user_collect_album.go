@@ -1,6 +1,6 @@
 package table
 
-import "github.com/qsnetwork/sds/utils/database"
+import "github.com/stratosnet/sds/utils/database"
 
 // UserCollectAlbum
 type UserCollectAlbum struct {

@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/qsnetwork/sds/sp/storages"
-	"github.com/qsnetwork/sds/sp/storages/data"
-	"github.com/qsnetwork/sds/utils/cache"
+	"github.com/stratosnet/sds/sp/storages"
+	"github.com/stratosnet/sds/sp/storages/data"
+	"github.com/stratosnet/sds/utils/cache"
 )
 
 func main() {

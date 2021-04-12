@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/qsnetwork/sds/pp/peers"
-	"github.com/qsnetwork/sds/pp/setting"
-	"github.com/qsnetwork/sds/utils/httpserv"
+	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils/httpserv"
 	"net/http"
 	"time"
 )

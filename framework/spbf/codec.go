@@ -3,7 +3,7 @@ package spbf
 //event register
 import (
 	"context"
-	"github.com/qsnetwork/sds/msg"
+	"github.com/stratosnet/sds/msg"
 )
 
 type ctxkey string

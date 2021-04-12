@@ -2,8 +2,8 @@ package serv
 
 
 import (
-	"github.com/qsnetwork/sds/framework/spbf"
-	"github.com/qsnetwork/sds/utils"
+	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/utils"
 	"net"
 	"sync"
 )

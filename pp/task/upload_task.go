@@ -1,9 +1,9 @@
 package task
 
 import (
-	"github.com/qsnetwork/sds/msg/protos"
-	"github.com/qsnetwork/sds/pp/file"
-	"github.com/qsnetwork/sds/utils"
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/utils"
 	"sync"
 )
 

@@ -3,15 +3,15 @@ package cf
 // client connect management, readloop writeloop handleloop
 
 import (
-	"github.com/qsnetwork/sds/framework/spbf"
-	"github.com/qsnetwork/sds/msg"
-	"github.com/qsnetwork/sds/msg/header"
-	"github.com/qsnetwork/sds/utils/cmem"
+	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/msg"
+	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/utils/cmem"
 	"reflect"
 	"unsafe"
 
 	"context"
-	"github.com/qsnetwork/sds/utils"
+	"github.com/stratosnet/sds/utils"
 	"io"
 	"net"
 	"sync"

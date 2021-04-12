@@ -1,12 +1,12 @@
 package sp
 
 import (
-	"github.com/qsnetwork/sds/msg/header"
-	"github.com/qsnetwork/sds/sp/api/core"
-	"github.com/qsnetwork/sds/sp/api/handlers"
-	"github.com/qsnetwork/sds/sp/net"
-	"github.com/qsnetwork/sds/sp/net/events"
-	"github.com/qsnetwork/sds/utils"
+	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/sp/api/core"
+	"github.com/stratosnet/sds/sp/api/handlers"
+	"github.com/stratosnet/sds/sp/net"
+	"github.com/stratosnet/sds/sp/net/events"
+	"github.com/stratosnet/sds/utils"
 )
 
 // StartSP

@@ -2,7 +2,7 @@ package tools
 
 import (
 	"encoding/json"
-	"github.com/qsnetwork/sds/utils"
+	"github.com/stratosnet/sds/utils"
 )
 
 type JsonResult struct {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/qsnetwork/sds/utils/crypto/sha3"
+	"github.com/stratosnet/sds/utils/crypto/sha3"
 )
 
 // Lengths of hashes and addresses in bytes.

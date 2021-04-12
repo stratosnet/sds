@@ -4,8 +4,8 @@ package setting
 import (
 	"crypto/ecdsa"
 	"encoding/csv"
-	"github.com/qsnetwork/sds/msg/protos"
-	"github.com/qsnetwork/sds/utils"
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/utils"
 	"os"
 	"sync"
 )

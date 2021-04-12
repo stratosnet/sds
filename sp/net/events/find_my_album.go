@@ -2,11 +2,11 @@ package events
 
 import (
 	"context"
-	"github.com/qsnetwork/sds/framework/spbf"
-	"github.com/qsnetwork/sds/msg/header"
-	"github.com/qsnetwork/sds/msg/protos"
-	"github.com/qsnetwork/sds/sp/net"
-	"github.com/qsnetwork/sds/sp/storages/table"
+	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/sp/net"
+	"github.com/stratosnet/sds/sp/storages/table"
 )
 
 // FindMyAlbum
