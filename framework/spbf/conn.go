@@ -212,7 +212,6 @@ func (sc *ServerConn) Close() {
 		Mylog(sc.belong.opts.logOpen, "enter close")
 		sc.mu.Unlock()
 
-
 		sc.wg.Wait()
 
 		close(sc.sendCh)
