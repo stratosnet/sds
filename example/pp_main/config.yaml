@@ -1,0 +1,27 @@
+Port: :18081
+NetWorkAddress: 127.0.0.1
+SPNetAddress: 127.0.0.1:8888
+Debug: true
+PPListDir: pp-list-dir
+BPListDir: bp-list-dir
+AccountDir: "./account"
+scryptN: 4096
+scryptP: 6
+DefPassword:
+DefSavePath:
+StorehousePath:
+DownloadPath:
+Password: a
+Account: 0x764e60d05Aa25d10dB26FeA593Fba418a4868C4e
+AutoRun: true
+Internal: true
+IsWallet:
+BPURL:
+IsCheckDefaultPath:
+IsLimitDownloadSpeed: true
+LimitDownloadSpeed: 100
+IsLimitUploadSpeed: true
+LimitUploadSpeed: 100
+IsCheckFileOperation:
+IsCheckFileTransferFinished:
+

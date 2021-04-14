@@ -143,8 +143,13 @@ func DebugLog(v ...interface{}) {
 	MyLogger.logDepth(Debug, 3, v...)
 }
 
+// CheckError  TODO This is a bad way to call error log, as you cannot know where this method is called in your error log
+// This give log line like this : [ERROR]2021/04/13 22:39:11 log.go:150: Fatal error: address 127.0.0.1: missing port in address
+// it always refer to this file and this line
+// If time allows, a better logging tool like "zerolog" can be used to replace these methods.
 func CheckError(err error) bool {
 	if err != nil {
+		// a fatal error , should be fatal and exit. If that is not the expected behavior, change this log
 		MyLogger.ErrorLog("Fatal error:", err.Error())
 		return true
 	}
