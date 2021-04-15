@@ -1,6 +1,5 @@
 package serv
 
-
 import (
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/utils"

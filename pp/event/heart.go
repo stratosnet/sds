@@ -1,7 +1,5 @@
 package event
 
-
-
 import (
 	"context"
 	"github.com/stratosnet/sds/framework/spbf"

@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/utils"
+	"net"
 	"time"
 
 	"github.com/alex023/clock"

@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Run some pre commit checks on the Go source code.
+echo "Running pre-commit checks on your code..."
+
+FILES=$(go list ./...  | grep -v /vendor/)
+
+# Format the Go code
+go fmt ${FILES}

@@ -872,7 +872,7 @@ func HTTPGetConfigFun(httpRsp *HTTPRsp, write http.ResponseWriter, reqID string)
 		FreeCapacity                uint64 `json:"FreeCapacity"`
 		Capacity                    uint64 `json:"Capacity"`
 		DownloadPath                string `json:"DownloadPath"`
-		IsCheckDefaultPath          bool   `json:"IsCheckDefaultPath"`          // whether use default download path
+		IsCheckDefaultPath          bool   `json:"IsCheckDefaultPath"` // whether use default download path
 		IsLimitDownloadSpeed        bool   `json:"IsLimitDownloadSpeed"`
 		LimitDownloadSpeed          uint64 `json:"LimitDownloadSpeed"`
 		IsLimitUploadSpeed          bool   `json:"IsLimitUploadSpeed"`
