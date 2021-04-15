@@ -105,7 +105,6 @@ func (e *DownloadFailed) Handle(ctx context.Context, conn spbf.WriteCloser) {
 
 			if e.GetServer().CT.Fetch(fileSlice) == nil {
 
-
 				fileSliceStorage := new(table.FileSliceStorage)
 				fileSliceStorage.SliceHash = task.SliceHash
 				fileSliceStorage.WalletAddress = task.StorageWalletAddress

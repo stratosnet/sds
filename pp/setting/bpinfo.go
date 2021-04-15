@@ -1,6 +1,5 @@
 package setting
 
-
 import (
 	"encoding/csv"
 	"github.com/stratosnet/sds/msg/protos"

@@ -19,7 +19,6 @@ func main() {
 	serv.StartListenServer(":8888")
 }
 
-
 type MyHandle struct {
 	Server *net.Server
 }
