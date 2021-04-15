@@ -1,6 +1,5 @@
 package spbf
 
-
 import (
 	"github.com/stratosnet/sds/utils"
 	"hash/fnv"
