@@ -1,6 +1,5 @@
 package client
 
-
 import (
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/spbf"
