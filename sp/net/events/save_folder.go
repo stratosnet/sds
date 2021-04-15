@@ -2,13 +2,13 @@ package events
 
 import (
 	"context"
-	"path/filepath"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/sp/net"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -89,13 +89,11 @@ func (e *SaveFolder) Handle(ctx context.Context, conn spbf.WriteCloser) {
 			insertFolders := make([][]interface{}, 0)
 			for _, dir := range dirs {
 
-
 				path := dir.FileName
 				if dir.StoragePath != "" {
 					path = strings.Join([]string{dir.StoragePath, dir.FileName}, "/")
 				}
 				dirHash := utils.CalcHash([]byte(body.WalletAddress + path))
-
 
 				err := e.GetServer().CT.FetchTable(new(table.UserDirectory), map[string]interface{}{
 					"where": map[string]interface{}{

@@ -7,7 +7,7 @@ type UserInviteRecord struct {
 	WalletAddress  string // invitation recipient
 	InvitationCode string //
 	Reward         uint64
-	Time           int64  // accept time
+	Time           int64 // accept time
 }
 
 // TableName

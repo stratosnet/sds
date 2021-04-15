@@ -59,7 +59,6 @@ func (e *TransferCerValidate) Handle(ctx context.Context, conn spbf.WriteCloser)
 			return rsp, header.RspValidateTransferCer
 		}
 
-
 		if transferRecord.ToWalletAddress == "" ||
 			transferRecord.Status != table.TRANSFER_RECORD_STATUS_CHECK {
 
@@ -67,7 +66,6 @@ func (e *TransferCerValidate) Handle(ctx context.Context, conn spbf.WriteCloser)
 			rsp.Result.State = protos.ResultState_RES_FAIL
 			return rsp, header.RspValidateTransferCer
 		}
-
 
 		if transferRecord.ToWalletAddress != body.NewPp.WalletAddress {
 

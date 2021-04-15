@@ -42,7 +42,6 @@ func (e *Mining) Handle(ctx context.Context, conn spbf.WriteCloser) {
 			},
 		}
 
-
 		if ok, msg := e.Validate(body); !ok {
 			rsp.Result.State = protos.ResultState_RES_FAIL
 			rsp.Result.Msg = msg

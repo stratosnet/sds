@@ -170,7 +170,6 @@ func (e *FileStorageInfo) Handle(ctx context.Context, conn spbf.WriteCloser) {
 			si.VisitResult = true
 			sliceInfo = append(sliceInfo, si)
 
-
 			task := new(data.DownloadTask)
 			task.TaskId = si.TaskId
 			task.SliceHash = row.SliceHash

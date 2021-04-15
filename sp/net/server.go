@@ -3,7 +3,6 @@ package net
 import (
 	"context"
 	"fmt"
-	"net"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
@@ -15,6 +14,7 @@ import (
 	"github.com/stratosnet/sds/utils/cache"
 	"github.com/stratosnet/sds/utils/database"
 	"github.com/stratosnet/sds/utils/hashring"
+	"net"
 	"sync"
 	"time"
 
@@ -88,7 +88,6 @@ func (s *Server) initialize() {
 
 	// it's commented out
 	//s.puk = tools.LoadOrCreateAccount(s.Conf.Ecdsa.PrivateKeyPath, s.Conf.Ecdsa.PrivateKeyPass)
-
 
 	s.connPool = new(sync.Map)
 
@@ -255,7 +254,6 @@ func (s *Server) OnConnectOption(conn spbf.WriteCloser) bool {
 
 // OnCloseOption
 func (s *Server) OnCloseOption(conn spbf.WriteCloser) {
-
 
 	go s.HandleMsg(&common.MsgLogout{
 		Name: conn.(*spbf.ServerConn).GetName(),

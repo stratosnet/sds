@@ -90,7 +90,6 @@ func (e *Invite) Handle(ctx context.Context, conn spbf.WriteCloser) {
 		rsp.CurrentCapacity = user.GetCapacity()
 		rsp.CapacityDelta = rsp.CapacityDelta / 1048576
 
-
 		user.BeInvited = 1
 
 		if e.GetServer().CT.Save(user) == nil {

@@ -53,7 +53,6 @@ func (e *ShareFile) Handle(ctx context.Context, conn spbf.WriteCloser) {
 
 		userShare := new(table.UserShare)
 
-
 		if body.FileHash != "" {
 
 			file := new(table.File)
@@ -67,7 +66,6 @@ func (e *ShareFile) Handle(ctx context.Context, conn spbf.WriteCloser) {
 			userShare.Hash = body.FileHash
 			userShare.ShareType = table.SHARE_TYPE_FILE
 		}
-
 
 		if body.PathHash != "" {
 

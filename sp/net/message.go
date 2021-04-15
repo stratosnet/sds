@@ -89,7 +89,6 @@ func (m *MsgHandler) Run() {
 // Mining
 func (m *MsgHandler) Mining(walletAddress, networkAddress, name string, puk []byte) {
 
-
 	if !m.server.HashRing.IsOnline(walletAddress) {
 		node := &hashring.Node{
 			ID:   walletAddress,
@@ -99,7 +98,6 @@ func (m *MsgHandler) Mining(walletAddress, networkAddress, name string, puk []by
 	}
 
 	m.server.HashRing.SetOnline(walletAddress)
-
 
 	user := &table.User{WalletAddress: walletAddress}
 	if m.server.CT.Fetch(user) == nil {
@@ -129,16 +127,13 @@ func (m *MsgHandler) Logout(name string) {
 	walletAddress := m.server.Who(name)
 	if walletAddress != "" {
 
-
 		m.server.HashRing.SetOffline(walletAddress)
-
 
 		pp := &table.PP{WalletAddress: walletAddress}
 		if m.server.CT.Fetch(pp) == nil {
 			pp.State = table.STATE_OFFLINE
 			m.server.CT.Save(pp)
 		}
-
 
 		m.server.RmConn(name)
 
@@ -217,7 +212,6 @@ func (m *MsgHandler) TransferNotice(sliceHash, sliceInWalletAddress, newStorePPW
 				NetworkAddress: fileSlice.NetworkAddress,
 			},
 		}
-
 
 		transferRecord := &table.TransferRecord{
 			SliceHash:          fileSlice.SliceHash,
