@@ -57,7 +57,6 @@ func (t *Test) Load(data map[string]interface{}) (bool, error) {
 	return database.LoadTable(t, data)
 }
 
-
 func main() {
 
 	// insert
@@ -76,7 +75,6 @@ func main() {
 	} else {
 		panic(err)
 	}
-
 
 	newTest := new(Test)
 

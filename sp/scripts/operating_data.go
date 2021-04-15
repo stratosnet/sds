@@ -3,12 +3,12 @@ package scripts
 import (
 	"database/sql"
 	"fmt"
-	"os"
-	"path/filepath"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/database"
 	"github.com/stratosnet/sds/utils/database/drivers"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )

@@ -61,7 +61,6 @@ func (e *SaveFile) Handle(ctx context.Context, conn spbf.WriteCloser) {
 
 		userHasFile := new(table.UserHasFile)
 
-
 		err := e.GetServer().CT.FetchTable(userHasFile, map[string]interface{}{
 			"where": map[string]interface{}{
 				"wallet_address = ? AND file_hash = ?": []interface{}{body.WalletAddress, body.FileHash},

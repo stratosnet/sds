@@ -3,7 +3,6 @@ package events
 import (
 	"context"
 	"encoding/hex"
-	"path/filepath"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -13,6 +12,7 @@ import (
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto"
+	"path/filepath"
 	"time"
 )
 
@@ -53,13 +53,11 @@ func (e *ReportUploadSliceResult) Handle(ctx context.Context, conn spbf.WriteClo
 			},
 		}
 
-
 		if ok, msg := e.Validate(body); !ok {
 			rsp.Result.State = protos.ResultState_RES_FAIL
 			rsp.Result.Msg = msg
 			return rsp, header.RspReportUploadSliceResult
 		}
-
 
 		fileSlice := new(table.FileSlice)
 
@@ -127,13 +125,11 @@ func (e *ReportUploadSliceResult) Handle(ctx context.Context, conn spbf.WriteClo
 
 				e.GetServer().CT.Save(fileSlice)
 
-
 				uploadFile.SetSliceFinish(fileSlice.SliceNumber)
 				e.GetServer().Store(uploadFile, 3600*time.Second)
 
 				// check if all slice upload finished
 				if uploadFile.IsUploadFinished() {
-
 
 					file := new(table.File)
 					file.Hash = uploadFile.FileHash
@@ -168,7 +164,6 @@ func (e *ReportUploadSliceResult) Handle(ctx context.Context, conn spbf.WriteClo
 							}
 						}
 
-
 						e.GetServer().Remove(uploadFile.GetCacheKey())
 					}
 				}
@@ -190,7 +185,6 @@ func (e *ReportUploadSliceResult) Handle(ctx context.Context, conn spbf.WriteClo
 
 // Validate
 func (e *ReportUploadSliceResult) Validate(req *protos.ReportUploadSliceResult) (bool, string) {
-
 
 	if req.FileHash == "" ||
 		req.SliceHash == "" ||

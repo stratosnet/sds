@@ -93,7 +93,6 @@ func (e *ReportDownloadResult) Handle(ctx context.Context, conn spbf.WriteCloser
 
 		} else {
 
-
 			record.SliceHash = fileSlice.SliceHash
 			record.Status = table.DOWNLOAD_STATUS_CHECK
 			record.Time = time.Now().Unix()

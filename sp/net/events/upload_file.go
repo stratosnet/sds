@@ -3,8 +3,6 @@ package events
 import (
 	"context"
 	"encoding/hex"
-	"math"
-	"path/filepath"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -14,6 +12,8 @@ import (
 	"github.com/stratosnet/sds/sp/tools"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto"
+	"math"
+	"path/filepath"
 	"strconv"
 	"time"
 )
@@ -54,7 +54,6 @@ func (e *UploadFile) Handle(ctx context.Context, conn spbf.WriteCloser) {
 			PpList: nil,
 			ReqId:  body.ReqId,
 		}
-
 
 		if ok, msg := e.Validate(body); !ok {
 			rsp.Result.State = protos.ResultState_RES_FAIL
@@ -165,8 +164,6 @@ func (e *UploadFile) Handle(ctx context.Context, conn spbf.WriteCloser) {
 
 		} else {
 
-
-
 			file := new(table.File)
 			file.Hash = body.FileInfo.FileHash
 			if e.GetServer().CT.Fetch(file) != nil {
@@ -200,13 +197,11 @@ func (e *UploadFile) Handle(ctx context.Context, conn spbf.WriteCloser) {
 				}
 			}
 
-
 			e.GetServer().CT.GetDriver().Delete("user_directory_map_file", map[string]interface{}{
 				"owner = ? AND file_hash = ?": []interface{}{
 					body.MyAddress.WalletAddress, file.Hash,
 				},
 			})
-
 
 			if body.FileInfo.StoragePath != "" {
 
@@ -242,7 +237,6 @@ func (e *UploadFile) Validate(req *protos.ReqUploadFile) (bool, string) {
 	if e.GetServer().HashRing.NodeCount <= 0 {
 		return false, "no online PP node, try later"
 	}
-
 
 	if req.FileInfo.FileHash == "" ||
 		req.FileInfo.FileSize <= 0 {

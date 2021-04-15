@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"net/http"
 	"github.com/stratosnet/sds/sp/api/core"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils/database"
+	"net/http"
 
 	"github.com/gorilla/mux"
 )

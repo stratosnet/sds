@@ -73,7 +73,6 @@ func ReqDownloadSlice(ctx context.Context, conn spbf.WriteCloser) {
 	}
 }
 
-
 func splitSendDownloadSliceData(rsp *protos.RspDownloadSlice, conn spbf.WriteCloser) {
 	dataLen := uint64(len(rsp.Data))
 	utils.DebugLog("dataLen=========", dataLen)
@@ -251,7 +250,7 @@ func RspDownloadSloceWrong(ctx context.Context, conn spbf.WriteCloser) {
 }
 
 func downloadWrong(taskID, sliceHash, walletAddress string, wrongType protos.DownloadWrongType) {
-	utils.DebugLog("downloadWrong, sliceHash: " , sliceHash)
+	utils.DebugLog("downloadWrong, sliceHash: ", sliceHash)
 	SendMessageToSPServer(reqDownloadSloceWrong(taskID, sliceHash, walletAddress, wrongType), header.ReqDownloadSliceWrong)
 }
 

@@ -32,7 +32,6 @@ func (e *TransferNotice) Handle(ctx context.Context, conn spbf.WriteCloser) {
 
 		body := message.(*protos.RspTransferNotice)
 
-
 		if body.Result.State != protos.ResultState_RES_SUCCESS {
 
 			// todo response failed, prepare another transfer

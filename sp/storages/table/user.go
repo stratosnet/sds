@@ -1,9 +1,9 @@
 package table
 
 import (
-	"path/filepath"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/utils/database"
+	"path/filepath"
 	"strings"
 	"time"
 )

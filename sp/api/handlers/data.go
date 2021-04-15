@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"net/http"
 	"github.com/stratosnet/sds/sp/api/core"
+	"net/http"
 )
 
 type Data struct {

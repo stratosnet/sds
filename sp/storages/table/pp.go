@@ -22,11 +22,11 @@ CREATE TABLE `pp` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `IDX_WALLET_ADDRESS` (`wallet_address`) USING HASH
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
- */
+*/
 
 const (
 	STATE_OFFLINE = 0
-	STATE_ONLINE = 1
+	STATE_ONLINE  = 1
 )
 
 // PP 表

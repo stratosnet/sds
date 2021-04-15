@@ -4,7 +4,6 @@ import (
 	"github.com/stratosnet/sds/utils/database"
 )
 
-
 const (
 	// DOWNLOAD_STATUS_SUCCESS
 	DOWNLOAD_STATUS_SUCCESS = 0

@@ -158,6 +158,7 @@ func transferSendMessageToPPServ(addr string, msgBuf *msg.RelayMsgBuf) {
 		client.NewClient(addr, false).Write(msgBuf)
 	}
 }
+
 //todo:
 // transferSendMessageToPPServ
 func sendMessageToBPServ(addr string, msgBuf *msg.RelayMsgBuf) {
@@ -219,7 +220,6 @@ func sendAllBP(m *msg.RelayMsgBuf) {
 		sendMessageToBPServ(bp, m)
 	}
 }
-
 
 func unmarshalData(ctx context.Context, target interface{}) bool {
 	msgBuf := spbf.MessageFromContext(ctx)
