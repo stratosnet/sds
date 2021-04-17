@@ -29,15 +29,9 @@ func StartSP(conf string) *net.Server {
 	spbf.Register(header.ReqReportTransferResult, events.GetReportTransferResultHandler(server))       // server.ListenEvent(header.ReqReportTransferResult, new(events.reportTransferResult))
 	spbf.Register(header.ReqGetBPList, events.GetBPListHandler(server))                                // server.ListenEvent(header.ReqGetBPList, new(events.getBPList))
 	spbf.Register(header.ReqDownloadTaskInfo, events.GetDownloadTaskInfoHandler(server))               // server.ListenEvent(header.ReqDownloadTaskInfo, new(events.downloadTaskInfo))
-
-	server.ListenEvent(header.ReqDeleteFile, new(events.DeleteFile))
-	spbf.Register(header, events)
-
-	server.ListenEvent(header.ReqDownloadSliceWrong, new(events.DownloadFailed))
-	spbf.Register(header, events)
-
-	server.ListenEvent(header.RspDeleteSlice, new(events.DeleteSlice))
-	spbf.Register(header, events)
+	spbf.Register(header.ReqDeleteFile, events.GetDeleteFileHandler(server))                           //	server.ListenEvent(header.ReqDeleteFile, new(events.deleteFile))
+	spbf.Register(header.ReqDownloadSliceWrong, events.GetDownloadFailedHandler(server))               //	server.ListenEvent(header.ReqDownloadSliceWrong, new(events.downloadFailed))
+	spbf.Register(header.RspDeleteSlice, events.GetDeleteSliceHandler(server))                         // server.ListenEvent(header.RspDeleteSlice, new(events.deleteSlice))
 
 	server.ListenEvent(header.RspGetHDInfo, new(events.GetHDInfo))
 	spbf.Register(header, events)
@@ -72,9 +66,9 @@ func StartSP(conf string) *net.Server {
 	spbf.Register(header, events)                                               // 	server.ListenEvent(header.ReqReportTransferResult, new(events.reportTransferResult))
 	spbf.Register(header, events)                                               // 	server.ListenEvent(header.ReqGetBPList, new(events.getBPList))
 	spbf.Register(header, events)                                               // 	server.ListenEvent(header.ReqShareFile, new(events.ShareFile))
-	spbf.Register(header, events)                                               // 	server.ListenEvent(header.ReqDeleteFile, new(events.DeleteFile))
-	spbf.Register(header, events)                                               // 	server.ListenEvent(header.ReqDownloadSliceWrong, new(events.DownloadFailed))
-	spbf.Register(header, events)                                               // 	server.ListenEvent(header.RspDeleteSlice, new(events.DeleteSlice))
+	spbf.Register(header, events)                                               // 	server.ListenEvent(header.ReqDeleteFile, new(events.deleteFile))
+	spbf.Register(header, events)                                               // 	server.ListenEvent(header.ReqDownloadSliceWrong, new(events.downloadFailed))
+	spbf.Register(header, events)                                               // 	server.ListenEvent(header.RspDeleteSlice, new(events.deleteSlice))
 	spbf.Register(header, events)                                               // 	server.ListenEvent(header.RspGetHDInfo, new(events.GetHDInfo))
 	spbf.Register(header, events)                                               // 	server.ListenEvent(header.ReqMakeDirectory, new(events.MakeDirectory))
 	spbf.Register(header, events)                                               // 	server.ListenEvent(header.ReqRemoveDirectory, new(events.RemoveDirectory))
