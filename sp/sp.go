@@ -15,21 +15,14 @@ func StartSP(conf string) *net.Server {
 
 	server := net.NewServer(conf)
 
-	spbf.Register(header.ReqMining, events.MiningHandler(server))       // server.ListenEvent(header.ReqMining, new(events.Mining))
-	spbf.Register(header.ReqRegister, events.RegisterHandler(server))   // server.ListenEvent(header.ReqRegister, new(events.Register))
-	spbf.Register(header.ReqGetPPList, events.GetPPListHandler(server)) // server.ListenEvent(header.ReqGetPPList, new(events.GetPPList))
+	spbf.Register(header.ReqMining, events.MiningHandler(server))                                   // server.ListenEvent(header.ReqMining, new(events.Mining))
+	spbf.Register(header.ReqRegister, events.RegisterHandler(server))                               // server.ListenEvent(header.ReqRegister, new(events.Register))
+	spbf.Register(header.ReqGetPPList, events.GetPPListHandler(server))                             // server.ListenEvent(header.ReqGetPPList, new(events.GetPPList))
+	spbf.Register(header.ReqRegisterNewPP, events.RegisterNewPPHandler(server))                     // server.ListenEvent(header.ReqRegisterNewPP, new(events.RegisterNewPP))
+	spbf.Register(header.ReqUploadFile, events.UploadFileHandler(server))                           // 	server.ListenEvent(header.ReqUploadFile, new(events.UploadFile))
+	spbf.Register(header.ReqReportUploadSliceResult, events.ReportUploadSliceResultHandler(server)) // 	server.ListenEvent(header.ReqReportUploadSliceResult, new(events.ReportUploadSliceResult))
 
-	server.ListenEvent(header.ReqRegisterNewPP, new(events.RegisterNewPP))
-	spbf.Register(header, events)
-
-	server.ListenEvent(header.ReqUploadFile, new(events.UploadFile))
-	spbf.Register(header, events)
-
-	server.ListenEvent(header.ReqReportUploadSliceResult, new(events.ReportUploadSliceResult))
-	spbf.Register(header, events)
-
-	server.ListenEvent(header.ReqFindMyFileList, new(events.FindMyFileList))
-	spbf.Register(header, events)
+	spbf.Register(header.ReqFindMyFileList, events.FindMyFileListHandler(server)) // server.ListenEvent(header.ReqFindMyFileList, new(events.FindMyFileList))
 
 	server.ListenEvent(header.ReqFileStorageInfo, new(events.FileStorageInfo))
 	spbf.Register(header, events)

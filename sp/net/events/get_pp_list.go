@@ -24,7 +24,7 @@ func GetPPListHandler(s *net.Server) EventHandleFunc {
 
 // getPPListCallbackFunc is the main process of get pp list
 func getPPListCallbackFunc(_ context.Context, s *net.Server, _ proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
-	// get PP from hashring
+	// get PP from hash ring
 	ppList := s.HashRing.RandomGetNodes(s.Conf.Peers.List)
 
 	ppBaseInfoList := make([]*protos.PPBaseInfo, 0, len(ppList))
