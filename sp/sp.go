@@ -36,12 +36,8 @@ func StartSP(conf string) *net.Server {
 	spbf.Register(header.ReqMakeDirectory, events.GetMakeDirHandler(server))                           // server.ListenEvent(header.ReqMakeDirectory, new(events.makeDirectory))
 	spbf.Register(header.ReqRemoveDirectory, events.GetRmDirHandler(server))                           // server.ListenEvent(header.ReqRemoveDirectory, new(events.removeDirectory))
 	spbf.Register(header.ReqMoveFileDirectory, events.GetMoveFileDirHandler(server))                   // server.ListenEvent(header.ReqMoveFileDirectory, new(events.moveFileDirectory))
-
-	server.ListenEvent(header.ReqSaveFile, new(events.SaveFile))
-	spbf.Register(header, events)
-
-	server.ListenEvent(header.ReqSaveFolder, new(events.SaveFolder))
-	spbf.Register(header, events)
+	spbf.Register(header.ReqSaveFile, events.GetSaveFileHandler(server))                               // server.ListenEvent(header.ReqSaveFile, new(events.saveFile))
+	spbf.Register(header.ReqSaveFolder, events.GetSaveFolderHandler(server))                           // server.ListenEvent(header.ReqSaveFolder, new(events.saveFolder))
 
 	server.ListenEvent(header.ReqShareFile, new(events.ShareFile))
 	spbf.Register(header, events)
