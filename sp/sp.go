@@ -38,12 +38,8 @@ func StartSP(conf string) *net.Server {
 	spbf.Register(header.ReqMoveFileDirectory, events.GetMoveFileDirHandler(server))                   // server.ListenEvent(header.ReqMoveFileDirectory, new(events.moveFileDirectory))
 	spbf.Register(header.ReqSaveFile, events.GetSaveFileHandler(server))                               // server.ListenEvent(header.ReqSaveFile, new(events.saveFile))
 	spbf.Register(header.ReqSaveFolder, events.GetSaveFolderHandler(server))                           // server.ListenEvent(header.ReqSaveFolder, new(events.saveFolder))
-
-	server.ListenEvent(header.ReqShareFile, new(events.ShareFile))
-	spbf.Register(header, events)
-
-	server.ListenEvent(header.ReqGetShareFile, new(events.GetShareFile))
-	spbf.Register(header, events)
+	spbf.Register(header.ReqShareFile, events.GetShareFileHandler(server))                             // server.ListenEvent(header.ReqShareFile, new(events.shareFile))
+	spbf.Register(header.ReqGetShareFile, events.GetGetShareFileHandler(server))                       // server.ListenEvent(header.ReqGetShareFile, new(events.getShareFile))
 
 	server.ListenEvent(header.ReqShareLink, new(events.ShareLink))
 	spbf.Register(header, events)
