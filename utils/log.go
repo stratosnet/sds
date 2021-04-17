@@ -125,19 +125,25 @@ func (l *Logger) ErrorLog(v ...interface{}) {
 	l.logDepth(Error, 3, v...)
 }
 
-//Log 调用 默认的日志对象, 输出info日志
+//Log calls default logger and output info log
 func Log(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
 	MyLogger.logDepth(Info, 3, v...)
 }
 
-//ErrorLog 调用 默认的日志对象, 输出error日志
+//ErrorLog call default logger and output error log
 func ErrorLog(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
 	MyLogger.logDepth(Error, 3, v...)
 }
 
-//DebugLog 调用 默认的日志对象, 输出debug日志
+//ErrorLogf call default logger and output error log
+func ErrorLogf(template string, v ...interface{}) {
+	//GetLogger().Log(Info, v...)
+	MyLogger.logDepth(Error, 3, fmt.Errorf(template, v...))
+}
+
+//DebugLog calls default logger and output debug log
 func DebugLog(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
 	MyLogger.logDepth(Debug, 3, v...)
