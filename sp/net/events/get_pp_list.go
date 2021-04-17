@@ -2,59 +2,57 @@ package events
 
 import (
 	"context"
+	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/sp/net"
+	"github.com/stratosnet/sds/utils"
 )
 
-// GetPPList
+// GetPPList is a concrete implementation of event
 type GetPPList struct {
-	Server *net.Server
+	event
 }
 
-// GetServer
-func (e *GetPPList) GetServer() *net.Server {
-	return e.Server
+// GetPPListHandler creates event and return handler func for it
+func GetPPListHandler(s *net.Server) EventHandleFunc {
+	return GetPPList{
+		newEvent("get_pp_list", s, getPPListCallbackFunc),
+	}.Handle
 }
 
-// SetServer
-func (e *GetPPList) SetServer(server *net.Server) {
-	e.Server = server
-}
+// getPPListCallbackFunc is the main process of get pp list
+func getPPListCallbackFunc(_ context.Context, s *net.Server, _ proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
+	// get PP from hashring
+	ppList := s.HashRing.RandomGetNodes(s.Conf.Peers.List)
 
-// Handle
-func (e *GetPPList) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	ppBaseInfoList := make([]*protos.PPBaseInfo, 0, len(ppList))
 
-	target := new(protos.ReqGetPPList)
-
-	callback := func(message interface{}) (interface{}, string) {
-
-		// get PP from hashring
-		ppList := e.GetServer().HashRing.RandomGetNodes(e.GetServer().Conf.Peers.List)
-
-		ppBaseInfoList := make([]*protos.PPBaseInfo, 0, len(ppList))
-
-		if len(ppList) > 0 {
-
-			for _, pp := range ppList {
-				ppBaseInfo := &protos.PPBaseInfo{
-					WalletAddress:  pp.ID,
-					NetworkAddress: pp.Host,
-				}
-				ppBaseInfoList = append(ppBaseInfoList, ppBaseInfo)
-			}
+	for _, pp := range ppList {
+		ppBaseInfo := &protos.PPBaseInfo{
+			WalletAddress:  pp.ID,
+			NetworkAddress: pp.Host,
 		}
-
-		rsp := &protos.RspGetPPList{
-			Result: &protos.Result{
-				State: protos.ResultState_RES_SUCCESS,
-			},
-			PpList: ppBaseInfoList,
-		}
-
-		return rsp, header.RspGetPPList
+		ppBaseInfoList = append(ppBaseInfoList, ppBaseInfo)
 	}
 
-	go net.EventHandle(ctx, conn, target, callback, e.GetServer().Ver)
+	rsp := &protos.RspGetPPList{
+		Result: &protos.Result{
+			State: protos.ResultState_RES_SUCCESS,
+		},
+		PpList: ppBaseInfoList,
+	}
+
+	return rsp, header.RspGetPPList
+}
+
+// Handle create a concrete proto message for this event, and handle the event asynchronously
+func (e *GetPPList) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	go func() {
+		if err := e.handle(ctx, conn, &protos.ReqGetPPList{}); err != nil {
+			utils.ErrorLog(err)
+		}
+	}()
+
 }

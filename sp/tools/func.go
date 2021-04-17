@@ -3,11 +3,11 @@ package tools
 import (
 	"encoding/hex"
 	"errors"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/crypto"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto"
 	"strconv"
 	"strings"
 	"time"

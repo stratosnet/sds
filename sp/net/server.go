@@ -3,7 +3,6 @@ package net
 import (
 	"context"
 	"fmt"
-	"net"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
@@ -15,6 +14,7 @@ import (
 	"github.com/stratosnet/sds/utils/cache"
 	"github.com/stratosnet/sds/utils/database"
 	"github.com/stratosnet/sds/utils/hashring"
+	"net"
 	"sync"
 	"time"
 
@@ -29,8 +29,8 @@ type Server struct {
 	PPVersion      uint16               // PP version
 	Host           string               // net host
 	puk            string               // public key
-	UserCount      int64                // user count
-	ConnectedCount uint64               // connection count
+	UserCount      int64                // user count todo should this be atomic?
+	ConnectedCount uint64               // connection count todo should this be atomic?
 	Conf           *Config              // configuration
 	CT             *database.CacheTable // database
 	HashRing       *hashring.HashRing   // hashring
@@ -88,7 +88,6 @@ func (s *Server) initialize() {
 
 	// it's commented out
 	//s.puk = tools.LoadOrCreateAccount(s.Conf.Ecdsa.PrivateKeyPath, s.Conf.Ecdsa.PrivateKeyPass)
-
 
 	s.connPool = new(sync.Map)
 
@@ -176,7 +175,7 @@ func (s *Server) refreshStatus() {
 }
 
 // AddConn
-func (s *Server) AddConn(name, walletAddress string, conn *spbf.ServerConn) {
+func (s *Server) AddConn(name, walletAddress string, conn spbf.WriteCloser) {
 	s.connPool.Store(name, walletAddress)
 	s.connPool.Store(walletAddress+"#name", name)
 	s.connPool.Store(walletAddress+"#connect", conn)
@@ -193,9 +192,9 @@ func (s *Server) RmConn(name string) {
 }
 
 // GetConn
-func (s *Server) GetConn(walletAddress string) *spbf.ServerConn {
+func (s *Server) GetConn(walletAddress string) spbf.WriteCloser {
 	if c, ok := s.connPool.Load(walletAddress + "#connect"); ok {
-		return c.(*spbf.ServerConn)
+		return c.(spbf.WriteCloser)
 	}
 	return nil
 }
@@ -255,7 +254,6 @@ func (s *Server) OnConnectOption(conn spbf.WriteCloser) bool {
 
 // OnCloseOption
 func (s *Server) OnCloseOption(conn spbf.WriteCloser) {
-
 
 	go s.HandleMsg(&common.MsgLogout{
 		Name: conn.(*spbf.ServerConn).GetName(),

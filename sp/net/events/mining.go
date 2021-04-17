@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -12,73 +13,69 @@ import (
 	"github.com/stratosnet/sds/utils/crypto"
 )
 
-// Mining
+// Mining is a concrete implementation of event
 type Mining struct {
-	Server *net.Server
+	event
 }
 
-// GetServer
-func (e *Mining) GetServer() *net.Server {
-	return e.Server
+// MiningHandler creates event and return handler func for it
+func MiningHandler(s *net.Server) EventHandleFunc {
+	return Mining{
+		newEvent("mining", s, miningCallbackFunc),
+	}.Handle
 }
 
-// SetServer
-func (e *Mining) SetServer(server *net.Server) {
-	e.Server = server
-}
+// miningCallbackFunc is the main process of mining
+func miningCallbackFunc(_ context.Context, s *net.Server, message proto.Message, conn spbf.WriteCloser) (proto.Message, string) {
 
-// Handle
-func (e *Mining) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	body := message.(*protos.ReqMining)
 
-	target := new(protos.ReqMining)
+	rsp := &protos.RspMining{
+		Result: &protos.Result{
+			State: protos.ResultState_RES_SUCCESS,
+		},
+	}
 
-	callback := func(message interface{}) (interface{}, string) {
-
-		body := message.(*protos.ReqMining)
-
-		rsp := &protos.RspMining{
-			Result: &protos.Result{
-				State: protos.ResultState_RES_SUCCESS,
-			},
-		}
-
-
-		if ok, msg := e.Validate(body); !ok {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = msg
-			return rsp, header.RspMining
-		}
-
-		pp := &table.PP{WalletAddress: body.Address.WalletAddress}
-		if e.GetServer().CT.Fetch(pp) != nil {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "not PP yet"
-			return rsp, header.RspMining
-		}
-
-		// map net address with wallet address
-		name := conn.(*spbf.ServerConn).GetName()
-		e.GetServer().AddConn(name, body.Address.WalletAddress, conn.(*spbf.ServerConn))
-
-		// send mining msg
-		e.GetServer().HandleMsg(&common.MsgMining{
-			WalletAddress:  body.Address.WalletAddress,
-			NetworkAddress: body.Address.NetworkAddress,
-			Name:           name,
-			Puk:            body.PublicKey,
-		})
-
+	if ok, msg := validateMiningRequest(body); !ok {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = msg
 		return rsp, header.RspMining
 	}
 
-	go net.EventHandle(ctx, conn, target, callback, e.GetServer().Ver)
+	pp := &table.PP{WalletAddress: body.Address.WalletAddress}
+	if s.CT.Fetch(pp) != nil {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "not PP yet"
+		return rsp, header.RspMining
+	}
+
+	// map net address with wallet address
+	name := conn.(*spbf.ServerConn).GetName()
+	s.AddConn(name, body.Address.WalletAddress, conn)
+
+	// send mining msg
+	s.HandleMsg(&common.MsgMining{
+		WalletAddress:  body.Address.WalletAddress,
+		NetworkAddress: body.Address.NetworkAddress,
+		Name:           name,
+		Puk:            body.PublicKey,
+	})
+
+	return rsp, header.RspMining
 }
 
-// Validate
-func (e *Mining) Validate(req *protos.ReqMining) (bool, string) {
+// Handle create a concrete proto message for this event, and handle the event asynchronously
+func (e *Mining) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	go func() {
+		if err := e.handle(ctx, conn, new(protos.ReqMining)); err != nil {
+			utils.ErrorLog(err)
+		}
+	}()
+}
 
-	if req.Address.WalletAddress == "" ||
-		req.Address.NetworkAddress == "" {
+// validateMiningRequest checks requests parameters
+func validateMiningRequest(req *protos.ReqMining) (bool, string) {
+	if req.Address.WalletAddress == "" || req.Address.NetworkAddress == "" {
 		return false, "wallet address or net address can't be empty"
 	}
 
@@ -100,5 +97,4 @@ func (e *Mining) Validate(req *protos.ReqMining) (bool, string) {
 	}
 
 	return true, ""
-
 }
