@@ -40,14 +40,10 @@ func StartSP(conf string) *net.Server {
 	spbf.Register(header.ReqSaveFolder, events.GetSaveFolderHandler(server))                           // server.ListenEvent(header.ReqSaveFolder, new(events.saveFolder))
 	spbf.Register(header.ReqShareFile, events.GetShareFileHandler(server))                             // server.ListenEvent(header.ReqShareFile, new(events.shareFile))
 	spbf.Register(header.ReqGetShareFile, events.GetGetShareFileHandler(server))                       // server.ListenEvent(header.ReqGetShareFile, new(events.getShareFile))
+	spbf.Register(header.ReqShareLink, events.GetShareLinkHandler(server))                             // server.ListenEvent(header.ReqShareLink, new(events.shareLink))
+	spbf.Register(header.ReqConfig, events.GetGetConfigHandler(server))                                // server.ListenEvent(header., new(events.getConfig))
+	spbf.Register(header.ReqDeleteShare, events.GetDeleteShareHandler(server))                         // server.ListenEvent(header.ReqDeleteShare, new(events.deleteShare))
 
-	server.ListenEvent(header.ReqShareLink, new(events.ShareLink))
-	spbf.Register(header, events)
-
-	server.ListenEvent(header.ReqConfig, new(events.GetConfig))
-	spbf.Register(header, events)
-
-	spbf.Register(header, events)                                               //	server.ListenEvent(header.ReqDeleteShare, new(events.DeleteShare))
 	spbf.Register(header, events)                                               //	server.ListenEvent(header.ReqCreateAlbum, new(events.CreateAlbum))
 	spbf.Register(header, events)                                               //	server.ListenEvent(header.ReqEditAlbum, new(events.EditAlbum))
 	spbf.Register(header, events)                                               //	server.ListenEvent(header.ReqAlbumContent, new(events.AlbumContent))

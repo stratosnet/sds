@@ -2,119 +2,111 @@ package events
 
 import (
 	"context"
+	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/sp/net"
 	"github.com/stratosnet/sds/sp/storages/table"
+	"github.com/stratosnet/sds/utils"
 )
 
-// ShareLink
-type ShareLink struct {
-	Server *net.Server
+// shareLink is a concrete implementation of event
+type shareLink struct {
+	event
 }
 
-// GetServer
-func (e *ShareLink) GetServer() *net.Server {
-	return e.Server
+const shareLinkEvent = "share_link"
+
+// GetShareLinkHandler creates event and return handler fun for it
+func GetShareLinkHandler(s *net.Server) EventHandleFunc {
+	return shareLink{newEvent(shareLinkEvent, s, shareLinkCallbackFunc)}.Handle
 }
 
-// SetServer
-func (e *ShareLink) SetServer(server *net.Server) {
-	e.Server = server
+type shareEx struct {
+	table.UserShare
+	FileSize uint64
+	FileName string
+	Path     string
 }
 
-// Handle
-func (e *ShareLink) Handle(ctx context.Context, conn spbf.WriteCloser) {
+// shareLinkCallbackFunc is the main process of share link
+func shareLinkCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
 
-	target := new(protos.ReqShareLink)
+	body := message.(*protos.ReqShareLink)
 
-	callback := func(message interface{}) (interface{}, string) {
+	rsp := &protos.RspShareLink{
+		Result: &protos.Result{
+			State: protos.ResultState_RES_SUCCESS,
+		},
+		WalletAddress: body.WalletAddress,
+		ReqId:         body.ReqId,
+		ShareInfo:     make([]*protos.ShareLinkInfo, 0),
+	}
 
-		body := message.(*protos.ReqShareLink)
-
-		rsp := &protos.RspShareLink{
-			Result: &protos.Result{
-				State: protos.ResultState_RES_SUCCESS,
-			},
-			WalletAddress: body.WalletAddress,
-			ReqId:         body.ReqId,
-			ShareInfo:     make([]*protos.ShareLinkInfo, 0),
-		}
-
-		if body.WalletAddress == "" {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "wallet address can't be empty"
-			return rsp, header.RspShareLink
-		}
-
-		type ShareEx struct {
-			table.UserShare
-			FileSize uint64
-			FileName string
-			Path     string
-		}
-
-		shares := make([]ShareEx, 0)
-
-		res, err := e.GetServer().CT.FetchTables([]ShareEx{}, map[string]interface{}{
-			"alias":   "us",
-			"columns": "us.*, ud.path",
-			"join":    []string{"user_directory", "ud.dir_hash = us.hash", "ud"},
-			"where":   map[string]interface{}{"us.wallet_address = ? AND us.share_type = ?": []interface{}{body.WalletAddress, table.SHARE_TYPE_DIR}},
-		})
-
-		if err == nil {
-			shareDirs := res.([]ShareEx)
-			if len(shareDirs) > 0 {
-				shares = append(shares, shareDirs...)
-			}
-		}
-
-		res, err = e.GetServer().CT.FetchTables([]ShareEx{}, map[string]interface{}{
-			"alias":   "us",
-			"columns": "us.*, f.name AS file_name, f.size AS file_size",
-			"join":    []string{"file", "us.hash = f.hash", "f", "left"},
-			"where":   map[string]interface{}{"us.wallet_address = ? AND us.share_type = ?": []interface{}{body.WalletAddress, table.SHARE_TYPE_FILE}},
-		})
-
-		if err == nil {
-			shareFiles := res.([]ShareEx)
-			if len(shareFiles) > 0 {
-				shares = append(shares, shareFiles...)
-			}
-		}
-
-		if len(shares) > 0 {
-			for _, share := range shares {
-
-				shareInfo := new(protos.ShareLinkInfo)
-
-				shareInfo.IsPrivate = false
-				if share.OpenType == table.OPEN_TYPE_PRIVATE {
-					shareInfo.IsPrivate = true
-				}
-				shareInfo.ShareId = share.ShareId
-				shareInfo.LinkTime = uint64(share.Time)
-				shareInfo.LinkTimeExp = uint64(share.Deadline)
-				shareInfo.FileHash = share.Hash
-				shareInfo.OwnerWalletAddress = share.WalletAddress
-				shareInfo.ShareLinkPassword = share.Password
-				if share.ShareType == table.SHARE_TYPE_FILE {
-					shareInfo.Name = share.FileName
-					shareInfo.FileSize = share.FileSize
-					shareInfo.IsDirectory = false
-				} else {
-					shareInfo.Name = share.Path
-					shareInfo.IsDirectory = true
-				}
-				shareInfo.ShareLink = share.RandCode + "_" + share.ShareId
-				rsp.ShareInfo = append(rsp.ShareInfo, shareInfo)
-			}
-		}
-
+	if body.WalletAddress == "" {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "wallet address can't be empty"
 		return rsp, header.RspShareLink
 	}
 
-	go net.EventHandle(ctx, conn, target, callback, e.GetServer().Ver)
+	var shares []shareEx
+
+	res, err := s.CT.FetchTables([]shareEx{}, map[string]interface{}{
+		"alias":   "us",
+		"columns": "us.*, ud.path",
+		"join":    []string{"user_directory", "ud.dir_hash = us.hash", "ud"},
+		"where":   map[string]interface{}{"us.wallet_address = ? AND us.share_type = ?": []interface{}{body.WalletAddress, table.SHARE_TYPE_DIR}},
+	})
+
+	if err == nil {
+		shares = append(shares, res.([]shareEx)...)
+	}
+
+	res, err = s.CT.FetchTables([]shareEx{}, map[string]interface{}{
+		"alias":   "us",
+		"columns": "us.*, f.name AS file_name, f.size AS file_size",
+		"join":    []string{"file", "us.hash = f.hash", "f", "left"},
+		"where":   map[string]interface{}{"us.wallet_address = ? AND us.share_type = ?": []interface{}{body.WalletAddress, table.SHARE_TYPE_FILE}},
+	})
+
+	if err == nil {
+		shares = append(shares, res.([]shareEx)...)
+	}
+
+	for _, share := range shares {
+
+		shareInfo := &protos.ShareLinkInfo{
+			ShareId:            share.ShareId,
+			LinkTime:           uint64(share.Time),
+			LinkTimeExp:        uint64(share.Deadline),
+			FileHash:           share.Hash,
+			OwnerWalletAddress: share.WalletAddress,
+			ShareLinkPassword:  share.Password,
+			IsPrivate:          share.OpenType == table.OPEN_TYPE_PRIVATE,
+			ShareLink:          share.RandCode + "_" + share.ShareId,
+		}
+
+		if share.ShareType == table.SHARE_TYPE_FILE {
+			shareInfo.Name = share.FileName
+			shareInfo.FileSize = share.FileSize
+			shareInfo.IsDirectory = false
+		} else {
+			shareInfo.Name = share.Path
+			shareInfo.IsDirectory = true
+		}
+		rsp.ShareInfo = append(rsp.ShareInfo, shareInfo)
+	}
+
+	return rsp, header.RspShareLink
+}
+
+// Handle create a concrete proto message for this event, and handle the event asynchronously
+func (e *shareLink) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	go func() {
+		target := &protos.ReqShareLink{}
+		if err := e.handle(ctx, conn, target); err != nil {
+			utils.ErrorLog(err)
+		}
+	}()
 }
