@@ -71,7 +71,7 @@ func downloadTaskInfoCallbackFunc(_ context.Context, s *net.Server, message prot
 // Handle create a concrete proto message for this event, and handle the event asynchronously
 func (e *downloadTaskInfo) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
-		target := new(protos.ReqDownloadTaskInfo)
+		target := &protos.ReqDownloadTaskInfo{}
 		if err := e.handle(ctx, conn, target); err != nil {
 			utils.ErrorLog(err)
 		}

@@ -73,8 +73,7 @@ func registerNewPPCallbackFunc(_ context.Context, s *net.Server, message proto.M
 // Handle create a concrete proto message for this event, and handle the event asynchronously
 func (e *registerNewPP) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
-		target := new(protos.ReqRegisterNewPP)
-
+		target := &protos.ReqRegisterNewPP{}
 		if err := e.handle(ctx, conn, target); err != nil {
 			utils.ErrorLog(err)
 		}

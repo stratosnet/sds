@@ -139,7 +139,7 @@ func reportDownloadResultCallbackFunc(_ context.Context, s *net.Server, message 
 // Handle create a concrete proto message for this event, and handle the event asynchronously
 func (e *reportDownloadResult) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
-		target := new(protos.ReqReportDownloadResult)
+		target := &protos.ReqReportDownloadResult{}
 		if err := e.handle(ctx, conn, target); err != nil {
 			utils.ErrorLog(err)
 		}

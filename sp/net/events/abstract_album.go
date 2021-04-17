@@ -11,21 +11,19 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// AbstractAlbum is a concrete implementation of event
-type AbstractAlbum struct {
+// abstractAlbum is a concrete implementation of event
+type abstractAlbum struct {
 	event
 }
 
+const abstractAlbumEvent = "abstract album"
+
 // AbstractAlbumHandler creates event and return handler func for it
 func AbstractAlbumHandler(server *net.Server) EventHandleFunc {
-	e := AbstractAlbum{
-		newEvent("abstract album", server, abstractAlbumCallbackFunc),
-	}
-
-	return e.Handle
+	return abstractAlbum{newEvent(abstractAlbumEvent, server, abstractAlbumCallbackFunc)}.Handle
 }
 
-// abstractAlbumCallbackFunc is the main process of AbstractAlbum
+// abstractAlbumCallbackFunc is the main process of abstractAlbum
 func abstractAlbumCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
 
 	body := message.(*protos.ReqAbstractAlbum)
@@ -101,9 +99,10 @@ func abstractAlbumCallbackFunc(_ context.Context, s *net.Server, message proto.M
 }
 
 // Handle create a concrete proto message for this event, and handle the event asynchronously
-func (e *AbstractAlbum) Handle(ctx context.Context, conn spbf.WriteCloser) {
+func (e *abstractAlbum) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
-		if err := e.handle(ctx, conn, &protos.ReqAbstractAlbum{}); err != nil {
+		album := protos.ReqAbstractAlbum{}
+		if err := e.handle(ctx, conn, &album); err != nil {
 			utils.ErrorLog(err)
 		}
 	}()

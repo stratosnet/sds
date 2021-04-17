@@ -232,7 +232,8 @@ func existsFileSlice(fileSlices []table.FileSlice, no, start, end uint64) bool {
 // Handle create a concrete proto message for this event, and handle the event asynchronously
 func (e *uploadFile) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
-		if err := e.handle(ctx, conn, new(protos.ReqUploadFile)); err != nil {
+		target := &protos.ReqUploadFile{}
+		if err := e.handle(ctx, conn, target); err != nil {
 			utils.ErrorLog(err)
 		}
 	}()

@@ -139,7 +139,8 @@ func shouldUpdate(ctx context.Context, s *net.Server) (updateTips bool, forceUpd
 // Handle create a concrete proto message for this event, and handle the event asynchronously
 func (e *register) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
-		if err := e.handle(ctx, conn, &protos.ReqRegister{}); err != nil {
+		target := &protos.ReqRegister{}
+		if err := e.handle(ctx, conn, target); err != nil {
 			utils.ErrorLog(err)
 		}
 	}()

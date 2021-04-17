@@ -83,7 +83,7 @@ func deleteFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 // Handle create a concrete proto message for this event, and handle the event asynchronously
 func (e *deleteFile) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
-		target := new(protos.ReqDeleteFile)
+		target := &protos.ReqDeleteFile{}
 		if err := e.handle(ctx, conn, target); err != nil {
 			utils.ErrorLog(err)
 		}

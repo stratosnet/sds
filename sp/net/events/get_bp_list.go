@@ -49,7 +49,7 @@ func getBpListCallbackFunc(_ context.Context, s *net.Server, _ proto.Message, _ 
 // Handle create a concrete proto message for this event, and handle the event asynchronously
 func (e *getBPList) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
-		target := new(protos.ReqGetBPList)
+		target := &protos.ReqGetBPList{}
 		if err := e.handle(ctx, conn, target); err != nil {
 			utils.ErrorLog(err)
 		}

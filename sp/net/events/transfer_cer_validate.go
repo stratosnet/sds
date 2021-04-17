@@ -100,8 +100,7 @@ func transferCerValidateCallbackFunc(_ context.Context, s *net.Server, message p
 // Handle create a concrete proto message for this event, and handle the event asynchronously
 func (e *transferCerValidate) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
-		target := new(protos.ReqValidateTransferCer)
-
+		target := &protos.ReqValidateTransferCer{}
 		if err := e.handle(ctx, conn, target); err != nil {
 			utils.ErrorLog(err)
 		}

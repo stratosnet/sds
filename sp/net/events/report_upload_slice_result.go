@@ -195,7 +195,7 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 // Handle create a concrete proto message for this event, and handle the event asynchronously
 func (e *reportUploadSliceResult) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
-		target := new(protos.ReportUploadSliceResult)
+		target := &protos.ReportUploadSliceResult{}
 		if err := e.handle(ctx, conn, target); err != nil {
 			utils.ErrorLog(err)
 		}

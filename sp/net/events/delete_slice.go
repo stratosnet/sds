@@ -43,7 +43,7 @@ func deleteSliceCallbackFunc(ctx context.Context, s *net.Server, message proto.M
 // Handle create a concrete proto message for this event, and handle the event asynchronously
 func (e *deleteSlice) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
-		target := new(protos.RspDeleteSlice)
+		target := &protos.RspDeleteSlice{}
 		if err := e.handle(ctx, conn, target); err != nil {
 			utils.ErrorLog(err)
 		}

@@ -75,7 +75,7 @@ func findMyFileListCallbackFunc(_ context.Context, s *net.Server, message proto.
 // Handle create a concrete proto message for this event, and handle the event asynchronously
 func (e *findMyFileList) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
-		target := new(protos.ReqFindMyFileList)
+		target := &protos.ReqFindMyFileList{}
 		if err := e.handle(ctx, conn, target); err != nil {
 			utils.ErrorLog(err)
 		}
