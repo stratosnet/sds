@@ -10,15 +10,17 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// GetPPList is a concrete implementation of event
-type GetPPList struct {
+// getPPList is a concrete implementation of event
+type getPPList struct {
 	event
 }
 
+const getPPListEvent = "get_pp_list"
+
 // GetPPListHandler creates event and return handler func for it
 func GetPPListHandler(s *net.Server) EventHandleFunc {
-	return GetPPList{
-		newEvent("get_pp_list", s, getPPListCallbackFunc),
+	return getPPList{
+		newEvent(getPPListEvent, s, getPPListCallbackFunc),
 	}.Handle
 }
 
@@ -48,7 +50,7 @@ func getPPListCallbackFunc(_ context.Context, s *net.Server, _ proto.Message, _ 
 }
 
 // Handle create a concrete proto message for this event, and handle the event asynchronously
-func (e *GetPPList) Handle(ctx context.Context, conn spbf.WriteCloser) {
+func (e *getPPList) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
 		if err := e.handle(ctx, conn, &protos.ReqGetPPList{}); err != nil {
 			utils.ErrorLog(err)

@@ -17,17 +17,17 @@ import (
 	"time"
 )
 
-// ReportUploadSliceResult is a concrete implementation of event
-type ReportUploadSliceResult struct {
+// reportUploadSliceResult is a concrete implementation of event
+type reportUploadSliceResult struct {
 	event
 }
 
-const reportUploadSliceResultEventType = "report_upload_slice_result"
+const reportUploadSliceResultEvent = "report_upload_slice_result"
 
-// ReportUploadSliceResultHandler creates event and return handler func for it
-func ReportUploadSliceResultHandler(s *net.Server) EventHandleFunc {
-	return ReportUploadSliceResult{
-		newEvent(reportUploadSliceResultEventType, s, reportUploadSliceResultCallbackFunc),
+// GetReportUploadSliceResultHandler creates event and return handler func for it
+func GetReportUploadSliceResultHandler(s *net.Server) EventHandleFunc {
+	return reportUploadSliceResult{
+		newEvent(reportUploadSliceResultEvent, s, reportUploadSliceResultCallbackFunc),
 	}.Handle
 }
 
@@ -110,7 +110,7 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 
 	// store file slice info todo change to read from redis
 	if err := s.Store(fileSlice, 3600*time.Second); err != nil {
-		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEventType, "store file slice 1", err)
+		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "store file slice 1", err)
 	}
 
 	s.Unlock()
@@ -127,12 +127,12 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 	}
 
 	if err := s.CT.Save(fileSlice); err != nil {
-		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEventType, "save file slice", err)
+		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "save file slice", err)
 	}
 
 	uploadFile.SetSliceFinish(fileSlice.SliceNumber)
 	if err := s.Store(uploadFile, 3600*time.Second); err != nil {
-		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEventType, "store file slice 2", err)
+		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "store file slice 2", err)
 	}
 
 	// check if all slice upload finished
@@ -171,13 +171,13 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 					dirMapFile.DirHash = dirMapFile.GenericHash()
 					dirMapFile.Owner = uploadFile.WalletAddress
 					if _, err := s.CT.InsertTable(dirMapFile); err != nil {
-						utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEventType, "insert dir map", err)
+						utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "insert dir map", err)
 					}
 				}
 			}
 
 			if err := s.Remove(uploadFile.GetCacheKey()); err != nil {
-				utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEventType, "remove upload file", err)
+				utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "remove upload file", err)
 			}
 		}
 	}
@@ -193,7 +193,7 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 }
 
 // Handle create a concrete proto message for this event, and handle the event asynchronously
-func (e *ReportUploadSliceResult) Handle(ctx context.Context, conn spbf.WriteCloser) {
+func (e *reportUploadSliceResult) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
 		target := new(protos.ReportUploadSliceResult)
 		if err := e.handle(ctx, conn, target); err != nil {

@@ -14,16 +14,18 @@ import (
 	"time"
 )
 
-// Register is a concrete implementation of event
+// register is a concrete implementation of event
 // register P and PP
-type Register struct {
+type register struct {
 	event
 }
 
-// RegisterHandler creates event and return handler func for it
-func RegisterHandler(server *net.Server) EventHandleFunc {
-	return (&Register{
-		newEvent("register", server, registerCallbackFunc),
+const registerEvent = "register"
+
+// GetRegisterHandler creates event and return handler func for it
+func GetRegisterHandler(server *net.Server) EventHandleFunc {
+	return (&register{
+		newEvent(registerEvent, server, registerCallbackFunc),
 	}).Handle
 }
 
@@ -135,7 +137,7 @@ func shouldUpdate(ctx context.Context, s *net.Server) (updateTips bool, forceUpd
 }
 
 // Handle create a concrete proto message for this event, and handle the event asynchronously
-func (e *Register) Handle(ctx context.Context, conn spbf.WriteCloser) {
+func (e *register) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
 		if err := e.handle(ctx, conn, &protos.ReqRegister{}); err != nil {
 			utils.ErrorLog(err)

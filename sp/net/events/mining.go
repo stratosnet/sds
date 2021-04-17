@@ -13,16 +13,16 @@ import (
 	"github.com/stratosnet/sds/utils/crypto"
 )
 
-// Mining is a concrete implementation of event
-type Mining struct {
+// mining is a concrete implementation of event
+type mining struct {
 	event
 }
 
-// MiningHandler creates event and return handler func for it
-func MiningHandler(s *net.Server) EventHandleFunc {
-	return Mining{
-		newEvent("mining", s, miningCallbackFunc),
-	}.Handle
+const miningEvent = "mining"
+
+// GetMiningHandler creates event and return handler func for it
+func GetMiningHandler(s *net.Server) EventHandleFunc {
+	return mining{newEvent(miningEvent, s, miningCallbackFunc)}.Handle
 }
 
 // miningCallbackFunc is the main process of mining
@@ -65,7 +65,7 @@ func miningCallbackFunc(_ context.Context, s *net.Server, message proto.Message,
 }
 
 // Handle create a concrete proto message for this event, and handle the event asynchronously
-func (e *Mining) Handle(ctx context.Context, conn spbf.WriteCloser) {
+func (e *mining) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
 		if err := e.handle(ctx, conn, new(protos.ReqMining)); err != nil {
 			utils.ErrorLog(err)

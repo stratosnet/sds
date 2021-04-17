@@ -13,16 +13,18 @@ import (
 	"github.com/stratosnet/sds/utils/crypto"
 )
 
-// RegisterNewPP is a concrete implementation of event
+// registerNewPP is a concrete implementation of event
 // P register to be PP
-type RegisterNewPP struct {
+type registerNewPP struct {
 	event
 }
 
-// RegisterNewPPHandler creates event and return handler func for it
-func RegisterNewPPHandler(s *net.Server) EventHandleFunc {
-	return RegisterNewPP{
-		newEvent("register_new_pp", s, registerNewPPCallbackFunc),
+const registerNewPPEvent = "register_new_pp"
+
+// GetRegisterNewPPHandler creates event and return handler func for it
+func GetRegisterNewPPHandler(s *net.Server) EventHandleFunc {
+	return registerNewPP{
+		newEvent(registerNewPPEvent, s, registerNewPPCallbackFunc),
 	}.Handle
 }
 
@@ -69,7 +71,7 @@ func registerNewPPCallbackFunc(_ context.Context, s *net.Server, message proto.M
 }
 
 // Handle create a concrete proto message for this event, and handle the event asynchronously
-func (e *RegisterNewPP) Handle(ctx context.Context, conn spbf.WriteCloser) {
+func (e *registerNewPP) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
 		target := new(protos.ReqRegisterNewPP)
 

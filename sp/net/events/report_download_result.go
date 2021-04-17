@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -12,136 +13,141 @@ import (
 	"time"
 )
 
-// ReportDownloadResult
-type ReportDownloadResult struct {
-	Server *net.Server
+// reportDownloadResult is a concrete implementation of event
+type reportDownloadResult struct {
+	event
 }
 
-// GetServer
-func (e *ReportDownloadResult) GetServer() *net.Server {
-	return e.Server
+const reportDownloadResultEvent = "report_download_event"
+
+// GetReportDownloadResultHandler creates event and return handler func for it
+func GetReportDownloadResultHandler(s *net.Server) EventHandleFunc {
+	return reportDownloadResult{
+		newEvent(reportDownloadResultEvent, s, reportDownloadResultCallbackFunc),
+	}.Handle
 }
 
-// SetServer
-func (e *ReportDownloadResult) SetServer(server *net.Server) {
-	e.Server = server
-}
+// reportDownloadResultCallbackFunc is the main process of report download result
+func reportDownloadResultCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
+	body := message.(*protos.ReqReportDownloadResult)
 
-// Handle
-func (e *ReportDownloadResult) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	rsp := &protos.RspReportDownloadResult{
+		Result: &protos.Result{
+			State: protos.ResultState_RES_SUCCESS,
+		},
+		SliceInfo: body.SliceInfo,
+	}
 
-	target := new(protos.ReqReportDownloadResult)
-
-	callback := func(message interface{}) (interface{}, string) {
-
-		body := message.(*protos.ReqReportDownloadResult)
-
-		rsp := &protos.RspReportDownloadResult{
-			Result: &protos.Result{
-				State: protos.ResultState_RES_SUCCESS,
-			},
-			SliceInfo: body.SliceInfo,
-		}
-
-		if ok, msg := e.Validate(body); !ok {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = msg
-			return rsp, header.RspReportDownloadResult
-		}
-
-		fileHash := body.FileHash
-		sliceHash := body.SliceInfo.SliceStorageInfo.SliceHash
-
-		fileSlice := new(table.FileSlice)
-
-		// query reported file or slice exist or not todo change to read from redis
-		err := e.GetServer().CT.FetchTable(fileSlice, map[string]interface{}{
-			"where": map[string]interface{}{
-				"file_hash = ? AND slice_hash = ?": []interface{}{
-					fileHash, sliceHash,
-				},
-			},
-		})
-
-		if err != nil {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "slice not exist, report error"
-			return rsp, header.RspReportDownloadResult
-		}
-
-		record := &table.FileSliceDownload{
-			TaskId: body.TaskId,
-		}
-
-		e.GetServer().Lock()
-		if e.GetServer().Load(record) == nil {
-
-			if record.Status == table.DOWNLOAD_STATUS_SUCCESS {
-				e.GetServer().Unlock()
-				return rsp, header.RspReportDownloadResult
-			}
-
-			record.Status = table.DOWNLOAD_STATUS_SUCCESS
-			record.Time = time.Now().Unix()
-
-			if record.SliceHash != fileSlice.SliceHash {
-				rsp.Result.State = protos.ResultState_RES_FAIL
-				rsp.Result.Msg = "report validation error"
-				e.GetServer().Unlock()
-				return rsp, header.RspReportDownloadResult
-			}
-
-		} else {
-
-
-			record.SliceHash = fileSlice.SliceHash
-			record.Status = table.DOWNLOAD_STATUS_CHECK
-			record.Time = time.Now().Unix()
-		}
-
-		if body.IsPP {
-			record.FromWalletAddress = body.WalletAddress
-		} else {
-			record.ToWalletAddress = body.WalletAddress
-		}
-
-		e.GetServer().Store(record, 3600*time.Second)
-
-		e.GetServer().Unlock()
-
-		if record.Status == table.DOWNLOAD_STATUS_SUCCESS {
-
-			if ok, err := e.GetServer().CT.StoreTable(record); !ok {
-				utils.ErrorLog(err.Error())
-			}
-
-			// 下载校对
-			downloadFile := &data.DownloadFile{FileHash: fileSlice.FileHash, WalletAddress: body.WalletAddress}
-			if e.GetServer().Load(downloadFile) == nil {
-				downloadFile.SetSliceFinish(fileSlice.SliceNumber)
-				e.GetServer().Store(downloadFile, 7*24*3600*time.Second)
-				if downloadFile.IsDownloadFinished() {
-					fileDownload := &table.FileDownload{
-						FileHash:        fileSlice.FileHash,
-						ToWalletAddress: body.WalletAddress,
-						TaskId:          utils.CalcHash([]byte(fileSlice.FileHash + body.WalletAddress)),
-						Time:            time.Now().Unix(),
-					}
-					e.GetServer().CT.StoreTable(fileDownload)
-				}
-			}
-
-			e.GetServer().Remove(record.GetCacheKey())
-		}
-
+	if ok, msg := validateReportDownloadRequest(body); !ok {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = msg
 		return rsp, header.RspReportDownloadResult
 	}
 
-	go net.EventHandle(ctx, conn, target, callback, e.GetServer().Ver)
+	fileHash := body.FileHash
+	sliceHash := body.SliceInfo.SliceStorageInfo.SliceHash
+
+	fileSlice := &table.FileSlice{}
+
+	// query reported file or slice exist or not todo change to read from redis
+	err := s.CT.FetchTable(fileSlice, map[string]interface{}{
+		"where": map[string]interface{}{
+			"file_hash = ? AND slice_hash = ?": []interface{}{
+				fileHash, sliceHash,
+			},
+		},
+	})
+
+	if err != nil {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "slice not exist, report error"
+		return rsp, header.RspReportDownloadResult
+	}
+
+	record := &table.FileSliceDownload{TaskId: body.TaskId}
+
+	s.Lock()
+	if s.Load(record) == nil {
+
+		if record.Status == table.DOWNLOAD_STATUS_SUCCESS {
+			s.Unlock()
+			return rsp, header.RspReportDownloadResult
+		}
+
+		record.Status = table.DOWNLOAD_STATUS_SUCCESS
+		record.Time = time.Now().Unix()
+
+		if record.SliceHash != fileSlice.SliceHash {
+			rsp.Result.State = protos.ResultState_RES_FAIL
+			rsp.Result.Msg = "report validation error"
+			s.Unlock()
+			return rsp, header.RspReportDownloadResult
+		}
+
+	} else {
+		record.SliceHash = fileSlice.SliceHash
+		record.Status = table.DOWNLOAD_STATUS_CHECK
+		record.Time = time.Now().Unix()
+	}
+
+	if body.IsPP {
+		record.FromWalletAddress = body.WalletAddress
+	} else {
+		record.ToWalletAddress = body.WalletAddress
+	}
+
+	if err = s.Store(record, 3600*time.Second); err != nil {
+		utils.ErrorLogf(eventHandleErrorTemplate, reportDownloadResultEvent, "store record to db", err)
+	}
+
+	s.Unlock()
+
+	if record.Status == table.DOWNLOAD_STATUS_SUCCESS {
+
+		if ok, err := s.CT.StoreTable(record); !ok {
+			utils.ErrorLogf(eventHandleErrorTemplate, reportDownloadResultEvent, "store record table to db", err)
+		}
+
+		// verify download
+		downloadFile := &data.DownloadFile{FileHash: fileSlice.FileHash, WalletAddress: body.WalletAddress}
+		if s.Load(downloadFile) == nil {
+			downloadFile.SetSliceFinish(fileSlice.SliceNumber)
+			if err = s.Store(downloadFile, 7*24*3600*time.Second); err != nil {
+				utils.ErrorLogf(eventHandleErrorTemplate, reportDownloadResultEvent, "store download file to db", err)
+			}
+			if downloadFile.IsDownloadFinished() {
+				fileDownload := &table.FileDownload{
+					FileHash:        fileSlice.FileHash,
+					ToWalletAddress: body.WalletAddress,
+					TaskId:          utils.CalcHash([]byte(fileSlice.FileHash + body.WalletAddress)),
+					Time:            time.Now().Unix(),
+				}
+				if _, err = s.CT.StoreTable(fileDownload); err != nil {
+					utils.ErrorLogf(eventHandleErrorTemplate, reportDownloadResultEvent, "store file download table to db", err)
+				}
+			}
+		}
+
+		if err = s.Remove(record.GetCacheKey()); err != nil {
+			utils.ErrorLogf(eventHandleErrorTemplate, reportDownloadResultEvent, "remove record from db", err)
+		}
+	}
+
+	return rsp, header.RspReportDownloadResult
 }
 
-// Validate
-func (e *ReportDownloadResult) Validate(req *protos.ReqReportDownloadResult) (bool, string) {
+// Handle create a concrete proto message for this event, and handle the event asynchronously
+func (e *reportDownloadResult) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	go func() {
+		target := new(protos.ReqReportDownloadResult)
+		if err := e.handle(ctx, conn, target); err != nil {
+			utils.ErrorLog(err)
+		}
+	}()
+}
+
+// validateReportDownloadRequest validates request
+func validateReportDownloadRequest(req *protos.ReqReportDownloadResult) (bool, string) {
 
 	if req.SliceInfo == nil ||
 		req.SliceInfo.SliceStorageInfo == nil ||
@@ -156,7 +162,7 @@ func (e *ReportDownloadResult) Validate(req *protos.ReqReportDownloadResult) (bo
 	}
 
 	//user := &table.User{WalletAddress: req.WalletAddress}
-	//if e.GetServer().CT.Fetch(user) != nil {
+	//if s.CT.Fetch(user) != nil {
 	//	return false, "not authorized to process"
 	//}
 	//

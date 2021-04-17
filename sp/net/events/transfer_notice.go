@@ -2,46 +2,48 @@ package events
 
 import (
 	"context"
+	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/sp/net"
 	"github.com/stratosnet/sds/utils"
 )
 
-// TransferNotice
-type TransferNotice struct {
-	Server *net.Server
+// transferNotice is a concrete implementation of event
+type transferNotice struct {
+	event
 }
 
-// GetServer
-func (e *TransferNotice) GetServer() *net.Server {
-	return e.Server
+const transferNoticeEvent = "transfer_notice"
+
+// GetTransferNoticeHandler creates event and return handler func for it
+func GetTransferNoticeHandler(s *net.Server) EventHandleFunc {
+	return transferNotice{
+		newEvent(transferNoticeEvent, s, transferNoticeCallbackFunc),
+	}.Handle
 }
 
-// SetServer
-func (e *TransferNotice) SetServer(server *net.Server) {
-	e.Server = server
-}
+// transferNoticeCallbackFunc is the main process of transfer notice
+func transferNoticeCallbackFunc(_ context.Context, _ *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
+	body := message.(*protos.RspTransferNotice)
 
-// Handle
-func (e *TransferNotice) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	if body.Result.State != protos.ResultState_RES_SUCCESS {
 
-	target := new(protos.RspTransferNotice)
+		// todo response failed, prepare another transfer
 
-	callback := func(message interface{}) (interface{}, string) {
-
-		body := message.(*protos.RspTransferNotice)
-
-
-		if body.Result.State != protos.ResultState_RES_SUCCESS {
-
-			// todo response failed, prepare another transfer
-
-			utils.Log(body.TransferCer + ": failed to response to transfer certificate, prepare another transfer")
-		}
-
-		return nil, ""
+		utils.ErrorLog(body.TransferCer + ": failed to response to transfer certificate, prepare another transfer")
 	}
 
-	go net.EventHandle(ctx, conn, target, callback, e.GetServer().Ver)
+	return nil, ""
+}
+
+// Handle create a concrete proto message for this event, and handle the event asynchronously
+func (e *transferNotice) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	go func() {
+		target := new(protos.RspTransferNotice)
+
+		if err := e.handle(ctx, conn, target); err != nil {
+			utils.ErrorLog(err)
+		}
+	}()
 }

@@ -19,17 +19,17 @@ import (
 	"time"
 )
 
-// UploadFile is a concrete implementation of event
-type UploadFile struct {
+// uploadFile is a concrete implementation of event
+type uploadFile struct {
 	event
 }
 
-const uploadFileEventName = "upload_file"
+const uploadFileEvent = "upload_file"
 
-// UploadFileHandler creates event and return handler func for it
-func UploadFileHandler(s *net.Server) EventHandleFunc {
-	return UploadFile{
-		newEvent(uploadFileEventName, s, uploadFileCallbackFunc),
+// GetUploadFileHandler creates event and return handler func for it
+func GetUploadFileHandler(s *net.Server) EventHandleFunc {
+	return uploadFile{
+		newEvent(uploadFileEvent, s, uploadFileCallbackFunc),
 	}.Handle
 }
 
@@ -145,7 +145,7 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 		}
 
 		if err = s.Store(uploadFile, 3600*time.Second); err != nil {
-			utils.ErrorLogf(eventHandleErrorTemplate, uploadFileEventName, "store file to DB", err)
+			utils.ErrorLogf(eventHandleErrorTemplate, uploadFileEvent, "store file to DB", err)
 		}
 
 	} else {
@@ -165,7 +165,7 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 			file.WalletAddress = walletAddress
 			file.IsCover = isCover
 			if err = s.CT.Save(file); err != nil {
-				utils.ErrorLogf(eventHandleErrorTemplate, uploadFileEventName, "save file to DB", err)
+				utils.ErrorLogf(eventHandleErrorTemplate, uploadFileEvent, "save file to DB", err)
 			}
 		} else {
 
@@ -181,7 +181,7 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 				userHasFile.WalletAddress = walletAddress
 				userHasFile.FileHash = file.Hash
 				if _, err = s.CT.StoreTable(userHasFile); err != nil {
-					utils.ErrorLogf(eventHandleErrorTemplate, uploadFileEventName, "create table in DB", err)
+					utils.ErrorLogf(eventHandleErrorTemplate, uploadFileEvent, "create table in DB", err)
 				}
 			}
 		}
@@ -203,7 +203,7 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 			}
 			dirMapFile.DirHash = dirMapFile.GenericHash()
 			if _, err = s.CT.InsertTable(dirMapFile); err != nil {
-				utils.ErrorLogf(eventHandleErrorTemplate, uploadFileEventName, "insert file to DB", err)
+				utils.ErrorLogf(eventHandleErrorTemplate, uploadFileEvent, "insert file to DB", err)
 			}
 		}
 	}
@@ -230,7 +230,7 @@ func existsFileSlice(fileSlices []table.FileSlice, no, start, end uint64) bool {
 }
 
 // Handle create a concrete proto message for this event, and handle the event asynchronously
-func (e *UploadFile) Handle(ctx context.Context, conn spbf.WriteCloser) {
+func (e *uploadFile) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
 		if err := e.handle(ctx, conn, new(protos.ReqUploadFile)); err != nil {
 			utils.ErrorLog(err)
