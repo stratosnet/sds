@@ -49,7 +49,7 @@ func main() {
 	} else {
 		utils.MyLogger.SetLogLevel(utils.Error)
 	}
-	peers.GetNetwrokAddress()
+	peers.GetNetworkAddress()
 	fmt.Println(helpStr)
 
 	help := func(line string, param []string) bool {

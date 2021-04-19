@@ -24,7 +24,7 @@ func reqRegisterData(toSP bool) *protos.ReqRegister {
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
-		PublicKey: setting.PublickKey,
+		PublicKey: setting.PublicKey,
 	}
 }
 
@@ -50,7 +50,7 @@ func reqMiningData() *protos.ReqMining {
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
-		PublicKey: setting.PublickKey,
+		PublicKey: setting.PublicKey,
 		Sign:      setting.GetSign(setting.WalletAddress),
 	}
 }
@@ -97,7 +97,7 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool) *prot
 	}
 	utils.DebugLog("setting.WalletAddress + fileHash", []byte(setting.WalletAddress+fileHash))
 
-	puk, _ := crypto.UnmarshalPubkey(setting.PublickKey)
+	puk, _ := crypto.UnmarshalPubkey(setting.PublicKey)
 	if utils.ECCVerify([]byte(setting.WalletAddress+fileHash), req.Sign, puk) {
 		utils.DebugLog("okkkkkk")
 	} else {
@@ -317,7 +317,7 @@ func reqRegisterNewPPData() *protos.ReqRegisterNewPP {
 		CpuInfo:       sysInfo.CPUInfo,
 		MacAddress:    sysInfo.MacAddress,
 		Version:       setting.Config.Version,
-		PubKey:        setting.PublickKey,
+		PubKey:        setting.PublicKey,
 		Sign:          setting.GetSign(setting.WalletAddress),
 	}
 }
