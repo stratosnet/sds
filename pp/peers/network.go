@@ -7,8 +7,8 @@ import (
 	"net"
 )
 
-// GetNetwrokAddress
-func GetNetwrokAddress() {
+// GetNetworkAddress
+func GetNetworkAddress() {
 
 	if setting.Config.Internal {
 		setting.NetworkAddress = getInternal() + setting.Config.Port

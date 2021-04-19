@@ -51,15 +51,20 @@ func createWallet(w http.ResponseWriter, request *http.Request) {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to create wallet").ToBytes())
 		return
 	}
+	accountString, err := account.ToBech(setting.Config.AddressPrefix)
+	if err != nil {
+		w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to convert wallet address to string: "+err.Error()).ToBytes())
+		return
+	}
 
 	data1 := walletInfo{
 		WalletInfo: walletList{
-			WalletAddress: account.String(),
+			WalletAddress: accountString,
 			Balance:       0,
 		},
 	}
 	utils.DebugLog("add", data1)
-	setting.WalletAddress = account.String()
+	setting.WalletAddress = accountString
 	peers.Login(setting.WalletAddress, password)
 	w.Write(httpserv.NewJson(data1, setting.SUCCESSCode, "create wallet successfully").ToBytes())
 }

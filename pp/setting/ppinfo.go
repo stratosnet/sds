@@ -27,8 +27,8 @@ var WalletAddress string
 // NetworkAddress
 var NetworkAddress string
 
-// PublickKey
-var PublickKey []byte
+// PublicKey
+var PublicKey []byte
 
 // PrivateKey
 var PrivateKey *ecdsa.PrivateKey

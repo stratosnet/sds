@@ -59,7 +59,7 @@ type cipherparamsJSON struct {
 	IV string `json:"iv"`
 }
 
-// CreateAccount 创建一个新的账号，将 auth 设置为账号的密码并将账号相关 key 数据存储在 dir 的位置
+// CreateAccount creates a new account, setting auth as the password and saving the key data into the dir folder
 func CreateAccount(dir, account, auth string, scryptN, scryptP int) (types.Address, error) {
 	keyStore := &KeyStorePassphrase{dir, scryptN, scryptP}
 
@@ -321,8 +321,8 @@ type AccountKey struct {
 	PrivateKey *ecdsa.PrivateKey
 }
 
-// ChangePassWord
-func ChangePassWord(walletAddress, dir, auth string, scryptN, scryptP int, key *AccountKey) error {
+// ChangePassword
+func ChangePassword(walletAddress, dir, auth string, scryptN, scryptP int, key *AccountKey) error {
 	files, _ := ioutil.ReadDir(dir)
 	if len(files) == 0 {
 		ErrorLog("not exist")
