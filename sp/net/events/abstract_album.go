@@ -44,8 +44,8 @@ func abstractAlbumCallbackFunc(_ context.Context, s *net.Server, message proto.M
 		return rsp, header.RspSearchAlbum
 	}
 
-	rsp.MyAlbum = new(protos.AlbumNumber)
-	rsp.CollectionAlbum = new(protos.AlbumNumber)
+	rsp.MyAlbum = &protos.AlbumNumber{}
+	rsp.CollectionAlbum = &protos.AlbumNumber{}
 
 	type abstract struct {
 		table.Album
@@ -101,8 +101,8 @@ func abstractAlbumCallbackFunc(_ context.Context, s *net.Server, message proto.M
 // Handle create a concrete proto message for this event, and handle the event asynchronously
 func (e *abstractAlbum) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
-		album := protos.ReqAbstractAlbum{}
-		if err := e.handle(ctx, conn, &album); err != nil {
+		album := &protos.ReqAbstractAlbum{}
+		if err := e.handle(ctx, conn, album); err != nil {
 			utils.ErrorLog(err)
 		}
 	}()
