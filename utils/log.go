@@ -29,9 +29,9 @@ type Logger struct {
 	loglevel   LogLevel
 }
 
-var MyLogger = NewLogger("test.log", true, true)
+var MyLogger = NewLogger("tmp/logs/stdout.log", true, true)
 
-func NewLogger(filepath string, enablestd, enablefile bool) *Logger {
+func NewLogger(filepath string, enableStd, enableFile bool) *Logger {
 	logger := new(Logger)
 	logfile := os.Stdout
 	logger.stdLogger = log.New(logfile, "\r\n", log.Ldate|log.Ltime|log.Lshortfile)
@@ -45,8 +45,8 @@ func NewLogger(filepath string, enablestd, enablefile bool) *Logger {
 	}
 	logger.fileLogger = log.New(outfile, "\r\n", log.Ldate|log.Ltime|log.Lshortfile)
 
-	logger.enablefile = enablefile
-	logger.enablestd = enablestd
+	logger.enablefile = enableFile
+	logger.enablestd = enableStd
 	logger.loglevel = Debug
 	return logger
 
@@ -147,6 +147,12 @@ func ErrorLogf(template string, v ...interface{}) {
 func DebugLog(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
 	MyLogger.logDepth(Debug, 3, v...)
+}
+
+//DebugLog calls default logger and output debug log
+func DebugLogf(template string, v ...interface{}) {
+	//GetLogger().Log(Info, v...)
+	MyLogger.logDepth(Debug, 3, fmt.Sprintf(template, v...))
 }
 
 // CheckError  TODO This is a bad way to call error log, as you cannot know where this method is called in your error log

@@ -49,14 +49,14 @@ func (e *event) handle(
 	if err := proto.Unmarshal(spbf.MessageFromContext(ctx).MSGData, target); err != nil {
 		return fmt.Errorf(eventHandleErrorTemplate, e.eventType, "unmarshal proto message", err)
 	}
-	utils.DebugLog("%v receive: %v", e.eventType, target)
+	utils.DebugLogf("%v receive: %v", e.eventType, target)
 
 	rsp, headerType := e.callbackFunc(ctx, e.server, target, conn)
 	if rsp == nil {
 		return fmt.Errorf("no response for %v", e.eventType)
 	}
 
-	utils.DebugLog("##### response: \n %v", utils.ConvertCoronaryUtf8(rsp.(proto.Message).String()))
+	utils.DebugLogf("%v response: %v", e.eventType, utils.ConvertCoronaryUtf8(rsp.(proto.Message).String()))
 
 	data, err := proto.Marshal(rsp.(proto.Message))
 

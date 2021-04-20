@@ -19,7 +19,6 @@ func main() {
 	serv.StartListenServer(":8888")
 }
 
-
 type MyHandle struct {
 	Server *net.Server
 }
@@ -36,7 +35,7 @@ func (t *MyHandle) Handle(ctx context.Context, conn spbf.WriteCloser) {
 
 	target := new(protos.ReqRegisterNewPP)
 
-	callback := func(message interface{}) (interface{}, string) {
+	callback := func(message interface{}, _ spbf.WriteCloser) (interface{}, string) {
 
 		// body := message.(*protos.ReqRegisterNewPP)
 

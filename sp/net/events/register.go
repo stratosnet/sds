@@ -61,7 +61,7 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 
 	// check PP
 	pp := &table.PP{WalletAddress: body.Address.WalletAddress}
-	if s.CT.Fetch(pp) == nil {
+	if err := s.CT.Fetch(pp); err == nil {
 		rsp.IsPP = true
 	}
 
@@ -69,7 +69,7 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 	user := &table.User{WalletAddress: body.Address.WalletAddress}
 
 	isNewUser := false
-	if s.CT.Fetch(user) != nil {
+	if err := s.CT.Fetch(user); err != nil {
 		s.UserCount++
 		user.InvitationCode = utils.Get8BitUUID()
 		user.BeInvited = 0
@@ -96,7 +96,7 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 
 	user.UsedCapacity = uint64(totalUsed)
 
-	if s.CT.Save(user) != nil {
+	if err := s.CT.Save(user); err != nil {
 		return rsp, header.RspRegister
 	}
 
@@ -104,12 +104,12 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 		return rsp, header.RspRegister
 	}
 
-	invite := &table.UserInvite{
+	inv := &table.UserInvite{
 		InvitationCode: user.InvitationCode,
 		WalletAddress:  user.WalletAddress,
 		Times:          0,
 	}
-	if err := s.CT.Save(invite); err != nil {
+	if err := s.CT.Save(inv); err != nil {
 		utils.ErrorLogf(eventHandleErrorTemplate, "register", "update user invite to db", err)
 	}
 
