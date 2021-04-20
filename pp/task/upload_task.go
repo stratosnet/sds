@@ -7,14 +7,13 @@ import (
 	"sync"
 )
 
-
 var urwmutex sync.RWMutex
 
 // UploadSliceTask
 type UploadSliceTask struct {
 	TaskID          string
 	FileHash        string
-	SliceNumAddr    *protos.SliceNumAddr    // upload PP address and sliceNumber
+	SliceNumAddr    *protos.SliceNumAddr // upload PP address and sliceNumber
 	SliceOffsetInfo *protos.SliceOffsetInfo
 	FileCRC         uint32
 	Data            []byte

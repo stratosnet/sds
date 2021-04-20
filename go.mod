@@ -14,12 +14,14 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/mattn/go-sqlite3 v1.14.6
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
+	github.com/onsi/ginkgo v1.16.1 // indirect
+	github.com/onsi/gomega v1.11.0 // indirect
 	github.com/pborman/uuid v1.2.1
 	github.com/peterh/liner v1.2.1
 	github.com/shirou/gopsutil v3.20.12+incompatible
-	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
+	github.com/stretchr/testify v1.7.0 // indirect
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect
-	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.1.0 // indirect
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.4.0
 )

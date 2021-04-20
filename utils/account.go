@@ -11,13 +11,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/stratosnet/sds/utils/crypto"
+	"github.com/stratosnet/sds/utils/crypto/math"
+	"github.com/stratosnet/sds/utils/types"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"github.com/stratosnet/sds/utils/crypto"
-	"github.com/stratosnet/sds/utils/crypto/math"
-	"github.com/stratosnet/sds/utils/types"
 
 	"github.com/pborman/uuid"
 	"golang.org/x/crypto/pbkdf2"
@@ -310,7 +310,6 @@ func ensureInt(x interface{}) int {
 	return res
 }
 
-
 type AccountKey struct {
 	Id uuid.UUID // Version 4 "random" for unique id not derived from key data
 	// a nickname
@@ -321,7 +320,6 @@ type AccountKey struct {
 	// privkey in this struct is always in plaintext
 	PrivateKey *ecdsa.PrivateKey
 }
-
 
 // ChangePassWord
 func ChangePassWord(walletAddress, dir, auth string, scryptN, scryptP int, key *AccountKey) error {

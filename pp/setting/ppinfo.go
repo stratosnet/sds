@@ -1,6 +1,5 @@
 package setting
 
-
 import (
 	"crypto/ecdsa"
 	"encoding/csv"
