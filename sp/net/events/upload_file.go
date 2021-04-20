@@ -28,9 +28,8 @@ const uploadFileEvent = "upload_file"
 
 // GetUploadFileHandler creates event and return handler func for it
 func GetUploadFileHandler(s *net.Server) EventHandleFunc {
-	return uploadFile{
-		newEvent(uploadFileEvent, s, uploadFileCallbackFunc),
-	}.Handle
+	e := uploadFile{newEvent(uploadFileEvent, s, uploadFileCallbackFunc)}
+	return e.Handle
 }
 
 // uploadFileCallbackFunc is the main process of uploading file

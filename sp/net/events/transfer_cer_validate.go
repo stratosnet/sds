@@ -21,9 +21,8 @@ const transferCerValidateEvent = "transfer_cer_validate"
 
 // GetTransferCerValidateHandler creates event and return handler func for it
 func GetTransferCerValidateHandler(s *net.Server) EventHandleFunc {
-	return transferCerValidate{
-		newEvent(transferCerValidateEvent, s, transferCerValidateCallbackFunc),
-	}.Handle
+	e := transferCerValidate{newEvent(transferCerValidateEvent, s, transferCerValidateCallbackFunc)}
+	return e.Handle
 }
 
 // transferCerValidateCallbackFunc is the main process of transfer cer validate

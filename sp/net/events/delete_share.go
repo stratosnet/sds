@@ -20,7 +20,8 @@ const deleteShareEvent = "delete_share"
 
 // GetDeleteShareHandler creates event and return handler func for it
 func GetDeleteShareHandler(s *net.Server) EventHandleFunc {
-	return deleteShare{newEvent(deleteShareEvent, s, deleteShareCallbackFunc)}.Handle
+	e := deleteShare{newEvent(deleteShareEvent, s, deleteShareCallbackFunc)}
+	return e.Handle
 }
 
 // deleteShareCallbackFunc is the main process of delete share

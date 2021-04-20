@@ -20,7 +20,8 @@ const getRewardEvent = "get_reward"
 
 // GetGetRewardHandler creates event and return handler func for it
 func GetGetRewardHandler(s *net.Server) EventHandleFunc {
-	return getReward{newEvent(getRewardEvent, s, getRewardCallbackFunc)}.Handle
+	e := getReward{newEvent(getRewardEvent, s, getRewardCallbackFunc)}
+	return e.Handle
 }
 
 // getRewardCallbackFunc is the main process of get rewarding

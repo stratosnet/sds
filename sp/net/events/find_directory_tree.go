@@ -20,7 +20,8 @@ const findDirTreeEvent = "find_directory_tree"
 
 // GetFindDirectoryTreeHandler creates event and return handler func for it
 func GetFindDirectoryTreeHandler(s *net.Server) EventHandleFunc {
-	return findDirectoryTree{newEvent(findDirTreeEvent, s, findDirTreeCallbackFunc)}.Handle
+	e := findDirectoryTree{newEvent(findDirTreeEvent, s, findDirTreeCallbackFunc)}
+	return e.Handle
 }
 
 // findDirTreeCallbackFunc is the main process of finding directory tree

@@ -20,7 +20,8 @@ const deleteAlbumEvent = "delete_album"
 
 // GetDeleteAlbumHandler creates event and return handler func for it
 func GetDeleteAlbumHandler(s *net.Server) EventHandleFunc {
-	return deleteAlbum{newEvent(deleteAlbumEvent, s, deleteAlbumCallbackFunc)}.Handle
+	e := deleteAlbum{newEvent(deleteAlbumEvent, s, deleteAlbumCallbackFunc)}
+	return e.Handle
 }
 
 // deleteAlbumCallbackFunc is the main process of deleting an album

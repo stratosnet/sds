@@ -22,7 +22,8 @@ const deleteFileEvent = "deleteFileEvent"
 
 // GetDeleteFileHandler creates event and return handler func for it
 func GetDeleteFileHandler(s *net.Server) EventHandleFunc {
-	return deleteFile{newEvent(deleteFileEvent, s, deleteFileCallbackFunc)}.Handle
+	e := deleteFile{newEvent(deleteFileEvent, s, deleteFileCallbackFunc)}
+	return e.Handle
 }
 
 // deleteFileCallbackFunc is the main process of delete file

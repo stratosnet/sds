@@ -26,7 +26,8 @@ const downloadFailedEvent = "download_failed"
 
 // GetDownloadFailedHandler create event and return handler func for it
 func GetDownloadFailedHandler(s *net.Server) EventHandleFunc {
-	return downloadFailed{newEvent(downloadFailedEvent, s, downloadFailedCallbackFunc)}.Handle
+	e := downloadFailed{newEvent(downloadFailedEvent, s, downloadFailedCallbackFunc)}
+	return e.Handle
 }
 
 // downloadFailedCallbackFunc is the main process of download fail event

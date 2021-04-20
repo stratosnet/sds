@@ -1,0 +1,26 @@
+Version: 1
+
+Host: 0.0.0.0
+Port: 8081
+
+Cache:
+  Engine: redis
+  Host: localhost
+  Port: 6379
+  Pass:
+  DB: 0
+  LifeTime: 60
+
+Database:
+  Driver: mysql
+  Host: localhost
+  Port: 3306
+  User: user1
+  Pass: 111111
+  DbName: sds
+  Debug: false
+  LogFile: path_to_log
+
+LogFile: path_to_log
+
+Debug: false

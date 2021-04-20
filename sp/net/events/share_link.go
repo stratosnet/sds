@@ -20,7 +20,8 @@ const shareLinkEvent = "share_link"
 
 // GetShareLinkHandler creates event and return handler fun for it
 func GetShareLinkHandler(s *net.Server) EventHandleFunc {
-	return shareLink{newEvent(shareLinkEvent, s, shareLinkCallbackFunc)}.Handle
+	e := shareLink{newEvent(shareLinkEvent, s, shareLinkCallbackFunc)}
+	return e.Handle
 }
 
 type shareEx struct {

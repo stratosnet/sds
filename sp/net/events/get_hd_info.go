@@ -17,7 +17,8 @@ type getHDInfo struct {
 const getHdInfoEvent = "get_hd_info"
 
 func GetHDInfoHandler(s *net.Server) EventHandleFunc {
-	return getHDInfo{newEvent(getHdInfoEvent, s, getHdInfoCallbackFunc)}.Handle
+	e := getHDInfo{newEvent(getHdInfoEvent, s, getHdInfoCallbackFunc)}
+	return e.Handle
 }
 
 func getHdInfoCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {

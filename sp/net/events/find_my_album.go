@@ -20,7 +20,8 @@ const findMyAlbumEvent = "find_my_album"
 
 // GetFindMyAlbumHandler creates event and return handler func for it
 func GetFindMyAlbumHandler(s *net.Server) EventHandleFunc {
-	return findMyAlbum{newEvent(findMyAlbumEvent, s, findMyAlbumCallbackFunc)}.Handle
+	e := findMyAlbum{newEvent(findMyAlbumEvent, s, findMyAlbumCallbackFunc)}
+	return e.Handle
 }
 
 // findMyAlbumCallbackFunc is the main process of find my album

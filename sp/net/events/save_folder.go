@@ -23,7 +23,8 @@ const saveFolderEvent = "save_folder"
 
 // GetSaveFolderHandler creates event and return handler func for it
 func GetSaveFolderHandler(s *net.Server) EventHandleFunc {
-	return saveFolder{newEvent(saveFolderEvent, s, saveFolderCallbackFunc)}.Handle
+	e := saveFolder{newEvent(saveFolderEvent, s, saveFolderCallbackFunc)}
+	return e.Handle
 }
 
 // saveFolderCallbackFunc is the main process of save folder

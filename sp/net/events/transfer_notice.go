@@ -18,9 +18,8 @@ const transferNoticeEvent = "transfer_notice"
 
 // GetTransferNoticeHandler creates event and return handler func for it
 func GetTransferNoticeHandler(s *net.Server) EventHandleFunc {
-	return transferNotice{
-		newEvent(transferNoticeEvent, s, transferNoticeCallbackFunc),
-	}.Handle
+	e := transferNotice{newEvent(transferNoticeEvent, s, transferNoticeCallbackFunc)}
+	return e.Handle
 }
 
 // transferNoticeCallbackFunc is the main process of transfer notice

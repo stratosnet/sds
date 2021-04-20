@@ -24,7 +24,8 @@ const createAlbumEvent = "create_album"
 
 // GetCreateAlbumHandler creates event and return handler func for it
 func GetCreateAlbumHandler(s *net.Server) EventHandleFunc {
-	return createAlbum{newEvent(createAlbumEvent, s, createAlbumCallbackFunc)}.Handle
+	e := createAlbum{newEvent(createAlbumEvent, s, createAlbumCallbackFunc)}
+	return e.Handle
 }
 
 // createAlbumCallbackFunc is the main process of album creation

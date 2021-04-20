@@ -20,9 +20,8 @@ const findMyFileListEvent = "find_my_file_list"
 
 // GetFindMyFileListHandler creates event and return handler func for it
 func GetFindMyFileListHandler(s *net.Server) EventHandleFunc {
-	return findMyFileList{
-		newEvent(findMyFileListEvent, s, findMyFileListCallbackFunc),
-	}.Handle
+	e := findMyFileList{newEvent(findMyFileListEvent, s, findMyFileListCallbackFunc)}
+	return e.Handle
 }
 
 // findMyFileListCallbackFunc is the main process this find my file list event

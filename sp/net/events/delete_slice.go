@@ -19,7 +19,8 @@ const deleteSliceEvent = "delete_slice"
 
 // GetDeleteSliceHandler creates event and return handler func for it
 func GetDeleteSliceHandler(s *net.Server) EventHandleFunc {
-	return deleteSlice{newEvent(deleteSliceEvent, s, deleteSliceCallbackFunc)}.Handle
+	e := deleteSlice{newEvent(deleteSliceEvent, s, deleteSliceCallbackFunc)}
+	return e.Handle
 }
 
 // deleteSliceCallbackFunc is the main process of delete slice event

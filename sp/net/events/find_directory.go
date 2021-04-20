@@ -20,7 +20,8 @@ const findDirectoryEvent = "find_directory"
 
 // GetFindDirectoryHandler creates event and return handler func for it
 func GetFindDirectoryHandler(s *net.Server) EventHandleFunc {
-	return findDirectory{newEvent(findDirectoryEvent, s, findDirCallbackFunc)}.Handle
+	e := findDirectory{newEvent(findDirectoryEvent, s, findDirCallbackFunc)}
+	return e.Handle
 }
 
 // findDirCallbackFunc is the main process of finding directory

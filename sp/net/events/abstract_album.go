@@ -20,7 +20,8 @@ const abstractAlbumEvent = "abstract album"
 
 // AbstractAlbumHandler creates event and return handler func for it
 func AbstractAlbumHandler(server *net.Server) EventHandleFunc {
-	return abstractAlbum{newEvent(abstractAlbumEvent, server, abstractAlbumCallbackFunc)}.Handle
+	e := abstractAlbum{newEvent(abstractAlbumEvent, server, abstractAlbumCallbackFunc)}
+	return e.Handle
 }
 
 // abstractAlbumCallbackFunc is the main process of abstractAlbum

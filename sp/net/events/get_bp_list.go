@@ -19,7 +19,8 @@ const getBpListEvent = "get_bp_list"
 
 // GetBPListHandler creates event and return handler func for it
 func GetBPListHandler(s *net.Server) EventHandleFunc {
-	return getBPList{newEvent(getBpListEvent, s, getBpListCallbackFunc)}.Handle
+	e := getBPList{newEvent(getBpListEvent, s, getBpListCallbackFunc)}
+	return e.Handle
 }
 
 // getBpListCallbackFunc is the main process of get bp list

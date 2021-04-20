@@ -30,9 +30,8 @@ const fileStorageInfoEvent = "file_storage_info"
 
 // GetFileStorageInfoHandler creates event and return handler func for it
 func GetFileStorageInfoHandler(s *net.Server) EventHandleFunc {
-	return fileStorageInfo{
-		newEvent(fileStorageInfoEvent, s, fileStorageInfoCallbackFunc),
-	}.Handle
+	e := fileStorageInfo{newEvent(fileStorageInfoEvent, s, fileStorageInfoCallbackFunc)}
+	return e.Handle
 }
 
 // fileStorageInfoCallbackFunc is the main process of getting file storage info

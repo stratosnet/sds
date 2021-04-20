@@ -21,7 +21,8 @@ const rmDirEvent = "remove_directory"
 
 //GetRmDirHandler creates event and return handler func for it
 func GetRmDirHandler(s *net.Server) EventHandleFunc {
-	return removeDirectory{newEvent(rmDirEvent, s, rmDirCallbackFunc)}.Handle
+	e := removeDirectory{newEvent(rmDirEvent, s, rmDirCallbackFunc)}
+	return e.Handle
 }
 
 // rmDirCallbackFunc is the main process of removing directory

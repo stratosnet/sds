@@ -19,9 +19,8 @@ const getPPListEvent = "get_pp_list"
 
 // GetPPListHandler creates event and return handler func for it
 func GetPPListHandler(s *net.Server) EventHandleFunc {
-	return getPPList{
-		newEvent(getPPListEvent, s, getPPListCallbackFunc),
-	}.Handle
+	e := getPPList{newEvent(getPPListEvent, s, getPPListCallbackFunc)}
+	return e.Handle
 }
 
 // getPPListCallbackFunc is the main process of get pp list

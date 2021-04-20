@@ -21,7 +21,8 @@ const albumFileSortEvent = "album_file_sort"
 
 // GetFileSortHandler creates event and return handler func for it
 func GetFileSortHandler(s *net.Server) EventHandleFunc {
-	return albumFileSort{newEvent(albumFileSortEvent, s, getFileSortCallbackFunc)}.Handle
+	e := albumFileSort{newEvent(albumFileSortEvent, s, getFileSortCallbackFunc)}
+	return e.Handle
 }
 
 // getFileSortCallbackFunc is the main process of album file sort

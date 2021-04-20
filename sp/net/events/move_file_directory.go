@@ -20,7 +20,8 @@ const mvFileDirEvent = "move_file_directory"
 
 // GetMoveFileDirHandler creates event and return handler func for it
 func GetMoveFileDirHandler(s *net.Server) EventHandleFunc {
-	return moveFileDirectory{newEvent(mvFileDirEvent, s, moveFileDirCallbackFunc)}.Handle
+	e := moveFileDirectory{newEvent(mvFileDirEvent, s, moveFileDirCallbackFunc)}
+	return e.Handle
 }
 
 // moveFileDirCallbackFunc is the main process of move file directory

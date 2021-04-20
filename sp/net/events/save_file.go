@@ -20,7 +20,8 @@ const saveFileEvent = "save_file"
 
 // GetSaveFileHandler creates event and return handler func for it
 func GetSaveFileHandler(s *net.Server) EventHandleFunc {
-	return saveFile{newEvent(saveFileEvent, s, saveFileCallbackFunc)}.Handle
+	e := saveFile{newEvent(saveFileEvent, s, saveFileCallbackFunc)}
+	return e.Handle
 }
 
 // saveFileCallbackFunc is the main process of save file

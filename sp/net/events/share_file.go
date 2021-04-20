@@ -23,7 +23,8 @@ const shareFileEvent = "share_file"
 
 // GetShareFileHandler creates event and return handler func for it
 func GetShareFileHandler(s *net.Server) EventHandleFunc {
-	return shareFile{newEvent(shareFileEvent, s, shareFileCallbackFunc)}.Handle
+	e := shareFile{newEvent(shareFileEvent, s, shareFileCallbackFunc)}
+	return e.Handle
 }
 
 func shareFileCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {

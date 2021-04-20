@@ -21,7 +21,8 @@ const downloadTaskInfoEvent = "download_task_info"
 
 // GetDownloadTaskInfoHandler creates event and return handler func for it
 func GetDownloadTaskInfoHandler(s *net.Server) EventHandleFunc {
-	return downloadTaskInfo{newEvent(downloadTaskInfoEvent, s, downloadTaskInfoCallbackFunc)}.Handle
+	e := downloadTaskInfo{newEvent(downloadTaskInfoEvent, s, downloadTaskInfoCallbackFunc)}
+	return e.Handle
 }
 
 // downloadTaskInfoCallbackFunc is the main process of download task info

@@ -22,9 +22,8 @@ const reportDownloadResultEvent = "report_download_event"
 
 // GetReportDownloadResultHandler creates event and return handler func for it
 func GetReportDownloadResultHandler(s *net.Server) EventHandleFunc {
-	return reportDownloadResult{
-		newEvent(reportDownloadResultEvent, s, reportDownloadResultCallbackFunc),
-	}.Handle
+	e := reportDownloadResult{newEvent(reportDownloadResultEvent, s, reportDownloadResultCallbackFunc)}
+	return e.Handle
 }
 
 // reportDownloadResultCallbackFunc is the main process of report download result

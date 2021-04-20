@@ -26,9 +26,8 @@ const reportUploadSliceResultEvent = "report_upload_slice_result"
 
 // GetReportUploadSliceResultHandler creates event and return handler func for it
 func GetReportUploadSliceResultHandler(s *net.Server) EventHandleFunc {
-	return reportUploadSliceResult{
-		newEvent(reportUploadSliceResultEvent, s, reportUploadSliceResultCallbackFunc),
-	}.Handle
+	e := reportUploadSliceResult{newEvent(reportUploadSliceResultEvent, s, reportUploadSliceResultCallbackFunc)}
+	return e.Handle
 }
 
 // reportUploadSliceResultCallbackFunc is the main process of report upload slice result

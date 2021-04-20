@@ -21,7 +21,8 @@ const reportTransferResultEvent = "report_transfer_result"
 
 // GetReportTransferResultHandler creates event and return handler func for it
 func GetReportTransferResultHandler(s *net.Server) EventHandleFunc {
-	return reportTransferResult{newEvent(reportTransferResultEvent, s, reportTransferResultCallbackFunc)}.Handle
+	e := reportTransferResult{newEvent(reportTransferResultEvent, s, reportTransferResultCallbackFunc)}
+	return e.Handle
 }
 
 func reportTransferResultCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {

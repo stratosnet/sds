@@ -20,7 +20,8 @@ const getConfigEvent = "get_config"
 
 // GetGetConfigHandler creates event and return handler func for it
 func GetGetConfigHandler(s *net.Server) EventHandleFunc {
-	return getConfig{newEvent(getConfigEvent, s, getConfigCallbackFunc)}.Handle
+	e := getConfig{newEvent(getConfigEvent, s, getConfigCallbackFunc)}
+	return e.Handle
 }
 
 // getConfigCallbackFunc is the main process of get configuration

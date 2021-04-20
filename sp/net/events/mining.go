@@ -22,7 +22,8 @@ const miningEvent = "mining"
 
 // GetMiningHandler creates event and return handler func for it
 func GetMiningHandler(s *net.Server) EventHandleFunc {
-	return mining{newEvent(miningEvent, s, miningCallbackFunc)}.Handle
+	e := mining{newEvent(miningEvent, s, miningCallbackFunc)}
+	return e.Handle
 }
 
 // miningCallbackFunc is the main process of mining

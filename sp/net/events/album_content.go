@@ -20,7 +20,8 @@ const albumContentEvent = "album_content"
 
 // GetAlbumContentHandler creates event and return handler func for it
 func GetAlbumContentHandler(s *net.Server) EventHandleFunc {
-	return albumContent{newEvent(albumContentEvent, s, albumContentCallbackFunc)}.Handle
+	e := albumContent{newEvent(albumContentEvent, s, albumContentCallbackFunc)}
+	return e.Handle
 
 }
 

@@ -21,7 +21,8 @@ const collectAlbumEvent = "collect_album"
 
 // GetCollectAlbumHandler creates event and return handler func for it
 func GetCollectAlbumHandler(s *net.Server) EventHandleFunc {
-	return collectAlbum{newEvent(collectAlbumEvent, s, collectAlbumCallbackFunc)}.Handle
+	e := collectAlbum{newEvent(collectAlbumEvent, s, collectAlbumCallbackFunc)}
+	return e.Handle
 }
 
 // collectAlbumCallbackFunc is the main process of collecting album

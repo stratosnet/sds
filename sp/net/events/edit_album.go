@@ -21,7 +21,8 @@ const editAlbumEvent = "edit_album"
 
 // GetEditAlbumHandler creates event and return handler func for it
 func GetEditAlbumHandler(s *net.Server) EventHandleFunc {
-	return editAlbum{newEvent(editAlbumEvent, s, editAlbumCallbackFunc)}.Handle
+	e := editAlbum{newEvent(editAlbumEvent, s, editAlbumCallbackFunc)}
+	return e.Handle
 }
 
 // editAlbumCallbackFunc is the main process of edit album

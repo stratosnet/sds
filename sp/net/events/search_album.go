@@ -21,7 +21,8 @@ const searchAlbumEvent = "search_album"
 
 // GetSearchAlbumHandler creates event and return handler func for it
 func GetSearchAlbumHandler(s *net.Server) EventHandleFunc {
-	return searchAlbum{newEvent(searchAlbumEvent, s, searchAlbumCallbackFunc)}.Handle
+	e := searchAlbum{newEvent(searchAlbumEvent, s, searchAlbumCallbackFunc)}
+	return e.Handle
 }
 
 func searchAlbumCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {

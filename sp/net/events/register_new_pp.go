@@ -23,9 +23,8 @@ const registerNewPPEvent = "register_new_pp"
 
 // GetRegisterNewPPHandler creates event and return handler func for it
 func GetRegisterNewPPHandler(s *net.Server) EventHandleFunc {
-	return registerNewPP{
-		newEvent(registerNewPPEvent, s, registerNewPPCallbackFunc),
-	}.Handle
+	e := registerNewPP{newEvent(registerNewPPEvent, s, registerNewPPCallbackFunc)}
+	return e.Handle
 }
 
 // registerNewPPCallbackFunc is the main process of register new PP

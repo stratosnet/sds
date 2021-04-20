@@ -21,7 +21,8 @@ const inviteEvent = "invite"
 
 // GetInviteHandler creates event and return handler func for it
 func GetInviteHandler(s *net.Server) EventHandleFunc {
-	return invite{newEvent(inviteEvent, s, inviteCallbackFunc)}.Handle
+	e := invite{newEvent(inviteEvent, s, inviteCallbackFunc)}
+	return e.Handle
 }
 
 // inviteCallbackFunc is the main process of inviting

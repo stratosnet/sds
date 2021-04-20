@@ -21,7 +21,8 @@ const makeDirectoryEvent = "make_directory"
 
 // GetMakeDirHandler creates event and return handler fun for it
 func GetMakeDirHandler(s *net.Server) EventHandleFunc {
-	return makeDirectory{newEvent(makeDirectoryEvent, s, makeDirectoryCallbackFunc)}.Handle
+	e := makeDirectory{newEvent(makeDirectoryEvent, s, makeDirectoryCallbackFunc)}
+	return e.Handle
 }
 
 // makeDirectoryCallbackFunc is the main process of make directory

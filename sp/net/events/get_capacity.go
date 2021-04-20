@@ -20,7 +20,8 @@ const getCapacityEvent = "get_capacity"
 
 // GetGetCapacityHandler creates event and return handler func for it
 func GetGetCapacityHandler(s *net.Server) EventHandleFunc {
-	return getCapacity{newEvent(getCapacityEvent, s, getCapacityCallbackFunc)}.Handle
+	e := getCapacity{newEvent(getCapacityEvent, s, getCapacityCallbackFunc)}
+	return e.Handle
 }
 
 func getCapacityCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
