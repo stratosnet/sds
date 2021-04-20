@@ -19,8 +19,8 @@ Database:
   Pass: 111111
   DbName: sds
   Debug: false
-  LogFile: path_to_log
+  LogFile: tmp/logs/db_api.log
 
-LogFile: path_to_log
+LogFile: tmp/logs/stdout_api.log
 
-Debug: false
+Debug: true
