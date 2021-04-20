@@ -1,6 +1,5 @@
 package setting
 
-
 import (
 	"encoding/csv"
 	"github.com/stratosnet/sds/msg/protos"
@@ -27,14 +26,14 @@ func InitBPList() bool {
 		utils.Log("InitBPList err", err)
 		return false
 	}
-	if len(record) > 0 {
-		for _, item := range record {
-			BPList = append(BPList, item[0])
-		}
-	} else {
+	if len(record) == 0 {
 		utils.Log("BPList == nil")
 		return false
 	}
+	for _, item := range record {
+		BPList = append(BPList, item[0])
+	}
+
 	return true
 }
 
