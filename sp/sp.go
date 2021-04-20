@@ -11,7 +11,7 @@ import (
 )
 
 // StartSP
-func StartSP(conf string) *net.Server {
+func StartSP(conf string) {
 
 	server := net.NewServer(conf)
 
@@ -41,7 +41,7 @@ func StartSP(conf string) *net.Server {
 	spbf.Register(header.ReqShareFile, events.GetShareFileHandler(server))                             // server.ListenEvent(header.ReqShareFile, new(events.shareFile))
 	spbf.Register(header.ReqGetShareFile, events.GetGetShareFileHandler(server))                       // server.ListenEvent(header.ReqGetShareFile, new(events.getShareFile))
 	spbf.Register(header.ReqShareLink, events.GetShareLinkHandler(server))                             // server.ListenEvent(header.ReqShareLink, new(events.shareLink))
-	spbf.Register(header.ReqConfig, events.GetGetConfigHandler(server))                                // server.ListenEvent(header., new(events.getConfig))
+	spbf.Register(header.ReqConfig, events.GetGetConfigHandler(server))                                // server.ListenEvent(header.ReqConfig, new(events.getConfig))
 	spbf.Register(header.ReqDeleteShare, events.GetDeleteShareHandler(server))                         // server.ListenEvent(header.ReqDeleteShare, new(events.deleteShare))
 	spbf.Register(header.ReqCreateAlbum, events.GetCreateAlbumHandler(server))                         // server.ListenEvent(header.ReqCreateAlbum, new(events.createAlbum))
 	spbf.Register(header.ReqEditAlbum, events.GetEditAlbumHandler(server))                             // server.ListenEvent(header.ReqEditAlbum, new(events.editAlbum))
@@ -54,16 +54,15 @@ func StartSP(conf string) *net.Server {
 	spbf.Register(header.ReqMyCollectionAlbum, events.GetMyCollectAlbumHandler(server))                // server.ListenEvent(header.ReqMyCollectionAlbum, new(events.myCollectAlbum))
 	spbf.Register(header.ReqAbstractAlbum, events.AbstractAlbumHandler(server))                        // server.ListenEvent(header.ReqAbstractAlbum, new(events.abstractAlbum))
 	spbf.Register(header.ReqFindDirectoryTree, events.GetFindDirectoryTreeHandler(server))             // server.ListenEvent(header.ReqFindDirectoryTree, new(events.findDirectoryTree))
-	spbf.Register(header, events)                                                                      // server.ListenEvent(header.ReqGetCapacity, new(events.GetCapacity))
-	spbf.Register(header, events)                                                                      // server.ListenEvent(header.ReqFileSort, new(events.AlbumFileSort))
-	spbf.Register(header, events)                                                                      // server.ListenEvent(header.ReqFindDirectory, new(events.FindDirectory))
+	spbf.Register(header.ReqDeleteAlbum, events.GetDeleteAlbumHandler(server))                         //server.ListenEvent(header.ReqDeleteAlbum, new(events.deleteAlbum))
+	spbf.Register(header.ReqGetCapacity, events.GetGetCapacityHandler(server))                         // server.ListenEvent(header.ReqGetCapacity, new(events.GetCapacity))
+	spbf.Register(header.ReqFileSort, events.GetFileSortHandler(server))                               // server.ListenEvent(header.ReqFileSort, new(events.albumFileSort))
+	spbf.Register(header.ReqFindDirectory, events.GetFindDirectoryHandler(server))                     // server.ListenEvent(header.ReqFindDirectory, new(events.findDirectory))
 
 	server.Start()
-
-	return server
 }
 
-// StartAPI
+// StartAPI start the SP user API
 func StartAPI(conf string) *core.APIServer {
 
 	if conf == "" {
