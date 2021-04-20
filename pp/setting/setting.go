@@ -11,7 +11,6 @@ import (
 	"sync"
 )
 
-
 // REPROTDHTIME 1 hour
 const REPROTDHTIME = 60 * 60
 
@@ -82,10 +81,10 @@ type config struct {
 	DownloadPath                string `yaml:"DownloadPath"`
 	Password                    string `yaml:"Password"`
 	Account                     string `yaml:"Account"`
-	AutoRun                     bool   `yaml:"AutoRun"`        // is auto login
-	Internal                    bool   `yaml:"Internal"`       // is internal net
-	IsWallet                    bool   `yaml:"IsWallet"`       // is wallet
-	BPURL                       string `yaml:"BPURL"`          // bphttp
+	AutoRun                     bool   `yaml:"AutoRun"`  // is auto login
+	Internal                    bool   `yaml:"Internal"` // is internal net
+	IsWallet                    bool   `yaml:"IsWallet"` // is wallet
+	BPURL                       string `yaml:"BPURL"`    // bphttp
 	IsCheckDefaultPath          bool   `yaml:"IsCheckDefaultPath"`
 	IsLimitDownloadSpeed        bool   `yaml:"IsLimitDownloadSpeed"`
 	LimitDownloadSpeed          uint64 `yaml:"LimitDownloadSpeed"`

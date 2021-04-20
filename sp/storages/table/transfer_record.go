@@ -24,7 +24,6 @@ CREATE TABLE `transfer_record` (
 */
 
 const (
-
 	TRANSFER_RECORD_STATUS_SUCCESS = 0
 
 	TRANSFER_RECORD_STATUS_CHECK = 1
