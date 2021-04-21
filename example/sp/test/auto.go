@@ -111,7 +111,7 @@ func (c *CONN) login(w, n string) {
 			WalletAddress:  w,
 			NetworkAddress: n,
 		},
-		PublicKey: w + ":publicKey",
+		PublicKey: []byte(w + ":publicKey"),
 	}, header.ReqRegister)
 }
 
@@ -124,6 +124,6 @@ func (c *CONN) registerPP(w string) {
 		CpuInfo:       "intel i7",
 		MacAddress:    "12345678901234567",
 		Version:       1,
-		PubKey:        w + ":publicKey",
+		PubKey:        []byte(w + ":publicKey"),
 	}, header.ReqRegisterNewPP)
 }

@@ -15,8 +15,8 @@ var IsPP = false
 // IsLoginToSP
 var IsLoginToSP = false
 
-// IsSatrtMining
-var IsSatrtMining = false
+// IsStartMining
+var IsStartMining = false
 
 // IsAuto
 var IsAuto = false

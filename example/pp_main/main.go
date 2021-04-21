@@ -485,7 +485,7 @@ func AutoStart(account, password string) {
 func setConfig() {
 
 	setting.LoadConfig("./config.yaml")
-	setting.WalletAddress = peers.CreateAccount(setting.Config.Password, "")
+	setting.WalletAddress = peers.CreateAccount(setting.Config.Password, "", "", "", "")
 	str := "Account: " + setting.WalletAddress
 	writerConfig(str)
 

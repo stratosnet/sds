@@ -10,9 +10,9 @@ import (
 )
 
 // CreateAccount
-func CreateAccount(password, name string) string {
-	account, err := utils.CreateAccount(
-		setting.Config.AccountDir, name, password, setting.Config.ScryptN, setting.Config.ScryptP)
+func CreateAccount(password, name, mnemonic, passphrase, hdPath string) string {
+	account, err := utils.CreateAccount(setting.Config.AccountDir, name, password, setting.Config.AddressPrefix,
+		mnemonic, passphrase, hdPath, setting.Config.ScryptN, setting.Config.ScryptP)
 	if utils.CheckError(err) {
 		utils.ErrorLog("CreateAccount error", err)
 		return ""
@@ -83,7 +83,7 @@ func NewAccount(password, name string) {
 	if password == "" {
 		fmt.Println("input password")
 	} else {
-		CreateAccount(password, name)
+		CreateAccount(password, name, "", "", "")
 	}
 }
 

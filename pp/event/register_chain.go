@@ -104,7 +104,7 @@ func RspMining(ctx context.Context, conn spbf.WriteCloser) {
 			if serv.GetPPServer() == nil {
 				go serv.StartListenServer(setting.Config.Port)
 			}
-			setting.IsSatrtMining = true
+			setting.IsStartMining = true
 			if client.SPConn == nil {
 				client.SPConn = client.NewClient(setting.Config.SPNetAddress, setting.IsPP)
 				RegisterChain(true)
