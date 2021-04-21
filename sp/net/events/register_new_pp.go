@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"encoding/hex"
+	"fmt"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -63,7 +63,7 @@ func (e *RegisterNewPP) Handle(ctx context.Context, conn spbf.WriteCloser) {
 			CpuInfo:        body.CpuInfo,
 			MacAddress:     body.MacAddress,
 			Version:        body.Version,
-			PubKey:         hex.EncodeToString(body.PubKey),
+			PubKey:         fmt.Sprintf("PubKeySecp256k1{%X}", body.PubKey),
 			State:          table.STATE_OFFLINE,
 		}
 
