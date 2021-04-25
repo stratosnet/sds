@@ -2,77 +2,80 @@ package events
 
 import (
 	"context"
+	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/sp/net"
 	"github.com/stratosnet/sds/sp/storages/data"
+	"github.com/stratosnet/sds/utils"
 	"time"
 )
 
-// DownloadTaskInfo
-type DownloadTaskInfo struct {
-	Server *net.Server
+// downloadTaskInfo is a concrete implementation of event
+type downloadTaskInfo struct {
+	event
 }
 
-// GetServer
-func (e *DownloadTaskInfo) GetServer() *net.Server {
-	return e.Server
+const downloadTaskInfoEvent = "download_task_info"
+
+// GetDownloadTaskInfoHandler creates event and return handler func for it
+func GetDownloadTaskInfoHandler(s *net.Server) EventHandleFunc {
+	e := downloadTaskInfo{newEvent(downloadTaskInfoEvent, s, downloadTaskInfoCallbackFunc)}
+	return e.Handle
 }
 
-// SetServer
-func (e *DownloadTaskInfo) SetServer(server *net.Server) {
-	e.Server = server
-}
+// downloadTaskInfoCallbackFunc is the main process of download task info
+func downloadTaskInfoCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
+	body := message.(*protos.ReqDownloadTaskInfo)
 
-// Handle
-func (e *DownloadTaskInfo) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	rsp := &protos.RspDownloadTaskInfo{
+		Result: &protos.Result{
+			State: protos.ResultState_RES_FAIL,
+		},
+		Id: body.Id,
+	}
 
-	target := new(protos.ReqDownloadTaskInfo)
+	taskID := body.TaskId
 
-	callback := func(message interface{}) (interface{}, string) {
+	if taskID == "" {
+		rsp.Result.Msg = "task ID can't be empty"
+	}
 
-		body := message.(*protos.ReqDownloadTaskInfo)
+	// todo change to read from redis
+	task := &data.DownloadTask{
+		TaskId: taskID,
+	}
 
-		rsp := &protos.RspDownloadTaskInfo{
-			Result: &protos.Result{
-				State: protos.ResultState_RES_FAIL,
-			},
-			Id: body.Id,
-		}
-
-		taskID := body.TaskId
-
-		if taskID == "" {
-			rsp.Result.Msg = "task ID can't be empty"
-		}
-
-		// todo change to read from redis
-		task := new(data.DownloadTask)
-		task.TaskId = taskID
-		e.GetServer().Lock()
-		if e.GetServer().Load(task) == nil {
-
-			rsp.TaskId = task.TaskId
-			rsp.SliceHash = task.SliceHash
-			rsp.SliceSize = task.SliceSize
-			rsp.StorageWalletAddress = task.StorageWalletAddress
-			rsp.WalletAddressList = task.WalletAddressList
-			rsp.SliceNumber = task.SliceNumber
-			rsp.Time = uint64(time.Now().Unix())
-
-			rsp.Result = &protos.Result{
-				State: protos.ResultState_RES_SUCCESS,
-			}
-
-		} else {
-			rsp.Result.Msg = "task doesn't exist"
-		}
-		e.GetServer().Unlock()
-
+	s.Lock()
+	defer s.Unlock()
+	if err := s.Load(task); err != nil {
+		rsp.Result.Msg = "task doesn't exist"
 		return rsp, header.RspDownloadTaskInfo
 	}
 
-	go net.EventHandle(ctx, conn, target, callback, e.GetServer().Ver)
+	rsp.TaskId = task.TaskId
+	rsp.SliceHash = task.SliceHash
+	rsp.SliceSize = task.SliceSize
+	rsp.StorageWalletAddress = task.StorageWalletAddress
+	rsp.WalletAddressList = task.WalletAddressList
+	rsp.SliceNumber = task.SliceNumber
+	rsp.Time = uint64(time.Now().Unix())
+
+	rsp.Result = &protos.Result{
+		State: protos.ResultState_RES_SUCCESS,
+	}
+
+	return rsp, header.RspDownloadTaskInfo
+}
+
+// Handle create a concrete proto message for this event, and handle the event asynchronously
+func (e *downloadTaskInfo) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	go func() {
+		target := &protos.ReqDownloadTaskInfo{}
+		if err := e.handle(ctx, conn, target); err != nil {
+			utils.ErrorLog(err)
+		}
+	}()
 
 }

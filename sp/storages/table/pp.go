@@ -24,6 +24,28 @@ CREATE TABLE `pp` (
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 */
 
+/*
+Updated, remove length for int types
+
+CREATE TABLE pp
+(
+    id              int unsigned        NOT NULL AUTO_INCREMENT COMMENT 'Id of pp' PRIMARY KEY,
+    wallet_address  char(42)            NOT NULL DEFAULT '',
+    network_address varchar(32)         NOT NULL DEFAULT '',
+    disk_size       bigint unsigned     NOT NULL DEFAULT '0',
+    free_disk       bigint unsigned     NOT NULL DEFAULT '0',
+    memory_size     bigint unsigned     NOT NULL DEFAULT '0',
+    os_and_ver      varchar(128)        NOT NULL DEFAULT '',
+    cpu_info        varchar(64)         NOT NULL DEFAULT '',
+    mac_address     varchar(17)         NOT NULL DEFAULT '',
+    version         int unsigned        NOT NULL DEFAULT '0',
+    pub_key         varchar(1000)       NOT NULL DEFAULT '',
+    state           tinyint unsigned    NOT NULL DEFAULT '0' COMMENT '0:offline,1:online',
+    UNIQUE KEY IDX_WALLET_ADDRESS (wallet_address) USING HASH
+) ENGINE = InnoDB
+  DEFAULT CHARSET = UTF8MB4;
+*/
+
 const (
 	STATE_OFFLINE = 0
 	STATE_ONLINE  = 1

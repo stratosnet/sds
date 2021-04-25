@@ -2,8 +2,10 @@ package events
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"encoding/hex"
-	"fmt"
+	"errors"
+	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -19,231 +21,245 @@ import (
 	"github.com/google/uuid"
 )
 
-// FileStorageInfo
-type FileStorageInfo struct {
-	Server *net.Server
+// fileStorageInfo is a concrete implementation of event
+type fileStorageInfo struct {
+	event
 }
 
-// GetServer
-func (e *FileStorageInfo) GetServer() *net.Server {
-	return e.Server
+const fileStorageInfoEvent = "file_storage_info"
+
+// GetFileStorageInfoHandler creates event and return handler func for it
+func GetFileStorageInfoHandler(s *net.Server) EventHandleFunc {
+	e := fileStorageInfo{newEvent(fileStorageInfoEvent, s, fileStorageInfoCallbackFunc)}
+	return e.Handle
 }
 
-// SetServer
-func (e *FileStorageInfo) SetServer(server *net.Server) {
-	e.Server = server
-}
+// fileStorageInfoCallbackFunc is the main process of getting file storage info
+func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto.Message, conn spbf.WriteCloser) (proto.Message, string) {
+	body := message.(*protos.ReqFileStorageInfo)
 
-// Handle
-func (e *FileStorageInfo) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	rsp := &protos.RspFileStorageInfo{
+		Result: &protos.Result{
+			State: protos.ResultState_RES_SUCCESS,
+		},
+		WalletAddress: body.FileIndexes.WalletAddress,
+		ReqId:         body.ReqId,
+		SavePath:      body.FileIndexes.SavePath,
+		VisitCer:      "",
+		FileHash:      "",
+		FileName:      "",
+		SliceInfo:     nil,
+		FileSize:      0,
+	}
 
-	target := new(protos.ReqFileStorageInfo)
+	// validate
+	storageWalletAddress, fileHash, err := validateFileStorageInfoRequest(s, body)
+	if err != nil {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = err.Error()
+		return rsp, header.RspFileStorageInfo
+	}
 
-	callback := func(message interface{}) (interface{}, string) {
+	// search file
+	file := &table.File{
+		Hash: fileHash,
+		UserHasFile: table.UserHasFile{
+			WalletAddress: storageWalletAddress,
+		},
+	}
+	if s.CT.Fetch(file) != nil || file.State == table.STATE_DELETE {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "wrong downloading address"
+		return rsp, header.RspFileStorageInfo
+	}
 
-		body := message.(*protos.ReqFileStorageInfo)
+	rsp.FileHash = fileHash
 
-		rsp := &protos.RspFileStorageInfo{
-			Result: &protos.Result{
-				State: protos.ResultState_RES_SUCCESS,
-			},
-			WalletAddress: body.FileIndexes.WalletAddress,
-			ReqId:         body.ReqId,
-			SavePath:      body.FileIndexes.SavePath,
-			VisitCer:      "",
-			FileHash:      "",
-			FileName:      "",
-			SliceInfo:     nil,
-			FileSize:      0,
+	//  todo change to read from redis
+
+	res, err := s.CT.FetchTables([]table.FileSlice{}, map[string]interface{}{
+		"alias":   "e",
+		"columns": "e.*, fss.wallet_address, fss.network_address",
+		"where":   map[string]interface{}{"e.file_hash = ?": fileHash},
+		"join":    []string{"file_slice_storage", "e.slice_hash = fss.slice_hash", "fss", "left"},
+		"orderBy": "e.slice_number ASC",
+	})
+	if err != nil {
+		utils.ErrorLog(err.Error())
+	}
+
+	fileSlices := res.([]table.FileSlice)
+
+	var sliceInfo []*protos.DownloadSliceInfo
+	if len(fileSlices) <= 0 || err != nil {
+
+		rsp.Result.Msg = "file not exist"
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		return rsp, header.RspFileStorageInfo
+	}
+
+	transferWalletAddress := s.Who(conn.(*spbf.ServerConn).GetName())
+	if transferWalletAddress == "" {
+		rsp.Result.Msg = "not miner"
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		return rsp, header.RspFileStorageInfo
+	}
+
+	rsp.FileName = file.Name
+
+	downloadFile := &data.DownloadFile{
+		WalletAddress: body.FileIndexes.WalletAddress,
+		FileHash:      fileHash,
+		FileName:      file.Name,
+		SliceNum:      file.SliceNum,
+		List:          make(map[uint64]bool),
+	}
+
+	// create hashring
+	storageRing := make(map[string]*hashring.HashRing)
+	fileSliceList := make(map[string]table.FileSlice)
+
+	for _, row := range fileSlices {
+		fileSliceList[row.SliceHash] = row
+	}
+
+	for str, row := range fileSliceList {
+		storageRing[str] = hashring.New(20)
+		downloadFile.List[row.SliceNumber] = false
+	}
+
+	for _, row := range fileSlices {
+		node := &hashring.Node{ID: row.WalletAddress, Host: row.NetworkAddress}
+		if s.HashRing.IsOnline(node.ID) {
+			storageRing[row.SliceHash].AddNode(node)
+			storageRing[row.SliceHash].SetOnline(node.ID)
 		}
+	}
 
-		var fileHash string
-		var storageWalletAddress string
+	for str, row := range fileSliceList {
 
-		// validate
-		if ok, errMsg := e.Validate(body, &fileHash, &storageWalletAddress); !ok {
+		ring := storageRing[str]
+		_, provideNodeID := ring.GetNode(row.SliceHash + "#" + uuid.New().String())
+
+		node := ring.Node(provideNodeID)
+
+		if node == nil {
+			rsp.Result.Msg = "no resource to process, try later"
 			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = errMsg
 			return rsp, header.RspFileStorageInfo
 		}
 
-		// search file
-		file := new(table.File)
-		file.Hash = fileHash
-		file.WalletAddress = storageWalletAddress
-		if e.GetServer().CT.Fetch(file) != nil || file.State == table.STATE_DELETE {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "wrong downloading address"
-			return rsp, header.RspFileStorageInfo
-		}
-
-		rsp.FileHash = fileHash
-
-		//  todo change to read from redis
-
-		res, err := e.GetServer().CT.FetchTables([]table.FileSlice{}, map[string]interface{}{
-			"alias":   "e",
-			"columns": "e.*, fss.wallet_address, fss.network_address",
-			"where":   map[string]interface{}{"e.file_hash = ?": fileHash},
-			"join":    []string{"file_slice_storage", "e.slice_hash = fss.slice_hash", "fss", "left"},
-			"orderBy": "e.slice_number ASC",
-		})
-		if err != nil {
-			utils.ErrorLog(err.Error())
-		}
-
-		fileSlices := res.([]table.FileSlice)
-
-		var sliceInfo []*protos.DownloadSliceInfo
-		if len(fileSlices) <= 0 || err != nil {
-
-			rsp.Result.Msg = "file not exist"
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			return rsp, header.RspFileStorageInfo
-		}
-
-		transferWalletAddress := e.GetServer().Who(conn.(*spbf.ServerConn).GetName())
-		if transferWalletAddress == "" {
-			rsp.Result.Msg = "not miner"
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			return rsp, header.RspFileStorageInfo
-		}
-
-		rsp.FileName = file.Name
-
-		downloadFile := &data.DownloadFile{
-			WalletAddress: body.FileIndexes.WalletAddress,
-			FileHash:      fileHash,
-			FileName:      file.Name,
-			SliceNum:      file.SliceNum,
-			List:          make(map[uint64]bool),
-		}
-
-		// create hashring
-		storageRing := make(map[string]*hashring.HashRing)
-		fileSliceList := make(map[string]table.FileSlice)
-
-		for _, row := range fileSlices {
-			fileSliceList[row.SliceHash] = row
-		}
-
-		for s, row := range fileSliceList {
-			storageRing[s] = hashring.New(20)
-			downloadFile.List[row.SliceNumber] = false
-		}
-
-		for _, row := range fileSlices {
-			node := &hashring.Node{ID: row.WalletAddress, Host: row.NetworkAddress}
-			if e.GetServer().HashRing.IsOnline(node.ID) {
-				storageRing[row.SliceHash].AddNode(node)
-				storageRing[row.SliceHash].SetOnline(node.ID)
-			}
-		}
-
-		for s, row := range fileSliceList {
-
-			ring := storageRing[s]
-			_, provideNodeID := ring.GetNode(row.SliceHash + "#" + uuid.New().String())
-
-			node := ring.Node(provideNodeID)
-
-			if node == nil {
-				rsp.Result.Msg = "no resource to process, try later"
-				rsp.Result.State = protos.ResultState_RES_FAIL
-				return rsp, header.RspFileStorageInfo
-			}
-
-			si := new(protos.DownloadSliceInfo)
-			si.TaskId = tools.GenerateTaskID(s)
-			si.SliceNumber = row.SliceNumber
-			si.SliceStorageInfo = &protos.SliceStorageInfo{
+		si := &protos.DownloadSliceInfo{
+			TaskId:      tools.GenerateTaskID(str),
+			SliceNumber: row.SliceNumber,
+			SliceStorageInfo: &protos.SliceStorageInfo{
 				SliceSize: row.SliceSize,
 				SliceHash: row.SliceHash,
-			}
-			si.StoragePpInfo = &protos.PPBaseInfo{
+			},
+			StoragePpInfo: &protos.PPBaseInfo{
 				WalletAddress:  node.ID,
 				NetworkAddress: node.Host,
-			}
-			si.SliceOffset = new(protos.SliceOffset)
-			si.SliceOffset.SliceOffsetStart = row.SliceOffsetStart
-			si.SliceOffset.SliceOffsetEnd = row.SliceOffsetEnd
-			si.VisitResult = true
-			sliceInfo = append(sliceInfo, si)
+			},
+			SliceOffset: &protos.SliceOffset{
+				SliceOffsetStart: row.SliceOffsetStart,
+				SliceOffsetEnd:   row.SliceOffsetEnd,
+			},
+			VisitResult: true,
+		}
 
-			task := new(data.DownloadTask)
-			task.TaskId = si.TaskId
-			task.SliceHash = row.SliceHash
-			task.SliceSize = row.SliceSize
-			task.StorageWalletAddress = node.ID
-			task.WalletAddressList = []string{
+		sliceInfo = append(sliceInfo, si)
+
+		task := &data.DownloadTask{
+			TaskId:               si.TaskId,
+			SliceHash:            row.SliceHash,
+			SliceSize:            row.SliceSize,
+			StorageWalletAddress: node.ID,
+			SliceNumber:          row.SliceNumber,
+			Time:                 uint64(time.Now().Unix()),
+			WalletAddressList: []string{
 				body.FileIndexes.WalletAddress, // download node
 				transferWalletAddress,          // transfer node
 				node.ID,                        // storage node
 				//row.WalletAddress,              // storage node wallet
-			}
-
-			task.SliceNumber = row.SliceNumber
-			task.Time = uint64(time.Now().Unix())
-
-			// todo change to read from redis
-			e.GetServer().Store(task, 3600*time.Second)
+			},
 		}
 
-		fmt.Println("save download file key = ", downloadFile.GetCacheKey())
-		e.GetServer().Store(downloadFile, 7*24*3600*time.Second)
-
-		rsp.FileSize = file.Size
-		rsp.SliceInfo = sliceInfo
-
-		return rsp, header.RspFileStorageInfo
+		// todo change to read from redis
+		if err = s.Store(task, 3600*time.Second); err != nil {
+			utils.ErrorLogf(eventHandleErrorTemplate, fileStorageInfoEvent, "store task to db", err)
+		}
 	}
 
-	go net.EventHandle(ctx, conn, target, callback, e.GetServer().Ver)
+	utils.DebugLog("save download file key = ", downloadFile.GetCacheKey())
+	if err = s.Store(downloadFile, 7*24*3600*time.Second); err != nil {
+		utils.ErrorLogf(eventHandleErrorTemplate, fileStorageInfoEvent, "store download file to db", err)
+	}
+
+	rsp.FileSize = file.Size
+	rsp.SliceInfo = sliceInfo
+
+	return rsp, header.RspFileStorageInfo
 }
 
-// Validate
-func (e *FileStorageInfo) Validate(req *protos.ReqFileStorageInfo, fileHash *string, storageWalletAddress *string) (bool, string) {
+// Handle create a concrete proto message for this event, and handle the event asynchronously
+func (e *fileStorageInfo) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	go func() {
+		target := &protos.ReqFileStorageInfo{}
+		if err := e.handle(ctx, conn, target); err != nil {
+			utils.ErrorLog(err)
+		}
+	}()
+}
+
+// validateFileStorageInfoRequest validates request
+func validateFileStorageInfoRequest(s *net.Server, req *protos.ReqFileStorageInfo) (storageWalletAddress, fileHash string, err error) {
 
 	if len(req.Sign) <= 0 {
-		return false, "signature can't be empty"
+		err = errors.New("signature can't be empty")
+		return
 	}
 
 	if req.FileIndexes.WalletAddress == "" {
-		return false, "wallet address can't be empty"
+		err = errors.New("wallet address can't be empty")
+		return
 	}
 
 	filePath := req.FileIndexes.FilePath
 
 	if filePath == "" {
-		return false, "file path can't be empty"
+		err = errors.New("file path can't be empty")
+		return
 	}
 
-	var err error
-	_, *storageWalletAddress, *fileHash, _, err = tools.ParseFileHandle(filePath)
+	_, storageWalletAddress, fileHash, _, err = tools.ParseFileHandle(filePath)
 
 	if err != nil {
-		return false, "wrong file path format, failed to parse"
+		err = errors.New("wrong file path format, failed to parse")
+		return
 	}
 
 	user := &table.User{WalletAddress: req.FileIndexes.WalletAddress}
-	if e.GetServer().CT.Fetch(user) != nil {
-		return false, "not authorized to process"
+	if s.CT.Fetch(user) != nil {
+		err = errors.New("not authorized to process")
+		return
 	}
-
-	pukInByte, err := hex.DecodeString(user.Puk)
+	var pukInByte []byte
+	pukInByte, err = hex.DecodeString(user.Puk)
 	if err != nil {
-		return false, err.Error()
+		return
 	}
 
-	puk, err := crypto.UnmarshalPubkey(pukInByte)
+	var puk *ecdsa.PublicKey
+	puk, err = crypto.UnmarshalPubkey(pukInByte)
 	if err != nil {
-		return false, err.Error()
+		return
 	}
 
-	data := req.FileIndexes.WalletAddress + *fileHash
-	if !utils.ECCVerify([]byte(data), req.Sign, puk) {
-		return false, "signature verification failed"
+	d := req.FileIndexes.WalletAddress + fileHash
+	if !utils.ECCVerify([]byte(d), req.Sign, puk) {
+		err = errors.New("signature verification failed")
+		return
 	}
 
-	return true, ""
+	return
 }

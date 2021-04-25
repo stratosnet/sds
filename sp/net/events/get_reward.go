@@ -2,90 +2,97 @@ package events
 
 import (
 	"context"
+	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/sp/net"
 	"github.com/stratosnet/sds/sp/storages/table"
+	"github.com/stratosnet/sds/utils"
 )
 
-// GetReward
-type GetReward struct {
-	Server *net.Server
+// getReward is a concrete implementation of event
+type getReward struct {
+	event
 }
 
-// GetServer
-func (e *GetReward) GetServer() *net.Server {
-	return e.Server
+const getRewardEvent = "get_reward"
+
+// GetGetRewardHandler creates event and return handler func for it
+func GetGetRewardHandler(s *net.Server) EventHandleFunc {
+	e := getReward{newEvent(getRewardEvent, s, getRewardCallbackFunc)}
+	return e.Handle
 }
 
-// SetServer
-func (e *GetReward) SetServer(server *net.Server) {
-	e.Server = server
-}
+// getRewardCallbackFunc is the main process of get rewarding
+func getRewardCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
+	body := message.(*protos.ReqGetReward)
+	rsp := &protos.RspGetReward{
+		Result: &protos.Result{
+			State: protos.ResultState_RES_SUCCESS,
+		},
+		ReqId:         body.ReqId,
+		WalletAddress: body.WalletAddress,
+	}
 
-// Handle
-func (e *GetReward) Handle(ctx context.Context, conn spbf.WriteCloser) {
-
-	target := new(protos.ReqGetReward)
-
-	callback := func(message interface{}) (interface{}, string) {
-		body := message.(*protos.ReqGetReward)
-		rsp := &protos.RspGetReward{
-			Result: &protos.Result{
-				State: protos.ResultState_RES_SUCCESS,
-			},
-			ReqId:         body.ReqId,
-			WalletAddress: body.WalletAddress,
-		}
-
-		if body.WalletAddress == "" {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "wallet address can't be empty"
-			return rsp, header.RspGetReward
-		}
-
-		user := new(table.User)
-		user.WalletAddress = body.WalletAddress
-		if e.GetServer().CT.Fetch(user) != nil {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "need to login first"
-			return rsp, header.RspGetReward
-		}
-
-		invite := new(table.UserInvite)
-		invite.InvitationCode = user.InvitationCode
-		if e.GetServer().CT.Fetch(invite) != nil {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "invitation code is invalid"
-			return rsp, header.RspGetReward
-		}
-
-		if invite.Times < 5 {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "invite times not enough(need 5 times)"
-			return rsp, header.RspGetReward
-		}
-
-		if user.IsUpgrade == 1 {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "already upgrated"
-			return rsp, header.RspGetReward
-		}
-
-		user.Capacity = user.Capacity + e.GetServer().System.UpgradeReward
-		user.IsUpgrade = 1
-
-		if err := e.GetServer().CT.Save(user); err != nil {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = err.Error()
-			return rsp, header.RspGetReward
-		}
-
-		rsp.CurrentCapacity = user.GetCapacity()
-
+	if body.WalletAddress == "" {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "wallet address can't be empty"
 		return rsp, header.RspGetReward
 	}
 
-	go net.EventHandle(ctx, conn, target, callback, e.GetServer().Ver)
+	user := &table.User{
+		WalletAddress: body.WalletAddress,
+	}
+
+	if err := s.CT.Fetch(user); err != nil {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "need to login first"
+		return rsp, header.RspGetReward
+	}
+
+	invite := &table.UserInvite{
+		InvitationCode: user.InvitationCode,
+	}
+
+	if err := s.CT.Fetch(invite); err != nil {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "invitation code is invalid"
+		return rsp, header.RspGetReward
+	}
+
+	if invite.Times < 5 {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "invite times not enough(need 5 times)"
+		return rsp, header.RspGetReward
+	}
+
+	if user.IsUpgrade == 1 {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "already upgraded"
+		return rsp, header.RspGetReward
+	}
+
+	user.Capacity = user.Capacity + s.System.UpgradeReward
+	user.IsUpgrade = 1
+
+	if err := s.CT.Save(user); err != nil {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = err.Error()
+		return rsp, header.RspGetReward
+	}
+
+	rsp.CurrentCapacity = user.GetCapacity()
+
+	return rsp, header.RspGetReward
+}
+
+// Handle create a concrete proto message for this event, and handle the event asynchronously
+func (e *getReward) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	go func() {
+		target := new(protos.ReqGetReward)
+		if err := e.handle(ctx, conn, target); err != nil {
+			utils.ErrorLog(err)
+		}
+	}()
 }

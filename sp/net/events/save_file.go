@@ -2,87 +2,91 @@ package events
 
 import (
 	"context"
+	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/sp/net"
 	"github.com/stratosnet/sds/sp/storages/table"
+	"github.com/stratosnet/sds/utils"
 )
 
-// SaveFile
-type SaveFile struct {
-	Server *net.Server
+// saveFile is a concrete implementation of event
+type saveFile struct {
+	event
 }
 
-// GetServer
-func (e *SaveFile) GetServer() *net.Server {
-	return e.Server
+const saveFileEvent = "save_file"
+
+// GetSaveFileHandler creates event and return handler func for it
+func GetSaveFileHandler(s *net.Server) EventHandleFunc {
+	e := saveFile{newEvent(saveFileEvent, s, saveFileCallbackFunc)}
+	return e.Handle
 }
 
-// SetServer
-func (e *SaveFile) SetServer(server *net.Server) {
-	e.Server = server
-}
+// saveFileCallbackFunc is the main process of save file
+func saveFileCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
+	body := message.(*protos.ReqSaveFile)
 
-// Handle
-func (e *SaveFile) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	rsp := &protos.RspSaveFile{
+		Result: &protos.Result{
+			State: protos.ResultState_RES_SUCCESS,
+		},
+		WalletAddress: body.WalletAddress,
+		ReqId:         body.ReqId,
+		FilePath:      "",
+	}
 
-	target := new(protos.ReqSaveFile)
-
-	callback := func(message interface{}) (interface{}, string) {
-
-		body := message.(*protos.ReqSaveFile)
-
-		rsp := &protos.RspSaveFile{
-			Result: &protos.Result{
-				State: protos.ResultState_RES_SUCCESS,
-			},
-			WalletAddress: body.WalletAddress,
-			ReqId:         body.ReqId,
-			FilePath:      "",
-		}
-
-		if body.WalletAddress == "" ||
-			body.FileHash == "" ||
-			body.FileOwnerWalletAddress == "" {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "wallet address or filehash can't be empty"
-			return rsp, header.RspSaveFile
-		}
-
-		file := new(table.File)
-		file.Hash = body.FileHash
-		file.WalletAddress = body.FileOwnerWalletAddress
-		if e.GetServer().CT.Fetch(file) != nil {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "file not exist"
-			return rsp, header.RspSaveFile
-		}
-
-		userHasFile := new(table.UserHasFile)
-
-		err := e.GetServer().CT.FetchTable(userHasFile, map[string]interface{}{
-			"where": map[string]interface{}{
-				"wallet_address = ? AND file_hash = ?": []interface{}{body.WalletAddress, body.FileHash},
-			},
-		})
-
-		if err == nil {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "file already in the storage"
-			return rsp, header.RspSaveFile
-		}
-
-		userHasFile.WalletAddress = body.WalletAddress
-		userHasFile.FileHash = body.FileHash
-		if ok, err := e.GetServer().CT.StoreTable(userHasFile); !ok {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = err.Error()
-			return rsp, header.RspSaveFile
-		}
-
+	if body.WalletAddress == "" || body.FileHash == "" || body.FileOwnerWalletAddress == "" {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "wallet address or file hash can't be empty"
 		return rsp, header.RspSaveFile
 	}
 
-	go net.EventHandle(ctx, conn, target, callback, e.GetServer().Ver)
+	file := &table.File{
+		Hash: body.FileHash,
+		UserHasFile: table.UserHasFile{
+			WalletAddress: body.FileOwnerWalletAddress,
+		},
+	}
+
+	if err := s.CT.Fetch(file); err != nil {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "file not exist"
+		return rsp, header.RspSaveFile
+	}
+
+	userHasFile := &table.UserHasFile{}
+
+	err := s.CT.FetchTable(userHasFile, map[string]interface{}{
+		"where": map[string]interface{}{
+			"wallet_address = ? AND file_hash = ?": []interface{}{body.WalletAddress, body.FileHash},
+		},
+	})
+
+	if err == nil {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "file already in the storage"
+		return rsp, header.RspSaveFile
+	}
+
+	userHasFile.WalletAddress = body.WalletAddress
+	userHasFile.FileHash = body.FileHash
+	if _, err = s.CT.StoreTable(userHasFile); err != nil {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = err.Error()
+		return rsp, header.RspSaveFile
+	}
+
+	return rsp, header.RspSaveFile
+}
+
+// Handle create a concrete proto message for this event, and handle the event asynchronously
+func (e *saveFile) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	go func() {
+		target := &protos.ReqSaveFile{}
+		if err := e.handle(ctx, conn, target); err != nil {
+			utils.ErrorLog(err)
+		}
+	}()
 }

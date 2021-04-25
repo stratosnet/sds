@@ -11,8 +11,7 @@ import (
 
 // CreateAccount
 func CreateAccount(password, name string) string {
-	account, err := utils.CreateAccount(
-		setting.Config.AccountDir, name, password, setting.Config.ScryptN, setting.Config.ScryptP)
+	account, err := utils.CreateAccount(setting.Config.AccountDir, name, password, setting.Config.ScryptN, setting.Config.ScryptP)
 	if utils.CheckError(err) {
 		utils.ErrorLog("CreateAccount error", err)
 		return ""
@@ -31,15 +30,16 @@ func GetWalletAddress() {
 	files, err := ioutil.ReadDir(setting.Config.AccountDir)
 	if len(files) == 0 {
 		// CreateAccount(setting.Config.DefPassword)
-	} else {
-		if utils.CheckError(err) {
-			// CreateAccount(setting.Config.DefPassword)
-			return
-		}
-		setting.WalletAddress = files[0].Name()
-		getPublickKey(setting.Config.AccountDir+"/"+setting.WalletAddress, setting.Config.DefPassword)
-		utils.Log("setting.WalletAddress,", setting.WalletAddress)
+		return
 	}
+	if utils.CheckError(err) {
+		// CreateAccount(setting.Config.DefPassword)
+		return
+	}
+	setting.WalletAddress = files[0].Name()
+	getPublickKey(setting.Config.AccountDir+"/"+setting.WalletAddress, setting.Config.DefPassword)
+	utils.Log("setting.WalletAddress,", setting.WalletAddress)
+
 }
 
 func getPublickKey(filePath, password string) bool {
@@ -90,30 +90,30 @@ func Login(account, password string) error {
 	if account == "" {
 		fmt.Println("please input wallet address")
 		return errors.New("please input wallet address")
-	} else if password == "" {
+	}
+	if password == "" {
 		fmt.Println("please input password")
 		return errors.New("please input password")
-	} else {
-		files, _ := ioutil.ReadDir(setting.Config.AccountDir)
-		if len(files) == 0 {
-			fmt.Println("wrong account or password")
-			return errors.New("wrong account or password")
-		} else {
-			for _, info := range files {
-				utils.Log(info.Name())
-				if info.Name() == account {
-					if getPublickKey(setting.Config.AccountDir+"/"+account, password) {
-						setting.WalletAddress = account
-						InitPeer()
-						return nil
-					} else {
-						fmt.Println("wrong password")
-						return errors.New("wrong password")
-					}
-				}
-			}
-			fmt.Println("wrong account or password")
-			return errors.New("wrong account or password")
-		}
 	}
+
+	files, _ := ioutil.ReadDir(setting.Config.AccountDir)
+	if len(files) == 0 {
+		fmt.Println("wrong account or password")
+		return errors.New("wrong account or password")
+	}
+	for _, info := range files {
+		if info.Name() == ".placeholder" || info.Name() != account {
+			continue
+		}
+		utils.Log(info.Name())
+		if getPublickKey(setting.Config.AccountDir+"/"+account, password) {
+			setting.WalletAddress = account
+			InitPeer()
+			return nil
+		}
+		fmt.Println("wrong password")
+		return errors.New("wrong password")
+	}
+	fmt.Println("wrong account or password")
+	return errors.New("wrong account or password")
 }

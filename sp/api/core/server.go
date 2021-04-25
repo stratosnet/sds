@@ -2,7 +2,6 @@ package core
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/gorilla/mux"
 	"github.com/stratosnet/sds/sp/storages"
 	"github.com/stratosnet/sds/sp/tools"
@@ -85,7 +84,7 @@ func (s *APIServer) AddHandler(method string, pattern string, handler Handler, h
 	}).Methods(method)
 }
 
-// Start 启动服务
+// Start starts API service
 func (s *APIServer) Start() {
 
 	s.server.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("sp/web/panel"))))
@@ -93,7 +92,7 @@ func (s *APIServer) Start() {
 	http.ListenAndServe(s.Host+":"+strconv.Itoa(s.Port), s.server)
 }
 
-// ParseBody 解析参数
+// ParseBody parses request body
 func (s *APIServer) ParseBody(r *http.Request) (map[string]interface{}, error) {
 
 	data := make(map[string]interface{})
@@ -108,7 +107,7 @@ func (s *APIServer) ParseBody(r *http.Request) (map[string]interface{}, error) {
 			log = log + " " + string(body)
 			err := json.Unmarshal(body, &data)
 			if err != nil {
-				return nil, errors.New("参数解析错误")
+				return nil, err
 			}
 			r.Body.Close()
 		}
@@ -117,7 +116,7 @@ func (s *APIServer) ParseBody(r *http.Request) (map[string]interface{}, error) {
 	return data, nil
 }
 
-// Log 记录日志
+// Log prints to info level
 func (s *APIServer) Log(log ...interface{}) {
 	if s.Logger == nil {
 		utils.Log(log...)
@@ -126,7 +125,7 @@ func (s *APIServer) Log(log ...interface{}) {
 	}
 }
 
-// NewApiServer 新建一个Api服务
+// NewAPIServer creates a new API service
 func NewAPIServer(config *Config) *APIServer {
 
 	api := new(APIServer)

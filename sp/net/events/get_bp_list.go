@@ -2,57 +2,57 @@ package events
 
 import (
 	"context"
+	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/sp/net"
+	"github.com/stratosnet/sds/utils"
 )
 
-// GetBPList
-type GetBPList struct {
-	Server *net.Server
+// getBPList is a concrete implementation of event
+type getBPList struct {
+	event
 }
 
-// GetServer
-func (e *GetBPList) GetServer() *net.Server {
-	return e.Server
+const getBpListEvent = "get_bp_list"
+
+// GetBPListHandler creates event and return handler func for it
+func GetBPListHandler(s *net.Server) EventHandleFunc {
+	e := getBPList{newEvent(getBpListEvent, s, getBpListCallbackFunc)}
+	return e.Handle
 }
 
-// SetServer
-func (e *GetBPList) SetServer(server *net.Server) {
-	e.Server = server
-}
+// getBpListCallbackFunc is the main process of get bp list
+func getBpListCallbackFunc(_ context.Context, s *net.Server, _ proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
+	bps := s.Conf.BpList
 
-// Handle
-func (e *GetBPList) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	bpList := make([]*protos.PPBaseInfo, 0, len(bps))
 
-	target := new(protos.ReqGetBPList)
-
-	callback := func(message interface{}) (interface{}, string) {
-
-		bps := e.GetServer().Conf.BpList
-
-		bpList := make([]*protos.PPBaseInfo, 0, len(bps))
-
-		if len(bps) > 0 {
-			for i := 0; i < len(bps); i++ {
-				info := &protos.PPBaseInfo{
-					NetworkAddress: bps[i].NetworkAddress,
-					WalletAddress:  bps[i].WalletAddress,
-				}
-				bpList = append(bpList, info)
-			}
+	for i := 0; i < len(bps); i++ {
+		info := &protos.PPBaseInfo{
+			NetworkAddress: bps[i].NetworkAddress,
+			WalletAddress:  bps[i].WalletAddress,
 		}
-
-		rsp := &protos.RspGetBPList{
-			Result: &protos.Result{
-				State: protos.ResultState_RES_SUCCESS,
-			},
-			BpList: bpList,
-		}
-
-		return rsp, header.RspGetBPList
+		bpList = append(bpList, info)
 	}
 
-	go net.EventHandle(ctx, conn, target, callback, e.GetServer().Ver)
+	rsp := &protos.RspGetBPList{
+		Result: &protos.Result{
+			State: protos.ResultState_RES_SUCCESS,
+		},
+		BpList: bpList,
+	}
+
+	return rsp, header.RspGetBPList
+}
+
+// Handle create a concrete proto message for this event, and handle the event asynchronously
+func (e *getBPList) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	go func() {
+		target := &protos.ReqGetBPList{}
+		if err := e.handle(ctx, conn, target); err != nil {
+			utils.ErrorLog(err)
+		}
+	}()
 }
