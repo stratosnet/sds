@@ -26,14 +26,14 @@ func (r *Redis) IsOK() error {
 // Get
 func (r *Redis) Get(key string, data interface{}) error {
 
-	if key != "" {
-		if res, err := r.Client.Get(key).Result(); err == nil {
-			return json.Unmarshal([]byte(res), data)
-		} else {
-			return err
-		}
+	if key == "" {
+		return errors.New("key is nil")
 	}
-	return errors.New("key is nil")
+	res, err := r.Client.Get(key).Result()
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal([]byte(res), data)
 }
 
 // Set

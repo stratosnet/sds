@@ -43,7 +43,7 @@ func main() {
 		"stopmonitor                         stop monitor\n"
 	// "config                              config key value\n"
 
-	setting.LoadConfig("./config.yaml")
+	setting.LoadConfig("./configs/config.yaml")
 	if setting.Config.Debug {
 		utils.MyLogger.SetLogLevel(utils.Debug)
 	} else {
@@ -74,18 +74,18 @@ func main() {
 		if len(param) < 1 {
 			fmt.Println("input account")
 			return false
-		} else {
-			if len(param[0]) != 42 {
-				fmt.Println("input correct account")
-				return false
-			}
-			password := console.MyGetPassPhrase("input password", false)
-			if len(password) == 0 {
-				fmt.Println("empty password")
-				return false
-			}
-			peers.Login(param[0], password)
 		}
+		if len(param[0]) != 42 {
+			fmt.Println("input correct account")
+			return false
+		}
+		password := console.MyGetPassPhrase("input password", false)
+		if len(password) == 0 {
+			fmt.Println("empty password")
+			return false
+		}
+		peers.Login(param[0], password)
+
 		return false
 	}
 
@@ -94,7 +94,7 @@ func main() {
 		return true
 	}
 
-	rgisterPP := func(line string, param []string) bool {
+	registerPP := func(line string, param []string) bool {
 		event.RegisterNewPP()
 		return true
 	}
@@ -429,8 +429,8 @@ func main() {
 	console.Mystdin.RegisterProcessFunc("newaccount", newAccount)
 	console.Mystdin.RegisterProcessFunc("login", login)
 	console.Mystdin.RegisterProcessFunc("start", start)
-	console.Mystdin.RegisterProcessFunc("rp", rgisterPP)
-	console.Mystdin.RegisterProcessFunc("registerminer", rgisterPP)
+	console.Mystdin.RegisterProcessFunc("rp", registerPP)
+	console.Mystdin.RegisterProcessFunc("registerminer", registerPP)
 	console.Mystdin.RegisterProcessFunc("u", upload)
 	console.Mystdin.RegisterProcessFunc("put", upload)
 	console.Mystdin.RegisterProcessFunc("d", downLoad)

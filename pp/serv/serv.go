@@ -37,7 +37,7 @@ func StartListenServer(port string) {
 	}
 }
 
-// NewServer returns a Server.
+// NewServer returns a server.
 func NewServer() *PPServer {
 	onConnectOption := spbf.OnConnectOption(func(conn spbf.WriteCloser) bool {
 		utils.Log("on connect")
