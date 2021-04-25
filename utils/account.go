@@ -286,7 +286,8 @@ func getKDFKey(cryptoJSON cryptoJSON, auth string) ([]byte, error) {
 		p := ensureInt(cryptoJSON.KDFParams["p"])
 		return scrypt.Key(authArray, salt, n, r, p, dkLen)
 
-	} else if cryptoJSON.KDF == "pbkdf2" {
+	}
+	if cryptoJSON.KDF == "pbkdf2" {
 		c := ensureInt(cryptoJSON.KDFParams["c"])
 		prf := cryptoJSON.KDFParams["prf"].(string)
 		if prf != "hmac-sha256" {
@@ -326,15 +327,17 @@ func ChangePassWord(walletAddress, dir, auth string, scryptN, scryptP int, key *
 	files, _ := ioutil.ReadDir(dir)
 	if len(files) == 0 {
 		ErrorLog("not exist")
-	} else {
-		for _, info := range files {
-			if info.Name() == walletAddress {
-				keyStore := &KeyStorePassphrase{dir, scryptN, scryptP}
-				filename := dir + "/" + walletAddress
-				err := keyStore.StoreKey(filename, key, auth)
-				return err
-			}
-		}
+		return nil
 	}
+	for _, info := range files {
+		if info.Name() == walletAddress {
+			continue
+		}
+		keyStore := &KeyStorePassphrase{dir, scryptN, scryptP}
+		filename := dir + "/" + walletAddress
+		err := keyStore.StoreKey(filename, key, auth)
+		return err
+	}
+
 	return nil
 }

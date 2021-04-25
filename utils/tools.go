@@ -75,8 +75,7 @@ func Uint16ToBytes(n uint16) []byte {
 
 // ByteToString
 func ByteToString(p []byte) string {
-	// return hex.EncodeToString(p)  这个方法不可靠
-	// 迭代方法最可靠 但应考虑性能问题
+	// return hex.EncodeToString(p)
 	for i := 0; i < len(p); i++ {
 		if p[i] == 0 {
 			return string(p[0:i])
