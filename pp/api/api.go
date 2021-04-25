@@ -137,7 +137,7 @@ func ParseBody(r *http.Request) (map[string]interface{}, error) {
 		utils.DebugLog("body", string(body))
 		if string(body) != "{}" {
 			log = log + " " + string(body)
-			err := json.Unmarshal(body, &data)
+			err = json.Unmarshal(body, &data)
 			if err != nil {
 				return nil, errors.New("error parsing params")
 			}

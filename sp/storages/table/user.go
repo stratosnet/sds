@@ -102,29 +102,30 @@ func (u *User) GetShareFiles(ct *database.CacheTable) []*protos.FileInfo {
 		"where": map[string]interface{}{"us.wallet_address = ?": []interface{}{SHARE_TYPE_FILE, OPEN_TYPE_PUBLIC, u.WalletAddress}},
 	})
 
-	if err == nil {
-		files := fileRes.([]ShareFile)
-		if len(files) > 0 {
-			fileInfos := make([]*protos.FileInfo, len(files))
-			for idx, shareFile := range files {
-				fileInfos[idx] = &protos.FileInfo{
-					FileHash:           shareFile.Hash,
-					FileName:           shareFile.Name,
-					FileSize:           shareFile.Size,
-					IsPrivate:          false,
-					IsDirectory:        false,
-					StoragePath:        shareFile.Path,
-					OwnerWalletAddress: u.WalletAddress,
-					ShareLink:          new(UserShare).GenerateShareLink(shareFile.ShareId, shareFile.RandCode),
-					CreateTime:         uint64(shareFile.Time),
-				}
-			}
+	if err != nil {
+		return []*protos.FileInfo{}
+	}
+	files := fileRes.([]ShareFile)
+	if len(files) <= 0 {
+		return []*protos.FileInfo{}
+	}
 
-			return fileInfos
+	fileInfos := make([]*protos.FileInfo, len(files))
+	for idx, shareFile := range files {
+		fileInfos[idx] = &protos.FileInfo{
+			FileHash:           shareFile.Hash,
+			FileName:           shareFile.Name,
+			FileSize:           shareFile.Size,
+			IsPrivate:          false,
+			IsDirectory:        false,
+			StoragePath:        shareFile.Path,
+			OwnerWalletAddress: u.WalletAddress,
+			ShareLink:          new(UserShare).GenerateShareLink(shareFile.ShareId, shareFile.RandCode),
+			CreateTime:         uint64(shareFile.Time),
 		}
 	}
 
-	return []*protos.FileInfo{}
+	return fileInfos
 }
 
 // GetShareDirs
@@ -147,30 +148,32 @@ func (u *User) GetShareDirs(ct *database.CacheTable) []*protos.FileInfo {
 		},
 	})
 
-	if err == nil {
-		dirs := dirRes.([]ShareDir)
-		if len(dirs) > 0 {
-			fileInfos := make([]*protos.FileInfo, len(dirs))
-			for idx, shareDir := range dirs {
-				sPath := ""
-				if strings.ContainsRune(shareDir.Path, '/') {
-					sPath = filepath.Dir(shareDir.Path)
-				}
-				fileInfos[idx] = &protos.FileInfo{
-					FileHash:           shareDir.DirHash,
-					FileName:           filepath.Base(shareDir.Path),
-					FileSize:           0,
-					IsPrivate:          false,
-					IsDirectory:        true,
-					StoragePath:        sPath,
-					OwnerWalletAddress: u.WalletAddress,
-					ShareLink:          new(UserShare).GenerateShareLink(shareDir.ShareId, shareDir.RandCode),
-					CreateTime:         uint64(shareDir.Time),
-				}
-			}
+	if err != nil {
+		return []*protos.FileInfo{}
+	}
 
-			return fileInfos
+	dirs := dirRes.([]ShareDir)
+	if len(dirs) <= 0 {
+		return []*protos.FileInfo{}
+	}
+
+	fileInfos := make([]*protos.FileInfo, len(dirs))
+	for idx, shareDir := range dirs {
+		sPath := ""
+		if strings.ContainsRune(shareDir.Path, '/') {
+			sPath = filepath.Dir(shareDir.Path)
+		}
+		fileInfos[idx] = &protos.FileInfo{
+			FileHash:           shareDir.DirHash,
+			FileName:           filepath.Base(shareDir.Path),
+			FileSize:           0,
+			IsPrivate:          false,
+			IsDirectory:        true,
+			StoragePath:        sPath,
+			OwnerWalletAddress: u.WalletAddress,
+			ShareLink:          new(UserShare).GenerateShareLink(shareDir.ShareId, shareDir.RandCode),
+			CreateTime:         uint64(shareDir.Time),
 		}
 	}
-	return []*protos.FileInfo{}
+	return fileInfos
 }

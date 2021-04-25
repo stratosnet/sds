@@ -15,7 +15,7 @@ Password: a
 Account: 0xcFaF25447c50BD3EF1cd67376e0b848AD2387a17
 AutoRun: true
 Internal: true
-IsWallet:
+IsWallet: true
 BPURL:
 IsCheckDefaultPath:
 IsLimitDownloadSpeed: true

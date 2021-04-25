@@ -18,3 +18,9 @@ vendor/
 target/
 
 *.log
+
+application/pp/*/account
+application/pp/node1/[a-zA-Z0-9]
+application/pp/node2/[a-zA-Z0-9]
+bp-list
+pp-list
