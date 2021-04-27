@@ -413,7 +413,7 @@ func main() {
 				go websocket.SocketRead(conn)
 				go func() {
 					for {
-						writeErr := websocket.SocketStart(conn, setting.UpMap, setting.DownMap, setting.ReusltMap)
+						writeErr := websocket.SocketStart(conn, setting.UpMap, setting.DownMap, setting.ResultMap)
 						if writeErr != nil {
 							return
 						}
