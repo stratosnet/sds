@@ -3,6 +3,7 @@ package cf
 // client connect management, readloop writeloop handleloop
 
 import (
+	"errors"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
@@ -373,6 +374,9 @@ func (cc *ClientConn) Write(message *msg.RelayMsgBuf) error {
 }
 
 func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf) (err error) {
+	if c == nil {
+		return errors.New("nil client connection")
+	}
 	defer func() {
 		if p := recover(); p != nil {
 			err = utils.ErrServerClosed

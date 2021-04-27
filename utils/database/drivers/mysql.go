@@ -182,7 +182,9 @@ func (my *MySQL) Count(tableName string, params map[string]interface{}) int64 {
 	}
 
 	rows, _ := rows.ToMaps(my.Query(sql, values...))
-
+	if len(rows) == 0 {
+		return 0
+	}
 	data := rows[0]
 	if total, ok := data["total"]; ok {
 		return total.(int64)
