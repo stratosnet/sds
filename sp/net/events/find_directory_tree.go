@@ -2,72 +2,73 @@ package events
 
 import (
 	"context"
+	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/sp/net"
 	"github.com/stratosnet/sds/sp/storages/table"
+	"github.com/stratosnet/sds/utils"
 )
 
-// FindDirectoryTree
-type FindDirectoryTree struct {
-	Server *net.Server
+// findDirectoryTree is a concrete implementation of event
+type findDirectoryTree struct {
+	event
 }
 
-// GetServer
-func (e *FindDirectoryTree) GetServer() *net.Server {
-	return e.Server
+const findDirTreeEvent = "find_directory_tree"
+
+// GetFindDirectoryTreeHandler creates event and return handler func for it
+func GetFindDirectoryTreeHandler(s *net.Server) EventHandleFunc {
+	e := findDirectoryTree{newEvent(findDirTreeEvent, s, findDirTreeCallbackFunc)}
+	return e.Handle
 }
 
-// SetServer
-func (e *FindDirectoryTree) SetServer(server *net.Server) {
-	e.Server = server
-}
+// findDirTreeCallbackFunc is the main process of finding directory tree
+func findDirTreeCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
+	body := message.(*protos.ReqFindDirectoryTree)
 
-// Handle
-func (e *FindDirectoryTree) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	rsp := &protos.RspFindDirectoryTree{
+		Result: &protos.Result{
+			State: protos.ResultState_RES_SUCCESS,
+		},
+		WalletAddress: body.WalletAddress,
+		ReqId:         body.ReqId,
+		Directory:     "",
+		FileInfo:      nil,
+	}
 
-	target := new(protos.ReqFindDirectoryTree)
-
-	callback := func(message interface{}) (interface{}, string) {
-
-		body := message.(*protos.ReqFindDirectoryTree)
-
-		rsp := &protos.RspFindDirectoryTree{
-			Result: &protos.Result{
-				State: protos.ResultState_RES_SUCCESS,
-			},
-			WalletAddress: body.WalletAddress,
-			ReqId:         body.ReqId,
-			Directory:     "",
-			FileInfo:      nil,
-		}
-
-		if body.WalletAddress == "" ||
-			body.PathHash == "" {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "wallet address or path hash can't be empty"
-			return rsp, header.RspFindDirectoryTree
-		}
-
-		baseDir := new(table.UserDirectory)
-		baseDir.DirHash = body.PathHash // body.Directory
-		if e.GetServer().CT.Fetch(baseDir) != nil {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "path doesn't exist"
-			return rsp, header.RspFindDirectoryTree
-		}
-		rsp.Directory = baseDir.Path
-
-		rsp.FileInfo = baseDir.RecursFindDirs(e.GetServer().CT)
-
-		files := baseDir.RecursFindFiles(e.GetServer().CT)
-		if len(files) > 0 {
-			rsp.FileInfo = append(rsp.FileInfo, files...)
-		}
-
+	if body.WalletAddress == "" || body.PathHash == "" {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "wallet address or path hash can't be empty"
 		return rsp, header.RspFindDirectoryTree
 	}
 
-	go net.EventHandle(ctx, conn, target, callback, e.GetServer().Ver)
+	baseDir := &table.UserDirectory{
+		DirHash: body.PathHash, // body.Directory
+	}
+
+	if err := s.CT.Fetch(baseDir); err != nil {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "path doesn't exist"
+		return rsp, header.RspFindDirectoryTree
+	}
+
+	rsp.Directory = baseDir.Path
+	rsp.FileInfo = baseDir.RecursFindDirs(s.CT)
+
+	files := baseDir.RecursFindFiles(s.CT)
+	rsp.FileInfo = append(rsp.FileInfo, files...)
+
+	return rsp, header.RspFindDirectoryTree
+}
+
+// Handle create a concrete proto message for this event, and handle the event asynchronously
+func (e *findDirectoryTree) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	go func() {
+		target := &protos.ReqFindDirectoryTree{}
+		if err := e.handle(ctx, conn, target); err != nil {
+			utils.ErrorLog(err)
+		}
+	}()
 }

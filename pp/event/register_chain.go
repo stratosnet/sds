@@ -64,34 +64,36 @@ func ReqRegisterChain(ctx context.Context, conn spbf.WriteCloser) {
 func RspRegisterChain(ctx context.Context, conn spbf.WriteCloser) {
 	utils.Log("get RspRegisterChain", conn)
 	var target protos.RspRegister
-	if unmarshalData(ctx, &target) {
+	if !unmarshalData(ctx, &target) {
+		return
+	}
+	utils.Log("target.RspRegister", target.WalletAddress)
+	if target.WalletAddress != setting.WalletAddress {
+		utils.Log("transfer RspRegisterChain to: ", target.WalletAddress)
+		transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+		return
+	}
 
-		utils.Log("target.RspRegister", target.WalletAddress)
-		if target.WalletAddress == setting.WalletAddress {
-			utils.Log("get RspRegisterChain ", target.Result.State, target.Result.Msg)
-			if target.Result.State == protos.ResultState_RES_SUCCESS {
-				fmt.Println("login successfully", target.Result.Msg)
-				setting.IsLoad = true
-				utils.DebugLog("@@@@@@@@@@@@@@@@@@@@@@@@@@@@", conn.(*cf.ClientConn).GetName())
-				setting.IsPP = target.IsPP
-				if !setting.IsPP {
-					reportDHInfoToPP()
-				}
-				if setting.IsAuto {
-					if setting.IsPP {
-						StartMining()
-					}
-				}
-			} else {
-				setting.WalletAddress = ""
-				fmt.Println("login failed", target.Result.Msg)
-			}
+	utils.Log("get RspRegisterChain ", target.Result.State, target.Result.Msg)
+	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		setting.WalletAddress = ""
+		fmt.Println("login failed", target.Result.Msg)
+		return
+	}
 
-		} else {
-			utils.Log("transfer RspRegisterChain to: ", target.WalletAddress)
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+	fmt.Println("login successfully", target.Result.Msg)
+	setting.IsLoad = true
+	utils.DebugLog("@@@@@@@@@@@@@@@@@@@@@@@@@@@@", conn.(*cf.ClientConn).GetName())
+	setting.IsPP = target.IsPP
+	if !setting.IsPP {
+		reportDHInfoToPP()
+	}
+	if setting.IsAuto {
+		if setting.IsPP {
+			StartMining()
 		}
 	}
+
 }
 
 // RspMining RspMining

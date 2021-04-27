@@ -1,6 +1,7 @@
 package sp
 
 import (
+	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/sp/api/core"
 	"github.com/stratosnet/sds/sp/api/handlers"
@@ -9,61 +10,59 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// StartSP
-func StartSP(conf string) *net.Server {
+// StartSP starts SP node
+func StartSP(conf string) {
 
 	server := net.NewServer(conf)
 
-	server.ListenEvent(header.ReqMining, new(events.Mining))
-	server.ListenEvent(header.ReqRegister, new(events.Register))
-	server.ListenEvent(header.ReqGetPPList, new(events.GetPPList))
-	server.ListenEvent(header.ReqRegisterNewPP, new(events.RegisterNewPP))
-	server.ListenEvent(header.ReqUploadFile, new(events.UploadFile))
-	server.ListenEvent(header.ReqReportUploadSliceResult, new(events.ReportUploadSliceResult))
-	server.ListenEvent(header.ReqFindMyFileList, new(events.FindMyFileList))
-	server.ListenEvent(header.ReqFileStorageInfo, new(events.FileStorageInfo))
-	server.ListenEvent(header.ReqReportDownloadResult, new(events.ReportDownloadResult))
-	server.ListenEvent(header.RspTransferNotice, new(events.TransferNotice))
-	server.ListenEvent(header.ReqValidateTransferCer, new(events.TransferCerValidate))
-	server.ListenEvent(header.ReqReportTransferResult, new(events.ReportTransferResult))
-	server.ListenEvent(header.ReqGetBPList, new(events.GetBPList))
-	server.ListenEvent(header.ReqDownloadTaskInfo, new(events.DownloadTaskInfo))
-	server.ListenEvent(header.ReqDeleteFile, new(events.DeleteFile))
-	server.ListenEvent(header.ReqDownloadSliceWrong, new(events.DownloadFailed))
-	server.ListenEvent(header.RspDeleteSlice, new(events.DeleteSlice))
-	server.ListenEvent(header.RspGetHDInfo, new(events.GetHDInfo))
-	server.ListenEvent(header.ReqMakeDirectory, new(events.MakeDirectory))
-	server.ListenEvent(header.ReqRemoveDirectory, new(events.RemoveDirectory))
-	server.ListenEvent(header.ReqMoveFileDirectory, new(events.MoveFileDirectory))
-	server.ListenEvent(header.ReqSaveFile, new(events.SaveFile))
-	server.ListenEvent(header.ReqSaveFolder, new(events.SaveFolder))
-	server.ListenEvent(header.ReqShareFile, new(events.ShareFile))
-	server.ListenEvent(header.ReqGetShareFile, new(events.GetShareFile))
-	server.ListenEvent(header.ReqShareLink, new(events.ShareLink))
-	server.ListenEvent(header.ReqConfig, new(events.GetConfig))
-	server.ListenEvent(header.ReqDeleteShare, new(events.DeleteShare))
-	server.ListenEvent(header.ReqCreateAlbum, new(events.CreateAlbum))
-	server.ListenEvent(header.ReqEditAlbum, new(events.EditAlbum))
-	server.ListenEvent(header.ReqAlbumContent, new(events.AlbumContent))
-	server.ListenEvent(header.ReqFindMyAlbum, new(events.FindMyAlbum))
-	server.ListenEvent(header.ReqSearchAlbum, new(events.SearchAlbum))
-	server.ListenEvent(header.ReqInvite, new(events.Invite))
-	server.ListenEvent(header.ReqGetReward, new(events.GetReward))
-	server.ListenEvent(header.ReqCollectionAlbum, new(events.CollectAlbum))
-	server.ListenEvent(header.ReqMyCollectionAlbum, new(events.MyCollectAlbum))
-	server.ListenEvent(header.ReqAbstractAlbum, new(events.AbstractAlbum))
-	server.ListenEvent(header.ReqFindDirectoryTree, new(events.FindDirectoryTree))
-	server.ListenEvent(header.ReqDeleteAlbum, new(events.DeleteAlbum))
-	server.ListenEvent(header.ReqGetCapacity, new(events.GetCapacity))
-	server.ListenEvent(header.ReqFileSort, new(events.AlbumFileSort))
-	server.ListenEvent(header.ReqFindDirectory, new(events.FindDirectory))
+	spbf.Register(header.ReqMining, events.GetMiningHandler(server))
+	spbf.Register(header.ReqRegister, events.GetRegisterHandler(server))
+	spbf.Register(header.ReqGetPPList, events.GetPPListHandler(server))
+	spbf.Register(header.ReqRegisterNewPP, events.GetRegisterNewPPHandler(server))
+	spbf.Register(header.ReqUploadFile, events.GetUploadFileHandler(server))
+	spbf.Register(header.ReqReportUploadSliceResult, events.GetReportUploadSliceResultHandler(server))
+	spbf.Register(header.ReqFindMyFileList, events.GetFindMyFileListHandler(server))
+	spbf.Register(header.ReqFileStorageInfo, events.GetFileStorageInfoHandler(server))
+	spbf.Register(header.ReqReportDownloadResult, events.GetReportDownloadResultHandler(server))
+	spbf.Register(header.RspTransferNotice, events.GetTransferNoticeHandler(server))
+	spbf.Register(header.ReqValidateTransferCer, events.GetTransferCerValidateHandler(server))
+	spbf.Register(header.ReqReportTransferResult, events.GetReportTransferResultHandler(server))
+	spbf.Register(header.ReqGetBPList, events.GetBPListHandler(server))
+	spbf.Register(header.ReqDownloadTaskInfo, events.GetDownloadTaskInfoHandler(server))
+	spbf.Register(header.ReqDeleteFile, events.GetDeleteFileHandler(server))
+	spbf.Register(header.ReqDownloadSliceWrong, events.GetDownloadFailedHandler(server))
+	spbf.Register(header.RspDeleteSlice, events.GetDeleteSliceHandler(server))
+	spbf.Register(header.RspGetHDInfo, events.GetHDInfoHandler(server))
+	spbf.Register(header.ReqMakeDirectory, events.GetMakeDirHandler(server))
+	spbf.Register(header.ReqRemoveDirectory, events.GetRmDirHandler(server))
+	spbf.Register(header.ReqMoveFileDirectory, events.GetMoveFileDirHandler(server))
+	spbf.Register(header.ReqSaveFile, events.GetSaveFileHandler(server))
+	spbf.Register(header.ReqSaveFolder, events.GetSaveFolderHandler(server))
+	spbf.Register(header.ReqShareFile, events.GetShareFileHandler(server))
+	spbf.Register(header.ReqGetShareFile, events.GetGetShareFileHandler(server))
+	spbf.Register(header.ReqShareLink, events.GetShareLinkHandler(server))
+	spbf.Register(header.ReqConfig, events.GetGetConfigHandler(server))
+	spbf.Register(header.ReqDeleteShare, events.GetDeleteShareHandler(server))
+	spbf.Register(header.ReqCreateAlbum, events.GetCreateAlbumHandler(server))
+	spbf.Register(header.ReqEditAlbum, events.GetEditAlbumHandler(server))
+	spbf.Register(header.ReqAlbumContent, events.GetAlbumContentHandler(server))
+	spbf.Register(header.ReqFindMyAlbum, events.GetFindMyAlbumHandler(server))
+	spbf.Register(header.ReqSearchAlbum, events.GetSearchAlbumHandler(server))
+	spbf.Register(header.ReqInvite, events.GetInviteHandler(server))
+	spbf.Register(header.ReqGetReward, events.GetGetRewardHandler(server))
+	spbf.Register(header.ReqCollectionAlbum, events.GetCollectAlbumHandler(server))
+	spbf.Register(header.ReqMyCollectionAlbum, events.GetMyCollectAlbumHandler(server))
+	spbf.Register(header.ReqAbstractAlbum, events.AbstractAlbumHandler(server))
+	spbf.Register(header.ReqFindDirectoryTree, events.GetFindDirectoryTreeHandler(server))
+	spbf.Register(header.ReqDeleteAlbum, events.GetDeleteAlbumHandler(server))
+	spbf.Register(header.ReqGetCapacity, events.GetGetCapacityHandler(server))
+	spbf.Register(header.ReqFileSort, events.GetFileSortHandler(server))
+	spbf.Register(header.ReqFindDirectory, events.GetFindDirectoryHandler(server))
 
 	server.Start()
-
-	return server
 }
 
-// StartAPI
+// StartAPI start the SP user API
 func StartAPI(conf string) *core.APIServer {
 
 	if conf == "" {

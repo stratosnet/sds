@@ -184,7 +184,7 @@ func (s *Server) Start(l net.Listener) error {
 				continue
 			}
 		}
-		utils.DebugLog("MaxConnections", s.opts.maxConnections)
+		//utils.DebugLog("MaxConnections", s.opts.maxConnections)
 		netid := netID.GetOldAndIncrement()
 		sc := CreateServerConn(netid, s, spbConn)
 		sc.SetConnName(sc.spbConn.RemoteAddr().String())

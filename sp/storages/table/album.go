@@ -97,56 +97,58 @@ func (a *Album) RemoveFile(ct *database.CacheTable, fileHash string) error {
 
 // GetFiles
 func (a *Album) GetFiles(ct *database.CacheTable) []*protos.FileInfo {
-	if a.AlbumId != "" {
+	if a.AlbumId == "" {
+		return nil
+	}
+	type AlbumFile struct {
+		File
+		AddTime       int64
+		Path          string
+		WalletAddress string
+	}
 
-		type AlbumFile struct {
-			File
-			AddTime       int64
-			Path          string
-			WalletAddress string
+	res, err := ct.FetchTables([]AlbumFile{}, map[string]interface{}{
+		"alias":   "e",
+		"columns": "e.*, ahf.time as add_time, ud.path, a.wallet_address",
+		"join": [][]string{
+			{"album_has_file", "e.hash = ahf.file_hash", "ahf"},
+			{"album", "ahf.album_id = a.album_id", "a"},
+			{"user_directory_map_file", "e.hash = udmf.file_hash", "udmf", "left"},
+			{"user_directory", "udmf.dir_hash = ud.dir_hash", "ud", "left"},
+		},
+		"where": map[string]interface{}{
+			"ahf.album_id = ?": a.AlbumId,
+		},
+		"orderBy": "ahf.sort ASC",
+	})
+
+	if err != nil {
+		return nil
+	}
+
+	files := res.([]AlbumFile)
+	if len(files) == 0 {
+		return nil
+	}
+
+	fileInfos := make([]*protos.FileInfo, len(files))
+	for idx, file := range files {
+		sPath := ""
+		if file.Path != "" && strings.ContainsRune(file.Path, '/') {
+			sPath = filepath.Dir(file.Path)
 		}
-
-		res, err := ct.FetchTables([]AlbumFile{}, map[string]interface{}{
-			"alias":   "e",
-			"columns": "e.*, ahf.time as add_time, ud.path, a.wallet_address",
-			"join": [][]string{
-				{"album_has_file", "e.hash = ahf.file_hash", "ahf"},
-				{"album", "ahf.album_id = a.album_id", "a"},
-				{"user_directory_map_file", "e.hash = udmf.file_hash", "udmf", "left"},
-				{"user_directory", "udmf.dir_hash = ud.dir_hash", "ud", "left"},
-			},
-			"where": map[string]interface{}{
-				"ahf.album_id = ?": a.AlbumId,
-			},
-			"orderBy": "ahf.sort ASC",
-		})
-
-		if err == nil {
-			files := res.([]AlbumFile)
-			if len(files) > 0 {
-				fileInfos := make([]*protos.FileInfo, len(files))
-				for idx, file := range files {
-					sPath := ""
-					if file.Path != "" && strings.ContainsRune(file.Path, '/') {
-						sPath = filepath.Dir(file.Path)
-					}
-					fileInfos[idx] = &protos.FileInfo{
-						FileName:           file.Name,
-						FileSize:           file.Size,
-						FileHash:           file.Hash,
-						CreateTime:         uint64(file.AddTime),
-						IsDirectory:        false,
-						StoragePath:        sPath,
-						OwnerWalletAddress: file.WalletAddress,
-					}
-				}
-
-				return fileInfos
-			}
+		fileInfos[idx] = &protos.FileInfo{
+			FileName:           file.Name,
+			FileSize:           file.Size,
+			FileHash:           file.Hash,
+			CreateTime:         uint64(file.AddTime),
+			IsDirectory:        false,
+			StoragePath:        sPath,
+			OwnerWalletAddress: file.WalletAddress,
 		}
 	}
 
-	return nil
+	return fileInfos
 }
 
 // GetCoverLink

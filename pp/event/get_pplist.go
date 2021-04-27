@@ -24,38 +24,39 @@ func GetPPList() {
 func RspGetPPList(ctx context.Context, conn spbf.WriteCloser) {
 	utils.Log("get GetPPList RSP")
 	var target protos.RspGetPPList
-	if unmarshalData(ctx, &target) {
-		utils.Log("get GetPPList RSP", target.PpList)
-		if target.Result.State == protos.ResultState_RES_SUCCESS {
-			setting.SavePPList(&target)
-			if len(setting.PPList) != 0 {
-				ppList := setting.PPList
-				for _, ppInfo := range ppList {
-					if ppInfo.NetworkAddress != setting.NetworkAddress {
-						client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
-						if client.PPConn == nil {
-
-							utils.DebugLog("failed to conn PP，delete:", ppInfo)
-							setting.DeletePPList(ppInfo.NetworkAddress)
-						} else {
-							RegisterChain(false)
-							return
-						}
-					}
-				}
-				reloadPPlist()
-			} else {
-				// no PP exist, register to SP
-				if !setting.IsLoginToSP {
-					RegisterChain(true)
-					setting.IsLoginToSP = true
-				}
-				reloadPPlist()
-			}
-		} else {
-			reloadPPlist()
-		}
+	if !unmarshalData(ctx, &target) {
+		return
 	}
+	utils.Log("get GetPPList RSP", target.PpList)
+	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		reloadPPlist()
+		return
+	}
+	setting.SavePPList(&target)
+	if len(setting.PPList) == 0 {
+		// no PP exist, register to SP
+		if !setting.IsLoginToSP {
+			RegisterChain(true)
+			setting.IsLoginToSP = true
+		}
+		reloadPPlist()
+		return
+	}
+
+	ppList := setting.PPList
+	for _, ppInfo := range ppList {
+		if ppInfo.NetworkAddress == setting.NetworkAddress {
+			continue
+		}
+		client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
+		if client.PPConn != nil {
+			RegisterChain(false)
+			return
+		}
+		utils.DebugLog("failed to conn PP，delete:", ppInfo)
+		setting.DeletePPList(ppInfo.NetworkAddress)
+	}
+	reloadPPlist()
 }
 
 func reloadPPlist() {

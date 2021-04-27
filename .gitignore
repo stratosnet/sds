@@ -16,4 +16,6 @@ vendor/
 
 .idea/
 target/
+
 *.log
+application/sp/spServer

@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -16,133 +17,140 @@ import (
 	"github.com/google/uuid"
 )
 
-// DownloadFailed
-type DownloadFailed struct {
-	Server *net.Server
+// downloadFailed is a concrete implementation of event
+type downloadFailed struct {
+	event
 }
 
-// GetServer
-func (e *DownloadFailed) GetServer() *net.Server {
-	return e.Server
+const downloadFailedEvent = "download_failed"
+
+// GetDownloadFailedHandler create event and return handler func for it
+func GetDownloadFailedHandler(s *net.Server) EventHandleFunc {
+	e := downloadFailed{newEvent(downloadFailedEvent, s, downloadFailedCallbackFunc)}
+	return e.Handle
 }
 
-// SetServer
-func (e *DownloadFailed) SetServer(server *net.Server) {
-	e.Server = server
-}
+// downloadFailedCallbackFunc is the main process of download fail event
+func downloadFailedCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
+	body := message.(*protos.ReqDownloadSloceWrong)
 
-// Handle
-func (e *DownloadFailed) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	rsp := &protos.RspDownloadSloceWrong{
+		Result: &protos.Result{
+			State: protos.ResultState_RES_SUCCESS,
+		},
+		WalletAddress: body.WalletAddress,
+		TaskId:        body.TaskId,
+		NewSliceInfo:  nil,
+		FileHash:      "",
+	}
 
-	target := new(protos.ReqDownloadSloceWrong)
-
-	callback := func(message interface{}) (interface{}, string) {
-
-		body := message.(*protos.ReqDownloadSloceWrong)
-
-		rsp := &protos.RspDownloadSloceWrong{
-			Result: &protos.Result{
-				State: protos.ResultState_RES_SUCCESS,
-			},
-			WalletAddress: body.WalletAddress,
-			TaskId:        body.TaskId,
-			NewSliceInfo:  nil,
-			FileHash:      "",
-		}
-
-		if body.TaskId == "" || body.SliceHash == "" {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "task ID or slice hash can't be empty"
-			return rsp, header.RspDownloadSliceWrong
-		}
-
-		task := &data.DownloadTask{
-			TaskId: body.TaskId,
-		}
-		if e.GetServer().Load(task) != nil {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "task is finished or not exist"
-			return rsp, header.RspDownloadSliceWrong
-		}
-
-		res, err := e.GetServer().CT.FetchTables([]table.FileSliceStorage{}, map[string]interface{}{
-			"where": map[string]interface{}{
-				"slice_hash = ?": body.SliceHash,
-			},
-		})
-
-		if err != nil {
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "no resource to process, try later"
-			return rsp, header.RspDownloadSliceWrong
-		}
-
-		sliceStorage := res.([]table.FileSliceStorage)
-
-		if len(sliceStorage) > 0 {
-
-			ring := hashring.New(e.GetServer().Conf.HashRing.VirtualNodeNum)
-			for _, storage := range sliceStorage {
-				if storage.WalletAddress != task.StorageWalletAddress {
-					if e.GetServer().HashRing.IsOnline(storage.WalletAddress) {
-						ring.AddNode(&hashring.Node{ID: storage.WalletAddress, Host: storage.NetworkAddress})
-						ring.SetOnline(storage.WalletAddress)
-					}
-				}
-			}
-
-			_, anotherWalletAddress := ring.GetNode(utils.CalcHash([]byte(uuid.New().String() + body.SliceHash)))
-
-			if anotherWalletAddress == "" {
-				rsp.Result.State = protos.ResultState_RES_FAIL
-				rsp.Result.Msg = "no resource to process, try later"
-				return rsp, header.RspDownloadSliceWrong
-			}
-
-			fileSlice := new(table.FileSlice)
-			fileSlice.SliceHash = task.SliceHash
-			fileSlice.WalletAddress = anotherWalletAddress
-
-			if e.GetServer().CT.Fetch(fileSlice) == nil {
-
-				fileSliceStorage := new(table.FileSliceStorage)
-				fileSliceStorage.SliceHash = task.SliceHash
-				fileSliceStorage.WalletAddress = task.StorageWalletAddress
-
-				e.GetServer().CT.DeleteTable(fileSliceStorage)
-
-				e.GetServer().HandleMsg(&common.MsgTransferNotice{
-					SliceHash:         fileSlice.SliceHash,
-					FromWalletAddress: fileSlice.WalletAddress,
-					ToWalletAddress:   task.StorageWalletAddress,
-				})
-
-				task.StorageWalletAddress = anotherWalletAddress
-
-				e.GetServer().Store(task, 3600*time.Second)
-
-				rsp.FileHash = fileSlice.FileHash
-				rsp.NewSliceInfo = &protos.DownloadSliceInfo{
-					SliceStorageInfo: &protos.SliceStorageInfo{
-						SliceHash: fileSlice.SliceHash,
-						SliceSize: fileSlice.SliceSize,
-					},
-					SliceNumber: fileSlice.SliceNumber,
-					StoragePpInfo: &protos.PPBaseInfo{
-						WalletAddress:  fileSlice.WalletAddress,
-						NetworkAddress: fileSlice.NetworkAddress,
-					},
-					SliceOffset: &protos.SliceOffset{
-						SliceOffsetStart: fileSlice.SliceOffsetStart,
-						SliceOffsetEnd:   fileSlice.SliceOffsetEnd,
-					},
-				}
-			}
-		}
-
+	if body.TaskId == "" || body.SliceHash == "" {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "task ID or slice hash can't be empty"
 		return rsp, header.RspDownloadSliceWrong
 	}
 
-	go net.EventHandle(ctx, conn, target, callback, e.GetServer().Ver)
+	task := &data.DownloadTask{TaskId: body.TaskId}
 
+	if s.Load(task) != nil {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "task is finished or not exist"
+		return rsp, header.RspDownloadSliceWrong
+	}
+
+	res, err := s.CT.FetchTables([]table.FileSliceStorage{}, map[string]interface{}{
+		"where": map[string]interface{}{
+			"slice_hash = ?": body.SliceHash,
+		},
+	})
+
+	if err != nil {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "no resource to process, try later"
+		return rsp, header.RspDownloadSliceWrong
+	}
+
+	sliceStorage := res.([]table.FileSliceStorage)
+
+	if len(sliceStorage) <= 0 {
+		return rsp, header.RspDownloadSliceWrong
+	}
+
+	ring := hashring.New(s.Conf.HashRing.VirtualNodeNum)
+	for _, storage := range sliceStorage {
+		if storage.WalletAddress != task.StorageWalletAddress {
+			if s.HashRing.IsOnline(storage.WalletAddress) {
+				ring.AddNode(&hashring.Node{ID: storage.WalletAddress, Host: storage.NetworkAddress})
+				ring.SetOnline(storage.WalletAddress)
+			}
+		}
+	}
+
+	_, anotherWalletAddress := ring.GetNode(utils.CalcHash([]byte(uuid.New().String() + body.SliceHash)))
+
+	if anotherWalletAddress == "" {
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "no resource to process, try later"
+		return rsp, header.RspDownloadSliceWrong
+	}
+
+	fileSlice := &table.FileSlice{
+		SliceHash: task.SliceHash,
+		FileSliceStorage: table.FileSliceStorage{
+			WalletAddress: anotherWalletAddress,
+		},
+	}
+
+	if s.CT.Fetch(fileSlice) != nil {
+		return rsp, header.RspDownloadSliceWrong
+	}
+
+	fileSliceStorage := &table.FileSliceStorage{
+		SliceHash:     task.SliceHash,
+		WalletAddress: task.StorageWalletAddress,
+	}
+
+	if _, err = s.CT.DeleteTable(fileSliceStorage); err != nil {
+		utils.ErrorLogf(eventHandleErrorTemplate, downloadFailedEvent, "delete file slice storage table", err)
+	}
+
+	s.HandleMsg(&common.MsgTransferNotice{
+		SliceHash:         fileSlice.SliceHash,
+		FromWalletAddress: fileSlice.WalletAddress,
+		ToWalletAddress:   task.StorageWalletAddress,
+	})
+
+	task.StorageWalletAddress = anotherWalletAddress
+
+	if err := s.Store(task, 3600*time.Second); err != nil {
+		utils.ErrorLogf(eventHandleErrorTemplate, downloadFailedEvent, "store task to db", err)
+	}
+
+	rsp.FileHash = fileSlice.FileHash
+	rsp.NewSliceInfo = &protos.DownloadSliceInfo{
+		SliceStorageInfo: &protos.SliceStorageInfo{
+			SliceHash: fileSlice.SliceHash,
+			SliceSize: fileSlice.SliceSize,
+		},
+		SliceNumber: fileSlice.SliceNumber,
+		StoragePpInfo: &protos.PPBaseInfo{
+			WalletAddress:  fileSlice.WalletAddress,
+			NetworkAddress: fileSlice.NetworkAddress,
+		},
+		SliceOffset: &protos.SliceOffset{
+			SliceOffsetStart: fileSlice.SliceOffsetStart,
+			SliceOffsetEnd:   fileSlice.SliceOffsetEnd,
+		},
+	}
+	return rsp, header.RspDownloadSliceWrong
+}
+
+// Handle create a concrete proto message for this event, and handle the event asynchronously
+func (e *downloadFailed) Handle(ctx context.Context, conn spbf.WriteCloser) {
+	go func() {
+		target := &protos.ReqDownloadSloceWrong{}
+		if err := e.handle(ctx, conn, target); err != nil {
+			utils.ErrorLog(err)
+		}
+	}()
 }

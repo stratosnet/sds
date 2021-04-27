@@ -1,14 +1,24 @@
 package net
 
 import (
+	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/utils"
+)
+
+/*
+
+
+DEPRECATED
+
+
+*/
+import (
 	"context"
 	"errors"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/utils"
 	"reflect"
 )
 
@@ -20,7 +30,14 @@ type Event interface {
 	Handle(ctx context.Context, conn spbf.WriteCloser)
 }
 
-// EventHandle
+/*
+EventHandle is a generic function that handle all events sent from PP nodes
+a callback function and the target (specific event struct) are passed in.
+This function is always called in a goroutine, make sure to handle the error message where it is called
+go func() {
+	err := e.EventHandle(...)
+}
+*/
 func EventHandle(
 	ctx context.Context,
 	conn spbf.WriteCloser,

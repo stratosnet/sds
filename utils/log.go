@@ -29,9 +29,9 @@ type Logger struct {
 	loglevel   LogLevel
 }
 
-var MyLogger = NewLogger("test.log", true, true)
+var MyLogger = NewLogger("tmp/logs/stdout.log", true, true)
 
-func NewLogger(filepath string, enablestd, enablefile bool) *Logger {
+func NewLogger(filepath string, enableStd, enableFile bool) *Logger {
 	logger := new(Logger)
 	logfile := os.Stdout
 	logger.stdLogger = log.New(logfile, "\r\n", log.Ldate|log.Ltime|log.Lshortfile)
@@ -45,8 +45,8 @@ func NewLogger(filepath string, enablestd, enablefile bool) *Logger {
 	}
 	logger.fileLogger = log.New(outfile, "\r\n", log.Ldate|log.Ltime|log.Lshortfile)
 
-	logger.enablefile = enablefile
-	logger.enablestd = enablestd
+	logger.enablefile = enableFile
+	logger.enablestd = enableStd
 	logger.loglevel = Debug
 	return logger
 
@@ -125,26 +125,43 @@ func (l *Logger) ErrorLog(v ...interface{}) {
 	l.logDepth(Error, 3, v...)
 }
 
-//Log 调用 默认的日志对象, 输出info日志
+//Log calls default logger and output info log
 func Log(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
 	MyLogger.logDepth(Info, 3, v...)
 }
 
-//ErrorLog 调用 默认的日志对象, 输出error日志
+//ErrorLog call default logger and output error log
 func ErrorLog(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
 	MyLogger.logDepth(Error, 3, v...)
 }
 
-//DebugLog 调用 默认的日志对象, 输出debug日志
+//ErrorLogf call default logger and output error log
+func ErrorLogf(template string, v ...interface{}) {
+	//GetLogger().Log(Info, v...)
+	MyLogger.logDepth(Error, 3, fmt.Errorf(template, v...))
+}
+
+//DebugLog calls default logger and output debug log
 func DebugLog(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
 	MyLogger.logDepth(Debug, 3, v...)
 }
 
+//DebugLog calls default logger and output debug log
+func DebugLogf(template string, v ...interface{}) {
+	//GetLogger().Log(Info, v...)
+	MyLogger.logDepth(Debug, 3, fmt.Sprintf(template, v...))
+}
+
+// CheckError  TODO This is a bad way to call error log, as you cannot know where this method is called in your error log
+// This give log line like this : [ERROR]2021/04/13 22:39:11 log.go:150: Fatal error: address 127.0.0.1: missing port in address
+// it always refer to this file and this line
+// If time allows, a better logging tool like "zerolog" can be used to replace these methods.
 func CheckError(err error) bool {
 	if err != nil {
+		// a fatal error , should be fatal and exit. If that is not the expected behavior, change this log
 		MyLogger.ErrorLog("Fatal error:", err.Error())
 		return true
 	}
