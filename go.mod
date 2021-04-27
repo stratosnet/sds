@@ -20,8 +20,8 @@ require (
 	github.com/pborman/uuid v1.2.1
 	github.com/peterh/liner v1.2.1
 	github.com/shirou/gopsutil v3.20.12+incompatible
-	github.com/stretchr/testify v1.7.0 // indirect
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	github.com/tendermint/tendermint v0.34.10
+	golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9
 	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.4.0
