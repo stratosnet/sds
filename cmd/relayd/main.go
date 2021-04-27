@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	scWebsocketUrl := "localhost:1317"
+	scWebsocketUrl := "localhost:26657"
 
 	//sdsClientUrl := "localhost:8888"
 	//sdsWebsocketUrl := "localhost:8889"
@@ -62,26 +62,26 @@ func main() {
 	}
 
 	/*
-	// Send message to SP
-	sdsClient := sds.NewClient(sdsClientUrl)
-	msgToSend := &msg.RelayMsgBuf{
-		MSGHead: header.MakeMessageHeader(1, 1, 0, header.ReqGetPPList),
-	}
-	err = sdsClient.Write(msgToSend)
-	if err != nil {
-		fmt.Println("Error when sending message to SDS: " + err.Error())
-	} else {
-		fmt.Println("Sent msg to SDS")
-	}
+		// Send message to SP
+		sdsClient := sds.NewClient(sdsClientUrl)
+		msgToSend := &msg.RelayMsgBuf{
+			MSGHead: header.MakeMessageHeader(1, 1, 0, header.ReqGetPPList),
+		}
+		err = sdsClient.Write(msgToSend)
+		if err != nil {
+			fmt.Println("Error when sending message to SDS: " + err.Error())
+		} else {
+			fmt.Println("Sent msg to SDS")
+		}
 
-	// Subscribe to events from SP
-	fullSdsWebsocketUrl := "ws://" + sdsWebsocketUrl + "/websocket"
-	ws = sds.DialWebsocket(fullSdsWebsocketUrl)
-	if ws == nil {
-		fmt.Println("Couldn't subscribe to SDS websocket")
-		return
-	}
-	defer ws.Close()
-	sds.ReaderLoop(ws)
-	 */
+		// Subscribe to events from SP
+		fullSdsWebsocketUrl := "ws://" + sdsWebsocketUrl + "/websocket"
+		ws = sds.DialWebsocket(fullSdsWebsocketUrl)
+		if ws == nil {
+			fmt.Println("Couldn't subscribe to SDS websocket")
+			return
+		}
+		defer ws.Close()
+		sds.ReaderLoop(ws)
+	*/
 }
