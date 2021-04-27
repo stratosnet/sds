@@ -42,17 +42,19 @@ func main() {
 	rpcClient := rpc.NewClientWithCodec(codec)
 
 	// TODO: create appropriate types for args and reply
-	type Args struct {
+	/*type Args struct {
 		query string
+	}*/
+	type SubscribeResponse struct {
+		error string
 	}
-	var reply interface{}
-	err = rpcClient.Call("subscribe", Args{query: "tm.event = 'NewBlock'"}, &reply)
+	reply := SubscribeResponse{}
+	err = rpcClient.Call("subscribe", "tm.event = 'NewBlock'", &reply)
 	if err != nil {
 		fmt.Println("couldn't call RPC subscribe: " + err.Error())
 		return
 	}
 	fmt.Println("stratos-chain subscription success")
-
 	for {
 		_, message, err := ws.ReadMessage()
 		if err != nil {
