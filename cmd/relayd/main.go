@@ -33,6 +33,7 @@ func main() {
 		fmt.Println(err.Error())
 		return
 	}
+	fmt.Println("statos-chain websocket connection created")
 
 	conn := utils.NewRWCConn(ws)
 	defer conn.Close()
@@ -47,6 +48,7 @@ func main() {
 		fmt.Printf("%v", err)
 		return
 	}
+	fmt.Println("stratos-chain subscription success")
 
 	for {
 		_, message, err := ws.ReadMessage()
@@ -54,9 +56,11 @@ func main() {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				fmt.Println("An error occurred when reading from the stratos-chain websocket: " + err.Error())
 				break
+			} else {
+				fmt.Println("Unknown error when reading message from stratos-chain: " + err.Error())
 			}
 		}
-
+		fmt.Println("Received a new message from stratos-chain!")
 		// TODO: handle message
 		fmt.Println(message)
 	}
