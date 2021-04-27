@@ -51,7 +51,7 @@ var DownLoadTaskIDMap = &sync.Map{}
 var (
 	UpMap     = make(map[string]interface{}, 0)
 	DownMap   = make(map[string]interface{}, 0)
-	ReusltMap = make(map[string]interface{}, 0)
+	ResultMap = make(map[string]interface{}, 0)
 )
 
 //  http code
@@ -59,7 +59,7 @@ var (
 	FAILCode       = 500
 	SUCCESSCode    = 0
 	ShareErrorCode = 1002
-	Iswindows      bool
+	IsWindows      bool
 )
 
 type config struct {
@@ -111,10 +111,10 @@ func LoadConfig(configPath string) {
 	Config.ScryptN = 4096
 	Config.ScryptP = 6
 	if ostype == "windows" {
-		Iswindows = true
+		IsWindows = true
 		// IMAGEPATH = filepath.FromSlash(IMAGEPATH)
 	} else {
-		Iswindows = false
+		IsWindows = false
 	}
 	cf.SetLimitDownloadSpeed(Config.LimitDownloadSpeed, Config.IsLimitDownloadSpeed)
 	cf.SetLimitUploadSpeed(Config.LimitUploadSpeed, Config.IsLimitUploadSpeed)

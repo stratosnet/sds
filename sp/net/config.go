@@ -9,8 +9,9 @@ import (
 type Config struct {
 	Version uint16 `yaml:"Version"`
 	Net     struct {
-		Host string `yaml:"Host"`
-		Port string `yaml:"Port"`
+		Host          string `yaml:"Host"`
+		Port          string `yaml:"Port"`
+		WebsocketPort string `yaml:"WebsocketPort"`
 	} `yaml:"Net"`
 	Peers struct {
 		List             int     `yaml:"List"`

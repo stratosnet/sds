@@ -25,19 +25,20 @@ import (
 
 // Server sp server
 type Server struct {
-	Ver            uint16               // version
-	PPVersion      uint16               // PP version
-	Host           string               // net host
-	puk            string               // public key
-	UserCount      int64                // user count todo should this be atomic?
-	ConnectedCount uint64               // connection count todo should this be atomic?
-	Conf           *Config              // configuration
-	CT             *database.CacheTable // database
-	HashRing       *hashring.HashRing   // hashring
-	serv           *spbf.Server         // server
-	connPool       *sync.Map            // connection pool
-	msgHandler     *MsgHandler
-	System         *data.System
+	Ver                uint16               // version
+	PPVersion          uint16               // PP version
+	Host               string               // net host
+	puk                string               // public key
+	UserCount          int64                // user count todo should this be atomic?
+	ConnectedCount     uint64               // connection count todo should this be atomic?
+	Conf               *Config              // configuration
+	CT                 *database.CacheTable // database
+	HashRing           *hashring.HashRing   // hashring
+	serv               *spbf.Server         // server
+	connPool           *sync.Map            // connection pool
+	msgHandler         *MsgHandler
+	System             *data.System
+	SubscriptionServer *SubscriptionServer // Server for websocket subscriptions
 
 	storages.ServerCache
 	sync.Mutex
@@ -239,6 +240,11 @@ func (s *Server) Start() {
 
 	// refresh status
 	go s.refreshStatus()
+
+	// Starts subscriptions websocket server
+	s.SubscriptionServer = NewSubscriptionServer(s)
+	s.SubscriptionServer.Start()
+	defer s.SubscriptionServer.Close()
 
 	// start listening
 	netListen, err := net.Listen("tcp", s.Host)

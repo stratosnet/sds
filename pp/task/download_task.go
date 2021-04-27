@@ -159,7 +159,7 @@ func DoneDownload(fileHash, fileName, savePath string) {
 		utils.ErrorLog("DoneDownload Remove", err)
 	}
 	lastPath := strings.Replace(newFilePath, fileHash+"/", "", -1)
-	// if setting.Iswindows {
+	// if setting.IsWindows {
 	// 	lastPath = filepath.FromSlash(lastPath)
 	// }
 	err3 := os.Rename(newFilePath, lastPath)
@@ -184,7 +184,7 @@ func DoneDownload(fileHash, fileName, savePath string) {
 			}
 		}
 		utils.DebugLog("enter imageMap creation")
-		if setting.Iswindows {
+		if setting.IsWindows {
 			f, err5 := os.Open(lastPath)
 			if err5 != nil {
 				utils.ErrorLog("err5>>>", err5)
