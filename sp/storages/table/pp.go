@@ -51,7 +51,7 @@ const (
 	STATE_ONLINE  = 1
 )
 
-// PP 表
+// PP table
 type PP struct {
 	Id             uint32
 	WalletAddress  string

@@ -10,14 +10,27 @@ import (
 )
 
 // CreateAccount
-func CreateAccount(password, name string) string {
-	account, err := utils.CreateAccount(setting.Config.AccountDir, name, password, setting.Config.ScryptN, setting.Config.ScryptP)
+func CreateAccount(password, name, mnemonic, passphrase, hdPath string) string {
+	if mnemonic == "" {
+		newMnemonic, err := utils.NewMnemonic()
+		if err != nil {
+			utils.ErrorLog("Couldn't generate new mnemonic", err)
+			return ""
+		}
+		mnemonic = newMnemonic
+	}
+	account, err := utils.CreateAccount(setting.Config.AccountDir, name, password, setting.Config.AddressPrefix,
+		mnemonic, passphrase, hdPath, setting.Config.ScryptN, setting.Config.ScryptP)
 	if utils.CheckError(err) {
 		utils.ErrorLog("CreateAccount error", err)
 		return ""
 	}
-	setting.WalletAddress = account.String()
-	getPublickKey(setting.Config.AccountDir+"/"+setting.WalletAddress, password)
+	setting.WalletAddress, err = account.ToBech(setting.Config.AddressPrefix)
+	if utils.CheckError(err) {
+		utils.ErrorLog("CreateAccount error", err)
+		return ""
+	}
+	getPublicKey(setting.Config.AccountDir+"/"+setting.WalletAddress, password)
 	utils.Log("Create account success ,", setting.WalletAddress)
 	if setting.NetworkAddress != "" {
 		InitPeer()
@@ -37,26 +50,25 @@ func GetWalletAddress() {
 		return
 	}
 	setting.WalletAddress = files[0].Name()
-	getPublickKey(setting.Config.AccountDir+"/"+setting.WalletAddress, setting.Config.DefPassword)
+	getPublicKey(setting.Config.AccountDir+"/"+setting.WalletAddress, setting.Config.DefPassword)
 	utils.Log("setting.WalletAddress,", setting.WalletAddress)
-
 }
 
-func getPublickKey(filePath, password string) bool {
+func getPublicKey(filePath, password string) bool {
 	keyjson, err := ioutil.ReadFile(filePath)
 	if utils.CheckError(err) {
-		fmt.Println("getPublickKey ioutil.ReadFile", err)
+		fmt.Println("getPublicKey ioutil.ReadFile", err)
 		return false
 	}
 	key, err := utils.DecryptKey(keyjson, password)
 
 	if utils.CheckError(err) {
-		fmt.Println("getPublickKey DecryptKey", err)
+		fmt.Println("getPublicKey DecryptKey", err)
 		return false
 	}
 	setting.PrivateKey = key.PrivateKey
-	setting.PublickKey = crypto.FromECDSAPub(&key.PrivateKey.PublicKey)
-	utils.DebugLog("publicKey", setting.PublickKey)
+	setting.PublicKey = crypto.FromECDSAPub(&key.PrivateKey.PublicKey)
+	utils.DebugLog("publicKey", setting.PublicKey)
 	fmt.Println("unlock wallet successfully ", setting.WalletAddress)
 	return true
 }
@@ -79,7 +91,7 @@ func NewAccount(password, name string) {
 	if password == "" {
 		fmt.Println("input password")
 	} else {
-		CreateAccount(password, name)
+		CreateAccount(password, name, "", "", "")
 	}
 }
 
@@ -106,7 +118,7 @@ func Login(account, password string) error {
 			continue
 		}
 		utils.Log(info.Name())
-		if getPublickKey(setting.Config.AccountDir+"/"+account, password) {
+		if getPublicKey(setting.Config.AccountDir+"/"+account, password) {
 			setting.WalletAddress = account
 			InitPeer()
 			return nil

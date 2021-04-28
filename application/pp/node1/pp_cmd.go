@@ -49,7 +49,7 @@ func main() {
 	} else {
 		utils.MyLogger.SetLogLevel(utils.Error)
 	}
-	peers.GetNetwrokAddress()
+	peers.GetNetworkAddress()
 	fmt.Println(helpStr)
 
 	help := func(line string, param []string) bool {
@@ -485,7 +485,7 @@ func AutoStart(account, password string) {
 func setConfig() {
 
 	setting.LoadConfig("./config.yaml")
-	setting.WalletAddress = peers.CreateAccount(setting.Config.Password, "")
+	setting.WalletAddress = peers.CreateAccount(setting.Config.Password, "", "", "", "")
 	str := "Account: " + setting.WalletAddress
 	writerConfig(str)
 

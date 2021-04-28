@@ -92,6 +92,7 @@ type config struct {
 	LimitUploadSpeed            uint64 `yaml:"LimitUploadSpeed"`
 	IsCheckFileOperation        bool   `yaml:"IsCheckFileOperation"`
 	IsCheckFileTransferFinished bool   `yaml:"IsCheckFileTransferFinished"`
+	AddressPrefix               string `yaml:"AddressPrefix"`
 }
 
 var ostype = runtime.GOOS
@@ -110,6 +111,7 @@ func LoadConfig(configPath string) {
 
 	Config.ScryptN = 4096
 	Config.ScryptP = 6
+	Config.AddressPrefix = "st"
 	if ostype == "windows" {
 		IsWindows = true
 		// IMAGEPATH = filepath.FromSlash(IMAGEPATH)
