@@ -17,7 +17,7 @@ var (
 	bpurl string
 )
 
-// walletList 本地钱包列表接口返回格式
+// walletList local wallet list return format
 type walletList struct {
 	WalletName       string  `json:"walletName"`
 	WalletAddress    string  `json:"walletAddress"`

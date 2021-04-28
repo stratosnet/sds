@@ -18,3 +18,4 @@ vendor/
 target/
 
 *.log
+application/sp/spServer
