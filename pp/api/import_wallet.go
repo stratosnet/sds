@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-// importwallet POST, params：(keystore , password)
+// importWallet POST, params：(keystore , password)
 func importWallet(w http.ResponseWriter, request *http.Request) {
 	data, err := HTTPRequest(request, w, false)
 	if err != nil {
@@ -36,13 +36,19 @@ func importWallet(w http.ResponseWriter, request *http.Request) {
 	key, err := utils.DecryptKey([]byte(keystore), password)
 
 	if utils.CheckError(err) {
-		fmt.Println("getPublickKey DecryptKey", err)
+		fmt.Println("getPublicKey DecryptKey", err)
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "wrong password").ToBytes())
 		return
 	}
 	setting.PrivateKey = key.PrivateKey
-	setting.PublickKey = crypto.FromECDSAPub(&key.PrivateKey.PublicKey)
-	setting.WalletAddress = key.Address.String()
+	setting.PublicKey = crypto.FromECDSAPub(&key.PrivateKey.PublicKey)
+
+	addressString, err := key.Address.ToBech(setting.Config.AddressPrefix)
+	if err != nil {
+		w.Write(httpserv.NewJson(nil, setting.FAILCode, "couldn't convert wallet address to bytes: "+err.Error()).ToBytes())
+		return
+	}
+	setting.WalletAddress = addressString
 	ks := utils.KeyStorePassphrase{dir, setting.Config.ScryptN, setting.Config.ScryptP}
 	filename := dir + "/" + key.Address.String()
 	err = ks.StoreKey(filename, key, password)
