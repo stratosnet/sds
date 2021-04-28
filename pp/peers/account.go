@@ -11,6 +11,14 @@ import (
 
 // CreateAccount
 func CreateAccount(password, name, mnemonic, passphrase, hdPath string) string {
+	if mnemonic == "" {
+		newMnemonic, err := utils.NewMnemonic()
+		if err != nil {
+			utils.ErrorLog("Couldn't generate new mnemonic", err)
+			return ""
+		}
+		mnemonic = newMnemonic
+	}
 	account, err := utils.CreateAccount(setting.Config.AccountDir, name, password, setting.Config.AddressPrefix,
 		mnemonic, passphrase, hdPath, setting.Config.ScryptN, setting.Config.ScryptP)
 	if utils.CheckError(err) {
