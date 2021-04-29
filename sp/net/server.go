@@ -75,7 +75,7 @@ func (s *Server) initialize() {
 
 	s.CT.GetDriver().GetDB().Exec("SET NAMES utf8mb4")
 
-	s.System = new(data.System)
+	s.System = &data.System{}
 	s.Load(s.System)
 	s.System.InviteReward = s.Conf.User.InviteReward
 	s.System.UpgradeReward = s.Conf.User.UpgradeReward
@@ -95,10 +95,10 @@ func (s *Server) initialize() {
 
 	// register heartbeat response
 	spbf.Register(header.ReqHeart, func(ctx context.Context, conn spbf.WriteCloser) {
-		msg := msg.RelayMsgBuf{
+		m := msg.RelayMsgBuf{
 			MSGHead: header.MakeMessageHeader(1, s.Ver, 0, header.RspHeart),
 		}
-		conn.Write(&msg)
+		conn.Write(&m)
 	})
 
 	s.BuildHashRing()
@@ -218,17 +218,19 @@ func (s *Server) Who(name string) string {
 // SendMsg send msg to PP
 func (s *Server) SendMsg(walletAddress string, cmd string, message proto.Message) {
 	conn := s.GetConn(walletAddress)
-	if conn != nil {
-		data, err := proto.Marshal(message)
-		if utils.CheckError(err) {
-			utils.Log(err)
-		}
-		msg := &msg.RelayMsgBuf{
-			MSGHead: header.MakeMessageHeader(1, s.Ver, uint32(len(data)), cmd),
-			MSGData: data,
-		}
-		conn.Write(msg)
+	if conn == nil {
+		return
 	}
+	d, err := proto.Marshal(message)
+	if utils.CheckError(err) {
+		utils.Log(err)
+	}
+	msg := &msg.RelayMsgBuf{
+		MSGHead: header.MakeMessageHeader(1, s.Ver, uint32(len(d)), cmd),
+		MSGData: d,
+	}
+	conn.Write(msg)
+
 }
 
 // Start as SP
@@ -248,7 +250,7 @@ func (s *Server) Start() {
 }
 
 // OnConnectOption
-func (s *Server) OnConnectOption(conn spbf.WriteCloser) bool {
+func (s *Server) OnConnectOption(_ spbf.WriteCloser) bool {
 	return true
 }
 
@@ -268,9 +270,8 @@ func NewServer(configFilePath string) *Server {
 		return nil
 	}
 
-	server := new(Server)
+	server := &Server{Conf: &Config{}}
 
-	server.Conf = new(Config)
 	utils.LoadYamlConfig(server.Conf, configFilePath)
 	if server.Conf == nil {
 		utils.ErrorLog("wrong config given")
@@ -285,4 +286,21 @@ func NewServer(configFilePath string) *Server {
 	)
 
 	return server
+}
+
+func (s *Server) NewMsgHandler() {
+	s.msgHandler = NewMsgHandler(s)
+	go s.msgHandler.Run()
+}
+
+func (s *Server) NewConnPool() {
+	s.connPool = &sync.Map{}
+}
+
+func (s *Server) CreateServ() {
+	s.serv = spbf.CreateServer()
+}
+
+func (s *Server) StartServ(listener net.Listener) error {
+	return s.serv.Start(listener)
 }

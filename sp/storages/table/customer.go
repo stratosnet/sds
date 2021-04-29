@@ -8,80 +8,71 @@ import (
 	"time"
 )
 
-// User
-type User struct {
-	Id             uint64
-	IsPp           byte
-	Belong         string
-	WalletAddress  string
-	NetworkAddress string
-	FreeDisk       uint64
-	DiskSize       uint64
-	Name           string
-	Puk            string
-	LastLoginTime  int64
-	LoginTimes     uint64
-	RegisterTime   int64
-	InvitationCode string
-	Capacity       uint64
-	UsedCapacity   uint64
-	IsUpgrade      byte
-	BeInvited      byte
+// Customer is the person who used the system for file storage
+type Customer struct {
+	Id            uint64
+	WalletAddress string
+	TotalVolume   uint64
+	UsedVolume    uint64
+	Puk           string
+	LastLoginTime int64
+	LoginTimes    uint64
+	RegisterTime  int64
 }
 
-// TableName
-func (u *User) TableName() string {
-	return "user"
+// TableName get the name of mysql table
+func (c *Customer) TableName() string {
+	return "customer"
 }
 
-// PrimaryKey
-func (u *User) PrimaryKey() []string {
+// PrimaryKey get the primary key column of this table
+func (c *Customer) PrimaryKey() []string {
 	return []string{"id"}
 }
 
-// SetData
-func (u *User) SetData(data map[string]interface{}) (bool, error) {
-	return database.LoadTable(u, data)
+// SetData save to db
+func (c *Customer) SetData(data map[string]interface{}) (bool, error) {
+	return database.LoadTable(c, data)
 }
 
-// GetCacheKey
-func (u *User) GetCacheKey() string {
-	return "user#" + u.WalletAddress
+// GetCacheKey get the key used for in memory cache
+func (c *Customer) GetCacheKey() string {
+	return "customer#" + c.WalletAddress
 }
 
-// GetTimeOut
-func (u *User) GetTimeOut() time.Duration {
+// GetTimeOut get the timeout, this table has no timeout
+func (c *Customer) GetTimeOut() time.Duration {
 	return 0
 }
 
-// Where
-func (u *User) Where() map[string]interface{} {
+// Where get the where command for this table
+func (c *Customer) Where() map[string]interface{} {
 	return map[string]interface{}{
 		"where": map[string]interface{}{
-			"wallet_address = ?": u.WalletAddress,
+			"wallet_address = ?": c.WalletAddress,
 		},
 	}
 }
 
-// Event
-func (u *User) Event(event int, dt *database.DataTable) {}
+// Event n/a
+func (c *Customer) Event(_ int, _ *database.DataTable) {}
 
-// GetCapacity
-func (u *User) GetCapacity() uint64 {
-	return u.Capacity / 1048576
+// GetTotalVolume get the total volume purchased by this customer
+func (c *Customer) GetTotalVolume() uint64 {
+	return c.TotalVolume / 1048576
 }
 
-// GetFreeCapacity
-func (u *User) GetFreeCapacity() uint64 {
-	var freeCapacity uint64 = 0
-	if u.Capacity > u.UsedCapacity {
-		freeCapacity = (u.Capacity - u.UsedCapacity) / 1048576
+// GetAvailableVolume get the available volume of this customer
+func (c *Customer) GetAvailableVolume() uint64 {
+	var freeVolume uint64 = 0
+	if c.TotalVolume > c.UsedVolume {
+		freeVolume = (c.TotalVolume - c.UsedVolume) / 1048576
 	}
-	return freeCapacity
+	return freeVolume
 }
 
-// GetShareFiles
-func (u *User) GetShareFiles(ct *database.CacheTable) []*protos.FileInfo {
+// GetShareFiles TODO needed?
+func (c *Customer) GetShareFiles(ct *database.CacheTable) []*protos.FileInfo {
 
 	type ShareFile struct {
 		File
@@ -99,7 +90,7 @@ func (u *User) GetShareFiles(ct *database.CacheTable) []*protos.FileInfo {
 			{"user_directory_map_file", "f.hash = udmf.file_hash", "udmf", "left"},
 			{"user_directory", "udmf.dir_hash = ud.dir_hash AND ud.wallet_address = us.wallet_address", "ud", "left"},
 		},
-		"where": map[string]interface{}{"us.wallet_address = ?": []interface{}{SHARE_TYPE_FILE, OPEN_TYPE_PUBLIC, u.WalletAddress}},
+		"where": map[string]interface{}{"us.wallet_address = ?": []interface{}{SHARE_TYPE_FILE, OPEN_TYPE_PUBLIC, c.WalletAddress}},
 	})
 
 	if err != nil {
@@ -119,8 +110,8 @@ func (u *User) GetShareFiles(ct *database.CacheTable) []*protos.FileInfo {
 			IsPrivate:          false,
 			IsDirectory:        false,
 			StoragePath:        shareFile.Path,
-			OwnerWalletAddress: u.WalletAddress,
-			ShareLink:          (&UserShare{}).GenerateShareLink(shareFile.ShareId, shareFile.RandCode),
+			OwnerWalletAddress: c.WalletAddress,
+			ShareLink:          new(UserShare).GenerateShareLink(shareFile.ShareId, shareFile.RandCode),
 			CreateTime:         uint64(shareFile.Time),
 		}
 	}
@@ -128,8 +119,8 @@ func (u *User) GetShareFiles(ct *database.CacheTable) []*protos.FileInfo {
 	return fileInfos
 }
 
-// GetShareDirs
-func (u *User) GetShareDirs(ct *database.CacheTable) []*protos.FileInfo {
+// GetShareDirs TODO needed?
+func (c *Customer) GetShareDirs(ct *database.CacheTable) []*protos.FileInfo {
 
 	type ShareDir struct {
 		UserDirectory
@@ -144,7 +135,7 @@ func (u *User) GetShareDirs(ct *database.CacheTable) []*protos.FileInfo {
 		"columns": "ud.*, us.time, us.rand_code, us.share_id",
 		"join":    []string{"user_share", "us.hash = ud.dir_hash AND us.share_type = ?", "us"},
 		"where": map[string]interface{}{
-			"ud.wallet_address = ?": []interface{}{SHARE_TYPE_DIR, u.WalletAddress},
+			"ud.wallet_address = ?": []interface{}{SHARE_TYPE_DIR, c.WalletAddress},
 		},
 	})
 
@@ -170,7 +161,7 @@ func (u *User) GetShareDirs(ct *database.CacheTable) []*protos.FileInfo {
 			IsPrivate:          false,
 			IsDirectory:        true,
 			StoragePath:        sPath,
-			OwnerWalletAddress: u.WalletAddress,
+			OwnerWalletAddress: c.WalletAddress,
 			ShareLink:          new(UserShare).GenerateShareLink(shareDir.ShareId, shareDir.RandCode),
 			CreateTime:         uint64(shareDir.Time),
 		}

@@ -24,9 +24,8 @@ const registerEvent = "register"
 
 // GetRegisterHandler creates event and return handler func for it
 func GetRegisterHandler(server *net.Server) EventHandleFunc {
-	return (&register{
-		newEvent(registerEvent, server, registerCallbackFunc),
-	}).Handle
+	e := register{newEvent(registerEvent, server, registerCallbackFunc)}
+	return e.Handle
 }
 
 // registerCallbackFunc is the main process of register
@@ -88,7 +87,7 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 	user.LastLoginTime = time.Now().Unix()
 	user.LoginTimes = user.LoginTimes + 1
 
-	totalUsed, _ := s.CT.SumTable(new(table.File), "f.size", map[string]interface{}{
+	totalUsed, _ := s.CT.SumTable(&table.File{}, "f.size", map[string]interface{}{
 		"alias": "f",
 		"join":  []string{"user_has_file", "f.hash = uhf.file_hash", "uhf"},
 		"where": map[string]interface{}{"uhf.wallet_address = ?": user.WalletAddress},
@@ -117,7 +116,7 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 }
 
 func shouldUpdate(ctx context.Context, s *net.Server) (updateTips bool, forceUpdate bool) {
-	sys := new(data.System)
+	sys := &data.System{}
 
 	if s.Load(sys) != nil {
 		return

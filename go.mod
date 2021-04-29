@@ -10,7 +10,7 @@ require (
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/protobuf v1.4.3
-	github.com/google/uuid v1.1.4
+	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.8.0
 	github.com/mattn/go-sqlite3 v1.14.6
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
@@ -19,9 +19,8 @@ require (
 	github.com/pborman/uuid v1.2.1
 	github.com/peterh/liner v1.2.1
 	github.com/shirou/gopsutil v3.20.12+incompatible
-	github.com/stretchr/testify v1.7.0 // indirect
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
-	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect
+	github.com/testcontainers/testcontainers-go v0.10.0
+	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.4.0
 )

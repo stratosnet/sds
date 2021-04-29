@@ -15,7 +15,7 @@ import (
 // New
 func New(conf interface{}) drivers.DBDriver {
 
-	connectConf := new(config.Connect)
+	connectConf := &config.Connect{}
 
 	switch t := conf.(type) {
 	case *config.Connect:
@@ -38,13 +38,13 @@ func New(conf interface{}) drivers.DBDriver {
 	switch connectConf.Driver {
 
 	case "mysql":
-		mysql := new(drivers.MySQL)
+		mysql := &drivers.MySQL{}
 		if mysql.Init(connectConf) {
 			driver = mysql
 		}
 
 	case "sqlite":
-		sqLite := new(drivers.SQLite)
+		sqLite := &drivers.SQLite{}
 		if sqLite.Init(connectConf) {
 			driver = sqLite
 		}

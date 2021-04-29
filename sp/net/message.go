@@ -125,20 +125,21 @@ func (m *MsgHandler) Logout(name string) {
 	}
 
 	walletAddress := m.server.Who(name)
-	if walletAddress != "" {
-
-		m.server.HashRing.SetOffline(walletAddress)
-
-		pp := &table.PP{WalletAddress: walletAddress}
-		if m.server.CT.Fetch(pp) == nil {
-			pp.State = table.STATE_OFFLINE
-			m.server.CT.Save(pp)
-		}
-
-		m.server.RmConn(name)
-
-		utils.Log(fmt.Sprintf("!!! %s@%s disconnect, current online nodes: %d", walletAddress, name, m.server.HashRing.NodeOkCount))
+	if walletAddress == "" {
+		return
 	}
+	m.server.HashRing.SetOffline(walletAddress)
+
+	pp := &table.PP{WalletAddress: walletAddress}
+	if m.server.CT.Fetch(pp) == nil {
+		pp.State = table.STATE_OFFLINE
+		m.server.CT.Save(pp)
+	}
+
+	m.server.RmConn(name)
+
+	utils.Log(fmt.Sprintf("!!! %s@%s disconnect, current online nodes: %d", walletAddress, name, m.server.HashRing.NodeOkCount))
+
 }
 
 // BackupPP
@@ -156,23 +157,22 @@ func (m *MsgHandler) BackupPP(walletAddress string) {
 		},
 	})
 
-	if err == nil {
+	if err != nil {
+		return
+	}
+	fileSlices := res.([]table.FileSlice)
 
-		fileSlices := res.([]table.FileSlice)
+	for index, fs := range fileSlices {
 
-		for index, fs := range fileSlices {
+		key := fs.SliceHash + "#" + strconv.FormatUint(fs.SliceNumber, 10) + "#" + strconv.Itoa(index)
 
-			key := fs.SliceHash + "#" + strconv.FormatUint(fs.SliceNumber, 10) + "#" + strconv.Itoa(index)
+		_, newStorePPWalletAddress := m.server.HashRing.GetNodeExcludedNodeIDs(key, m.server.System.MissingBackupWalletAddr)
 
-			_, newStorePPWalletAddress := m.server.HashRing.GetNodeExcludedNodeIDs(key, m.server.System.MissingBackupWalletAddr)
-
-			if newStorePPWalletAddress != "" &&
-				fs.WalletAddress != newStorePPWalletAddress {
-
-				m.TransferNotice(fs.SliceHash, fs.WalletAddress, newStorePPWalletAddress)
-			}
+		if newStorePPWalletAddress != "" && fs.WalletAddress != newStorePPWalletAddress {
+			m.TransferNotice(fs.SliceHash, fs.WalletAddress, newStorePPWalletAddress)
 		}
 	}
+
 }
 
 // TransferNotice
@@ -186,9 +186,12 @@ func (m *MsgHandler) TransferNotice(sliceHash, sliceInWalletAddress, newStorePPW
 		return
 	}
 
-	fileSlice := new(table.FileSlice)
-	fileSlice.WalletAddress = sliceInWalletAddress
-	fileSlice.SliceHash = sliceHash
+	fileSlice := &table.FileSlice{
+		FileSliceStorage: table.FileSliceStorage{
+			WalletAddress: sliceInWalletAddress,
+		},
+		SliceHash: sliceHash,
+	}
 	if m.server.CT.Fetch(fileSlice) != nil {
 		utils.Log(errors.New("no slice found"))
 		return
@@ -196,40 +199,39 @@ func (m *MsgHandler) TransferNotice(sliceHash, sliceInWalletAddress, newStorePPW
 
 	// get online PP info todo change to read from redis
 	node := m.server.HashRing.Node(newStorePPWalletAddress)
-	if node != nil && node.Host != "" {
-
-		transferCer := utils.CalcHash([]byte(fileSlice.SliceHash + "#" + newStorePPWalletAddress + "#" + strconv.FormatInt(time.Now().UnixNano(), 10)))
-
-		req := &protos.ReqTransferNotice{
-			TransferCer: transferCer,
-			FromSp:      true,
-			SliceStorageInfo: &protos.SliceStorageInfo{
-				SliceSize: fileSlice.SliceSize,
-				SliceHash: fileSlice.SliceHash,
-			},
-			StoragePpInfo: &protos.PPBaseInfo{
-				WalletAddress:  fileSlice.WalletAddress,
-				NetworkAddress: fileSlice.NetworkAddress,
-			},
-		}
-
-		transferRecord := &table.TransferRecord{
-			SliceHash:          fileSlice.SliceHash,
-			TransferCer:        transferCer,
-			FromWalletAddress:  fileSlice.WalletAddress,
-			ToWalletAddress:    newStorePPWalletAddress,
-			FromNetworkAddress: fileSlice.NetworkAddress,
-			Status:             table.TRANSFER_RECORD_STATUS_CHECK,
-			Time:               0,
-		}
-
-		// todo change to read from redis
-		m.server.Store(transferRecord, 3600*time.Second)
-
-		m.server.SendMsg(node.ID, header.ReqTransferNotice, req)
-	} else {
+	if node == nil || node.Host == "" {
 		utils.Log("TransferNotice: new PP[", newStorePPWalletAddress, "] is not online")
+		return
 	}
+	transferCer := utils.CalcHash([]byte(fileSlice.SliceHash + "#" + newStorePPWalletAddress + "#" + strconv.FormatInt(time.Now().UnixNano(), 10)))
+
+	req := &protos.ReqTransferNotice{
+		TransferCer: transferCer,
+		FromSp:      true,
+		SliceStorageInfo: &protos.SliceStorageInfo{
+			SliceSize: fileSlice.SliceSize,
+			SliceHash: fileSlice.SliceHash,
+		},
+		StoragePpInfo: &protos.PPBaseInfo{
+			WalletAddress:  fileSlice.WalletAddress,
+			NetworkAddress: fileSlice.NetworkAddress,
+		},
+	}
+
+	transferRecord := &table.TransferRecord{
+		SliceHash:          fileSlice.SliceHash,
+		TransferCer:        transferCer,
+		FromWalletAddress:  fileSlice.WalletAddress,
+		ToWalletAddress:    newStorePPWalletAddress,
+		FromNetworkAddress: fileSlice.NetworkAddress,
+		Status:             table.TRANSFER_RECORD_STATUS_CHECK,
+		Time:               0,
+	}
+
+	// todo change to read from redis
+	m.server.Store(transferRecord, 3600*time.Second)
+
+	m.server.SendMsg(node.ID, header.ReqTransferNotice, req)
 }
 
 // DeleteSlice from P or PP
@@ -276,10 +278,8 @@ func (m *MsgHandler) BackupSlice(sliceHash, sliceInWalletAddress string) {
 
 // NewMsgHandler
 func NewMsgHandler(server *Server) *MsgHandler {
-
-	mh := new(MsgHandler)
-	mh.msgQueue = make(chan common.Msg, 10)
-	mh.server = server
-
-	return mh
+	return &MsgHandler{
+		msgQueue: make(chan common.Msg, 10),
+		server:   server,
+	}
 }
