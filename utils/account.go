@@ -161,8 +161,8 @@ func DecryptKey(keyjson []byte, auth string) (*AccountKey, error) {
 		keyBytes, keyId []byte
 		err             error
 	)
-	k := new(encryptedKeyJSONV3)
-	if err := json.Unmarshal(keyjson, k); err != nil {
+	k := &encryptedKeyJSONV3{}
+	if err = json.Unmarshal(keyjson, k); err != nil {
 		return nil, err
 	}
 	keyBytes, keyId, err = decryptKeyV3(k, auth)

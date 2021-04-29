@@ -76,7 +76,7 @@ func main() {
 		panic(err)
 	}
 
-	newTest := new(Test)
+	newTest := &Test{}
 
 	err := dt.FetchTable(newTest, map[string]interface{}{
 		"where": map[string]interface{}{

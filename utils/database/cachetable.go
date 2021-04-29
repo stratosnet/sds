@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// CTable Table的缓存扩展版本
+// CTable Table's cache version
 type CTable interface {
 	Table
 	GetTimeOut() time.Duration
@@ -86,38 +86,46 @@ func (ct *CacheTable) Trash(table CTable) error {
 // handleSmt
 // @feature process queue to update to db
 func (ct *CacheTable) handleSmt() {
-	for {
-		smt := <-ct.SmtQueue
-		if action, ok := smt["action"]; ok {
-			if table, ok := smt["table"]; ok {
-				cTable := table.(CTable)
-				switch action.(string) {
-				case "store":
-					ct.Lock()
-					ct.StoreTable(cTable)
-					ct.Cache.Delete(cTable.GetCacheKey())
-					ct.Unlock()
-					ct.Fetch(cTable)
-				case "update":
-					ct.Lock()
-					ct.UpdateTable(cTable)
-					ct.Cache.Delete(cTable.GetCacheKey())
-					ct.Unlock()
-					ct.Fetch(cTable)
-				case "remove":
-					ct.DeleteTable(cTable)
-				}
-			}
+	for smt := range ct.SmtQueue {
+		action, found := smt["action"]
+		if !found {
+			continue
+		}
+
+		table, found := smt["table"]
+		if !found {
+			continue
+		}
+
+		cTable := table.(CTable)
+		switch action.(string) {
+		case "store":
+			ct.Lock()
+			ct.StoreTable(cTable)
+			ct.Cache.Delete(cTable.GetCacheKey())
+			ct.Unlock()
+			ct.Fetch(cTable)
+		case "update":
+			ct.Lock()
+			ct.UpdateTable(cTable)
+			ct.Cache.Delete(cTable.GetCacheKey())
+			ct.Unlock()
+			ct.Fetch(cTable)
+		case "remove":
+			ct.DeleteTable(cTable)
 		}
 	}
 }
 
-// NewCacheTable 实例化事务
+// NewCacheTable instantiate
 func NewCacheTable(cache cache.Cache, dbConf config.Connect) *CacheTable {
-	ct := new(CacheTable)
-	ct.Cache = cache
-	ct.driver = New(dbConf)
-	ct.SmtQueue = make(chan map[string]interface{}, 100)
+	ct := &CacheTable{
+		Cache: cache,
+		DataTable: DataTable{
+			driver: New(dbConf),
+		},
+		SmtQueue: make(chan map[string]interface{}, 100),
+	}
 
 	go ct.handleSmt()
 
