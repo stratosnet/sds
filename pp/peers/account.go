@@ -12,7 +12,7 @@ import (
 // CreateAccount
 func CreateAccount(password, name string) string {
 	account, err := utils.CreateAccount(setting.Config.AccountDir, name, password, setting.Config.ScryptN, setting.Config.ScryptP)
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog("CreateAccount error", err)
 		return ""
 	}
@@ -32,7 +32,7 @@ func GetWalletAddress() {
 		// CreateAccount(setting.Config.DefPassword)
 		return
 	}
-	if utils.CheckError(err) {
+	if err != nil {
 		// CreateAccount(setting.Config.DefPassword)
 		return
 	}
@@ -44,13 +44,13 @@ func GetWalletAddress() {
 
 func getPublickKey(filePath, password string) bool {
 	keyjson, err := ioutil.ReadFile(filePath)
-	if utils.CheckError(err) {
+	if err != nil {
 		fmt.Println("getPublickKey ioutil.ReadFile", err)
 		return false
 	}
 	key, err := utils.DecryptKey(keyjson, password)
 
-	if utils.CheckError(err) {
+	if err != nil {
 		fmt.Println("getPublickKey DecryptKey", err)
 		return false
 	}

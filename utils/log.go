@@ -35,7 +35,7 @@ func newLogger(filepath string, enableStd, enableFile bool) *Logger {
 	//init file output
 	outfile, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666) //open file, if not exist, create at filepath
 	if err != nil {
-		panic(fmt.Sprintln("log file open failed:", err.Error()))
+		panic(fmt.Sprintf("log file '%v' open failed: %v", filepath, err.Error()))
 	}
 
 	logger := &Logger{
@@ -53,6 +53,10 @@ func newLogger(filepath string, enableStd, enableFile bool) *Logger {
 }
 
 func NewLogger(filepath string, enableStd, enableFile bool) *Logger {
+	return newLogger(filepath, enableStd, enableFile)
+}
+
+func NewDefaultLogger(filepath string, enableStd, enableFile bool) *Logger {
 	MyLogger = newLogger(filepath, enableStd, enableFile)
 	return MyLogger
 }

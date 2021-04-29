@@ -25,7 +25,7 @@ Database:
   User: user1
   Pass: 111111
   DbName: sds
-  Debug: false
+  Debug: true
   LogFile: tmp/logs/db.log
 
 BpList:
@@ -35,3 +35,9 @@ BpList:
 Ecdsa:
   PrivateKeyPath: path_to_privatekey
   PrivateKeyPass: privatekey_password
+
+Log:
+  Path: tmp/logs/sp-server.log
+  Level: 1
+  OutputFile: true
+  OutputStd: true

@@ -49,13 +49,13 @@ func GetLocalPPList() []*protos.PPBaseInfo {
 	}
 	csvFile, err := os.OpenFile(Config.PPListDir, os.O_CREATE|os.O_RDWR, 0777)
 	defer csvFile.Close()
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.Log("InitPPList err", err)
 	}
 	reader := csv.NewReader(csvFile)
 	reader.FieldsPerRecord = -1
 	record, err := reader.ReadAll()
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.Log("InitPPList err", err)
 	}
 	if len(record) > 0 {
@@ -90,7 +90,7 @@ func savePPListLocal() {
 
 	os.Truncate(Config.PPListDir, 0)
 	csvFile, err := os.OpenFile(Config.PPListDir, os.O_CREATE|os.O_RDWR, 0777)
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog("InitPPList err", err)
 		return
 	}
@@ -99,8 +99,8 @@ func savePPListLocal() {
 	utils.DebugLog("PPList len", len(PPList))
 	for _, post := range PPList {
 		line := []string{post.NetworkAddress, post.WalletAddress}
-		err := writer.Write(line)
-		if utils.CheckError(err) {
+		err = writer.Write(line)
+		if err != nil {
 			utils.ErrorLog("csv line ", err)
 		}
 	}

@@ -5,6 +5,5 @@ import (
 )
 
 func main() {
-
 	sp.StartSP("configs/sp.yaml")
 }

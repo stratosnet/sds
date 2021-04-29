@@ -97,7 +97,7 @@ func StopMonitor() {
 // GetDHInfo
 func GetDHInfo() (uint64, uint64) {
 	d, err := disk.Usage("/")
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog("GetDHInfo", err)
 		return 0, 0
 	}

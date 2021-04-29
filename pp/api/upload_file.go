@@ -28,44 +28,44 @@ type upLoadFileResult struct {
 
 func upLoadFile(w http.ResponseWriter, request *http.Request) {
 
+	// check differently for sp
+	if !setting.CheckLogin() {
+		_, _ = w.Write(httpserv.NewJson(nil, setting.FAILCode, "login first").ToBytes())
+		return
+	}
+
 	data, err := HTTPRequest(request, w, true)
 
 	if err != nil {
 		return
 	}
 	utils.DebugLog("path", data["walletAddress"])
-	// sdPath := ""
-	// if data["storagePath"] != nil {
-	// 	sdPath = data["storagePath"].(string)
-	// }
-	//type resData struct {
-	//	path        string
-	//	storagePath string
-	//}
+
 	if data["tasks"] == nil {
-		w.Write(httpserv.NewJson(nil, setting.FAILCode, "path is required").ToBytes())
+		_, _ = w.Write(httpserv.NewJson(nil, setting.FAILCode, "path is required").ToBytes())
 		return
 	}
+
 	fileArr := data["tasks"].([]interface{})
 	result := make(map[string][]*upLoadFileResult, 0)
 	resultArr := make([]*upLoadFileResult, 0)
-	if !setting.CheckLogin() {
-		w.Write(httpserv.NewJson(nil, setting.FAILCode, "login first").ToBytes())
-		return
-	}
+
 	for _, p := range fileArr {
 		pathMap := p.(map[string]interface{})
 		path := pathMap["path"].(string)
+
 		sdPath := ""
 		if pathMap["storagePath"] != nil {
 			sdPath = pathMap["storagePath"].(string)
 		}
-		if setting.Iswindows {
+		if setting.IsWindows {
 			path = strings.Replace(path, `\`, "/", -1)
 		}
-		pathType := file.IsFile(path)
-		if pathType == 0 {
-			fmt.Println("wrong path")
+		isFile := false
+		isFile, err = file.IsFile(path)
+
+		if err != nil {
+			fmt.Println(err)
 			r := &upLoadFileResult{
 				FilePath: path,
 				State:    false,
@@ -75,7 +75,10 @@ func upLoadFile(w http.ResponseWriter, request *http.Request) {
 				FileSize: 0,
 			}
 			resultArr = append(resultArr, r)
-		} else if pathType == 1 {
+			continue
+		}
+
+		if isFile {
 			f := event.RequestUploadFileData(path, sdPath, "", false)
 			go event.SendMessageToSPServer(f, header.ReqUploadFile)
 			taskID := uuid.New().String()
@@ -95,72 +98,74 @@ func upLoadFile(w http.ResponseWriter, request *http.Request) {
 				return true
 			})
 			setting.UpLoadTaskIDMap.Store(r.TaskID, f.FileInfo.FileHash)
-			utils.DebugLog("taskid>>>>>>>>>>>>>>", r.TaskID)
+			utils.DebugLogf("Upload task ID >> %v", r.TaskID)
 			resultArr = append(resultArr, r)
-		} else {
-			utils.DebugLog("this is a file directory")
-
-			/*
-
-				TODO change this func to not directly send file into chan, because total file size needs to be calculated first
-
-			*/
-			file.GetAllFile(path)
-
-			dir := filepath.Dir(path)
-			for {
-				select {
-				case pathstring := <-setting.UpChan:
-					utils.DebugLog("pathstring == ", pathstring)
-					sPath := strings.Replace(pathstring, dir, "", -1)
-					lastPaths := filepath.Dir(sPath)
-					utils.DebugLog("lastPaths ==>>>>>>>>>>> ", lastPaths)
-					if file.IsFile(pathstring) == 2 {
-						event.MakeDirectory(sPath, uuid.New().String(), w)
-						continue
-					}
-
-					var lps []string
-					lps = strings.FieldsFunc(lastPaths, func(r rune) bool { return r == '/' })
-					lastPaths = strings.Join(lps, "/")
-					if sdPath != "" {
-						lastPaths = sdPath + "/" + lastPaths
-					}
-
-					f := event.RequestUploadFileData(pathstring, lastPaths, "", false)
-					utils.DebugLog("lastPaths>>>>", lastPaths)
-					utils.DebugLog("storagePath+relativePath", lastPaths, pathstring)
-					taskID := uuid.New().String()
-					r := &upLoadFileResult{
-						FailInfo: "",
-						FilePath: path,
-						State:    true,
-						TaskID:   taskID,
-						FileName: f.FileInfo.FileName,
-						FileSize: f.FileInfo.FileSize,
-					}
-					setting.UpLoadTaskIDMap.Range(func(k, v interface{}) bool {
-						if v.(string) == f.FileInfo.FileHash {
-							r.TaskID = k.(string)
-							return false
-						}
-						return true
-					})
-					setting.UpLoadTaskIDMap.Store(r.TaskID, f.FileInfo.FileHash)
-					resultArr = append(resultArr, r)
-					go event.SendMessageToSPServer(f, header.ReqUploadFile)
-					utils.DebugLog("resust>>>>>>>>>>>>>>", resultArr)
-
-				default:
-					result["list"] = resultArr
-					w.Write(httpserv.NewJson(result, setting.SUCCESSCode, "request success").ToBytes())
-					return
-				}
-
-			}
+			continue
 		}
 
+		// ----------------------------------------
+		// is directory
+		utils.DebugLog("this is a file directory")
+
+		/*
+
+			TODO change this func to not directly send file into chan, because total file size needs to be calculated first
+
+		*/
+		file.GetAllFiles(path) // this func should be per connection for sp
+
+		dir := filepath.Dir(path)
+		for {
+			select {
+			case pathstring := <-setting.UpChan:
+				utils.DebugLog("pathstring == ", pathstring)
+				sPath := strings.Replace(pathstring, dir, "", -1)
+				lastPaths := filepath.Dir(sPath)
+				utils.DebugLog("lastPaths ==>>>>>>>>>>> ", lastPaths)
+				if isFile, _ = file.IsFile(pathstring); !isFile {
+					event.MakeDirectory(sPath, uuid.New().String(), w)
+					continue
+				}
+
+				var lps []string
+				lps = strings.FieldsFunc(lastPaths, func(r rune) bool { return r == '/' })
+				lastPaths = strings.Join(lps, "/")
+				if sdPath != "" {
+					lastPaths = sdPath + "/" + lastPaths
+				}
+
+				f := event.RequestUploadFileData(pathstring, lastPaths, "", false)
+				utils.DebugLog("lastPaths>>>>", lastPaths)
+				utils.DebugLog("storagePath+relativePath", lastPaths, pathstring)
+				taskID := uuid.New().String()
+				r := &upLoadFileResult{
+					FailInfo: "",
+					FilePath: path,
+					State:    true,
+					TaskID:   taskID,
+					FileName: f.FileInfo.FileName,
+					FileSize: f.FileInfo.FileSize,
+				}
+				setting.UpLoadTaskIDMap.Range(func(k, v interface{}) bool {
+					if v.(string) == f.FileInfo.FileHash {
+						r.TaskID = k.(string)
+						return false
+					}
+					return true
+				})
+				setting.UpLoadTaskIDMap.Store(r.TaskID, f.FileInfo.FileHash)
+				resultArr = append(resultArr, r)
+				go event.SendMessageToSPServer(f, header.ReqUploadFile)
+				utils.DebugLog("resust>>>>>>>>>>>>>>", resultArr)
+
+			default:
+				result["list"] = resultArr
+				w.Write(httpserv.NewJson(result, setting.SUCCESSCode, "request success").ToBytes())
+				return
+			}
+
+		}
 	}
 	result["list"] = resultArr
-	w.Write(httpserv.NewJson(result, setting.SUCCESSCode, "request success").ToBytes())
+	_, _ = w.Write(httpserv.NewJson(result, setting.SUCCESSCode, "request success").ToBytes())
 }

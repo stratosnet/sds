@@ -156,15 +156,16 @@ func ParseBody(r *http.Request) (map[string]interface{}, error) {
 func HTTPRequest(request *http.Request, w http.ResponseWriter, isNeedWalletAddress bool) (data map[string]interface{}, err error) {
 	data, err = ParseBody(request)
 	if err != nil {
-		w.Write(httpserv.NewJson(nil, setting.FAILCode, err.Error()).ToBytes())
+		_, _ = w.Write(httpserv.NewJson(nil, setting.FAILCode, err.Error()).ToBytes())
 		return
 	}
-	if isNeedWalletAddress {
-		if setting.WalletAddress != data["walletAddress"] {
-			err = errors.New("wallet is locked")
-			w.Write(httpserv.NewJson(nil, setting.FAILCode, "wallet is locked").ToBytes())
-			return
-		}
+	if !isNeedWalletAddress {
+		return
 	}
+	if setting.WalletAddress == data["walletAddress"] {
+		return
+	}
+	err = errors.New("wallet is locked")
+	_, _ = w.Write(httpserv.NewJson(nil, setting.FAILCode, "wallet is locked").ToBytes())
 	return
 }

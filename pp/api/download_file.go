@@ -104,7 +104,8 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 			for _, finfo := range target.FileInfo {
 				if finfo.IsDirectory {
 					utils.DebugLog("directory is at 》》》》》》》", finfo.StoragePath)
-					if utils.CheckError(os.MkdirAll(setting.Config.DownloadPath+finfo.StoragePath+"/"+finfo.FileName, os.ModePerm)) {
+					err = os.MkdirAll(setting.Config.DownloadPath+finfo.StoragePath+"/"+finfo.FileName, os.ModePerm)
+					if err != nil {
 						utils.ErrorLog("err>>>>>>>::::::", err)
 					}
 				} else {
