@@ -85,7 +85,7 @@ func StartMock(cmd string, eventHandleFunc func(s *net.Server) EventHandleFunc) 
 		log.Panic(err)
 	}
 
-	utils.NewLogger(tmpDir+"/stdout.log", true, true)
+	utils.NewDefaultLogger(tmpDir+"/stdout.log", true, true)
 
 	mysqlC := config.Connect{
 		Driver:  "mysql",

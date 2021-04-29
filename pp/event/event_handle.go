@@ -122,7 +122,7 @@ func PPMsgHeader(data []byte, head string) header.MessageHead {
 func sendMessage(conn spbf.WriteCloser, pb proto.Message, cmd string) {
 	data, err := proto.Marshal(pb)
 
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog("error decoding")
 		return
 	}
@@ -166,23 +166,22 @@ func sendMessageToBPServ(addr string, msgBuf *msg.RelayMsgBuf) {
 
 		utils.DebugLog("exist BP connection, transfer")
 		err := client.ConnMap[addr].Write(msgBuf)
-		if utils.CheckError(err) {
+		if err != nil {
 			GetBPList()
-			utils.DebugLog("(1)error report to BP， get BPList again")
+			utils.DebugLog("error report to BP， get BPList again")
 		}
-	} else {
-		utils.DebugLog("new BP connection, connect and transfer")
-		cf := client.NewClient(addr, false)
-		if cf != nil {
-			err := cf.Write(msgBuf)
-			if utils.CheckError(err) {
-				utils.DebugLog("(2)error report to BP， get BPList again")
-				GetBPList()
-			}
-		} else {
-			utils.DebugLog("(3)error report to BP， get BPList again")
-			GetBPList()
-		}
+		return
+	}
+	utils.DebugLog("new BP connection, connect and transfer")
+	cf := client.NewClient(addr, false)
+	if cf == nil {
+		utils.DebugLog("error report to BP， get BPList again")
+		GetBPList()
+		return
+	}
+	if err := cf.Write(msgBuf); err != nil {
+		utils.DebugLog("error report to BP， get BPList again")
+		GetBPList()
 	}
 }
 
@@ -224,7 +223,7 @@ func sendAllBP(m *msg.RelayMsgBuf) {
 func unmarshalData(ctx context.Context, target interface{}) bool {
 	msgBuf := spbf.MessageFromContext(ctx)
 	utils.DebugLog("msgBuf len = ", len(msgBuf.MSGData))
-	if utils.CheckError(proto.Unmarshal(msgBuf.MSGData, target.(proto.Message))) {
+	if err := proto.Unmarshal(msgBuf.MSGData, target.(proto.Message)); err != nil {
 		utils.ErrorLog("protobuf Unmarshal error,target =", reflect.TypeOf(target))
 		return false
 	}

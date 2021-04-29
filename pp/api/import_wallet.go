@@ -35,7 +35,7 @@ func importWallet(w http.ResponseWriter, request *http.Request) {
 	dir := setting.Config.AccountDir
 	key, err := utils.DecryptKey([]byte(keystore), password)
 
-	if utils.CheckError(err) {
+	if err != nil {
 		fmt.Println("getPublickKey DecryptKey", err)
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "wrong password").ToBytes())
 		return
