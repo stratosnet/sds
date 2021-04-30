@@ -35,7 +35,7 @@ func ParseFileHandle(handle string) (protocol, walletAddress, fileHash, fileName
 		fileName = string(handleInBytes[114:])
 	}
 
-	if protocol == "" || protocol != "spb" ||
+	if protocol != "spb" ||
 		walletAddress == "" || len(walletAddress) < 42 ||
 		fileHash == "" || len(fileHash) < 64 {
 		err = errors.New("file handle parse fail")
@@ -49,7 +49,7 @@ func GenerateTaskID(mix string) string {
 	return utils.CalcHash([]byte(uuid.New().String() + "#" + strconv.FormatInt(time.Now().UnixNano(), 10) + mix))
 }
 
-// LoadOrCeateAccount
+// LoadOrCreateAccount
 func LoadOrCreateAccount(path, pass string) string {
 
 	if path == "" && pass == "" {
@@ -68,7 +68,7 @@ func LoadOrCreateAccount(path, pass string) string {
 	privKeyInStr, err := ioutil.ReadFile(path)
 	if err != nil {
 		keyPath := filepath.Dir(path)
-		account, err := utils.CreateAccount(keyPath, "", pass, 4096, 6)
+		account, err := utils.CreateAccount(keyPath, "", pass, "", "", "", "", 4096, 6)
 		if utils.CheckError(err) {
 			utils.ErrorLog("create account failed", err)
 			return ""

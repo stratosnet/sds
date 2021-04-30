@@ -10,7 +10,7 @@ import (
 // Start Start
 func Start(isPP bool) {
 	GetWalletAddress()
-	GetNetwrokAddress()
+	GetNetworkAddress()
 	event.RegisterEventHandle()
 	if !isPP {
 		initPPList()
@@ -23,7 +23,7 @@ func Start(isPP bool) {
 // StartPP StartPP
 func StartPP() {
 	GetWalletAddress()
-	GetNetwrokAddress()
+	GetNetworkAddress()
 	event.RegisterEventHandle()
 	// client.SPConn = client.NewClient(setting.Config.SPNetAddress, true)
 	initPPList()

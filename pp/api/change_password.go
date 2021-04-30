@@ -61,7 +61,7 @@ func changePassword(w http.ResponseWriter, request *http.Request) {
 	}
 	key, err := utils.DecryptKey(keyjson, oldPassWord)
 	if err != nil {
-		utils.ErrorLog("getPublickKey DecryptKey", err)
+		utils.ErrorLog("getPublicKey DecryptKey", err)
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "wrong old password").ToBytes())
 		return
 	}
@@ -69,7 +69,7 @@ func changePassword(w http.ResponseWriter, request *http.Request) {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "new password not match").ToBytes())
 		return
 	}
-	err = utils.ChangePassWord(walletAddress, dir, newPassWord, setting.Config.ScryptN, setting.Config.ScryptP, key)
+	err = utils.ChangePassword(walletAddress, dir, newPassWord, setting.Config.ScryptN, setting.Config.ScryptP, key)
 	if err != nil {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to change password").ToBytes())
 		return
