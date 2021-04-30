@@ -1,0 +1,8 @@
+sds:
+  networkAddress: 127.0.0.1
+  clientPort: 8888
+  websocketPort: 8889
+stratoschain:
+  networkAddress: 127.0.0.1
+  clientPort: 26657
+  websocketPort: 26657

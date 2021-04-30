@@ -1,5 +1,5 @@
 Port: :18082
-NetWorkAddress: 127.0.0.1
+NetworkAddress: 127.0.0.1
 SPNetAddress: 127.0.0.1:8888
 Debug: true
 PPListDir: "./peers/pp-list"
