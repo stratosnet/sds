@@ -26,39 +26,6 @@ func NewClient(server string) *cf.ClientConn {
 	})
 	onClose := cf.OnCloseOption(func(c spbf.WriteCloser) {
 		utils.Log("on close", c.(*cf.ClientConn).GetName())
-		/*
-			delete(ConnMap, c.(*cf.ClientConn).GetName())
-
-			PdownloadPassagewayCheck(c.(*cf.ClientConn))
-
-			if PPConn != nil {
-				if PPConn == c.(*cf.ClientConn) {
-					utils.DebugLog("lost registered PP conn, delete and change to new PP")
-					select {
-					case OfflineChan <- &Offline{
-						IsSp:           false,
-						NetWorkAddress: PPConn.GetName(),
-					}:
-					default:
-						break
-					}
-				}
-			}
-			if SPConn != nil {
-				if SPConn.GetName() == c.(*cf.ClientConn).GetName() {
-					utils.DebugLog("lost SP conn")
-					SPConn = nil
-					select {
-					case OfflineChan <- &Offline{
-						IsSp: true,
-					}:
-					default:
-						break
-					}
-				}
-			}
-		*/
-
 	})
 	onMessage := cf.OnMessageOption(func(msg msg.RelayMsgBuf, c spbf.WriteCloser) {})
 	bufferSize := cf.BufferSizeOption(100)

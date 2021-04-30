@@ -63,21 +63,21 @@ var (
 )
 
 type config struct {
-	Version                     uint32
-	VersionShow                 string
-	DownloadPathMinLen          int
-	Port                        string `yaml:"Port"`
-	NetWorkAddress              string `yaml:"NetWorkAddress"`
-	SPNetAddress                string `yaml:"SPNetAddress"`
-	Debug                       bool   `yaml:"Debug"`
-	PPListDir                   string `yaml:"PPListDir"`
-	BPListDir                   string `yaml:"BPListDir"`
-	AccountDir                  string `yaml:"AccountDir"`
-	ScryptN                     int    `yaml:"scryptN"`
-	ScryptP                     int    `yaml:"scryptP"`
-	DefPassword                 string `yaml:"DefPassword"`
-	DefSavePath                 string `yaml:"DefSavePath"`
-	StorehousePath              string `yaml:"StorehousePath"`
+	Version            uint32
+	VersionShow        string
+	DownloadPathMinLen int
+	Port               string `yaml:"Port"`
+	NetworkAddress     string `yaml:"NetworkAddress"`
+	SPNetAddress       string `yaml:"SPNetAddress"`
+	Debug              bool   `yaml:"Debug"`
+	PPListDir          string `yaml:"PPListDir"`
+	BPListDir          string `yaml:"BPListDir"`
+	AccountDir         string `yaml:"AccountDir"`
+	ScryptN            int    `yaml:"scryptN"`
+	ScryptP            int    `yaml:"scryptP"`
+	DefPassword        string `yaml:"DefPassword"`
+	DefSavePath        string `yaml:"DefSavePath"`
+	StorehousePath     string `yaml:"StorehousePath"`
 	DownloadPath                string `yaml:"DownloadPath"`
 	Password                    string `yaml:"Password"`
 	Account                     string `yaml:"Account"`

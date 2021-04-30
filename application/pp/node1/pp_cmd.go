@@ -505,8 +505,8 @@ func setConfig() {
 		ipS := mm["ip"]
 		ipString = ipS.(string)
 		setting.NetworkAddress = ipString
-		setting.Config.NetWorkAddress = ipString
-		netStr := "NetWorkAddress: " + ipString
+		setting.Config.NetworkAddress = ipString
+		netStr := "NetworkAddress: " + ipString
 		writerConfig("\n" + netStr)
 	}
 	st()
@@ -515,8 +515,8 @@ func setConfig() {
 
 func st() {
 	for {
-		if setting.Config.NetWorkAddress != "" && setting.WalletAddress != "" {
-			utils.DebugLog("setting.Config.NetWorkAddress == ", setting.Config.NetWorkAddress)
+		if setting.Config.NetworkAddress != "" && setting.WalletAddress != "" {
+			utils.DebugLog("setting.Config.NetworkAddress == ", setting.Config.NetworkAddress)
 			utils.DebugLog("setting.WalletAddress == ", setting.WalletAddress)
 			break
 		}
