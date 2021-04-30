@@ -11,6 +11,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/cosmos/cosmos-sdk/crypto/hd"
+	"github.com/cosmos/go-bip39"
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/math"
 	"github.com/stratosnet/sds/utils/types"
@@ -29,7 +32,8 @@ const (
 	scryptR      = 8
 	scryptDKLen  = 32
 
-	version = 3
+	version         = 3
+	mnemonicEntropy = 256
 )
 
 type KeyStorePassphrase struct {
@@ -59,16 +63,29 @@ type cipherparamsJSON struct {
 	IV string `json:"iv"`
 }
 
-// CreateAccount 创建一个新的账号，将 auth 设置为账号的密码并将账号相关 key 数据存储在 dir 的位置
-func CreateAccount(dir, account, auth string, scryptN, scryptP int) (types.Address, error) {
+// CreateAccount creates a new account, setting auth as the password and saving the key data into the dir folder
+func CreateAccount(dir, nickname, auth, hrp, mnemonic, bip39Passphrase, hdPath string, scryptN, scryptP int) (types.Address, error) {
 	keyStore := &KeyStorePassphrase{dir, scryptN, scryptP}
 
-	key, err := newAccountKey(rand.Reader)
+	derivedKeyBytes, err := hd.Secp256k1.Derive()(mnemonic, bip39Passphrase, hdPath)
 	if err != nil {
 		return types.Address{}, err
 	}
-	key.Account = account
-	filename := dir + "/" + key.Address.String()
+	derivedKey, _ := btcec.PrivKeyFromBytes(crypto.S256(), derivedKeyBytes)
+	if derivedKey == nil {
+		return types.Address{}, errors.New("couldn't generate ecdsa private key from bytes")
+	}
+	derivedKeyEcdsa := (*ecdsa.PrivateKey)(derivedKey)
+
+	key := newKeyFromECDSA(derivedKeyEcdsa)
+	key.Account = nickname
+
+	filename, err := key.Address.ToBech(hrp)
+	if err != nil {
+		return types.Address{}, err
+	}
+
+	filename = dir + "/" + filename
 	if err := keyStore.StoreKey(filename, key, auth); err != nil {
 		zeroKey(key.PrivateKey)
 		return types.Address{}, err
@@ -76,12 +93,13 @@ func CreateAccount(dir, account, auth string, scryptN, scryptP int) (types.Addre
 	return key.Address, nil
 }
 
-func newAccountKey(rand io.Reader) (*AccountKey, error) {
-	privateKeyECDSA, err := ecdsa.GenerateKey(crypto.S256(), rand)
+func NewMnemonic() (string, error) {
+	entropy, err := bip39.NewEntropy(mnemonicEntropy)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return newKeyFromECDSA(privateKeyECDSA), nil
+
+	return bip39.NewMnemonic(entropy)
 }
 
 func newKeyFromECDSA(privateKeyECDSA *ecdsa.PrivateKey) *AccountKey {
@@ -322,8 +340,8 @@ type AccountKey struct {
 	PrivateKey *ecdsa.PrivateKey
 }
 
-// ChangePassWord
-func ChangePassWord(walletAddress, dir, auth string, scryptN, scryptP int, key *AccountKey) error {
+// ChangePassword
+func ChangePassword(walletAddress, dir, auth string, scryptN, scryptP int, key *AccountKey) error {
 	files, _ := ioutil.ReadDir(dir)
 	if len(files) == 0 {
 		ErrorLog("not exist")

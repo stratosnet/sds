@@ -45,7 +45,7 @@ func S256() elliptic.Curve {
 	return secp256k1.S256()
 }
 
-// PubkeyToAddress 用户公钥转钱包地址
+// PubkeyToAddress calculates the waller address from the user public key
 func PubkeyToAddress(p ecdsa.PublicKey) types.Address {
 	pubBytes := FromECDSAPub(&p)
 	return types.BytesToAddress(Keccak256(pubBytes[1:])[12:])
