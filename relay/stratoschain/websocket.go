@@ -8,7 +8,7 @@ import (
 )
 
 func DialWebsocket(addr, query string) (*tmhttp.HTTP, <-chan coretypes.ResultEvent, error) {
-	client, err := tmhttp.New("tcp://" + addr, "/websocket")
+	client, err := tmhttp.New("tcp://"+addr, "/websocket")
 	if err != nil {
 		return nil, nil, errors.New("failed to create stratos-chain client: " + err.Error())
 	}

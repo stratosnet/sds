@@ -6,19 +6,19 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
-	"github.com/stratosnet/sds/cmd/relayd/sds"
-	"github.com/stratosnet/sds/cmd/relayd/stratoschain"
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/relay/sds"
+	"github.com/stratosnet/sds/relay/stratoschain"
 	tmHttp "github.com/tendermint/tendermint/rpc/client/http"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 	"sync"
 )
 
 type MultiClient struct {
-	Once *sync.Once
-	SdsClientConn *cf.ClientConn
-	SdsWebsocketConn *websocket.Conn
+	Once              *sync.Once
+	SdsClientConn     *cf.ClientConn
+	SdsWebsocketConn  *websocket.Conn
 	StratosClientConn *tmHttp.HTTP
 	StratosEventsChan <-chan coretypes.ResultEvent
 }

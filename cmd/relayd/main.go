@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/stratosnet/sds/cmd/relayd/client"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
+	"github.com/stratosnet/sds/relay/client"
 	"os"
 	"os/signal"
 	"syscall"
