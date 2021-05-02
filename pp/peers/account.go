@@ -86,15 +86,6 @@ func Accounts() {
 	}
 }
 
-// NewAccount
-func NewAccount(password, name string) {
-	if password == "" {
-		fmt.Println("input password")
-	} else {
-		CreateAccount(password, name, "", "", "")
-	}
-}
-
 // Login
 func Login(account, password string) error {
 	utils.DebugLog("account = ", account)

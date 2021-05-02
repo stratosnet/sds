@@ -30,8 +30,8 @@ Database:
   LogFile: tmp/logs/db.log
 
 BpList:
-  - { NetworkAddress: 192.168.2.43:18081, WalletAddress: 0xcFaF25447c50BD3EF1cd67376e0b848AD2387a17 }
-  - { NetworkAddress: 192.168.2.43:18082, WalletAddress: 0xc5300c46B342deE1dd2c1FFe815322aDEd83446C }
+  - { NetworkAddress: 192.168.2.43:18081, WalletAddress: st1cdsw4wmrd6w9a7gsez2mxadfrkxltj7685aj83 }
+  - { NetworkAddress: 192.168.2.43:18082, WalletAddress: st1jzkud0tt88y6tyg6675utue45z5a04er4hfp9n }
 
 Ecdsa:
   PrivateKeyPath: path_to_privatekey
