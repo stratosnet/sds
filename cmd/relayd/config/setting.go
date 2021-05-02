@@ -3,15 +3,15 @@ package setting
 import "github.com/stratosnet/sds/utils"
 
 type sds struct {
-	ClientPort string
+	ClientPort     string
 	NetworkAddress string
-	WebsocketPort string
+	WebsocketPort  string
 }
 
 type stratoschain struct {
-	ClientPort string
+	ClientPort     string
 	NetworkAddress string
-	WebsocketPort string
+	WebsocketPort  string
 }
 
 type config struct {
