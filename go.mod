@@ -25,6 +25,7 @@ require (
 	github.com/shirou/gopsutil v3.20.12+incompatible
 	github.com/tendermint/classic v0.0.0-20201012085102-0a11024b2668
 	github.com/tendermint/tendermint v0.34.9
+	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect
 	google.golang.org/protobuf v1.25.0

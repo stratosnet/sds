@@ -11,8 +11,8 @@ DefPassword:
 DefSavePath:
 StorehousePath:
 DownloadPath:
-Password: a
-Account: 0xcFaF25447c50BD3EF1cd67376e0b848AD2387a17
+Password: aaa
+Account: st1cdsw4wmrd6w9a7gsez2mxadfrkxltj7685aj83
 AutoRun: true
 Internal: true
 IsWallet:
