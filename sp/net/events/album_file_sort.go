@@ -52,7 +52,7 @@ func getFileSortCallbackFunc(_ context.Context, s *net.Server, message proto.Mes
 
 	album := &table.Album{AlbumId: body.AlbumId}
 
-	if s.CT.Fetch(album) != nil {
+	if err := s.CT.Fetch(album); err != nil {
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		rsp.Result.Msg = "album doesn't exist"
 		return rsp, header.RspFileSort
@@ -66,7 +66,7 @@ func getFileSortCallbackFunc(_ context.Context, s *net.Server, message proto.Mes
 			Time:     time.Now().Unix(),
 		}
 		if _, err := s.CT.UpdateTable(albumHasFile); err != nil {
-			utils.ErrorLogf("event handler error: album file sort update table error: %v")
+			utils.ErrorLogf("event handler error: album file sort update table error: %v", err)
 		}
 	}
 

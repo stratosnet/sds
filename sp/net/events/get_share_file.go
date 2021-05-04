@@ -182,8 +182,7 @@ func getFileFromServer(s *net.Server, fileHash string) (*protos.FileInfo, error)
 }
 
 func getWalletAddressFiles(s *net.Server, walletAddress string) ([]*protos.FileInfo, error) {
-	user := new(table.User)
-	user.WalletAddress = walletAddress
+	user := &table.User{WalletAddress: walletAddress}
 	fileInfos := user.GetShareDirs(s.CT)
 	files := user.GetShareFiles(s.CT)
 	if len(files) > 0 {

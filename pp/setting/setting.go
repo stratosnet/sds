@@ -100,7 +100,7 @@ var ostype = runtime.GOOS
 // LoadConfig
 func LoadConfig(configPath string) {
 	ConfigPath = configPath
-	Config = new(config)
+	Config = &config{}
 	utils.LoadYamlConfig(Config, configPath)
 
 	Config.Version = 5

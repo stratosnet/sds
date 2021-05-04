@@ -11,55 +11,55 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// PP 用户接口
+// PP user interface
 type PP struct {
 	server *core.APIServer
 }
 
-// GetAPIServer 获取API服务实例
+// GetAPIServer get API instance
 func (e *PP) GetAPIServer() *core.APIServer {
 	return e.server
 }
 
-// SetAPIServer 设置API服务实例
+// SetAPIServer set API instance
 func (e *PP) SetAPIServer(server *core.APIServer) {
 	e.server = server
 }
 
-// List pp列表
+// List pp list
 func (e *PP) List(params map[string]interface{}, r *http.Request) ([]map[string]interface{}, int, string) {
 
 	data := make([]map[string]interface{}, 0)
 
 	res, err := e.GetAPIServer().DB.FetchTables([]table.PP{}, map[string]interface{}{})
-	if err == nil {
-		ppList := res.([]table.PP)
-		if len(ppList) > 0 {
-			for _, pp := range ppList {
-				data = append(data, database.Table2Map(&pp))
-			}
-		}
+	if err != nil {
+		return data, 200, "ok"
+
+	}
+	ppList := res.([]table.PP)
+	for _, pp := range ppList {
+		data = append(data, database.Table2Map(&pp))
 	}
 
 	return data, 200, "ok"
 }
 
-// Backup 备份pp
+// Backup backup pp
 func (e *PP) Backup(params map[string]interface{}, r *http.Request) ([]map[string]interface{}, int, string) {
 
 	vals := mux.Vars(r)
 
-	if walletAddress, ok := vals["wa"]; ok {
-
-		data := make([]map[string]interface{}, 0)
-
-		msg := &common.MsgBackupPP{WalletAddress: walletAddress}
-
-		msgJson, _ := json.Marshal(msg)
-		e.GetAPIServer().Cache.EnQueue("msg_queue", msgJson)
-
-		return data, 200, "ok"
+	walletAddress, ok := vals["wa"]
+	if !ok {
+		return nil, 400, "invalid parameter"
 	}
 
-	return nil, 400, "参数错误"
+	data := make([]map[string]interface{}, 0)
+
+	msg := &common.MsgBackupPP{WalletAddress: walletAddress}
+
+	msgJson, _ := json.Marshal(msg)
+	e.GetAPIServer().Cache.EnQueue("msg_queue", msgJson)
+
+	return data, 200, "ok"
 }

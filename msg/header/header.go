@@ -174,6 +174,12 @@ const (
 	//BPRspBH      = "BPRspBH"
 	//ReportFlow   = "ReptF"
 
+	// customer volume
+	ReqCAddVolume = "ReqCAV"
+	RspCAddVolume = "RspCAV"
+
+	ReqCUseVolume = "ReqCUV"
+	RspCUseVolume = "RspCUV"
 )
 
 // DecodeHeader

@@ -27,10 +27,10 @@ CREATE TABLE `file_slice` (
 
 const (
 
-	// FILE_SLICE_STATUS_SUCCESS 成功
+	// FILE_SLICE_STATUS_SUCCESS success
 	FILE_SLICE_STATUS_SUCCESS = 0
 
-	// FILE_SLICE_STATUS_CHECK 待确认
+	// FILE_SLICE_STATUS_CHECK status to be confirmed
 	FILE_SLICE_STATUS_CHECK = 1
 )
 
@@ -79,25 +79,28 @@ func (f *FileSlice) GetTimeOut() time.Duration {
 
 // Where
 func (f *FileSlice) Where() map[string]interface{} {
-	where := map[string]interface{}{
-		"where": map[string]interface{}{
-			"slice_hash = ?": f.SliceHash,
-		},
-	}
-	if f.WalletAddress != "" {
-		where = map[string]interface{}{
-			"alias":   "e",
-			"columns": "e.*, fss.wallet_address, fss.network_address",
-			"join": []string{
-				"file_slice_storage", "e.slice_hash = fss.slice_hash", "fss",
-			},
+	if f.WalletAddress == "" {
+		where := map[string]interface{}{
 			"where": map[string]interface{}{
-				"e.slice_hash = ? AND fss.wallet_address = ?": []interface{}{
-					f.SliceHash, f.WalletAddress,
-				},
+				"slice_hash = ?": f.SliceHash,
 			},
 		}
+		return where
 	}
+
+	where := map[string]interface{}{
+		"alias":   "e",
+		"columns": "e.*, fss.wallet_address, fss.network_address",
+		"join": []string{
+			"file_slice_storage", "e.slice_hash = fss.slice_hash", "fss",
+		},
+		"where": map[string]interface{}{
+			"e.slice_hash = ? AND fss.wallet_address = ?": []interface{}{
+				f.SliceHash, f.WalletAddress,
+			},
+		},
+	}
+
 	return where
 }
 

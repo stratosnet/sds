@@ -74,13 +74,14 @@ func (a *Album) AddFile(ct *database.CacheTable, file *protos.FileInfo) error {
 	if file.FileHash == "" || a.AlbumId == "" {
 		return errors.New("file hash or album ID can't be empty")
 	}
-	ahf := new(AlbumHasFile)
-	ahf.FileHash = file.FileHash
-	ahf.AlbumId = a.AlbumId
-	ahf.Sort = file.SortId
-	ahf.Time = time.Now().Unix()
-	ct.StoreTable(ahf)
-	return nil
+	ahf := &AlbumHasFile{
+		FileHash: file.FileHash,
+		AlbumId:  a.AlbumId,
+		Sort:     file.SortId,
+		Time:     time.Now().Unix(),
+	}
+	_, err := ct.StoreTable(ahf)
+	return err
 }
 
 // RemoveFile
@@ -88,11 +89,12 @@ func (a *Album) RemoveFile(ct *database.CacheTable, fileHash string) error {
 	if fileHash == "" || a.AlbumId == "" {
 		return errors.New("file hash or album ID can't be empty")
 	}
-	ahf := new(AlbumHasFile)
-	ahf.FileHash = fileHash
-	ahf.AlbumId = a.AlbumId
-	ct.DeleteTable(ahf)
-	return nil
+	ahf := &AlbumHasFile{
+		FileHash: fileHash,
+		AlbumId:  a.AlbumId,
+	}
+	_, err := ct.DeleteTable(ahf)
+	return err
 }
 
 // GetFiles

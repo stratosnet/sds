@@ -10,12 +10,13 @@ import (
 )
 
 func main() {
-
-	od := new(scripts.OperatingData)
-	config := new(net.Config)
+	config := &net.Config{}
 	utils.LoadYamlConfig(config, "configs/sp.yaml")
-	od.DT = database.NewDataTable(config.Database)
-	od.Debug = true
+
+	od := &scripts.OperatingData{
+		DT:    database.NewDataTable(config.Database),
+		Debug: true,
+	}
 	od.SetTime(time.Now())
 	od.GetData()
 }

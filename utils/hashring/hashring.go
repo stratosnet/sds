@@ -108,28 +108,29 @@ func (r *HashRing) RemoveNode(nodeID string) bool {
 	r.Lock()
 	defer r.Unlock()
 
-	if val, ok := r.Nodes.Load(nodeID); ok {
-
-		node := val.(*Node)
-
-		var numberOfNode uint32 = 1
-		if r.NumberOfVirtual > 0 {
-			numberOfNode = r.NumberOfVirtual
-		}
-
-		var i uint32
-		for i = 0; i < numberOfNode; i++ {
-			index := r.hashToCRC32(r.hashKey(r.virtualKey(node.ID, i)))
-			r.VRing.Delete(&VNode{Index: index, NodeID: node.ID})
-		}
-
-		r.Nodes.Delete(node.ID)
-		delete(r.NodeStatus, node.ID)
-
-		r.NRing.Delete(node)
-
-		r.NodeCount--
+	val, ok := r.Nodes.Load(nodeID)
+	if !ok {
+		return true
 	}
+	node := val.(*Node)
+
+	var numberOfNode uint32 = 1
+	if r.NumberOfVirtual > 0 {
+		numberOfNode = r.NumberOfVirtual
+	}
+
+	var i uint32
+	for i = 0; i < numberOfNode; i++ {
+		index := r.hashToCRC32(r.hashKey(r.virtualKey(node.ID, i)))
+		r.VRing.Delete(&VNode{Index: index, NodeID: node.ID})
+	}
+
+	r.Nodes.Delete(node.ID)
+	delete(r.NodeStatus, node.ID)
+
+	r.NRing.Delete(node)
+
+	r.NodeCount--
 
 	return true
 }
@@ -255,65 +256,63 @@ func (r *HashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
 		return "", ""
 	}
 
-	if r.NRing.Len() > 1 {
-
-		up := r.NRing.Max().(*Node).ID
-		down := r.NRing.Min().(*Node).ID
-
-		r.NRing.Descend(&Node{ID: NodeID}, func(item rbtree.Item) bool {
-			if utils.CalcCRC32([]byte(NodeID)) == utils.CalcCRC32([]byte(item.(*Node).ID)) {
-				return true
-			}
-			up = item.(*Node).ID
-			return false
-		})
-
-		r.NRing.Ascend(&Node{ID: NodeID}, func(item rbtree.Item) bool {
-			if utils.CalcCRC32([]byte(NodeID)) == utils.CalcCRC32([]byte(item.(*Node).ID)) {
-				return true
-			}
-			down = item.(*Node).ID
-			return false
-		})
-
-		return up, down
+	if r.NRing.Len() <= 1 {
+		return "", ""
 	}
 
-	return "", ""
+	up := r.NRing.Max().(*Node).ID
+	down := r.NRing.Min().(*Node).ID
+
+	r.NRing.Descend(&Node{ID: NodeID}, func(item rbtree.Item) bool {
+		if utils.CalcCRC32([]byte(NodeID)) == utils.CalcCRC32([]byte(item.(*Node).ID)) {
+			return true
+		}
+		up = item.(*Node).ID
+		return false
+	})
+
+	r.NRing.Ascend(&Node{ID: NodeID}, func(item rbtree.Item) bool {
+		if utils.CalcCRC32([]byte(NodeID)) == utils.CalcCRC32([]byte(item.(*Node).ID)) {
+			return true
+		}
+		down = item.(*Node).ID
+		return false
+	})
+
+	return up, down
 }
 
 // GetNodeByIndex
 // @params keyIndex
 func (r *HashRing) GetNodeByIndex(keyIndex uint32) (uint32, string) {
 
-	if r.VRing.Len() > 0 {
+	if r.VRing.Len() <= 0 {
+		return 0, ""
+	}
 
-		minVNodeOfRing := r.VRing.Min().(*VNode)
+	minVNodeOfRing := r.VRing.Min().(*VNode)
 
-		vNode := minVNodeOfRing
+	vNode := minVNodeOfRing
 
-		r.VRing.Ascend(&VNode{Index: keyIndex}, func(item rbtree.Item) bool {
+	r.VRing.Ascend(&VNode{Index: keyIndex}, func(item rbtree.Item) bool {
+		vNode = item.(*VNode)
+		if r.NodeStatus[vNode.NodeID] == false {
+			return true
+		}
+		return false
+	})
+
+	if !r.NodeStatus[vNode.NodeID] {
+		r.VRing.Ascend(minVNodeOfRing, func(item rbtree.Item) bool {
 			vNode = item.(*VNode)
 			if r.NodeStatus[vNode.NodeID] == false {
 				return true
 			}
 			return false
 		})
-
-		if !r.NodeStatus[vNode.NodeID] {
-			r.VRing.Ascend(minVNodeOfRing, func(item rbtree.Item) bool {
-				vNode = item.(*VNode)
-				if r.NodeStatus[vNode.NodeID] == false {
-					return true
-				}
-				return false
-			})
-		}
-
-		return vNode.Index, vNode.NodeID
 	}
 
-	return 0, ""
+	return vNode.Index, vNode.NodeID
 }
 
 // PrintNodes print all non-virtual nodes
