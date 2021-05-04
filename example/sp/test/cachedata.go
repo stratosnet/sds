@@ -23,9 +23,7 @@ func main() {
 
 	c.Store(sys, 0)
 
-	state2 := new(data.System)
-
-	state2.Version = 2
+	state2 := &data.System{Version: 2}
 
 	c.Load(state2)
 

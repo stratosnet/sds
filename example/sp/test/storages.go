@@ -12,7 +12,7 @@ func main() {
 	dataTable := database.NewDataTable("examples/sp/test/database.yaml")
 
 	//find PP
-	findPP := new(table.PP)
+	findPP := &table.PP{}
 	err := dataTable.FetchTable(findPP, map[string]interface{}{
 		"where": map[string]interface{}{
 			"id = ?": 1,
