@@ -19,7 +19,7 @@ func main() {
 		DB:     0,
 	})
 
-	connectConf := new(config.Connect)
+	connectConf := &config.Connect{}
 	connectConf.LoadConfFromYaml("examples/sp/test/database.yaml")
 
 	ct := database.NewCacheTable(r, *connectConf)

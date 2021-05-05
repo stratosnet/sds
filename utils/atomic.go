@@ -137,7 +137,7 @@ func (a *AtomicInt32) GetAtomic() int32 {
 
 // SetAtomic
 func (a *AtomicInt32) SetAtomic(newValue int32) {
-	// 这个方法实现把新值替换旧值
+	// replace stored value by newValue
 	atomic.StoreInt32((*int32)(a), newValue)
 }
 

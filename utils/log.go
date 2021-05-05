@@ -29,27 +29,32 @@ type Logger struct {
 	loglevel   LogLevel
 }
 
-var MyLogger = NewLogger("tmp/logs/stdout.log", true, true)
+var MyLogger *Logger // = NewLogger("tmp/logs/stdout.log", true, true)
 
-func NewLogger(filepath string, enableStd, enableFile bool) *Logger {
-	logger := new(Logger)
-	logfile := os.Stdout
-	logger.stdLogger = log.New(logfile, "\r\n", log.Ldate|log.Ltime|log.Lshortfile)
-	logger.stdLogger.SetPrefix("[Info]")
-
+func newLogger(filepath string, enableStd, enableFile bool) *Logger {
 	//init file output
 	outfile, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666) //open file, if not exist, create at filepath
 	if err != nil {
-		fmt.Println("log file open failed:", err.Error())
-		os.Exit(1)
+		panic(fmt.Sprintln("log file open failed:", err.Error()))
 	}
-	logger.fileLogger = log.New(outfile, "\r\n", log.Ldate|log.Ltime|log.Lshortfile)
 
-	logger.enablefile = enableFile
-	logger.enablestd = enableStd
-	logger.loglevel = Debug
+	logger := &Logger{
+		stdLogger:  log.New(os.Stdout, "\r\n", log.Ldate|log.Ltime|log.Lshortfile),
+		fileLogger: log.New(outfile, "\r\n", log.Ldate|log.Ltime|log.Lshortfile),
+		enablefile: enableFile,
+		enablestd:  enableStd,
+		loglevel:   Debug,
+	}
+
+	logger.stdLogger.SetPrefix("[Info]")
+
 	return logger
 
+}
+
+func NewLogger(filepath string, enableStd, enableFile bool) *Logger {
+	MyLogger = newLogger(filepath, enableStd, enableFile)
+	return MyLogger
 }
 
 func init() {
