@@ -65,10 +65,10 @@ type cipherparamsJSON struct {
 }
 
 type hdKeyBytes struct {
-	HdPath []byte
-	Mnemonic []byte
+	HdPath     []byte
+	Mnemonic   []byte
 	Passphrase []byte
-	PrivKey []byte
+	PrivKey    []byte
 }
 
 // CreateAccount creates a new account, setting auth as the password and saving the key data into the dir folder
@@ -221,8 +221,8 @@ func DecryptKey(keyjson []byte, auth string) (*AccountKey, error) {
 		Id:         uuid.UUID(keyId),
 		Account:    k.Account,
 		Address:    crypto.PubkeyToAddress(key.PublicKey),
-		HdPath: string(hdKeyBytesObject.HdPath),
-		Mnemonic: string(hdKeyBytesObject.Mnemonic),
+		HdPath:     string(hdKeyBytesObject.HdPath),
+		Mnemonic:   string(hdKeyBytesObject.Mnemonic),
 		Passphrase: string(hdKeyBytesObject.Passphrase),
 		PrivateKey: key,
 	}, nil
