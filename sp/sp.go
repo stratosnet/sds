@@ -58,6 +58,8 @@ func StartSP(conf string) {
 	spbf.Register(header.ReqGetCapacity, events.GetGetCapacityHandler(server))
 	spbf.Register(header.ReqFileSort, events.GetFileSortHandler(server))
 	spbf.Register(header.ReqFindDirectory, events.GetFindDirectoryHandler(server))
+	spbf.Register(header.ReqCAddVolume, events.GetCAddVolumeHandler(server))
+	spbf.Register(header.ReqCUseVolume, events.GetCUseVolumeHandler(server))
 
 	server.Start()
 }

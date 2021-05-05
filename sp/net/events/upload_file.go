@@ -87,6 +87,7 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 
 		if len(fileSlices) > 0 {
 			if existsFileSlice(fileSlices, sliceNumber, sliceOffsetStart, sliceOffsetEnd) {
+				utils.DebugLogf(eventHandleErrorTemplate, uploadFileEvent, "file not uploaded", "file slice already existed")
 				continue
 			}
 		}
@@ -168,7 +169,7 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 			}
 		} else {
 
-			userHasFile := new(table.UserHasFile)
+			userHasFile := &table.UserHasFile{}
 			err = s.CT.FetchTable(userHasFile, map[string]interface{}{
 				"where": map[string]interface{}{
 					"wallet_address = ? AND file_hash = ?": []interface{}{
@@ -259,7 +260,7 @@ func validateUploadFileRequest(req *protos.ReqUploadFile, s *net.Server) (bool, 
 	}
 
 	user := &table.User{WalletAddress: req.MyAddress.WalletAddress}
-	if s.CT.Fetch(user) != nil {
+	if err := s.CT.Fetch(user); err != nil {
 		return false, "not authorized to process"
 	}
 

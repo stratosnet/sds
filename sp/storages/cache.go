@@ -39,8 +39,7 @@ func (d *ServerCache) GetCache() cache.Cache {
 
 // NewServerCache
 func NewServerCache(cache cache.Cache) *ServerCache {
-	cd := new(ServerCache)
-	cd.Cache = cache
+	cd := &ServerCache{Cache: cache}
 	return cd
 }
 

@@ -19,9 +19,9 @@
 -- Current Database: `sds_sp`
 --
 
-CREATE DATABASE /*!32312 IF NOT EXISTS*/ `spacebook_sp` /*!40100 DEFAULT CHARACTER SET utf8 */;
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `sds` /*!40100 DEFAULT CHARACTER SET utf8 */;
 
-USE `spacebook_sp`;
+USE `sds`;
 
 --
 -- Table structure for table `album`
