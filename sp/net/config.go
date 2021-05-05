@@ -20,8 +20,8 @@ type Config struct {
 }
 
 type NetworkConfig struct {
-	Host string `yaml:"Host"`
-	Port string `yaml:"Port"`
+	Host          string `yaml:"Host"`
+	Port          string `yaml:"Port"`
 	WebsocketPort string `yaml:"WebsocketPort"`
 }
 
