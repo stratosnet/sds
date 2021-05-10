@@ -4,12 +4,14 @@ import (
 	"fmt"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
 	"github.com/stratosnet/sds/relay/client"
+	"github.com/stratosnet/sds/utils"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
 func main() {
+	utils.NewLogger("stdout.log", true, true)
 	setting.LoadConfig("./config/config.yaml")
 
 	multiClient := client.NewClient()
