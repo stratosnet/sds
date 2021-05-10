@@ -17,6 +17,7 @@ type Config struct {
 	BpList      BpListConfig      `yaml:"BpList"`
 	Ecdsa       EcdsaConfig       `yaml:"Ecdsa"`
 	User        UserConfig        `yaml:"User"`
+	Token       string            `yaml:"Token"`
 }
 
 type NetworkConfig struct {
