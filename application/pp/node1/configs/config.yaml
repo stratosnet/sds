@@ -24,4 +24,5 @@ IsLimitUploadSpeed: true
 LimitUploadSpeed: 100
 IsCheckFileOperation:
 IsCheckFileTransferFinished:
-
+AddressPrefix: "st"
+Token: "STOS"

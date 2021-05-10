@@ -13,12 +13,13 @@ func main() {
 	setting.LoadConfig("./config/config.yaml")
 
 	multiClient := client.NewClient()
+	defer multiClient.Stop()
+
 	err := multiClient.Start()
 	if err != nil {
 		fmt.Println("Shutting down. Could not start relay client: " + err.Error())
 		return
 	}
-	fmt.Println("Successfully subscribed to events from SDS and stratos-chain, and started client to send messages back")
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit,
@@ -32,8 +33,9 @@ func main() {
 	for {
 		select {
 		case <-quit:
-			multiClient.Stop()
-			os.Exit(0)
+			return
+		case <-multiClient.Ctx.Done():
+			return
 		}
 	}
 }

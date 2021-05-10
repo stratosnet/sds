@@ -11,12 +11,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
+	"github.com/cosmos/cosmos-sdk/crypto/keys"
 	"github.com/cosmos/go-bip39"
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/math"
 	"github.com/stratosnet/sds/utils/types"
+	"github.com/tendermint/btcd/btcec"
 	"github.com/vmihailenco/msgpack"
 	"io"
 	"io/ioutil"
@@ -75,7 +75,7 @@ type hdKeyBytes struct {
 func CreateAccount(dir, nickname, auth, hrp, mnemonic, bip39Passphrase, hdPath string, scryptN, scryptP int) (types.Address, error) {
 	keyStore := &KeyStorePassphrase{dir, scryptN, scryptP}
 
-	derivedKeyBytes, err := hd.Secp256k1.Derive()(mnemonic, bip39Passphrase, hdPath)
+	derivedKeyBytes, err := keys.SecpDeriveKey(mnemonic, bip39Passphrase, hdPath)
 	if err != nil {
 		return types.Address{}, err
 	}

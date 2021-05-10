@@ -2,7 +2,10 @@ sds:
   networkAddress: 127.0.0.1
   clientPort: 8888
   websocketPort: 8889
-stratoschain:
+  connectionRetries:
+    max: 100
+    sleepDuration: 1000 # milliseconds
+stratosChain:
   networkAddress: 127.0.0.1
-  clientPort: 26657
+  restPort: 1317
   websocketPort: 26657
