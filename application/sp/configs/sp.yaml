@@ -22,8 +22,8 @@ Database:
   Driver: mysql
   Host: localhost
   Port: 3306
-  User: user1
-  Pass: 111111
+  User: root
+  Pass: root
   DbName: sds
   Debug: false
   LogFile: tmp/logs/db.log

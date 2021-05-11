@@ -1,4 +1,4 @@
-Port: :18082
+Port: :18081
 NetWorkAddress: 127.0.0.1
 SPNetAddress: 127.0.0.1:8888
 Debug: true
@@ -11,11 +11,11 @@ DefPassword:
 DefSavePath:
 StorehousePath:
 DownloadPath:
-Password: a
-Account: 0xc5300c46B342deE1dd2c1FFe815322aDEd83446C
-AutoRun: true
+Password:
+Account:
+AutoRun: false
 Internal: true
-IsWallet:
+IsWallet: false
 BPURL:
 IsCheckDefaultPath:
 IsLimitDownloadSpeed: true
