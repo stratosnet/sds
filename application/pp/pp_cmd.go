@@ -75,7 +75,7 @@ func main() {
 			fmt.Println("input account")
 			return false
 		}
-		if len(param[0]) != 42 {
+		if len(param[0]) != 41 {
 			fmt.Println("input correct account")
 			return false
 		}
