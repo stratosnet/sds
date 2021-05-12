@@ -906,7 +906,7 @@ func HTTPGetConfigFun(httpRsp *HTTPRsp, write http.ResponseWriter, reqID string)
 			}
 			paths := strings.Split(setting.Config.DownloadPath, "./")
 			data.DownloadPath = dir + "/" + paths[1]
-			if setting.Iswindows {
+			if setting.IsWindows {
 				data.DownloadPath = filepath.FromSlash(data.DownloadPath)
 			}
 		}

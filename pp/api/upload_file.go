@@ -60,7 +60,7 @@ func upLoadFile(w http.ResponseWriter, request *http.Request) {
 		if pathMap["storagePath"] != nil {
 			sdPath = pathMap["storagePath"].(string)
 		}
-		if setting.Iswindows {
+		if setting.IsWindows {
 			path = strings.Replace(path, `\`, "/", -1)
 		}
 		pathType := file.IsFile(path)
