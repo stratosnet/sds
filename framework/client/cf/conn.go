@@ -50,7 +50,7 @@ type options struct {
 	logOpen    bool
 }
 
-// ClientOption client配置
+// ClientOption client configuration
 type ClientOption func(*options)
 
 // ClientConn
@@ -248,7 +248,7 @@ func (cc *ClientConn) Start() {
 	myClock.AddJobRepeat(time.Second*1, 0, logFunc)
 }
 
-// ClientClose 客户端主动断开
+// ClientClose Actively closes the client connection
 func (cc *ClientConn) ClientClose() {
 	cc.is_active = true
 	cc.once.Do(func() {
@@ -676,7 +676,7 @@ func handleLoop(c spbf.WriteCloser, wg *sync.WaitGroup) {
 
 	for {
 		select {
-		case <-cDone: // connectin closed
+		case <-cDone: // connection closed
 			Mylog(cc.opts.logOpen, "receiving cancel signal from conn")
 			return
 		case msgHandler := <-handlerCh:

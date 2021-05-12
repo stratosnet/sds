@@ -15,13 +15,13 @@ var ostype = runtime.GOOS
 func GetDownloadTmpPath(fileHash, fileName, savePath string) string {
 	if savePath == "" {
 		downPath := GetDownloadPath(fileHash) + "/" + fileName + ".tmp"
-		// if setting.Iswindows {
+		// if setting.IsWindows {
 		// 	downPath = filepath.FromSlash(downPath)
 		// }
 		return downPath
 	}
 	downPath := GetDownloadPath(savePath+"/"+fileHash) + "/" + fileName + ".tmp"
-	// if setting.Iswindows {
+	// if setting.IsWindows {
 	// 	downPath = filepath.FromSlash(downPath)
 	// }
 	return downPath
@@ -32,13 +32,13 @@ func GetDownloadTmpPath(fileHash, fileName, savePath string) string {
 func GetDownloadCsvPath(fileHash, fileName, savePath string) string {
 	if savePath == "" {
 		csv := GetDownloadPath(fileHash) + "/" + fileName + ".csv"
-		// if setting.Iswindows {
+		// if setting.IsWindows {
 		// 	csv = filepath.FromSlash(csv)
 		// }
 		return csv
 	}
 	csv := GetDownloadPath(savePath+"/"+fileHash) + "/" + fileName + ".csv"
-	// if setting.Iswindows {
+	// if setting.IsWindows {
 	// 	csv = filepath.FromSlash(csv)
 	// }
 	return csv
@@ -48,7 +48,7 @@ func GetDownloadCsvPath(fileHash, fileName, savePath string) string {
 // GetDownloadPath
 func GetDownloadPath(fileName string) string {
 	filePath := setting.Config.DownloadPath + fileName
-	// if setting.Iswindows {
+	// if setting.IsWindows {
 	// 	filePath = filepath.FromSlash(filePath)
 	// }
 	exist, err := PathExists(filePath)

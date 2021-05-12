@@ -25,7 +25,9 @@ extern void secp256k1GoPanicError(const char* msg, void* data);
 import "C"
 
 import (
+	"crypto/ecdsa"
 	"errors"
+	tmsecp256k1 "github.com/tendermint/tendermint/crypto/secp256k1"
 	"math/big"
 	"unsafe"
 )
@@ -154,6 +156,13 @@ func CompressPubkey(x, y *big.Int) []byte {
 		panic("libsecp256k1 error")
 	}
 	return out
+}
+
+func PubkeyToTendermint(pubkey ecdsa.PublicKey) tmsecp256k1.PubKeySecp256k1 {
+	compressed := CompressPubkey(pubkey.X, pubkey.Y)
+	var compressedArr [33]byte
+	copy(compressedArr[:], compressed)
+	return compressedArr
 }
 
 func checkSignature(sig []byte) error {
