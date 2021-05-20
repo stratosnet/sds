@@ -11,11 +11,11 @@ DefPassword:
 DefSavePath:
 StorehousePath:
 DownloadPath:
-Password: a
-Account: 0xcFaF25447c50BD3EF1cd67376e0b848AD2387a17
-AutoRun: true
+Password:
+Account:
+AutoRun: false
 Internal: true
-IsWallet: true
+IsWallet:
 BPURL:
 IsCheckDefaultPath:
 IsLimitDownloadSpeed: true
