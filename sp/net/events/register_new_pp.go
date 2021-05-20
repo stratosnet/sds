@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"encoding/hex"
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -58,7 +58,7 @@ func registerNewPPCallbackFunc(_ context.Context, s *net.Server, message proto.M
 		CpuInfo:        body.CpuInfo,
 		MacAddress:     body.MacAddress,
 		Version:        body.Version,
-		PubKey:         hex.EncodeToString(body.PubKey),
+		PubKey:         fmt.Sprintf("PubKeySecp256k1{%X}", body.PubKey),
 		State:          table.STATE_OFFLINE,
 	}
 

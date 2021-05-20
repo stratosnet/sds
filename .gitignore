@@ -18,6 +18,7 @@ vendor/
 target/
 
 *.log
+application/sp/spServer
 
 application/pp/*/account
 application/pp/node1/[a-zA-Z0-9]

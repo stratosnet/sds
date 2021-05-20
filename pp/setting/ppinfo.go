@@ -15,8 +15,8 @@ var IsPP = false
 // IsLoginToSP
 var IsLoginToSP = false
 
-// IsSatrtMining
-var IsSatrtMining = false
+// IsStartMining
+var IsStartMining = false
 
 // IsAuto
 var IsAuto = false
@@ -27,8 +27,8 @@ var WalletAddress string
 // NetworkAddress
 var NetworkAddress string
 
-// PublickKey
-var PublickKey []byte
+// PublicKey
+var PublicKey []byte
 
 // PrivateKey
 var PrivateKey *ecdsa.PrivateKey

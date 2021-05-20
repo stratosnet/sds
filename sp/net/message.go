@@ -1,7 +1,6 @@
 package net
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -110,7 +109,7 @@ func (m *MsgHandler) Mining(walletAddress, networkAddress, name string, puk []by
 	if m.server.CT.Fetch(pp) == nil {
 		pp.State = table.STATE_ONLINE
 		pp.NetworkAddress = networkAddress
-		pp.PubKey = hex.EncodeToString(puk)
+		pp.PubKey = fmt.Sprintf("PubKeySecp256k1{%X}", puk)
 		m.server.CT.Save(pp)
 	}
 }

@@ -11,9 +11,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/crypto/keys"
+	"github.com/cosmos/go-bip39"
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/math"
 	"github.com/stratosnet/sds/utils/types"
+	"github.com/tendermint/btcd/btcec"
+	"github.com/vmihailenco/msgpack"
 	"io"
 	"io/ioutil"
 	"os"
@@ -29,7 +33,8 @@ const (
 	scryptR      = 8
 	scryptDKLen  = 32
 
-	version = 3
+	version         = 3
+	mnemonicEntropy = 256
 )
 
 type KeyStorePassphrase struct {
@@ -59,16 +64,39 @@ type cipherparamsJSON struct {
 	IV string `json:"iv"`
 }
 
-// CreateAccount 创建一个新的账号，将 auth 设置为账号的密码并将账号相关 key 数据存储在 dir 的位置
-func CreateAccount(dir, account, auth string, scryptN, scryptP int) (types.Address, error) {
+type hdKeyBytes struct {
+	HdPath     []byte
+	Mnemonic   []byte
+	Passphrase []byte
+	PrivKey    []byte
+}
+
+// CreateAccount creates a new account, setting auth as the password and saving the key data into the dir folder
+func CreateAccount(dir, nickname, auth, hrp, mnemonic, bip39Passphrase, hdPath string, scryptN, scryptP int) (types.Address, error) {
 	keyStore := &KeyStorePassphrase{dir, scryptN, scryptP}
 
-	key, err := newAccountKey(rand.Reader)
+	derivedKeyBytes, err := keys.SecpDeriveKey(mnemonic, bip39Passphrase, hdPath)
 	if err != nil {
 		return types.Address{}, err
 	}
-	key.Account = account
-	filename := dir + "/" + key.Address.String()
+	derivedKey, _ := btcec.PrivKeyFromBytes(crypto.S256(), derivedKeyBytes)
+	if derivedKey == nil {
+		return types.Address{}, errors.New("couldn't generate ecdsa private key from bytes")
+	}
+	derivedKeyEcdsa := (*ecdsa.PrivateKey)(derivedKey)
+
+	key := newKeyFromECDSA(derivedKeyEcdsa)
+	key.Account = nickname
+	key.HdPath = hdPath
+	key.Mnemonic = mnemonic
+	key.Passphrase = bip39Passphrase
+
+	filename, err := key.Address.ToBech(hrp)
+	if err != nil {
+		return types.Address{}, err
+	}
+
+	filename = dir + "/" + filename
 	if err := keyStore.StoreKey(filename, key, auth); err != nil {
 		zeroKey(key.PrivateKey)
 		return types.Address{}, err
@@ -76,12 +104,13 @@ func CreateAccount(dir, account, auth string, scryptN, scryptP int) (types.Addre
 	return key.Address, nil
 }
 
-func newAccountKey(rand io.Reader) (*AccountKey, error) {
-	privateKeyECDSA, err := ecdsa.GenerateKey(crypto.S256(), rand)
+func NewMnemonic() (string, error) {
+	entropy, err := bip39.NewEntropy(mnemonicEntropy)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return newKeyFromECDSA(privateKeyECDSA), nil
+
+	return bip39.NewMnemonic(entropy)
 }
 
 func newKeyFromECDSA(privateKeyECDSA *ecdsa.PrivateKey) *AccountKey {
@@ -109,12 +138,22 @@ func EncryptKey(key *AccountKey, auth string, scryptN, scryptP int) ([]byte, err
 	}
 	encryptKey := derivedKey[:16]
 	keyBytes := math.PaddedBigBytes(key.PrivateKey.D, 32)
+	hdKeyBytesObject := hdKeyBytes{
+		HdPath:     []byte(key.HdPath),
+		Mnemonic:   []byte(key.HdPath),
+		Passphrase: []byte(key.HdPath),
+		PrivKey:    keyBytes,
+	}
+	hdKeyEncoded, err := msgpack.Marshal(hdKeyBytesObject)
+	if err != nil {
+		return nil, err
+	}
 
 	iv := make([]byte, aes.BlockSize) // 16
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		panic("reading from crypto/rand failed: " + err.Error())
 	}
-	cipherText, err := aesCTRXOR(encryptKey, keyBytes, iv)
+	cipherText, err := aesCTRXOR(encryptKey, hdKeyEncoded, iv)
 	if err != nil {
 		return nil, err
 	}
@@ -170,13 +209,22 @@ func DecryptKey(keyjson []byte, auth string) (*AccountKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	key := crypto.ToECDSAUnsafe(keyBytes)
+
+	hdKeyBytesObject := hdKeyBytes{}
+	err = msgpack.Unmarshal(keyBytes, &hdKeyBytesObject)
+	if err != nil {
+		return nil, err
+	}
+	key := crypto.ToECDSAUnsafe(hdKeyBytesObject.PrivKey)
 
 	return &AccountKey{
 		Id:         uuid.UUID(keyId),
-		Address:    crypto.PubkeyToAddress(key.PublicKey),
-		PrivateKey: key,
 		Account:    k.Account,
+		Address:    crypto.PubkeyToAddress(key.PublicKey),
+		HdPath:     string(hdKeyBytesObject.HdPath),
+		Mnemonic:   string(hdKeyBytesObject.Mnemonic),
+		Passphrase: string(hdKeyBytesObject.Passphrase),
+		PrivateKey: key,
 	}, nil
 }
 
@@ -317,13 +365,19 @@ type AccountKey struct {
 	Account string
 	// to simplify lookups we also store the address
 	Address types.Address
+	// The HD path to use to derive this key
+	HdPath string
+	// The mnemonic for the underlying HD wallet
+	Mnemonic string
+	// The bip39 passphrase for the underlying HD wallet
+	Passphrase string
 	// we only store privkey as pubkey/address can be derived from it
 	// privkey in this struct is always in plaintext
 	PrivateKey *ecdsa.PrivateKey
 }
 
-// ChangePassWord
-func ChangePassWord(walletAddress, dir, auth string, scryptN, scryptP int, key *AccountKey) error {
+// ChangePassword
+func ChangePassword(walletAddress, dir, auth string, scryptN, scryptP int, key *AccountKey) error {
 	files, _ := ioutil.ReadDir(dir)
 	if len(files) == 0 {
 		ErrorLog("not exist")
