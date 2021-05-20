@@ -45,10 +45,17 @@ func S256() elliptic.Curve {
 	return secp256k1.S256()
 }
 
-// PubkeyToAddress calculates the waller address from the user public key
-func PubkeyToAddress(p ecdsa.PublicKey) types.Address {
-	pubBytes := FromECDSAPub(&p)
-	return types.BytesToAddress(Keccak256(pubBytes[1:])[12:])
+// PubKeyToAddress calculates the wallet address from the user's private key
+func PrivKeyToAddress(privKey []byte) types.Address {
+	tmPrivKey := secp256k1.PrivKeyBytesToTendermint(privKey)
+	tmPubKey := tmPrivKey.PubKey()
+	return types.BytesToAddress(tmPubKey.Address())
+}
+
+// PubKeyToAddress calculates the wallet address from the user's public key
+func PubKeyToAddress(pubKey []byte) types.Address {
+	tmPubKey := secp256k1.PubKeyBytesToTendermint(pubKey)
+	return types.BytesToAddress(tmPubKey.Address())
 }
 
 // ToECDSAUnsafe blindly converts a binary blob to a private key. It should almost

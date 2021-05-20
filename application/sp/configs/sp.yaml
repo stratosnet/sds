@@ -36,3 +36,8 @@ BpList:
 Ecdsa:
   PrivateKeyPath: path_to_privatekey
   PrivateKeyPass: privatekey_password
+
+BlockchainInfo:
+  AddressPrefix: st
+  ChainId: stratoschain
+  Token: stos

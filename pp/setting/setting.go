@@ -93,7 +93,10 @@ type config struct {
 	IsCheckFileOperation        bool   `yaml:"IsCheckFileOperation"`
 	IsCheckFileTransferFinished bool   `yaml:"IsCheckFileTransferFinished"`
 	AddressPrefix               string `yaml:"AddressPrefix"`
+	ChainId                     string `yaml:"ChainId"`
 	Token                       string `yaml:"Token"`
+	StratosChainAddress         string `yaml:"StratosChainAddress"`
+	StratosChainPort            string `yaml:"StratosChainPort"`
 }
 
 var ostype = runtime.GOOS
@@ -133,7 +136,7 @@ func CheckLogin() bool {
 
 // GetSign
 func GetSign(str string) []byte {
-	data, err := utils.ECCSign([]byte(str), PrivateKey)
+	data, err := utils.ECCSignBytes([]byte(str), PrivateKey)
 	utils.DebugLog("GetSign == ", data)
 	if utils.CheckError(err) {
 		utils.ErrorLog("GetSign", err)
