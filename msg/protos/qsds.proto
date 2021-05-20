@@ -184,7 +184,7 @@ message RspDownloadSlice {
   Result result = 10;
 }
 
-message ReqDownloadSloceWrong {
+message ReqDownloadSliceWrong {
   string wallet_address = 1;
   string task_id = 2;
   string slice_hash = 3;
@@ -192,7 +192,7 @@ message ReqDownloadSloceWrong {
   string save_path = 5;
 }
 
-message RspDownloadSloceWrong {
+message RspDownloadSliceWrong {
   string wallet_address = 1;
   string file_hash = 2;
   string task_id = 3;
@@ -201,12 +201,12 @@ message RspDownloadSloceWrong {
   Result result = 6;
 }
 
-message ReqDownloadSlocePause {
+message ReqDownloadSlicePause {
   string wallet_address = 1;
   string file_hash = 2;
   string req_id = 3;
 }
-message RspDownloadSlocePause {
+message RspDownloadSlicePause {
   string wallet_address = 1;
   string file_hash = 2;
   string req_id = 3;
@@ -217,7 +217,7 @@ message ReqReportDownloadResult {
   bool isPP = 1; // p doesn't need DownloadSliceInfo
   DownloadSliceInfo slice_info = 2;
   string file_hash = 3;
-  string wallet_address = 4; //dowloader address
+  string wallet_address = 4; // downloader address
   bytes  sign = 5;
   string task_id = 6;
   string my_wallet_address = 7; // PP's address
@@ -258,9 +258,25 @@ message ReqRegisterNewPP {
 
 message RspRegisterNewPP {
   Result result = 1;
-
 }
 
+message ReqActivate {
+  bytes tx = 1;
+  string wallet_address = 2;
+}
+
+message RspActivate {
+  Result result = 1;
+  bool already_active = 2;
+}
+
+message ReqActivated {
+  string wallet_address = 1;
+}
+
+message RspActivated {
+  Result result = 1;
+}
 
 message ReqDeleteFile {
   string wallet_address = 1;
@@ -279,7 +295,7 @@ message RspDeleteFile {
 
 // file transfer
 // SP notify new PP to get file from storing PP，slice info are included
-// new pp transfer to old pp, slice infor are not included,
+// new pp transfer to old pp, slice infos are not included,
 message ReqTransferNotice {
   SliceStorageInfo slice_storage_info = 1;
   string transfer_cer = 2;
@@ -864,4 +880,9 @@ message RspCustomerUseVolume {
   string wallet_address = 1;
   string req_id = 2;
   Result result = 3;
+}
+
+message RelayMessage {
+  string type = 1;
+  bytes data = 2;
 }

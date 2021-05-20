@@ -851,7 +851,7 @@ func HTTPShareLinkFun(httpRsp *HTTPRsp, write http.ResponseWriter, reqID string)
 
 // HTTPDownPauseFun HTTPDownPauseFun
 // func HTTPDownPauseFun(httpRsp *HTTPRsp, write http.ResponseWriter, reqID string) {
-// 	target := httpRsp.Data.(*protos.RspDownloadSlocePause)
+// 	target := httpRsp.Data.(*protos.RspDownloadSlicePause)
 // 	if target.Result.State == protos.ResultState_RES_SUCCESS {
 // 		write.Write(httpserv.NewJson(nil, setting.SUCCESSCode, target.Result.Msg).ToBytes())
 // 		HTTPWriterMap.Delete(reqID)

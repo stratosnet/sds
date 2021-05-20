@@ -12,7 +12,6 @@ import (
 	"github.com/stratosnet/sds/sp/storages/data"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto"
 	"path/filepath"
 	"time"
 )
@@ -226,18 +225,13 @@ func validateReportUploadSliceResultRequest(req *protos.ReportUploadSliceResult,
 		return false, "not authorized to process"
 	}
 
-	pukInByte, err := hex.DecodeString(user.Puk)
-	if err != nil {
-		return false, err.Error()
-	}
-
-	puk, err := crypto.UnmarshalPubkey(pukInByte)
+	puk, err := hex.DecodeString(user.Puk)
 	if err != nil {
 		return false, err.Error()
 	}
 
 	d := req.WalletAddress + req.FileHash
-	if !utils.ECCVerify([]byte(d), req.Sign, puk) {
+	if !utils.ECCVerifyBytes([]byte(d), req.Sign, puk) {
 		return false, "signature verification failed"
 	}
 

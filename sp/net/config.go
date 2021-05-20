@@ -7,17 +7,17 @@ import (
 
 // Config server config struct
 type Config struct {
-	Version     uint16            `yaml:"Version"`
-	Net         NetworkConfig     `yaml:"Net"`
-	Peers       PeersConfig       `yaml:"Peers"`
-	HashRing    HashRingConfig    `yaml:"HashRing"`
-	FileStorage FileStorageConfig `yaml:"FileStorage"`
-	Cache       cache.Config      `yaml:"Cache"`
-	Database    config.Connect    `yaml:"Database"`
-	BpList      BpListConfig      `yaml:"BpList"`
-	Ecdsa       EcdsaConfig       `yaml:"Ecdsa"`
-	User        UserConfig        `yaml:"User"`
-	Token       string            `yaml:"Token"`
+	Version        uint16               `yaml:"Version"`
+	Net            NetworkConfig        `yaml:"Net"`
+	Peers          PeersConfig          `yaml:"Peers"`
+	HashRing       HashRingConfig       `yaml:"HashRing"`
+	FileStorage    FileStorageConfig    `yaml:"FileStorage"`
+	Cache          cache.Config         `yaml:"Cache"`
+	Database       config.Connect       `yaml:"Database"`
+	BpList         BpListConfig         `yaml:"BpList"`
+	Ecdsa          EcdsaConfig          `yaml:"Ecdsa"`
+	User           UserConfig           `yaml:"User"`
+	BlockchainInfo BlockchainInfoConfig `yaml:"BlockchainInfo"`
 }
 
 type NetworkConfig struct {
@@ -57,4 +57,10 @@ type UserConfig struct {
 	UpgradeReward      uint64 `yaml:"UpgradeReward"`
 	InviteReward       uint64 `yaml:"InviteReward"`
 	InitializeCapacity uint64 `yaml:"InitializeCapacity"`
+}
+
+type BlockchainInfoConfig struct {
+	AddressPrefix string `yaml:"AddressPrefix"`
+	ChainId       string `yaml:"ChainId"`
+	Token         string `yaml:"Token"`
 }

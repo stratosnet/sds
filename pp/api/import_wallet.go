@@ -5,7 +5,7 @@ import (
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto"
+	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/stratosnet/sds/utils/httpserv"
 	"net/http"
 )
@@ -41,7 +41,7 @@ func importWallet(w http.ResponseWriter, request *http.Request) {
 		return
 	}
 	setting.PrivateKey = key.PrivateKey
-	setting.PublicKey = crypto.FromECDSAPub(&key.PrivateKey.PublicKey)
+	setting.PublicKey = secp256k1.PrivKeyToPubKey(key.PrivateKey)
 
 	addressString, err := key.Address.ToBech(setting.Config.AddressPrefix)
 	if err != nil {

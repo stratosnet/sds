@@ -10,7 +10,6 @@ import (
 	"github.com/stratosnet/sds/sp/net"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto"
 )
 
 // mining is a concrete implementation of event
@@ -89,12 +88,7 @@ func validateMiningRequest(req *protos.ReqMining) (bool, string) {
 		return false, "signature can't be empty"
 	}
 
-	puk, err := crypto.UnmarshalPubkey(req.PublicKey)
-	if err != nil {
-		return false, err.Error()
-	}
-
-	if !utils.ECCVerify([]byte(req.Address.WalletAddress), req.Sign, puk) {
+	if !utils.ECCVerifyBytes([]byte(req.Address.WalletAddress), req.Sign, req.PublicKey) {
 		return false, "signature verification failed"
 	}
 

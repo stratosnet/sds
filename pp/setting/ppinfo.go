@@ -1,7 +1,6 @@
 package setting
 
 import (
-	"crypto/ecdsa"
 	"encoding/csv"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/utils"
@@ -18,6 +17,9 @@ var IsLoginToSP = false
 // IsStartMining
 var IsStartMining = false
 
+// IsActive
+var IsActive = false
+
 // IsAuto
 var IsAuto = false
 
@@ -31,7 +33,7 @@ var NetworkAddress string
 var PublicKey []byte
 
 // PrivateKey
-var PrivateKey *ecdsa.PrivateKey
+var PrivateKey []byte
 
 // PPList
 var PPList []*protos.PPBaseInfo

@@ -12,7 +12,7 @@ DefSavePath:
 StorehousePath:
 DownloadPath:
 Password: aaa
-Account: st1cdsw4wmrd6w9a7gsez2mxadfrkxltj7685aj83
+Account: st1c7yf8ca7acazqfyp85q25249gr9zgewe03xylp
 AutoRun: true
 Internal: true
 IsWallet: true
@@ -25,4 +25,7 @@ LimitUploadSpeed: 100
 IsCheckFileOperation:
 IsCheckFileTransferFinished:
 AddressPrefix: "st"
-Token: "STOS"
+ChainId: "stratoschain"
+Token: "stos"
+StratosChainAddress: 127.0.0.1
+StratosChainPort: 1317

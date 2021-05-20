@@ -135,7 +135,11 @@ func StartMock(cmd string, eventHandleFunc func(s *net.Server) EventHandleFunc) 
 			InviteReward:       0,
 			InitializeCapacity: 0,
 		},
-		Token: "STOS",
+		BlockchainInfo: net.BlockchainInfoConfig{
+			AddressPrefix: "st",
+			ChainId:       "stratoschain",
+			Token:         "stos",
+		},
 	}
 	s = &net.Server{
 		Conf: conf,

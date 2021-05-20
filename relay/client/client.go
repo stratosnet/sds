@@ -72,7 +72,7 @@ func (m *MultiClient) Start() error {
 
 			// Client to subscribe to events from SDS SP node
 			fullSdsWebsocketUrl := "ws://" + sdsWebsocketUrl + "/websocket"
-			sdsTopics := []string{"todo"} // TODO: fill list of SDS topics to subscribe to
+			sdsTopics := []string{"broadcast"}
 			ws := sds.DialWebsocket(fullSdsWebsocketUrl, sdsTopics)
 			if ws == nil {
 				break
@@ -145,13 +145,22 @@ func (m *MultiClient) sdsEventsReaderLoop() {
 			return
 		}
 
-		// TODO: handle messages. Need a proto type that can differentiate between event type
-		// Responding to most events will probably involve sending a message to stratos-chain using m.stratosWebsocketClient
-
 		fmt.Println("received: " + string(data))
-		msg := protos.RspGetPPList{}
-		proto.Unmarshal(data, &msg)
-		fmt.Printf("Received: %v\n", msg)
+		msg := protos.RelayMessage{}
+		err = proto.Unmarshal(data, &msg)
+		if err != nil {
+			fmt.Println("couldn't unmarshal message to protos.RelayMessage: " + err.Error())
+			continue
+		}
+
+		switch msg.Type {
+		case sds.TypeBroadcast:
+			err = stratoschain.BroadcastTxBytes(msg.Data)
+			if err != nil {
+				fmt.Println("couldn't broadcast transaction: " + err.Error())
+				continue
+			}
+		}
 	}
 }
 

@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto"
+	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -82,7 +82,7 @@ func LoadOrCreateAccount(path, pass string) string {
 		return ""
 	}
 
-	return hex.EncodeToString(crypto.FromECDSAPub(&privKey.PrivateKey.PublicKey))
+	return hex.EncodeToString(secp256k1.PrivKeyToPubKey(privKey.PrivateKey))
 }
 
 // GenerateDownloadLink

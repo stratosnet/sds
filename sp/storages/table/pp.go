@@ -19,6 +19,7 @@ CREATE TABLE `pp` (
   `version` int(10) unsigned NOT NULL DEFAULT '0' ,
   `pub_key` varchar(1000) NOT NULL DEFAULT '' ,
   `state` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT '0:offline,1:online',
+  `active` boolean NOT NULL DEFAULT false,
   PRIMARY KEY (`id`),
   UNIQUE KEY `IDX_WALLET_ADDRESS` (`wallet_address`) USING HASH
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
@@ -41,6 +42,7 @@ CREATE TABLE pp
     version         int unsigned        NOT NULL DEFAULT '0',
     pub_key         varchar(1000)       NOT NULL DEFAULT '',
     state           tinyint unsigned    NOT NULL DEFAULT '0' COMMENT '0:offline,1:online',
+    active          boolean             NOT NULL DEFAULT false,
     UNIQUE KEY IDX_WALLET_ADDRESS (wallet_address) USING HASH
 ) ENGINE = InnoDB
   DEFAULT CHARSET = UTF8MB4;
@@ -65,6 +67,7 @@ type PP struct {
 	Version        uint32
 	PubKey         string
 	State          byte
+	Active         bool // Whether or not the PP is an active resource node on the stratos-chain
 }
 
 // TableName

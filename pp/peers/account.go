@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto"
+	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"io/ioutil"
 )
 
@@ -67,7 +67,7 @@ func getPublicKey(filePath, password string) bool {
 		return false
 	}
 	setting.PrivateKey = key.PrivateKey
-	setting.PublicKey = crypto.FromECDSAPub(&key.PrivateKey.PublicKey)
+	setting.PublicKey = secp256k1.PrivKeyToPubKey(key.PrivateKey)
 	utils.DebugLog("publicKey", setting.PublicKey)
 	fmt.Println("unlock wallet successfully ", setting.WalletAddress)
 	return true
