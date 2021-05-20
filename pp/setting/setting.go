@@ -2,13 +2,14 @@ package setting
 
 import (
 	"fmt"
-	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/utils"
 	"io/ioutil"
 	"os"
 	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/utils"
 )
 
 // REPROTDHTIME 1 hour
@@ -71,7 +72,6 @@ type config struct {
 	SPNetAddress                string `yaml:"SPNetAddress"`
 	Debug                       bool   `yaml:"Debug"`
 	PPListDir                   string `yaml:"PPListDir"`
-	BPListDir                   string `yaml:"BPListDir"`
 	AccountDir                  string `yaml:"AccountDir"`
 	ScryptN                     int    `yaml:"scryptN"`
 	ScryptP                     int    `yaml:"scryptP"`

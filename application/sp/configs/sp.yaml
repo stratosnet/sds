@@ -28,10 +28,6 @@ Database:
   Debug: false
   LogFile: tmp/logs/db.log
 
-BpList:
-  - { NetworkAddress: 192.168.2.43:18081, WalletAddress: 0xcFaF25447c50BD3EF1cd67376e0b848AD2387a17 }
-  - { NetworkAddress: 192.168.2.43:18082, WalletAddress: 0xc5300c46B342deE1dd2c1FFe815322aDEd83446C }
-
 Ecdsa:
   PrivateKeyPath: path_to_privatekey
   PrivateKeyPass: privatekey_password

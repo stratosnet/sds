@@ -3,13 +3,14 @@ package event
 // Author j
 import (
 	"context"
+	"time"
+
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
-	"time"
 
 	"github.com/alex023/clock"
 )
@@ -64,19 +65,4 @@ func reloadPPlist() {
 	clock := clock.NewClock()
 	clock.AddJobRepeat(time.Second*3, 1, GetPPList)
 	// defer job.Cancel()
-}
-
-// GetBPList P node get BPList
-func GetBPList() {
-	utils.DebugLog("GetBPList")
-	SendMessageToSPServer(reqGetPPlistData(), header.ReqGetBPList)
-}
-
-// RspGetBPList
-func RspGetBPList(ctx context.Context, conn spbf.WriteCloser) {
-	utils.DebugLog("get RspGetBPList RSP")
-	var target protos.RspGetBPList
-	if unmarshalData(ctx, &target) {
-		setting.SaveBPListLocal(&target)
-	}
 }

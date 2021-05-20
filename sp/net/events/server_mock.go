@@ -2,6 +2,12 @@ package events
 
 import (
 	"context"
+	"io/ioutil"
+	"log"
+	gonet "net"
+	"os"
+	"strings"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg"
@@ -17,11 +23,6 @@ import (
 	"github.com/stratosnet/sds/utils/hashring"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"io/ioutil"
-	"log"
-	gonet "net"
-	"os"
-	"strings"
 )
 
 // initialize
@@ -125,7 +126,6 @@ func StartMock(cmd string, eventHandleFunc func(s *net.Server) EventHandleFunc) 
 		FileStorage: net.FileStorageConfig{},
 		Cache:       redisConfig,
 		Database:    mysqlC,
-		BpList:      net.BpListConfig{},
 		Ecdsa: net.EcdsaConfig{
 			PrivateKeyPath: "",
 			PrivateKeyPass: "",
