@@ -502,7 +502,7 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 
 	for {
 		select {
-		case <-cDone: // connectin closed
+		case <-cDone: // connection closed
 			Mylog(sc.belong.opts.logOpen, "handle receiving cancel signal from conn")
 			return
 		case <-sDone: // server closed

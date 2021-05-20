@@ -1,5 +1,5 @@
 Port: :18081
-NetWorkAddress: 127.0.0.1
+NetworkAddress: 127.0.0.1
 SPNetAddress: 127.0.0.1:8888
 Debug: true
 PPListDir: "./peers/pp-list"
@@ -11,9 +11,9 @@ DefPassword:
 DefSavePath:
 StorehousePath:
 DownloadPath:
-Password:
-Account:
-AutoRun: false
+Password: aaa
+Account: st1cdsw4wmrd6w9a7gsez2mxadfrkxltj7685aj83
+AutoRun: true
 Internal: true
 IsWallet:
 BPURL:
@@ -24,4 +24,5 @@ IsLimitUploadSpeed: true
 LimitUploadSpeed: 100
 IsCheckFileOperation:
 IsCheckFileTransferFinished:
-
+AddressPrefix: "st"
+Token: "STOS"

@@ -21,7 +21,7 @@ func listenOffline() {
 				}
 			} else {
 				utils.Log("PP is offline")
-				setting.DeletePPList(offline.NetWorkAddress)
+				setting.DeletePPList(offline.NetworkAddress)
 				initPPList()
 			}
 		}
@@ -35,7 +35,7 @@ func reloadConnectSP() {
 		clock.AddJobRepeat(time.Second*3, 1, reloadConnectSP)
 		client.SPConn = client.NewClient(setting.Config.SPNetAddress, setting.IsPP)
 		event.RegisterChain(true)
-		if setting.IsSatrtMining {
+		if setting.IsStartMining {
 			event.StartMining()
 		}
 	}

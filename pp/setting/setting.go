@@ -51,7 +51,7 @@ var DownLoadTaskIDMap = &sync.Map{}
 var (
 	UpMap     = make(map[string]interface{}, 0)
 	DownMap   = make(map[string]interface{}, 0)
-	ReusltMap = make(map[string]interface{}, 0)
+	ResultMap = make(map[string]interface{}, 0)
 )
 
 //  http code
@@ -67,7 +67,7 @@ type config struct {
 	VersionShow                 string
 	DownloadPathMinLen          int
 	Port                        string `yaml:"Port"`
-	NetWorkAddress              string `yaml:"NetWorkAddress"`
+	NetworkAddress              string `yaml:"NetworkAddress"`
 	SPNetAddress                string `yaml:"SPNetAddress"`
 	Debug                       bool   `yaml:"Debug"`
 	PPListDir                   string `yaml:"PPListDir"`
@@ -92,6 +92,8 @@ type config struct {
 	LimitUploadSpeed            uint64 `yaml:"LimitUploadSpeed"`
 	IsCheckFileOperation        bool   `yaml:"IsCheckFileOperation"`
 	IsCheckFileTransferFinished bool   `yaml:"IsCheckFileTransferFinished"`
+	AddressPrefix               string `yaml:"AddressPrefix"`
+	Token                       string `yaml:"Token"`
 }
 
 var ostype = runtime.GOOS
