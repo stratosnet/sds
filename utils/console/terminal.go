@@ -142,8 +142,8 @@ func (p *Terminal) PromptPassword(prompt string) (passwd string, err error) {
 	return passwd, err
 }
 
-// MyGetPassPhrase
-func MyGetPassPhrase(prompt string, confirmation bool) string {
+// MyGetPassword
+func MyGetPassword(prompt string, confirmation bool) string {
 	// Otherwise prompt the user for the password
 	if prompt != "" {
 		fmt.Println(prompt)

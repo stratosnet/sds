@@ -20,8 +20,8 @@ func GetNetworkAddress() {
 }
 
 func getExternal() string {
-	utils.Log("setting.NetworkAddress", setting.Config.NetWorkAddress)
-	return setting.Config.NetWorkAddress
+	utils.Log("setting.NetworkAddress", setting.Config.NetworkAddress)
+	return setting.Config.NetworkAddress
 }
 
 func getInternal() string {
