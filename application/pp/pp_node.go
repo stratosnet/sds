@@ -6,10 +6,6 @@ import (
 )
 
 func main() {
-	setting.LoadConfig("./configs/config2.yaml")
+	setting.LoadConfig("./configs/config.yaml")
 	peers.StartPP()
-
-	for {
-
-	}
 }
