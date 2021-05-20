@@ -3,6 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/api"
 	"github.com/stratosnet/sds/pp/event"
@@ -12,13 +20,6 @@ import (
 	"github.com/stratosnet/sds/pp/websocket"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
-	"io/ioutil"
-	"net"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func main() {
@@ -61,12 +62,21 @@ func main() {
 		return true
 	}
 	newAccount := func(line string, param []string) bool {
-		password := console.MyGetPassPhrase("input password", true)
+		if len(param) < 2 {
+			fmt.Println("Not enough arguments. Please provide the new account name and hdPath")
+			return false
+		}
+
+		password := console.MyGetPassword("input password", true)
 		if len(password) == 0 {
 			fmt.Println("wrong password")
 			return false
 		}
-		peers.NewAccount(password, "")
+
+		mnemonic := console.MyGetPassword("input bip39 mnemonic (leave blank to generate a new one)", false)
+		passphrase := console.MyGetPassword("input bip39 passphrase", false)
+
+		peers.CreateAccount(password, param[0], mnemonic, passphrase, param[1])
 		return true
 	}
 
@@ -79,7 +89,7 @@ func main() {
 			fmt.Println("input correct account")
 			return false
 		}
-		password := console.MyGetPassPhrase("input password", false)
+		password := console.MyGetPassword("input password", false)
 		if len(password) == 0 {
 			fmt.Println("empty password")
 			return false
@@ -413,7 +423,7 @@ func main() {
 				go websocket.SocketRead(conn)
 				go func() {
 					for {
-						writeErr := websocket.SocketStart(conn, setting.UpMap, setting.DownMap, setting.ReusltMap)
+						writeErr := websocket.SocketStart(conn, setting.UpMap, setting.DownMap, setting.ResultMap)
 						if writeErr != nil {
 							return
 						}
@@ -505,8 +515,8 @@ func setConfig() {
 		ipS := mm["ip"]
 		ipString = ipS.(string)
 		setting.NetworkAddress = ipString
-		setting.Config.NetWorkAddress = ipString
-		netStr := "NetWorkAddress: " + ipString
+		setting.Config.NetworkAddress = ipString
+		netStr := "NetworkAddress: " + ipString
 		writerConfig("\n" + netStr)
 	}
 	st()
@@ -515,8 +525,8 @@ func setConfig() {
 
 func st() {
 	for {
-		if setting.Config.NetWorkAddress != "" && setting.WalletAddress != "" {
-			utils.DebugLog("setting.Config.NetWorkAddress == ", setting.Config.NetWorkAddress)
+		if setting.Config.NetworkAddress != "" && setting.WalletAddress != "" {
+			utils.DebugLog("setting.Config.NetworkAddress == ", setting.Config.NetworkAddress)
 			utils.DebugLog("setting.WalletAddress == ", setting.WalletAddress)
 			break
 		}
