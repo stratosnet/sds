@@ -3,6 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/api"
 	"github.com/stratosnet/sds/pp/event"
@@ -12,13 +20,6 @@ import (
 	"github.com/stratosnet/sds/pp/websocket"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
-	"io/ioutil"
-	"net"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func main() {
@@ -84,7 +85,7 @@ func main() {
 			fmt.Println("input account")
 			return false
 		}
-		if len(param[0]) != 42 {
+		if len(param[0]) != 41 {
 			fmt.Println("input correct account")
 			return false
 		}

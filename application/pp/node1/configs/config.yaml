@@ -15,7 +15,7 @@ Password: aaa
 Account: st1cdsw4wmrd6w9a7gsez2mxadfrkxltj7685aj83
 AutoRun: true
 Internal: true
-IsWallet: true
+IsWallet: false
 BPURL:
 IsCheckDefaultPath:
 IsLimitDownloadSpeed: true
