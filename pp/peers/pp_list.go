@@ -26,9 +26,3 @@ func initPPList() {
 		event.GetPPList()
 	}
 }
-
-func initBPList() {
-	if !setting.InitBPList() {
-		event.GetBPList()
-	}
-}

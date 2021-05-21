@@ -1,13 +1,13 @@
 package peers
 
 import (
+	"time"
+
+	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
-	"time"
-
-	"github.com/alex023/clock"
 )
 
 func listenOffline() {
@@ -35,8 +35,5 @@ func reloadConnectSP() {
 		clock.AddJobRepeat(time.Second*3, 1, reloadConnectSP)
 		client.SPConn = client.NewClient(setting.Config.SPNetAddress, setting.IsPP)
 		event.RegisterChain(true)
-		if setting.IsStartMining {
-			event.StartMining()
-		}
 	}
 }
