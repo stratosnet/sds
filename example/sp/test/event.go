@@ -35,7 +35,7 @@ func (t *MyHandle) Handle(ctx context.Context, conn spbf.WriteCloser) {
 
 	target := new(protos.ReqRegisterNewPP)
 
-	callback := func(message interface{}, _ spbf.WriteCloser) (interface{}, string) {
+	callback := func(message interface{}) (interface{}, string) {
 
 		// body := message.(*protos.ReqRegisterNewPP)
 

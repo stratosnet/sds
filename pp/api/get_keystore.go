@@ -22,7 +22,7 @@ func getKeyStore(w http.ResponseWriter, request *http.Request) {
 	}
 	walletPath := strings.Split(setting.Config.AccountDir, "./")
 	utils.DebugLog("wa", walletPath[1])
-	if setting.Iswindows {
+	if setting.IsWindows {
 		winPath := walletPath[1]
 		winPath = strings.Replace(winPath, "/", "\\", -1)
 		path = path + "\\" + winPath

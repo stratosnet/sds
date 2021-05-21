@@ -135,6 +135,7 @@ func StartMock(cmd string, eventHandleFunc func(s *net.Server) EventHandleFunc) 
 			InviteReward:       0,
 			InitializeCapacity: 0,
 		},
+		Token: "STOS",
 	}
 	s = &net.Server{
 		Conf: conf,

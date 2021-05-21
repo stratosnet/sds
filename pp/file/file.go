@@ -209,7 +209,7 @@ func CheckFileExisting(fileHash, fileName, savePath string) bool {
 	} else {
 		filePath = setting.Config.DownloadPath + savePath + "/" + fileName
 	}
-	// if setting.Iswindows {
+	// if setting.IsWindows {
 	// 	filePath = filepath.FromSlash(filePath)
 	// }
 	utils.DebugLog("filePath", filePath)

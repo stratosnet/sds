@@ -1,8 +1,9 @@
-Port: :18081
-NetWorkAddress: 127.0.0.1
+Port: :18082
+NetworkAddress: 127.0.0.1
 SPNetAddress: 127.0.0.1:8888
 Debug: true
 PPListDir: "./peers/pp-list"
+BPListDir: "./peers/bp-list"
 AccountDir: "./account"
 scryptN: 4096
 scryptP: 6
@@ -10,11 +11,11 @@ DefPassword:
 DefSavePath:
 StorehousePath:
 DownloadPath:
-Password:
-Account:
-AutoRun: false
+Password: aaa
+Account: st1jzkud0tt88y6tyg6675utue45z5a04er4hfp9n
+AutoRun: true
 Internal: true
-IsWallet: false
+IsWallet:
 BPURL:
 IsCheckDefaultPath:
 IsLimitDownloadSpeed: true
@@ -23,4 +24,5 @@ IsLimitUploadSpeed: true
 LimitUploadSpeed: 100
 IsCheckFileOperation:
 IsCheckFileTransferFinished:
-
+AddressPrefix: "st"
+Token: "STOS"
