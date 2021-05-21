@@ -5,7 +5,7 @@ syntax = "proto3";
 
 package protos;
 // j
-import "qsds_comm.proto";
+import "sds_comm.proto";
 
 // upload -----------------------------------
 
@@ -32,16 +32,6 @@ message RspRegister {
   Result result = 1; // if register success or not
   string wallet_address = 2;
   bool   isPP = 3;
-}
-
-message ReqMining {
-  PPBaseInfo address = 1;
-  bytes public_key = 2; // publickey
-  bytes sign = 3; //signature
-}
-
-message RspMining {
-  Result result = 1;
 }
 
 message ReqUploadFile {
@@ -232,16 +222,6 @@ message ReqReportTaskBP {
   string task_id = 1;
   PPBaseInfo reporter = 2;
   uint64 traffic = 3;
-}
-
-message ReqGetBPList {
-  PPBaseInfo my_address = 1;
-}
-
-
-message RspGetBPList {
-  Result result = 1;
-  repeated PPBaseInfo bp_list = 2;
 }
 
 message ReqRegisterNewPP {
