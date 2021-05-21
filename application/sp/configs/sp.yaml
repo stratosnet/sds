@@ -23,15 +23,11 @@ Database:
   Driver: mysql
   Host: localhost
   Port: 3306
-  User: user1
-  Pass: 111111
+  User: root
+  Pass: root
   DbName: sds
   Debug: true
   LogFile: tmp/logs/db.log
-
-BpList:
-  - { NetworkAddress: 192.168.2.43:18081, WalletAddress: st1cdsw4wmrd6w9a7gsez2mxadfrkxltj7685aj83 }
-  - { NetworkAddress: 192.168.2.43:18082, WalletAddress: st1jzkud0tt88y6tyg6675utue45z5a04er4hfp9n }
 
 Ecdsa:
   PrivateKeyPath: path_to_privatekey

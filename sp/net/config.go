@@ -14,7 +14,6 @@ type Config struct {
 	FileStorage FileStorageConfig `yaml:"FileStorage"`
 	Cache       cache.Config      `yaml:"Cache"`
 	Database    config.Connect    `yaml:"Database"`
-	BpList      BpListConfig      `yaml:"BpList"`
 	Ecdsa       EcdsaConfig       `yaml:"Ecdsa"`
 	User        UserConfig        `yaml:"User"`
 	Token       string            `yaml:"Token"`
@@ -46,8 +45,6 @@ type BpConfig struct {
 	NetworkAddress string `yaml:"NetworkAddress"`
 	WalletAddress  string `yaml:"WalletAddress"`
 }
-
-type BpListConfig []BpConfig
 
 type EcdsaConfig struct {
 	PrivateKeyPath string `yaml:"PrivateKeyPath"`

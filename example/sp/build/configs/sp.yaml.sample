@@ -29,10 +29,6 @@ Database:
   Debug: true
   LogFile: path_to_log
 
-BpList:
-  - { NetworkAddress: 192.168.1.100:7788, WalletAddress: 0x1111111111111111111111111111111111111111 }
-  - { NetworkAddress: 192.168.1.101:7788, WalletAddress: 0x2222222222222222222222222222222222222222 }
-
 Ecdsa:
   PrivateKeyPath: path_to_privatekey
   PrivateKeyPass: privatekey_password

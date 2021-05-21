@@ -17,7 +17,6 @@ func Start(isPP bool) {
 	} else {
 		client.SPConn = client.NewClient(setting.Config.SPNetAddress, true)
 	}
-	initBPList()
 }
 
 // StartPP StartPP
@@ -27,7 +26,6 @@ func StartPP() {
 	event.RegisterEventHandle()
 	// client.SPConn = client.NewClient(setting.Config.SPNetAddress, true)
 	initPPList()
-	initBPList()
 	go listenOffline()
 }
 
@@ -37,6 +35,5 @@ func InitPeer() {
 	utils.DebugLog("InitPeer InitPeerInitPeer InitPeerInitPeer InitPeer")
 	event.RegisterEventHandle()
 	initPPList()
-	initBPList()
 	go listenOffline()
 }

@@ -20,8 +20,8 @@ target/
 *.log
 application/sp/spServer
 
-application/pp/*/account
-application/pp/node1/[a-zA-Z0-9]
-application/pp/node2/[a-zA-Z0-9]
+application/pp/account
+application/pp/[a-zA-Z0-9]
+application/pp/[a-zA-Z0-9]
 bp-list
 pp-list

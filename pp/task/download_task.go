@@ -2,16 +2,17 @@ package task
 
 import (
 	"fmt"
-	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/client"
-	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
 	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
 )
 
 // DownloadTaskMap PP passway download task map   make(map[string]*DonwloadTask)
