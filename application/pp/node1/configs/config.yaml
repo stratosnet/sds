@@ -3,7 +3,6 @@ NetworkAddress: 127.0.0.1
 SPNetAddress: 127.0.0.1:8888
 Debug: true
 PPListDir: "./peers/pp-list"
-BPListDir: "./peers/bp-list"
 AccountDir: "./account"
 scryptN: 4096
 scryptP: 6

@@ -3,10 +3,11 @@ package setting
 import (
 	"crypto/ecdsa"
 	"encoding/csv"
-	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/utils"
 	"os"
 	"sync"
+
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/utils"
 )
 
 // IsPP
@@ -14,9 +15,6 @@ var IsPP = false
 
 // IsLoginToSP
 var IsLoginToSP = false
-
-// IsStartMining
-var IsStartMining = false
 
 // IsAuto
 var IsAuto = false
