@@ -47,7 +47,7 @@ type Server struct {
 	cancel           context.CancelFunc
 	conns            *sync.Map
 	wg               *sync.WaitGroup
-	mu               sync.Mutex // 锁
+	mu               sync.Mutex // lock
 	lis              map[net.Listener]bool
 	interv           time.Duration
 	goroutine        int64

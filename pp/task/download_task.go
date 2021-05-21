@@ -2,16 +2,17 @@ package task
 
 import (
 	"fmt"
-	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/client"
-	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
 	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
 )
 
 // DownloadTaskMap PP passway download task map   make(map[string]*DonwloadTask)
@@ -159,7 +160,7 @@ func DoneDownload(fileHash, fileName, savePath string) {
 		utils.ErrorLog("DoneDownload Remove", err)
 	}
 	lastPath := strings.Replace(newFilePath, fileHash+"/", "", -1)
-	// if setting.Iswindows {
+	// if setting.IsWindows {
 	// 	lastPath = filepath.FromSlash(lastPath)
 	// }
 	err3 := os.Rename(newFilePath, lastPath)
@@ -184,7 +185,7 @@ func DoneDownload(fileHash, fileName, savePath string) {
 			}
 		}
 		utils.DebugLog("enter imageMap creation")
-		if setting.Iswindows {
+		if setting.IsWindows {
 			f, err5 := os.Open(lastPath)
 			if err5 != nil {
 				utils.ErrorLog("err5>>>", err5)

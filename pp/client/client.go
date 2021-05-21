@@ -12,7 +12,7 @@ import (
 // Offline Offline
 type Offline struct {
 	IsSp           bool
-	NetWorkAddress string
+	NetworkAddress string
 }
 
 // OfflineChan OfflineChan
@@ -85,7 +85,7 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 				select {
 				case OfflineChan <- &Offline{
 					IsSp:           false,
-					NetWorkAddress: PPConn.GetName(),
+					NetworkAddress: PPConn.GetName(),
 				}:
 				default:
 					break
