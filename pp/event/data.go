@@ -1,6 +1,8 @@
 package event
 
 import (
+	"path"
+
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -11,7 +13,6 @@ import (
 	"github.com/stratosnet/sds/relay/stratoschain/register"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/types"
-	"path"
 
 	"github.com/golang/protobuf/proto"
 )
@@ -43,17 +44,6 @@ func reqRegisterDataTR(target *protos.ReqRegister) *msg.RelayMsgBuf {
 	return &msg.RelayMsgBuf{
 		MSGHead: PPMsgHeader(data, header.ReqRegister),
 		MSGData: data,
-	}
-}
-
-func reqMiningData() *protos.ReqMining {
-	return &protos.ReqMining{
-		Address: &protos.PPBaseInfo{
-			WalletAddress:  setting.WalletAddress,
-			NetworkAddress: setting.NetworkAddress,
-		},
-		PublicKey: setting.PublicKey,
-		Sign:      setting.GetSign(setting.WalletAddress),
 	}
 }
 

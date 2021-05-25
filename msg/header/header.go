@@ -44,9 +44,6 @@ const (
 	ReqActivated = "ReqActvd" // request when PP node was successfully activated
 	RspActivated = "RspActvd" // response when PP node was successfully activated
 
-	ReqMining = "ReqMin" // request to mining
-	RspMining = "RspMin" //  response to mining
-
 	// upload
 	ReqUploadFile              = "ReqUpl"
 	RspUploadFile              = "RspUpl"
@@ -110,8 +107,7 @@ const (
 	ReqReportTransferResult = "ReqTrRep"
 	RspReportTransferResult = "RspTrRep"
 
-	ReqGetBPList    = "ReqGBPL"
-	RspGetBPList    = "RspGBPL"
+	//TODO change to report to SP
 	ReqReportTaskBP = "ReqRTBP" // report to BP
 
 	ReqShareLink    = "ReqSL"
@@ -163,20 +159,6 @@ const (
 	// heartbeat
 	ReqHeart = "ReqHeart"
 	RspHeart = "RspHeart"
-
-	// bp
-	//BPMessage    = "BPMsg"
-	//BPReqPubkey  = "BPReqPub"
-	//BPRspPubkey  = "BPRspPub"
-	//BPReqBalance = "BPReqBal"
-	//BPRspBalance = "BPRspBal"
-	//BPReqTransac = "BPReqTra"
-	//BPRspTransac = "BPRspTra"
-	//BPReqBlock   = "BPReqB"
-	//BPRspBlock   = "BpRspB"
-	//BPReqBH      = "BPReqBH"
-	//BPRspBH      = "BPRspBH"
-	//ReportFlow   = "ReptF"
 
 	// customer volume
 	ReqCAddVolume = "ReqCAV"
