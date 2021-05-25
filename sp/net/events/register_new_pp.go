@@ -59,7 +59,7 @@ func registerNewPPCallbackFunc(_ context.Context, s *net.Server, message proto.M
 		Version:        body.Version,
 		PubKey:         fmt.Sprintf("PubKeySecp256k1{%X}", body.PubKey),
 		State:          table.STATE_OFFLINE,
-		Active:         false,
+		Active:         0,
 	}
 
 	if err := s.CT.Save(pp); err != nil {

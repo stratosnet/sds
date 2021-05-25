@@ -67,7 +67,7 @@ type PP struct {
 	Version        uint32
 	PubKey         string
 	State          byte
-	Active         bool // Whether or not the PP is an active resource node on the stratos-chain
+	Active         byte // Whether or not the PP is an active resource node on the stratos-chain
 }
 
 // TableName

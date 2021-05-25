@@ -6,6 +6,7 @@ import (
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/sp/common"
 	"github.com/stratosnet/sds/sp/storages"
 	"github.com/stratosnet/sds/sp/storages/data"
@@ -290,6 +291,8 @@ func NewServer(configFilePath string) *Server {
 		spbf.MaxConnectionsOption(2000000),
 		spbf.MaxFlowOption(125*1024*1024),
 	)
+
+	stratoschain.SetConfig(server.Conf.BlockchainInfo.AddressPrefix)
 
 	return server
 }

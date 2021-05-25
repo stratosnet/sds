@@ -3,6 +3,7 @@ package setting
 import (
 	"fmt"
 	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
 	"io/ioutil"
 	"os"
@@ -123,6 +124,7 @@ func LoadConfig(configPath string) {
 	}
 	cf.SetLimitDownloadSpeed(Config.LimitDownloadSpeed, Config.IsLimitDownloadSpeed)
 	cf.SetLimitUploadSpeed(Config.LimitUploadSpeed, Config.IsLimitUploadSpeed)
+	stratoschain.SetConfig(Config.AddressPrefix)
 }
 
 // CheckLogin

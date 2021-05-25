@@ -49,7 +49,7 @@ func activateCallbackFunc(_ context.Context, s *net.Server, message proto.Messag
 		return rsp, header.RspActivate
 	}
 
-	if pp.Active {
+	if pp.Active == 1 {
 		rsp.AlreadyActive = true
 		return rsp, header.RspActivate
 	}
