@@ -96,7 +96,7 @@ func (m *MultiClient) Start() error {
 	}()
 
 	// REST client to send messages to stratos-chain
-	scRestUrl := setting.Config.StratosChain.NetworkAddress + ":" + setting.Config.StratosChain.RestPort
+	scRestUrl := "http://" + setting.Config.StratosChain.NetworkAddress + ":" + setting.Config.StratosChain.RestPort
 	stratoschain.Url = scRestUrl
 
 	// Client to subscribe to stratos-chain events and send messages via websocket

@@ -9,3 +9,7 @@ stratosChain:
   networkAddress: 127.0.0.1
   restPort: 1317
   websocketPort: 26657
+blockchainInfo:
+  addressPrefix: st
+  chainId: test-chain-localnet
+  token: stos

@@ -10,6 +10,7 @@ import (
 	sdkrest "github.com/cosmos/cosmos-sdk/types/rest"
 	"github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	registertypes "github.com/stratosnet/sds/relay/stratoschain/register/types"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/tendermint/tendermint/crypto"
 	"io/ioutil"
@@ -17,13 +18,22 @@ import (
 )
 
 var Url string
+var cdc *codec.Codec
+
+func init() {
+	cdc = codec.New()
+	codec.RegisterCrypto(cdc)
+	sdktypes.RegisterCodec(cdc)
+	registertypes.RegisterCodec(cdc)
+	cdc.Seal()
+}
 
 func FetchAccountInfo(address string) (uint64, uint64, error) {
 	if Url == "" {
 		return 0, 0, errors.New("the stratos-chain URL is not set")
 	}
 
-	resp, err := http.Get("http://" + Url + "/auth/accounts/" + address)
+	resp, err := http.Get(Url + "/auth/accounts/" + address)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -78,7 +88,9 @@ func BuildTxBytes(token, chainId, memo, address, mode string, msg sdktypes.Msg, 
 		Tx:   *tx,
 		Mode: mode,
 	}
-	return json.Marshal(body)
+
+	//authtypes.RegisterCodec(cdc)
+	return cdc.MarshalJSON(body)
 }
 
 func BroadcastTx(tx authtypes.StdTx) (*http.Response, []byte, error) {
@@ -116,11 +128,12 @@ func BroadcastTxBytes(txBytes []byte) error {
 		return err
 	}
 
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(responseBody))
+
 	if resp.StatusCode != 200 {
 		return errors.New("invalid http response: " + resp.Status)
 	}
 
-	responseBody, err := ioutil.ReadAll(resp.Body)
-	fmt.Println(responseBody)
 	return err
 }

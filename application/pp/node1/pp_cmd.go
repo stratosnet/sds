@@ -54,7 +54,7 @@ func main() {
 	peers.GetNetworkAddress()
 	fmt.Println(helpStr)
 
-	stratoschain.Url = setting.Config.StratosChainAddress + ":" + setting.Config.StratosChainPort
+	stratoschain.Url = "http://" + setting.Config.StratosChainAddress + ":" + setting.Config.StratosChainPort
 
 	help := func(line string, param []string) bool {
 		fmt.Println(helpStr)

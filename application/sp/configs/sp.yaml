@@ -39,5 +39,5 @@ Ecdsa:
 
 BlockchainInfo:
   AddressPrefix: st
-  ChainId: stratoschain
+  ChainId: test-chain-localnet
   Token: stos
