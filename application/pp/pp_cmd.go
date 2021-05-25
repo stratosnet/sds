@@ -24,7 +24,6 @@ import (
 )
 
 func main() {
-	utils.NewLogger("stdout.log", true, true)
 	// utils.ImageCommpress("./123.jpg")
 	// return
 	// setConfig()
