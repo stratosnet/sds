@@ -3,7 +3,6 @@ NetworkAddress: 127.0.0.1
 SPNetAddress: 127.0.0.1:8888
 Debug: true
 PPListDir: "./peers/pp-list"
-BPListDir: "./peers/bp-list"
 AccountDir: "./account"
 scryptN: 4096
 scryptP: 6
@@ -15,7 +14,7 @@ Password: aaa
 Account: st1c7yf8ca7acazqfyp85q25249gr9zgewe03xylp
 AutoRun: true
 Internal: true
-IsWallet: true
+IsWallet: false
 BPURL:
 IsCheckDefaultPath:
 IsLimitDownloadSpeed: true

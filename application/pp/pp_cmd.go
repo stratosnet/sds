@@ -3,6 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/api"
 	"github.com/stratosnet/sds/pp/event"
@@ -13,13 +21,6 @@ import (
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
-	"io/ioutil"
-	"net"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func main() {
@@ -33,7 +34,6 @@ func main() {
 		"newaccount ->password               create new account\n" +
 		"login account ->password            unlock and log in account \n" +
 		"registerminer                       apply to be PP miner\n" +
-		"start                               start mining\n" +
 		"put filepath                        upload file\n" +
 		"list filename                       inquire uploaded file by self\n" +
 		"list                                inquire all files\n" +
@@ -88,7 +88,7 @@ func main() {
 			fmt.Println("input account")
 			return false
 		}
-		if len(param[0]) != 42 {
+		if len(param[0]) != 41 {
 			fmt.Println("input correct account")
 			return false
 		}
@@ -100,11 +100,6 @@ func main() {
 		peers.Login(param[0], password)
 
 		return false
-	}
-
-	start := func(line string, param []string) bool {
-		event.StartMining()
-		return true
 	}
 
 	registerPP := func(line string, param []string) bool {
@@ -474,7 +469,6 @@ func main() {
 	console.Mystdin.RegisterProcessFunc("accounts", accounts)
 	console.Mystdin.RegisterProcessFunc("newaccount", newAccount)
 	console.Mystdin.RegisterProcessFunc("login", login)
-	console.Mystdin.RegisterProcessFunc("start", start)
 	console.Mystdin.RegisterProcessFunc("rp", registerPP)
 	console.Mystdin.RegisterProcessFunc("registerminer", registerPP)
 	console.Mystdin.RegisterProcessFunc("activate", activate)

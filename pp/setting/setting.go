@@ -72,7 +72,6 @@ type config struct {
 	SPNetAddress                string `yaml:"SPNetAddress"`
 	Debug                       bool   `yaml:"Debug"`
 	PPListDir                   string `yaml:"PPListDir"`
-	BPListDir                   string `yaml:"BPListDir"`
 	AccountDir                  string `yaml:"AccountDir"`
 	ScryptN                     int    `yaml:"scryptN"`
 	ScryptP                     int    `yaml:"scryptP"`

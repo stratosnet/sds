@@ -4,6 +4,8 @@ package event
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg"
@@ -14,7 +16,6 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
-	"net/http"
 )
 
 var bpChan = make(chan *msg.RelayMsgBuf, 100)
@@ -62,9 +63,10 @@ func ReqDownloadSlice(ctx context.Context, conn spbf.WriteCloser) {
 			splitSendDownloadSliceData(rsp, conn)
 			if rsp.SliceSize > 0 {
 				select {
+				//TODO: Change BP to SP
 				case bpChan <- reqReportTaskBPData(target.TaskId, uint64(len(rsp.Data))):
 					utils.DebugLog("reqReportTaskBPDatareqReportTaskBPDatareqReportTaskBPData")
-					sendBPMessage(bpChan)
+					// sendBPMessage(bpChan)
 				default:
 					break
 				}
@@ -171,9 +173,10 @@ func sendReportDownloadResult(target *protos.RspDownloadSlice, isPP bool) {
 	utils.DebugLog("ReportDownloadResult report result target.FileHash = ", target.FileHash)
 	SendMessageToSPServer(reqReportDownloadResultData(target, isPP), header.ReqReportDownloadResult)
 	select {
+	//TODO: Change BP to SP
 	case bpChan <- reqReportTaskBPData(target.TaskId, uint64(target.SliceSize)):
 		utils.DebugLog("reqReportTaskBPDatareqReportTaskBPDatareqReportTaskBPData")
-		sendBPMessage(bpChan)
+		//sendBPMessage(bpChan)
 	default:
 		break
 	}

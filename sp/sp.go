@@ -15,7 +15,6 @@ func StartSP(conf string) {
 
 	server := net.NewServer(conf)
 
-	spbf.Register(header.ReqMining, events.GetMiningHandler(server))
 	spbf.Register(header.ReqRegister, events.GetRegisterHandler(server))
 	spbf.Register(header.ReqActivate, events.GetActivateHandler(server))
 	spbf.Register(header.ReqActivated, events.GetActivatedHandler(server))
@@ -29,7 +28,6 @@ func StartSP(conf string) {
 	spbf.Register(header.RspTransferNotice, events.GetTransferNoticeHandler(server))
 	spbf.Register(header.ReqValidateTransferCer, events.GetTransferCerValidateHandler(server))
 	spbf.Register(header.ReqReportTransferResult, events.GetReportTransferResultHandler(server))
-	spbf.Register(header.ReqGetBPList, events.GetBPListHandler(server))
 	spbf.Register(header.ReqDownloadTaskInfo, events.GetDownloadTaskInfoHandler(server))
 	spbf.Register(header.ReqDeleteFile, events.GetDeleteFileHandler(server))
 	spbf.Register(header.ReqDownloadSliceWrong, events.GetDownloadFailedHandler(server))

@@ -33,11 +33,6 @@ Database:
   Debug: true
   LogFile: tmp/logs/database.log
 
-BpList:
-  - { NetworkAddress: 192.168.1.100:7788, WalletAddress: 0x1111111111111111111111111111111111111111 }
-  - { NetworkAddress: 192.168.1.101:7788, WalletAddress: 0x2222222222222222222222222222222222222222 }
-  - { NetworkAddress: 192.168.1.102:7788, WalletAddress: 0x3333333333333333333333333333333333333333 }
-
 Ecdsa:
   PrivateKeyPath: configs/privatekey
   PrivateKeyPass: pass
