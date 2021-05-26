@@ -4,6 +4,8 @@ package event
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -12,7 +14,6 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
-	"net/http"
 )
 
 var isImage bool
@@ -144,7 +145,7 @@ func CheckDownloadPath(path string) bool {
 	if path[:6] != "spb://" {
 		return false
 	}
-	if path[48:49] != "/" {
+	if path[47:48] != "/" {
 		return false
 	}
 	return true
