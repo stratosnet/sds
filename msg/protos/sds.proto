@@ -34,6 +34,16 @@ message RspRegister {
   bool   isPP = 3;
 }
 
+message ReqMining {
+  PPBaseInfo address = 1;
+  bytes public_key = 2; // publickey
+  bytes sign = 3; //signature
+}
+
+message RspMining {
+  Result result = 1;
+}
+
 message ReqUploadFile {
   FileInfo file_info = 1;
   PPBaseInfo my_address = 2;

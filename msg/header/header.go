@@ -40,6 +40,9 @@ const (
 	ReqRegister  = "ReqReg"  // request to register
 	RspRegister  = "RspReg"  // response to register
 
+	ReqMining = "ReqMin" // request to mining
+	RspMining = "RspMin" //  response to mining
+
 	// upload
 	ReqUploadFile              = "ReqUpl"
 	RspUploadFile              = "RspUpl"
