@@ -53,9 +53,12 @@ func PrivKeyToAddress(privKey []byte) types.Address {
 }
 
 // PubKeyToAddress calculates the wallet address from the user's public key
-func PubKeyToAddress(pubKey []byte) types.Address {
-	tmPubKey := secp256k1.PubKeyBytesToTendermint(pubKey)
-	return types.BytesToAddress(tmPubKey.Address())
+func PubKeyToAddress(pubKey []byte) (types.Address, error) {
+	tmPubKey, err := secp256k1.PubKeyBytesToTendermint(pubKey)
+	if err != nil {
+		return types.Address{}, err
+	}
+	return types.BytesToAddress(tmPubKey.Address()), nil
 }
 
 // ToECDSAUnsafe blindly converts a binary blob to a private key. It should almost

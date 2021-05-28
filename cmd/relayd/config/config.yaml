@@ -11,5 +11,5 @@ stratosChain:
   websocketPort: 26657
 blockchainInfo:
   addressPrefix: st
-  chainId: test-chain-localnet
+  chainId: test-chain
   token: stos

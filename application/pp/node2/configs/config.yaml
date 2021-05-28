@@ -24,7 +24,7 @@ LimitUploadSpeed: 100
 IsCheckFileOperation:
 IsCheckFileTransferFinished:
 AddressPrefix: "st"
-ChainId: "test-chain-localnet"
+ChainId: "test-chain"
 Token: "stos"
 StratosChainAddress: 127.0.0.1
 StratosChainPort: 1317
