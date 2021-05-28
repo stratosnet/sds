@@ -45,6 +45,17 @@ func reqRegisterDataTR(target *protos.ReqRegister) *msg.RelayMsgBuf {
 	}
 }
 
+func reqMiningData() *protos.ReqMining {
+	return &protos.ReqMining{
+		Address: &protos.PPBaseInfo{
+			WalletAddress:  setting.WalletAddress,
+			NetworkAddress: setting.NetworkAddress,
+		},
+		PublicKey: setting.PublicKey,
+		Sign:      setting.GetSign(setting.WalletAddress),
+	}
+}
+
 func reqGetPPlistData() *protos.ReqGetPPList {
 	return &protos.ReqGetPPList{
 		MyAddress: &protos.PPBaseInfo{

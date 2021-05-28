@@ -27,6 +27,8 @@ It has these top-level messages:
 	RspGetPPList
 	ReqRegister
 	RspRegister
+	ReqMining
+	RspMining
 	ReqUploadFile
 	RspUploadFile
 	ReqUploadFileSlice

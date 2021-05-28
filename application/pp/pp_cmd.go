@@ -32,6 +32,7 @@ func main() {
 		"newaccount ->password               create new account\n" +
 		"login account ->password            unlock and log in account \n" +
 		"registerminer                       apply to be PP miner\n" +
+		"start                               start mining\n" +
 		"put filepath                        upload file\n" +
 		"list filename                       inquire uploaded file by self\n" +
 		"list                                inquire all files\n" +
@@ -98,6 +99,11 @@ func main() {
 		peers.Login(param[0], password)
 
 		return false
+	}
+
+	start := func(line string, param []string) bool {
+		event.StartMining()
+		return true
 	}
 
 	registerPP := func(line string, param []string) bool {
@@ -434,6 +440,7 @@ func main() {
 	console.Mystdin.RegisterProcessFunc("accounts", accounts)
 	console.Mystdin.RegisterProcessFunc("newaccount", newAccount)
 	console.Mystdin.RegisterProcessFunc("login", login)
+	console.Mystdin.RegisterProcessFunc("start", start)
 	console.Mystdin.RegisterProcessFunc("rp", registerPP)
 	console.Mystdin.RegisterProcessFunc("registerminer", registerPP)
 	console.Mystdin.RegisterProcessFunc("u", upload)
