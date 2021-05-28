@@ -25,15 +25,15 @@ func GetPPServer() *PPServer {
 // StartListenServer
 func StartListenServer(port string) {
 	netListen, err := net.Listen("tcp4", port)
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog("StartListenServer", err)
 	}
 	spbServer := NewServer()
 	ppServ = spbServer
 	utils.Log("StartListenServer!!! ", port)
-	err1 := spbServer.Start(netListen)
-	if utils.CheckError(err1) {
-		utils.ErrorLog("StartListenServer Error", err1)
+	err = spbServer.Start(netListen)
+	if err != nil {
+		utils.ErrorLog("StartListenServer Error", err)
 	}
 }
 

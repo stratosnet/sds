@@ -23,8 +23,8 @@ var infoMutex sync.Mutex
 // GetFileInfo
 func GetFileInfo(filePath string) os.FileInfo {
 	infoMutex.Lock()
-	fileInfo, fileInfoErr := os.Stat(filePath)
-	if utils.CheckError(fileInfoErr) {
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
 		infoMutex.Unlock()
 		return nil
 	}
@@ -60,15 +60,15 @@ func ClearFileMap(hash string) {
 func GetFileData(filePath string, offset *protos.SliceOffset) []byte {
 	rmutex.Lock()
 	fin, err := os.Open(filePath)
-	if utils.CheckError(err) {
+	if err != nil {
 		rmutex.Unlock()
 		return nil
 	}
 	defer fin.Close()
-	fin.Seek(int64(offset.SliceOffsetStart), os.SEEK_SET)
-	data := make([]byte, (offset.SliceOffsetEnd - offset.SliceOffsetStart))
-	_, err2 := fin.Read(data)
-	if utils.CheckError(err2) {
+	_, _ = fin.Seek(int64(offset.SliceOffsetStart), os.SEEK_SET)
+	data := make([]byte, offset.SliceOffsetEnd-offset.SliceOffsetStart)
+	_, err = fin.Read(data)
+	if err != nil {
 		rmutex.Unlock()
 		return nil
 	}
@@ -82,7 +82,7 @@ func GetSliceData(sliceHash string) []byte {
 	rmutex.Lock()
 	defer rmutex.Unlock()
 	data, err := ioutil.ReadFile(getSlicePath(sliceHash))
-	if utils.CheckError(err) {
+	if err != nil {
 		return nil
 	}
 	return data
@@ -105,12 +105,12 @@ func SaveSliceData(data []byte, sliceHash string, offset uint64) bool {
 	defer wmutex.Unlock()
 	fileMg, err := os.OpenFile(getSlicePath(sliceHash), os.O_CREATE|os.O_RDWR, 0777)
 	defer fileMg.Close()
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog("error initialize file")
 		return false
 	}
-	_, err2 := fileMg.WriteAt(data, int64(offset))
-	if utils.CheckError(err2) {
+	_, err = fileMg.WriteAt(data, int64(offset))
+	if err != nil {
 		utils.ErrorLog("error save file")
 		return false
 	}
@@ -127,17 +127,17 @@ func SaveFileData(data []byte, offset int64, sliceHash, fileName, fileHash, save
 	}
 	fileMg, err := os.OpenFile(GetDownloadTmpPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR, 0777)
 	defer fileMg.Close()
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.Log("SaveFileData err", err)
 	}
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog("error initialize file")
 		wmutex.Unlock()
 		return false
 	}
-	// _, err2 := fileMg.WriteAt(data, offset)
-	_, err2 := fileMg.Seek(offset, 0)
-	if utils.CheckError(err2) {
+	// _, err = fileMg.WriteAt(data, offset)
+	_, err = fileMg.Seek(offset, 0)
+	if err != nil {
 		utils.ErrorLog("error save file")
 		wmutex.Unlock()
 		return false
@@ -149,16 +149,16 @@ func SaveFileData(data []byte, offset int64, sliceHash, fileName, fileHash, save
 
 // SaveDownloadProgress
 func SaveDownloadProgress(sliceHash, fileName, fileHash, savePath string) {
-	csvFile, err3 := os.OpenFile(GetDownloadCsvPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
+	csvFile, err := os.OpenFile(GetDownloadCsvPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
 	defer csvFile.Close()
-	if utils.CheckError(err3) {
+	if err != nil {
 		utils.ErrorLog("error open downloaded file records")
 	}
 	writer := csv.NewWriter(csvFile)
 	line := []string{sliceHash}
-	err4 := writer.Write(line)
-	if utils.CheckError(err4) {
-		utils.ErrorLog("download csv line ", err4)
+	err = writer.Write(line)
+	if err != nil {
+		utils.ErrorLog("download csv line ", err)
 	}
 	writer.Flush()
 }
@@ -166,9 +166,9 @@ func SaveDownloadProgress(sliceHash, fileName, fileHash, savePath string) {
 // RecordDownloadCSV
 func RecordDownloadCSV(target *protos.RspFileStorageInfo) {
 	// check if downloading, if not create new, sliceHash+startPosition
-	csvFile, err3 := os.OpenFile(GetDownloadCsvPath(target.FileHash, target.FileName, target.SavePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
+	csvFile, err := os.OpenFile(GetDownloadCsvPath(target.FileHash, target.FileName, target.SavePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
 	defer csvFile.Close()
-	if utils.CheckError(err3) {
+	if err != nil {
 		utils.ErrorLog("error open download file records")
 	}
 	writer := csv.NewWriter(csvFile)
@@ -177,23 +177,22 @@ func RecordDownloadCSV(target *protos.RspFileStorageInfo) {
 		offsetStatrt := int64(rsp.SliceOffset.SliceOffsetStart)
 		offsetEnd := int64(rsp.SliceOffset.SliceOffsetEnd)
 		for {
-			if offsetStatrt+setting.MAXDATA < offsetEnd {
+			if offsetStatrt+setting.MAXDATA >= offsetEnd {
 				offsetString := strconv.FormatInt(offsetStatrt, 10)
 				line := []string{sliceHash + offsetString}
-				err := writer.Write(line)
-				if utils.CheckError(err) {
-					utils.ErrorLog("download csv line ", err)
-				}
-				offsetStatrt += setting.MAXDATA
-			} else {
-				offsetString := strconv.FormatInt(offsetStatrt, 10)
-				line := []string{sliceHash + offsetString}
-				err := writer.Write(line)
-				if utils.CheckError(err) {
+				err = writer.Write(line)
+				if err != nil {
 					utils.ErrorLog("download csv line ", err)
 				}
 				break
 			}
+
+			offsetString := strconv.FormatInt(offsetStatrt, 10)
+			line := []string{sliceHash + offsetString}
+			if err = writer.Write(line); err != nil {
+				utils.ErrorLog("download csv line ", err)
+			}
+			offsetStatrt += setting.MAXDATA
 		}
 
 	}
@@ -257,17 +256,17 @@ func CheckSliceExisting(fileHash, fileName, sliceHash, savePath string) bool {
 
 // DeleteSlice
 func DeleteSlice(sliceHash string) error {
-	err := os.Remove(getSlicePath(sliceHash))
-	if utils.CheckError(err) {
+	if err := os.Remove(getSlicePath(sliceHash)); err != nil {
 		utils.ErrorLog("DeleteSlice Remove", err)
+		return err
 	}
-	return err
+	return nil
 }
 
 // DeleteDirectory DeleteDirectory
 func DeleteDirectory(fileHash string) {
 	err := os.RemoveAll(setting.Config.DownloadPath + fileHash)
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.DebugLog("DeleteDirectory err", err)
 	}
 

@@ -77,7 +77,7 @@ func LoadOrCreateAccount(path, pass string) string {
 	}
 
 	privKey, err := utils.DecryptKey(privKeyInStr, pass)
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog("decrypt key failed", err)
 		return ""
 	}

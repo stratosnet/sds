@@ -17,6 +17,7 @@ type Config struct {
 	Ecdsa       EcdsaConfig       `yaml:"Ecdsa"`
 	User        UserConfig        `yaml:"User"`
 	Token       string            `yaml:"Token"`
+	Log         Log               `yaml:"Log"`
 }
 
 type NetworkConfig struct {
@@ -54,4 +55,22 @@ type UserConfig struct {
 	UpgradeReward      uint64 `yaml:"UpgradeReward"`
 	InviteReward       uint64 `yaml:"InviteReward"`
 	InitializeCapacity uint64 `yaml:"InitializeCapacity"`
+}
+
+/*
+Log level:
+const (
+	Detail LogLevel = 1
+	Debug  LogLevel = 10
+	Info   LogLevel = 20
+	Warn   LogLevel = 30
+	Error  LogLevel = 40
+	Fatal  LogLevel = 50
+)
+*/
+type Log struct {
+	Path       string `yaml:"Path"`
+	Level      int    `yaml:"Level"`
+	OutputFile bool   `yaml:"OutputFile"`
+	OutputStd  bool   `yaml:"OutputStd"`
 }

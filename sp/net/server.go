@@ -52,6 +52,9 @@ func (s *Server) initialize() {
 		return
 	}
 
+	logger := utils.NewDefaultLogger(s.Conf.Log.Path, s.Conf.Log.OutputStd, s.Conf.Log.OutputFile)
+	logger.SetLogLevel(utils.LogLevel(s.Conf.Log.Level))
+
 	if s.Conf.Net.Host == "" {
 		utils.ErrorLog("missing host, start fail")
 		return
@@ -223,7 +226,7 @@ func (s *Server) SendMsg(walletAddress string, cmd string, message proto.Message
 		return
 	}
 	d, err := proto.Marshal(message)
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.Log(err)
 	}
 	msg := &msg.RelayMsgBuf{
@@ -250,9 +253,11 @@ func (s *Server) Start() {
 
 	// start listening
 	netListen, err := net.Listen("tcp", s.Host)
-	utils.CheckError(err)
+	if err != nil {
+		utils.ErrorLogf("error creating SP server tcp connection: %v", err)
+	}
 
-	s.serv.Start(netListen)
+	_ = s.serv.Start(netListen)
 }
 
 // OnConnectOption

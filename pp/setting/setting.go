@@ -114,7 +114,7 @@ func LoadConfig(configPath string) {
 	Config.ScryptP = 6
 	if ostype == "windows" {
 		IsWindows = true
-		// IMAGEPATH = filepath.FromSlash(IMAGEPATH)
+		// imagePath = filepath.FromSlash(imagePath)
 	} else {
 		IsWindows = false
 	}
@@ -135,7 +135,7 @@ func CheckLogin() bool {
 func GetSign(str string) []byte {
 	data, err := utils.ECCSign([]byte(str), PrivateKey)
 	utils.DebugLog("GetSign == ", data)
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog("GetSign", err)
 		return nil
 	}
@@ -148,68 +148,74 @@ var UpChan = make(chan string, 100)
 // SetConfig SetConfig
 func SetConfig(key, value string) bool {
 
-	if utils.CheckStructField(key, Config) {
-		f, err := os.Open(ConfigPath)
-		defer f.Close()
-		if utils.CheckError(err) {
-			fmt.Println("failed to change configuration file")
-			return false
-		}
-		if contents, err := ioutil.ReadAll(f); err == nil {
-			configString := string(contents)
-			strs := strings.Split(configString, "\n")
-			newString := ""
-			change := false
-			keyStr := key + ":"
-			for _, str := range strs {
-				ss := strings.Split(str, " ")
-				if len(ss) > 0 {
-					if ss[0] == keyStr {
-						if keyStr == "DownloadPath:" {
-							if ostype == "windows" {
-								value = value + `\`
-							} else {
-								value = value + `/`
-							}
-						}
-						ns := key + ": " + value
-						newString += ns
-						newString += "\n"
-						change = true
-						continue
-					}
-				}
-				newString += str
-				newString += "\n"
-			}
-			if change {
-
-				if os.Truncate(ConfigPath, 0) != nil {
-					fmt.Println("failed to change configuration file")
-					return false
-				}
-				configOS, err := os.OpenFile(ConfigPath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
-				defer configOS.Close()
-				if utils.CheckError(err) {
-					fmt.Println("failed to change configuration file")
-					return false
-				}
-				_, err2 := configOS.WriteString(newString)
-				if utils.CheckError(err2) {
-					fmt.Println("failed to change configuration file")
-					return false
-				}
-				LoadConfig(ConfigPath)
-				fmt.Println("failed to change configuration file ", key+": ", value)
-				return true
-			}
-		} else {
-			fmt.Println("failed to change configuration file")
-			return false
-		}
-	} else {
+	if !utils.CheckStructField(key, Config) {
 		fmt.Println("configuration not found")
 		return false
 	}
-	return false
+
+	f, err := os.Open(ConfigPath)
+	defer f.Close()
+
+	if err != nil {
+		fmt.Println("failed to change configuration file")
+		return false
+	}
+
+	var contents []byte
+	contents, err = ioutil.ReadAll(f)
+	if err != nil {
+		fmt.Println("failed to change configuration file")
+		return false
+	}
+
+	contentStrs := strings.Split(string(contents), "\n")
+	newString := ""
+	change := false
+	keyStr := key + ":"
+	for _, str := range contentStrs {
+		ss := strings.Split(str, " ")
+		if len(ss) > 0 && ss[0] == keyStr {
+			if keyStr == "DownloadPath:" {
+				if ostype == "windows" {
+					value = value + `\`
+				} else {
+					value = value + `/`
+				}
+			}
+			ns := key + ": " + value
+			newString += ns
+			newString += "\n"
+			change = true
+			continue
+		}
+		newString += str
+		newString += "\n"
+	}
+	if !change {
+		return false
+	}
+
+	if os.Truncate(ConfigPath, 0) != nil {
+		fmt.Println("failed to change configuration file")
+		return false
+	}
+
+	var configOS *os.File
+	configOS, err = os.OpenFile(ConfigPath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
+	defer configOS.Close()
+
+	if err != nil {
+		fmt.Println("failed to change configuration file")
+		return false
+	}
+
+	_, err = configOS.WriteString(newString)
+	if err != nil {
+		fmt.Println("failed to change configuration file")
+		return false
+	}
+
+	LoadConfig(ConfigPath)
+	fmt.Println("failed to change configuration file ", key+": ", value)
+	return true
 }

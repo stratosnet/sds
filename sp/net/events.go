@@ -47,7 +47,7 @@ func EventHandle(
 ) error {
 
 	msgBuf := spbf.MessageFromContext(ctx)
-	if utils.CheckError(proto.Unmarshal(msgBuf.MSGData, target.(proto.Message))) {
+	if err := proto.Unmarshal(msgBuf.MSGData, target.(proto.Message)); err != nil {
 		return errors.New("unmarshal proto fail")
 	}
 

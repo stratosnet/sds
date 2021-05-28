@@ -59,9 +59,11 @@ func PdownloadPassagewayCheck(c *cf.ClientConn) {
 func NewClient(server string, heartbeat bool) *cf.ClientConn {
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", server)
-	utils.CheckError(err)
+	if err != nil {
+		utils.ErrorLogf("resolve TCP address error: %v", err)
+	}
 	c, err := net.DialTCP("tcp", nil, tcpAddr)
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.DebugLog(server, "connect failed")
 		return nil
 	}

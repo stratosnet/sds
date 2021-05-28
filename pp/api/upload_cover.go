@@ -17,7 +17,7 @@ func uploadCoverImage(w http.ResponseWriter, request *http.Request) {
 	if data["path"] != nil {
 		path := data["path"].(string)
 		// tmpString, err := utils.ImageCommpress(path)
-		// if utils.CheckError(err) {
+		// if err) {
 		// 	utils.ErrorLog("imagepath>>>>", err)
 		// 	w.Write(httpserv.NewJson(nil, setting.FAILCode, "compression failed").ToBytes())
 		// 	return

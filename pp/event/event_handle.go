@@ -121,7 +121,7 @@ func PPMsgHeader(data []byte, head string) header.MessageHead {
 func sendMessage(conn spbf.WriteCloser, pb proto.Message, cmd string) {
 	data, err := proto.Marshal(pb)
 
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog("error decoding")
 		return
 	}
@@ -179,7 +179,7 @@ func transferSendMessageToClient(waller string, msgBuf *msg.RelayMsgBuf) {
 func unmarshalData(ctx context.Context, target interface{}) bool {
 	msgBuf := spbf.MessageFromContext(ctx)
 	utils.DebugLog("msgBuf len = ", len(msgBuf.MSGData))
-	if utils.CheckError(proto.Unmarshal(msgBuf.MSGData, target.(proto.Message))) {
+	if err := proto.Unmarshal(msgBuf.MSGData, target.(proto.Message)); err != nil {
 		utils.ErrorLog("protobuf Unmarshal error,target =", reflect.TypeOf(target))
 		return false
 	}
