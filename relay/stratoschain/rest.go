@@ -72,7 +72,7 @@ func BuildAndSignTx(token, chainId, memo string, accountNum, sequence uint64, ms
 		return nil, err
 	}
 	sig := authtypes.StdSignature{
-		PubKey: pubKey,
+		PubKey:    pubKey,
 		Signature: signedBytes,
 	}
 
