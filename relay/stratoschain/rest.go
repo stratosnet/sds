@@ -62,12 +62,19 @@ func BuildAndSignTx(token, chainId, memo string, accountNum, sequence uint64, ms
 	msgs := []sdktypes.Msg{msg}
 
 	unsignedBytes := authtypes.StdSignBytes(chainId, accountNum, sequence, stdFee, msgs, memo)
-	signedBytes, err := secp256k1.Sign(crypto.Sha256(unsignedBytes), privateKey)
+	signedBytes, err := secp256k1.PrivKeyBytesToTendermint(privateKey).Sign(crypto.Sha256(unsignedBytes))
 	if err != nil {
 		return nil, err
 	}
 
-	sig := authtypes.StdSignature{Signature: signedBytes}
+	pubKey, err := secp256k1.PubKeyBytesToTendermint(secp256k1.PrivKeyToPubKey(privateKey))
+	if err != nil {
+		return nil, err
+	}
+	sig := authtypes.StdSignature{
+		PubKey: pubKey,
+		Signature: signedBytes,
+	}
 
 	tx := authtypes.NewStdTx(msgs, stdFee, []authtypes.StdSignature{sig}, memo)
 	return &tx, nil
@@ -89,7 +96,6 @@ func BuildTxBytes(token, chainId, memo, address, mode string, msg sdktypes.Msg, 
 		Mode: mode,
 	}
 
-	//authtypes.RegisterCodec(cdc)
 	return cdc.MarshalJSON(body)
 }
 
