@@ -3,14 +3,15 @@ package tools
 import (
 	"encoding/hex"
 	"errors"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/crypto"
 
 	"github.com/google/uuid"
 )
@@ -28,15 +29,15 @@ func ParseFileHandle(handle string) (protocol, walletAddress, fileHash, fileName
 	}
 
 	protocol = string(handleInBytes[:3])
-	walletAddress = string(handleInBytes[6:48])
-	fileHash = string(handleInBytes[49:113])
+	walletAddress = string(handleInBytes[6:47])
+	fileHash = string(handleInBytes[48:112])
 
 	if len(handle) > FileHandleLength+1 {
-		fileName = string(handleInBytes[114:])
+		fileName = string(handleInBytes[113:])
 	}
 
 	if protocol != "spb" ||
-		walletAddress == "" || len(walletAddress) < 42 ||
+		walletAddress == "" || len(walletAddress) < 41 ||
 		fileHash == "" || len(fileHash) < 64 {
 		err = errors.New("file handle parse fail")
 	}
