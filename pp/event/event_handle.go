@@ -22,6 +22,7 @@ func RegisterEventHandle() {
 	spbf.Register(header.RspGetPPList, RspGetPPList)
 	spbf.Register(header.RspRegister, RspRegisterChain)
 	spbf.Register(header.ReqRegister, ReqRegisterChain)
+	spbf.Register(header.RspMining, RspMining)
 	spbf.Register(header.RspFindMyFileList, RspFindMyFileList)
 	spbf.Register(header.ReqFindMyFileList, ReqFindMyFileList)
 	spbf.Register(header.ReqUploadFileSlice, ReqUploadFileSlice)
