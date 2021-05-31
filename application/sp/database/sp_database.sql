@@ -31,7 +31,7 @@ CREATE TABLE pp
     version         int unsigned     NOT NULL DEFAULT '0',
     pub_key         varchar(1000)    NOT NULL DEFAULT '',
     state           tinyint unsigned NOT NULL DEFAULT '0' COMMENT '0:offline,1:online',
-    active          boolean          NOT NULL DEFAULT false,
+    active          tinyint          NOT NULL DEFAULT '0',
     UNIQUE KEY IDX_WALLET_ADDRESS (wallet_address) USING HASH
 ) ENGINE = InnoDB
   DEFAULT CHARSET = UTF8MB4;
