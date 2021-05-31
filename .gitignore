@@ -19,9 +19,8 @@ target/
 
 *.log
 application/sp/spServer
-
+cmd/relayd/relayd
 application/pp/account
-application/pp/[a-zA-Z0-9]
 application/pp/[a-zA-Z0-9]
 bp-list
 pp-list

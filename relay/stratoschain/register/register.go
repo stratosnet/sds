@@ -1,16 +1,17 @@
 package register
 
 import (
-	"crypto/ecdsa"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stratosnet/sds/relay/stratoschain/register/types"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
-func BuildCreateResourceNodeMsg(networkAddress, token, moniker string, pubkey ecdsa.PublicKey, amount int64, ownerAddress utiltypes.Address) sdktypes.Msg {
-	tmPubkey := secp256k1.PubkeyToTendermint(pubkey)
-
+func BuildCreateResourceNodeMsg(networkAddress, token, moniker string, pubKey []byte, amount int64, ownerAddress utiltypes.Address) (sdktypes.Msg, error) {
+	tmPubkey, err := secp256k1.PubKeyBytesToTendermint(pubKey)
+	if err != nil {
+		return nil, err
+	}
 	return types.NewMsgCreateResourceNode(
 		networkAddress,
 		tmPubkey,
@@ -19,11 +20,14 @@ func BuildCreateResourceNodeMsg(networkAddress, token, moniker string, pubkey ec
 		types.Description{
 			Moniker: moniker,
 		},
-	)
+	), nil
 }
 
-func BuildCreateIndexingNodeMsg(networkAddress, token, moniker string, pubkey ecdsa.PublicKey, amount int64, ownerAddress utiltypes.Address) sdktypes.Msg {
-	tmPubkey := secp256k1.PubkeyToTendermint(pubkey)
+func BuildCreateIndexingNodeMsg(networkAddress, token, moniker string, pubKey []byte, amount int64, ownerAddress utiltypes.Address) (sdktypes.Msg, error) {
+	tmPubkey, err := secp256k1.PubKeyBytesToTendermint(pubKey)
+	if err != nil {
+		return nil, err
+	}
 
 	return types.NewMsgCreateIndexingNode(
 		networkAddress,
@@ -33,7 +37,7 @@ func BuildCreateIndexingNodeMsg(networkAddress, token, moniker string, pubkey ec
 		types.Description{
 			Moniker: moniker,
 		},
-	)
+	), nil
 }
 
 func BuildRemoveResourceNodeMsg(nodeAddress, ownerAddress utiltypes.Address) sdktypes.Msg {

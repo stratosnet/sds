@@ -28,7 +28,7 @@ func downloadCancel(w http.ResponseWriter, request *http.Request) {
 			}
 			list = append(list, l)
 			if val, ok := setting.DownLoadTaskIDMap.Load(l.TaskID); ok {
-				go event.DownloadSloceCancel(val.(string), uuid.New().String(), w)
+				go event.DownloadSliceCancel(val.(string), uuid.New().String(), w)
 			}
 			setting.DownLoadTaskIDMap.Delete(l.TaskID)
 			delete(setting.DownMap, l.TaskID)

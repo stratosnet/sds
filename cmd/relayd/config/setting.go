@@ -1,6 +1,9 @@
 package setting
 
-import "github.com/stratosnet/sds/utils"
+import (
+	stratos "github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/utils"
+)
 
 type connectionRetries struct {
 	Max           int `yaml:"max"`
@@ -21,8 +24,15 @@ type stratoschain struct {
 }
 
 type config struct {
-	SDS          sds          `yaml:"sds"`
-	StratosChain stratoschain `yaml:"stratosChain"`
+	BlockchainInfo blockchainInfoConfig `yaml:"blockchainInfo"`
+	SDS            sds                  `yaml:"sds"`
+	StratosChain   stratoschain         `yaml:"stratosChain"`
+}
+
+type blockchainInfoConfig struct {
+	AddressPrefix string `yaml:"addressPrefix"`
+	ChainId       string `yaml:"chainId"`
+	Token         string `yaml:"token"`
 }
 
 var Config *config
@@ -30,4 +40,5 @@ var Config *config
 func LoadConfig(path string) {
 	Config = new(config)
 	utils.LoadYamlConfig(Config, path)
+	stratos.SetConfig(Config.BlockchainInfo.AddressPrefix)
 }

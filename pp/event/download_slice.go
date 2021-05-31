@@ -233,19 +233,19 @@ func RspReportDownloadResult(ctx context.Context, conn spbf.WriteCloser) {
 	}
 }
 
-// RspDownloadSloceWrong
-func RspDownloadSloceWrong(ctx context.Context, conn spbf.WriteCloser) {
-	utils.DebugLog("RspDownloadSloce")
-	var target protos.RspDownloadSloceWrong
+// RspDownloadSliceWrong
+func RspDownloadSliceWrong(ctx context.Context, conn spbf.WriteCloser) {
+	utils.DebugLog("RspDownloadSlice")
+	var target protos.RspDownloadSliceWrong
 	if unmarshalData(ctx, &target) {
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
-			utils.DebugLog("RspDownloadSloceWrongRspDownloadSloceWrongRspDownloadSloceWrong", target.NewSliceInfo.SliceStorageInfo.SliceHash)
+			utils.DebugLog("RspDownloadSliceWrongRspDownloadSliceWrongRspDownloadSliceWrong", target.NewSliceInfo.SliceStorageInfo.SliceHash)
 			if dlTask, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress); ok {
 				donwloadTask := dlTask.(*task.DonwloadTask)
 				if sInfo, ok := donwloadTask.SliceInfo[target.NewSliceInfo.SliceStorageInfo.SliceHash]; ok {
 					sInfo.StoragePpInfo.WalletAddress = target.NewSliceInfo.StoragePpInfo.WalletAddress
 					sInfo.StoragePpInfo.NetworkAddress = target.NewSliceInfo.StoragePpInfo.NetworkAddress
-					transferSendMessageToPPServ(target.NewSliceInfo.StoragePpInfo.NetworkAddress, rspDownloadSloceWrong(&target))
+					transferSendMessageToPPServ(target.NewSliceInfo.StoragePpInfo.NetworkAddress, rspDownloadSliceWrong(&target))
 				}
 			}
 		}
@@ -254,13 +254,13 @@ func RspDownloadSloceWrong(ctx context.Context, conn spbf.WriteCloser) {
 
 func downloadWrong(taskID, sliceHash, walletAddress string, wrongType protos.DownloadWrongType) {
 	utils.DebugLog("downloadWrong, sliceHash: ", sliceHash)
-	SendMessageToSPServer(reqDownloadSloceWrong(taskID, sliceHash, walletAddress, wrongType), header.ReqDownloadSliceWrong)
+	SendMessageToSPServer(reqDownloadSliceWrong(taskID, sliceHash, walletAddress, wrongType), header.ReqDownloadSliceWrong)
 }
 
-// DownloadSlocePause
-func DownloadSlocePause(fileHash, reqID string, w http.ResponseWriter) {
+// DownloadSlicePause
+func DownloadSlicePause(fileHash, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqDownloadSlocePause(fileHash, reqID), header.ReqDownloadSlicePause)
+		sendMessage(client.PPConn, reqDownloadSlicePause(fileHash, reqID), header.ReqDownloadSlicePause)
 		// stroeResponseWriter(reqID, w)
 		task.PCleanDownloadTask(fileHash)
 		if c, ok := client.PdownloadPassageway.Load(fileHash); ok {
@@ -272,10 +272,10 @@ func DownloadSlocePause(fileHash, reqID string, w http.ResponseWriter) {
 	}
 }
 
-// DownloadSloceCancel
-func DownloadSloceCancel(fileHash, reqID string, w http.ResponseWriter) {
+// DownloadSliceCancel
+func DownloadSliceCancel(fileHash, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqDownloadSlocePause(fileHash, reqID), header.ReqDownloadSlicePause)
+		sendMessage(client.PPConn, reqDownloadSlicePause(fileHash, reqID), header.ReqDownloadSlicePause)
 		stroeResponseWriter(reqID, w)
 		task.PCleanDownloadTask(fileHash)
 		task.PCancelDownloadTask(fileHash)
@@ -289,12 +289,12 @@ func DownloadSloceCancel(fileHash, reqID string, w http.ResponseWriter) {
 	}
 }
 
-// ReqDownloadSlocePause ReqDownloadSlocePause
-func ReqDownloadSlocePause(ctx context.Context, conn spbf.WriteCloser) {
-	utils.DebugLog("ReqDownloadSlocePause&*************************************** ")
-	var target protos.ReqDownloadSlocePause
+// ReqDownloadSlicePause ReqDownloadSlicePause
+func ReqDownloadSlicePause(ctx context.Context, conn spbf.WriteCloser) {
+	utils.DebugLog("ReqDownloadSlicePause&*************************************** ")
+	var target protos.ReqDownloadSlicePause
 	if unmarshalData(ctx, &target) {
-		transferSendMessageToClient(target.WalletAddress, rspDownloadSlocePauseData(&target))
+		transferSendMessageToClient(target.WalletAddress, rspDownloadSlicePauseData(&target))
 		//
 		if dlTask, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress); ok {
 			donwloadTask := dlTask.(*task.DonwloadTask)
@@ -311,9 +311,9 @@ func ReqDownloadSlocePause(ctx context.Context, conn spbf.WriteCloser) {
 	}
 }
 
-// RspDownloadSlocePause RspDownloadSlocePause
-func RspDownloadSlocePause(ctx context.Context, conn spbf.WriteCloser) {
-	var target protos.RspDownloadSlocePause
+// RspDownloadSlicePause RspDownloadSlicePause
+func RspDownloadSlicePause(ctx context.Context, conn spbf.WriteCloser) {
+	var target protos.RspDownloadSlicePause
 	if unmarshalData(ctx, &target) {
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
 			utils.DebugLog("pause successfully, fileHash", target.FileHash)

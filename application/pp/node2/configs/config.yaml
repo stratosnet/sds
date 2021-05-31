@@ -3,7 +3,6 @@ NetworkAddress: 127.0.0.1
 SPNetAddress: 127.0.0.1:8888
 Debug: true
 PPListDir: "./peers/pp-list"
-BPListDir: "./peers/bp-list"
 AccountDir: "./account"
 scryptN: 4096
 scryptP: 6
@@ -12,7 +11,7 @@ DefSavePath:
 StorehousePath:
 DownloadPath:
 Password: aaa
-Account: st1jzkud0tt88y6tyg6675utue45z5a04er4hfp9n
+Account: st1rgfaumqggksfw9vr2asuq9flyywam8lrvzmq9s
 AutoRun: true
 Internal: true
 IsWallet:
@@ -25,4 +24,7 @@ LimitUploadSpeed: 100
 IsCheckFileOperation:
 IsCheckFileTransferFinished:
 AddressPrefix: "st"
-Token: "STOS"
+ChainId: "test-chain"
+Token: "stos"
+StratosChainAddress: 127.0.0.1
+StratosChainPort: 1317

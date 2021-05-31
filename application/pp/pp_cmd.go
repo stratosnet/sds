@@ -18,6 +18,7 @@ import (
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/websocket"
+	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
 )
@@ -27,7 +28,7 @@ func main() {
 	// return
 	// setConfig()
 	// return
-	helpStr := "\nhelp                                show all the commands\n" +
+	helpStr := "\nhelp                       show all the commands\n" +
 		"accounts                            acquire all wallet accounts’ address\n" +
 		"newaccount ->password               create new account\n" +
 		"login account ->password            unlock and log in account \n" +
@@ -54,6 +55,8 @@ func main() {
 	}
 	peers.GetNetworkAddress()
 	fmt.Println(helpStr)
+
+	stratoschain.Url = "http://" + setting.Config.StratosChainAddress + ":" + setting.Config.StratosChainPort
 
 	help := func(line string, param []string) bool {
 		fmt.Println(helpStr)
@@ -111,6 +114,39 @@ func main() {
 		return true
 	}
 
+	activate := func(line string, param []string) bool {
+		if len(param) < 3 {
+			fmt.Println("Expecting 3 params. Input amount of tokens, fee amount and gas amount")
+			return false
+		}
+		amount, err := strconv.ParseInt(param[0], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid amount param. Should be an integer")
+			return false
+		}
+		fee, err := strconv.ParseInt(param[1], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid fee param. Should be an integer")
+			return false
+		}
+		gas, err := strconv.ParseInt(param[2], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid gas param. Should be an integer")
+			return false
+		}
+
+		if setting.IsActive {
+			return true
+		}
+
+		if !setting.IsPP {
+			fmt.Println("register as a PP node first")
+			return true
+		}
+
+		return event.Activate(amount, fee, gas) == nil
+	}
+
 	upload := func(line string, param []string) bool {
 		if len(param) == 0 {
 			fmt.Println("input upload file path")
@@ -131,7 +167,7 @@ func main() {
 		return true
 	}
 
-	downLoad := func(line string, param []string) bool {
+	download := func(line string, param []string) bool {
 		if len(param) == 0 {
 			fmt.Println("input download path, e.g: spb://account_address/file_hash|filename(optional)")
 			return false
@@ -313,7 +349,7 @@ func main() {
 			fmt.Println("input file hash of the pause")
 			return false
 		}
-		event.DownloadSlocePause(param[0], "", nil)
+		event.DownloadSlicePause(param[0], "", nil)
 		return true
 	}
 	pauseput := func(line string, param []string) bool {
@@ -329,7 +365,7 @@ func main() {
 			fmt.Println("input file hash of the cancel")
 			return false
 		}
-		event.DownloadSloceCancel(param[0], "", nil)
+		event.DownloadSliceCancel(param[0], "", nil)
 		return true
 	}
 
@@ -407,7 +443,7 @@ func main() {
 	}
 	if setting.Config.IsWallet {
 		go api.StartHTTPServ()
-		peers.Login("0x027e1207F35bda064ada6290d09775a5C657d232", "123")
+		peers.Login(setting.Config.Account, setting.Config.Password)
 		// setting.ShowMonitor()
 		go func() {
 			netListen, err := net.Listen("tcp4", ":1203")
@@ -443,10 +479,11 @@ func main() {
 	console.Mystdin.RegisterProcessFunc("start", start)
 	console.Mystdin.RegisterProcessFunc("rp", registerPP)
 	console.Mystdin.RegisterProcessFunc("registerminer", registerPP)
+	console.Mystdin.RegisterProcessFunc("activate", activate)
 	console.Mystdin.RegisterProcessFunc("u", upload)
 	console.Mystdin.RegisterProcessFunc("put", upload)
-	console.Mystdin.RegisterProcessFunc("d", downLoad)
-	console.Mystdin.RegisterProcessFunc("get", downLoad)
+	console.Mystdin.RegisterProcessFunc("d", download)
+	console.Mystdin.RegisterProcessFunc("get", download)
 	console.Mystdin.RegisterProcessFunc("list", list)
 	console.Mystdin.RegisterProcessFunc("ls", list)
 	console.Mystdin.RegisterProcessFunc("delete", delete)
