@@ -6,6 +6,8 @@ import (
 	"crypto/ecdsa"
 	"encoding/binary"
 	"errors"
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/stratosnet/sds/utils/crypto"
 	"hash/crc32"
 	"math/big"
 	"reflect"
@@ -125,9 +127,8 @@ func Struct2Map(obj interface{}) map[string]interface{} {
 	return data
 }
 
-// ECCSign
+// ECCSign signs the given text
 func ECCSign(text []byte, prk *ecdsa.PrivateKey) ([]byte, error) {
-
 	randSign := CalcHash([]byte(uuid.New().String() + "#" + strconv.FormatInt(time.Now().UnixNano(), 10)))
 	r, s, err := ecdsa.Sign(strings.NewReader(randSign), prk, text)
 	if err != nil {
@@ -152,7 +153,13 @@ func ECCSign(text []byte, prk *ecdsa.PrivateKey) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-// ECCVerify
+// ECCSignBytes converts the private key bytes to an ecdsa.PrivateKey and then signs the given text
+func ECCSignBytes(text, privateKey []byte) ([]byte, error) {
+	privKey, _ := btcec.PrivKeyFromBytes(crypto.S256(), privateKey)
+	return ECCSign(text, privKey.ToECDSA())
+}
+
+// ECCVerify verifies the given signature
 func ECCVerify(text []byte, signature []byte, key *ecdsa.PublicKey) bool {
 
 	r, err := gzip.NewReader(bytes.NewBuffer(signature))
@@ -188,6 +195,15 @@ func ECCVerify(text []byte, signature []byte, key *ecdsa.PublicKey) bool {
 	}
 
 	return ecdsa.Verify(key, text, &rint, &sint)
+}
+
+// ECCVerifyBytes converts the public key bytes to an ecdsa.PublicKey and then verifies the given signature
+func ECCVerifyBytes(text, signature, publicKey []byte) bool {
+	pubKey, err := crypto.UnmarshalPubkey(publicKey)
+	if err != nil {
+		return false
+	}
+	return ECCVerify(text, signature, pubKey)
 }
 
 // CheckStructField

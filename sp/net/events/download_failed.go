@@ -32,9 +32,9 @@ func GetDownloadFailedHandler(s *net.Server) EventHandleFunc {
 
 // downloadFailedCallbackFunc is the main process of download fail event
 func downloadFailedCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
-	body := message.(*protos.ReqDownloadSloceWrong)
+	body := message.(*protos.ReqDownloadSliceWrong)
 
-	rsp := &protos.RspDownloadSloceWrong{
+	rsp := &protos.RspDownloadSliceWrong{
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
@@ -148,7 +148,7 @@ func downloadFailedCallbackFunc(_ context.Context, s *net.Server, message proto.
 // Handle create a concrete proto message for this event, and handle the event asynchronously
 func (e *downloadFailed) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
-		target := &protos.ReqDownloadSloceWrong{}
+		target := &protos.ReqDownloadSliceWrong{}
 		if err := e.handle(ctx, conn, target); err != nil {
 			utils.ErrorLog(err)
 		}

@@ -1,7 +1,6 @@
 package setting
 
 import (
-	"crypto/ecdsa"
 	"encoding/csv"
 	"os"
 	"sync"
@@ -15,6 +14,9 @@ var IsPP = false
 
 // IsLoginToSP
 var IsLoginToSP = false
+
+// IsActive
+var IsActive = false
 
 // IsStartMining
 var IsStartMining = false
@@ -32,7 +34,7 @@ var NetworkAddress string
 var PublicKey []byte
 
 // PrivateKey
-var PrivateKey *ecdsa.PrivateKey
+var PrivateKey []byte
 
 // PPList
 var PPList []*protos.PPBaseInfo

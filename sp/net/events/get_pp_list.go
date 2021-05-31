@@ -2,7 +2,6 @@ package events
 
 import (
 	"context"
-	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -44,16 +43,6 @@ func getPPListCallbackFunc(_ context.Context, s *net.Server, _ proto.Message, _ 
 			State: protos.ResultState_RES_SUCCESS,
 		},
 		PpList: ppBaseInfoList,
-	}
-
-	// TODO: remove. Just for testing
-	rsp.Result.Msg = "hello"
-	data, err := proto.Marshal(rsp)
-	if err == nil {
-		utils.Log(fmt.Sprintf("-------in callback, calling broadcast"))
-		s.SubscriptionServer.Broadcast("test", data)
-	} else {
-		utils.Log(fmt.Sprintf("-------in callback, error " + err.Error()))
 	}
 
 	return rsp, header.RspGetPPList

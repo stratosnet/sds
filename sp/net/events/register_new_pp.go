@@ -10,7 +10,6 @@ import (
 	"github.com/stratosnet/sds/sp/net"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto"
 )
 
 // registerNewPP is a concrete implementation of event
@@ -60,6 +59,7 @@ func registerNewPPCallbackFunc(_ context.Context, s *net.Server, message proto.M
 		Version:        body.Version,
 		PubKey:         fmt.Sprintf("PubKeySecp256k1{%X}", body.PubKey),
 		State:          table.STATE_OFFLINE,
+		Active:         table.PP_INACTIVE,
 	}
 
 	if err := s.CT.Save(pp); err != nil {
@@ -100,12 +100,7 @@ func validateNewPP(s *net.Server, req *protos.ReqRegisterNewPP, user *table.User
 		return false, "public key or signature is empty"
 	}
 
-	puk, err := crypto.UnmarshalPubkey(req.PubKey)
-	if err != nil {
-		return false, err.Error()
-	}
-
-	if !utils.ECCVerify([]byte(req.WalletAddress), req.Sign, puk) {
+	if !utils.ECCVerifyBytes([]byte(req.WalletAddress), req.Sign, req.PubKey) {
 		return false, "signature verification failed"
 	}
 

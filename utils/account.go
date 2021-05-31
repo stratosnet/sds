@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -14,9 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys"
 	"github.com/cosmos/go-bip39"
 	"github.com/stratosnet/sds/utils/crypto"
-	"github.com/stratosnet/sds/utils/crypto/math"
 	"github.com/stratosnet/sds/utils/types"
-	"github.com/tendermint/btcd/btcec"
 	"github.com/vmihailenco/msgpack"
 	"io"
 	"io/ioutil"
@@ -79,13 +76,8 @@ func CreateAccount(dir, nickname, auth, hrp, mnemonic, bip39Passphrase, hdPath s
 	if err != nil {
 		return types.Address{}, err
 	}
-	derivedKey, _ := btcec.PrivKeyFromBytes(crypto.S256(), derivedKeyBytes)
-	if derivedKey == nil {
-		return types.Address{}, errors.New("couldn't generate ecdsa private key from bytes")
-	}
-	derivedKeyEcdsa := (*ecdsa.PrivateKey)(derivedKey)
 
-	key := newKeyFromECDSA(derivedKeyEcdsa)
+	key := newKeyFromBytes(derivedKeyBytes)
 	key.Account = nickname
 	key.HdPath = hdPath
 	key.Mnemonic = mnemonic
@@ -113,12 +105,12 @@ func NewMnemonic() (string, error) {
 	return bip39.NewMnemonic(entropy)
 }
 
-func newKeyFromECDSA(privateKeyECDSA *ecdsa.PrivateKey) *AccountKey {
+func newKeyFromBytes(privateKey []byte) *AccountKey {
 	id := uuid.NewRandom()
 	key := &AccountKey{
 		Id:         id,
-		Address:    crypto.PubkeyToAddress(privateKeyECDSA.PublicKey),
-		PrivateKey: privateKeyECDSA,
+		Address:    crypto.PrivKeyToAddress(privateKey),
+		PrivateKey: privateKey,
 	}
 	return key
 }
@@ -137,12 +129,11 @@ func EncryptKey(key *AccountKey, auth string, scryptN, scryptP int) ([]byte, err
 		return nil, err
 	}
 	encryptKey := derivedKey[:16]
-	keyBytes := math.PaddedBigBytes(key.PrivateKey.D, 32)
 	hdKeyBytesObject := hdKeyBytes{
 		HdPath:     []byte(key.HdPath),
-		Mnemonic:   []byte(key.HdPath),
-		Passphrase: []byte(key.HdPath),
-		PrivKey:    keyBytes,
+		Mnemonic:   []byte(key.Mnemonic),
+		Passphrase: []byte(key.Passphrase),
+		PrivKey:    key.PrivateKey,
 	}
 	hdKeyEncoded, err := msgpack.Marshal(hdKeyBytesObject)
 	if err != nil {
@@ -215,16 +206,15 @@ func DecryptKey(keyjson []byte, auth string) (*AccountKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	key := crypto.ToECDSAUnsafe(hdKeyBytesObject.PrivKey)
 
 	return &AccountKey{
 		Id:         uuid.UUID(keyId),
 		Account:    k.Account,
-		Address:    crypto.PubkeyToAddress(key.PublicKey),
+		Address:    crypto.PrivKeyToAddress(hdKeyBytesObject.PrivKey),
 		HdPath:     string(hdKeyBytesObject.HdPath),
 		Mnemonic:   string(hdKeyBytesObject.Mnemonic),
 		Passphrase: string(hdKeyBytesObject.Passphrase),
-		PrivateKey: key,
+		PrivateKey: hdKeyBytesObject.PrivKey,
 	}, nil
 }
 
@@ -249,8 +239,7 @@ func (ks KeyStorePassphrase) StoreKey(filename string, key *AccountKey, auth str
 }
 
 // zeroKey zeroes a private key in memory.
-func zeroKey(k *ecdsa.PrivateKey) {
-	b := k.D.Bits()
+func zeroKey(b []byte) {
 	for i := range b {
 		b[i] = 0
 	}
@@ -373,7 +362,7 @@ type AccountKey struct {
 	Passphrase string
 	// we only store privkey as pubkey/address can be derived from it
 	// privkey in this struct is always in plaintext
-	PrivateKey *ecdsa.PrivateKey
+	PrivateKey []byte
 }
 
 // ChangePassword

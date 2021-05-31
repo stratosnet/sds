@@ -10,7 +10,6 @@ import (
 	"github.com/stratosnet/sds/sp/net"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto"
 )
 
 // deleteFile is a concrete implementation of event
@@ -110,18 +109,13 @@ func validateDeleteFileRequest(s *net.Server, req *protos.ReqDeleteFile) (bool, 
 		return false, "not authorized to process"
 	}
 
-	pukInByte, err := hex.DecodeString(user.Puk)
-	if err != nil {
-		return false, err.Error()
-	}
-
-	puk, err := crypto.UnmarshalPubkey(pukInByte)
+	puk, err := hex.DecodeString(user.Puk)
 	if err != nil {
 		return false, err.Error()
 	}
 
 	data := req.WalletAddress + req.FileHash
-	if !utils.ECCVerify([]byte(data), req.Sign, puk) {
+	if !utils.ECCVerifyBytes([]byte(data), req.Sign, puk) {
 		return false, "signature verification failed"
 	}
 

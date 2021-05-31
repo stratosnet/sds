@@ -9,8 +9,10 @@ import (
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/relay/stratoschain/register"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto"
+	"github.com/stratosnet/sds/utils/types"
 
 	"github.com/golang/protobuf/proto"
 )
@@ -43,6 +45,30 @@ func reqRegisterDataTR(target *protos.ReqRegister) *msg.RelayMsgBuf {
 		MSGHead: PPMsgHeader(data, header.ReqRegister),
 		MSGData: data,
 	}
+}
+
+func reqActivateData(amount, fee, gas int64) (*protos.ReqActivate, error) {
+	// Create and sign transaction to add new resource node
+	ownerAddress, err := types.BechToAddress(setting.WalletAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	txMsg, err := register.BuildCreateResourceNodeMsg(setting.NetworkAddress, setting.Config.Token, setting.WalletAddress, setting.PublicKey, amount, ownerAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", setting.WalletAddress, "sync", txMsg, fee, gas, setting.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &protos.ReqActivate{
+		Tx:            txBytes,
+		WalletAddress: setting.WalletAddress,
+	}
+	return req, nil
 }
 
 func reqMiningData() *protos.ReqMining {
@@ -101,8 +127,7 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool) *prot
 	walletFileHash := []byte(walletFileString)
 	utils.DebugLogf("setting.WalletAddress + fileHash : %v", walletFileHash)
 
-	puk, _ := crypto.UnmarshalPubkey(setting.PublicKey)
-	if utils.ECCVerify(walletFileHash, req.Sign, puk) {
+	if utils.ECCVerifyBytes(walletFileHash, req.Sign, setting.PublicKey) {
 		utils.DebugLog("ECC verification ok")
 	} else {
 		utils.DebugLog("ECC verification failed")
@@ -473,8 +498,8 @@ func reqDeleteFileData(fileHash, reqID string) *protos.ReqDeleteFile {
 	}
 }
 
-func reqDownloadSloceWrong(taskID, sliceHash, walletAddress string, wrongType protos.DownloadWrongType) *protos.ReqDownloadSloceWrong {
-	return &protos.ReqDownloadSloceWrong{
+func reqDownloadSliceWrong(taskID, sliceHash, walletAddress string, wrongType protos.DownloadWrongType) *protos.ReqDownloadSliceWrong {
+	return &protos.ReqDownloadSliceWrong{
 		WalletAddress: walletAddress,
 		TaskId:        taskID,
 		SliceHash:     sliceHash,
@@ -482,7 +507,7 @@ func reqDownloadSloceWrong(taskID, sliceHash, walletAddress string, wrongType pr
 	}
 }
 
-func rspDownloadSloceWrong(target *protos.RspDownloadSloceWrong) *msg.RelayMsgBuf {
+func rspDownloadSliceWrong(target *protos.RspDownloadSliceWrong) *msg.RelayMsgBuf {
 	sendTager := &protos.ReqDownloadSlice{
 		SliceInfo: &protos.SliceOffsetInfo{
 			SliceHash:   target.NewSliceInfo.SliceStorageInfo.SliceHash,
@@ -606,16 +631,16 @@ func reqGetMyConfig(walletAddress, reqID string) *protos.ReqConfig {
 	}
 }
 
-func reqDownloadSlocePause(fileHash, reqID string) *protos.ReqDownloadSlocePause {
-	return &protos.ReqDownloadSlocePause{
+func reqDownloadSlicePause(fileHash, reqID string) *protos.ReqDownloadSlicePause {
+	return &protos.ReqDownloadSlicePause{
 		FileHash:      fileHash,
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 	}
 }
 
-func rspDownloadSlocePauseData(target *protos.ReqDownloadSlocePause) *msg.RelayMsgBuf {
-	sendTager := &protos.RspDownloadSlocePause{
+func rspDownloadSlicePauseData(target *protos.ReqDownloadSlicePause) *msg.RelayMsgBuf {
+	sendTager := &protos.RspDownloadSlicePause{
 		WalletAddress: target.WalletAddress,
 		FileHash:      target.FileHash,
 		ReqId:         target.ReqId,

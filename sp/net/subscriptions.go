@@ -142,13 +142,11 @@ func (s *SubscriptionServer) Close() {
 }
 
 func (s *SubscriptionServer) Broadcast(topic string, message []byte) {
-	utils.Log(fmt.Sprintf("calling Broadcast for %v bytes to topic %v", len(message), topic))
+	utils.DebugLog(fmt.Sprintf("calling Broadcast for %v bytes to topic %v", len(message), topic))
 	s.subscribers.Range(func(k, v interface{}) bool {
 		sub := v.(*subscriber)
-		utils.Log(fmt.Sprintf("Broadcasting to subscriber"))
 		for _, top := range sub.topics {
 			if top == topic {
-				utils.Log(fmt.Sprintf("topic match"))
 				sub.msgChan <- message
 			}
 		}
