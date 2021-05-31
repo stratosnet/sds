@@ -47,9 +47,12 @@ func main() {
 func newCONN() *CONN {
 
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", "localhost:8888")
-	utils.CheckError(err)
-	c, err := net.DialTCP("tcp", nil, tcpAddr)
-	if utils.CheckError(err) {
+	if err != nil {
+		utils.ErrorLogf("new connection error : %v", err)
+	}
+	var c *net.TCPConn
+	c, err = net.DialTCP("tcp", nil, tcpAddr)
+	if err != nil {
 		panic(err)
 	}
 	onConnect := cf.OnConnectOption(func(c spbf.WriteCloser) bool {
@@ -86,7 +89,7 @@ type CONN struct {
 
 func (c *CONN) send(message proto.Message, cmd string) {
 	data, err := proto.Marshal(message)
-	if utils.CheckError(err) {
+	if err != nil {
 		panic(err)
 	}
 	msg := &msg.RelayMsgBuf{

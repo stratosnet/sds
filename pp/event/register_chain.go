@@ -89,4 +89,43 @@ func RspRegisterChain(ctx context.Context, conn spbf.WriteCloser) {
 	if !setting.IsPP {
 		reportDHInfoToPP()
 	}
+	if setting.IsAuto {
+		if setting.IsPP {
+			StartMining()
+		}
+	}
+
+}
+
+// RspMining RspMining
+func RspMining(ctx context.Context, conn spbf.WriteCloser) {
+	utils.DebugLog("get RspMining", conn)
+	var target protos.RspMining
+	if unmarshalData(ctx, &target) {
+		if target.Result.State == protos.ResultState_RES_SUCCESS {
+			fmt.Println("start mining")
+			if serv.GetPPServer() == nil {
+				go serv.StartListenServer(setting.Config.Port)
+			}
+			setting.IsStartMining = true
+			if client.SPConn == nil {
+				client.SPConn = client.NewClient(setting.Config.SPNetAddress, setting.IsPP)
+				RegisterChain(true)
+			}
+		} else {
+			utils.Log(target.Result.Msg)
+		}
+	}
+}
+
+// StartMining
+func StartMining() {
+	if setting.CheckLogin() {
+		if setting.IsPP {
+			utils.DebugLog("StartMining")
+			SendMessageToSPServer(reqMiningData(), header.ReqMining)
+		} else {
+			fmt.Println("register as miner first")
+		}
+	}
 }

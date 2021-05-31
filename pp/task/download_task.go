@@ -152,66 +152,69 @@ func DoneDownload(fileHash, fileName, savePath string) {
 	filePath := file.GetDownloadTmpPath(fileHash, fileName, savePath)
 	newFilePath := filePath[:len(filePath)-4]
 	err := os.Rename(filePath, newFilePath)
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog("DoneDownload", err)
 	}
-	err1 := os.Remove(file.GetDownloadCsvPath(fileHash, fileName, savePath))
-	if utils.CheckError(err1) {
+	err = os.Remove(file.GetDownloadCsvPath(fileHash, fileName, savePath))
+	if err != nil {
 		utils.ErrorLog("DoneDownload Remove", err)
 	}
 	lastPath := strings.Replace(newFilePath, fileHash+"/", "", -1)
 	// if setting.IsWindows {
 	// 	lastPath = filepath.FromSlash(lastPath)
 	// }
-	err3 := os.Rename(newFilePath, lastPath)
-	if utils.CheckError(err3) {
+	err = os.Rename(newFilePath, lastPath)
+	if err != nil {
 		utils.ErrorLog("DoneDownload Rename", err)
 	}
 	rmPath := strings.Replace(newFilePath, "/"+fileName, "", -1)
-	err4 := os.Remove(rmPath)
-	if utils.CheckError(err4) {
+	err = os.Remove(rmPath)
+	if err != nil {
 		utils.ErrorLog("DoneDownload Remove", err)
 	}
 
 	if _, ok := setting.ImageMap.Load(fileHash); ok {
 		utils.DebugLog("enter imageMap》》》》》》")
-		exist, err := file.PathExists(setting.IMAGEPATH)
-		if utils.CheckError(err) {
+		exist := false
+		exist, err = file.PathExists(setting.IMAGEPATH)
+		if err != nil {
 			utils.ErrorLog("ImageMap no", err)
 		}
 		if !exist {
-			if utils.CheckError(os.MkdirAll(setting.IMAGEPATH, os.ModePerm)) {
+			if err = os.MkdirAll(setting.IMAGEPATH, os.ModePerm); err != nil {
 				utils.ErrorLog("ImageMap mk no", err)
 			}
 		}
 		utils.DebugLog("enter imageMap creation")
 		if setting.IsWindows {
-			f, err5 := os.Open(lastPath)
-			if err5 != nil {
-				utils.ErrorLog("err5>>>", err5)
+			var f, imageFile *os.File
+			f, err = os.Open(lastPath)
+			if err != nil {
+				utils.ErrorLog("err5>>>", err)
 			}
-			img, err6 := ioutil.ReadAll(f)
-			if err6 != nil {
-				utils.ErrorLog("img err6>>>", err6)
+			var img []byte
+			img, err = ioutil.ReadAll(f)
+			if err != nil {
+				utils.ErrorLog("img err6>>>", err)
 			}
-			imageFile, err7 := os.OpenFile(setting.IMAGEPATH+fileHash, os.O_CREATE|os.O_RDWR, 0777)
-			if err7 != nil {
-				utils.ErrorLog("img err7>>>", err7)
+			imageFile, err = os.OpenFile(setting.IMAGEPATH+fileHash, os.O_CREATE|os.O_RDWR, 0777)
+			if err != nil {
+				utils.ErrorLog("img err7>>>", err)
 			}
-			_, err8 := imageFile.Write(img)
-			if err8 != nil {
-				utils.ErrorLog("img err8>>>", err8)
+			_, err = imageFile.Write(img)
+			if err != nil {
+				utils.ErrorLog("img err8>>>", err)
 			}
 			f.Close()
 			imageFile.Close()
-			err9 := os.Remove(lastPath)
-			if utils.CheckError(err9) {
+			err = os.Remove(lastPath)
+			if err != nil {
 				utils.ErrorLog("err9 Remove", err)
 			}
 		} else {
-			err3 := os.Rename(lastPath, setting.IMAGEPATH+fileHash)
-			if utils.CheckError(err3) {
-				utils.ErrorLog("ImageMap Rename", err3)
+			err = os.Rename(lastPath, setting.IMAGEPATH+fileHash)
+			if err != nil {
+				utils.ErrorLog("ImageMap Rename", err)
 			}
 		}
 

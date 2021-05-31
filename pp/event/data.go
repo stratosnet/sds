@@ -17,7 +17,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-func reqRegisterData(toSP bool) *protos.ReqRegister {
+func reqRegisterData(_ bool) *protos.ReqRegister {
 	return &protos.ReqRegister{
 		Address: &protos.PPBaseInfo{
 			WalletAddress:  setting.WalletAddress,
@@ -38,7 +38,7 @@ func reqRegisterDataTR(target *protos.ReqRegister) *msg.RelayMsgBuf {
 		NetworkAddress: setting.NetworkAddress,
 	}
 	data, err := proto.Marshal(req)
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog(err)
 	}
 	return &msg.RelayMsgBuf{
@@ -71,14 +71,24 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivate, error) {
 	return req, nil
 }
 
+func reqMiningData() *protos.ReqMining {
+	return &protos.ReqMining{
+		Address: &protos.PPBaseInfo{
+			WalletAddress:  setting.WalletAddress,
+			NetworkAddress: setting.NetworkAddress,
+		},
+		PublicKey: setting.PublicKey,
+		Sign:      setting.GetSign(setting.WalletAddress),
+	}
+}
+
 func reqGetPPlistData() *protos.ReqGetPPList {
-	req := &protos.ReqGetPPList{
+	return &protos.ReqGetPPList{
 		MyAddress: &protos.PPBaseInfo{
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
 	}
-	return req
 }
 
 // RequestUploadFileData RequestUploadFileData
@@ -92,6 +102,9 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool) *prot
 	utils.Log("fileName~~~~~~~~~~~~~~~~~~~~~~~~", fileName)
 	fileHash := file.GetFileHash(paths)
 	utils.Log("fileHash~~~~~~~~~~~~~~~~~~~~~~", fileHash)
+
+	walletFileString := setting.WalletAddress + fileHash
+
 	req := &protos.ReqUploadFile{
 		FileInfo: &protos.FileInfo{
 			FileSize:    uint64(info.Size()),
@@ -103,7 +116,7 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool) *prot
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
-		Sign:    setting.GetSign(setting.WalletAddress + fileHash),
+		Sign:    setting.GetSign(walletFileString),
 		IsCover: isCover,
 		ReqId:   reqID,
 	}
@@ -111,13 +124,15 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool) *prot
 		fileSuffix := path.Ext(paths)
 		req.FileInfo.FileName = fileHash + fileSuffix
 	}
-	utils.DebugLog("setting.WalletAddress + fileHash", []byte(setting.WalletAddress+fileHash))
+	walletFileHash := []byte(walletFileString)
+	utils.DebugLogf("setting.WalletAddress + fileHash : %v", walletFileHash)
 
-	if utils.ECCVerifyBytes([]byte(setting.WalletAddress+fileHash), req.Sign, setting.PublicKey) {
-		utils.DebugLog("okkkkkk")
+	if utils.ECCVerify(walletFileHash, req.Sign, setting.PublicKey) {
+		utils.DebugLog("ECC verification ok")
 	} else {
-		utils.DebugLog("noooooo")
+		utils.DebugLog("ECC verification failed")
 	}
+
 	// info
 	p := &task.UpProgress{
 		Total:     info.Size(),
@@ -313,7 +328,7 @@ func rspFileStorageInfoData(target *protos.RspFileStorageInfo) *msg.RelayMsgBuf 
 	}
 	sendTarget.SliceInfo = sliceInfoArr
 	sendData, err := proto.Marshal(sendTarget)
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog(err)
 	}
 	return &msg.RelayMsgBuf{
@@ -360,7 +375,7 @@ func reqTransferNoticeData(target *protos.ReqTransferNotice) *msg.RelayMsgBuf {
 		SliceStorageInfo: target.SliceStorageInfo,
 	}
 	data, err := proto.Marshal(sendTager)
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog(err)
 	}
 	return &msg.RelayMsgBuf{
@@ -395,6 +410,7 @@ func reqTransferDownloadData(transferCer string) *protos.ReqTransferDownload {
 	}
 }
 
+//TODO: Change to BP to SP
 func reqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
 	utils.DebugLog("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~reqReportTaskBPDatareqReportTaskBPData  taskID ==", taskID, "traffic == ", traffic)
 	sendTager := &protos.ReqReportTaskBP{
@@ -406,7 +422,7 @@ func reqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
 		},
 	}
 	data, err := proto.Marshal(sendTager)
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog(err)
 	}
 	return &msg.RelayMsgBuf{
@@ -502,7 +518,7 @@ func rspDownloadSliceWrong(target *protos.RspDownloadSliceWrong) *msg.RelayMsgBu
 		FileHash:      target.FileHash,
 	}
 	data, err := proto.Marshal(sendTager)
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog(err)
 	}
 	return &msg.RelayMsgBuf{
@@ -633,7 +649,7 @@ func rspDownloadSlicePauseData(target *protos.ReqDownloadSlicePause) *msg.RelayM
 		},
 	}
 	data, err := proto.Marshal(sendTager)
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog(err)
 	}
 	return &msg.RelayMsgBuf{

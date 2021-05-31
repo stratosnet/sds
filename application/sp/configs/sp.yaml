@@ -23,10 +23,10 @@ Database:
   Driver: mysql
   Host: localhost
   Port: 3306
-  User: user1
-  Pass: 111111
+  User: root
+  Pass: root
   DbName: sds
-  Debug: false
+  Debug: true
   LogFile: tmp/logs/db.log
 
 Ecdsa:
@@ -37,3 +37,9 @@ BlockchainInfo:
   AddressPrefix: st
   ChainId: test-chain
   Token: stos
+
+Log:
+  Path: tmp/logs/sp-server.log
+  Level: 1
+  OutputFile: true
+  OutputStd: true

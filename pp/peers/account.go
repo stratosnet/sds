@@ -45,7 +45,7 @@ func GetWalletAddress() {
 		// CreateAccount(setting.Config.DefPassword)
 		return
 	}
-	if utils.CheckError(err) {
+	if err != nil {
 		// CreateAccount(setting.Config.DefPassword)
 		return
 	}
