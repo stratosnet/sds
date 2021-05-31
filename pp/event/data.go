@@ -127,7 +127,7 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool) *prot
 	walletFileHash := []byte(walletFileString)
 	utils.DebugLogf("setting.WalletAddress + fileHash : %v", walletFileHash)
 
-	if utils.ECCVerify(walletFileHash, req.Sign, setting.PublicKey) {
+	if utils.ECCVerifyBytes(walletFileHash, req.Sign, setting.PublicKey) {
 		utils.DebugLog("ECC verification ok")
 	} else {
 		utils.DebugLog("ECC verification failed")

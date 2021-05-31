@@ -53,6 +53,12 @@ const (
 	STATE_ONLINE  = 1
 )
 
+const (
+	PP_INACTIVE = iota
+	PP_ACTIVE
+	PP_SUSPENDED
+)
+
 // PP table
 type PP struct {
 	Id             uint32

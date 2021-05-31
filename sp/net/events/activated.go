@@ -45,7 +45,7 @@ func activatedCallbackFunc(_ context.Context, s *net.Server, message proto.Messa
 		return rsp, header.RspActivated
 	}
 
-	pp.Active = 1
+	pp.Active = table.PP_ACTIVE
 	if err := s.CT.Save(pp); err != nil {
 		utils.ErrorLog(err)
 	}
