@@ -1,6 +1,7 @@
 package file
 
 import (
+	"fmt"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"io/ioutil"
@@ -9,9 +10,9 @@ import (
 	"strings"
 )
 
-var ostype = runtime.GOOS
+//var osType = runtime.GOOS
 
-// GetDownloadTmpPath
+// GetDownloadTmpPath get temporary download path
 func GetDownloadTmpPath(fileHash, fileName, savePath string) string {
 	if savePath == "" {
 		downPath := GetDownloadPath(fileHash) + "/" + fileName + ".tmp"
@@ -28,7 +29,7 @@ func GetDownloadTmpPath(fileHash, fileName, savePath string) string {
 
 }
 
-// GetDownloadCsvPath
+// GetDownloadCsvPath get download CSV path
 func GetDownloadCsvPath(fileHash, fileName, savePath string) string {
 	if savePath == "" {
 		csv := GetDownloadPath(fileHash) + "/" + fileName + ".csv"
@@ -45,20 +46,20 @@ func GetDownloadCsvPath(fileHash, fileName, savePath string) string {
 
 }
 
-// GetDownloadPath
+// GetDownloadPath get download path
 func GetDownloadPath(fileName string) string {
 	filePath := setting.Config.DownloadPath + fileName
 	// if setting.IsWindows {
 	// 	filePath = filepath.FromSlash(filePath)
 	// }
 	exist, err := PathExists(filePath)
-	if utils.CheckError(err) {
-		utils.ErrorLog("exist>>>>>>>>>>>>>>>", err)
+	if err != nil {
+		utils.ErrorLogf("file existed: %v", err)
 		return ""
 	}
 	if !exist {
-		if utils.CheckError(os.MkdirAll(filePath, os.ModePerm)) {
-			utils.ErrorLog("MkdirAll>>>>>>>>>>>>>>.", err)
+		if err = os.MkdirAll(filePath, os.ModePerm); err != nil {
+			utils.ErrorLogf("MkdirAll error: %v", err)
 			return ""
 		}
 	}
@@ -69,12 +70,12 @@ func getSlicePath(hash string) string {
 	s2 := string([]rune(hash)[1:2])
 	path := setting.Config.StorehousePath + s1 + "/" + s2
 	exist, err := PathExists(path)
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog(err)
 		return ""
 	}
 	if !exist {
-		if utils.CheckError(os.MkdirAll(path, os.ModePerm)) {
+		if err = os.MkdirAll(path, os.ModePerm); err != nil {
 			utils.ErrorLog(err)
 			return ""
 		}
@@ -94,41 +95,41 @@ func PathExists(path string) (bool, error) {
 	return false, err
 }
 
-// IsFile
-func IsFile(f string) int {
+// IsFile checks if the path is a file or directory
+func IsFile(f string) (bool, error) {
 	fi, e := os.Stat(f)
 	if e != nil {
-		utils.ErrorLog("IsFile", e)
-		return 0
+		return false, fmt.Errorf("IsFile: error open path %v ", e)
 	}
-	if !fi.IsDir() {
-		return 1
-	}
-	return 2
+	return !fi.IsDir(), nil
 }
 
-// GetAllFile
-func GetAllFile(pathname string) {
-	utils.DebugLog("pathname", pathname)
+// GetAllFiles get all files in directory and all sub-directory recursively
+func GetAllFiles(pathname string) {
+	utils.DebugLogf("pathname: %v", pathname)
 	rd, _ := ioutil.ReadDir(pathname)
-	utils.DebugLog("rd", len(rd))
+	utils.DebugLogf("%v files in %v", len(rd), pathname)
 	if len(rd) == 0 {
+		// empty folder
 		setting.UpChan <- pathname
 	}
 	for _, fi := range rd {
-		if fi.IsDir() == false {
+		if !fi.IsDir() {
+			// file found
 			setting.UpChan <- pathname + "/" + fi.Name()
-		} else {
-			GetAllFile(pathname + "/" + fi.Name())
+			continue
 		}
+
+		// check sub folder
+		GetAllFiles(pathname + "/" + fi.Name())
 	}
 }
 
-// ESCPath
-func ESCPath(param []string) string {
-	os := runtime.GOOS
+// EscapePath
+func EscapePath(param []string) string {
+	operatingSystem := runtime.GOOS
 	newStr := ""
-	if os == "linux" || os == "darwin" {
+	if operatingSystem == "linux" || operatingSystem == "darwin" {
 		for i := 0; i < len(param); i++ {
 			str := param[i]
 			if str != "" {

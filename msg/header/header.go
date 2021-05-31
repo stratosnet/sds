@@ -44,6 +44,9 @@ const (
 	ReqActivated = "ReqActvd" // request when PP node was successfully activated
 	RspActivated = "RspActvd" // response when PP node was successfully activated
 
+	ReqMining = "ReqMin" // request to mining
+	RspMining = "RspMin" //  response to mining
+
 	// upload
 	ReqUploadFile              = "ReqUpl"
 	RspUploadFile              = "RspUpl"

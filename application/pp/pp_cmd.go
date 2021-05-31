@@ -33,6 +33,7 @@ func main() {
 		"newaccount ->password               create new account\n" +
 		"login account ->password            unlock and log in account \n" +
 		"registerminer                       apply to be PP miner\n" +
+		"start                               start mining\n" +
 		"put filepath                        upload file\n" +
 		"list filename                       inquire uploaded file by self\n" +
 		"list                                inquire all files\n" +
@@ -45,6 +46,8 @@ func main() {
 	// "config                              config key value\n"
 
 	setting.LoadConfig("./configs/config.yaml")
+	utils.NewDefaultLogger("./tmp/logs/stdout.log", true, true)
+
 	if setting.Config.Debug {
 		utils.MyLogger.SetLogLevel(utils.Debug)
 	} else {
@@ -101,6 +104,11 @@ func main() {
 		return false
 	}
 
+	start := func(line string, param []string) bool {
+		event.StartMining()
+		return true
+	}
+
 	registerPP := func(line string, param []string) bool {
 		event.RegisterNewPP()
 		return true
@@ -144,7 +152,7 @@ func main() {
 			fmt.Println("input upload file path")
 			return false
 		}
-		pathStr := file.ESCPath(param)
+		pathStr := file.EscapePath(param)
 		event.RequestUploadFile(pathStr, "", nil)
 		return true
 	}
@@ -262,12 +270,12 @@ func main() {
 			return false
 		}
 		time, timeErr := strconv.Atoi(param[1])
-		if utils.CheckError(timeErr) {
+		if timeErr != nil {
 			fmt.Println("input expire time(0 means non-expire)")
 			return false
 		}
 		private, err := strconv.Atoi(param[2])
-		if utils.CheckError(err) {
+		if err != nil {
 			fmt.Println("input is_private (0:public,1:private)")
 			return false
 		}
@@ -289,12 +297,12 @@ func main() {
 			return false
 		}
 		time, timeErr := strconv.Atoi(param[1])
-		if utils.CheckError(timeErr) {
+		if timeErr != nil {
 			fmt.Println("input expire time(0 for non-expire)")
 			return false
 		}
 		private, err := strconv.Atoi(param[2])
-		if utils.CheckError(err) {
+		if err != nil {
 			fmt.Println("input is private (0:public,1:private)")
 			return false
 		}
@@ -468,6 +476,7 @@ func main() {
 	console.Mystdin.RegisterProcessFunc("accounts", accounts)
 	console.Mystdin.RegisterProcessFunc("newaccount", newAccount)
 	console.Mystdin.RegisterProcessFunc("login", login)
+	console.Mystdin.RegisterProcessFunc("start", start)
 	console.Mystdin.RegisterProcessFunc("rp", registerPP)
 	console.Mystdin.RegisterProcessFunc("registerminer", registerPP)
 	console.Mystdin.RegisterProcessFunc("activate", activate)
@@ -531,7 +540,7 @@ func setConfig() {
 
 	resp, err1 := http.Get("http://ip.taobao.com/service/getIpInfo.php?ip=myip")
 
-	if utils.CheckError(err1) {
+	if err1 != nil {
 		utils.ErrorLog(err1)
 	}
 	defer resp.Body.Close()
@@ -566,7 +575,7 @@ func st() {
 func writerConfig(str string) {
 	configOS, err := os.OpenFile("./config.yaml", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
 	defer configOS.Close()
-	if utils.CheckError(err) {
+	if err != nil {
 		utils.ErrorLog("failed to open config file:", err)
 	}
 	configOS.WriteString("\n" + str)

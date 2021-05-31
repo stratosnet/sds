@@ -15,6 +15,7 @@ func StartSP(conf string) {
 
 	server := net.NewServer(conf)
 
+	spbf.Register(header.ReqMining, events.GetMiningHandler(server))
 	spbf.Register(header.ReqRegister, events.GetRegisterHandler(server))
 	spbf.Register(header.ReqActivate, events.GetActivateHandler(server))
 	spbf.Register(header.ReqActivated, events.GetActivatedHandler(server))
