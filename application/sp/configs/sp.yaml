@@ -30,8 +30,8 @@ Database:
   LogFile: tmp/logs/db.log
 
 Ecdsa:
-  PrivateKeyPath: path_to_privatekey
-  PrivateKeyPass: privatekey_password
+  PrivateKeyPath: configs/node_key.json
+  PrivateKeyPass: aaa
 
 BlockchainInfo:
   AddressPrefix: st
