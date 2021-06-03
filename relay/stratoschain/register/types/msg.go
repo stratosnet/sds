@@ -19,10 +19,12 @@ type MsgCreateResourceNode struct {
 	Value          sdk.Coin       `json:"value" yaml:"value"`
 	OwnerAddress   sdk.AccAddress `json:"owner_address" yaml:"owner_address"`
 	Description    Description    `json:"description" yaml:"description"`
+	NodeType       string         `json:"node_type" yaml:"node_type"`
 }
 
 // NewMsgCreateResourceNode NewMsg<Action> creates a new Msg<Action> instance
-func NewMsgCreateResourceNode(networkAddr string, pubKey crypto.PubKey, value sdk.Coin, ownerAddr sdk.AccAddress, description Description,
+func NewMsgCreateResourceNode(networkAddr string, pubKey crypto.PubKey, value sdk.Coin,
+	ownerAddr sdk.AccAddress, description Description, nodeType string,
 ) MsgCreateResourceNode {
 	return MsgCreateResourceNode{
 		NetworkAddress: networkAddr,
@@ -30,6 +32,7 @@ func NewMsgCreateResourceNode(networkAddr string, pubKey crypto.PubKey, value sd
 		Value:          value,
 		OwnerAddress:   ownerAddr,
 		Description:    description,
+		NodeType:       nodeType,
 	}
 }
 
@@ -52,9 +55,12 @@ func (msg MsgCreateResourceNode) ValidateBasic() error {
 	if !msg.Value.IsPositive() {
 		return ErrValueNegative
 	}
-	//if msg.Description == (Description{}) {
-	//	return ErrEmptyDescription
-	//}
+	if msg.Description == (Description{}) {
+		return ErrEmptyDescription
+	}
+	if msg.Description.Moniker == "" {
+		return ErrEmptyMoniker
+	}
 	return nil
 }
 
@@ -105,9 +111,12 @@ func (msg MsgCreateIndexingNode) ValidateBasic() error {
 	if !msg.Value.IsPositive() {
 		return ErrValueNegative
 	}
-	//if msg.Description == (Description{}) {
-	//	return ErrEmptyDescription
-	//}
+	if msg.Description == (Description{}) {
+		return ErrEmptyDescription
+	}
+	if msg.Description.Moniker == "" {
+		return ErrEmptyMoniker
+	}
 	return nil
 }
 
@@ -117,7 +126,7 @@ func (msg MsgCreateIndexingNode) GetSignBytes() []byte {
 }
 
 func (msg MsgCreateIndexingNode) GetSigners() []sdk.AccAddress {
-	return []sdk.AccAddress{msg.OwnerAddress}
+	return []sdk.AccAddress{msg.OwnerAddress, sdk.AccAddress(msg.PubKey.Address())}
 }
 
 // MsgRemoveResourceNode - struct for removing resource node
