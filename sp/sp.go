@@ -19,6 +19,8 @@ func StartSP(conf string) {
 	spbf.Register(header.ReqRegister, events.GetRegisterHandler(server))
 	spbf.Register(header.ReqActivate, events.GetActivateHandler(server))
 	spbf.Register(header.ReqActivated, events.GetActivatedHandler(server))
+	spbf.Register(header.ReqDeactivate, events.GetDeactivateHandler(server))
+	spbf.Register(header.ReqDeactivated, events.GetDeactivatedHandler(server))
 	spbf.Register(header.ReqGetPPList, events.GetPPListHandler(server))
 	spbf.Register(header.ReqRegisterNewPP, events.GetRegisterNewPPHandler(server))
 	spbf.Register(header.ReqUploadFile, events.GetUploadFileHandler(server))

@@ -39,10 +39,14 @@ const (
 	RspGetPPList = "RspGPPL"  // response to get pp list
 	ReqRegister  = "ReqReg"   // request to register
 	RspRegister  = "RspReg"   // response to register
-	ReqActivate  = "ReqActiv" // request to activate PP node
-	RspActivate  = "RspActiv" // response to activate PP node
-	ReqActivated = "ReqActvd" // request when PP node was successfully activated
-	RspActivated = "RspActvd" // response when PP node was successfully activated
+	ReqActivate  = "ReqActiv" // request to activate a PP node
+	RspActivate  = "RspActiv" // response to activate a PP node
+	ReqActivated = "ReqActvd" // request when a PP node was successfully activated
+	RspActivated = "RspActvd" // response when a PP node was successfully activated
+	ReqDeactivate  = "ReqDctiv" // request to deactivate a PP node
+	RspDeactivate  = "RspDctiv" // response to deactivate a PP node
+	ReqDeactivated = "ReqDctvd" // request when a PP node was successfully deactivated
+	RspDeactivated = "RspDctvd" // response when a PP node was successfully deactivated
 
 	ReqMining = "ReqMin" // request to mining
 	RspMining = "RspMin" //  response to mining

@@ -13,30 +13,30 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// activate is a concrete implementation of event
-// PP node is trying to become active
-type activate struct {
+// deactivate is a concrete implementation of event
+// An active PP node wants to become inactive
+type deactivate struct {
 	event
 }
 
-const activateEvent = "activate"
+const deactivateEvent = "deactivate"
 
-// GetActivateHandler creates event and return handler func for it
-func GetActivateHandler(s *net.Server) EventHandleFunc {
-	e := activate{newEvent(activateEvent, s, activateCallbackFunc)}
+// GetDeactivateHandler creates event and return handler func for it
+func GetDeactivateHandler(s *net.Server) EventHandleFunc {
+	e := deactivate{newEvent(deactivateEvent, s, deactivateCallbackFunc)}
 	return e.Handle
 }
 
-// activateCallbackFunc is the main process of activating a registered PP node
-func activateCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
-	fmt.Println("Received activate msg in SP")
-	body := message.(*protos.ReqActivate)
+// deactivateCallbackFunc is the main process of deactivating an active PP node
+func deactivateCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
+	fmt.Println("Received deactivate msg in SP")
+	body := message.(*protos.ReqDeactivate)
 
-	rsp := &protos.RspActivate{
+	rsp := &protos.RspDeactivate{
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
-		ActivationState: table.PP_INACTIVE,
+		ActivationState: table.PP_ACTIVE,
 	}
 
 	pp := &table.PP{
@@ -46,12 +46,12 @@ func activateCallbackFunc(_ context.Context, s *net.Server, message proto.Messag
 	if s.CT.Fetch(pp) != nil {
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		rsp.Result.Msg = "Could not find this PP node. Please register first"
-		return rsp, header.RspActivate
+		return rsp, header.RspDeactivate
 	}
 
-	if pp.Active != table.PP_INACTIVE {
-		rsp.ActivationState = uint32(pp.Active)
-		return rsp, header.RspActivate
+	if pp.Active == table.PP_INACTIVE {
+		rsp.ActivationState = table.PP_INACTIVE
+		return rsp, header.RspDeactivate
 	}
 
 	relayMsg := &protos.RelayMessage{
@@ -62,17 +62,17 @@ func activateCallbackFunc(_ context.Context, s *net.Server, message proto.Messag
 	if err != nil {
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		rsp.Result.Msg = "Could not marshal message to send to relay: " + err.Error()
-		return rsp, header.RspActivate
+		return rsp, header.RspDeactivate
 	}
 
 	s.SubscriptionServer.Broadcast("broadcast", msgBytes)
-	return rsp, header.RspActivate
+	return rsp, header.RspDeactivate
 }
 
 // Handle create a concrete proto message for this event, and handle the event asynchronously
-func (e *activate) Handle(ctx context.Context, conn spbf.WriteCloser) {
+func (e *deactivate) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
-		target := &protos.ReqActivate{}
+		target := &protos.ReqDeactivate{}
 		if err := e.handle(ctx, conn, target); err != nil {
 			utils.ErrorLog(err)
 		}

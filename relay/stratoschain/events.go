@@ -45,12 +45,16 @@ func SubscribeToEvents(c Client) error {
 }
 
 func subscribeToCreateResourceNodeMsg(c Client) error {
-	err := c.SubscribeToStratosChain("tm.event='Tx' AND event.type='create_resource_node'", func(result coretypes.ResultEvent) {
-		fmt.Printf("%+v\n", result)
-		// TODO: check result before sending activated msg to get PP node address
+	err := c.SubscribeToStratosChain("message.action='create_resource_node'", func(result coretypes.ResultEvent) {
+		//fmt.Printf("%+v\n", result)
 		conn := c.GetSdsClientConn()
 
-		activatedMsg := &protos.ReqActivated{WalletAddress: "address"}
+		nodeAddressList := result.Events["create_resource_node.node_address"]
+		if len(nodeAddressList) < 1 {
+			fmt.Println("No node address was specified in the create_resource_node message from stratos-chain")
+			return
+		}
+		activatedMsg := &protos.ReqActivated{WalletAddress: nodeAddressList[0]}
 		activatedMsgBytes, err := proto.Marshal(activatedMsg)
 		if err != nil {
 			fmt.Println("Error when trying to marshal activatedMsg proto: " + err.Error())
@@ -71,15 +75,37 @@ func subscribeToCreateResourceNodeMsg(c Client) error {
 }
 
 func subscribeToRemoveResourceNodeMsg(c Client) error {
-	err := c.SubscribeToStratosChain("tm.event='Tx' AND event.type='remove_resource_node'", func(result coretypes.ResultEvent) {
-		// TODO
-		fmt.Printf("%+v\n", result)
+	err := c.SubscribeToStratosChain("message.action='remove_resource_node'", func(result coretypes.ResultEvent) {
+		//fmt.Printf("%+v\n", result)
+		conn := c.GetSdsClientConn()
+
+		nodeAddressList := result.Events["remove_resource_node.resource_node"]
+		if len(nodeAddressList) < 1 {
+			fmt.Println("No node address was specified in the remove_resource_node message from stratos-chain")
+			return
+		}
+		deactivatedMsg := &protos.ReqDeactivated{WalletAddress: nodeAddressList[0]}
+		deactivatedMsgBytes, err := proto.Marshal(deactivatedMsg)
+		if err != nil {
+			fmt.Println("Error when trying to marshal deactivatedMsg proto: " + err.Error())
+			return
+		}
+		msgToSend := &msg.RelayMsgBuf{
+			MSGData: deactivatedMsgBytes,
+			MSGHead: header.MakeMessageHeader(1, 1, uint32(len(deactivatedMsgBytes)), header.ReqDeactivated),
+		}
+
+		err = conn.Write(msgToSend)
+		if err != nil {
+			fmt.Println("Error when sending message to SDS: " + err.Error())
+			return
+		}
 	})
 	return err
 }
 
 func subscribeToCreateIndexingNodeMsg(c Client) error {
-	err := c.SubscribeToStratosChain("tm.event='Tx' AND event.type='create_indexing_node'", func(result coretypes.ResultEvent) {
+	err := c.SubscribeToStratosChain("message.action='create_indexing_node'", func(result coretypes.ResultEvent) {
 		// TODO
 		fmt.Printf("%+v\n", result)
 	})
@@ -87,7 +113,7 @@ func subscribeToCreateIndexingNodeMsg(c Client) error {
 }
 
 func subscribeToRemoveIndexingNodeMsg(c Client) error {
-	err := c.SubscribeToStratosChain("tm.event='Tx' AND event.type='remove_indexing_node'", func(result coretypes.ResultEvent) {
+	err := c.SubscribeToStratosChain("message.action='remove_indexing_node'", func(result coretypes.ResultEvent) {
 		// TODO
 		fmt.Printf("%+v\n", result)
 	})
@@ -96,7 +122,7 @@ func subscribeToRemoveIndexingNodeMsg(c Client) error {
 
 func subscribeToSPRegistrationApprovedMsg(c Client) error {
 	// TODO: name will probably change when this is implemented in stratos-chain
-	err := c.SubscribeToStratosChain("tm.event='Tx' AND event.type='sp_registration_approved'", func(result coretypes.ResultEvent) {
+	err := c.SubscribeToStratosChain("message.action='sp_registration_approved'", func(result coretypes.ResultEvent) {
 		// TODO
 		fmt.Printf("%+v\n", result)
 	})
@@ -105,7 +131,7 @@ func subscribeToSPRegistrationApprovedMsg(c Client) error {
 
 func subscribeToPrepayMsg(c Client) error {
 	// TODO: name will probably change when this is implemented in stratos-chain
-	err := c.SubscribeToStratosChain("tm.event='Tx' AND event.type='prepay'", func(result coretypes.ResultEvent) {
+	err := c.SubscribeToStratosChain("message.action='prepay'", func(result coretypes.ResultEvent) {
 		// TODO
 		fmt.Printf("%+v\n", result)
 	})

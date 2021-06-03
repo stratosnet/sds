@@ -43,6 +43,7 @@ func NewClient() *MultiClient {
 func (m *MultiClient) Start() error {
 	m.wg.Add(1)
 	go func() {
+		// Connect to SDS SP node in a loop
 		defer m.wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
@@ -177,8 +178,8 @@ func (m *MultiClient) stratosSubscriptionReaderLoop(channel <-chan coretypes.Res
 				return
 			}
 			fmt.Println("Received a new message from stratos-chain!")
-			// TODO: handle message. Often this will involve sending a message to SDS using m.sdsClientConn
 			/*
+				// Example of how to send a message to SDS
 				msgToSend := &msg.RelayMsgBuf{
 					MSGHead: header.MakeMessageHeader(1, 1, 0, header.ReqGetPPList),
 				}
@@ -189,7 +190,7 @@ func (m *MultiClient) stratosSubscriptionReaderLoop(channel <-chan coretypes.Res
 					fmt.Println("Sent msg to SDS")
 				}
 			*/
-			fmt.Println(message)
+			//fmt.Println(message)
 			handler(message)
 		}
 	}
