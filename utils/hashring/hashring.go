@@ -8,6 +8,7 @@ package hashring
 
 import (
 	"fmt"
+	"github.com/stratosnet/sds/msg/protos"
 	"strconv"
 	"strings"
 	"sync"
@@ -19,13 +20,13 @@ import (
 // Node
 type Node struct {
 	ID   string
-	Host string
+	NetworkId *protos.NetworkId
 	Data *sync.Map
 }
 
 // nodeKey
 func (n *Node) nodeKey() string {
-	return n.ID + "#" + n.Host
+	return n.ID + "#" + n.NetworkId.NetworkAddress
 }
 
 // Less of rbtree
@@ -327,7 +328,7 @@ func (r *HashRing) PrintNodes() {
 		node := value.(*Node)
 		fmt.Println(strings.Repeat("=", 30))
 		fmt.Println("NodeID:", node.ID)
-		fmt.Println("NodeHost:", node.Host)
+		fmt.Println("NodeHost:", node.NetworkId.NetworkAddress)
 		fmt.Println("NodeKey :", node.nodeKey())
 		fmt.Println()
 		return true

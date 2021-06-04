@@ -27,14 +27,19 @@ func main() {
 	main.AddJobRepeat(time.Second*1, uint64(cap(ppList)), func() {
 
 		no := fmt.Sprintf("%07d", ppNum)
-		w := "12345678901234567890123456789012345" + no
-		n := "localhost:" + no
+		ppBaseInfo := &protos.PPBaseInfo{
+			WalletAddress: "12345678901234567890123456789012345" + no,
+			NetworkId: &protos.NetworkId{
+				PublicKey:      "04985aab77ca25ccedda4ae680dc3f05c56830a67fe9e6570ec6702c00652382940ba7fe7da83f7a31e954f6bd46b9d7ed53bdbe59079ef84b8114576609fa3f8d",
+				NetworkAddress: "localhost:" + no,
+			},
+		}
 
 		c := newCONN()
 
-		c.login(w, n)
-		c.registerPP(w)
-		c.login(w, n)
+		c.login(ppBaseInfo)
+		c.registerPP(ppBaseInfo)
+		c.login(ppBaseInfo)
 
 		ppList[ppNum-1] = c
 
@@ -99,34 +104,20 @@ func (c *CONN) send(message proto.Message, cmd string) {
 	c.Conn.Write(msg)
 }
 
-func (c *CONN) pplist() {
-	c.send(&protos.ReqGetPPList{
-		MyAddress: &protos.PPBaseInfo{
-			WalletAddress:  "",
-			NetworkAddress: "",
-		},
-	}, header.ReqGetPPList)
-}
-
-func (c *CONN) login(w, n string) {
+func (c *CONN) login(ppBaseInfo *protos.PPBaseInfo) {
 	c.send(&protos.ReqRegister{
-		Address: &protos.PPBaseInfo{
-			WalletAddress:  w,
-			NetworkAddress: n,
-		},
-		PublicKey: []byte(w + ":publicKey"),
+		Address: ppBaseInfo,
 	}, header.ReqRegister)
 }
 
-func (c *CONN) registerPP(w string) {
+func (c *CONN) registerPP(ppBaseInfo *protos.PPBaseInfo) {
 	c.send(&protos.ReqRegisterNewPP{
-		WalletAddress: w,
+		PpBaseInfo: ppBaseInfo,
 		DiskSize:      1024 * 1024 * 1024 * 720,
 		MemorySize:    1024 * 1024 * 1024 * 2,
 		OsAndVer:      "CentOS 7",
 		CpuInfo:       "intel i7",
 		MacAddress:    "12345678901234567",
 		Version:       1,
-		PubKey:        []byte(w + ":publicKey"),
 	}, header.ReqRegisterNewPP)
 }

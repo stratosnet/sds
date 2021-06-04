@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/sp/common"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
@@ -67,7 +68,7 @@ func (m *MsgHandler) Run() {
 				m.Logout(msg.(*common.MsgLogout).Name)
 			} else if msgType == common.MSG_MIMING {
 				msgMing := msg.(*common.MsgMining)
-				m.Mining(msgMing.WalletAddress, msgMing.NetworkAddress, msgMing.Name, msgMing.Puk)
+				m.Mining(msgMing.WalletAddress, msgMing.NetworkId, msgMing.Name)
 			} else if msgType == common.MSG_TRANSFER_NOTICE {
 				msgTransferNotice := msg.(*common.MsgTransferNotice)
 				m.TransferNotice(msgTransferNotice.SliceHash, msgTransferNotice.FromWalletAddress, msgTransferNotice.ToWalletAddress)
@@ -86,12 +87,13 @@ func (m *MsgHandler) Run() {
 }
 
 // Mining
-func (m *MsgHandler) Mining(walletAddress, networkAddress, name string, puk []byte) {
+func (m *MsgHandler) Mining(walletAddress, networkIdStr, name string) {
 
+	networkId := setting.ToNetworkId(networkIdStr)
 	if !m.server.HashRing.IsOnline(walletAddress) {
 		node := &hashring.Node{
 			ID:   walletAddress,
-			Host: networkAddress,
+			NetworkId: networkId,
 		}
 		m.server.HashRing.AddNode(node)
 	}
@@ -108,8 +110,8 @@ func (m *MsgHandler) Mining(walletAddress, networkAddress, name string, puk []by
 	pp := &table.PP{WalletAddress: walletAddress}
 	if m.server.CT.Fetch(pp) == nil {
 		pp.State = table.STATE_ONLINE
-		pp.NetworkAddress = networkAddress
-		pp.PubKey = fmt.Sprintf("PubKeySecp256k1{%X}", puk)
+		pp.NetworkAddress = networkId.NetworkAddress
+		pp.PubKey = networkId.PublicKey
 		m.server.CT.Save(pp)
 	}
 }
@@ -198,7 +200,7 @@ func (m *MsgHandler) TransferNotice(sliceHash, sliceInWalletAddress, newStorePPW
 
 	// get online PP info todo change to read from redis
 	node := m.server.HashRing.Node(newStorePPWalletAddress)
-	if node == nil || node.Host == "" {
+	if node == nil || node.NetworkId.NetworkAddress == "" {
 		utils.Log("TransferNotice: new PP[", newStorePPWalletAddress, "] is not online")
 		return
 	}
@@ -213,7 +215,10 @@ func (m *MsgHandler) TransferNotice(sliceHash, sliceInWalletAddress, newStorePPW
 		},
 		StoragePpInfo: &protos.PPBaseInfo{
 			WalletAddress:  fileSlice.WalletAddress,
-			NetworkAddress: fileSlice.NetworkAddress,
+			NetworkId: &protos.NetworkId{
+				PublicKey:      fileSlice.PublicKey,
+				NetworkAddress: fileSlice.NetworkAddress,
+			},
 		},
 	}
 

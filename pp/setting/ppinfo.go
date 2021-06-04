@@ -2,7 +2,10 @@ package setting
 
 import (
 	"encoding/csv"
+	"encoding/hex"
+	"fmt"
 	"os"
+	"regexp"
 	"sync"
 
 	"github.com/stratosnet/sds/msg/protos"
@@ -45,6 +48,27 @@ var TestDownload = false
 
 var TestUpload = false
 
+func GetNetworkId() *protos.NetworkId {
+	return &protos.NetworkId{
+		PublicKey: hex.EncodeToString(PublicKey),
+		NetworkAddress: NetworkAddress,
+	}
+}
+
+func ToString(networkId *protos.NetworkId) string {
+	return fmt.Sprintf("sdm://%s@%s", networkId.PublicKey, networkId.NetworkAddress)
+}
+
+func ToNetworkId(networkIdString string) *protos.NetworkId {
+	networkIdPattern := regexp.MustCompile(`^sdm://(\w+)@(.+)$`)
+	match := networkIdPattern.FindSubmatch([]byte(networkIdString))
+
+	return &protos.NetworkId{
+		PublicKey: string(match[1]),
+		NetworkAddress: string(match[2]),
+	}
+}
+
 // GetLocalPPList
 func GetLocalPPList() []*protos.PPBaseInfo {
 	if len(PPList) > 0 {
@@ -64,7 +88,7 @@ func GetLocalPPList() []*protos.PPBaseInfo {
 	if len(record) > 0 {
 		for _, item := range record {
 			pp := protos.PPBaseInfo{
-				NetworkAddress: item[0],
+				NetworkId: ToNetworkId(item[0]),
 				WalletAddress:  item[1],
 			}
 			PPList = append(PPList, &pp)
@@ -80,7 +104,7 @@ func GetLocalPPList() []*protos.PPBaseInfo {
 // SavePPList
 func SavePPList(target *protos.RspGetPPList) {
 	for _, info := range target.PpList {
-		if info.NetworkAddress != NetworkAddress {
+		if info.NetworkId != GetNetworkId() {
 			PPList = append(PPList, info)
 		}
 	}
@@ -101,7 +125,7 @@ func savePPListLocal() {
 	writer := csv.NewWriter(csvFile)
 	utils.DebugLog("PPList len", len(PPList))
 	for _, post := range PPList {
-		line := []string{post.NetworkAddress, post.WalletAddress}
+		line := []string{ToString(post.NetworkId), post.WalletAddress}
 		err = writer.Write(line)
 		if err != nil {
 			utils.ErrorLog("csv line ", err)
@@ -112,9 +136,9 @@ func savePPListLocal() {
 
 // DeletePPList
 func DeletePPList(networkAddress string) {
-	utils.DebugLog("delete PP: ", networkAddress)
+	utils.DebugLog("delete PP: networkAddress=" + networkAddress)
 	for i, pp := range PPList {
-		if pp.NetworkAddress == networkAddress {
+		if pp.NetworkId.NetworkAddress == networkAddress {
 			PPList = append(PPList[:i], PPList[i+1:]...)
 			savePPListLocal()
 			return

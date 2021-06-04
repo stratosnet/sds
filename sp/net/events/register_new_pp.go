@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"fmt"
+	"encoding/hex"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -49,15 +49,15 @@ func registerNewPPCallbackFunc(_ context.Context, s *net.Server, message proto.M
 	}
 
 	pp := &table.PP{
-		WalletAddress:  body.WalletAddress,
-		NetworkAddress: user.NetworkAddress,
+		WalletAddress:  body.PpBaseInfo.WalletAddress,
+		NetworkAddress: body.PpBaseInfo.NetworkId.NetworkAddress,
 		DiskSize:       body.DiskSize,
 		MemorySize:     body.MemorySize,
 		OsAndVer:       body.OsAndVer,
 		CpuInfo:        body.CpuInfo,
 		MacAddress:     body.MacAddress,
 		Version:        body.Version,
-		PubKey:         fmt.Sprintf("PubKeySecp256k1{%X}", body.PubKey),
+		PubKey:         body.PpBaseInfo.NetworkId.PublicKey,
 		State:          table.STATE_OFFLINE,
 		Active:         table.PP_INACTIVE,
 	}
@@ -84,23 +84,27 @@ func validateNewPP(s *net.Server, req *protos.ReqRegisterNewPP, user *table.User
 
 	// todo change to read from redis
 	pp := &table.PP{
-		WalletAddress: req.WalletAddress,
+		WalletAddress: req.PpBaseInfo.WalletAddress,
 	}
 	if s.CT.Fetch(pp) == nil {
 		return false, "already PP, not register needed"
 	}
 
 	// check if register or not, todo change to read from redis
-	user.WalletAddress = req.WalletAddress
+	user.WalletAddress = req.PpBaseInfo.WalletAddress
 	if s.CT.Fetch(user) != nil {
 		return false, "not register as PP, register first"
 	}
 
-	if len(req.PubKey) <= 0 || len(req.Sign) <= 0 {
+	if len(req.PpBaseInfo.NetworkId.PublicKey) <= 0 || len(req.Sign) <= 0 {
 		return false, "public key or signature is empty"
 	}
 
-	if !utils.ECCVerifyBytes([]byte(req.WalletAddress), req.Sign, req.PubKey) {
+	publicKey, err := hex.DecodeString(req.PpBaseInfo.NetworkId.PublicKey)
+	if err != nil {
+		return false, "invalid public key"
+	}
+	if !utils.ECCVerifyBytes([]byte(req.PpBaseInfo.WalletAddress), req.Sign, publicKey) {
 		return false, "signature verification failed"
 	}
 

@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 //for future protoc-gen-go requirement
-//option go_package = "github.com/stratosnet/sds/msg/protos";
+option go_package = "github.com/stratosnet/sds/msg/protos";
 
 package protos;
 // j
@@ -24,8 +24,7 @@ message RspGetPPList{
 
 message ReqRegister {
   PPBaseInfo address = 1;
-  bytes public_key = 2;
-  PPBaseInfo my_address = 3; //middleman pp address
+  PPBaseInfo my_address = 2; //middleman pp address
 }
 
 message RspRegister {
@@ -36,8 +35,7 @@ message RspRegister {
 
 message ReqMining {
   PPBaseInfo address = 1;
-  bytes public_key = 2; // publickey
-  bytes sign = 3; //signature
+  bytes sign = 2; //signature
 }
 
 message RspMining {
@@ -235,14 +233,13 @@ message ReqReportTaskBP {
 }
 
 message ReqRegisterNewPP {
-  string  wallet_address = 1;
+  PPBaseInfo ppBaseInfo = 1;
   uint64  disk_size = 2;
   uint64  memory_size = 3;
   string  os_and_ver = 4;
   string  cpu_info = 5;
   string  mac_address = 6;
   uint32  version = 7;
-  bytes  pub_key = 8;
   bytes  sign = 9;
 }
 
@@ -847,10 +844,9 @@ message RspFindDirectory {
 }
 
 message ReqCustomerAddVolume {
-  string wallet_address = 1;
+  PPBaseInfo ppBaseInfo = 1;
   string req_id = 2;
   uint64 volume = 3;
-  bytes public_key = 4;
 }
 
 message RspCustomerAddVolume {
@@ -860,10 +856,9 @@ message RspCustomerAddVolume {
 }
 
 message ReqCustomerUseVolume {
-  string wallet_address = 1;
+  PPBaseInfo ppBaseInfo = 1;
   string req_id = 2;
   uint64 required_volume = 3;
-  bytes public_key = 4;
 }
 
 message RspCustomerUseVolume {

@@ -40,7 +40,7 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 		SliceNumAddr: &protos.SliceNumAddr{
 			PpInfo: &protos.PPBaseInfo{
 				WalletAddress:  body.SliceNumAddr.PpInfo.WalletAddress,
-				NetworkAddress: body.SliceNumAddr.PpInfo.NetworkAddress,
+				NetworkId: body.SliceNumAddr.PpInfo.NetworkId,
 			},
 			SliceNumber: body.SliceNumAddr.SliceNumber,
 		},
@@ -76,7 +76,8 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 		// validate report result
 		if fileSlice.SliceSize != body.SliceSize ||
 			fileSlice.SliceNumber != body.SliceNumAddr.SliceNumber ||
-			fileSlice.NetworkAddress != body.SliceNumAddr.PpInfo.NetworkAddress ||
+			fileSlice.NetworkAddress != body.SliceNumAddr.PpInfo.NetworkId.NetworkAddress||
+			fileSlice.PublicKey != body.SliceNumAddr.PpInfo.NetworkId.PublicKey||
 			fileSlice.WalletAddress != body.SliceNumAddr.PpInfo.WalletAddress ||
 			fileSlice.FileHash != body.FileHash {
 
@@ -101,7 +102,8 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 		fileSlice.SliceOffsetStart = body.SliceNumAddr.SliceOffset.SliceOffsetStart
 		fileSlice.SliceOffsetEnd = body.SliceNumAddr.SliceOffset.SliceOffsetEnd
 		fileSlice.WalletAddress = body.SliceNumAddr.PpInfo.WalletAddress
-		fileSlice.NetworkAddress = body.SliceNumAddr.PpInfo.NetworkAddress
+		fileSlice.NetworkAddress = body.SliceNumAddr.PpInfo.NetworkId.NetworkAddress
+		fileSlice.PublicKey = body.SliceNumAddr.PpInfo.NetworkId.PublicKey
 		fileSlice.Status = table.FILE_SLICE_STATUS_CHECK
 		fileSlice.Time = time.Now().Unix()
 	}
@@ -204,7 +206,7 @@ func (e *reportUploadSliceResult) Handle(ctx context.Context, conn spbf.WriteClo
 func validateReportUploadSliceResultRequest(req *protos.ReportUploadSliceResult, s *net.Server) (bool, string) {
 
 	if req.FileHash == "" || req.SliceHash == "" || req.SliceNumAddr.SliceNumber <= 0 ||
-		req.SliceNumAddr.PpInfo.WalletAddress == "" || req.SliceNumAddr.PpInfo.NetworkAddress == "" {
+		req.SliceNumAddr.PpInfo.WalletAddress == "" || req.SliceNumAddr.PpInfo.NetworkId.NetworkAddress == "" {
 		return false, "slice info invalid"
 	}
 

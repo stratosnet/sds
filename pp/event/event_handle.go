@@ -143,8 +143,8 @@ func sendMessage(conn spbf.WriteCloser, pb proto.Message, cmd string) {
 // SendMessageToSPServer SendMessageToSPServer
 func SendMessageToSPServer(pb proto.Message, cmd string) {
 	if client.SPConn == nil {
-		utils.DebugLog("client.SPConn = client.NewClient(setting.Config.SPNetAddress, setting.IsPP)")
-		client.SPConn = client.NewClient(setting.Config.SPNetAddress, setting.IsPP)
+		utils.DebugLog("Send message to SP server: SPNetworkId=", setting.Config.SPNetworkId, "IsPP=", setting.IsPP)
+		client.SPConn = client.NewClient(setting.ToNetworkId(setting.Config.SPNetworkId).NetworkAddress, setting.IsPP)
 	}
 	sendMessage(client.SPConn, pb, cmd)
 }
@@ -164,7 +164,7 @@ func transferSendMessageToPPServ(addr string, msgBuf *msg.RelayMsgBuf) {
 // transferSendMessageToSPServer
 func transferSendMessageToSPServer(msg *msg.RelayMsgBuf) {
 	if client.SPConn == nil {
-		client.SPConn = client.NewClient(setting.Config.SPNetAddress, setting.IsPP)
+		client.SPConn = client.NewClient(setting.ToNetworkId(setting.Config.SPNetworkId).NetworkAddress, setting.IsPP)
 	}
 	client.SPConn.Write(msg)
 }

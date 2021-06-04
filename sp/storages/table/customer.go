@@ -12,6 +12,7 @@ import (
 type Customer struct {
 	Id            uint64
 	WalletAddress string
+	NetworkAddress string
 	TotalVolume   uint64
 	UsedVolume    uint64
 	Puk           string

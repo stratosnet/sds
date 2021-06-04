@@ -4,8 +4,6 @@ package event
 import (
 	"context"
 	"fmt"
-	"net/http"
-
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg"
@@ -16,6 +14,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
+	"net/http"
 )
 
 var bpChan = make(chan *msg.RelayMsgBuf, 100)
@@ -32,7 +31,7 @@ func ReqDownloadSlice(ctx context.Context, conn spbf.WriteCloser) {
 			donwloadTask := dlTask.(*task.DonwloadTask)
 			if sInfo, ok := donwloadTask.SliceInfo[target.SliceInfo.SliceHash]; ok {
 				// get all info for the slice
-				if sInfo.StoragePpInfo.NetworkAddress == setting.NetworkAddress {
+				if sInfo.StoragePpInfo.NetworkId.NetworkAddress == setting.NetworkAddress {
 					utils.DebugLog("self is storagePP")
 					rsp := rspDownloadSliceData(&target)
 					if rsp.SliceSize > 0 {
@@ -42,13 +41,13 @@ func ReqDownloadSlice(ctx context.Context, conn spbf.WriteCloser) {
 						downloadWrong(target.TaskId, target.SliceInfo.SliceHash, target.WalletAddress, protos.DownloadWrongType_LOSESLICE)
 					}
 				} else {
-					utils.DebugLog("passagePP received downloadslice reqest, transfer to :", sInfo.StoragePpInfo.NetworkAddress)
+					utils.DebugLog("passagePP received download slice request, transfer to :", setting.ToString(sInfo.StoragePpInfo.NetworkId))
 					// transferSendMessageToPPServ(sInfo.StoragePpInfo.NetworkAddress, spbf.MessageFromContext(ctx))
 					if c, ok := client.DownloadPassageway.Load(target.WalletAddress + target.SliceInfo.SliceHash); ok {
 						conn := c.(*cf.ClientConn)
 						conn.Write(spbf.MessageFromContext(ctx))
 					} else {
-						conn := client.NewClient(sInfo.StoragePpInfo.NetworkAddress, false)
+						conn := client.NewClient(sInfo.StoragePpInfo.NetworkId.NetworkAddress, false)
 						conn.Write(spbf.MessageFromContext(ctx))
 						client.DownloadPassageway.Store((target.WalletAddress + target.SliceInfo.SliceHash), conn)
 					}
@@ -211,7 +210,7 @@ func DownloadFileSlice(target *protos.RspFileStorageInfo) {
 					utils.DebugLog("RRRRRRRRRRRR", client.PPConn)
 
 				} else {
-					conn := client.NewClient(client.PPConn.GetName(), false)
+					conn := client.NewClient(client.PPConn.GetNetworkAddress(), false)
 					sendMessage(conn, req, header.ReqDownloadSlice)
 					client.PdownloadPassageway.Store((target.FileHash), conn)
 					utils.DebugLog("WWWWWWWWWWWWWWWWWW", conn)
@@ -244,8 +243,8 @@ func RspDownloadSliceWrong(ctx context.Context, conn spbf.WriteCloser) {
 				donwloadTask := dlTask.(*task.DonwloadTask)
 				if sInfo, ok := donwloadTask.SliceInfo[target.NewSliceInfo.SliceStorageInfo.SliceHash]; ok {
 					sInfo.StoragePpInfo.WalletAddress = target.NewSliceInfo.StoragePpInfo.WalletAddress
-					sInfo.StoragePpInfo.NetworkAddress = target.NewSliceInfo.StoragePpInfo.NetworkAddress
-					transferSendMessageToPPServ(target.NewSliceInfo.StoragePpInfo.NetworkAddress, rspDownloadSliceWrong(&target))
+					sInfo.StoragePpInfo.NetworkId = target.NewSliceInfo.StoragePpInfo.NetworkId
+					transferSendMessageToPPServ(target.NewSliceInfo.StoragePpInfo.NetworkId.NetworkAddress, rspDownloadSliceWrong(&target))
 				}
 			}
 		}

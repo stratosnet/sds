@@ -76,8 +76,8 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 		utils.Log("on error")
 	})
 	onClose := cf.OnCloseOption(func(c spbf.WriteCloser) {
-		utils.Log("on close", c.(*cf.ClientConn).GetName())
-		delete(ConnMap, c.(*cf.ClientConn).GetName())
+		utils.Log("on close", c.(*cf.ClientConn).GetNetworkAddress())
+		delete(ConnMap, c.(*cf.ClientConn).GetNetworkAddress())
 
 		PdownloadPassagewayCheck(c.(*cf.ClientConn))
 
@@ -87,7 +87,7 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 				select {
 				case OfflineChan <- &Offline{
 					IsSp:           false,
-					NetworkAddress: PPConn.GetName(),
+					NetworkAddress: PPConn.GetNetworkAddress(),
 				}:
 				default:
 					break
@@ -95,7 +95,7 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 			}
 		}
 		if SPConn != nil {
-			if SPConn.GetName() == c.(*cf.ClientConn).GetName() {
+			if SPConn.GetNetworkAddress() == c.(*cf.ClientConn).GetNetworkAddress() {
 				utils.DebugLog("lost SP conn")
 				SPConn = nil
 				select {

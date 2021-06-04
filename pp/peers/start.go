@@ -15,7 +15,7 @@ func Start(isPP bool) {
 	if !isPP {
 		initPPList()
 	} else {
-		client.SPConn = client.NewClient(setting.Config.SPNetAddress, true)
+		client.SPConn = client.NewClient(setting.ToNetworkId(setting.Config.SPNetworkId).NetworkAddress, true)
 	}
 }
 

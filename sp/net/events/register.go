@@ -2,7 +2,6 @@ package events
 
 import (
 	"context"
-	"encoding/hex"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -52,7 +51,7 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 		}
 	}
 
-	if body.Address.WalletAddress == "" || body.Address.NetworkAddress == "" {
+	if body.Address.WalletAddress == "" || body.Address.NetworkId.NetworkAddress == "" {
 		rsp.Result.Msg = "wallet address and net address can't be empty"
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		return rsp, header.RspRegister
@@ -82,8 +81,8 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 	}
 	user.Belong = body.MyAddress.WalletAddress
 	user.WalletAddress = body.Address.WalletAddress
-	user.NetworkAddress = body.Address.NetworkAddress
-	user.Puk = hex.EncodeToString(body.PublicKey)
+	user.NetworkAddress = body.Address.NetworkId.NetworkAddress
+	user.Puk = body.Address.NetworkId.PublicKey
 	user.LastLoginTime = time.Now().Unix()
 	user.LoginTimes = user.LoginTimes + 1
 

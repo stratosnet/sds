@@ -127,7 +127,10 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 	}
 
 	for _, row := range fileSlices {
-		node := &hashring.Node{ID: row.WalletAddress, Host: row.NetworkAddress}
+		node := &hashring.Node{ID: row.WalletAddress, NetworkId: &protos.NetworkId{
+			PublicKey: row.PublicKey,
+			NetworkAddress: row.NetworkAddress,
+		}}
 		if s.HashRing.IsOnline(node.ID) {
 			storageRing[row.SliceHash].AddNode(node)
 			storageRing[row.SliceHash].SetOnline(node.ID)
@@ -156,7 +159,7 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 			},
 			StoragePpInfo: &protos.PPBaseInfo{
 				WalletAddress:  node.ID,
-				NetworkAddress: node.Host,
+				NetworkId: node.NetworkId,
 			},
 			SliceOffset: &protos.SliceOffset{
 				SliceOffsetStart: row.SliceOffsetStart,

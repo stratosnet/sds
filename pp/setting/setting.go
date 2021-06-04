@@ -69,7 +69,7 @@ type config struct {
 	DownloadPathMinLen          int
 	Port                        string `yaml:"Port"`
 	NetworkAddress              string `yaml:"NetworkAddress"`
-	SPNetAddress                string `yaml:"SPNetAddress"`
+	SPNetworkId                 string `yaml:"SPNetworkId"`
 	Debug                       bool   `yaml:"Debug"`
 	PPListDir                   string `yaml:"PPListDir"`
 	AccountDir                  string `yaml:"AccountDir"`

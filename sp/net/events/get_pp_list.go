@@ -33,7 +33,7 @@ func getPPListCallbackFunc(_ context.Context, s *net.Server, _ proto.Message, _ 
 	for _, pp := range ppList {
 		ppBaseInfo := &protos.PPBaseInfo{
 			WalletAddress:  pp.ID,
-			NetworkAddress: pp.Host,
+			NetworkId: pp.NetworkId,
 		}
 		ppBaseInfoList = append(ppBaseInfoList, ppBaseInfo)
 	}

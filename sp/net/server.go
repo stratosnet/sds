@@ -8,6 +8,7 @@ import (
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/sp/common"
 	"github.com/stratosnet/sds/sp/storages"
@@ -134,7 +135,10 @@ func (s *Server) BuildHashRing() {
 		for _, pp := range ppList {
 			node := &hashring.Node{
 				ID:   pp["wallet_address"].(string),
-				Host: pp["network_address"].(string),
+				NetworkId: &protos.NetworkId{
+					PublicKey: pp["pub_key"].(string),
+					NetworkAddress: pp["network_address"].(string),
+				},
 			}
 			s.HashRing.AddNode(node)
 		}

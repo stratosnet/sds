@@ -35,7 +35,7 @@ func ReqTransferNotice(ctx context.Context, conn spbf.WriteCloser) {
 			task.TransferTaskMap[target.TransferCer] = &target
 			rspTransferNotice(true, target.TransferCer)
 			// if accept task, send request transfer notice to original PP
-			transferSendMessageToPPServ(target.StoragePpInfo.NetworkAddress, reqTransferNoticeData(&target))
+			transferSendMessageToPPServ(target.StoragePpInfo.NetworkId.NetworkAddress, reqTransferNoticeData(&target))
 			utils.DebugLog("rspTransferNotice sendTransferToPP ")
 		} else {
 			rspTransferNotice(false, target.TransferCer)
@@ -133,7 +133,7 @@ func ReqReportTransferResult(transferCer string, result bool) {
 		req.IsNew = true
 		req.NewPp = &protos.PPBaseInfo{
 			WalletAddress:  setting.WalletAddress,
-			NetworkAddress: setting.NetworkAddress,
+			NetworkId: setting.GetNetworkId(),
 		}
 	} else {
 		req.IsNew = false

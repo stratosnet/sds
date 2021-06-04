@@ -28,9 +28,9 @@ func ReqUploadFileSlice(ctx context.Context, conn spbf.WriteCloser) {
 	if unmarshalData(ctx, &target) {
 		// passway PP respond to P about progress
 		sendMessage(conn, uploadSpeedOfProgressData(target.FileHash, uint64(len(target.Data))), header.UploadSpeedOfProgress)
-		if target.SliceNumAddr.PpInfo.NetworkAddress != setting.NetworkAddress {
-			utils.DebugLog("transfer to", target.SliceNumAddr.PpInfo.NetworkAddress)
-			transferSendMessageToPPServ(target.SliceNumAddr.PpInfo.NetworkAddress, spbf.MessageFromContext(ctx))
+		if target.SliceNumAddr.PpInfo.NetworkId.NetworkAddress != setting.NetworkAddress {
+			utils.DebugLog("transfer to", setting.ToString(target.SliceNumAddr.PpInfo.NetworkId))
+			transferSendMessageToPPServ(target.SliceNumAddr.PpInfo.NetworkId.NetworkAddress, spbf.MessageFromContext(ctx))
 		} else {
 			if !task.SaveUploadFile(&target) {
 				// save failed, not handing yet
@@ -92,7 +92,8 @@ func RspReportUploadSliceResult(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspReportUploadSliceResult
 	if unmarshalData(ctx, &target) {
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
-			utils.DebugLog("ResultState_RES_SUCCESS, sliceNumber，storageAddress，walletAddress", target.SliceNumAddr.SliceNumber, target.SliceNumAddr.PpInfo.NetworkAddress, target.SliceNumAddr.PpInfo.WalletAddress)
+			utils.DebugLog("ResultState_RES_SUCCESS, sliceNumber，storageAddress，walletAddress",
+				target.SliceNumAddr.SliceNumber, setting.ToString(target.SliceNumAddr.PpInfo.NetworkId), target.SliceNumAddr.PpInfo.WalletAddress)
 		} else {
 			utils.Log("ResultState_RES_FAIL : ", target.Result.Msg)
 		}

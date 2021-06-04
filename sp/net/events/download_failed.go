@@ -80,7 +80,10 @@ func downloadFailedCallbackFunc(_ context.Context, s *net.Server, message proto.
 	for _, storage := range sliceStorage {
 		if storage.WalletAddress != task.StorageWalletAddress {
 			if s.HashRing.IsOnline(storage.WalletAddress) {
-				ring.AddNode(&hashring.Node{ID: storage.WalletAddress, Host: storage.NetworkAddress})
+				ring.AddNode(&hashring.Node{ID: storage.WalletAddress, NetworkId: &protos.NetworkId{
+					PublicKey: storage.PublicKey,
+					NetworkAddress: storage.NetworkAddress,
+				}})
 				ring.SetOnline(storage.WalletAddress)
 			}
 		}
@@ -135,7 +138,11 @@ func downloadFailedCallbackFunc(_ context.Context, s *net.Server, message proto.
 		SliceNumber: fileSlice.SliceNumber,
 		StoragePpInfo: &protos.PPBaseInfo{
 			WalletAddress:  fileSlice.WalletAddress,
-			NetworkAddress: fileSlice.NetworkAddress,
+			NetworkId: &protos.NetworkId{
+				PublicKey: fileSlice.PublicKey,
+				NetworkAddress: fileSlice.NetworkAddress,
+
+			},
 		},
 		SliceOffset: &protos.SliceOffset{
 			SliceOffsetStart: fileSlice.SliceOffsetStart,

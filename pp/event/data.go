@@ -1,6 +1,7 @@
 package event
 
 import (
+	"encoding/hex"
 	"path"
 
 	"github.com/stratosnet/sds/msg"
@@ -21,13 +22,12 @@ func reqRegisterData(_ bool) *protos.ReqRegister {
 	return &protos.ReqRegister{
 		Address: &protos.PPBaseInfo{
 			WalletAddress:  setting.WalletAddress,
-			NetworkAddress: setting.NetworkAddress,
+			NetworkId: setting.GetNetworkId(),
 		},
 		MyAddress: &protos.PPBaseInfo{
 			WalletAddress:  setting.WalletAddress,
-			NetworkAddress: setting.NetworkAddress,
+			NetworkId: setting.GetNetworkId(),
 		},
-		PublicKey: setting.PublicKey,
 	}
 }
 
@@ -35,7 +35,7 @@ func reqRegisterDataTR(target *protos.ReqRegister) *msg.RelayMsgBuf {
 	req := target
 	req.MyAddress = &protos.PPBaseInfo{
 		WalletAddress:  setting.WalletAddress,
-		NetworkAddress: setting.NetworkAddress,
+		NetworkId: setting.GetNetworkId(),
 	}
 	data, err := proto.Marshal(req)
 	if err != nil {
@@ -75,9 +75,8 @@ func reqMiningData() *protos.ReqMining {
 	return &protos.ReqMining{
 		Address: &protos.PPBaseInfo{
 			WalletAddress:  setting.WalletAddress,
-			NetworkAddress: setting.NetworkAddress,
+			NetworkId: setting.GetNetworkId(),
 		},
-		PublicKey: setting.PublicKey,
 		Sign:      setting.GetSign(setting.WalletAddress),
 	}
 }
@@ -86,7 +85,7 @@ func reqGetPPlistData() *protos.ReqGetPPList {
 	return &protos.ReqGetPPList{
 		MyAddress: &protos.PPBaseInfo{
 			WalletAddress:  setting.WalletAddress,
-			NetworkAddress: setting.NetworkAddress,
+			NetworkId: setting.GetNetworkId(),
 		},
 	}
 }
@@ -114,7 +113,7 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool) *prot
 		},
 		MyAddress: &protos.PPBaseInfo{
 			WalletAddress:  setting.WalletAddress,
-			NetworkAddress: setting.NetworkAddress,
+			NetworkId: setting.GetNetworkId(),
 		},
 		Sign:    setting.GetSign(walletFileString),
 		IsCover: isCover,
@@ -340,14 +339,19 @@ func rspFileStorageInfoData(target *protos.RspFileStorageInfo) *msg.RelayMsgBuf 
 func reqRegisterNewPPData() *protos.ReqRegisterNewPP {
 	sysInfo := utils.GetSysInfo()
 	return &protos.ReqRegisterNewPP{
-		WalletAddress: setting.WalletAddress,
+		PpBaseInfo:    &protos.PPBaseInfo{
+			WalletAddress: setting.WalletAddress,
+			NetworkId: &protos.NetworkId{
+				PublicKey: hex.EncodeToString(setting.PublicKey),
+				NetworkAddress: setting.NetworkAddress,
+			},
+		},
 		DiskSize:      sysInfo.DiskSize,
 		MemorySize:    sysInfo.MemorySize,
 		OsAndVer:      sysInfo.OSInfo,
 		CpuInfo:       sysInfo.CPUInfo,
 		MacAddress:    sysInfo.MacAddress,
 		Version:       setting.Config.Version,
-		PubKey:        setting.PublicKey,
 		Sign:          setting.GetSign(setting.WalletAddress),
 	}
 }
@@ -358,7 +362,7 @@ func reqValidateTransferCerData(target *protos.ReqTransferNotice) *protos.ReqVal
 		NewPp:       target.StoragePpInfo,
 		OriginalPp: &protos.PPBaseInfo{
 			WalletAddress:  setting.WalletAddress,
-			NetworkAddress: setting.NetworkAddress,
+			NetworkId: setting.GetNetworkId(),
 		},
 	}
 }
@@ -369,7 +373,7 @@ func reqTransferNoticeData(target *protos.ReqTransferNotice) *msg.RelayMsgBuf {
 		TransferCer: target.TransferCer,
 		StoragePpInfo: &protos.PPBaseInfo{
 			WalletAddress:  setting.WalletAddress,
-			NetworkAddress: setting.NetworkAddress,
+			NetworkId: setting.GetNetworkId(),
 		},
 
 		SliceStorageInfo: target.SliceStorageInfo,
@@ -388,7 +392,7 @@ func rspTransferNoticeData(agree bool, cer string) *protos.RspTransferNotice {
 	rsp := &protos.RspTransferNotice{
 		StoragePpInfo: &protos.PPBaseInfo{
 			WalletAddress:  setting.WalletAddress,
-			NetworkAddress: setting.NetworkAddress,
+			NetworkId: setting.GetNetworkId(),
 		},
 		TransferCer: cer,
 	}
@@ -418,7 +422,7 @@ func reqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
 		Traffic: traffic,
 		Reporter: &protos.PPBaseInfo{
 			WalletAddress:  setting.WalletAddress,
-			NetworkAddress: setting.NetworkAddress,
+			NetworkId: setting.GetNetworkId(),
 		},
 	}
 	data, err := proto.Marshal(sendTager)

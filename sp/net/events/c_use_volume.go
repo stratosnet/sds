@@ -2,7 +2,6 @@ package events
 
 import (
 	"context"
-	"encoding/hex"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -35,17 +34,17 @@ func getCustomerUseVolumeCallbackFunc(_ context.Context, s *net.Server, message 
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
-		WalletAddress: body.WalletAddress,
+		WalletAddress: body.PpBaseInfo.WalletAddress,
 		ReqId:         body.ReqId,
 	}
 
-	if body.WalletAddress == "" {
+	if body.PpBaseInfo.WalletAddress == "" {
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		rsp.Result.Msg = "wallet address can't be empty"
 		return rsp, header.RspCUseVolume
 	}
 
-	customer := &table.Customer{WalletAddress: body.WalletAddress}
+	customer := &table.Customer{WalletAddress: body.PpBaseInfo.WalletAddress}
 
 	if err := s.CT.Fetch(customer); err != nil {
 		rsp.Result.State = protos.ResultState_RES_FAIL
@@ -59,8 +58,8 @@ func getCustomerUseVolumeCallbackFunc(_ context.Context, s *net.Server, message 
 		return rsp, header.RspCUseVolume
 	}
 
-	customer.WalletAddress = body.WalletAddress
-	customer.Puk = hex.EncodeToString(body.PublicKey)
+	customer.WalletAddress = body.PpBaseInfo.WalletAddress
+	customer.Puk = body.PpBaseInfo.NetworkId.PublicKey
 	customer.LastLoginTime = time.Now().Unix()
 	customer.LoginTimes++
 	customer.UsedVolume += body.RequiredVolume

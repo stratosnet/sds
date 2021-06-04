@@ -68,7 +68,6 @@ func init() {
 	level2String[Warn] = "[WARN]"
 	level2String[Error] = "[ERROR]"
 	level2String[Fatal] = "[FATAL]"
-	MyLogger = newLogger("tmp/logs/stdout.log", true, true)
 }
 
 //SetLogLevel

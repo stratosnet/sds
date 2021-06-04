@@ -46,16 +46,16 @@ func RspGetPPList(ctx context.Context, conn spbf.WriteCloser) {
 
 	ppList := setting.PPList
 	for _, ppInfo := range ppList {
-		if ppInfo.NetworkAddress == setting.NetworkAddress {
+		if ppInfo.NetworkId.NetworkAddress == setting.NetworkAddress {
 			continue
 		}
-		client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
+		client.PPConn = client.NewClient(ppInfo.NetworkId.NetworkAddress, true)
 		if client.PPConn != nil {
 			RegisterChain(false)
 			return
 		}
 		utils.DebugLog("failed to conn PP，delete:", ppInfo)
-		setting.DeletePPList(ppInfo.NetworkAddress)
+		setting.DeletePPList(ppInfo.NetworkId.NetworkAddress)
 	}
 	reloadPPlist()
 }

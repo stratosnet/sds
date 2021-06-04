@@ -1,6 +1,6 @@
 Port: :18082
 NetworkAddress: 127.0.0.1
-SPNetAddress: 127.0.0.1:8888
+SPNetworkId: sdm://0431341a51afc3241fc96017dcaddf87121737e18c0fefbb9f5ccdc56a3d4515a343c3ea09e9a36524a4b3618251f5eb049e54ad6f9aa37d2f3a6eb94d6ae4c1b5@127.0.0.1:8888
 Debug: true
 PPListDir: "./peers/pp-list"
 AccountDir: "./account"

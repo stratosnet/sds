@@ -45,8 +45,8 @@ func main() {
 		"stopmonitor                         stop monitor\n"
 	// "config                              config key value\n"
 
-	setting.LoadConfig("./configs/config.yaml")
 	utils.NewDefaultLogger("./tmp/logs/stdout.log", true, true)
+	setting.LoadConfig("./configs/config.yaml")
 
 	if setting.Config.Debug {
 		utils.MyLogger.SetLogLevel(utils.Debug)

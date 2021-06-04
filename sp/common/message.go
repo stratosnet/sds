@@ -15,9 +15,8 @@ type Msg interface {
 
 type MsgMining struct {
 	WalletAddress  string
-	NetworkAddress string
+	NetworkId      string
 	Name           string
-	Puk            []byte
 }
 
 func (m *MsgMining) GetType() uint32 {

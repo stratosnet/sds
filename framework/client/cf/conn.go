@@ -55,7 +55,7 @@ type ClientOption func(*options)
 
 // ClientConn
 type ClientConn struct {
-	addr      string
+	networkAddress   string
 	opts      options
 	netid     int64
 	spbConn   net.Conn
@@ -65,7 +65,6 @@ type ClientConn struct {
 	handlerCh chan MsgHandler
 	// timing    *TimingWheel
 	mu   sync.Mutex // guards following
-	name string
 	// heart   int64
 	pending          []int64
 	ctx              context.Context
@@ -132,7 +131,7 @@ func newClientConnWithOptions(netid int64, c net.Conn, opts options) *ClientConn
 		opts.bufferSize = 100
 	}
 	cc := &ClientConn{
-		addr:             c.RemoteAddr().String(),
+		networkAddress:   c.RemoteAddr().String(),
 		opts:             opts,
 		netid:            netid,
 		spbConn:          c,
@@ -147,7 +146,6 @@ func newClientConnWithOptions(netid int64, c net.Conn, opts options) *ClientConn
 		is_active:        false,
 	}
 	cc.ctx, cc.cancel = context.WithCancel(context.Background())
-	cc.name = c.RemoteAddr().String()
 	cc.pending = []int64{}
 	return cc
 }
@@ -157,17 +155,10 @@ func (cc *ClientConn) GetNetID() int64 {
 	return cc.netid
 }
 
-// SetConnName
-func (cc *ClientConn) SetConnName(name string) {
+// GetNetworkAddress
+func (cc *ClientConn) GetNetworkAddress() string {
 	cc.mu.Lock()
-	cc.name = name
-	cc.mu.Unlock()
-}
-
-// GetName
-func (cc *ClientConn) GetName() string {
-	cc.mu.Lock()
-	name := cc.name
+	name := cc.networkAddress
 	cc.mu.Unlock()
 	return name
 }
@@ -188,7 +179,7 @@ func SetLimitUploadSpeed(up uint64, isLimitUpload bool) {
 func (cc *ClientConn) GetIP() string {
 	cc.mu.Lock()
 	defer cc.mu.Unlock()
-	host, _, _ := net.SplitHostPort(cc.name)
+	host, _, _ := net.SplitHostPort(cc.networkAddress)
 	return host
 }
 
@@ -196,7 +187,7 @@ func (cc *ClientConn) GetIP() string {
 func (cc *ClientConn) GetPort() string {
 	cc.mu.Lock()
 	defer cc.mu.Unlock()
-	_, port, _ := net.SplitHostPort(cc.name)
+	_, port, _ := net.SplitHostPort(cc.networkAddress)
 	return port
 }
 
@@ -323,7 +314,7 @@ func (cc *ClientConn) Close() {
 func (cc *ClientConn) reconnect() {
 	var c net.Conn
 	var err error
-	c, err = net.Dial("tcp", cc.addr)
+	c, err = net.Dial("tcp", cc.networkAddress)
 	if err != nil {
 		if p := recover(); p != nil {
 			Mylog(cc.opts.logOpen, "net dial error", err)

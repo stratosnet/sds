@@ -78,7 +78,7 @@ func transferCerValidateCallbackFunc(_ context.Context, s *net.Server, message p
 		return rsp, header.RspValidateTransferCer
 	}
 
-	transferRecord.ToNetworkAddress = body.NewPp.NetworkAddress
+	transferRecord.ToNetworkAddress = body.NewPp.NetworkId.NetworkAddress
 	transferRecord.ToWalletAddress = body.NewPp.WalletAddress
 	transferRecord.Time = time.Now().Unix()
 

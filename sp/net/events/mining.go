@@ -2,6 +2,8 @@ package events
 
 import (
 	"context"
+	"encoding/hex"
+	"github.com/stratosnet/sds/pp/setting"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
@@ -58,9 +60,8 @@ func miningCallbackFunc(_ context.Context, s *net.Server, message proto.Message,
 	// send mining msg
 	s.HandleMsg(&common.MsgMining{
 		WalletAddress:  body.Address.WalletAddress,
-		NetworkAddress: body.Address.NetworkAddress,
+		NetworkId:      setting.ToString(body.Address.NetworkId),
 		Name:           name,
-		Puk:            body.PublicKey,
 	})
 
 	return rsp, header.RspMining
@@ -78,11 +79,11 @@ func (e *mining) Handle(ctx context.Context, conn spbf.WriteCloser) {
 
 // validateMiningRequest checks requests parameters
 func validateMiningRequest(req *protos.ReqMining) (bool, string) {
-	if req.Address.WalletAddress == "" || req.Address.NetworkAddress == "" {
+	if req.Address.WalletAddress == "" || req.Address.NetworkId.NetworkAddress == "" {
 		return false, "wallet address or net address can't be empty"
 	}
 
-	if len(req.PublicKey) <= 0 {
+	if req.Address.NetworkId.PublicKey == "" {
 		return false, "public key can't be empty"
 	}
 
@@ -90,7 +91,12 @@ func validateMiningRequest(req *protos.ReqMining) (bool, string) {
 		return false, "signature can't be empty"
 	}
 
-	puk, err := crypto.UnmarshalPubkey(req.PublicKey)
+	publicKeyBytes, err := hex.DecodeString(req.Address.NetworkId.PublicKey)
+	if err != nil {
+		return false, err.Error()
+	}
+
+	puk, err := crypto.UnmarshalPubkey(publicKeyBytes)
 	if err != nil {
 		return false, err.Error()
 	}

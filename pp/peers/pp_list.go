@@ -13,10 +13,10 @@ func initPPList() {
 		event.GetPPList()
 	} else {
 		for _, ppInfo := range pplist {
-			client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
+			client.PPConn = client.NewClient(ppInfo.NetworkId.NetworkAddress, true)
 			if client.PPConn == nil {
 
-				setting.DeletePPList(ppInfo.NetworkAddress)
+				setting.DeletePPList(ppInfo.NetworkId.NetworkAddress)
 			} else {
 				event.RegisterChain(false)
 				return

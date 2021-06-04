@@ -33,7 +33,7 @@ func reloadConnectSP() {
 		utils.Log("reconnect SP")
 		clock := clock.NewClock()
 		clock.AddJobRepeat(time.Second*3, 1, reloadConnectSP)
-		client.SPConn = client.NewClient(setting.Config.SPNetAddress, setting.IsPP)
+		client.SPConn = client.NewClient(setting.ToNetworkId(setting.Config.SPNetworkId).NetworkAddress, setting.IsPP)
 		event.RegisterChain(true)
 		if setting.IsStartMining {
 			event.StartMining()

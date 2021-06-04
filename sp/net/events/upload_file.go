@@ -103,7 +103,7 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 			sliceNumAddr := &protos.SliceNumAddr{
 				PpInfo: &protos.PPBaseInfo{
 					WalletAddress:  node.ID,
-					NetworkAddress: node.Host,
+					NetworkId:      node.NetworkId,
 				},
 				SliceNumber: sliceNumber,
 				SliceOffset: &protos.SliceOffset{

@@ -119,7 +119,7 @@ func startUploadTask(target *protos.RspUploadFile) {
 	}
 	task.UpIngMap.Store(target.FileHash, taskING)
 	if client.PPConn != nil {
-		conn := client.NewClient(client.PPConn.GetName(), setting.IsPP)
+		conn := client.NewClient(client.PPConn.GetNetworkAddress(), setting.IsPP)
 		client.UpConnMap.Store(target.FileHash, conn)
 		utils.DebugLog("task.UpConnMap.Store(target.FileHash, conn)", target.FileHash)
 	}

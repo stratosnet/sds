@@ -108,7 +108,8 @@ func reportTransferResultCallbackFunc(_ context.Context, s *net.Server, message 
 		fileSliceStorage := &table.FileSliceStorage{
 			SliceHash:      fileSlice.SliceHash,
 			WalletAddress:  body.NewPp.WalletAddress,
-			NetworkAddress: body.NewPp.NetworkAddress,
+			NetworkAddress: body.NewPp.NetworkId.NetworkAddress,
+			PublicKey: body.NewPp.NetworkId.PublicKey,
 		}
 
 		if _, err = s.CT.StoreTable(fileSliceStorage); err != nil {

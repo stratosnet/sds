@@ -84,7 +84,7 @@ func RspRegisterChain(ctx context.Context, conn spbf.WriteCloser) {
 
 	fmt.Println("login successfully", target.Result.Msg)
 	setting.IsLoad = true
-	utils.DebugLog("@@@@@@@@@@@@@@@@@@@@@@@@@@@@", conn.(*cf.ClientConn).GetName())
+	utils.DebugLog("@@@@@@@@@@@@@@@@@@@@@@@@@@@@", conn.(*cf.ClientConn).GetNetworkAddress())
 	setting.IsPP = target.IsPP
 	if !setting.IsPP {
 		reportDHInfoToPP()
@@ -109,7 +109,7 @@ func RspMining(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			setting.IsStartMining = true
 			if client.SPConn == nil {
-				client.SPConn = client.NewClient(setting.Config.SPNetAddress, setting.IsPP)
+				client.SPConn = client.NewClient(setting.ToNetworkId(setting.Config.SPNetworkId).NetworkAddress, setting.IsPP)
 				RegisterChain(true)
 			}
 		} else {

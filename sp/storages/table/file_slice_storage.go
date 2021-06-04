@@ -9,6 +9,7 @@ type FileSliceStorage struct {
 	SliceHash      string
 	WalletAddress  string
 	NetworkAddress string
+	PublicKey      string
 }
 
 // TableName
