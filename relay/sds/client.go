@@ -27,6 +27,7 @@ func NewClient(server string) *cf.ClientConn {
 		onMessage,
 		bufferSize,
 		logOpen,
+		cf.ReconnectOption(),
 	}
 	conn := cf.CreateClientConn(0, c, options...)
 	conn.Start()

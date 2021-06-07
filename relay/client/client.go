@@ -121,7 +121,7 @@ func (m *MultiClient) Stop() {
 	m.once.Do(func() {
 		m.cancel()
 		if m.sdsClientConn != nil {
-			m.sdsClientConn.Close()
+			m.sdsClientConn.ClientClose()
 		}
 		if m.sdsWebsocketConn != nil {
 			_ = m.sdsWebsocketConn.Close()
