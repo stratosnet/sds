@@ -35,14 +35,14 @@ func GetMessageHeader(tag int16, varsion uint16, length uint32, cmd string, data
 
 //cmd, 8 bytes string, exceeded will be truncate
 const (
-	ReqGetPPList = "ReqGPPL"  // request to get pp list
-	RspGetPPList = "RspGPPL"  // response to get pp list
-	ReqRegister  = "ReqReg"   // request to register
-	RspRegister  = "RspReg"   // response to register
-	ReqActivate  = "ReqActiv" // request to activate a PP node
-	RspActivate  = "RspActiv" // response to activate a PP node
-	ReqActivated = "ReqActvd" // request when a PP node was successfully activated
-	RspActivated = "RspActvd" // response when a PP node was successfully activated
+	ReqGetPPList   = "ReqGPPL"  // request to get pp list
+	RspGetPPList   = "RspGPPL"  // response to get pp list
+	ReqRegister    = "ReqReg"   // request to register
+	RspRegister    = "RspReg"   // response to register
+	ReqActivate    = "ReqActiv" // request to activate a PP node
+	RspActivate    = "RspActiv" // response to activate a PP node
+	ReqActivated   = "ReqActvd" // request when a PP node was successfully activated
+	RspActivated   = "RspActvd" // response when a PP node was successfully activated
 	ReqDeactivate  = "ReqDctiv" // request to deactivate a PP node
 	RspDeactivate  = "RspDctiv" // response to deactivate a PP node
 	ReqDeactivated = "ReqDctvd" // request when a PP node was successfully deactivated
