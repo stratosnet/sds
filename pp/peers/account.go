@@ -1,7 +1,6 @@
 package peers
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/stratosnet/sds/pp/setting"
@@ -69,7 +68,7 @@ func getPublicKey(filePath, password string) bool {
 	}
 	setting.PrivateKey = key.PrivateKey
 	setting.PublicKey = secp256k1.PrivKeyToPubKey(key.PrivateKey)
-	utils.DebugLog("publicKey", hex.EncodeToString(setting.PublicKey))
+	utils.DebugLog("publicKey:", setting.StPubKey())
 	fmt.Println("unlock wallet successfully ", setting.WalletAddress)
 	return true
 }

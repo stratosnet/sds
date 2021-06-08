@@ -2,8 +2,8 @@ package setting
 
 import (
 	"encoding/csv"
-	"encoding/hex"
 	"fmt"
+	"github.com/btcsuite/btcutil/bech32"
 	"os"
 	"regexp"
 	"sync"
@@ -48,9 +48,25 @@ var TestDownload = false
 
 var TestUpload = false
 
+func StPubKey() string {
+	result, err := bech32.Encode("stpub", PublicKey)
+	if err != nil {
+		panic(err)
+	}
+	return result
+}
+
+func StPubKeyToBytes(pubKey string) []byte {
+	_, data, err := bech32.Decode(pubKey)
+	if err != nil {
+		panic(err)
+	}
+	return data
+}
+
 func GetNetworkId() *protos.NetworkId {
 	return &protos.NetworkId{
-		PublicKey: hex.EncodeToString(PublicKey),
+		PublicKey:      StPubKey(),
 		NetworkAddress: NetworkAddress,
 	}
 }
@@ -64,7 +80,7 @@ func ToNetworkId(networkIdString string) *protos.NetworkId {
 	match := networkIdPattern.FindSubmatch([]byte(networkIdString))
 
 	return &protos.NetworkId{
-		PublicKey: string(match[1]),
+		PublicKey:      string(match[1]),
 		NetworkAddress: string(match[2]),
 	}
 }
@@ -88,8 +104,8 @@ func GetLocalPPList() []*protos.PPBaseInfo {
 	if len(record) > 0 {
 		for _, item := range record {
 			pp := protos.PPBaseInfo{
-				NetworkId: ToNetworkId(item[0]),
-				WalletAddress:  item[1],
+				NetworkId:     ToNetworkId(item[0]),
+				WalletAddress: item[1],
 			}
 			PPList = append(PPList, &pp)
 		}

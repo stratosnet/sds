@@ -2,7 +2,6 @@ package net
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/stratosnet/sds/framework/spbf"
@@ -34,7 +33,7 @@ type Server struct {
 	Ver                uint16               // version
 	PPVersion          uint16               // PP version
 	Host               string               // net host
-	puk                string               // public key
+	puk                []byte               // public key
 	UserCount          int64                // user count todo should this be atomic?
 	ConnectedCount     uint64               // connection count todo should this be atomic?
 	Conf               *Config              // configuration
@@ -134,9 +133,9 @@ func (s *Server) BuildHashRing() {
 	if err == nil {
 		for _, pp := range ppList {
 			node := &hashring.Node{
-				ID:   pp["wallet_address"].(string),
+				ID: pp["wallet_address"].(string),
 				NetworkId: &protos.NetworkId{
-					PublicKey: pp["pub_key"].(string),
+					PublicKey:      pp["pub_key"].(string),
 					NetworkAddress: pp["network_address"].(string),
 				},
 			}
@@ -347,9 +346,7 @@ func (s *Server) verifyNodeKey() error {
 		return err
 	}
 
-	publicKey := hex.EncodeToString(secp256k1.PrivKeyToPubKey(key.PrivateKey))
-	s.puk = publicKey
-	utils.DebugLog("publicKey: ", publicKey)
+	s.puk = secp256k1.PrivKeyToPubKey(key.PrivateKey)
 	utils.Log("verify node key successfully!")
 	return nil
 }

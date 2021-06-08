@@ -2,7 +2,7 @@ package events
 
 import (
 	"context"
-	"encoding/hex"
+	"github.com/btcsuite/btcutil/bech32"
 	"github.com/stratosnet/sds/pp/setting"
 
 	"github.com/golang/protobuf/proto"
@@ -59,9 +59,9 @@ func miningCallbackFunc(_ context.Context, s *net.Server, message proto.Message,
 
 	// send mining msg
 	s.HandleMsg(&common.MsgMining{
-		WalletAddress:  body.Address.WalletAddress,
-		NetworkId:      setting.ToString(body.Address.NetworkId),
-		Name:           name,
+		WalletAddress: body.Address.WalletAddress,
+		NetworkId:     setting.ToString(body.Address.NetworkId),
+		Name:          name,
 	})
 
 	return rsp, header.RspMining
@@ -91,7 +91,7 @@ func validateMiningRequest(req *protos.ReqMining) (bool, string) {
 		return false, "signature can't be empty"
 	}
 
-	publicKeyBytes, err := hex.DecodeString(req.Address.NetworkId.PublicKey)
+	_, publicKeyBytes, err := bech32.Decode(req.Address.NetworkId.PublicKey)
 	if err != nil {
 		return false, err.Error()
 	}
