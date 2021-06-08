@@ -129,5 +129,6 @@ CREATE TABLE `file_slice_storage`
     `slice_hash`      char(64)    NOT NULL DEFAULT '',
     `wallet_address`  char(42)    NOT NULL DEFAULT '' COMMENT 'storage PP wallet address',
     `network_address` varchar(32) NOT NULL DEFAULT '' COMMENT 'storage PP network address',
+    `public_key` varchar(1000) NOT NULL,
     PRIMARY KEY (`slice_hash`, `wallet_address`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
