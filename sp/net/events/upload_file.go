@@ -2,7 +2,6 @@ package events
 
 import (
 	"context"
-	"encoding/hex"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -102,8 +101,8 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 
 			sliceNumAddr := &protos.SliceNumAddr{
 				PpInfo: &protos.PPBaseInfo{
-					WalletAddress:  node.ID,
-					NetworkId:      node.NetworkId,
+					WalletAddress: node.ID,
+					NetworkId:     node.NetworkId,
 				},
 				SliceNumber: sliceNumber,
 				SliceOffset: &protos.SliceOffset{
@@ -263,13 +262,8 @@ func validateUploadFileRequest(req *protos.ReqUploadFile, s *net.Server) (bool, 
 		return false, "not authorized to process"
 	}
 
-	puk, err := hex.DecodeString(user.Puk)
-	if err != nil {
-		return false, err.Error()
-	}
-
 	d := req.MyAddress.WalletAddress + req.FileInfo.FileHash
-	if !utils.ECCVerifyBytes([]byte(d), req.Sign, puk) {
+	if !utils.ECCVerifyString([]byte(d), req.Sign, user.Puk) {
 		return false, "signature verification failed"
 	}
 

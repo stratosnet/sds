@@ -2,7 +2,6 @@ package events
 
 import (
 	"context"
-	"encoding/hex"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -39,8 +38,8 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 		},
 		SliceNumAddr: &protos.SliceNumAddr{
 			PpInfo: &protos.PPBaseInfo{
-				WalletAddress:  body.SliceNumAddr.PpInfo.WalletAddress,
-				NetworkId: body.SliceNumAddr.PpInfo.NetworkId,
+				WalletAddress: body.SliceNumAddr.PpInfo.WalletAddress,
+				NetworkId:     body.SliceNumAddr.PpInfo.NetworkId,
 			},
 			SliceNumber: body.SliceNumAddr.SliceNumber,
 		},
@@ -76,8 +75,8 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 		// validate report result
 		if fileSlice.SliceSize != body.SliceSize ||
 			fileSlice.SliceNumber != body.SliceNumAddr.SliceNumber ||
-			fileSlice.NetworkAddress != body.SliceNumAddr.PpInfo.NetworkId.NetworkAddress||
-			fileSlice.PublicKey != body.SliceNumAddr.PpInfo.NetworkId.PublicKey||
+			fileSlice.NetworkAddress != body.SliceNumAddr.PpInfo.NetworkId.NetworkAddress ||
+			fileSlice.PublicKey != body.SliceNumAddr.PpInfo.NetworkId.PublicKey ||
 			fileSlice.WalletAddress != body.SliceNumAddr.PpInfo.WalletAddress ||
 			fileSlice.FileHash != body.FileHash {
 
@@ -227,13 +226,8 @@ func validateReportUploadSliceResultRequest(req *protos.ReportUploadSliceResult,
 		return false, "not authorized to process"
 	}
 
-	puk, err := hex.DecodeString(user.Puk)
-	if err != nil {
-		return false, err.Error()
-	}
-
 	d := req.WalletAddress + req.FileHash
-	if !utils.ECCVerifyBytes([]byte(d), req.Sign, puk) {
+	if !utils.ECCVerifyString([]byte(d), req.Sign, user.Puk) {
 		return false, "signature verification failed"
 	}
 

@@ -2,7 +2,6 @@ package events
 
 import (
 	"context"
-	"encoding/hex"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -109,13 +108,8 @@ func validateDeleteFileRequest(s *net.Server, req *protos.ReqDeleteFile) (bool, 
 		return false, "not authorized to process"
 	}
 
-	puk, err := hex.DecodeString(user.Puk)
-	if err != nil {
-		return false, err.Error()
-	}
-
 	data := req.WalletAddress + req.FileHash
-	if !utils.ECCVerifyBytes([]byte(data), req.Sign, puk) {
+	if !utils.ECCVerifyString([]byte(data), req.Sign, user.Puk) {
 		return false, "signature verification failed"
 	}
 

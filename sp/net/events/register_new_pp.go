@@ -2,7 +2,6 @@ package events
 
 import (
 	"context"
-	"github.com/btcsuite/btcutil/bech32"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -100,11 +99,7 @@ func validateNewPP(s *net.Server, req *protos.ReqRegisterNewPP, user *table.User
 		return false, "public key or signature is empty"
 	}
 
-	_, publicKey, err := bech32.Decode(req.PpBaseInfo.NetworkId.PublicKey)
-	if err != nil {
-		return false, "invalid public key"
-	}
-	if !utils.ECCVerifyBytes([]byte(req.PpBaseInfo.WalletAddress), req.Sign, publicKey) {
+	if !utils.ECCVerifyString([]byte(req.PpBaseInfo.WalletAddress), req.Sign, req.PpBaseInfo.NetworkId.PublicKey) {
 		return false, "signature verification failed"
 	}
 

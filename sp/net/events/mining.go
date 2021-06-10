@@ -2,18 +2,15 @@ package events
 
 import (
 	"context"
-	"github.com/btcsuite/btcutil/bech32"
-	"github.com/stratosnet/sds/pp/setting"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/sp/common"
 	"github.com/stratosnet/sds/sp/net"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto"
 )
 
 // mining is a concrete implementation of event
@@ -91,17 +88,7 @@ func validateMiningRequest(req *protos.ReqMining) (bool, string) {
 		return false, "signature can't be empty"
 	}
 
-	_, publicKeyBytes, err := bech32.Decode(req.Address.NetworkId.PublicKey)
-	if err != nil {
-		return false, err.Error()
-	}
-
-	puk, err := crypto.UnmarshalPubkey(publicKeyBytes)
-	if err != nil {
-		return false, err.Error()
-	}
-
-	if !utils.ECCVerify([]byte(req.Address.WalletAddress), req.Sign, puk) {
+	if !utils.ECCVerifyString([]byte(req.Address.WalletAddress), req.Sign, req.Address.NetworkId.PublicKey) {
 		return false, "signature verification failed"
 	}
 

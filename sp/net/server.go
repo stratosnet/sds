@@ -18,6 +18,7 @@ import (
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/stratosnet/sds/utils/database"
 	"github.com/stratosnet/sds/utils/hashring"
+	"github.com/tendermint/tendermint/libs/bech32"
 	"io/ioutil"
 	"net"
 	"sync"
@@ -347,6 +348,11 @@ func (s *Server) verifyNodeKey() error {
 	}
 
 	s.puk = secp256k1.PrivKeyToPubKey(key.PrivateKey)
+	stPubKey, err := bech32.ConvertAndEncode("stpub", s.puk)
+	if err != nil {
+		return err
+	}
+	utils.DebugLog("publicKey:", stPubKey)
 	utils.Log("verify node key successfully!")
 	return nil
 }

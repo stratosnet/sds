@@ -2,7 +2,6 @@ package events
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
@@ -128,7 +127,7 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 
 	for _, row := range fileSlices {
 		node := &hashring.Node{ID: row.WalletAddress, NetworkId: &protos.NetworkId{
-			PublicKey: row.PublicKey,
+			PublicKey:      row.PublicKey,
 			NetworkAddress: row.NetworkAddress,
 		}}
 		if s.HashRing.IsOnline(node.ID) {
@@ -158,8 +157,8 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 				SliceHash: row.SliceHash,
 			},
 			StoragePpInfo: &protos.PPBaseInfo{
-				WalletAddress:  node.ID,
-				NetworkId: node.NetworkId,
+				WalletAddress: node.ID,
+				NetworkId:     node.NetworkId,
 			},
 			SliceOffset: &protos.SliceOffset{
 				SliceOffsetStart: row.SliceOffsetStart,
@@ -244,14 +243,9 @@ func validateFileStorageInfoRequest(s *net.Server, req *protos.ReqFileStorageInf
 		err = errors.New("not authorized to process")
 		return
 	}
-	var puk []byte
-	puk, err = hex.DecodeString(user.Puk)
-	if err != nil {
-		return
-	}
 
 	d := req.FileIndexes.WalletAddress + fileHash
-	if !utils.ECCVerifyBytes([]byte(d), req.Sign, puk) {
+	if !utils.ECCVerifyString([]byte(d), req.Sign, user.Puk) {
 		err = errors.New("signature verification failed")
 		return
 	}

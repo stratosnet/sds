@@ -66,8 +66,7 @@ func getPublicKey(filePath, password string) bool {
 		fmt.Println("getPublicKey DecryptKey", err)
 		return false
 	}
-	setting.PrivateKey = key.PrivateKey
-	setting.PublicKey = secp256k1.PrivKeyToPubKey(key.PrivateKey)
+	setting.PrivateKey = secp256k1.PrivKeyBytesToTendermint(key.PrivateKey)
 	utils.DebugLog("publicKey:", setting.StPubKey())
 	fmt.Println("unlock wallet successfully ", setting.WalletAddress)
 	return true

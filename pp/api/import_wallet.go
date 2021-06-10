@@ -40,8 +40,7 @@ func importWallet(w http.ResponseWriter, request *http.Request) {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "wrong password").ToBytes())
 		return
 	}
-	setting.PrivateKey = key.PrivateKey
-	setting.PublicKey = secp256k1.PrivKeyToPubKey(key.PrivateKey)
+	setting.PrivateKey = secp256k1.PrivKeyBytesToTendermint(key.PrivateKey)
 
 	addressString, err := key.Address.ToBech(setting.Config.AddressPrefix)
 	if err != nil {

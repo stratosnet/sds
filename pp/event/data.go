@@ -53,7 +53,7 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivate, error) {
 		return nil, err
 	}
 
-	txMsg, err := register.BuildCreateResourceNodeMsg(setting.NetworkAddress, setting.Config.Token, setting.WalletAddress, setting.PublicKey, amount, ownerAddress)
+	txMsg, err := register.BuildCreateResourceNodeMsg(setting.NetworkAddress, setting.Config.Token, setting.WalletAddress, setting.PublicKey(), amount, ownerAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool) *prot
 	walletFileHash := []byte(walletFileString)
 	utils.DebugLogf("setting.WalletAddress + fileHash : %v", walletFileHash)
 
-	if utils.ECCVerifyBytes(walletFileHash, req.Sign, setting.PublicKey) {
+	if setting.PublicKey().VerifyBytes(walletFileHash, req.Sign) {
 		utils.DebugLog("ECC verification ok")
 	} else {
 		utils.DebugLog("ECC verification failed")

@@ -137,7 +137,7 @@ func CheckLogin() bool {
 
 // GetSign
 func GetSign(str string) []byte {
-	data, err := utils.ECCSignBytes([]byte(str), PrivateKey)
+	data, err := PrivateKey.Sign([]byte(str))
 	utils.DebugLog("GetSign == ", data)
 	if err != nil {
 		utils.ErrorLog("GetSign", err)

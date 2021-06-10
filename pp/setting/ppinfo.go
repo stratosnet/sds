@@ -3,7 +3,8 @@ package setting
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/btcsuite/btcutil/bech32"
+	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/libs/bech32"
 	"os"
 	"regexp"
 	"sync"
@@ -33,11 +34,8 @@ var WalletAddress string
 // NetworkAddress
 var NetworkAddress string
 
-// PublicKey
-var PublicKey []byte
-
 // PrivateKey
-var PrivateKey []byte
+var PrivateKey crypto.PrivKey
 
 // PPList
 var PPList []*protos.PPBaseInfo
@@ -48,8 +46,12 @@ var TestDownload = false
 
 var TestUpload = false
 
+func PublicKey() crypto.PubKey {
+	return PrivateKey.PubKey()
+}
+
 func StPubKey() string {
-	result, err := bech32.Encode("stpub", PublicKey)
+	result, err := bech32.ConvertAndEncode("stpub", PrivateKey.PubKey().Bytes())
 	if err != nil {
 		panic(err)
 	}
@@ -57,7 +59,7 @@ func StPubKey() string {
 }
 
 func StPubKeyToBytes(pubKey string) []byte {
-	_, data, err := bech32.Decode(pubKey)
+	_, data, err := bech32.DecodeAndConvert(pubKey)
 	if err != nil {
 		panic(err)
 	}

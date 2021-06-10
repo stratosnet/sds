@@ -8,6 +8,8 @@ import (
 	"errors"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/stratosnet/sds/utils/crypto"
+	"github.com/tendermint/classic/libs/bech32"
+	cryptoamino "github.com/tendermint/tendermint/crypto/encoding/amino"
 	"hash/crc32"
 	"math/big"
 	"reflect"
@@ -204,6 +206,16 @@ func ECCVerifyBytes(text, signature, publicKey []byte) bool {
 		return false
 	}
 	return ECCVerify(text, signature, pubKey)
+}
+
+func ECCVerifyString(text, signature []byte, stPublicKey string) bool {
+	_, tmpPublicKeyBytes, err := bech32.DecodeAndConvert(stPublicKey)
+	if err != nil {
+		return false
+	}
+
+	publicKey, err := cryptoamino.PubKeyFromBytes(tmpPublicKeyBytes)
+	return publicKey.VerifyBytes(text, signature)
 }
 
 // CheckStructField

@@ -11,7 +11,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	registertypes "github.com/stratosnet/sds/relay/stratoschain/register/types"
-	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/tendermint/tendermint/crypto"
 	"io/ioutil"
 	"net/http"
@@ -54,7 +53,8 @@ func FetchAccountInfo(address string) (uint64, uint64, error) {
 	return account.AccountNumber, account.Sequence, err
 }
 
-func BuildAndSignTx(token, chainId, memo string, accountNum, sequence uint64, msg sdktypes.Msg, fee, gas int64, privateKey []byte) (*authtypes.StdTx, error) {
+func BuildAndSignTx(token, chainId, memo string, accountNum, sequence uint64, msg sdktypes.Msg, fee, gas int64,
+	privateKey crypto.PrivKey) (*authtypes.StdTx, error) {
 	stdFee := authtypes.NewStdFee(
 		uint64(gas),
 		sdktypes.NewCoins(sdktypes.NewInt64Coin(token, fee)),
@@ -62,17 +62,16 @@ func BuildAndSignTx(token, chainId, memo string, accountNum, sequence uint64, ms
 	msgs := []sdktypes.Msg{msg}
 
 	unsignedBytes := authtypes.StdSignBytes(chainId, accountNum, sequence, stdFee, msgs, memo)
-	signedBytes, err := secp256k1.PrivKeyBytesToTendermint(privateKey).Sign(crypto.Sha256(unsignedBytes))
+	signedBytes, err := privateKey.Sign(crypto.Sha256(unsignedBytes))
 	if err != nil {
 		return nil, err
 	}
 
-	pubKey, err := secp256k1.PubKeyBytesToTendermint(secp256k1.PrivKeyToPubKey(privateKey))
 	if err != nil {
 		return nil, err
 	}
 	sig := authtypes.StdSignature{
-		PubKey:    pubKey,
+		PubKey:    privateKey.PubKey(),
 		Signature: signedBytes,
 	}
 
@@ -80,7 +79,8 @@ func BuildAndSignTx(token, chainId, memo string, accountNum, sequence uint64, ms
 	return &tx, nil
 }
 
-func BuildTxBytes(token, chainId, memo, address, mode string, msg sdktypes.Msg, fee, gas int64, privateKey []byte) ([]byte, error) {
+func BuildTxBytes(token, chainId, memo, address, mode string, msg sdktypes.Msg, fee, gas int64,
+	privateKey crypto.PrivKey) ([]byte, error) {
 	accountNum, sequence, err := FetchAccountInfo(address)
 	if err != nil {
 		return nil, err

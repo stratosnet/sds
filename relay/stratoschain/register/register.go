@@ -5,16 +5,13 @@ import (
 	"github.com/stratosnet/sds/relay/stratoschain/register/types"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	utiltypes "github.com/stratosnet/sds/utils/types"
+	"github.com/tendermint/tendermint/crypto"
 )
 
-func BuildCreateResourceNodeMsg(networkAddress, token, moniker string, pubKey []byte, amount int64, ownerAddress utiltypes.Address) (sdktypes.Msg, error) {
-	tmPubkey, err := secp256k1.PubKeyBytesToTendermint(pubKey)
-	if err != nil {
-		return nil, err
-	}
+func BuildCreateResourceNodeMsg(networkAddress, token, moniker string, pubKey crypto.PubKey, amount int64, ownerAddress utiltypes.Address) (sdktypes.Msg, error) {
 	return types.NewMsgCreateResourceNode(
 		networkAddress,
-		tmPubkey,
+		pubKey,
 		sdktypes.NewInt64Coin(token, amount),
 		ownerAddress[:],
 		types.Description{
