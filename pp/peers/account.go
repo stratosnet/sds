@@ -6,6 +6,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
+	"github.com/stratosnet/sds/utils/types"
 	"io/ioutil"
 )
 
@@ -67,7 +68,7 @@ func getPublicKey(filePath, password string) bool {
 		return false
 	}
 	setting.PrivateKey = secp256k1.PrivKeyBytesToTendermint(key.PrivateKey)
-	utils.DebugLog("publicKey:", setting.StPubKey())
+	utils.DebugLog("publicKey:", types.MustBech32ifyStPubKey(setting.PublicKey()))
 	fmt.Println("unlock wallet successfully ", setting.WalletAddress)
 	return true
 }

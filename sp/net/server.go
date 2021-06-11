@@ -18,7 +18,8 @@ import (
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/stratosnet/sds/utils/database"
 	"github.com/stratosnet/sds/utils/hashring"
-	"github.com/tendermint/tendermint/libs/bech32"
+	"github.com/stratosnet/sds/utils/types"
+	"github.com/tendermint/tendermint/crypto"
 	"io/ioutil"
 	"net"
 	"sync"
@@ -34,7 +35,7 @@ type Server struct {
 	Ver                uint16               // version
 	PPVersion          uint16               // PP version
 	Host               string               // net host
-	puk                []byte               // public key
+	puk                crypto.PubKey        // public key
 	UserCount          int64                // user count todo should this be atomic?
 	ConnectedCount     uint64               // connection count todo should this be atomic?
 	Conf               *Config              // configuration
@@ -347,12 +348,9 @@ func (s *Server) verifyNodeKey() error {
 		return err
 	}
 
-	s.puk = secp256k1.PrivKeyToPubKey(key.PrivateKey)
-	stPubKey, err := bech32.ConvertAndEncode("stpub", s.puk)
-	if err != nil {
-		return err
-	}
-	utils.DebugLog("publicKey:", stPubKey)
+	privateKey := secp256k1.PrivKeyBytesToTendermint(key.PrivateKey)
+	s.puk = privateKey.PubKey()
+	utils.DebugLog("publicKey:", types.MustBech32ifyStPubKey(s.puk))
 	utils.Log("verify node key successfully!")
 	return nil
 }

@@ -3,8 +3,8 @@ package setting
 import (
 	"encoding/csv"
 	"fmt"
+	"github.com/stratosnet/sds/utils/types"
 	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/libs/bech32"
 	"os"
 	"regexp"
 	"sync"
@@ -50,25 +50,9 @@ func PublicKey() crypto.PubKey {
 	return PrivateKey.PubKey()
 }
 
-func StPubKey() string {
-	result, err := bech32.ConvertAndEncode("stpub", PrivateKey.PubKey().Bytes())
-	if err != nil {
-		panic(err)
-	}
-	return result
-}
-
-func StPubKeyToBytes(pubKey string) []byte {
-	_, data, err := bech32.DecodeAndConvert(pubKey)
-	if err != nil {
-		panic(err)
-	}
-	return data
-}
-
 func GetNetworkId() *protos.NetworkId {
 	return &protos.NetworkId{
-		PublicKey:      StPubKey(),
+		PublicKey:      types.MustBech32ifyStPubKey(PublicKey()),
 		NetworkAddress: NetworkAddress,
 	}
 }

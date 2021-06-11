@@ -3,6 +3,8 @@ package types
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/types"
+	"github.com/tendermint/tendermint/crypto"
 	"math/big"
 
 	"github.com/stratosnet/sds/utils/crypto/sha3"
@@ -218,4 +220,12 @@ func isHex(str string) bool {
 		}
 	}
 	return true
+}
+
+func MustBech32ifyStPubKey(pubKey crypto.PubKey) string {
+	return types.MustBech32ifyPubKey(types.Bech32PubKeyTypeAccPub, pubKey)
+}
+
+func MustGetStPubKeyFromBech32(pubKey string) crypto.PubKey {
+	return types.MustGetPubKeyFromBech32(types.Bech32PubKeyTypeAccPub, pubKey)
 }

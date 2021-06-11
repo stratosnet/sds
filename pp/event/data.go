@@ -341,7 +341,7 @@ func reqRegisterNewPPData() *protos.ReqRegisterNewPP {
 		PpBaseInfo: &protos.PPBaseInfo{
 			WalletAddress: setting.WalletAddress,
 			NetworkId: &protos.NetworkId{
-				PublicKey:      setting.StPubKey(),
+				PublicKey:      types.MustBech32ifyStPubKey(setting.PublicKey()),
 				NetworkAddress: setting.NetworkAddress,
 			},
 		},
