@@ -309,6 +309,7 @@ func (m *MsgHandler) AggregateTraffic(time int64) ([]AggregatedTraffic, error) {
 			return []AggregatedTraffic{}, err
 		}
 
+		//TODO persist the file to the SDS
 		fileName := fmt.Sprintf("tmp/traffic_aggregation_%v.csv", time)
 		err = m.WriteTrafficToCsvFile(fileName, trafficRecords)
 
