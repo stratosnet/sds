@@ -37,6 +37,7 @@ const (
 type TransferRecord struct {
 	Id                 uint32
 	SliceHash          string
+	SliceSize          uint64
 	TransferCer        string
 	FromWalletAddress  string
 	ToWalletAddress    string

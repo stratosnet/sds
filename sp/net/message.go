@@ -1,17 +1,21 @@
 package net
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/sp/common"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/hashring"
-	"strconv"
-	"time"
 )
 
 // MsgHandler
@@ -27,21 +31,21 @@ func (m *MsgHandler) AddMsg(msg common.Msg) {
 
 // ListenMsgQueue
 func (m *MsgHandler) ListenMsgQueue() {
-
+	ticker := time.NewTicker(1 * time.Second)
 	for {
-
-		msgInStr, _ := m.server.GetCache().DeQueue("msg_queue")
-		if msgInStr != nil && msgInStr != "" {
-			switch msgInStr.(type) {
-			case string:
-				msg := new(common.Msg)
-				if json.Unmarshal([]byte(msgInStr.(string)), msg) == nil {
-					m.msgQueue <- *msg
+		select {
+		case <-ticker.C:
+			msgInStr, _ := m.server.GetCache().DeQueue("msg_queue")
+			if msgInStr != nil && msgInStr != "" {
+				switch msgInStr.(type) {
+				case string:
+					msg := new(common.MsgWrapper)
+					if json.Unmarshal([]byte(msgInStr.(string)), msg) == nil {
+						m.msgQueue <- *&msg.Msg
+					}
 				}
 			}
 		}
-
-		time.Sleep(time.Second * 1)
 	}
 }
 
@@ -56,7 +60,6 @@ func (m *MsgHandler) Run() {
 	go m.ListenMsgQueue()
 
 	for {
-
 		select {
 
 		case msg := <-m.msgQueue:
@@ -79,6 +82,13 @@ func (m *MsgHandler) Run() {
 			} else if msgType == common.MSG_DELETE_SLICE {
 				msgDeleteSlice := msg.(*common.MsgDeleteSlice)
 				m.DeleteSlice(msgDeleteSlice.WalletAddress, msgDeleteSlice.SliceHash)
+			} else if msgType == common.MSG_AGGREGATE_TRAFFIC {
+				msgAggregateTraffic := msg.(*common.MsgAggregateTraffic)
+				aggregatedTraffic, err := m.AggregateTraffic(msgAggregateTraffic.Time)
+				if err != nil {
+					utils.ErrorLog("Error when aggregating Traffic: ", err)
+				}
+				utils.Log(aggregatedTraffic)
 			}
 		}
 	}
@@ -219,6 +229,7 @@ func (m *MsgHandler) TransferNotice(sliceHash, sliceInWalletAddress, newStorePPW
 
 	transferRecord := &table.TransferRecord{
 		SliceHash:          fileSlice.SliceHash,
+		SliceSize:          fileSlice.SliceSize,
 		TransferCer:        transferCer,
 		FromWalletAddress:  fileSlice.WalletAddress,
 		ToWalletAddress:    newStorePPWalletAddress,
@@ -231,6 +242,118 @@ func (m *MsgHandler) TransferNotice(sliceHash, sliceInWalletAddress, newStorePPW
 	m.server.Store(transferRecord, 3600*time.Second)
 
 	m.server.SendMsg(node.ID, header.ReqTransferNotice, req)
+}
+
+type AggregatedTraffic struct {
+	WalletAddress string
+	Volume        uint64
+}
+
+func (m *MsgHandler) AggregateTraffic(time int64) ([]AggregatedTraffic, error) {
+	type TrafficGroup struct {
+		table.Traffic
+		WalletAddress string
+		TotalVolume   string
+	}
+
+	res, err := m.server.CT.FetchTables([]TrafficGroup{}, map[string]interface{}{
+		"columns": "provider_wallet_address AS wallet_address, SUM(volume) AS total_volume",
+		"where": map[string]interface{}{
+			"delivery_time < ?": time,
+		},
+		"groupBy": "provider_wallet_address",
+		"orderBy": "total_volume desc",
+	})
+
+	if err != nil {
+		return []AggregatedTraffic{}, err
+	}
+
+	trafficGroups := res.([]TrafficGroup)
+	aggregatedTraffic := make([]AggregatedTraffic, 0, len(trafficGroups))
+	rewardAccounts := make([]interface{}, 0, len(trafficGroups))
+
+	if len(trafficGroups) > 0 {
+		totalVolume := uint64(0)
+		aggregatedVolume := uint64(0)
+
+		for _, group := range trafficGroups {
+			volume, _ := strconv.Atoi(group.TotalVolume)
+			totalVolume += uint64(volume)
+		}
+		threshold := uint64(float64(totalVolume) * 0.8)
+
+		for _, group := range trafficGroups {
+			if aggregatedVolume <= threshold {
+				volume, _ := strconv.Atoi(group.TotalVolume)
+				aggregatedVolume += uint64(volume)
+				aggregatedTraffic = append(aggregatedTraffic, AggregatedTraffic{
+					WalletAddress: group.WalletAddress,
+					Volume:        uint64(volume),
+				})
+				rewardAccounts = append(rewardAccounts, group.WalletAddress)
+			} else {
+				break
+			}
+		}
+
+		res, err := m.server.CT.FetchTables([]table.Traffic{}, map[string]interface{}{
+			"where": map[string]interface{}{
+				"provider_wallet_address in (?" + strings.Repeat(",?", len(rewardAccounts)-1) + ")": rewardAccounts,
+				"delivery_time < ?": time,
+			},
+		})
+		trafficRecords := res.([]table.Traffic)
+
+		if err != nil {
+			return []AggregatedTraffic{}, err
+		}
+
+		fileName := fmt.Sprintf("tmp/traffic_aggregation_%v.csv", time)
+		err = m.WriteTrafficToCsvFile(fileName, trafficRecords)
+
+		if err != nil {
+			return []AggregatedTraffic{}, err
+		}
+
+		num := m.server.CT.GetDriver().Delete("traffic", map[string]interface{}{
+			"provider_wallet_address in (?" + strings.Repeat(",?", len(rewardAccounts)-1) + ")": rewardAccounts,
+			"delivery_time < ?": time,
+		})
+
+		if num == 0 {
+			return []AggregatedTraffic{}, errors.New("cannot delete traffic records for rewarded accounts")
+		}
+	}
+
+	return aggregatedTraffic, nil
+}
+
+func (m *MsgHandler) WriteTrafficToCsvFile(fileName string, records []table.Traffic) error {
+	file, err := os.Create(fileName)
+	if err != nil {
+		return errors.New(fmt.Sprint("cannot create file ", err.Error()))
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	for idx, value := range records {
+		if idx == 0 {
+			err := writer.Write(value.GetHeaders())
+			if err != nil {
+				return errors.New(fmt.Sprint("cannot write to file", err.Error()))
+			}
+		}
+
+		err := writer.Write(value.ToSlice())
+		if err != nil {
+			return errors.New(fmt.Sprint("cannot write to file", err.Error()))
+		}
+	}
+
+	return nil
 }
 
 // DeleteSlice from P or PP

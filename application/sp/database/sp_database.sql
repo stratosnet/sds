@@ -131,3 +131,16 @@ CREATE TABLE `file_slice_storage`
     `network_address` varchar(32) NOT NULL DEFAULT '' COMMENT 'storage PP network address',
     PRIMARY KEY (`slice_hash`, `wallet_address`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE traffic (
+  id int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  provider_wallet_address char(42) NOT NULL DEFAULT '' COMMENT 'PP wallet address',
+  consumer_wallet_address char(42) NOT NULL DEFAULT '' COMMENT 'P wallet address',
+  task_id char(64) NOT NULL DEFAULT '' ,
+  task_type tinyint(3) unsigned NOT NULL DEFAULT '1' COMMENT '0:upload,1:download,2:transfer',
+  volume bigint(20) NOT NULL DEFAULT '0' ,
+  delivery_time int(11) NOT NULL DEFAULT '0' COMMENT 'delivery time',
+  response_time int(11) NOT NULL DEFAULT '0' COMMENT 'response time',
+  PRIMARY KEY (id)
+) ENGINE=InnoDB  
+DEFAULT CHARSET=utf8;

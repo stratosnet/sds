@@ -1,16 +1,26 @@
 package common
 
+import (
+	"encoding/json"
+)
+
 const (
-	MSG_LOGOUT          = 0x01
-	MSG_MIMING          = 0x02
-	MSG_TRANSFER_NOTICE = 0x03
-	MSG_BACKUP_SLICE    = 0x04
-	MSG_BACKUP_PP       = 0x05
-	MSG_DELETE_SLICE    = 0x06
+	MSG_LOGOUT            = 0x01
+	MSG_MIMING            = 0x02
+	MSG_TRANSFER_NOTICE   = 0x03
+	MSG_BACKUP_SLICE      = 0x04
+	MSG_BACKUP_PP         = 0x05
+	MSG_DELETE_SLICE      = 0x06
+	MSG_AGGREGATE_TRAFFIC = 0x07
 )
 
 type Msg interface {
 	GetType() uint32
+}
+
+type MsgWrapper struct {
+	MsgType uint32
+	Msg     Msg
 }
 
 type MsgMining struct {
@@ -66,4 +76,50 @@ type MsgDeleteSlice struct {
 
 func (m *MsgDeleteSlice) GetType() uint32 {
 	return MSG_DELETE_SLICE
+}
+
+type MsgAggregateTraffic struct {
+	Time int64
+}
+
+func (m *MsgAggregateTraffic) GetType() uint32 {
+	return MSG_AGGREGATE_TRAFFIC
+}
+
+func (w *MsgWrapper) UnmarshalJSON(data []byte) error {
+	m := map[string]json.RawMessage{}
+	var typeValue uint32
+
+	if err := json.Unmarshal(data, &m); err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(m["MsgType"], &typeValue); err != nil {
+		return err
+	}
+
+	w.MsgType = typeValue
+
+	switch typeValue {
+	case MSG_TRANSFER_NOTICE:
+		var msgTransferNotice MsgTransferNotice
+		if err := json.Unmarshal(m["Msg"], &msgTransferNotice); err != nil {
+			return err
+		}
+		w.Msg = &msgTransferNotice
+	case MSG_AGGREGATE_TRAFFIC:
+		var msgAggregateTraffic MsgAggregateTraffic
+		if err := json.Unmarshal(m["Msg"], &msgAggregateTraffic); err != nil {
+			return err
+		}
+		w.Msg = &msgAggregateTraffic
+	case MSG_BACKUP_PP:
+		var msgBackupPP MsgBackupPP
+		if err := json.Unmarshal(m["Msg"], &msgBackupPP); err != nil {
+			return err
+		}
+		w.Msg = &msgBackupPP
+	}
+
+	return nil
 }
