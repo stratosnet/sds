@@ -7,6 +7,7 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -24,7 +25,6 @@ func Activate(amount, fee, gas int64) error {
 
 // RspActivate. Response to asking the SP node to activate this PP node
 func RspActivate(ctx context.Context, conn spbf.WriteCloser) {
-	utils.Log("get RspActivate")
 	var target protos.RspActivate
 	success := unmarshalData(ctx, &target)
 	if !success {
@@ -36,9 +36,9 @@ func RspActivate(ctx context.Context, conn spbf.WriteCloser) {
 		return
 	}
 
-	if target.AlreadyActive {
+	if target.ActivationState != table.PP_INACTIVE {
 		fmt.Println("Current node is already active")
-		setting.IsActive = true
+		setting.State = byte(target.ActivationState)
 	} else {
 		fmt.Println("The activation transaction was broadcast")
 	}
@@ -46,5 +46,5 @@ func RspActivate(ctx context.Context, conn spbf.WriteCloser) {
 
 // RspActivated. Response when this PP node was successfully activated
 func RspActivated(ctx context.Context, conn spbf.WriteCloser) {
-	setting.IsActive = true
+	setting.State = table.PP_ACTIVE
 }

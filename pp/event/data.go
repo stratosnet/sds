@@ -12,6 +12,7 @@ import (
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/relay/stratoschain/register"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/types"
 
 	"github.com/golang/protobuf/proto"
@@ -54,7 +55,7 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivate, error) {
 		return nil, err
 	}
 
-	txMsg, err := register.BuildCreateResourceNodeMsg(setting.NetworkAddress, setting.Config.Token, setting.WalletAddress, setting.PublicKey, amount, ownerAddress)
+	txMsg, err := register.BuildCreateResourceNodeMsg(setting.NetworkAddress, setting.Config.Token, setting.WalletAddress, "", setting.PublicKey, amount, ownerAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -65,6 +66,27 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivate, error) {
 	}
 
 	req := &protos.ReqActivate{
+		Tx:            txBytes,
+		WalletAddress: setting.WalletAddress,
+	}
+	return req, nil
+}
+
+func reqDeactivateData(fee, gas int64) (*protos.ReqDeactivate, error) {
+	// Create and sign transaction to remove a resource node
+	nodeAddress, err := crypto.PubKeyToAddress(setting.PublicKey)
+	if err != nil {
+		return nil, err
+	}
+
+	txMsg := register.BuildRemoveResourceNodeMsg(nodeAddress, nodeAddress)
+
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", setting.WalletAddress, "sync", txMsg, fee, gas, setting.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &protos.ReqDeactivate{
 		Tx:            txBytes,
 		WalletAddress: setting.WalletAddress,
 	}

@@ -184,10 +184,16 @@ func PrivKeyBytesToTendermint(privKey []byte) tmsecp256k1.PrivKeySecp256k1 {
 	return bzArr
 }
 
-// PrivKeyToPubKey returns the public key associated with the given private key
+// PrivKeyToPubKey returns the public key associated with the given private key in the uncompressed format.
 func PrivKeyToPubKey(privKey []byte) []byte {
 	_, pubKeyObject := btcec.PrivKeyFromBytes(S256(), privKey[:])
 	return pubKeyObject.SerializeUncompressed()
+}
+
+// PrivKeyToPubKeyCompressed returns the public key associated with the given private key in the compressed format.
+func PrivKeyToPubKeyCompressed(privKey []byte) []byte {
+	_, pubKeyObject := btcec.PrivKeyFromBytes(S256(), privKey[:])
+	return pubKeyObject.SerializeCompressed()
 }
 
 // UnmarshalPubkey converts bytes to a secp256k1 public key.
