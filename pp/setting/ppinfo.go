@@ -2,6 +2,7 @@ package setting
 
 import (
 	"encoding/csv"
+	"github.com/stratosnet/sds/sp/storages/table"
 	"os"
 	"sync"
 
@@ -15,8 +16,8 @@ var IsPP = false
 // IsLoginToSP
 var IsLoginToSP = false
 
-// IsActive
-var IsActive = false
+// State
+var State byte = table.PP_INACTIVE
 
 // IsStartMining
 var IsStartMining = false

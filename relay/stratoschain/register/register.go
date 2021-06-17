@@ -7,7 +7,7 @@ import (
 	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
-func BuildCreateResourceNodeMsg(networkAddress, token, moniker string, pubKey []byte, amount int64, ownerAddress utiltypes.Address) (sdktypes.Msg, error) {
+func BuildCreateResourceNodeMsg(networkAddress, token, moniker, nodeType string, pubKey []byte, amount int64, ownerAddress utiltypes.Address) (sdktypes.Msg, error) {
 	tmPubkey, err := secp256k1.PubKeyBytesToTendermint(pubKey)
 	if err != nil {
 		return nil, err
@@ -20,6 +20,7 @@ func BuildCreateResourceNodeMsg(networkAddress, token, moniker string, pubKey []
 		types.Description{
 			Moniker: moniker,
 		},
+		nodeType,
 	), nil
 }
 

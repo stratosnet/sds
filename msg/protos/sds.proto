@@ -257,7 +257,7 @@ message ReqActivate {
 
 message RspActivate {
   Result result = 1;
-  bool already_active = 2;
+  uint32 activation_state = 2;
 }
 
 message ReqActivated {
@@ -265,6 +265,24 @@ message ReqActivated {
 }
 
 message RspActivated {
+  Result result = 1;
+}
+
+message ReqDeactivate {
+  bytes tx = 1;
+  string wallet_address = 2;
+}
+
+message RspDeactivate {
+  Result result = 1;
+  uint32 activation_state = 2;
+}
+
+message ReqDeactivated {
+  string wallet_address = 1;
+}
+
+message RspDeactivated {
   Result result = 1;
 }
 

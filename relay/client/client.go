@@ -18,14 +18,20 @@ import (
 )
 
 type MultiClient struct {
-	cancel                 context.CancelFunc
-	Ctx                    context.Context
-	once                   *sync.Once
-	sdsClientConn          *cf.ClientConn
-	sdsWebsocketConn       *websocket.Conn
-	stratosWebsocketClient *tmHttp.HTTP
-	stratosEventsChannels  map[<-chan coretypes.ResultEvent]bool
-	wg                     *sync.WaitGroup
+	cancel                context.CancelFunc
+	Ctx                   context.Context
+	once                  *sync.Once
+	sdsClientConn         *cf.ClientConn
+	sdsWebsocketConn      *websocket.Conn
+	stratosWebsocketUrl   string
+	stratosEventsChannels map[string]websocketSubscription
+	wg                    *sync.WaitGroup
+}
+
+type websocketSubscription struct {
+	channel <-chan coretypes.ResultEvent
+	client  *tmHttp.HTTP
+	query   string
 }
 
 func NewClient() *MultiClient {
@@ -34,7 +40,7 @@ func NewClient() *MultiClient {
 		cancel:                cancel,
 		Ctx:                   ctx,
 		once:                  &sync.Once{},
-		stratosEventsChannels: make(map[<-chan coretypes.ResultEvent]bool),
+		stratosEventsChannels: make(map[string]websocketSubscription),
 		wg:                    &sync.WaitGroup{},
 	}
 	return client
@@ -43,6 +49,7 @@ func NewClient() *MultiClient {
 func (m *MultiClient) Start() error {
 	m.wg.Add(1)
 	go func() {
+		// Connect to SDS SP node in a loop
 		defer m.wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
@@ -99,36 +106,35 @@ func (m *MultiClient) Start() error {
 	scRestUrl := "http://" + setting.Config.StratosChain.NetworkAddress + ":" + setting.Config.StratosChain.RestPort
 	stratoschain.Url = scRestUrl
 
-	// Client to subscribe to stratos-chain events and send messages via websocket
-	scWebsocketUrl := setting.Config.StratosChain.NetworkAddress + ":" + setting.Config.StratosChain.WebsocketPort
-	client, err := stratoschain.DialWebsocket(scWebsocketUrl)
+	// Client to subscribe to stratos-chain events and receive messages via websocket
+	m.stratosWebsocketUrl = setting.Config.StratosChain.NetworkAddress + ":" + setting.Config.StratosChain.WebsocketPort
+	err := m.SubscribeToStratosChainEvents()
 	if err != nil {
 		return err
 	}
-	m.stratosWebsocketClient = client
-	err = stratoschain.SubscribeToEvents(stratoschain.Client(m))
-	if err != nil {
-		return err
-	}
+	fmt.Println("Successfully subscribed to events from stratos-chain")
 
-	fmt.Println("Successfully subscribed to events from stratos-chain and started client to send messages back")
 	return nil
 }
 
 func (m *MultiClient) Stop() {
 	m.once.Do(func() {
 		m.cancel()
-		m.wg.Wait()
-
 		if m.sdsClientConn != nil {
-			m.sdsClientConn.Close()
+			m.sdsClientConn.ClientClose()
 		}
 		if m.sdsWebsocketConn != nil {
 			_ = m.sdsWebsocketConn.Close()
 		}
-		if m.stratosWebsocketClient != nil {
-			_ = m.stratosWebsocketClient.Stop()
+
+		for query, subscription := range m.stratosEventsChannels {
+			if subscription.client != nil {
+				_ = subscription.client.Unsubscribe(context.Background(), "", query)
+				_ = subscription.client.Stop()
+			}
 		}
+
+		m.wg.Wait()
 		fmt.Println("All client connections have been stopped")
 	})
 }
@@ -164,21 +170,33 @@ func (m *MultiClient) sdsEventsReaderLoop() {
 	}
 }
 
-func (m *MultiClient) stratosSubscriptionReaderLoop(channel <-chan coretypes.ResultEvent, handler func(coretypes.ResultEvent)) {
-	defer delete(m.stratosEventsChannels, channel)
-	defer m.wg.Done()
+func (m *MultiClient) stratosSubscriptionReaderLoop(subscription websocketSubscription, handler func(coretypes.ResultEvent)) {
+	defer func() {
+		if subscription.client != nil {
+			err := subscription.client.Unsubscribe(context.Background(), "", subscription.query)
+			if err != nil {
+				fmt.Printf("couldn't unsubscribe from %v: %v\n", subscription.query, err.Error())
+			} else {
+				fmt.Println("unsubscribed from " + subscription.query)
+			}
+			_ = subscription.client.Stop()
+			delete(m.stratosEventsChannels, subscription.query)
+		}
+		m.wg.Done()
+	}()
+
 	for {
 		select {
 		case <-m.Ctx.Done():
 			return
-		case message, ok := <-channel:
+		case message, ok := <-subscription.channel:
 			if !ok {
 				fmt.Println("The stratos-chain events websocket channel has been closed")
 				return
 			}
 			fmt.Println("Received a new message from stratos-chain!")
-			// TODO: handle message. Often this will involve sending a message to SDS using m.sdsClientConn
 			/*
+				// Example of how to send a message to SDS
 				msgToSend := &msg.RelayMsgBuf{
 					MSGHead: header.MakeMessageHeader(1, 1, 0, header.ReqGetPPList),
 				}
@@ -189,20 +207,31 @@ func (m *MultiClient) stratosSubscriptionReaderLoop(channel <-chan coretypes.Res
 					fmt.Println("Sent msg to SDS")
 				}
 			*/
-			fmt.Println(message)
+			//fmt.Println(message)
 			handler(message)
 		}
 	}
 }
 
 func (m *MultiClient) SubscribeToStratosChain(query string, handler func(coretypes.ResultEvent)) error {
-	out, err := m.stratosWebsocketClient.Subscribe(context.Background(), "", query)
+	client, err := stratoschain.DialWebsocket(m.stratosWebsocketUrl)
+	if err != nil {
+		return err
+	}
+
+	out, err := client.Subscribe(context.Background(), "", query)
 	if err != nil {
 		return errors.New("failed to subscribe to query in stratos-chain: " + err.Error())
 	}
-	m.stratosEventsChannels[out] = true
 	m.wg.Add(1)
-	go m.stratosSubscriptionReaderLoop(out, handler)
+	subscription := websocketSubscription{
+		channel: out,
+		client:  client,
+		query:   query,
+	}
+	m.stratosEventsChannels[query] = subscription
+	go m.stratosSubscriptionReaderLoop(subscription, handler)
+
 	return nil
 }
 
@@ -212,8 +241,4 @@ func (m *MultiClient) GetSdsClientConn() *cf.ClientConn {
 
 func (m *MultiClient) GetSdsWebsocketConn() *websocket.Conn {
 	return m.sdsWebsocketConn
-}
-
-func (m *MultiClient) GetStratosWebsocketClient() *tmHttp.HTTP {
-	return m.stratosWebsocketClient
 }

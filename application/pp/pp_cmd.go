@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/stratosnet/sds/sp/storages/table"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -24,15 +25,14 @@ import (
 )
 
 func main() {
-	// utils.ImageCommpress("./123.jpg")
-	// return
 	// setConfig()
-	// return
 	helpStr := "\nhelp                       show all the commands\n" +
 		"accounts                            acquire all wallet accounts’ address\n" +
 		"newaccount ->password               create new account\n" +
 		"login account ->password            unlock and log in account \n" +
 		"registerminer                       apply to be PP miner\n" +
+		"activate                            send transaction to stratos-chain to become an active PP node\n" +
+		"deactivate                          send transaction to stratos-chain to stop being a PP node\n" +
 		"start                               start mining\n" +
 		"put filepath                        upload file\n" +
 		"list filename                       inquire uploaded file by self\n" +
@@ -42,12 +42,10 @@ func main() {
 		"For example: get spb://0x96983DA5Aed28Ac0FF7646fE1C3260AACe9ECB7B/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe|test.mp4\n" +
 		"ver                                 version\n" +
 		"monitor                             show monitor\n" +
-		"stopmonitor                         stop monitor\n"
-	// "config                              config key value\n"
+		"stopmonitor                         stop monitor\n" +
+		"config                              config key value"
 
 	setting.LoadConfig("./configs/config.yaml")
-	utils.NewDefaultLogger("./tmp/logs/stdout.log", true, true)
-
 	if setting.Config.Debug {
 		utils.MyLogger.SetLogLevel(utils.Debug)
 	} else {
@@ -135,7 +133,7 @@ func main() {
 			return false
 		}
 
-		if setting.IsActive {
+		if setting.State != table.PP_INACTIVE {
 			return true
 		}
 
@@ -145,6 +143,30 @@ func main() {
 		}
 
 		return event.Activate(amount, fee, gas) == nil
+	}
+
+	deactivate := func(line string, param []string) bool {
+		if len(param) < 2 {
+			fmt.Println("Expecting 2 params. Input fee amount and gas amount")
+			return false
+		}
+		fee, err := strconv.ParseInt(param[0], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid fee param. Should be an integer")
+			return false
+		}
+		gas, err := strconv.ParseInt(param[1], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid gas param. Should be an integer")
+			return false
+		}
+
+		if setting.State == table.PP_INACTIVE {
+			fmt.Println("The node is already inactive")
+			return true
+		}
+
+		return event.Deactivate(fee, gas) == nil
 	}
 
 	upload := func(line string, param []string) bool {
@@ -480,6 +502,7 @@ func main() {
 	console.Mystdin.RegisterProcessFunc("rp", registerPP)
 	console.Mystdin.RegisterProcessFunc("registerminer", registerPP)
 	console.Mystdin.RegisterProcessFunc("activate", activate)
+	console.Mystdin.RegisterProcessFunc("deactivate", deactivate)
 	console.Mystdin.RegisterProcessFunc("u", upload)
 	console.Mystdin.RegisterProcessFunc("put", upload)
 	console.Mystdin.RegisterProcessFunc("d", download)

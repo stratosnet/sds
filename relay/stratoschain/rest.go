@@ -12,7 +12,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	registertypes "github.com/stratosnet/sds/relay/stratoschain/register/types"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
-	"github.com/tendermint/tendermint/crypto"
 	"io/ioutil"
 	"net/http"
 )
@@ -62,7 +61,7 @@ func BuildAndSignTx(token, chainId, memo string, accountNum, sequence uint64, ms
 	msgs := []sdktypes.Msg{msg}
 
 	unsignedBytes := authtypes.StdSignBytes(chainId, accountNum, sequence, stdFee, msgs, memo)
-	signedBytes, err := secp256k1.PrivKeyBytesToTendermint(privateKey).Sign(crypto.Sha256(unsignedBytes))
+	signedBytes, err := secp256k1.PrivKeyBytesToTendermint(privateKey).Sign(unsignedBytes)
 	if err != nil {
 		return nil, err
 	}
