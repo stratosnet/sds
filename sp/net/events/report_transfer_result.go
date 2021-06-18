@@ -124,7 +124,7 @@ func reportTransferResultCallbackFunc(_ context.Context, s *net.Server, message 
 
 	trafficRecord := &table.Traffic{
 		TaskId:                body.TransferCer,
-		TaskType:              table.TRAFFIC_TASK_TYPE_TRASFER,
+		TaskType:              table.TRAFFIC_TASK_TYPE_TRANSFER,
 		ProviderWalletAddress: transferRecord.FromWalletAddress,
 		ConsumerWalletAddress: transferRecord.ToWalletAddress,
 		Volume:                transferRecord.SliceSize,
