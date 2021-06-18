@@ -2,6 +2,8 @@ package events
 
 import (
 	"context"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -9,7 +11,6 @@ import (
 	"github.com/stratosnet/sds/sp/net"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
-	"time"
 )
 
 // reportTransferResult is a concrete implementation of event
@@ -119,6 +120,19 @@ func reportTransferResultCallbackFunc(_ context.Context, s *net.Server, message 
 	// todo change to read from redis
 	if err := s.Remove(transferRecord.GetCacheKey()); err != nil {
 		utils.ErrorLogf(eventHandleErrorTemplate, reportTransferResultEvent, "remove transfer record from db", err)
+	}
+
+	trafficRecord := &table.Traffic{
+		TaskId:                body.TransferCer,
+		TaskType:              table.TRAFFIC_TASK_TYPE_TRANSFER,
+		ProviderWalletAddress: transferRecord.FromWalletAddress,
+		ConsumerWalletAddress: transferRecord.ToWalletAddress,
+		Volume:                transferRecord.SliceSize,
+		DeliveryTime:          transferRecord.Time,
+	}
+
+	if ok, err := s.CT.StoreTable(trafficRecord); !ok {
+		utils.ErrorLogf(eventHandleErrorTemplate, reportTransferResultEvent, "store traffic record table to db", err)
 	}
 
 	return rsp, header.RspReportTransferResult

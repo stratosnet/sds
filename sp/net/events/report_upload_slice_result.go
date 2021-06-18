@@ -3,6 +3,9 @@ package events
 import (
 	"context"
 	"encoding/hex"
+	"path/filepath"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -12,8 +15,6 @@ import (
 	"github.com/stratosnet/sds/sp/storages/data"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
-	"path/filepath"
-	"time"
 )
 
 // reportUploadSliceResult is a concrete implementation of event
@@ -59,6 +60,8 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 		SliceHash: body.SliceHash,
 		TaskId:    body.TaskId,
 	}
+
+	traffic := &table.Traffic{TaskId: body.TaskId}
 
 	//todo change to read from redis
 	s.Lock()
@@ -106,9 +109,20 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 		fileSlice.Time = time.Now().Unix()
 	}
 
+	s.Load(traffic)
+	if body.IsPP {
+		traffic.ProviderWalletAddress = body.WalletAddress
+	} else {
+		traffic.ConsumerWalletAddress = body.WalletAddress
+	}
+
 	// store file slice info todo change to read from redis
 	if err := s.Store(fileSlice, 3600*time.Second); err != nil {
 		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "store file slice 1", err)
+	}
+
+	if err := s.Store(traffic, 3600*time.Second); err != nil {
+		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "store traffic record to cache", err)
 	}
 
 	s.Unlock()
@@ -126,6 +140,14 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 
 	if err := s.CT.Save(fileSlice); err != nil {
 		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "save file slice", err)
+	}
+
+	traffic.Volume = fileSlice.SliceSize
+	traffic.TaskType = table.TRAFFIC_TASK_TYPE_UPLOAD
+	traffic.DeliveryTime = time.Now().Unix()
+
+	if ok, err := s.CT.StoreTable(traffic); !ok {
+		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "store traffic record table to db", err)
 	}
 
 	uploadFile.SetSliceFinish(fileSlice.SliceNumber)

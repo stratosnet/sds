@@ -89,6 +89,8 @@ func StartAPI(conf string) *core.APIServer {
 	server.AddHandler("GET", "/sys", new(handlers.Sys), "Setting")
 	server.AddHandler("POST", "/sys", new(handlers.Sys), "Save")
 	server.AddHandler("POST", "/sys/client_download", new(handlers.Sys), "ClientDownload")
+	server.AddHandler("POST", "/transfer", new(handlers.Transfer), "SliceTransfer")
+	server.AddHandler("POST", "/traffic/aggregate", new(handlers.Traffic), "AggregateTraffic")
 
 	server.Start()
 
