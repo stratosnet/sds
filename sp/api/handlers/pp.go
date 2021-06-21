@@ -2,11 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/stratosnet/sds/sp/api/core"
 	"github.com/stratosnet/sds/sp/common"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils/database"
-	"net/http"
 
 	"github.com/gorilla/mux"
 )
@@ -56,7 +57,12 @@ func (e *PP) Backup(params map[string]interface{}, r *http.Request) ([]map[strin
 
 	data := make([]map[string]interface{}, 0)
 
-	msg := &common.MsgBackupPP{WalletAddress: walletAddress}
+	msg := &common.MsgWrapper{
+		MsgType: common.MSG_BACKUP_PP,
+		Msg: &common.MsgBackupPP{
+			WalletAddress: walletAddress,
+		},
+	}
 
 	msgJson, _ := json.Marshal(msg)
 	e.GetAPIServer().Cache.EnQueue("msg_queue", msgJson)

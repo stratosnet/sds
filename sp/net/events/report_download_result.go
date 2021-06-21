@@ -2,6 +2,8 @@ package events
 
 import (
 	"context"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -10,7 +12,6 @@ import (
 	"github.com/stratosnet/sds/sp/storages/data"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
-	"time"
 )
 
 // reportDownloadResult is a concrete implementation of event
@@ -90,13 +91,13 @@ func reportDownloadResultCallbackFunc(_ context.Context, s *net.Server, message 
 	}
 
 	if body.IsPP {
-		record.FromWalletAddress = body.WalletAddress
+		record.FromWalletAddress = body.MyWalletAddress
 	} else {
-		record.ToWalletAddress = body.WalletAddress
+		record.ToWalletAddress = body.MyWalletAddress
 	}
 
 	if err = s.Store(record, 3600*time.Second); err != nil {
-		utils.ErrorLogf(eventHandleErrorTemplate, reportDownloadResultEvent, "store record to db", err)
+		utils.ErrorLogf(eventHandleErrorTemplate, reportDownloadResultEvent, "store record to cache", err)
 	}
 
 	s.Unlock()
@@ -105,6 +106,20 @@ func reportDownloadResultCallbackFunc(_ context.Context, s *net.Server, message 
 
 		if ok, err := s.CT.StoreTable(record); !ok {
 			utils.ErrorLogf(eventHandleErrorTemplate, reportDownloadResultEvent, "store record table to db", err)
+		}
+
+		//persist Traffic records
+		traffic := &table.Traffic{
+			TaskId:                body.TaskId,
+			ProviderWalletAddress: record.FromWalletAddress,
+			ConsumerWalletAddress: record.ToWalletAddress,
+			TaskType:              table.TRAFFIC_TASK_TYPE_DOWNLOAD,
+			Volume:                fileSlice.SliceSize,
+			DeliveryTime:          time.Now().Unix(),
+		}
+
+		if ok, err := s.CT.StoreTable(traffic); !ok {
+			utils.ErrorLogf(eventHandleErrorTemplate, reportDownloadResultEvent, "store traffic record table to db", err)
 		}
 
 		// verify download
