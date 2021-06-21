@@ -47,6 +47,10 @@ const (
 	RspDeactivate  = "RspDctiv" // response to deactivate a PP node
 	ReqDeactivated = "ReqDctvd" // request when a PP node was successfully deactivated
 	RspDeactivated = "RspDctvd" // response when a PP node was successfully deactivated
+	ReqPrepay      = "ReqPrpay" // request for a PP node sending a prepay transaction
+	RspPrepay      = "RspPrpay" // response for a PP node sending a prepay transaction
+	ReqPrepaid     = "ReqPrpad" // request when a PP node prepay transaction was successful
+	RspPrepaid     = "RspPrpad" // response when a PP node prepay transaction was successful
 
 	ReqMining = "ReqMin" // request to mining
 	RspMining = "RspMin" //  response to mining
@@ -59,6 +63,7 @@ const (
 	ReqReportUploadSliceResult = "ReqUFR"
 	RspReportUploadSliceResult = "RspUFR"
 	UploadSpeedOfProgress      = "USOP"
+	Uploaded                   = "Uploaded"
 
 	ReqFindMyFileList = "ReqFFL"
 	RspFindMyFileList = "RspFFL"

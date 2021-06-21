@@ -13,7 +13,7 @@ DownloadPath:
 Password: aaa
 Account: st145p208zkkha67sr2r0u28y3ncuk6hf2xkgkj69
 AutoRun: true
-Internal: true
+Internal: false
 IsWallet: false
 BPURL:
 IsCheckDefaultPath:

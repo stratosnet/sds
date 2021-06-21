@@ -31,8 +31,11 @@ func (m *MultiClient) SubscribeToStratosChainEvents() error {
 	if err != nil {
 		return err
 	}
-	// TODO: query will probably change when this is implemented in stratos-chain
-	//err = m.SubscribeToStratosChain("message.action='prepay'", m.PrepayMsgHandler())
+	err = m.SubscribeToStratosChain("message.action='SdsPrepayTx'", m.PrepayMsgHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='FileUploadTx'", m.PrepayMsgHandler())
 	return err
 }
 
@@ -120,5 +123,50 @@ func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
 		fmt.Printf("%+v\n", result)
+	}
+}
+
+func (m *MultiClient) FileUploadMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
+		conn := m.GetSdsClientConn()
+
+		reporterAddressList := result.Events["FileUploadTx.reporter"]
+		if len(reporterAddressList) < 1 {
+			fmt.Println("No reporter address was specified in the FileUploadTx message from stratos-chain")
+			return
+		}
+
+		uploaderAddressList := result.Events["FileUploadTx.uploader"]
+		if len(uploaderAddressList) < 1 {
+			fmt.Println("No uploader address was specified in the FileUploadTx message from stratos-chain")
+			return
+		}
+
+		fileHashList := result.Events["FileUploadTx.file_hash"]
+		if len(fileHashList) < 1 {
+			fmt.Println("No file hash was specified in the FileUploadTx message from stratos-chain")
+			return
+		}
+
+		uploadedMsg := &protos.Uploaded{
+			ReporterAddress: reporterAddressList[0],
+			UploaderAddress: uploaderAddressList[0],
+			FileHash:        fileHashList[0],
+		}
+		uploadedMsgBytes, err := proto.Marshal(uploadedMsg)
+		if err != nil {
+			fmt.Println("Error when trying to marshal uploadedMsg proto: " + err.Error())
+			return
+		}
+		msgToSend := &msg.RelayMsgBuf{
+			MSGData: uploadedMsgBytes,
+			MSGHead: header.MakeMessageHeader(1, 1, uint32(len(uploadedMsgBytes)), header.Uploaded),
+		}
+
+		err = conn.Write(msgToSend)
+		if err != nil {
+			fmt.Println("Error when sending message to SDS: " + err.Error())
+			return
+		}
 	}
 }

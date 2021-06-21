@@ -58,9 +58,17 @@ type UserConfig struct {
 }
 
 type BlockchainInfoConfig struct {
-	AddressPrefix string `yaml:"AddressPrefix"`
-	ChainId       string `yaml:"ChainId"`
-	Token         string `yaml:"Token"`
+	AddressPrefix       string             `yaml:"AddressPrefix"`
+	ChainId             string             `yaml:"ChainId"`
+	StratosChainAddress string             `yaml:"StratosChainAddress"`
+	StratosChainPort    string             `yaml:"StratosChainPort"`
+	Token               string             `yaml:"Token"`
+	Transactions        TransactionsConfig `yaml:"Transactions"`
+}
+
+type TransactionsConfig struct {
+	Fee int64 `yaml:"Fee"`
+	Gas int64 `yaml:"Gas"`
 }
 
 /*

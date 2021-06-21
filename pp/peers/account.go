@@ -25,11 +25,7 @@ func CreateAccount(password, name, mnemonic, passphrase, hdPath string) string {
 		utils.ErrorLog("CreateAccount error", err)
 		return ""
 	}
-	setting.WalletAddress, err = account.ToBech(setting.Config.AddressPrefix)
-	if utils.CheckError(err) {
-		utils.ErrorLog("CreateAccount error", err)
-		return ""
-	}
+	setting.WalletAddress = account.ToBech()
 	getPublicKey(setting.Config.AccountDir+"/"+setting.WalletAddress, password)
 	utils.Log("Create account success ,", setting.WalletAddress)
 	if setting.NetworkAddress != "" {

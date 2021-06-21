@@ -48,4 +48,5 @@ func RspDeactivate(ctx context.Context, conn spbf.WriteCloser) {
 // RspActivated. Response when this PP node was successfully activated
 func RspDeactivated(ctx context.Context, conn spbf.WriteCloser) {
 	setting.State = table.PP_INACTIVE
+	fmt.Println("This PP node is now inactive")
 }

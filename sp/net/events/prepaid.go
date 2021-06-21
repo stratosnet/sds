@@ -11,25 +11,25 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// activated is a concrete implementation of event
-// stratoschain createResourceNode transaction success. PP node will become active
-type activated struct {
+// prepaid is a concrete implementation of event
+// stratoschain prepay transaction success
+type prepaid struct {
 	event
 }
 
-const activatedEvent = "activated"
+const prepaidEvent = "prepaid"
 
-// GetActivatedHandler creates event and return handler func for it
-func GetActivatedHandler(s *net.Server) EventHandleFunc {
-	e := activated{newEvent(activatedEvent, s, activatedCallbackFunc)}
+// GetPrepaidHandler creates event and return handler func for it
+func GetPrepaidHandler(s *net.Server) EventHandleFunc {
+	e := prepaid{newEvent(prepaidEvent, s, prepaidCallbackFunc)}
 	return e.Handle
 }
 
-// activatedCallbackFunc is the main process of marking the new PP node as active
-func activatedCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
-	body := message.(*protos.ReqActivated)
+// prepaidCallbackFunc is the main process of updating the user capacity following a successful prepay transaction
+func prepaidCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
+	body := message.(*protos.ReqPrepaid)
 
-	rsp := &protos.RspActivated{
+	rsp := &protos.RspPrepaid{
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
@@ -45,19 +45,19 @@ func activatedCallbackFunc(_ context.Context, s *net.Server, message proto.Messa
 		return rsp, header.RspActivated
 	}
 
-	pp.Active = table.PP_ACTIVE
+	// TODO: update capacity
 	if err := s.CT.Save(pp); err != nil {
 		utils.ErrorLog(err)
 	}
 
-	s.SendMsg(body.WalletAddress, header.RspActivated, rsp)
-	return rsp, header.RspActivated
+	s.SendMsg(body.WalletAddress, header.RspPrepaid, rsp)
+	return rsp, header.RspPrepaid
 }
 
 // Handle create a concrete proto message for this event, and handle the event asynchronously
-func (e *activated) Handle(ctx context.Context, conn spbf.WriteCloser) {
+func (e *prepaid) Handle(ctx context.Context, conn spbf.WriteCloser) {
 	go func() {
-		target := &protos.ReqActivated{}
+		target := &protos.ReqPrepaid{}
 		if err := e.handle(ctx, conn, target); err != nil {
 			utils.ErrorLog(err)
 		}
