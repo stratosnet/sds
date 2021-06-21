@@ -83,12 +83,7 @@ func CreateAccount(dir, nickname, auth, hrp, mnemonic, bip39Passphrase, hdPath s
 	key.Mnemonic = mnemonic
 	key.Passphrase = bip39Passphrase
 
-	filename, err := key.Address.ToBech(hrp)
-	if err != nil {
-		return types.Address{}, err
-	}
-
-	filename = dir + "/" + filename
+	filename := dir + "/" + key.Address.ToBech()
 	if err := keyStore.StoreKey(filename, key, auth); err != nil {
 		zeroKey(key.PrivateKey)
 		return types.Address{}, err

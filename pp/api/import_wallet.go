@@ -42,13 +42,7 @@ func importWallet(w http.ResponseWriter, request *http.Request) {
 	}
 	setting.PrivateKey = key.PrivateKey
 	setting.PublicKey = secp256k1.PrivKeyToPubKey(key.PrivateKey)
-
-	addressString, err := key.Address.ToBech(setting.Config.AddressPrefix)
-	if err != nil {
-		w.Write(httpserv.NewJson(nil, setting.FAILCode, "couldn't convert wallet address to bytes: "+err.Error()).ToBytes())
-		return
-	}
-	setting.WalletAddress = addressString
+	setting.WalletAddress = key.Address.ToBech()
 	ks := utils.KeyStorePassphrase{dir, setting.Config.ScryptN, setting.Config.ScryptP}
 	filename := dir + "/" + key.Address.String()
 	err = ks.StoreKey(filename, key, password)

@@ -107,6 +107,11 @@ message RspReportUploadSliceResult {
   SliceNumAddr slice_num_addr = 2;
 }
 
+message Uploaded {
+  string reporter_address = 1;
+  string uploader_address = 2;
+  string file_hash = 3;
+}
 
 
 message ReqFindMyFileList {
@@ -285,6 +290,24 @@ message ReqDeactivated {
 message RspDeactivated {
   Result result = 1;
 }
+
+message ReqPrepay {
+  bytes tx = 1;
+  string wallet_address = 2;
+}
+
+message RspPrepay {
+  Result result = 1;
+}
+
+message ReqPrepaid {
+  string wallet_address = 1;
+}
+
+message RspPrepaid {
+  Result result = 1;
+}
+
 
 message ReqDeleteFile {
   string wallet_address = 1;

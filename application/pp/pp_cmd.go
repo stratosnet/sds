@@ -169,6 +169,30 @@ func main() {
 		return event.Deactivate(fee, gas) == nil
 	}
 
+	prepay := func(line string, param []string) bool {
+		if len(param) < 3 {
+			fmt.Println("Expecting 3 params. Input amount of tokens, fee amount and gas amount")
+			return false
+		}
+		amount, err := strconv.ParseInt(param[0], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid amount param. Should be an integer")
+			return false
+		}
+		fee, err := strconv.ParseInt(param[1], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid fee param. Should be an integer")
+			return false
+		}
+		gas, err := strconv.ParseInt(param[2], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid gas param. Should be an integer")
+			return false
+		}
+
+		return event.Prepay(amount, fee, gas) == nil
+	}
+
 	upload := func(line string, param []string) bool {
 		if len(param) == 0 {
 			fmt.Println("input upload file path")
@@ -503,6 +527,7 @@ func main() {
 	console.Mystdin.RegisterProcessFunc("registerminer", registerPP)
 	console.Mystdin.RegisterProcessFunc("activate", activate)
 	console.Mystdin.RegisterProcessFunc("deactivate", deactivate)
+	console.Mystdin.RegisterProcessFunc("prepay", prepay)
 	console.Mystdin.RegisterProcessFunc("u", upload)
 	console.Mystdin.RegisterProcessFunc("put", upload)
 	console.Mystdin.RegisterProcessFunc("d", download)
