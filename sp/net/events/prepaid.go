@@ -35,18 +35,18 @@ func prepaidCallbackFunc(_ context.Context, s *net.Server, message proto.Message
 		},
 	}
 
-	pp := &table.PP{
+	user := &table.User{
 		WalletAddress: body.WalletAddress,
 	}
 
-	if s.CT.Fetch(pp) != nil {
+	if s.CT.Fetch(user) != nil {
 		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "Could not find this PP node."
-		return rsp, header.RspActivated
+		rsp.Result.Msg = "Could not find this user."
+		return rsp, header.RspPrepaid
 	}
 
-	// TODO: update capacity
-	if err := s.CT.Save(pp); err != nil {
+	user.Capacity += body.Capacity
+	if err := s.CT.Save(user); err != nil {
 		utils.ErrorLog(err)
 	}
 
