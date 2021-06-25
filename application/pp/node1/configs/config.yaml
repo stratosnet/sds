@@ -25,6 +25,6 @@ IsCheckFileOperation:
 IsCheckFileTransferFinished:
 AddressPrefix: "st"
 ChainId: "test-chain"
-Token: "stos"
+Token: "ustos"
 StratosChainAddress: 127.0.0.1
 StratosChainPort: 1317

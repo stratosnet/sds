@@ -12,4 +12,4 @@ stratosChain:
 blockchainInfo:
   addressPrefix: st
   chainId: test-chain
-  token: stos
+  token: ustos

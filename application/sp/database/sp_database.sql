@@ -144,3 +144,9 @@ CREATE TABLE traffic (
   PRIMARY KEY (id)
 ) ENGINE=InnoDB  
 DEFAULT CHARSET=utf8;
+
+CREATE TABLE variables (
+    name  varchar(64)  NOT NULL DEFAULT '',
+    value varchar(256) NOT NULL DEFAULT '',
+    PRIMARY KEY (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

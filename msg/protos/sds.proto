@@ -302,6 +302,7 @@ message RspPrepay {
 
 message ReqPrepaid {
   string wallet_address = 1;
+  uint64 capacity = 2;
 }
 
 message RspPrepaid {

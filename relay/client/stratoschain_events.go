@@ -35,13 +35,16 @@ func (m *MultiClient) SubscribeToStratosChainEvents() error {
 	if err != nil {
 		return err
 	}
-	err = m.SubscribeToStratosChain("message.action='FileUploadTx'", m.PrepayMsgHandler())
+	err = m.SubscribeToStratosChain("message.action='FileUploadTx'", m.FileUploadMsgHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='volume_report'", m.VolumeReportHandler())
 	return err
 }
 
 func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		//fmt.Printf("%+v\n", result)
 		conn := m.GetSdsClientConn()
 
 		nodeAddressList := result.Events["create_resource_node.node_address"]
@@ -70,7 +73,6 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 
 func (m *MultiClient) RemoveResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		//fmt.Printf("%+v\n", result)
 		conn := m.GetSdsClientConn()
 
 		nodeAddressList := result.Events["remove_resource_node.resource_node"]
@@ -121,8 +123,35 @@ func (m *MultiClient) SPRegistrationApprovedMsgHandler() func(event coretypes.Re
 
 func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		// TODO
 		fmt.Printf("%+v\n", result)
+		conn := m.GetSdsClientConn()
+
+		reporterList := result.Events["Prepay.reporter"]
+		if len(reporterList) < 1 {
+			fmt.Println("No reporter address was specified in the prepay message from stratos-chain")
+			return
+		}
+
+		// TODO: change the capacity amount once the calculation is done in stratos-chain
+		prepaidMsg := &protos.ReqPrepaid{
+			WalletAddress: reporterList[0],
+			Capacity:      1,
+		}
+		prepaidMsgBytes, err := proto.Marshal(prepaidMsg)
+		if err != nil {
+			fmt.Println("Error when trying to marshal prepaidMsg proto: " + err.Error())
+			return
+		}
+		msgToSend := &msg.RelayMsgBuf{
+			MSGData: prepaidMsgBytes,
+			MSGHead: header.MakeMessageHeader(1, 1, uint32(len(prepaidMsgBytes)), header.ReqPrepaid),
+		}
+
+		err = conn.Write(msgToSend)
+		if err != nil {
+			fmt.Println("Error when sending message to SDS: " + err.Error())
+			return
+		}
 	}
 }
 
@@ -168,5 +197,12 @@ func (m *MultiClient) FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 			fmt.Println("Error when sending message to SDS: " + err.Error())
 			return
 		}
+	}
+}
+
+func (m *MultiClient) VolumeReportHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
+		// TODO
+		fmt.Printf("%+v\n", result)
 	}
 }
