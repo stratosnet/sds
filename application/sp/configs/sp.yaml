@@ -30,13 +30,18 @@ Database:
   LogFile: tmp/logs/db.log
 
 Ecdsa:
-  PrivateKeyPath: path_to_privatekey
-  PrivateKeyPass: privatekey_password
+  PrivateKeyPath: configs/node_key.json
+  PrivateKeyPass: aaa
 
 BlockchainInfo:
   AddressPrefix: st
   ChainId: test-chain
-  Token: stos
+  StratosChainAddress: 127.0.0.1
+  StratosChainPort: 1317
+  Token: ustos
+  Transactions:
+    Fee: 1
+    Gas: 100000
 
 Log:
   Path: tmp/logs/sp-server.log

@@ -18,10 +18,10 @@ import (
 // RegisterChain
 func RegisterChain(toSP bool) {
 	if toSP {
-		SendMessageToSPServer(reqRegisterData(toSP), header.ReqRegister)
+		SendMessageToSPServer(reqRegisterData(), header.ReqRegister)
 		utils.Log("SendMessage(conn, req, header.ReqRegister) to SP")
 	} else {
-		sendMessage(client.PPConn, reqRegisterData(toSP), header.ReqRegister)
+		sendMessage(client.PPConn, reqRegisterData(), header.ReqRegister)
 		utils.Log("SendMessage(conn, req, header.ReqRegister) to PP")
 	}
 

@@ -10,7 +10,9 @@ import (
 	sdkrest "github.com/cosmos/cosmos-sdk/types/rest"
 	"github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	pottypes "github.com/stratosnet/sds/relay/stratoschain/pot/types"
 	registertypes "github.com/stratosnet/sds/relay/stratoschain/register/types"
+	sdstypes "github.com/stratosnet/sds/relay/stratoschain/sds/types"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"io/ioutil"
 	"net/http"
@@ -24,6 +26,8 @@ func init() {
 	codec.RegisterCrypto(cdc)
 	sdktypes.RegisterCodec(cdc)
 	registertypes.RegisterCodec(cdc)
+	sdstypes.RegisterCodec(cdc)
+	pottypes.RegisterCodec(cdc)
 	cdc.Seal()
 }
 

@@ -2,6 +2,7 @@ package net
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg"
@@ -13,8 +14,11 @@ import (
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/cache"
+	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/stratosnet/sds/utils/database"
 	"github.com/stratosnet/sds/utils/hashring"
+	"github.com/tendermint/tendermint/crypto"
+	"io/ioutil"
 	"net"
 	"sync"
 	"time"
@@ -29,7 +33,7 @@ type Server struct {
 	Ver                uint16               // version
 	PPVersion          uint16               // PP version
 	Host               string               // net host
-	puk                string               // public key
+	PrivateKey         crypto.PrivKey       // private key
 	UserCount          int64                // user count todo should this be atomic?
 	ConnectedCount     uint64               // connection count todo should this be atomic?
 	Conf               *Config              // configuration
@@ -46,22 +50,25 @@ type Server struct {
 }
 
 // initialize
-func (s *Server) initialize() {
+func (s *Server) initialize() error {
 
 	if s.Conf == nil {
-		utils.ErrorLog("wrong config")
-		return
+		return errors.New("wrong config")
 	}
 
 	logger := utils.NewDefaultLogger(s.Conf.Log.Path, s.Conf.Log.OutputStd, s.Conf.Log.OutputFile)
 	logger.SetLogLevel(utils.LogLevel(s.Conf.Log.Level))
 
 	if s.Conf.Net.Host == "" {
-		utils.ErrorLog("missing host, start fail")
-		return
+		return errors.New("missing host config")
 	}
 
 	utils.Log("initializing...")
+	err := s.verifyNodeKey()
+	if err != nil {
+		utils.ErrorLog("wrong node key: ", err)
+		return err
+	}
 
 	s.Host = s.Conf.Net.Host + ":" + s.Conf.Net.Port
 
@@ -107,6 +114,7 @@ func (s *Server) initialize() {
 	})
 
 	s.BuildHashRing()
+	return nil
 }
 
 // BuildHashRing
@@ -242,7 +250,11 @@ func (s *Server) SendMsg(walletAddress string, cmd string, message proto.Message
 func (s *Server) Start() {
 
 	// initialization
-	s.initialize()
+	err := s.initialize()
+	if err != nil {
+		utils.ErrorLogf("Initializing SP server error : %v", err)
+		return
+	}
 
 	// refresh status
 	go s.refreshStatus()
@@ -298,6 +310,7 @@ func NewServer(configFilePath string) *Server {
 	)
 
 	stratoschain.SetConfig(server.Conf.BlockchainInfo.AddressPrefix)
+	stratoschain.Url = "http://" + server.Conf.BlockchainInfo.StratosChainAddress + ":" + server.Conf.BlockchainInfo.StratosChainPort
 
 	return server
 }
@@ -317,4 +330,20 @@ func (s *Server) CreateServ() {
 
 func (s *Server) StartServ(listener net.Listener) error {
 	return s.serv.Start(listener)
+}
+
+func (s *Server) verifyNodeKey() error {
+	keyJson, err := ioutil.ReadFile(s.Conf.Ecdsa.PrivateKeyPath)
+	if err != nil {
+		return err
+	}
+
+	key, err := utils.DecryptKey(keyJson, s.Conf.Ecdsa.PrivateKeyPass)
+	if err != nil {
+		return err
+	}
+
+	s.PrivateKey = secp256k1.PrivKeyBytesToTendermint(key.PrivateKey)
+	utils.Log("verify node key successfully!")
+	return nil
 }

@@ -19,7 +19,7 @@ type activated struct {
 
 const activatedEvent = "activated"
 
-// GetActivateHandler creates event and return handler func for it
+// GetActivatedHandler creates event and return handler func for it
 func GetActivatedHandler(s *net.Server) EventHandleFunc {
 	e := activated{newEvent(activatedEvent, s, activatedCallbackFunc)}
 	return e.Handle

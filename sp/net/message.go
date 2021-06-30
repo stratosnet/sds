@@ -5,6 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/types"
+	"github.com/golang/protobuf/proto"
+	"github.com/stratosnet/sds/relay/sds"
+	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/relay/stratoschain/pot"
+	"github.com/tendermint/tendermint/crypto/secp256k1"
 	"os"
 	"strconv"
 	"strings"
@@ -304,7 +310,6 @@ func (m *MsgHandler) AggregateTraffic(time int64) ([]AggregatedTraffic, error) {
 			},
 		})
 		trafficRecords := res.([]table.Traffic)
-
 		if err != nil {
 			return []AggregatedTraffic{}, err
 		}
@@ -312,7 +317,25 @@ func (m *MsgHandler) AggregateTraffic(time int64) ([]AggregatedTraffic, error) {
 		//TODO persist the file to the SDS
 		fileName := fmt.Sprintf("tmp/traffic_aggregation_%v.csv", time)
 		err = m.WriteTrafficToCsvFile(fileName, trafficRecords)
+		if err != nil {
+			return []AggregatedTraffic{}, err
+		}
 
+		// Calculate epoch
+		var epoch uint64 = 0
+		epochVar := &table.Variable{Name: "epoch"}
+		if m.server.CT.Fetch(epochVar) == nil {
+			epoch, err = strconv.ParseUint(epochVar.Value, 10, 64)
+		}
+		epoch++
+		epochVar.Value = strconv.FormatUint(epoch, 10)
+		if err := m.server.CT.Save(epochVar); err != nil {
+			utils.ErrorLog("Couldn't save aggregateTraffic epoch to database: " + err.Error())
+		}
+
+		// Send volume report transaction
+		fileHash := utils.CalcFileHash(fileName)
+		err = broadcastVolumeReportTx(trafficRecords, epoch, fileHash, m.server)
 		if err != nil {
 			return []AggregatedTraffic{}, err
 		}
@@ -405,4 +428,35 @@ func NewMsgHandler(server *Server) *MsgHandler {
 		msgQueue: make(chan common.Msg, 10),
 		server:   server,
 	}
+}
+
+func broadcastVolumeReportTx(traffic []table.Traffic, epoch uint64, fileHash string, s *Server) error {
+	spPubKey := s.PrivateKey.PubKey()
+	spPrivKey := s.PrivateKey.(secp256k1.PrivKeySecp256k1)
+	spWalletAddress := spPubKey.Address()
+	spWalletAddressString := types.AccAddress(spPubKey.Address()).String()
+
+	txMsg, err := pot.BuildVolumeReportMsg(traffic, spWalletAddress, epoch, fileHash)
+	if err != nil {
+		return err
+	}
+
+	txBytes, err := stratoschain.BuildTxBytes(s.Conf.BlockchainInfo.Token, s.Conf.BlockchainInfo.ChainId, "",
+		spWalletAddressString, "sync", txMsg, s.Conf.BlockchainInfo.Transactions.Fee,
+		s.Conf.BlockchainInfo.Transactions.Gas, spPrivKey[:])
+	if err != nil {
+		return err
+	}
+
+	relayMsg := &protos.RelayMessage{
+		Type: sds.TypeBroadcast,
+		Data: txBytes,
+	}
+	msgBytes, err := proto.Marshal(relayMsg)
+	if err != nil {
+		return err
+	}
+
+	s.SubscriptionServer.Broadcast("broadcast", msgBytes)
+	return nil
 }

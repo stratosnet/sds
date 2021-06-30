@@ -6,15 +6,20 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/relay/sds"
+	"github.com/stratosnet/sds/relay/stratoschain"
+	stratossds "github.com/stratosnet/sds/relay/stratoschain/sds"
 	"github.com/stratosnet/sds/sp/common"
 	"github.com/stratosnet/sds/sp/net"
 	"github.com/stratosnet/sds/sp/storages/data"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
+	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
 
 // reportUploadSliceResult is a concrete implementation of event
@@ -199,6 +204,14 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 			if err := s.Remove(uploadFile.GetCacheKey()); err != nil {
 				utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "remove upload file", err)
 			}
+
+			// Broadcast file upload transaction
+			err := broadcastFileUploadTx(file, s)
+			if err != nil {
+				rsp.Result.State = protos.ResultState_RES_FAIL
+				rsp.Result.Msg = "couldn't broadcast file upload tx: " + err.Error()
+				return rsp, header.RspReportUploadSliceResult
+			}
 		}
 	}
 
@@ -258,4 +271,44 @@ func validateReportUploadSliceResultRequest(req *protos.ReportUploadSliceResult,
 	}
 
 	return true, ""
+}
+
+func broadcastFileUploadTx(file *table.File, s *net.Server) error {
+	fileHash, err := hex.DecodeString(file.Hash)
+	if err != nil {
+		return err
+	}
+
+	spPubKey := s.PrivateKey.PubKey()
+	spPrivKey := s.PrivateKey.(secp256k1.PrivKeySecp256k1)
+	ppWalletAddress, err := types.AccAddressFromBech32(file.WalletAddress)
+	if err != nil {
+		return err
+	}
+
+	spWalletAddress := spPubKey.Address()
+	spWalletAddressString := types.AccAddress(spPubKey.Address()).String()
+	txMsg, err := stratossds.BuildFileUploadMsg(fileHash, spWalletAddress, ppWalletAddress)
+	if err != nil {
+		return err
+	}
+
+	txBytes, err := stratoschain.BuildTxBytes(s.Conf.BlockchainInfo.Token, s.Conf.BlockchainInfo.ChainId, "",
+		spWalletAddressString, "sync", txMsg, s.Conf.BlockchainInfo.Transactions.Fee,
+		s.Conf.BlockchainInfo.Transactions.Gas, spPrivKey[:])
+	if err != nil {
+		return err
+	}
+
+	relayMsg := &protos.RelayMessage{
+		Type: sds.TypeBroadcast,
+		Data: txBytes,
+	}
+	msgBytes, err := proto.Marshal(relayMsg)
+	if err != nil {
+		return err
+	}
+
+	s.SubscriptionServer.Broadcast("broadcast", msgBytes)
+	return nil
 }

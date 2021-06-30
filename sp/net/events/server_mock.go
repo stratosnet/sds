@@ -136,9 +136,15 @@ func StartMock(cmd string, eventHandleFunc func(s *net.Server) EventHandleFunc) 
 			InitializeCapacity: 0,
 		},
 		BlockchainInfo: net.BlockchainInfoConfig{
-			AddressPrefix: "st",
-			ChainId:       "stratoschain",
-			Token:         "stos",
+			AddressPrefix:       "st",
+			ChainId:             "stratoschain",
+			StratosChainAddress: "127.0.0.1",
+			StratosChainPort:    "1317",
+			Token:               "ustos",
+			Transactions: net.TransactionsConfig{
+				Fee: 1,
+				Gas: 100000,
+			},
 		},
 	}
 	s = &net.Server{
