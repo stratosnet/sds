@@ -1,6 +1,7 @@
 package event
 
 import (
+	"github.com/stratosnet/sds/relay/stratoschain/sds"
 	"path"
 
 	"github.com/stratosnet/sds/msg"
@@ -18,7 +19,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-func reqRegisterData(_ bool) *protos.ReqRegister {
+func reqRegisterData() *protos.ReqRegister {
 	return &protos.ReqRegister{
 		Address: &protos.PPBaseInfo{
 			WalletAddress:  setting.WalletAddress,
@@ -87,6 +88,30 @@ func reqDeactivateData(fee, gas int64) (*protos.ReqDeactivate, error) {
 	}
 
 	req := &protos.ReqDeactivate{
+		Tx:            txBytes,
+		WalletAddress: setting.WalletAddress,
+	}
+	return req, nil
+}
+
+func reqPrepayData(amount, fee, gas int64) (*protos.ReqPrepay, error) {
+	// Create and sign a prepay transaction
+	senderAddress, err := types.BechToAddress(setting.WalletAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	txMsg, err := sds.BuildPrepayMsg(setting.Config.Token, amount, senderAddress[:])
+	if err != nil {
+		return nil, err
+	}
+
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", setting.WalletAddress, "sync", txMsg, fee, gas, setting.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &protos.ReqPrepay{
 		Tx:            txBytes,
 		WalletAddress: setting.WalletAddress,
 	}

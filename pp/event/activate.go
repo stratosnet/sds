@@ -47,4 +47,5 @@ func RspActivate(ctx context.Context, conn spbf.WriteCloser) {
 // RspActivated. Response when this PP node was successfully activated
 func RspActivated(ctx context.Context, conn spbf.WriteCloser) {
 	setting.State = table.PP_ACTIVE
+	fmt.Println("This PP node is now active")
 }

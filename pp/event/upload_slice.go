@@ -68,7 +68,7 @@ func RspUploadFileSlice(ctx context.Context, conn spbf.WriteCloser) {
 		} else {
 			// target is self, report to SP if success
 			utils.DebugLog("P get resp upload slice success sliceNumber", target.SliceNumAddr.SliceNumber, "target.FileHash", target.FileHash)
-			utils.DebugLog("traget size =", target.SliceSize)
+			utils.DebugLog("target size =", target.SliceSize)
 			utils.DebugLog("******************************************")
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				utils.DebugLog("reqReportUploadSliceResultData RspUploadFileSlice")

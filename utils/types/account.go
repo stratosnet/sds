@@ -3,10 +3,10 @@ package types
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/types"
 	"math/big"
 
 	"github.com/stratosnet/sds/utils/crypto/sha3"
-	"github.com/tendermint/classic/libs/bech32"
 )
 
 // Lengths of hashes and addresses in bytes.
@@ -138,17 +138,13 @@ func (a Address) String() string {
 	return a.Hex()
 }
 
-func (a Address) ToBech(hrp string) (string, error) {
-	return bech32.Encode(hrp, a.Bytes())
+func (a Address) ToBech() string {
+	return types.AccAddress(a[:]).String()
 }
 
 func BechToAddress(str string) (Address, error) {
-	_, data, err := bech32.Decode(str)
-	if err != nil {
-		return Address{}, err
-	}
-
-	return BytesToAddress(data), nil
+	addr, err := types.AccAddressFromBech32(str)
+	return BytesToAddress(addr), err
 }
 
 // Bytes2Hex returns the hexadecimal encoding of d.

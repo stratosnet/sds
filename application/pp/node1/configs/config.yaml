@@ -13,7 +13,7 @@ DownloadPath:
 Password: aaa
 Account: st145p208zkkha67sr2r0u28y3ncuk6hf2xkgkj69
 AutoRun: true
-Internal: true
+Internal: false
 IsWallet: false
 BPURL:
 IsCheckDefaultPath:
@@ -25,6 +25,6 @@ IsCheckFileOperation:
 IsCheckFileTransferFinished:
 AddressPrefix: "st"
 ChainId: "test-chain"
-Token: "stos"
+Token: "ustos"
 StratosChainAddress: 127.0.0.1
 StratosChainPort: 1317

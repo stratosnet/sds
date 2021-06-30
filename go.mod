@@ -23,7 +23,6 @@ require (
 	github.com/pborman/uuid v1.2.1
 	github.com/peterh/liner v1.2.1
 	github.com/shirou/gopsutil v3.20.12+incompatible
-	github.com/tendermint/classic v0.0.0-20201012085102-0a11024b2668
 	github.com/tendermint/tendermint v0.33.9
 	github.com/testcontainers/testcontainers-go v0.10.0
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
