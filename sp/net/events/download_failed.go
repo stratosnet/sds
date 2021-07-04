@@ -38,6 +38,7 @@ func downloadFailedCallbackFunc(_ context.Context, s *net.Server, message proto.
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
+		P2PAddress:    body.P2PAddress,
 		WalletAddress: body.WalletAddress,
 		TaskId:        body.TaskId,
 		NewSliceInfo:  nil,
@@ -134,7 +135,7 @@ func downloadFailedCallbackFunc(_ context.Context, s *net.Server, message proto.
 		},
 		SliceNumber: fileSlice.SliceNumber,
 		StoragePpInfo: &protos.PPBaseInfo{
-			WalletAddress:  fileSlice.WalletAddress,
+			P2PAddress:     fileSlice.P2PAddress,
 			NetworkAddress: fileSlice.NetworkAddress,
 		},
 		SliceOffset: &protos.SliceOffset{

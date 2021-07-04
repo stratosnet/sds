@@ -32,14 +32,15 @@ func moveFileDirCallbackFunc(_ context.Context, s *net.Server, message proto.Mes
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
+		P2PAddress:    body.P2PAddress,
 		WalletAddress: body.WalletAddress,
 		ReqId:         body.ReqId,
 		FilePath:      "",
 	}
 
-	if body.WalletAddress == "" || body.FileHash == "" {
+	if body.P2PAddress == "" || body.FileHash == "" {
 		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "wallet address or  file hash can't be empty"
+		rsp.Result.Msg = "P2P key address and  file hash can't be empty"
 		return rsp, header.RspMoveFileDirectory
 	}
 

@@ -175,7 +175,7 @@ func validateReportDownloadRequest(req *protos.ReqReportDownloadResult) (bool, s
 		return false, "download task ID can't be empty"
 	}
 
-	//user := &table.User{WalletAddress: req.WalletAddress}
+	//user := &table.User{P2PAddress: req.P2PAddress}
 	//if s.CT.Fetch(user) != nil {
 	//	return false, "not authorized to process"
 	//}

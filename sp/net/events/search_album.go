@@ -32,14 +32,15 @@ func searchAlbumCallbackFunc(_ context.Context, s *net.Server, message proto.Mes
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
+		P2PAddress:    body.P2PAddress,
 		WalletAddress: body.WalletAddress,
 		ReqId:         body.ReqId,
 		AlbumInfo:     nil,
 	}
 
-	if body.WalletAddress == "" {
+	if body.P2PAddress == "" {
 		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "wallet address can't be empty"
+		rsp.Result.Msg = "P2P key address can't be empty"
 		return rsp, header.RspSearchAlbum
 	}
 
@@ -53,7 +54,7 @@ func searchAlbumCallbackFunc(_ context.Context, s *net.Server, message proto.Mes
 	if body.AlbumType != protos.AlbumType_ALL {
 		//where = append(where, "type = ?", "is_private = ?", "wallet_address != ?")
 		where = append(where, "type = ?", "is_private = ?")
-		//args = append(args, int(body.AlbumType), table.ALBUM_IS_PUBLIC, body.WalletAddress)
+		//args = append(args, int(body.AlbumType), table.ALBUM_IS_PUBLIC, body.P2PAddress)
 		args = append(args, int(body.AlbumType), table.ALBUM_IS_PUBLIC)
 	}
 

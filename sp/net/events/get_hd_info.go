@@ -24,7 +24,7 @@ func GetHDInfoHandler(s *net.Server) EventHandleFunc {
 func getHdInfoCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
 	body := message.(*protos.RspGetHDInfo)
 
-	user := &table.User{WalletAddress: body.WalletAddress}
+	user := &table.User{P2PAddress: body.P2PAddress}
 
 	if s.CT.Fetch(user) != nil {
 		return nil, ""

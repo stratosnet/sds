@@ -39,8 +39,8 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
-		IsPP:          false,
-		WalletAddress: body.Address.WalletAddress,
+		IsPP:       false,
+		P2PAddress: body.Address.P2PAddress,
 	}
 
 	if updateTips {
@@ -52,8 +52,8 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 		}
 	}
 
-	if body.Address.WalletAddress == "" || body.Address.NetworkAddress == "" {
-		rsp.Result.Msg = "wallet address and net address can't be empty"
+	if body.Address.P2PAddress == "" || body.Address.WalletAddress == "" || body.Address.NetworkAddress == "" {
+		rsp.Result.Msg = "P2P key address, wallet address and network address can't be empty"
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		return rsp, header.RspRegister
 	}
@@ -65,7 +65,7 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 	}
 
 	// save user info
-	user := &table.User{WalletAddress: body.Address.WalletAddress}
+	user := &table.User{P2PAddress: body.Address.P2PAddress}
 
 	isNewUser := false
 	if err := s.CT.Fetch(user); err != nil {
@@ -80,7 +80,8 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 	if rsp.IsPP {
 		user.IsPp = 1
 	}
-	user.Belong = body.MyAddress.WalletAddress
+	user.Belong = body.MyAddress.P2PAddress
+	user.P2PAddress = body.Address.P2PAddress
 	user.WalletAddress = body.Address.WalletAddress
 	user.NetworkAddress = body.Address.NetworkAddress
 	user.Puk = hex.EncodeToString(body.PublicKey)
@@ -90,7 +91,7 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 	totalUsed, _ := s.CT.SumTable(&table.File{}, "f.size", map[string]interface{}{
 		"alias": "f",
 		"join":  []string{"user_has_file", "f.hash = uhf.file_hash", "uhf"},
-		"where": map[string]interface{}{"uhf.wallet_address = ?": user.WalletAddress},
+		"where": map[string]interface{}{"uhf.p2p_address = ?": user.P2PAddress},
 	})
 
 	user.UsedCapacity = uint64(totalUsed)

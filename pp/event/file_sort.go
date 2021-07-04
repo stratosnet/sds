@@ -32,11 +32,10 @@ func RspFileSort(ctx context.Context, conn spbf.WriteCloser) {
 	utils.DebugLog("get RspFindMyFileList")
 	var target protos.RspFileSort
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			putData(target.ReqId, HTTPFileSort, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
-
 	}
 }

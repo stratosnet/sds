@@ -33,7 +33,7 @@ func ReqDeleteFile(ctx context.Context, conn spbf.WriteCloser) {
 func RspDeleteFile(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspDeleteFile
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("delete success ", target.Result.Msg)
 			} else {
@@ -41,7 +41,7 @@ func RspDeleteFile(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPDeleteFile, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }

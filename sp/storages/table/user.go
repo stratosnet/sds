@@ -13,6 +13,7 @@ type User struct {
 	Id             uint64
 	IsPp           byte
 	Belong         string
+	P2PAddress     string
 	WalletAddress  string
 	NetworkAddress string
 	FreeDisk       uint64
@@ -46,7 +47,7 @@ func (u *User) SetData(data map[string]interface{}) (bool, error) {
 
 // GetCacheKey
 func (u *User) GetCacheKey() string {
-	return "user#" + u.WalletAddress
+	return "user#" + u.P2PAddress
 }
 
 // GetTimeOut
@@ -58,7 +59,7 @@ func (u *User) GetTimeOut() time.Duration {
 func (u *User) Where() map[string]interface{} {
 	return map[string]interface{}{
 		"where": map[string]interface{}{
-			"wallet_address = ?": u.WalletAddress,
+			"p2p_address = ?": u.P2PAddress,
 		},
 	}
 }

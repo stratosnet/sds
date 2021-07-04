@@ -31,19 +31,20 @@ func getCapacityCallbackFunc(_ context.Context, s *net.Server, message proto.Mes
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
+		P2PAddress:    body.P2PAddress,
 		WalletAddress: body.WalletAddress,
 		ReqId:         body.ReqId,
 		Capacity:      0,
 		FreeCapacity:  0,
 	}
 
-	if body.WalletAddress == "" {
+	if body.P2PAddress == "" {
 		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "wallet address can't be empty"
+		rsp.Result.Msg = "P2P key address can't be empty"
 		return rsp, header.RspGetCapacity
 	}
 
-	user := &table.User{WalletAddress: body.WalletAddress}
+	user := &table.User{P2PAddress: body.P2PAddress}
 	if err := s.CT.Fetch(user); err != nil {
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		rsp.Result.Msg = "need to login wallet first"
@@ -53,7 +54,7 @@ func getCapacityCallbackFunc(_ context.Context, s *net.Server, message proto.Mes
 	totalUsed, err := s.CT.SumTable(&table.File{}, "f.size", map[string]interface{}{
 		"alias": "f",
 		"join":  []string{"user_has_file", "f.hash = uhf.file_hash", "uhf"},
-		"where": map[string]interface{}{"uhf.wallet_address = ?": user.WalletAddress},
+		"where": map[string]interface{}{"uhf.p2p_address = ?": user.P2PAddress},
 	})
 
 	if err != nil {

@@ -24,6 +24,7 @@ type MsgWrapper struct {
 }
 
 type MsgMining struct {
+	P2PAddress     string
 	WalletAddress  string
 	NetworkAddress string
 	Name           string

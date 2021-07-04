@@ -54,7 +54,7 @@ func RspShareLink(ctx context.Context, conn spbf.WriteCloser) {
 	utils.DebugLog("RspShareLink(ctx context.Context, conn spbf.WriteCloser) {RspShareLink(ctx context.Context, conn spbf.WriteCloser) {")
 	var target protos.RspShareLink
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				for _, info := range target.ShareInfo {
 					fmt.Println("_______________________________")
@@ -71,7 +71,7 @@ func RspShareLink(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPShareLink, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }
@@ -86,7 +86,7 @@ func ReqShareFile(ctx context.Context, conn spbf.WriteCloser) {
 func RspShareFile(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspShareFile
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("ShareId", target.ShareId)
 				fmt.Println("ShareLink", target.ShareLink)
@@ -96,7 +96,7 @@ func RspShareFile(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPShareFile, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }
@@ -111,7 +111,7 @@ func ReqDeleteShare(ctx context.Context, conn spbf.WriteCloser) {
 func RspDeleteShare(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspDeleteShare
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("cancel share success:", target.ShareId)
 			} else {
@@ -119,7 +119,7 @@ func RspDeleteShare(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPDeleteShare, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 
@@ -147,7 +147,7 @@ func ReqGetShareFile(ctx context.Context, conn spbf.WriteCloser) {
 func RspGetShareFile(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspGetShareFile
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("FileInfo:", target.FileInfo)
 			} else {
@@ -155,7 +155,7 @@ func RspGetShareFile(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPGetShareFile, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 

@@ -33,13 +33,14 @@ func inviteCallbackFunc(_ context.Context, s *net.Server, message proto.Message,
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
+		P2PAddress:    body.P2PAddress,
 		WalletAddress: body.WalletAddress,
 		ReqId:         body.ReqId,
 	}
 
-	if body.WalletAddress == "" || body.InvitationCode == "" {
+	if body.P2PAddress == "" || body.InvitationCode == "" {
 		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "wallet address or invitation code can't be empty"
+		rsp.Result.Msg = "P2P key address and invitation code can't be empty"
 		return rsp, header.RspInvite
 	}
 
@@ -60,7 +61,7 @@ func inviteCallbackFunc(_ context.Context, s *net.Server, message proto.Message,
 	}
 
 	user := &table.User{
-		WalletAddress: body.WalletAddress,
+		P2PAddress: body.P2PAddress,
 	}
 
 	if err := s.CT.Fetch(user); err != nil {
@@ -101,6 +102,7 @@ func inviteCallbackFunc(_ context.Context, s *net.Server, message proto.Message,
 
 	uir := &table.UserInviteRecord{
 		InvitationCode: invite.InvitationCode,
+		P2PAddress:     body.P2PAddress,
 		WalletAddress:  body.WalletAddress,
 		Reward:         rsp.CapacityDelta,
 		Time:           time.Now().Unix(),

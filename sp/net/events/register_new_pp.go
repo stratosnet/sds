@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"crypto/ed25519"
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
@@ -91,7 +92,7 @@ func validateNewPP(s *net.Server, req *protos.ReqRegisterNewPP, user *table.User
 	}
 
 	// check if register or not, todo change to read from redis
-	user.WalletAddress = req.WalletAddress
+	user.P2PAddress = req.P2PAddress
 	if s.CT.Fetch(user) != nil {
 		return false, "not register as PP, register first"
 	}
@@ -100,7 +101,7 @@ func validateNewPP(s *net.Server, req *protos.ReqRegisterNewPP, user *table.User
 		return false, "public key or signature is empty"
 	}
 
-	if !utils.ECCVerifyBytes([]byte(req.WalletAddress), req.Sign, req.PubKey) {
+	if !ed25519.Verify(req.PubKey, []byte(req.P2PAddress), req.Sign) {
 		return false, "signature verification failed"
 	}
 

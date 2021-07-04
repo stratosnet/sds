@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"crypto/ed25519"
 	"encoding/hex"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
@@ -33,6 +34,7 @@ func deleteFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
+		P2PAddress:    body.P2PAddress,
 		WalletAddress: body.WalletAddress,
 		ReqId:         body.ReqId,
 	}
@@ -70,7 +72,7 @@ func deleteFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 		},
 	})
 
-	user := &table.User{WalletAddress: body.WalletAddress}
+	user := &table.User{P2PAddress: body.P2PAddress}
 
 	if err := s.CT.Fetch(user); err != nil {
 		return rsp, header.RspDeleteFile
@@ -93,9 +95,9 @@ func (e *deleteFile) Handle(ctx context.Context, conn spbf.WriteCloser) {
 // validateDeleteFileRequest validate request
 func validateDeleteFileRequest(s *net.Server, req *protos.ReqDeleteFile) (bool, string) {
 
-	if req.WalletAddress == "" || req.FileHash == "" {
+	if req.P2PAddress == "" || req.FileHash == "" {
 
-		return false, "wallet address or file hash can't be empty"
+		return false, "P2P key address and file hash can't be empty"
 	}
 
 	if len(req.Sign) <= 0 {
@@ -103,7 +105,7 @@ func validateDeleteFileRequest(s *net.Server, req *protos.ReqDeleteFile) (bool, 
 	}
 
 	user := &table.User{
-		WalletAddress: req.WalletAddress,
+		P2PAddress: req.P2PAddress,
 	}
 	if s.CT.Fetch(user) != nil {
 		return false, "not authorized to process"
@@ -114,8 +116,8 @@ func validateDeleteFileRequest(s *net.Server, req *protos.ReqDeleteFile) (bool, 
 		return false, err.Error()
 	}
 
-	data := req.WalletAddress + req.FileHash
-	if !utils.ECCVerifyBytes([]byte(data), req.Sign, puk) {
+	data := req.P2PAddress + req.FileHash
+	if !ed25519.Verify(puk, []byte(data), req.Sign) {
 		return false, "signature verification failed"
 	}
 

@@ -219,6 +219,7 @@ CREATE TABLE `user` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
   `is_pp` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT '0:no, 1:yest',
   `belong` char(42) NOT NULL DEFAULT '' COMMENT 'parent wallet address',
+  `p2p_address` char(42) NOT NULL DEFAULT '' COMMENT 'p2p key address'
   `wallet_address` char(42) NOT NULL DEFAULT '' COMMENT 'wallet address',
   `network_address` varchar(32) NOT NULL DEFAULT '' COMMENT 'network address',
   `disk_size` bigint(20) unsigned NOT NULL DEFAULT '0' ,
@@ -237,6 +238,7 @@ CREATE TABLE `user` (
   UNIQUE KEY `IDX_INVITATION_CODE` (`invitation_code`),
   KEY `IDX_WALLET_ADDRESS` (`wallet_address`) USING HASH,
   KEY `IDX_BELONG` (`belong`),
+  KEY `IDX_P2P_ADDRESS` (`p2p_address`),
   KEY `IDX_NAME` (`name`),
   KEY `IDX_NETWORK_ADDRESS` (`network_address`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
@@ -333,11 +335,12 @@ DROP TABLE IF EXISTS `user_invite_record`;
 CREATE TABLE `user_invite_record` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `invitation_code` char(8) NOT NULL DEFAULT '' ,
+  `p2p_address` char(42) NOT NULL DEFAULT '' ,
   `wallet_address` char(42) NOT NULL DEFAULT '' ,
   `reward` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'reward capacity',
   `time` int(10) unsigned NOT NULL DEFAULT '0' ,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `IDX_WALLET_ADDRESS` (`wallet_address`)
+  UNIQUE KEY `IDX_P2P_ADDRESS` (`p2p_address`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

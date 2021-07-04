@@ -33,7 +33,7 @@ func RspFindMyFileList(ctx context.Context, conn spbf.WriteCloser) {
 	utils.DebugLog("get RspFindMyFileList")
 	var target protos.RspFindMyFileList
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			putData(target.ReqId, HTTPGetAllFile, &target)
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				if len(target.FileInfo) == 0 {
@@ -57,7 +57,7 @@ func RspFindMyFileList(ctx context.Context, conn spbf.WriteCloser) {
 				fmt.Println(target.Result.Msg)
 			}
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 
 	}

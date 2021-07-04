@@ -33,6 +33,7 @@ func rmDirCallbackFunc(_ context.Context, s *net.Server, message proto.Message, 
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
+		P2PAddress:    body.P2PAddress,
 		WalletAddress: body.WalletAddress,
 		ReqId:         body.ReqId,
 	}
@@ -43,9 +44,9 @@ func rmDirCallbackFunc(_ context.Context, s *net.Server, message proto.Message, 
 		return rsp, header.RspRemoveDirectory
 	}
 
-	if body.WalletAddress == "" || body.Directory == "" {
+	if body.P2PAddress == "" || body.Directory == "" {
 		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "wallet address or directory can't be empty"
+		rsp.Result.Msg = "P2P key address and directory can't be empty"
 		return rsp, header.RspRemoveDirectory
 	}
 

@@ -59,7 +59,7 @@ func transferCerValidateCallbackFunc(_ context.Context, s *net.Server, message p
 		return rsp, header.RspValidateTransferCer
 	}
 
-	if transferRecord.ToWalletAddress != body.NewPp.WalletAddress {
+	if transferRecord.ToWalletAddress != body.NewPp.P2PAddress {
 		rsp.Result.Msg = "transfer certificate invalid, wallet address not match"
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		return rsp, header.RspValidateTransferCer
@@ -72,17 +72,17 @@ func transferCerValidateCallbackFunc(_ context.Context, s *net.Server, message p
 		},
 	}
 
-	if s.CT.Fetch(fileSlice) != nil || fileSlice.WalletAddress != body.OriginalPp.WalletAddress {
+	if s.CT.Fetch(fileSlice) != nil || fileSlice.WalletAddress != body.OriginalPp.P2PAddress {
 		rsp.Result.Msg = "file slice not exist or the original PP doesn't have it"
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		return rsp, header.RspValidateTransferCer
 	}
 
 	transferRecord.ToNetworkAddress = body.NewPp.NetworkAddress
-	transferRecord.ToWalletAddress = body.NewPp.WalletAddress
+	transferRecord.ToWalletAddress = body.NewPp.P2PAddress
 	transferRecord.Time = time.Now().Unix()
 
-	utils.Log("created transfer certificate：Slice: " + fileSlice.SliceHash + " From[" + fileSlice.WalletAddress + "] to[" + body.NewPp.WalletAddress + "]")
+	utils.Log("created transfer certificate：Slice: " + fileSlice.SliceHash + " From[" + fileSlice.WalletAddress + "] to[" + body.NewPp.P2PAddress + "]")
 
 	// todo change to read from redis
 	if err := s.Store(transferRecord, 3600*time.Second); err != nil {

@@ -33,7 +33,8 @@ type Server struct {
 	Ver                uint16               // version
 	PPVersion          uint16               // PP version
 	Host               string               // net host
-	PrivateKey         crypto.PrivKey       // private key
+	WalletPrivateKey   crypto.PrivKey       // Wallet private key
+	P2PPrivateKey      []byte               // P2P private key
 	UserCount          int64                // user count todo should this be atomic?
 	ConnectedCount     uint64               // connection count todo should this be atomic?
 	Conf               *Config              // configuration
@@ -64,9 +65,9 @@ func (s *Server) initialize() error {
 	}
 
 	utils.Log("initializing...")
-	err := s.verifyNodeKey()
+	err := s.verifyNodeKeys()
 	if err != nil {
-		utils.ErrorLog("wrong node key: ", err)
+		utils.ErrorLog("couldn't load P2P and wallet keys: ", err)
 		return err
 	}
 
@@ -99,7 +100,7 @@ func (s *Server) initialize() error {
 	go s.msgHandler.Run()
 
 	// it's commented out
-	//s.puk = tools.LoadOrCreateAccount(s.Conf.Ecdsa.PrivateKeyPath, s.Conf.Ecdsa.PrivateKeyPass)
+	//s.puk = tools.LoadOrCreateAccount(s.Conf.Keys.WalletPath, s.Conf.Keys.WalletPassword)
 
 	s.connPool = new(sync.Map)
 
@@ -332,18 +333,31 @@ func (s *Server) StartServ(listener net.Listener) error {
 	return s.serv.Start(listener)
 }
 
-func (s *Server) verifyNodeKey() error {
-	keyJson, err := ioutil.ReadFile(s.Conf.Ecdsa.PrivateKeyPath)
+func (s *Server) verifyNodeKeys() error {
+	p2pJson, err := ioutil.ReadFile(s.Conf.Keys.P2PPath)
 	if err != nil {
 		return err
 	}
 
-	key, err := utils.DecryptKey(keyJson, s.Conf.Ecdsa.PrivateKeyPass)
+	p2pKey, err := utils.DecryptKey(p2pJson, s.Conf.Keys.P2PPassword)
 	if err != nil {
 		return err
 	}
 
-	s.PrivateKey = secp256k1.PrivKeyBytesToTendermint(key.PrivateKey)
-	utils.Log("verify node key successfully!")
+	s.P2PPrivateKey = p2pKey.PrivateKey
+	utils.DebugLog("verified P2P key successfully!")
+
+	walletJson, err := ioutil.ReadFile(s.Conf.Keys.WalletPath)
+	if err != nil {
+		return err
+	}
+
+	walletKey, err := utils.DecryptKey(walletJson, s.Conf.Keys.WalletPassword)
+	if err != nil {
+		return err
+	}
+
+	s.WalletPrivateKey = secp256k1.PrivKeyBytesToTendermint(walletKey.PrivateKey)
+	utils.DebugLog("verified wallet key successfully!")
 	return nil
 }

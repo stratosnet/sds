@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"crypto/ed25519"
 	"encoding/hex"
 	"errors"
 	"github.com/golang/protobuf/proto"
@@ -40,6 +41,7 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
+		P2PAddress:    body.FileIndexes.P2PAddress,
 		WalletAddress: body.FileIndexes.WalletAddress,
 		ReqId:         body.ReqId,
 		SavePath:      body.FileIndexes.SavePath,
@@ -155,7 +157,7 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 				SliceHash: row.SliceHash,
 			},
 			StoragePpInfo: &protos.PPBaseInfo{
-				WalletAddress:  node.ID,
+				P2PAddress:     node.ID,
 				NetworkAddress: node.Host,
 			},
 			SliceOffset: &protos.SliceOffset{
@@ -178,7 +180,7 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 				body.FileIndexes.WalletAddress, // download node
 				transferWalletAddress,          // transfer node
 				node.ID,                        // storage node
-				//row.WalletAddress,              // storage node wallet
+				//row.P2PAddress,              // storage node wallet
 			},
 		}
 
@@ -217,8 +219,8 @@ func validateFileStorageInfoRequest(s *net.Server, req *protos.ReqFileStorageInf
 		return
 	}
 
-	if req.FileIndexes.WalletAddress == "" {
-		err = errors.New("wallet address can't be empty")
+	if req.FileIndexes.P2PAddress == "" {
+		err = errors.New("P2P key address can't be empty")
 		return
 	}
 
@@ -236,7 +238,7 @@ func validateFileStorageInfoRequest(s *net.Server, req *protos.ReqFileStorageInf
 		return
 	}
 
-	user := &table.User{WalletAddress: req.FileIndexes.WalletAddress}
+	user := &table.User{P2PAddress: req.FileIndexes.P2PAddress}
 	if s.CT.Fetch(user) != nil {
 		err = errors.New("not authorized to process")
 		return
@@ -247,8 +249,8 @@ func validateFileStorageInfoRequest(s *net.Server, req *protos.ReqFileStorageInf
 		return
 	}
 
-	d := req.FileIndexes.WalletAddress + fileHash
-	if !utils.ECCVerifyBytes([]byte(d), req.Sign, puk) {
+	d := req.FileIndexes.P2PAddress + fileHash
+	if !ed25519.Verify(puk, []byte(d), req.Sign) {
 		err = errors.New("signature verification failed")
 		return
 	}

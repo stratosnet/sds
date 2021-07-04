@@ -33,15 +33,16 @@ func collectAlbumCallbackFunc(_ context.Context, s *net.Server, message proto.Me
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
+		P2PAddress:    body.P2PAddress,
 		WalletAddress: body.WalletAddress,
 		ReqId:         body.ReqId,
 		AlbumId:       body.AlbumId,
 		IsCollection:  body.IsCollection,
 	}
 
-	if body.WalletAddress == "" || body.AlbumId == "" {
+	if body.P2PAddress == "" || body.AlbumId == "" {
 		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "wallet address or album ID can't be empty"
+		rsp.Result.Msg = "P2P key address or album ID can't be empty"
 		return rsp, header.RspCollectionAlbum
 	}
 

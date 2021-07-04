@@ -108,7 +108,7 @@ func reportTransferResultCallbackFunc(_ context.Context, s *net.Server, message 
 
 		fileSliceStorage := &table.FileSliceStorage{
 			SliceHash:      fileSlice.SliceHash,
-			WalletAddress:  body.NewPp.WalletAddress,
+			WalletAddress:  body.NewPp.P2PAddress,
 			NetworkAddress: body.NewPp.NetworkAddress,
 		}
 

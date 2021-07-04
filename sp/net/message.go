@@ -9,7 +9,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/relay/sds"
 	"github.com/stratosnet/sds/relay/stratoschain"
-	"github.com/stratosnet/sds/relay/stratoschain/pot"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 	"os"
 	"strconv"
@@ -75,8 +74,8 @@ func (m *MsgHandler) Run() {
 			if msgType == common.MSG_LOGOUT {
 				m.Logout(msg.(*common.MsgLogout).Name)
 			} else if msgType == common.MSG_MIMING {
-				msgMing := msg.(*common.MsgMining)
-				m.Mining(msgMing.WalletAddress, msgMing.NetworkAddress, msgMing.Name, msgMing.Puk)
+				msgMining := msg.(*common.MsgMining)
+				m.Mining(msgMining.P2PAddress, msgMining.WalletAddress, msgMining.NetworkAddress, msgMining.Name, msgMining.Puk)
 			} else if msgType == common.MSG_TRANSFER_NOTICE {
 				msgTransferNotice := msg.(*common.MsgTransferNotice)
 				m.TransferNotice(msgTransferNotice.SliceHash, msgTransferNotice.FromWalletAddress, msgTransferNotice.ToWalletAddress)
@@ -102,7 +101,7 @@ func (m *MsgHandler) Run() {
 }
 
 // Mining
-func (m *MsgHandler) Mining(walletAddress, networkAddress, name string, puk []byte) {
+func (m *MsgHandler) Mining(p2pAddress, walletAddress, networkAddress, name string, puk []byte) {
 
 	if !m.server.HashRing.IsOnline(walletAddress) {
 		node := &hashring.Node{
@@ -114,7 +113,7 @@ func (m *MsgHandler) Mining(walletAddress, networkAddress, name string, puk []by
 
 	m.server.HashRing.SetOnline(walletAddress)
 
-	user := &table.User{WalletAddress: walletAddress}
+	user := &table.User{P2PAddress: p2pAddress}
 	if m.server.CT.Fetch(user) == nil {
 		user.Name = name
 		m.server.CT.Save(user)
@@ -228,7 +227,7 @@ func (m *MsgHandler) TransferNotice(sliceHash, sliceInWalletAddress, newStorePPW
 			SliceHash: fileSlice.SliceHash,
 		},
 		StoragePpInfo: &protos.PPBaseInfo{
-			WalletAddress:  fileSlice.WalletAddress,
+			P2PAddress:     fileSlice.WalletAddress,
 			NetworkAddress: fileSlice.NetworkAddress,
 		},
 	}
@@ -386,7 +385,7 @@ func (m *MsgHandler) DeleteSlice(walletAddress, sliceHash string) {
 	if sliceHash == "" || walletAddress == "" {
 		utils.Log("DeleteSlice: msg data given incorrect ")
 		utils.Log("sliceHash = ", sliceHash)
-		utils.Log("WalletAddress = ", walletAddress)
+		utils.Log("P2PAddress = ", walletAddress)
 		return
 	}
 
@@ -431,12 +430,12 @@ func NewMsgHandler(server *Server) *MsgHandler {
 }
 
 func broadcastVolumeReportTx(traffic []table.Traffic, epoch uint64, fileHash string, s *Server) error {
-	spPubKey := s.PrivateKey.PubKey()
-	spPrivKey := s.PrivateKey.(secp256k1.PrivKeySecp256k1)
+	spPubKey := s.WalletPrivateKey.PubKey()
+	spPrivKey := s.WalletPrivateKey.(secp256k1.PrivKeySecp256k1)
 	spWalletAddress := spPubKey.Address()
 	spWalletAddressString := types.AccAddress(spPubKey.Address()).String()
 
-	txMsg, err := pot.BuildVolumeReportMsg(traffic, spWalletAddress, epoch, fileHash)
+	txMsg, err := stratoschain.BuildVolumeReportMsg(traffic, spWalletAddress, epoch, fileHash)
 	if err != nil {
 		return err
 	}

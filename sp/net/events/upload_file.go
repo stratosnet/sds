@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"crypto/ed25519"
 	"encoding/hex"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
@@ -92,7 +93,7 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 		}
 
 		key := body.FileInfo.FileHash + "#" + strconv.FormatUint(i, 10)
-		missingNodeIds := []string{body.MyAddress.WalletAddress}
+		missingNodeIds := []string{body.MyAddress.P2PAddress}
 		if s.HashRing.NodeCount <= 1 {
 			missingNodeIds = []string{}
 		}
@@ -102,7 +103,7 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 
 			sliceNumAddr := &protos.SliceNumAddr{
 				PpInfo: &protos.PPBaseInfo{
-					WalletAddress:  node.ID,
+					P2PAddress:     node.ID,
 					NetworkAddress: node.Host,
 				},
 				SliceNumber: sliceNumber,
@@ -118,7 +119,7 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 
 	taskID := tools.GenerateTaskID(body.FileInfo.FileHash)
 
-	walletAddress := body.MyAddress.WalletAddress
+	walletAddress := body.MyAddress.P2PAddress
 	var isCover byte
 	if body.IsCover {
 		isCover = table.IS_COVER
@@ -187,7 +188,7 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 
 		s.CT.GetDriver().Delete("user_directory_map_file", map[string]interface{}{
 			"owner = ? AND file_hash = ?": []interface{}{
-				body.MyAddress.WalletAddress, file.Hash,
+				body.MyAddress.P2PAddress, file.Hash,
 			},
 		})
 
@@ -195,9 +196,9 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 			dirMapFile := &table.UserDirectoryMapFile{
 				UserDirectory: table.UserDirectory{
 					Path:          body.FileInfo.StoragePath,
-					WalletAddress: body.MyAddress.WalletAddress,
+					WalletAddress: body.MyAddress.P2PAddress,
 				},
-				Owner:    body.MyAddress.WalletAddress,
+				Owner:    body.MyAddress.P2PAddress,
 				FileHash: file.Hash,
 			}
 			dirMapFile.DirHash = dirMapFile.GenericHash()
@@ -250,15 +251,15 @@ func validateUploadFileRequest(req *protos.ReqUploadFile, s *net.Server) (bool, 
 		return false, "file info invalid"
 	}
 
-	if req.MyAddress.WalletAddress == "" {
-		return false, "wallet address can't be empty"
+	if req.MyAddress.P2PAddress == "" {
+		return false, "P2P key address can't be empty"
 	}
 
 	if len(req.Sign) <= 0 {
 		return false, "signature can't be empty"
 	}
 
-	user := &table.User{WalletAddress: req.MyAddress.WalletAddress}
+	user := &table.User{P2PAddress: req.MyAddress.P2PAddress}
 	if err := s.CT.Fetch(user); err != nil {
 		return false, "not authorized to process"
 	}
@@ -268,8 +269,8 @@ func validateUploadFileRequest(req *protos.ReqUploadFile, s *net.Server) (bool, 
 		return false, err.Error()
 	}
 
-	d := req.MyAddress.WalletAddress + req.FileInfo.FileHash
-	if !utils.ECCVerifyBytes([]byte(d), req.Sign, puk) {
+	d := req.MyAddress.P2PAddress + req.FileInfo.FileHash
+	if !ed25519.Verify(puk, []byte(d), req.Sign) {
 		return false, "signature verification failed"
 	}
 
