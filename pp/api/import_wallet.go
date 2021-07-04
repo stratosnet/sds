@@ -40,11 +40,15 @@ func importWallet(w http.ResponseWriter, request *http.Request) {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "wrong password").ToBytes())
 		return
 	}
-	setting.PrivateKey = key.PrivateKey
-	setting.PublicKey = secp256k1.PrivKeyToPubKey(key.PrivateKey)
-	setting.WalletAddress = key.Address.ToBech()
+	setting.WalletPrivateKey = key.PrivateKey
+	setting.WalletPublicKey = secp256k1.PrivKeyToPubKey(key.PrivateKey)
+	setting.WalletAddress, err = key.Address.ToBech(setting.Config.AddressPrefix)
+	if err != nil {
+		w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to convert wallet address to bech32 string").ToBytes())
+		return
+	}
 	ks := utils.KeyStorePassphrase{dir, setting.Config.ScryptN, setting.Config.ScryptP}
-	filename := dir + "/" + key.Address.String()
+	filename := dir + "/" + setting.WalletAddress + ".json"
 	err = ks.StoreKey(filename, key, password)
 	if err != nil {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to import wallet").ToBytes())
@@ -63,7 +67,7 @@ func importWallet(w http.ResponseWriter, request *http.Request) {
 	}
 	data1 := walletInfo{
 		WalletInfo: walletList{
-			WalletName:    key.Account,
+			WalletName:    key.Name,
 			WalletAddress: setting.WalletAddress,
 			Balance:       balance,
 			State:         true,

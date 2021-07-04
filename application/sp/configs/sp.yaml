@@ -29,9 +29,11 @@ Database:
   Debug: true
   LogFile: tmp/logs/db.log
 
-Ecdsa:
-  PrivateKeyPath: configs/node_key.json
-  PrivateKeyPass: aaa
+Keys:
+  P2PPath: configs/node_key.json
+  P2PPassword: aaa
+  WalletPath: configs/node_key.json
+  WalletPassword: aaa
 
 BlockchainInfo:
   AddressPrefix: st

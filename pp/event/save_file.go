@@ -30,7 +30,7 @@ func ReqSaveFile(ctx context.Context, conn spbf.WriteCloser) {
 func RspSaveFile(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspSaveFile
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
 			} else {
@@ -38,7 +38,7 @@ func RspSaveFile(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPMVdir, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }
@@ -62,7 +62,7 @@ func ReqSaveFolder(ctx context.Context, conn spbf.WriteCloser) {
 func RspSaveFolder(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspSaveFolder
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
 			} else {
@@ -70,7 +70,7 @@ func RspSaveFolder(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPSaveFolder, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }

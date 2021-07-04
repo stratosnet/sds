@@ -33,7 +33,7 @@ func ReqRegisterChain(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.ReqRegister
 	if unmarshalData(ctx, &target) {
 		// store register P wallet address
-		serv.RegisterPeerMap.Store(target.Address.WalletAddress, spbf.NetIDFromContext(ctx))
+		serv.RegisterPeerMap.Store(target.Address.P2PAddress, spbf.NetIDFromContext(ctx))
 		transferSendMessageToSPServer(reqRegisterDataTR(&target))
 
 		// IPProt := strings.Split(target.Address.NetworkAddress, ":")
@@ -49,7 +49,7 @@ func ReqRegisterChain(ctx context.Context, conn spbf.WriteCloser) {
 		// 	utils.DebugLog("target", target)
 		// 	req := target
 		// 	req.Address = &protos.PPBaseInfo{
-		// 		WalletAddress:  target.Address.WalletAddress,
+		// 		P2PAddress:  target.Address.P2PAddress,
 		// 		NetworkAddress: conn.(*spbf.ServerConn).GetIP() + ":" + port,
 		// 	}
 		// 	utils.DebugLog("req", req)
@@ -68,15 +68,16 @@ func RspRegisterChain(ctx context.Context, conn spbf.WriteCloser) {
 	if !unmarshalData(ctx, &target) {
 		return
 	}
-	utils.Log("target.RspRegister", target.WalletAddress)
-	if target.WalletAddress != setting.WalletAddress {
-		utils.Log("transfer RspRegisterChain to: ", target.WalletAddress)
-		transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+	utils.Log("target.RspRegister", target.P2PAddress)
+	if target.P2PAddress != setting.P2PAddress {
+		utils.Log("transfer RspRegisterChain to: ", target.P2PAddress)
+		transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		return
 	}
 
 	utils.Log("get RspRegisterChain ", target.Result.State, target.Result.Msg)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		setting.P2PAddress = ""
 		setting.WalletAddress = ""
 		fmt.Println("login failed", target.Result.Msg)
 		return

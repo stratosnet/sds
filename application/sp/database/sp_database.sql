@@ -53,9 +53,10 @@ create table user
     used_capacity   int          null,
     is_upgrade      tinyint(1)   null,
     is_pp           tinyint(1)   null,
+    p2p_address     varchar(256) null,
     wallet_address  varchar(256) null,
     network_Address varchar(256) null,
-    UNIQUE KEY IDX_WALLET_ADDRESS (wallet_address) USING HASH
+    UNIQUE KEY IDX_P2P_ADDRESS (p2p_address) USING HASH
 ) ENGINE = InnoDB
   DEFAULT CHARSET = UTF8MB4;
 

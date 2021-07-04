@@ -174,12 +174,12 @@ func transferSendMessageToSPServer(msg *msg.RelayMsgBuf) {
 }
 
 // transferSendMessageToClient
-func transferSendMessageToClient(waller string, msgBuf *msg.RelayMsgBuf) {
-	if netid, ok := serv.RegisterPeerMap.Load(waller); ok {
+func transferSendMessageToClient(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
+	if netid, ok := serv.RegisterPeerMap.Load(p2pAddress); ok {
 		utils.Log("transfer to netid = ", netid)
 		serv.GetPPServer().Unicast(netid.(int64), msgBuf)
 	} else {
-		utils.DebugLog("waller ===== ", waller)
+		utils.DebugLog("waller ===== ", p2pAddress)
 	}
 }
 

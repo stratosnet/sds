@@ -143,7 +143,7 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 	// 	case dt := <-event.DirectoryTree:
 	// 		tree := &df{
 	// 			FileHash: dt.Hash,file.go:226
-	// 			Path:     dt.Dir,
+	// 			P2PPath:     dt.Dir,
 	// 		}
 	// 		// path := "spb://" + data["belongAddress"].(string) + "/" + tree.FileHash
 	// 		// event.GetFileStorageInfo(path, savePath, uuid.New().String(), w)

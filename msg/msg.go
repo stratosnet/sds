@@ -6,7 +6,7 @@ import "github.com/stratosnet/sds/msg/header"
 type RelayMsgBuf struct {
 	// ConnID    int64
 	// NetAdress string
-	// WalletAddress string
+	// P2PAddress string
 	MSGHead header.MessageHead
 	MSGData []byte
 	Alloc   *[]byte

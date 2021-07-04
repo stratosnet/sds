@@ -26,7 +26,7 @@ func ReqMakeDirectory(ctx context.Context, conn spbf.WriteCloser) {
 func RspMakeDirectory(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspMakeDirectory
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
 			} else {
@@ -34,7 +34,7 @@ func RspMakeDirectory(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPMkdir, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }
@@ -69,7 +69,7 @@ func ReqRemoveDirectory(ctx context.Context, conn spbf.WriteCloser) {
 func RspRemoveDirectory(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspRemoveDirectory
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
 			} else {
@@ -77,7 +77,7 @@ func RspRemoveDirectory(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPRMdir, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }
@@ -104,7 +104,7 @@ func ReqMoveFileDirectory(ctx context.Context, conn spbf.WriteCloser) {
 func RspMoveFileDirectory(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspMoveFileDirectory
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
 			} else {
@@ -112,7 +112,7 @@ func RspMoveFileDirectory(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPMVdir, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }

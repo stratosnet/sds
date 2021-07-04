@@ -31,7 +31,7 @@ func main() {
 	if ct.Fetch(file) != nil {
 
 		//file.Owner = &table.UserHasFile{
-		//	WalletAddress: "12345678",
+		//	P2PAddress: "12345678",
 		//	FileHash:      file.Hash,
 		//}
 	}
@@ -50,7 +50,7 @@ func main() {
 	ct.Trash(file)
 
 	//pp := new(table.PP)
-	//pp.WalletAddress = "0x999aE343980D80d2A59AffC19d1801eFd489c1Da"
+	//pp.P2PAddress = "0x999aE343980D80d2A59AffC19d1801eFd489c1Da"
 	//
 	////ct.Fetch(pp)
 	//
@@ -69,7 +69,7 @@ func main() {
 	////
 	//p2 := new(table.PP)
 	////
-	//p2.WalletAddress = "0x999aE343980D80d2A59AffC19d1801eFd489c1Da"
+	//p2.P2PAddress = "0x999aE343980D80d2A59AffC19d1801eFd489c1Da"
 	////
 	//ct.Load(p2)
 	////
