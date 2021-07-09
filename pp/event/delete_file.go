@@ -18,7 +18,7 @@ import (
 func DeleteFile(fileHash, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqDeleteFileData(fileHash, reqID), header.ReqDeleteFile)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -53,7 +53,7 @@ func ReqDeleteSlice(ctx context.Context, conn spbf.WriteCloser) {
 		{
 			var target protos.ReqDeleteSlice
 			if unmarshalData(ctx, &target) {
-				if target.WalletAddress == setting.WalletAddress {
+				if target.P2PAddress == setting.P2PAddress {
 					if file.DeleteSlice(target.SliceHash) != nil {
 						rspDeleteSliceData(target.SliceHash, "failed to delete, file not exist", false)
 					} else {

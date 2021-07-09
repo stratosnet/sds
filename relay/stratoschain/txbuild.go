@@ -3,7 +3,7 @@ package stratoschain
 import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stratosnet/sds/sp/storages/table"
-	"github.com/stratosnet/sds/utils/crypto/secp256k1"
+	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
@@ -14,17 +14,18 @@ import (
 func BuildVolumeReportMsg(traffic []table.Traffic, reporterAddress []byte, epoch uint64, reportReference string) (sdktypes.Msg, error) {
 	aggregatedVolume := make(map[string]uint64)
 	for _, trafficReccord := range traffic {
-		aggregatedVolume[trafficReccord.ProviderWalletAddress] += trafficReccord.Volume
+		aggregatedVolume[trafficReccord.ProviderP2PAddress] += trafficReccord.Volume
 	}
 
 	var nodesVolume []pottypes.SingleNodeVolume
-	for address, volume := range aggregatedVolume {
-		addressBytes, err := sdktypes.AccAddressFromBech32(address)
+	for p2pAddressString, volume := range aggregatedVolume {
+		p2pAddressBytes, err := utiltypes.BechToAddress(p2pAddressString)
+		p2pAddress := sdktypes.AccAddress(p2pAddressBytes[:])
 		if err != nil {
 			return nil, err
 		}
 		nodesVolume = append(nodesVolume, pottypes.SingleNodeVolume{
-			NodeAddress: addressBytes,
+			NodeAddress: p2pAddress,
 			Volume:      sdktypes.NewIntFromUint64(volume),
 		})
 	}
@@ -33,38 +34,29 @@ func BuildVolumeReportMsg(traffic []table.Traffic, reporterAddress []byte, epoch
 }
 
 // Stratos-chain 'register' module
-func BuildCreateResourceNodeMsg(networkAddress, token, moniker, nodeType string, pubKey []byte, amount int64, ownerAddress utiltypes.Address) (sdktypes.Msg, error) {
-	tmPubkey, err := secp256k1.PubKeyBytesToTendermint(pubKey)
-	if err != nil {
-		return nil, err
-	}
+func BuildCreateResourceNodeMsg(networkID, token, moniker, nodeType string, pubKey []byte, amount int64, ownerAddress utiltypes.Address) sdktypes.Msg {
 	return registertypes.NewMsgCreateResourceNode(
-		networkAddress,
-		tmPubkey,
+		networkID,
+		ed25519.PubKeyBytesToPubKey(pubKey),
 		sdktypes.NewInt64Coin(token, amount),
 		ownerAddress[:],
 		registertypes.Description{
 			Moniker: moniker,
 		},
 		nodeType,
-	), nil
+	)
 }
 
-func BuildCreateIndexingNodeMsg(networkAddress, token, moniker string, pubKey []byte, amount int64, ownerAddress utiltypes.Address) (sdktypes.Msg, error) {
-	tmPubkey, err := secp256k1.PubKeyBytesToTendermint(pubKey)
-	if err != nil {
-		return nil, err
-	}
-
+func BuildCreateIndexingNodeMsg(networkAddress, token, moniker string, pubKey []byte, amount int64, ownerAddress utiltypes.Address) sdktypes.Msg {
 	return registertypes.NewMsgCreateIndexingNode(
 		networkAddress,
-		tmPubkey,
+		ed25519.PubKeyBytesToPubKey(pubKey),
 		sdktypes.NewInt64Coin(token, amount),
 		ownerAddress[:],
 		registertypes.Description{
 			Moniker: moniker,
 		},
-	), nil
+	)
 }
 
 func BuildRemoveResourceNodeMsg(nodeAddress, ownerAddress utiltypes.Address) sdktypes.Msg {
@@ -82,17 +74,17 @@ func BuildRemoveIndexingNodeMsg(nodeAddress, ownerAddress utiltypes.Address) sdk
 }
 
 // Stratos-chain 'sds' module
-func BuildFileUploadMsg(fileHash, reporterAddress, uploaderAddress []byte) (sdktypes.Msg, error) {
+func BuildFileUploadMsg(fileHash, reporterAddress, uploaderAddress []byte) sdktypes.Msg {
 	return sdstypes.NewMsgUpload(
 		fileHash,
 		reporterAddress,
 		uploaderAddress,
-	), nil
+	)
 }
 
-func BuildPrepayMsg(token string, amount int64, senderAddress []byte) (sdktypes.Msg, error) {
+func BuildPrepayMsg(token string, amount int64, senderAddress []byte) sdktypes.Msg {
 	return sdstypes.NewMsgPrepay(
 		senderAddress,
 		sdktypes.NewCoins(sdktypes.NewInt64Coin(token, amount)),
-	), nil
+	)
 }

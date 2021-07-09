@@ -236,10 +236,13 @@ message ReqReportDownloadResult {
   bool isPP = 1; // p doesn't need DownloadSliceInfo
   DownloadSliceInfo slice_info = 2;
   string file_hash = 3;
-  string wallet_address = 4; // downloader address
-  bytes  sign = 5;
-  string task_id = 6;
-  string my_wallet_address = 7; // PP's address
+  string downloader_p2p_address = 4;
+  string downloader_wallet_address = 5;
+  string my_p2p_address = 6; // PP's P2P key address
+  string my_wallet_address = 7; // PP's wallet address
+  bytes  sign = 8;
+  string task_id = 9;
+
 }
 
 message RspReportDownloadResult {
@@ -272,7 +275,7 @@ message RspRegisterNewPP {
 
 message ReqActivate {
   bytes tx = 1;
-  string wallet_address = 2;
+  string p2p_address = 2;
 }
 
 message RspActivate {
@@ -281,7 +284,7 @@ message RspActivate {
 }
 
 message ReqActivated {
-  string wallet_address = 1;
+  string p2p_address = 1;
 }
 
 message RspActivated {
@@ -290,7 +293,7 @@ message RspActivated {
 
 message ReqDeactivate {
   bytes tx = 1;
-  string wallet_address = 2;
+  string p2p_address = 2;
 }
 
 message RspDeactivate {
@@ -299,7 +302,7 @@ message RspDeactivate {
 }
 
 message ReqDeactivated {
-  string wallet_address = 1;
+  string p2p_address = 1;
 }
 
 message RspDeactivated {
@@ -434,13 +437,13 @@ message RspSendChatMessages {
 
 // sp 
 message ReqDeleteSlice {
-  string wallet_address = 1;
+  string p2p_address = 1;
   string slice_hash = 2; //
   // bytes  sign = 3; //SP signature  wallet address + hash
 }
 
 message RspDeleteSlice {
-  string wallet_address = 1;
+  string p2p_address = 1;
   string slice_hash = 2;
   Result result = 3;
 }
@@ -581,8 +584,8 @@ message RspDownloadTaskInfo {
   uint64 slice_size = 2;
   string slice_hash = 3;
   uint64 slice_number = 4;
-  string storage_wallet_address = 5;
-  repeated string wallet_address_list = 6;
+  string storage_p2p_address = 5;
+  repeated string p2p_address_list = 6;
   uint64 time = 7;
   Result result = 8;
   string id = 9;

@@ -98,8 +98,8 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 		return rsp, header.RspFileStorageInfo
 	}
 
-	transferWalletAddress := s.Who(conn.(*spbf.ServerConn).GetName())
-	if transferWalletAddress == "" {
+	transferP2PAddress := s.Who(conn.(*spbf.ServerConn).GetName())
+	if transferP2PAddress == "" {
 		rsp.Result.Msg = "not miner"
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		return rsp, header.RspFileStorageInfo
@@ -129,7 +129,7 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 	}
 
 	for _, row := range fileSlices {
-		node := &hashring.Node{ID: row.WalletAddress, Host: row.NetworkAddress}
+		node := &hashring.Node{ID: row.P2PAddress, Host: row.NetworkAddress}
 		if s.HashRing.IsOnline(node.ID) {
 			storageRing[row.SliceHash].AddNode(node)
 			storageRing[row.SliceHash].SetOnline(node.ID)
@@ -170,17 +170,17 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 		sliceInfo = append(sliceInfo, si)
 
 		task := &data.DownloadTask{
-			TaskId:               si.TaskId,
-			SliceHash:            row.SliceHash,
-			SliceSize:            row.SliceSize,
-			StorageWalletAddress: node.ID,
-			SliceNumber:          row.SliceNumber,
-			Time:                 uint64(time.Now().Unix()),
-			WalletAddressList: []string{
-				body.FileIndexes.WalletAddress, // download node
-				transferWalletAddress,          // transfer node
-				node.ID,                        // storage node
-				//row.P2PAddress,              // storage node wallet
+			TaskId:            si.TaskId,
+			SliceHash:         row.SliceHash,
+			SliceSize:         row.SliceSize,
+			StorageP2PAddress: node.ID,
+			SliceNumber:       row.SliceNumber,
+			Time:              uint64(time.Now().Unix()),
+			P2PAddressList: []string{
+				body.FileIndexes.P2PAddress, // download node
+				transferP2PAddress,          // transfer node
+				node.ID,                     // storage node
+				//row.WalletAddress,            // storage node wallet
 			},
 		}
 
@@ -219,8 +219,8 @@ func validateFileStorageInfoRequest(s *net.Server, req *protos.ReqFileStorageInf
 		return
 	}
 
-	if req.FileIndexes.P2PAddress == "" {
-		err = errors.New("P2P key address can't be empty")
+	if req.FileIndexes.P2PAddress == "" || req.FileIndexes.WalletAddress == "" {
+		err = errors.New("P2P key address and wallet address can't be empty")
 		return
 	}
 

@@ -18,6 +18,7 @@ const (
 // Traffic
 type Traffic struct {
 	Id                    uint32
+	ProviderP2PAddress    string
 	ProviderWalletAddress string
 	ConsumerWalletAddress string
 	TaskId                string
@@ -53,6 +54,7 @@ func (t *Traffic) GetCacheKey() string {
 func (t *Traffic) GetHeaders() []string {
 	return []string{
 		"Id",
+		"ProviderP2PAddress",
 		"ProviderWalletAddress",
 		"ConsumerWalletAddress",
 		"TaskId",
@@ -66,6 +68,7 @@ func (t *Traffic) GetHeaders() []string {
 func (t *Traffic) ToSlice() []string {
 	return []string{
 		strconv.FormatUint(uint64(t.Id), 10),
+		t.ProviderP2PAddress,
 		t.ProviderWalletAddress,
 		t.ConsumerWalletAddress,
 		t.TaskId,

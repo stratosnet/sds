@@ -7,7 +7,7 @@ import (
 // FileSliceStorage map for file slice and storage pp
 type FileSliceStorage struct {
 	SliceHash      string
-	WalletAddress  string
+	P2PAddress     string
 	NetworkAddress string
 }
 
@@ -18,7 +18,7 @@ func (fss *FileSliceStorage) TableName() string {
 
 // PrimaryKey
 func (fss *FileSliceStorage) PrimaryKey() []string {
-	return []string{"slice_hash", "wallet_address"}
+	return []string{"slice_hash", "p2p_address"}
 }
 
 // SetData

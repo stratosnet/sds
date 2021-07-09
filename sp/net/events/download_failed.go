@@ -79,17 +79,17 @@ func downloadFailedCallbackFunc(_ context.Context, s *net.Server, message proto.
 
 	ring := hashring.New(s.Conf.HashRing.VirtualNodeNum)
 	for _, storage := range sliceStorage {
-		if storage.WalletAddress != task.StorageWalletAddress {
-			if s.HashRing.IsOnline(storage.WalletAddress) {
-				ring.AddNode(&hashring.Node{ID: storage.WalletAddress, Host: storage.NetworkAddress})
-				ring.SetOnline(storage.WalletAddress)
+		if storage.P2PAddress != task.StorageP2PAddress {
+			if s.HashRing.IsOnline(storage.P2PAddress) {
+				ring.AddNode(&hashring.Node{ID: storage.P2PAddress, Host: storage.NetworkAddress})
+				ring.SetOnline(storage.P2PAddress)
 			}
 		}
 	}
 
-	_, anotherWalletAddress := ring.GetNode(utils.CalcHash([]byte(uuid.New().String() + body.SliceHash)))
+	_, anotherP2PAddress := ring.GetNode(utils.CalcHash([]byte(uuid.New().String() + body.SliceHash)))
 
-	if anotherWalletAddress == "" {
+	if anotherP2PAddress == "" {
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		rsp.Result.Msg = "no resource to process, try later"
 		return rsp, header.RspDownloadSliceWrong
@@ -98,7 +98,7 @@ func downloadFailedCallbackFunc(_ context.Context, s *net.Server, message proto.
 	fileSlice := &table.FileSlice{
 		SliceHash: task.SliceHash,
 		FileSliceStorage: table.FileSliceStorage{
-			WalletAddress: anotherWalletAddress,
+			P2PAddress: anotherP2PAddress,
 		},
 	}
 
@@ -107,8 +107,8 @@ func downloadFailedCallbackFunc(_ context.Context, s *net.Server, message proto.
 	}
 
 	fileSliceStorage := &table.FileSliceStorage{
-		SliceHash:     task.SliceHash,
-		WalletAddress: task.StorageWalletAddress,
+		SliceHash:  task.SliceHash,
+		P2PAddress: task.StorageP2PAddress,
 	}
 
 	if _, err = s.CT.DeleteTable(fileSliceStorage); err != nil {
@@ -116,12 +116,12 @@ func downloadFailedCallbackFunc(_ context.Context, s *net.Server, message proto.
 	}
 
 	s.HandleMsg(&common.MsgTransferNotice{
-		SliceHash:         fileSlice.SliceHash,
-		FromWalletAddress: fileSlice.WalletAddress,
-		ToWalletAddress:   task.StorageWalletAddress,
+		SliceHash:      fileSlice.SliceHash,
+		FromP2PAddress: fileSlice.P2PAddress,
+		ToP2PAddress:   task.StorageP2PAddress,
 	})
 
-	task.StorageWalletAddress = anotherWalletAddress
+	task.StorageP2PAddress = anotherP2PAddress
 
 	if err := s.Store(task, 3600*time.Second); err != nil {
 		utils.ErrorLogf(eventHandleErrorTemplate, downloadFailedEvent, "store task to db", err)

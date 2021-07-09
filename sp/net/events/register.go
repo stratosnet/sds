@@ -59,7 +59,7 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 	}
 
 	// check PP
-	pp := &table.PP{WalletAddress: body.Address.WalletAddress}
+	pp := &table.PP{P2PAddress: body.Address.P2PAddress}
 	if err := s.CT.Fetch(pp); err == nil {
 		rsp.IsPP = true
 	}
@@ -91,7 +91,7 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 	totalUsed, _ := s.CT.SumTable(&table.File{}, "f.size", map[string]interface{}{
 		"alias": "f",
 		"join":  []string{"user_has_file", "f.hash = uhf.file_hash", "uhf"},
-		"where": map[string]interface{}{"uhf.p2p_address = ?": user.P2PAddress},
+		"where": map[string]interface{}{"uhf.wallet_address = ?": user.WalletAddress},
 	})
 
 	user.UsedCapacity = uint64(totalUsed)
@@ -106,7 +106,7 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 
 	inv := &table.UserInvite{
 		InvitationCode: user.InvitationCode,
-		WalletAddress:  user.WalletAddress,
+		P2PAddress:     user.P2PAddress,
 		Times:          0,
 	}
 	if err := s.CT.Save(inv); err != nil {

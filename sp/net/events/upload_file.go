@@ -119,7 +119,7 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 
 	taskID := tools.GenerateTaskID(body.FileInfo.FileHash)
 
-	walletAddress := body.MyAddress.P2PAddress
+	walletAddress := body.MyAddress.WalletAddress
 	var isCover byte
 	if body.IsCover {
 		isCover = table.IS_COVER
@@ -188,7 +188,7 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 
 		s.CT.GetDriver().Delete("user_directory_map_file", map[string]interface{}{
 			"owner = ? AND file_hash = ?": []interface{}{
-				body.MyAddress.P2PAddress, file.Hash,
+				body.MyAddress.WalletAddress, file.Hash,
 			},
 		})
 
@@ -196,9 +196,9 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 			dirMapFile := &table.UserDirectoryMapFile{
 				UserDirectory: table.UserDirectory{
 					Path:          body.FileInfo.StoragePath,
-					WalletAddress: body.MyAddress.P2PAddress,
+					WalletAddress: body.MyAddress.WalletAddress,
 				},
-				Owner:    body.MyAddress.P2PAddress,
+				Owner:    body.MyAddress.WalletAddress,
 				FileHash: file.Hash,
 			}
 			dirMapFile.DirHash = dirMapFile.GenericHash()

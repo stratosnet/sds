@@ -16,7 +16,7 @@ import (
 func FindDirectory(reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, findDirectoryData(reqID), header.ReqFindDirectory)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}

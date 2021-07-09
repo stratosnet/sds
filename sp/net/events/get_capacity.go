@@ -54,7 +54,7 @@ func getCapacityCallbackFunc(_ context.Context, s *net.Server, message proto.Mes
 	totalUsed, err := s.CT.SumTable(&table.File{}, "f.size", map[string]interface{}{
 		"alias": "f",
 		"join":  []string{"user_has_file", "f.hash = uhf.file_hash", "uhf"},
-		"where": map[string]interface{}{"uhf.p2p_address = ?": user.P2PAddress},
+		"where": map[string]interface{}{"uhf.wallet_address = ?": user.WalletAddress},
 	})
 
 	if err != nil {

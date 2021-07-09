@@ -100,7 +100,7 @@ func putData(reqID string, httpType HTTPType, target interface{}) {
 	}
 }
 
-func stroeResponseWriter(reqID string, w http.ResponseWriter) {
+func storeResponseWriter(reqID string, w http.ResponseWriter) {
 	if setting.Config.IsWallet {
 		if w != nil {
 			StroeReqID(reqID, w)

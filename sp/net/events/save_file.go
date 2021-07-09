@@ -40,7 +40,7 @@ func saveFileCallbackFunc(_ context.Context, s *net.Server, message proto.Messag
 
 	if body.P2PAddress == "" || body.WalletAddress == "" || body.FileHash == "" || body.FileOwnerWalletAddress == "" {
 		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "P2P key address, wallet address and file hash can't be empty"
+		rsp.Result.Msg = "P2P key address, wallet address, file hash and file owner wallet address can't be empty"
 		return rsp, header.RspSaveFile
 	}
 

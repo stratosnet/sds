@@ -6,44 +6,23 @@ import (
 )
 
 /*
-CREATE TABLE `pp` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Id of pp',
-  `wallet_address` char(42) NOT NULL DEFAULT '' ,
-  `network_address` varchar(32) NOT NULL DEFAULT '' ,
-  `disk_size` bigint(20) unsigned NOT NULL DEFAULT '0' ,
-  `free_disk` bigint(20) unsigned NOT NULL DEFAULT '0' ,
-  `memory_size` bigint(20) unsigned NOT NULL DEFAULT '0' ,
-  `os_and_ver` varchar(128) NOT NULL DEFAULT '' ,
-  `cpu_info` varchar(64) NOT NULL DEFAULT '' ,
-  `mac_address` varchar(17) NOT NULL DEFAULT '' ,
-  `version` int(10) unsigned NOT NULL DEFAULT '0' ,
-  `pub_key` varchar(1000) NOT NULL DEFAULT '' ,
-  `state` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT '0:offline,1:online',
-  `active` boolean NOT NULL DEFAULT false,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `IDX_WALLET_ADDRESS` (`wallet_address`) USING HASH
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
-*/
-
-/*
-Updated, remove length for int types
-
 CREATE TABLE pp
 (
-    id              int unsigned        NOT NULL AUTO_INCREMENT COMMENT 'Id of pp' PRIMARY KEY,
-    wallet_address  char(42)            NOT NULL DEFAULT '',
-    network_address varchar(32)         NOT NULL DEFAULT '',
-    disk_size       bigint unsigned     NOT NULL DEFAULT '0',
-    free_disk       bigint unsigned     NOT NULL DEFAULT '0',
-    memory_size     bigint unsigned     NOT NULL DEFAULT '0',
-    os_and_ver      varchar(128)        NOT NULL DEFAULT '',
-    cpu_info        varchar(64)         NOT NULL DEFAULT '',
-    mac_address     varchar(17)         NOT NULL DEFAULT '',
-    version         int unsigned        NOT NULL DEFAULT '0',
-    pub_key         varchar(1000)       NOT NULL DEFAULT '',
-    state           tinyint unsigned    NOT NULL DEFAULT '0' COMMENT '0:offline,1:online',
-    active          boolean             NOT NULL DEFAULT false,
-    UNIQUE KEY IDX_WALLET_ADDRESS (wallet_address) USING HASH
+    id              int unsigned     NOT NULL AUTO_INCREMENT COMMENT 'Id of pp' PRIMARY KEY,
+    p2p_address     char(42)         NOT NULL DEFAULT '',
+    wallet_address  char(42)         NOT NULL DEFAULT '',
+    network_address varchar(32)      NOT NULL DEFAULT '',
+    disk_size       bigint unsigned  NOT NULL DEFAULT '0',
+    free_disk       bigint unsigned  NOT NULL DEFAULT '0',
+    memory_size     bigint unsigned  NOT NULL DEFAULT '0',
+    os_and_ver      varchar(128)     NOT NULL DEFAULT '',
+    cpu_info        varchar(64)      NOT NULL DEFAULT '',
+    mac_address     varchar(17)      NOT NULL DEFAULT '',
+    version         int unsigned     NOT NULL DEFAULT '0',
+    pub_key         varchar(1000)    NOT NULL DEFAULT '',
+    state           tinyint unsigned NOT NULL DEFAULT '0' COMMENT '0:offline,1:online',
+    active          tinyint          NOT NULL DEFAULT '0',
+    UNIQUE KEY IDX_P2P_ADDRESS (p2p_address) USING HASH
 ) ENGINE = InnoDB
   DEFAULT CHARSET = UTF8MB4;
 */
@@ -62,6 +41,7 @@ const (
 // PP table
 type PP struct {
 	Id             uint32
+	P2PAddress     string
 	WalletAddress  string
 	NetworkAddress string
 	DiskSize       uint64
@@ -71,7 +51,7 @@ type PP struct {
 	CpuInfo        string
 	MacAddress     string
 	Version        uint32
-	PubKey         string
+	PubKey         string // TODO: remove or make sure it's bech32 encoded
 	State          byte
 	Active         byte // Whether or not the PP is an active resource node on the stratos-chain
 }
@@ -93,7 +73,7 @@ func (p *PP) SetData(data map[string]interface{}) (bool, error) {
 
 // GetCacheKey
 func (p *PP) GetCacheKey() string {
-	return "pp#" + p.WalletAddress
+	return "pp#" + p.P2PAddress
 }
 
 // GetTimeOut
@@ -105,7 +85,7 @@ func (p *PP) GetTimeOut() time.Duration {
 func (p *PP) Where() map[string]interface{} {
 	return map[string]interface{}{
 		"where": map[string]interface{}{
-			"wallet_address = ?": p.WalletAddress,
+			"p2p_address = ?": p.P2PAddress,
 		},
 	}
 }

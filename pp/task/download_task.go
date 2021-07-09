@@ -63,15 +63,15 @@ func AddDownloadTask(target *protos.RspFileStorageInfo) {
 }
 
 // CleanDownloadTask
-func CleanDownloadTask(fileHash, sliceHash, wAddress string) {
-	if dlTask, ok := DownloadTaskMap.Load(fileHash + wAddress); ok {
+func CleanDownloadTask(fileHash, sliceHash, p2pAddress, walletAddress string) {
+	if dlTask, ok := DownloadTaskMap.Load(fileHash + walletAddress); ok {
 
 		downloadTask := dlTask.(*DownloadTask)
 		delete(downloadTask.SliceInfo, sliceHash)
 		if len(downloadTask.SliceInfo) == 0 {
-			DownloadTaskMap.Delete((fileHash + wAddress))
+			DownloadTaskMap.Delete(fileHash + walletAddress)
 			utils.DebugLog("PP reported, clean all slice task")
-			client.DownloadConnMap.Delete(wAddress + fileHash)
+			client.DownloadConnMap.Delete(p2pAddress + fileHash)
 		}
 		utils.DebugLog("PP reported, clean slice taks")
 	}

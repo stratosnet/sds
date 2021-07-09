@@ -52,7 +52,7 @@ func GetWalletAddress() {
 	}
 	setting.WalletAddress = files[0].Name()
 	getPublicKey(filepath.Join(setting.Config.AccountDir, setting.WalletAddress+".json"), setting.Config.DefPassword)
-	utils.Log("setting.P2PAddress,", setting.WalletAddress)
+	utils.Log("setting.WalletAddress,", setting.WalletAddress)
 }
 
 func getPublicKey(filePath, password string) bool {

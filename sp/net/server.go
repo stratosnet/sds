@@ -128,12 +128,12 @@ func (s *Server) BuildHashRing() {
 
 	// initialize hashring
 	ppList, err := s.CT.GetDriver().FetchAll("pp", map[string]interface{}{
-		"columns": "wallet_address, network_address, pub_key",
+		"columns": "p2p_address, network_address, pub_key",
 	})
 	if err == nil {
 		for _, pp := range ppList {
 			node := &hashring.Node{
-				ID:   pp["wallet_address"].(string),
+				ID:   pp["p2p_address"].(string),
 				Host: pp["network_address"].(string),
 			}
 			s.HashRing.AddNode(node)
@@ -189,39 +189,39 @@ func (s *Server) refreshStatus() {
 }
 
 // AddConn
-func (s *Server) AddConn(name, walletAddress string, conn spbf.WriteCloser) {
-	s.connPool.Store(name, walletAddress)
-	s.connPool.Store(walletAddress+"#name", name)
-	s.connPool.Store(walletAddress+"#connect", conn)
+func (s *Server) AddConn(name, p2pAddress string, conn spbf.WriteCloser) {
+	s.connPool.Store(name, p2pAddress)
+	s.connPool.Store(p2pAddress+"#name", name)
+	s.connPool.Store(p2pAddress+"#connect", conn)
 	s.ConnectedCount++
 }
 
 // RmConn
 func (s *Server) RmConn(name string) {
-	walletAddress := s.Who(name)
+	p2pAddress := s.Who(name)
 	s.connPool.Delete(name)
-	s.connPool.Delete(walletAddress + "#name")
-	s.connPool.Delete(walletAddress + "#connect")
+	s.connPool.Delete(p2pAddress + "#name")
+	s.connPool.Delete(p2pAddress + "#connect")
 	s.ConnectedCount--
 }
 
 // GetConn
-func (s *Server) GetConn(walletAddress string) spbf.WriteCloser {
-	if c, ok := s.connPool.Load(walletAddress + "#connect"); ok {
+func (s *Server) GetConn(p2pAddress string) spbf.WriteCloser {
+	if c, ok := s.connPool.Load(p2pAddress + "#connect"); ok {
 		return c.(spbf.WriteCloser)
 	}
 	return nil
 }
 
 // GetName
-func (s *Server) GetName(walletAddress string) string {
-	if n, ok := s.connPool.Load(walletAddress + "#name"); ok {
+func (s *Server) GetName(p2pAddress string) string {
+	if n, ok := s.connPool.Load(p2pAddress + "#name"); ok {
 		return n.(string)
 	}
 	return ""
 }
 
-// Who return wallet address, can be used to check if PP.
+// Who returns the P2P key address, can be used to check if a node is a PP.
 func (s *Server) Who(name string) string {
 	if wa, ok := s.connPool.Load(name); ok {
 		return wa.(string)
@@ -230,8 +230,8 @@ func (s *Server) Who(name string) string {
 }
 
 // SendMsg send msg to PP
-func (s *Server) SendMsg(walletAddress string, cmd string, message proto.Message) {
-	conn := s.GetConn(walletAddress)
+func (s *Server) SendMsg(p2pAddress string, cmd string, message proto.Message) {
+	conn := s.GetConn(p2pAddress)
 	if conn == nil {
 		return
 	}

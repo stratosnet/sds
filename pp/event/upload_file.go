@@ -34,7 +34,7 @@ func RequestUploadCoverImage(pathStr, reqID string, w http.ResponseWriter) {
 	}
 	p := RequestUploadFileData(tmpString, "", reqID, true)
 	SendMessageToSPServer(p, header.ReqUploadFile)
-	stroeResponseWriter(reqID, w)
+	storeResponseWriter(reqID, w)
 }
 
 // RequestUploadFile request to SP for upload file

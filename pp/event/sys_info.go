@@ -56,7 +56,7 @@ func startReportDHInfo() {
 func GetCapacity(reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqGetCapacityData(reqID), header.ReqGetCapacity)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}

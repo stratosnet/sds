@@ -68,7 +68,6 @@ func reportDownloadResultCallbackFunc(_ context.Context, s *net.Server, message 
 
 	s.Lock()
 	if s.Load(record) == nil {
-
 		if record.Status == table.DOWNLOAD_STATUS_SUCCESS {
 			s.Unlock()
 			return rsp, header.RspReportDownloadResult
@@ -83,16 +82,22 @@ func reportDownloadResultCallbackFunc(_ context.Context, s *net.Server, message 
 			s.Unlock()
 			return rsp, header.RspReportDownloadResult
 		}
-
 	} else {
 		record.SliceHash = fileSlice.SliceHash
 		record.Status = table.DOWNLOAD_STATUS_CHECK
 		record.Time = time.Now().Unix()
 	}
 
+	// TODO: confirm this logic in QB-475
 	if body.IsPP {
+		record.FromP2PAddress = body.MyP2PAddress
 		record.FromWalletAddress = body.MyWalletAddress
+		record.ToP2PAddress = body.DownloaderP2PAddress
+		record.ToWalletAddress = body.DownloaderWalletAddress
 	} else {
+		record.FromP2PAddress = body.DownloaderP2PAddress
+		record.FromWalletAddress = body.DownloaderWalletAddress
+		record.ToP2PAddress = body.MyP2PAddress
 		record.ToWalletAddress = body.MyWalletAddress
 	}
 
@@ -111,6 +116,7 @@ func reportDownloadResultCallbackFunc(_ context.Context, s *net.Server, message 
 		//persist Traffic records
 		traffic := &table.Traffic{
 			TaskId:                body.TaskId,
+			ProviderP2PAddress:    record.FromP2PAddress,
 			ProviderWalletAddress: record.FromWalletAddress,
 			ConsumerWalletAddress: record.ToWalletAddress,
 			TaskType:              table.TRAFFIC_TASK_TYPE_DOWNLOAD,
@@ -123,7 +129,7 @@ func reportDownloadResultCallbackFunc(_ context.Context, s *net.Server, message 
 		}
 
 		// verify download
-		downloadFile := &data.DownloadFile{FileHash: fileSlice.FileHash, WalletAddress: body.WalletAddress}
+		downloadFile := &data.DownloadFile{FileHash: fileSlice.FileHash, WalletAddress: body.DownloaderWalletAddress}
 		if s.Load(downloadFile) == nil {
 			downloadFile.SetSliceFinish(fileSlice.SliceNumber)
 			if err = s.Store(downloadFile, 7*24*3600*time.Second); err != nil {
@@ -132,8 +138,8 @@ func reportDownloadResultCallbackFunc(_ context.Context, s *net.Server, message 
 			if downloadFile.IsDownloadFinished() {
 				fileDownload := &table.FileDownload{
 					FileHash:        fileSlice.FileHash,
-					ToWalletAddress: body.WalletAddress,
-					TaskId:          utils.CalcHash([]byte(fileSlice.FileHash + body.WalletAddress)),
+					ToWalletAddress: body.DownloaderWalletAddress,
+					TaskId:          utils.CalcHash([]byte(fileSlice.FileHash + body.DownloaderWalletAddress)),
 					Time:            time.Now().Unix(),
 				}
 				if _, err = s.CT.StoreTable(fileDownload); err != nil {
@@ -175,7 +181,7 @@ func validateReportDownloadRequest(req *protos.ReqReportDownloadResult) (bool, s
 		return false, "download task ID can't be empty"
 	}
 
-	//user := &table.User{P2PAddress: req.P2PAddress}
+	//user := &table.User{WalletAddress: req.WalletAddress}
 	//if s.CT.Fetch(user) != nil {
 	//	return false, "not authorized to process"
 	//}
@@ -185,13 +191,8 @@ func validateReportDownloadRequest(req *protos.ReqReportDownloadResult) (bool, s
 	//	return false, err.Error()
 	//}
 	//
-	//puk, err := crypto.UnmarshalPubkey(pukInByte)
-	//if err != nil {
-	//	return false, err.Error()
-	//}
-	//
-	//data := req.MyWalletAddress + req.FileHash
-	//if !utils.ECCVerify([]byte(data), req.Sign, puk) {
+	//data := req.MyP2PAddress + req.FileHash
+	//if !ed25519.Verify(puk, []byte(data), req.Sign) {
 	//	return false, "signature verification failed"
 	//}
 

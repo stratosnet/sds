@@ -42,9 +42,9 @@ func saveFolderCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 		FolderHash:    body.FolderHash,
 	}
 
-	if body.P2PAddress == "" || body.FolderHash == "" {
+	if body.P2PAddress == "" || body.WalletAddress == "" || body.FolderHash == "" {
 		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "P2P key address and file hash can't be empty"
+		rsp.Result.Msg = "P2P key address, wallet address and file hash can't be empty"
 		return rsp, header.RspSaveFolder
 	}
 

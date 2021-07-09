@@ -40,9 +40,9 @@ func albumContentCallbackFunc(_ context.Context, s *net.Server, message proto.Me
 		AlbumId:       body.AlbumId,
 	}
 
-	if body.P2PAddress == "" {
+	if body.P2PAddress == "" || body.WalletAddress == "" {
 		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "P2P key address can't be empty"
+		rsp.Result.Msg = "P2P key address and wallet address can't be empty"
 		return rsp, header.RspAlbumContent
 	}
 

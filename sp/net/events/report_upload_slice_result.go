@@ -46,6 +46,7 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 		SliceNumAddr: &protos.SliceNumAddr{
 			PpInfo: &protos.PPBaseInfo{
 				P2PAddress:     body.SliceNumAddr.PpInfo.P2PAddress,
+				WalletAddress:  body.SliceNumAddr.PpInfo.WalletAddress,
 				NetworkAddress: body.SliceNumAddr.PpInfo.NetworkAddress,
 			},
 			SliceNumber: body.SliceNumAddr.SliceNumber,
@@ -60,7 +61,7 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 
 	fileSlice := &table.FileSlice{
 		FileSliceStorage: table.FileSliceStorage{
-			WalletAddress: body.SliceNumAddr.PpInfo.P2PAddress,
+			P2PAddress: body.SliceNumAddr.PpInfo.P2PAddress,
 		},
 		SliceHash: body.SliceHash,
 		TaskId:    body.TaskId,
@@ -85,7 +86,7 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 		if fileSlice.SliceSize != body.SliceSize ||
 			fileSlice.SliceNumber != body.SliceNumAddr.SliceNumber ||
 			fileSlice.NetworkAddress != body.SliceNumAddr.PpInfo.NetworkAddress ||
-			fileSlice.WalletAddress != body.SliceNumAddr.PpInfo.P2PAddress ||
+			fileSlice.P2PAddress != body.SliceNumAddr.PpInfo.P2PAddress ||
 			fileSlice.FileHash != body.FileHash {
 
 			rsp.Result.Msg = "report result validate failed"
@@ -108,13 +109,14 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 		fileSlice.SliceNumber = body.SliceNumAddr.SliceNumber
 		fileSlice.SliceOffsetStart = body.SliceNumAddr.SliceOffset.SliceOffsetStart
 		fileSlice.SliceOffsetEnd = body.SliceNumAddr.SliceOffset.SliceOffsetEnd
-		fileSlice.WalletAddress = body.SliceNumAddr.PpInfo.P2PAddress
+		fileSlice.P2PAddress = body.SliceNumAddr.PpInfo.P2PAddress
 		fileSlice.NetworkAddress = body.SliceNumAddr.PpInfo.NetworkAddress
 		fileSlice.Status = table.FILE_SLICE_STATUS_CHECK
 		fileSlice.Time = time.Now().Unix()
 	}
 
 	s.Load(traffic)
+	// TODO: confirm this logic in QB-475
 	if body.IsPP {
 		traffic.ProviderWalletAddress = body.WalletAddress
 	} else {
@@ -217,8 +219,8 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 
 	// if upload finish, started backup
 	backupSliceMsg := &common.MsgBackupSlice{
-		SliceHash:         fileSlice.SliceHash,
-		FromWalletAddress: fileSlice.WalletAddress,
+		SliceHash:      fileSlice.SliceHash,
+		FromP2PAddress: fileSlice.P2PAddress,
 	}
 	s.HandleMsg(backupSliceMsg)
 
@@ -288,11 +290,7 @@ func broadcastFileUploadTx(file *table.File, s *net.Server) error {
 
 	spWalletAddress := spPubKey.Address()
 	spWalletAddressString := types.AccAddress(spPubKey.Address()).String()
-	txMsg, err := stratoschain.BuildFileUploadMsg(fileHash, spWalletAddress, ppWalletAddress)
-	if err != nil {
-		return err
-	}
-
+	txMsg := stratoschain.BuildFileUploadMsg(fileHash, spWalletAddress, ppWalletAddress)
 	txBytes, err := stratoschain.BuildTxBytes(s.Conf.BlockchainInfo.Token, s.Conf.BlockchainInfo.ChainId, "",
 		spWalletAddressString, "sync", txMsg, s.Conf.BlockchainInfo.Transactions.Fee,
 		s.Conf.BlockchainInfo.Transactions.Gas, spPrivKey[:])

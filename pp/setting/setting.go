@@ -50,8 +50,8 @@ var IsLoad bool
 // UpLoadTaskIDMap
 var UpLoadTaskIDMap = &sync.Map{}
 
-// DownLoadTaskIDMap
-var DownLoadTaskIDMap = &sync.Map{}
+// DownloadTaskIDMap
+var DownloadTaskIDMap = &sync.Map{}
 
 // socket map
 var (
@@ -84,9 +84,9 @@ type config struct {
 	DefSavePath                 string `yaml:"DefSavePath"`
 	StorehousePath              string `yaml:"StorehousePath"`
 	DownloadPath                string `yaml:"DownloadPath"`
-	P2PAddress                  string `yaml:"P2PAddress"`
+	P2PAddress                  string `yaml:"WalletAddress"`
 	P2PPassword                 string `yaml:"P2PPassword"`
-	WalletAddress               string `yaml:"P2PAddress"`
+	WalletAddress               string `yaml:"WalletAddress"`
 	WalletPassword              string `yaml:"WalletPassword"`
 	AutoRun                     bool   `yaml:"AutoRun"`  // is auto login
 	Internal                    bool   `yaml:"Internal"` // is internal net
@@ -251,7 +251,7 @@ func SetupP2PKey() error {
 
 		p2pKeyAddress, err := utils.CreateP2PKey(Config.AccountDir, nickname, password, Config.P2PKeyPrefix, Config.ScryptN, Config.ScryptP)
 		if err != nil {
-			return errors.New("couldn't create P2PAddress: " + err.Error())
+			return errors.New("couldn't create WalletAddress: " + err.Error())
 		}
 
 		p2pKeyAddressString, err := p2pKeyAddress.ToBech(Config.P2PKeyPrefix)
@@ -276,6 +276,6 @@ func SetupP2PKey() error {
 
 	P2PAddress = Config.P2PAddress
 	P2PPrivateKey = p2pKey.PrivateKey
-	P2PPublicKey = ed25519.PrivateKeyToPublicKey(P2PPrivateKey)
+	P2PPublicKey = ed25519.PrivKeyBytesToPubKeyBytes(P2PPrivateKey)
 	return nil
 }
