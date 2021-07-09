@@ -16,7 +16,7 @@ import (
 func FindMyFileList(fileName, dir, reqID, keyword string, fileType int, isUp bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, findMyFileListData(fileName, dir, reqID, keyword, protos.FileSortType(fileType), isUp), header.ReqFindMyFileList)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}

@@ -63,7 +63,7 @@ func RspUploadFileSlice(ctx context.Context, conn spbf.WriteCloser) {
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress != setting.P2PAddress {
 
-			utils.DebugLog("PP get resp upload slice success, transfer to P2PAddress = ", target.P2PAddress, "sliceNumber= ", target.SliceNumAddr.SliceNumber)
+			utils.DebugLog("PP get resp upload slice success, transfer to WalletAddress = ", target.P2PAddress, "sliceNumber= ", target.SliceNumAddr.SliceNumber)
 			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		} else {
 			// target is self, report to SP if success

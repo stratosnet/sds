@@ -49,7 +49,7 @@ func ReqRegisterChain(ctx context.Context, conn spbf.WriteCloser) {
 		// 	utils.DebugLog("target", target)
 		// 	req := target
 		// 	req.Address = &protos.PPBaseInfo{
-		// 		P2PAddress:  target.Address.P2PAddress,
+		// 		WalletAddress:  target.Address.WalletAddress,
 		// 		NetworkAddress: conn.(*spbf.ServerConn).GetIP() + ":" + port,
 		// 	}
 		// 	utils.DebugLog("req", req)

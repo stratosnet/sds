@@ -1,7 +1,8 @@
 package event
 
 import (
-	"crypto/ed25519"
+	goed25519 "crypto/ed25519"
+	"github.com/stratosnet/sds/utils/crypto"
 	"path"
 
 	"github.com/stratosnet/sds/msg"
@@ -12,7 +13,7 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto"
+	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/types"
 
 	"github.com/golang/protobuf/proto"
@@ -58,40 +59,37 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivate, error) {
 		return nil, err
 	}
 
-	txMsg, err := stratoschain.BuildCreateResourceNodeMsg(setting.NetworkAddress, setting.Config.Token, setting.WalletAddress, "", setting.WalletPublicKey, amount, ownerAddress)
-	if err != nil {
-		return nil, err
-	}
-
+	// TODO: Send network ID instead of P2P address (QB-446)
+	txMsg := stratoschain.BuildCreateResourceNodeMsg(setting.P2PAddress, setting.Config.Token, setting.P2PAddress, "", setting.P2PPublicKey, amount, ownerAddress)
 	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", setting.WalletAddress, "sync", txMsg, fee, gas, setting.WalletPrivateKey)
 	if err != nil {
 		return nil, err
 	}
 
 	req := &protos.ReqActivate{
-		Tx:            txBytes,
-		WalletAddress: setting.WalletAddress,
+		Tx:         txBytes,
+		P2PAddress: setting.P2PAddress,
 	}
 	return req, nil
 }
 
 func reqDeactivateData(fee, gas int64) (*protos.ReqDeactivate, error) {
 	// Create and sign transaction to remove a resource node
-	nodeAddress, err := crypto.PubKeyToAddress(setting.WalletPublicKey)
+	nodeAddress := ed25519.PubKeyBytesToAddress(setting.P2PPublicKey)
+	ownerAddress, err := crypto.PubKeyToAddress(setting.WalletPublicKey)
 	if err != nil {
 		return nil, err
 	}
 
-	txMsg := stratoschain.BuildRemoveResourceNodeMsg(nodeAddress, nodeAddress)
-
+	txMsg := stratoschain.BuildRemoveResourceNodeMsg(nodeAddress, ownerAddress)
 	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", setting.WalletAddress, "sync", txMsg, fee, gas, setting.WalletPrivateKey)
 	if err != nil {
 		return nil, err
 	}
 
 	req := &protos.ReqDeactivate{
-		Tx:            txBytes,
-		WalletAddress: setting.WalletAddress,
+		Tx:         txBytes,
+		P2PAddress: setting.P2PAddress,
 	}
 	return req, nil
 }
@@ -103,11 +101,7 @@ func reqPrepayData(amount, fee, gas int64) (*protos.ReqPrepay, error) {
 		return nil, err
 	}
 
-	txMsg, err := stratoschain.BuildPrepayMsg(setting.Config.Token, amount, senderAddress[:])
-	if err != nil {
-		return nil, err
-	}
-
+	txMsg := stratoschain.BuildPrepayMsg(setting.Config.Token, amount, senderAddress[:])
 	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", setting.WalletAddress, "sync", txMsg, fee, gas, setting.WalletPrivateKey)
 	if err != nil {
 		return nil, err
@@ -115,6 +109,7 @@ func reqPrepayData(amount, fee, gas int64) (*protos.ReqPrepay, error) {
 
 	req := &protos.ReqPrepay{
 		Tx:            txBytes,
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 	}
 	return req, nil
@@ -136,6 +131,7 @@ func reqGetPPlistData() *protos.ReqGetPPList {
 	return &protos.ReqGetPPList{
 		MyAddress: &protos.PPBaseInfo{
 			P2PAddress:     setting.P2PAddress,
+			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
 	}
@@ -164,6 +160,7 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool) *prot
 		},
 		MyAddress: &protos.PPBaseInfo{
 			P2PAddress:     setting.P2PAddress,
+			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
 		Sign:    setting.GetSign(p2pFileString),
@@ -175,9 +172,9 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool) *prot
 		req.FileInfo.FileName = fileHash + fileSuffix
 	}
 	p2pFileHash := []byte(p2pFileString)
-	utils.DebugLogf("setting.P2PAddress + fileHash : %v", p2pFileHash)
+	utils.DebugLogf("setting.WalletAddress + fileHash : %v", p2pFileHash)
 
-	if ed25519.Verify(setting.P2PPublicKey, p2pFileHash, req.Sign) {
+	if goed25519.Verify(setting.P2PPublicKey, p2pFileHash, req.Sign) {
 		utils.DebugLog("ECC verification ok")
 	} else {
 		utils.DebugLog("ECC verification failed")
@@ -223,6 +220,7 @@ func rspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 			FileCrc:       rsp.FileCrc,
 			FileHash:      rsp.FileHash,
 			Data:          rsp.Data[dataStart:],
+			P2PAddress:    rsp.P2PAddress,
 			WalletAddress: rsp.WalletAddress,
 			TaskId:        rsp.TaskId,
 			SliceSize:     rsp.SliceSize,
@@ -242,6 +240,7 @@ func rspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 		FileCrc:       rsp.FileCrc,
 		FileHash:      rsp.FileHash,
 		Data:          rsp.Data[dataStart:dataEnd],
+		P2PAddress:    rsp.P2PAddress,
 		WalletAddress: rsp.WalletAddress,
 		TaskId:        rsp.TaskId,
 		SliceSize:     rsp.SliceSize,
@@ -317,12 +316,14 @@ func reqReportDownloadResultData(target *protos.RspDownloadSlice, isPP bool) *pr
 
 	utils.DebugLog("#################################################################", target.SliceInfo.SliceHash)
 	repReq := &protos.ReqReportDownloadResult{
-		IsPP:            isPP,
-		WalletAddress:   target.WalletAddress,
-		FileHash:        target.FileHash,
-		Sign:            setting.GetSign(setting.WalletAddress + target.FileHash),
-		MyWalletAddress: setting.WalletAddress,
-		TaskId:          target.TaskId,
+		IsPP:                    isPP,
+		DownloaderP2PAddress:    target.P2PAddress,
+		DownloaderWalletAddress: target.WalletAddress,
+		MyP2PAddress:            setting.P2PAddress,
+		MyWalletAddress:         setting.WalletAddress,
+		FileHash:                target.FileHash,
+		Sign:                    setting.GetSign(setting.P2PAddress + target.FileHash),
+		TaskId:                  target.TaskId,
 	}
 	if isPP {
 		utils.Log("PP ReportDownloadResult ")
@@ -415,6 +416,7 @@ func reqValidateTransferCerData(target *protos.ReqTransferNotice) *protos.ReqVal
 		NewPp:       target.StoragePpInfo,
 		OriginalPp: &protos.PPBaseInfo{
 			P2PAddress:     setting.P2PAddress,
+			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
 	}
@@ -426,6 +428,7 @@ func reqTransferNoticeData(target *protos.ReqTransferNotice) *msg.RelayMsgBuf {
 		TransferCer: target.TransferCer,
 		StoragePpInfo: &protos.PPBaseInfo{
 			P2PAddress:     setting.P2PAddress,
+			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
 
@@ -445,6 +448,7 @@ func rspTransferNoticeData(agree bool, cer string) *protos.RspTransferNotice {
 	rsp := &protos.RspTransferNotice{
 		StoragePpInfo: &protos.PPBaseInfo{
 			P2PAddress:     setting.P2PAddress,
+			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
 		TransferCer: cer,
@@ -475,6 +479,7 @@ func reqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
 		Traffic: traffic,
 		Reporter: &protos.PPBaseInfo{
 			P2PAddress:     setting.P2PAddress,
+			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
 	}
@@ -607,8 +612,8 @@ func rspDeleteSliceData(sliceHash, msg string, result bool) *protos.RspDeleteSli
 		state = protos.ResultState_RES_FAIL
 	}
 	return &protos.RspDeleteSlice{
-		WalletAddress: setting.WalletAddress,
-		SliceHash:     sliceHash,
+		P2PAddress: setting.P2PAddress,
+		SliceHash:  sliceHash,
 		Result: &protos.Result{
 			State: state,
 			Msg:   msg,

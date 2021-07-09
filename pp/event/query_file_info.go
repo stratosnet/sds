@@ -44,7 +44,7 @@ func FindDirectoryTree(reqID, pathHash string, w http.ResponseWriter, isF bool) 
 	if setting.CheckLogin() {
 		// request is the same as AlbumContent
 		sendMessage(client.PPConn, reqFindDirectoryTreeData(reqID, pathHash), header.ReqFindDirectoryTree)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 		isFind = isF
 	} else {
 		notLogin(w)
@@ -87,7 +87,7 @@ func GetFileStorageInfo(path, savePath, reqID string, isImg bool, w http.Respons
 			sendMessage(client.PPConn, reqFileStorageInfoData(path, savePath, reqID), header.ReqFileStorageInfo)
 			if isImg {
 				isImage = isImg
-				stroeResponseWriter(reqID, w)
+				storeResponseWriter(reqID, w)
 			}
 		} else {
 			utils.ErrorLog("please input correct download link, eg: spb://address/fileHash|filename(optional)")
@@ -114,7 +114,7 @@ func RspFileStorageInfo(ctx context.Context, conn spbf.WriteCloser) {
 	if unmarshalData(ctx, &target) {
 
 		utils.DebugLog("file hash", target.FileHash)
-		// utils.Log("target", target.P2PAddress)
+		// utils.Log("target", target.WalletAddress)
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("download starts: ")

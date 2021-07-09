@@ -15,7 +15,7 @@ import (
 func SaveOthersFile(fileHash, ownerAddress, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqSaveFileData(fileHash, reqID, ownerAddress), header.ReqSaveFile)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -47,7 +47,7 @@ func RspSaveFile(ctx context.Context, conn spbf.WriteCloser) {
 func SaveFolder(folderHash, ownerAddress, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqSaveFolderData(folderHash, reqID, ownerAddress), header.ReqSaveFolder)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}

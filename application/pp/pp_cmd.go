@@ -297,7 +297,7 @@ func main() {
 
 	savefile := func(line string, param []string) bool {
 		if len(param) < 2 {
-			fmt.Println("input file hash and account address")
+			fmt.Println("input file hash and wallet address")
 			return false
 		}
 		event.SaveOthersFile(param[0], param[1], "", nil)

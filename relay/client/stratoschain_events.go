@@ -52,7 +52,7 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 			fmt.Println("No node address was specified in the create_resource_node message from stratos-chain")
 			return
 		}
-		activatedMsg := &protos.ReqActivated{WalletAddress: nodeAddressList[0]}
+		activatedMsg := &protos.ReqActivated{P2PAddress: nodeAddressList[0]}
 		activatedMsgBytes, err := proto.Marshal(activatedMsg)
 		if err != nil {
 			fmt.Println("Error when trying to marshal activatedMsg proto: " + err.Error())
@@ -80,7 +80,7 @@ func (m *MultiClient) RemoveResourceNodeMsgHandler() func(event coretypes.Result
 			fmt.Println("No node address was specified in the remove_resource_node message from stratos-chain")
 			return
 		}
-		deactivatedMsg := &protos.ReqDeactivated{WalletAddress: nodeAddressList[0]}
+		deactivatedMsg := &protos.ReqDeactivated{P2PAddress: nodeAddressList[0]}
 		deactivatedMsgBytes, err := proto.Marshal(deactivatedMsg)
 		if err != nil {
 			fmt.Println("Error when trying to marshal deactivatedMsg proto: " + err.Error())
@@ -132,10 +132,11 @@ func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 			return
 		}
 
-		// TODO: change the capacity amount once the calculation is done in stratos-chain
+		// TODO: change the capacity amount once the calculation is done in stratos-chain (QB-475)
+		// TODO: verify if it makes sense to use reporter as P2P address (QB-475)
 		prepaidMsg := &protos.ReqPrepaid{
-			WalletAddress: reporterList[0],
-			Capacity:      1,
+			P2PAddress: reporterList[0],
+			Capacity:   1,
 		}
 		prepaidMsgBytes, err := proto.Marshal(prepaidMsg)
 		if err != nil {

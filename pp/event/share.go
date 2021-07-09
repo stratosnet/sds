@@ -16,7 +16,7 @@ import (
 func GetAllShareLink(reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqShareLinkData(reqID), header.ReqShareLink)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -26,7 +26,7 @@ func GetAllShareLink(reqID string, w http.ResponseWriter) {
 func GetReqShareFile(reqID, fileHash, pathHash string, shareTime int64, isPrivate bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqShareFileData(reqID, fileHash, pathHash, isPrivate, shareTime), header.ReqShareFile)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -36,7 +36,7 @@ func GetReqShareFile(reqID, fileHash, pathHash string, shareTime int64, isPrivat
 func DeleteShare(shareID, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqDeleteShareData(reqID, shareID), header.ReqDeleteShare)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -130,7 +130,7 @@ func GetShareFile(keyword, sharePassword, reqID string, w http.ResponseWriter) {
 	utils.DebugLog("GetShareFileGetShareFileGetShareFileGetShareFile")
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqGetShareFileData(keyword, sharePassword, reqID), header.ReqGetShareFile)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}

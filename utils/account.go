@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
-	ed25519go "crypto/ed25519"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -82,10 +81,7 @@ func CreateWallet(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPat
 
 // CreateP2PKey creates a P2P key to be used by one of the SDS nodes, and saves the key data into the dir folder
 func CreateP2PKey(dir, nickname, password, hrp string, scryptN, scryptP int) (types.Address, error) {
-	_, privateKey, err := ed25519go.GenerateKey(nil)
-	if err != nil {
-		return types.Address{}, err
-	}
+	privateKey := ed25519.NewKey()
 
 	return saveAccountKey(dir, nickname, password, hrp, "", "", "", scryptN, scryptP, privateKey, false)
 }
@@ -130,7 +126,7 @@ func newKeyFromBytes(privateKey []byte, isWallet bool) *AccountKey {
 	if isWallet {
 		key.Address = crypto.PrivKeyToAddress(privateKey)
 	} else {
-		key.Address = ed25519.PrivateKeyToAddress(privateKey)
+		key.Address = ed25519.PrivKeyBytesToAddress(privateKey)
 	}
 	return key
 }

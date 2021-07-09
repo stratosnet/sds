@@ -16,7 +16,7 @@ import (
 func GetMyConfig(p2pAddress, walletAddress, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqGetMyConfig(p2pAddress, walletAddress, reqID), header.ReqConfig)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
