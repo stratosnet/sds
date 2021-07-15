@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/relay/stratoschain/prefix"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
@@ -84,7 +84,7 @@ type config struct {
 	DefSavePath                 string `yaml:"DefSavePath"`
 	StorehousePath              string `yaml:"StorehousePath"`
 	DownloadPath                string `yaml:"DownloadPath"`
-	P2PAddress                  string `yaml:"WalletAddress"`
+	P2PAddress                  string `yaml:"P2PAddress"`
 	P2PPassword                 string `yaml:"P2PPassword"`
 	WalletAddress               string `yaml:"WalletAddress"`
 	WalletPassword              string `yaml:"WalletPassword"`
@@ -131,7 +131,7 @@ func LoadConfig(configPath string) {
 	}
 	cf.SetLimitDownloadSpeed(Config.LimitDownloadSpeed, Config.IsLimitDownloadSpeed)
 	cf.SetLimitUploadSpeed(Config.LimitUploadSpeed, Config.IsLimitUploadSpeed)
-	stratoschain.SetConfig(Config.AddressPrefix)
+	prefix.SetConfig(Config.AddressPrefix)
 }
 
 // CheckLogin
@@ -232,7 +232,7 @@ func SetConfig(key, value string) bool {
 func SetupP2PKey() error {
 	if Config.P2PAddress == "" {
 		fmt.Println("No P2P key specified in config. Attempting to create one...")
-		nickname, err := console.Stdin.PromptInput("Enter P2PAddress nickname: ")
+		nickname, err := console.Stdin.PromptInput("Enter P2pAddress nickname: ")
 		if err != nil {
 			return errors.New("couldn't read nickname from console: " + err.Error())
 		}
@@ -260,7 +260,7 @@ func SetupP2PKey() error {
 		}
 		Config.P2PAddress = p2pKeyAddressString
 		Config.P2PPassword = password
-		SetConfig("P2PAddress", p2pKeyAddressString)
+		SetConfig("P2pAddress", p2pKeyAddressString)
 		SetConfig("P2PPassword", password)
 	}
 

@@ -40,10 +40,10 @@ type KeyStorePassphrase struct {
 	ScryptP     int
 }
 
-// TODO: rename Account to Name and regenerate all wallets
+// TODO: rename Name to Name and regenerate all wallets
 type encryptedKeyJSONV3 struct {
 	Address string     `json:"address"`
-	Account string     `json:"account"`
+	Name    string     `json:"name"`
 	Crypto  cryptoJSON `json:"crypto"`
 	Id      string     `json:"id"`
 	Version int        `json:"version"`
@@ -225,7 +225,7 @@ func DecryptKey(keyjson []byte, auth string) (*AccountKey, error) {
 
 	return &AccountKey{
 		Id:         uuid.UUID(keyId),
-		Name:       k.Account,
+		Name:       k.Name,
 		Address:    crypto.PrivKeyToAddress(hdKeyBytesObject.PrivKey),
 		HdPath:     string(hdKeyBytesObject.HdPath),
 		Mnemonic:   string(hdKeyBytesObject.Mnemonic),

@@ -37,7 +37,7 @@ func RspFindMyFileList(ctx context.Context, conn spbf.WriteCloser) {
 			putData(target.ReqId, HTTPGetAllFile, &target)
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				if len(target.FileInfo) == 0 {
-					fmt.Println("failed to get query file")
+					fmt.Println("There are no files stored")
 					return
 				}
 				for _, info := range target.FileInfo {

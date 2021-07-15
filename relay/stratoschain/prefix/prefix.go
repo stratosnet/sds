@@ -1,4 +1,4 @@
-package stratoschain
+package prefix
 
 import (
 	"github.com/cosmos/cosmos-sdk/types"

@@ -1,7 +1,7 @@
 package setting
 
 import (
-	stratos "github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/relay/stratoschain/prefix"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -30,9 +30,10 @@ type config struct {
 }
 
 type blockchainInfoConfig struct {
-	AddressPrefix string `yaml:"addressPrefix"`
-	ChainId       string `yaml:"chainId"`
-	Token         string `yaml:"token"`
+	AddressPrefix    string `yaml:"addressPrefix"`
+	P2PAddressPrefix string `yaml:"p2pAddressPrefix"`
+	ChainId          string `yaml:"chainId"`
+	Token            string `yaml:"token"`
 }
 
 var Config *config
@@ -40,5 +41,5 @@ var Config *config
 func LoadConfig(path string) {
 	Config = new(config)
 	utils.LoadYamlConfig(Config, path)
-	stratos.SetConfig(Config.BlockchainInfo.AddressPrefix)
+	prefix.SetConfig(Config.BlockchainInfo.AddressPrefix)
 }

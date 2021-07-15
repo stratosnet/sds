@@ -20,7 +20,7 @@ CREATE TABLE `file`
 CREATE TABLE pp
 (
     id              int unsigned     NOT NULL AUTO_INCREMENT COMMENT 'Id of pp' PRIMARY KEY,
-    p2p_address     char(256)        NOT NULL DEFAULT '',
+    p2p_address     char(255)        NOT NULL DEFAULT '',
     wallet_address  char(42)         NOT NULL DEFAULT '',
     network_address varchar(32)      NOT NULL DEFAULT '',
     disk_size       bigint unsigned  NOT NULL DEFAULT '0',
@@ -40,23 +40,23 @@ CREATE TABLE pp
 create table user
 (
     id              int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Id of user' PRIMARY KEY,
-    name            varchar(256) null,
+    name            varchar(255) null,
     register_time   int          null,
-    invitation_code varchar(256) null,
+    invitation_code varchar(255) null,
     disk_size       int          null,
     capacity        int          null,
     be_invited      tinyint(1)   null,
     last_login_time int          null,
     login_times     int          null,
-    belong          varchar(256) null,
+    belong          varchar(255) null,
     free_disk       int          null,
-    puk             varchar(256) null,
+    puk             varchar(255) null,
     used_capacity   int          null,
     is_upgrade      tinyint(1)   null,
     is_pp           tinyint(1)   null,
-    p2p_address     varchar(256) null,
-    wallet_address  varchar(256) null,
-    network_Address varchar(256) null,
+    p2p_address     varchar(255) null,
+    wallet_address  varchar(255) null,
+    network_Address varchar(255) null,
     UNIQUE KEY IDX_P2P_ADDRESS (p2p_address) USING HASH
 ) ENGINE = InnoDB
   DEFAULT CHARSET = UTF8MB4;
@@ -66,10 +66,10 @@ CREATE TABLE `transfer_record`
     `id`                   int(10) unsigned    NOT NULL AUTO_INCREMENT COMMENT 'ID' PRIMARY KEY,
     `file_slice_id`        int(10) unsigned    NOT NULL DEFAULT '0',
     `transfer_cer`         char(64)            NOT NULL DEFAULT '',
-    `from_p2p_address`     char(256)           NOT NULL DEFAULT '' COMMENT 'origin PP P2P key address',
+    `from_p2p_address`     char(255)           NOT NULL DEFAULT '' COMMENT 'origin PP P2P key address',
     `from_wallet_address`  char(42)            NOT NULL DEFAULT '' COMMENT 'origin PP wallet address',
     `from_network_address` varchar(32)         NOT NULL DEFAULT '' COMMENT 'origin PP network address',
-    `to_p2p_address`       char(256)           NOT NULL DEFAULT '' COMMENT 'target PP P2P key address',
+    `to_p2p_address`       char(255)           NOT NULL DEFAULT '' COMMENT 'target PP P2P key address',
     `to_wallet_address`    char(42)            NOT NULL DEFAULT '' COMMENT 'target PP wallet address',
     `to_network_address`   varchar(32)         NOT NULL DEFAULT '' COMMENT 'target network address',
     `status`               tinyint(3) unsigned NOT NULL DEFAULT '1' COMMENT '0:success,1:waiting,2:pending,3:error',
@@ -82,13 +82,13 @@ CREATE TABLE `transfer_record`
 
 create table user_has_file
 (
-    file_hash      varchar(256) null,
+    file_hash      varchar(255) null,
     wallet_address varchar(42) null
 );
 
 create table user_invite
 (
-    invitation_code varchar(256) null,
+    invitation_code varchar(255) null,
     wallet_address  varchar(42) null,
     times           int          null
 );
@@ -109,7 +109,7 @@ CREATE TABLE `user_directory_map_file`
     `file_hash`    char(64)  NOT NULL DEFAULT '' COMMENT 'file hash',
     `owner_wallet` char(42) NOT NULL DEFAULT '' COMMENT 'owner wallet address',
     PRIMARY KEY (`dir_hash`, `file_hash`) USING HASH,
-    KEY         `IDX_WALLET_ADDRESS` (`wallet`)
+    KEY         `IDX_WALLET_ADDRESS` (`owner_wallet`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `file_slice`
@@ -131,14 +131,14 @@ CREATE TABLE `file_slice`
 CREATE TABLE `file_slice_storage`
 (
     `slice_hash`      char(64)    NOT NULL DEFAULT '',
-    `p2p_address`     char(256)   NOT NULL DEFAULT '' COMMENT 'storage PP P2P key address',
+    `p2p_address`     char(255)   NOT NULL DEFAULT '' COMMENT 'storage PP P2P key address',
     `network_address` varchar(32) NOT NULL DEFAULT '' COMMENT 'storage PP network address',
     PRIMARY KEY (`slice_hash`, `p2p_address`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE traffic (
   id                      int(10) unsigned    NOT NULL AUTO_INCREMENT COMMENT 'ID',
-  provider_p2p_address    char(256)           NOT NULL DEFAULT '' COMMENT 'PP P2P address',
+  provider_p2p_address    char(255)           NOT NULL DEFAULT '' COMMENT 'PP P2P address',
   provider_wallet_address char(42)            NOT NULL DEFAULT '' COMMENT 'PP wallet address',
   consumer_wallet_address char(42)            NOT NULL DEFAULT '' COMMENT 'P wallet address',
   task_id                 char(64)            NOT NULL DEFAULT '' ,
@@ -152,6 +152,6 @@ DEFAULT CHARSET=utf8;
 
 CREATE TABLE variables (
     name  varchar(64)  NOT NULL DEFAULT '',
-    value varchar(256) NOT NULL DEFAULT '',
+    value varchar(255) NOT NULL DEFAULT '',
     PRIMARY KEY (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

@@ -96,6 +96,7 @@ func reqDeactivateData(fee, gas int64) (*protos.ReqDeactivate, error) {
 
 func reqPrepayData(amount, fee, gas int64) (*protos.ReqPrepay, error) {
 	// Create and sign a prepay transaction
+	// TODO: use P2P key as sender address (QB-475)
 	senderAddress, err := types.BechToAddress(setting.WalletAddress)
 	if err != nil {
 		return nil, err
