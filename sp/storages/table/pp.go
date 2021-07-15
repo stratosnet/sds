@@ -9,7 +9,7 @@ import (
 CREATE TABLE pp
 (
     id              int unsigned     NOT NULL AUTO_INCREMENT COMMENT 'Id of pp' PRIMARY KEY,
-    p2p_address     char(42)         NOT NULL DEFAULT '',
+    p2p_address     char(255)         NOT NULL DEFAULT '',
     wallet_address  char(42)         NOT NULL DEFAULT '',
     network_address varchar(32)      NOT NULL DEFAULT '',
     disk_size       bigint unsigned  NOT NULL DEFAULT '0',
@@ -51,7 +51,7 @@ type PP struct {
 	CpuInfo        string
 	MacAddress     string
 	Version        uint32
-	PubKey         string // TODO: remove or make sure it's bech32 encoded
+	PubKey         string
 	State          byte
 	Active         byte // Whether or not the PP is an active resource node on the stratos-chain
 }
