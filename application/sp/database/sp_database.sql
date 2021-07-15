@@ -40,23 +40,23 @@ CREATE TABLE pp
 create table user
 (
     id              int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Id of user' PRIMARY KEY,
-    name            varchar(255) null,
+    name            varchar(256) null,
     register_time   int          null,
-    invitation_code varchar(255) null,
+    invitation_code varchar(256) null,
     disk_size       int          null,
     capacity        int          null,
     be_invited      tinyint(1)   null,
     last_login_time int          null,
     login_times     int          null,
-    belong          varchar(255) null,
+    belong          varchar(256) null,
     free_disk       int          null,
-    puk             varchar(255) null,
+    puk             varchar(256) null,
     used_capacity   int          null,
     is_upgrade      tinyint(1)   null,
     is_pp           tinyint(1)   null,
-    p2p_address     varchar(255) null,
-    wallet_address  varchar(255) null,
-    network_Address varchar(255) null,
+    p2p_address     varchar(256) null,
+    wallet_address  varchar(256) null,
+    network_Address varchar(256) null,
     UNIQUE KEY IDX_P2P_ADDRESS (p2p_address) USING HASH
 ) ENGINE = InnoDB
   DEFAULT CHARSET = UTF8MB4;
@@ -82,13 +82,13 @@ CREATE TABLE `transfer_record`
 
 create table user_has_file
 (
-    file_hash      varchar(255) null,
+    file_hash      varchar(256) null,
     wallet_address varchar(42) null
 );
 
 create table user_invite
 (
-    invitation_code varchar(255) null,
+    invitation_code varchar(256) null,
     wallet_address  varchar(42) null,
     times           int          null
 );
@@ -152,6 +152,6 @@ DEFAULT CHARSET=utf8;
 
 CREATE TABLE variables (
     name  varchar(64)  NOT NULL DEFAULT '',
-    value varchar(255) NOT NULL DEFAULT '',
+    value varchar(256) NOT NULL DEFAULT '',
     PRIMARY KEY (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

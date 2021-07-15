@@ -40,7 +40,6 @@ type KeyStorePassphrase struct {
 	ScryptP     int
 }
 
-// TODO: rename Name to Name and regenerate all wallets
 type encryptedKeyJSONV3 struct {
 	Address string     `json:"address"`
 	Name    string     `json:"name"`
