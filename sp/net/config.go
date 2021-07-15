@@ -80,7 +80,7 @@ const (
 )
 */
 type Log struct {
-	Path       string `yaml:"P2PPath"`
+	Path       string `yaml:"Path"`
 	Level      int    `yaml:"Level"`
 	OutputFile bool   `yaml:"OutputFile"`
 	OutputStd  bool   `yaml:"OutputStd"`

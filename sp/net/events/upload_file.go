@@ -198,8 +198,8 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 					Path:          body.FileInfo.StoragePath,
 					WalletAddress: body.MyAddress.WalletAddress,
 				},
-				Owner:    body.MyAddress.WalletAddress,
-				FileHash: file.Hash,
+				OwnerWallet: body.MyAddress.WalletAddress,
+				FileHash:    file.Hash,
 			}
 			dirMapFile.DirHash = dirMapFile.GenericHash()
 			if _, err = s.CT.InsertTable(dirMapFile); err != nil {
@@ -259,7 +259,7 @@ func validateUploadFileRequest(req *protos.ReqUploadFile, s *net.Server) (bool, 
 		return false, "signature can't be empty"
 	}
 
-	user := &table.User{P2PAddress: req.MyAddress.P2PAddress}
+	user := &table.User{P2pAddress: req.MyAddress.P2PAddress}
 	if err := s.CT.Fetch(user); err != nil {
 		return false, "not authorized to process"
 	}

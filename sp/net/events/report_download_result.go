@@ -90,14 +90,14 @@ func reportDownloadResultCallbackFunc(_ context.Context, s *net.Server, message 
 
 	// TODO: confirm this logic in QB-475
 	if body.IsPP {
-		record.FromP2PAddress = body.MyP2PAddress
+		record.FromP2pAddress = body.MyP2PAddress
 		record.FromWalletAddress = body.MyWalletAddress
-		record.ToP2PAddress = body.DownloaderP2PAddress
+		record.ToP2pAddress = body.DownloaderP2PAddress
 		record.ToWalletAddress = body.DownloaderWalletAddress
 	} else {
-		record.FromP2PAddress = body.DownloaderP2PAddress
+		record.FromP2pAddress = body.DownloaderP2PAddress
 		record.FromWalletAddress = body.DownloaderWalletAddress
-		record.ToP2PAddress = body.MyP2PAddress
+		record.ToP2pAddress = body.MyP2PAddress
 		record.ToWalletAddress = body.MyWalletAddress
 	}
 
@@ -116,7 +116,7 @@ func reportDownloadResultCallbackFunc(_ context.Context, s *net.Server, message 
 		//persist Traffic records
 		traffic := &table.Traffic{
 			TaskId:                body.TaskId,
-			ProviderP2PAddress:    record.FromP2PAddress,
+			ProviderP2pAddress:    record.FromP2pAddress,
 			ProviderWalletAddress: record.FromWalletAddress,
 			ConsumerWalletAddress: record.ToWalletAddress,
 			TaskType:              table.TRAFFIC_TASK_TYPE_DOWNLOAD,

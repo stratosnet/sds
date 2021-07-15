@@ -79,7 +79,7 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 
 	res, err := s.CT.FetchTables([]table.FileSlice{}, map[string]interface{}{
 		"alias":   "e",
-		"columns": "e.*, fss.wallet_address, fss.network_address",
+		"columns": "e.*, fss.p2p_address, fss.network_address",
 		"where":   map[string]interface{}{"e.file_hash = ?": fileHash},
 		"join":    []string{"file_slice_storage", "e.slice_hash = fss.slice_hash", "fss", "left"},
 		"orderBy": "e.slice_number ASC",
@@ -129,7 +129,7 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 	}
 
 	for _, row := range fileSlices {
-		node := &hashring.Node{ID: row.P2PAddress, Host: row.NetworkAddress}
+		node := &hashring.Node{ID: row.P2pAddress, Host: row.NetworkAddress}
 		if s.HashRing.IsOnline(node.ID) {
 			storageRing[row.SliceHash].AddNode(node)
 			storageRing[row.SliceHash].SetOnline(node.ID)
@@ -238,7 +238,7 @@ func validateFileStorageInfoRequest(s *net.Server, req *protos.ReqFileStorageInf
 		return
 	}
 
-	user := &table.User{P2PAddress: req.FileIndexes.P2PAddress}
+	user := &table.User{P2pAddress: req.FileIndexes.P2PAddress}
 	if s.CT.Fetch(user) != nil {
 		err = errors.New("not authorized to process")
 		return
@@ -249,7 +249,7 @@ func validateFileStorageInfoRequest(s *net.Server, req *protos.ReqFileStorageInf
 		return
 	}
 
-	d := req.FileIndexes.P2PAddress + fileHash
+	d := req.FileIndexes.P2PAddress + filePath
 	if !ed25519.Verify(puk, []byte(d), req.Sign) {
 		err = errors.New("signature verification failed")
 		return

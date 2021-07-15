@@ -37,7 +37,7 @@ func prepaidCallbackFunc(_ context.Context, s *net.Server, message proto.Message
 
 	// TODO: change this logic in QB-475. Prepay doesn't increase capacity. It grants ozone to the user.
 	user := &table.User{
-		P2PAddress: body.P2PAddress,
+		P2pAddress: body.P2PAddress,
 	}
 
 	if s.CT.Fetch(user) != nil {

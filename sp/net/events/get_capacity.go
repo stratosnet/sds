@@ -44,7 +44,7 @@ func getCapacityCallbackFunc(_ context.Context, s *net.Server, message proto.Mes
 		return rsp, header.RspGetCapacity
 	}
 
-	user := &table.User{P2PAddress: body.P2PAddress}
+	user := &table.User{P2pAddress: body.P2PAddress}
 	if err := s.CT.Fetch(user); err != nil {
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		rsp.Result.Msg = "need to login wallet first"

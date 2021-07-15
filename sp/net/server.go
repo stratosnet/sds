@@ -8,6 +8,7 @@ import (
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/relay/stratoschain/prefix"
 	"github.com/stratosnet/sds/sp/common"
 	"github.com/stratosnet/sds/sp/storages"
 	"github.com/stratosnet/sds/sp/storages/data"
@@ -310,7 +311,7 @@ func NewServer(configFilePath string) *Server {
 		spbf.MaxFlowOption(125*1024*1024),
 	)
 
-	stratoschain.SetConfig(server.Conf.BlockchainInfo.AddressPrefix)
+	prefix.SetConfig(server.Conf.BlockchainInfo.AddressPrefix)
 	stratoschain.Url = "http://" + server.Conf.BlockchainInfo.StratosChainAddress + ":" + server.Conf.BlockchainInfo.StratosChainPort
 
 	return server

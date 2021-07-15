@@ -40,7 +40,7 @@ func deactivateCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 	}
 
 	pp := &table.PP{
-		P2PAddress: body.P2PAddress,
+		P2pAddress: body.P2PAddress,
 	}
 
 	if s.CT.Fetch(pp) != nil {

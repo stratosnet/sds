@@ -4,7 +4,7 @@ import "github.com/stratosnet/sds/utils/database"
 
 type UserInviteRecord struct {
 	Id             uint32
-	P2PAddress     string
+	P2pAddress     string
 	WalletAddress  string // invitation recipient
 	InvitationCode string //
 	Reward         uint64

@@ -32,10 +32,10 @@ func (e *Transfer) SliceTransfer(params map[string]interface{}, r *http.Request)
 		return data, 400, "Invalid SliceHash"
 	}
 
-	if val, ok := params["FromP2PAddress"]; ok {
+	if val, ok := params["FromP2pAddress"]; ok {
 		FromP2PAddress = val.(string)
 	} else {
-		return data, 400, "Invalid FromP2PAddress"
+		return data, 400, "Invalid FromP2pAddress"
 	}
 
 	if val, ok := params["ToWalletAddress"]; ok {

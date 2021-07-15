@@ -67,12 +67,12 @@ func deleteFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 	}
 
 	_ = s.CT.GetDriver().Delete("user_directory_map_file", map[string]interface{}{
-		"wallet_address = ? AND file_hash = ?": []interface{}{
+		"owner_wallet = ? AND file_hash = ?": []interface{}{
 			body.WalletAddress, body.FileHash,
 		},
 	})
 
-	user := &table.User{P2PAddress: body.P2PAddress}
+	user := &table.User{P2pAddress: body.P2PAddress}
 
 	if err := s.CT.Fetch(user); err != nil {
 		return rsp, header.RspDeleteFile
@@ -105,7 +105,7 @@ func validateDeleteFileRequest(s *net.Server, req *protos.ReqDeleteFile) (bool, 
 	}
 
 	user := &table.User{
-		P2PAddress: req.P2PAddress,
+		P2pAddress: req.P2PAddress,
 	}
 	if s.CT.Fetch(user) != nil {
 		return false, "not authorized to process"

@@ -44,7 +44,7 @@ func miningCallbackFunc(_ context.Context, s *net.Server, message proto.Message,
 		return rsp, header.RspMining
 	}
 
-	pp := &table.PP{P2PAddress: body.Address.P2PAddress}
+	pp := &table.PP{P2pAddress: body.Address.P2PAddress}
 	if s.CT.Fetch(pp) != nil {
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		rsp.Result.Msg = "not PP yet"

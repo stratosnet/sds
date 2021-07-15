@@ -7,7 +7,7 @@ import (
 // FileSliceStorage map for file slice and storage pp
 type FileSliceStorage struct {
 	SliceHash      string
-	P2PAddress     string
+	P2pAddress     string
 	NetworkAddress string
 }
 

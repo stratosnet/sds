@@ -59,13 +59,13 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 	}
 
 	// check PP
-	pp := &table.PP{P2PAddress: body.Address.P2PAddress}
+	pp := &table.PP{P2pAddress: body.Address.P2PAddress}
 	if err := s.CT.Fetch(pp); err == nil {
 		rsp.IsPP = true
 	}
 
 	// save user info
-	user := &table.User{P2PAddress: body.Address.P2PAddress}
+	user := &table.User{P2pAddress: body.Address.P2PAddress}
 
 	isNewUser := false
 	if err := s.CT.Fetch(user); err != nil {
@@ -81,7 +81,7 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 		user.IsPp = 1
 	}
 	user.Belong = body.MyAddress.P2PAddress
-	user.P2PAddress = body.Address.P2PAddress
+	user.P2pAddress = body.Address.P2PAddress
 	user.WalletAddress = body.Address.WalletAddress
 	user.NetworkAddress = body.Address.NetworkAddress
 	user.Puk = hex.EncodeToString(body.PublicKey)
@@ -106,7 +106,7 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 
 	inv := &table.UserInvite{
 		InvitationCode: user.InvitationCode,
-		P2PAddress:     user.P2PAddress,
+		P2PAddress:     user.P2pAddress,
 		Times:          0,
 	}
 	if err := s.CT.Save(inv); err != nil {

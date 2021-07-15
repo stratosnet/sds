@@ -43,7 +43,7 @@ func getRewardCallbackFunc(_ context.Context, s *net.Server, message proto.Messa
 	}
 
 	user := &table.User{
-		P2PAddress: body.P2PAddress,
+		P2pAddress: body.P2PAddress,
 	}
 
 	if err := s.CT.Fetch(user); err != nil {

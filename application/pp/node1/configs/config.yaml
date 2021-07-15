@@ -10,9 +10,9 @@ DefPassword:
 DefSavePath:
 StorehousePath:
 DownloadPath:
-P2PAddress: stsdsp2p123123123123123123123123132123112312312
+P2PAddress: stsdsp2p1gl9ywg6jdfdgcja70ffum4ectq4fmt26n6z7tt
 P2PPassword: aaa
-WalletAddress: st145p208zkkha67sr2r0u28y3ncuk6hf2xkgkj69
+WalletAddress: st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg
 WalletPassword: aaa
 AutoRun: true
 Internal: false

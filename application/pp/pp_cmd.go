@@ -27,10 +27,11 @@ func main() {
 		return
 	}
 
-	helpStr := "\nhelp                       show all the commands\n" +
+	helpStr := "\n" +
+		"help                                show all the commands\n" +
 		"wallets                             acquire all wallet wallets' address\n" +
 		"newwallet ->password                create new wallet\n" +
-		"login walletAddress ->password             unlock and log in wallet \n" +
+		"login walletAddress ->password      unlock and log in wallet \n" +
 		"registerminer                       apply to be PP miner\n" +
 		"activate                            send transaction to stratos-chain to become an active PP node\n" +
 		"deactivate                          send transaction to stratos-chain to stop being a PP node\n" +

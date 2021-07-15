@@ -41,7 +41,7 @@ const (
 // PP table
 type PP struct {
 	Id             uint32
-	P2PAddress     string
+	P2pAddress     string
 	WalletAddress  string
 	NetworkAddress string
 	DiskSize       uint64
@@ -73,7 +73,7 @@ func (p *PP) SetData(data map[string]interface{}) (bool, error) {
 
 // GetCacheKey
 func (p *PP) GetCacheKey() string {
-	return "pp#" + p.P2PAddress
+	return "pp#" + p.P2pAddress
 }
 
 // GetTimeOut
@@ -85,7 +85,7 @@ func (p *PP) GetTimeOut() time.Duration {
 func (p *PP) Where() map[string]interface{} {
 	return map[string]interface{}{
 		"where": map[string]interface{}{
-			"p2p_address = ?": p.P2PAddress,
+			"p2p_address = ?": p.P2pAddress,
 		},
 	}
 }

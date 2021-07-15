@@ -61,7 +61,7 @@ func inviteCallbackFunc(_ context.Context, s *net.Server, message proto.Message,
 	}
 
 	user := &table.User{
-		P2PAddress: body.P2PAddress,
+		P2pAddress: body.P2PAddress,
 	}
 
 	if err := s.CT.Fetch(user); err != nil {
@@ -102,7 +102,7 @@ func inviteCallbackFunc(_ context.Context, s *net.Server, message proto.Message,
 
 	uir := &table.UserInviteRecord{
 		InvitationCode: invite.InvitationCode,
-		P2PAddress:     body.P2PAddress,
+		P2pAddress:     body.P2PAddress,
 		WalletAddress:  body.WalletAddress,
 		Reward:         rsp.CapacityDelta,
 		Time:           time.Now().Unix(),

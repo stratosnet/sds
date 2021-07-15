@@ -66,8 +66,8 @@ func (f *FileSlice) SetData(data map[string]interface{}) (bool, error) {
 
 // GetCacheKey
 func (f *FileSlice) GetCacheKey() string {
-	if f.P2PAddress != "" {
-		return "file_slice#" + f.SliceHash + "-" + f.P2PAddress
+	if f.P2pAddress != "" {
+		return "file_slice#" + f.SliceHash + "-" + f.P2pAddress
 	}
 	return "file_slice#" + f.SliceHash
 }
@@ -79,7 +79,7 @@ func (f *FileSlice) GetTimeOut() time.Duration {
 
 // Where
 func (f *FileSlice) Where() map[string]interface{} {
-	if f.P2PAddress == "" {
+	if f.P2pAddress == "" {
 		where := map[string]interface{}{
 			"where": map[string]interface{}{
 				"slice_hash = ?": f.SliceHash,
@@ -96,7 +96,7 @@ func (f *FileSlice) Where() map[string]interface{} {
 		},
 		"where": map[string]interface{}{
 			"e.slice_hash = ? AND fss.p2p_address = ?": []interface{}{
-				f.SliceHash, f.P2PAddress,
+				f.SliceHash, f.P2pAddress,
 			},
 		},
 	}
@@ -108,12 +108,12 @@ func (f *FileSlice) Where() map[string]interface{} {
 func (f *FileSlice) Event(event int, dt *database.DataTable) {
 	switch event {
 	case database.AFTER_INSERT:
-		if f.P2PAddress != "" && f.SliceHash != "" {
-			dt.StoreTable(&FileSliceStorage{SliceHash: f.SliceHash, P2PAddress: f.P2PAddress, NetworkAddress: f.NetworkAddress})
+		if f.P2pAddress != "" && f.SliceHash != "" {
+			dt.StoreTable(&FileSliceStorage{SliceHash: f.SliceHash, P2pAddress: f.P2pAddress, NetworkAddress: f.NetworkAddress})
 		}
 	case database.BEFORE_DELETE:
-		if f.P2PAddress != "" && f.SliceHash != "" {
-			dt.DeleteTable(&FileSliceStorage{SliceHash: f.SliceHash, P2PAddress: f.P2PAddress, NetworkAddress: f.NetworkAddress})
+		if f.P2pAddress != "" && f.SliceHash != "" {
+			dt.DeleteTable(&FileSliceStorage{SliceHash: f.SliceHash, P2pAddress: f.P2pAddress, NetworkAddress: f.NetworkAddress})
 		}
 	}
 }

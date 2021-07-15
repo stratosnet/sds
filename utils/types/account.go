@@ -3,9 +3,9 @@ package types
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/btcsuite/btcutil/bech32"
 	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/stratosnet/sds/utils/crypto/sha3"
+	"github.com/tendermint/tendermint/libs/bech32"
 	"math/big"
 )
 
@@ -139,7 +139,7 @@ func (a Address) String() string {
 }
 
 func (a Address) ToBech(hrp string) (string, error) {
-	return bech32.Encode(hrp, a.Bytes())
+	return bech32.ConvertAndEncode(hrp, a.Bytes())
 }
 
 func BechToAddress(str string) (Address, error) {

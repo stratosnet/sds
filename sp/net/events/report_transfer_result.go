@@ -99,14 +99,14 @@ func reportTransferResultCallbackFunc(_ context.Context, s *net.Server, message 
 	fileSlice := &table.FileSlice{
 		SliceHash: transferRecord.SliceHash,
 		FileSliceStorage: table.FileSliceStorage{
-			P2PAddress: transferRecord.FromP2PAddress,
+			P2pAddress: transferRecord.FromP2pAddress,
 		},
 	}
 
 	if err := s.CT.Fetch(fileSlice); err == nil {
 		fileSliceStorage := &table.FileSliceStorage{
 			SliceHash:      fileSlice.SliceHash,
-			P2PAddress:     body.NewPp.P2PAddress,
+			P2pAddress:     body.NewPp.P2PAddress,
 			NetworkAddress: body.NewPp.NetworkAddress,
 		}
 
@@ -123,7 +123,7 @@ func reportTransferResultCallbackFunc(_ context.Context, s *net.Server, message 
 	trafficRecord := &table.Traffic{
 		TaskId:                body.TransferCer,
 		TaskType:              table.TRAFFIC_TASK_TYPE_TRANSFER,
-		ProviderP2PAddress:    transferRecord.FromP2PAddress,
+		ProviderP2pAddress:    transferRecord.FromP2pAddress,
 		ProviderWalletAddress: transferRecord.FromWalletAddress,
 		ConsumerWalletAddress: transferRecord.ToWalletAddress,
 		Volume:                transferRecord.SliceSize,

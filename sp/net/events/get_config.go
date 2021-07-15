@@ -37,7 +37,7 @@ func getConfigCallbackFunc(_ context.Context, s *net.Server, message proto.Messa
 		WalletAddress: body.WalletAddress,
 	}
 
-	user := &table.User{P2PAddress: body.P2PAddress}
+	user := &table.User{P2pAddress: body.P2PAddress}
 	if s.CT.Fetch(user) != nil {
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		rsp.Result.Msg = "need to login wallet first"

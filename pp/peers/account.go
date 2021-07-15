@@ -77,12 +77,19 @@ func getPublicKey(filePath, password string) bool {
 // Wallets get all wallets
 func Wallets() {
 	files, _ := ioutil.ReadDir(setting.Config.AccountDir)
-	if len(files) == 0 {
-		fmt.Println("no wallet exists yet")
+	var wallets []string
+	for _, file := range files {
+		fileName := file.Name()
+		if fileName[len(fileName)-5:] == ".json" && fileName[:len(setting.Config.P2PKeyPrefix)] != setting.Config.P2PKeyPrefix {
+			wallets = append(wallets, fileName[:len(fileName)-5])
+		}
+	}
 
+	if len(wallets) == 0 {
+		fmt.Println("no wallet exists yet")
 	} else {
-		for _, info := range files {
-			fmt.Println(info.Name())
+		for _, wallet := range wallets {
+			fmt.Println(wallet)
 		}
 	}
 }
@@ -105,12 +112,13 @@ func Login(walletAddress, password string) error {
 		fmt.Println("wrong account or password")
 		return errors.New("wrong account or password")
 	}
+	fileName := walletAddress + ".json"
 	for _, info := range files {
-		if info.Name() == ".placeholder" || info.Name() != walletAddress {
+		if info.Name() == ".placeholder" || info.Name() != fileName {
 			continue
 		}
 		utils.Log(info.Name())
-		if getPublicKey(filepath.Join(setting.Config.AccountDir, walletAddress+".json"), password) {
+		if getPublicKey(filepath.Join(setting.Config.AccountDir, fileName), password) {
 			setting.WalletAddress = walletAddress
 			InitPeer()
 			return nil

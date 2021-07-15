@@ -50,7 +50,7 @@ func registerNewPPCallbackFunc(_ context.Context, s *net.Server, message proto.M
 	}
 
 	pp := &table.PP{
-		P2PAddress:     body.P2PAddress,
+		P2pAddress:     body.P2PAddress,
 		WalletAddress:  body.WalletAddress,
 		NetworkAddress: user.NetworkAddress,
 		DiskSize:       body.DiskSize,
@@ -86,14 +86,14 @@ func validateNewPP(s *net.Server, req *protos.ReqRegisterNewPP, user *table.User
 
 	// todo change to read from redis
 	pp := &table.PP{
-		P2PAddress: req.P2PAddress,
+		P2pAddress: req.P2PAddress,
 	}
 	if s.CT.Fetch(pp) == nil {
 		return false, "already PP, not register needed"
 	}
 
 	// check if register or not, todo change to read from redis
-	user.P2PAddress = req.P2PAddress
+	user.P2pAddress = req.P2PAddress
 	if s.CT.Fetch(user) != nil {
 		return false, "not register as PP, register first"
 	}

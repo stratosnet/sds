@@ -24,7 +24,7 @@ func GetHDInfoHandler(s *net.Server) EventHandleFunc {
 func getHdInfoCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
 	body := message.(*protos.RspGetHDInfo)
 
-	user := &table.User{P2PAddress: body.P2PAddress}
+	user := &table.User{P2pAddress: body.P2PAddress}
 
 	if s.CT.Fetch(user) != nil {
 		return nil, ""
@@ -40,7 +40,7 @@ func getHdInfoCallbackFunc(_ context.Context, s *net.Server, message proto.Messa
 		return nil, ""
 	}
 
-	pp := &table.PP{P2PAddress: body.P2PAddress}
+	pp := &table.PP{P2pAddress: body.P2PAddress}
 
 	if s.CT.Fetch(pp) == nil {
 		return nil, ""

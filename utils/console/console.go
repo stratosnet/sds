@@ -33,7 +33,7 @@ func GetAccount(prompt string) string {
 	if prompt != "" {
 		fmt.Println(prompt)
 	}
-	account, err := Stdin.PromptInput("Account: ")
+	account, err := Stdin.PromptInput("Name: ")
 	if err != nil {
 		cmd.Fatalf("Failed to read account: %v", err)
 	}

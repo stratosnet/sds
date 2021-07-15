@@ -79,10 +79,10 @@ func downloadFailedCallbackFunc(_ context.Context, s *net.Server, message proto.
 
 	ring := hashring.New(s.Conf.HashRing.VirtualNodeNum)
 	for _, storage := range sliceStorage {
-		if storage.P2PAddress != task.StorageP2PAddress {
-			if s.HashRing.IsOnline(storage.P2PAddress) {
-				ring.AddNode(&hashring.Node{ID: storage.P2PAddress, Host: storage.NetworkAddress})
-				ring.SetOnline(storage.P2PAddress)
+		if storage.P2pAddress != task.StorageP2PAddress {
+			if s.HashRing.IsOnline(storage.P2pAddress) {
+				ring.AddNode(&hashring.Node{ID: storage.P2pAddress, Host: storage.NetworkAddress})
+				ring.SetOnline(storage.P2pAddress)
 			}
 		}
 	}
@@ -98,7 +98,7 @@ func downloadFailedCallbackFunc(_ context.Context, s *net.Server, message proto.
 	fileSlice := &table.FileSlice{
 		SliceHash: task.SliceHash,
 		FileSliceStorage: table.FileSliceStorage{
-			P2PAddress: anotherP2PAddress,
+			P2pAddress: anotherP2PAddress,
 		},
 	}
 
@@ -108,7 +108,7 @@ func downloadFailedCallbackFunc(_ context.Context, s *net.Server, message proto.
 
 	fileSliceStorage := &table.FileSliceStorage{
 		SliceHash:  task.SliceHash,
-		P2PAddress: task.StorageP2PAddress,
+		P2pAddress: task.StorageP2PAddress,
 	}
 
 	if _, err = s.CT.DeleteTable(fileSliceStorage); err != nil {
@@ -117,7 +117,7 @@ func downloadFailedCallbackFunc(_ context.Context, s *net.Server, message proto.
 
 	s.HandleMsg(&common.MsgTransferNotice{
 		SliceHash:      fileSlice.SliceHash,
-		FromP2PAddress: fileSlice.P2PAddress,
+		FromP2PAddress: fileSlice.P2pAddress,
 		ToP2PAddress:   task.StorageP2PAddress,
 	})
 
@@ -135,7 +135,7 @@ func downloadFailedCallbackFunc(_ context.Context, s *net.Server, message proto.
 		},
 		SliceNumber: fileSlice.SliceNumber,
 		StoragePpInfo: &protos.PPBaseInfo{
-			P2PAddress:     fileSlice.P2PAddress,
+			P2PAddress:     fileSlice.P2pAddress,
 			NetworkAddress: fileSlice.NetworkAddress,
 		},
 		SliceOffset: &protos.SliceOffset{

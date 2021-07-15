@@ -183,7 +183,7 @@ func getFileFromServer(s *net.Server, fileHash string) (*protos.FileInfo, error)
 }
 
 func getP2PAddressFiles(s *net.Server, p2pAddress string) ([]*protos.FileInfo, error) {
-	user := &table.User{P2PAddress: p2pAddress}
+	user := &table.User{P2pAddress: p2pAddress}
 	fileInfos := user.GetShareDirs(s.CT)
 	files := user.GetShareFiles(s.CT)
 	if len(files) > 0 {

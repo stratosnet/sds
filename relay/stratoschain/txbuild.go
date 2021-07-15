@@ -14,7 +14,7 @@ import (
 func BuildVolumeReportMsg(traffic []table.Traffic, reporterAddress []byte, epoch uint64, reportReference string) (sdktypes.Msg, error) {
 	aggregatedVolume := make(map[string]uint64)
 	for _, trafficReccord := range traffic {
-		aggregatedVolume[trafficReccord.ProviderP2PAddress] += trafficReccord.Volume
+		aggregatedVolume[trafficReccord.ProviderP2pAddress] += trafficReccord.Volume
 	}
 
 	var nodesVolume []pottypes.SingleNodeVolume

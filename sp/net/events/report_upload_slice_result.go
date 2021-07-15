@@ -61,7 +61,7 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 
 	fileSlice := &table.FileSlice{
 		FileSliceStorage: table.FileSliceStorage{
-			P2PAddress: body.SliceNumAddr.PpInfo.P2PAddress,
+			P2pAddress: body.SliceNumAddr.PpInfo.P2PAddress,
 		},
 		SliceHash: body.SliceHash,
 		TaskId:    body.TaskId,
@@ -86,7 +86,7 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 		if fileSlice.SliceSize != body.SliceSize ||
 			fileSlice.SliceNumber != body.SliceNumAddr.SliceNumber ||
 			fileSlice.NetworkAddress != body.SliceNumAddr.PpInfo.NetworkAddress ||
-			fileSlice.P2PAddress != body.SliceNumAddr.PpInfo.P2PAddress ||
+			fileSlice.P2pAddress != body.SliceNumAddr.PpInfo.P2PAddress ||
 			fileSlice.FileHash != body.FileHash {
 
 			rsp.Result.Msg = "report result validate failed"
@@ -109,7 +109,7 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 		fileSlice.SliceNumber = body.SliceNumAddr.SliceNumber
 		fileSlice.SliceOffsetStart = body.SliceNumAddr.SliceOffset.SliceOffsetStart
 		fileSlice.SliceOffsetEnd = body.SliceNumAddr.SliceOffset.SliceOffsetEnd
-		fileSlice.P2PAddress = body.SliceNumAddr.PpInfo.P2PAddress
+		fileSlice.P2pAddress = body.SliceNumAddr.PpInfo.P2PAddress
 		fileSlice.NetworkAddress = body.SliceNumAddr.PpInfo.NetworkAddress
 		fileSlice.Status = table.FILE_SLICE_STATUS_CHECK
 		fileSlice.Time = time.Now().Unix()
@@ -196,7 +196,7 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 					dirMapFile.Path = uploadFile.FilePath
 					dirMapFile.FileHash = file.Hash
 					dirMapFile.DirHash = dirMapFile.GenericHash()
-					dirMapFile.Owner = uploadFile.WalletAddress
+					dirMapFile.OwnerWallet = uploadFile.WalletAddress
 					if _, err := s.CT.InsertTable(dirMapFile); err != nil {
 						utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "insert dir map", err)
 					}
@@ -220,7 +220,7 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 	// if upload finish, started backup
 	backupSliceMsg := &common.MsgBackupSlice{
 		SliceHash:      fileSlice.SliceHash,
-		FromP2PAddress: fileSlice.P2PAddress,
+		FromP2PAddress: fileSlice.P2pAddress,
 	}
 	s.HandleMsg(backupSliceMsg)
 
@@ -257,7 +257,7 @@ func validateReportUploadSliceResultRequest(req *protos.ReportUploadSliceResult,
 		return false, "signature can't be empty"
 	}
 
-	user := &table.User{P2PAddress: req.P2PAddress}
+	user := &table.User{P2pAddress: req.P2PAddress}
 	if s.CT.Fetch(user) != nil {
 		return false, "not authorized to process"
 	}

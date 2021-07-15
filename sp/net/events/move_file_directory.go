@@ -115,9 +115,9 @@ func moveFileDirCallbackFunc(_ context.Context, s *net.Server, message proto.Mes
 	// if original directory is empty, then move from root directory to target
 	if body.DirectoryOriginal == "" || body.DirectoryTarget != "" {
 		fileMap := &table.UserDirectoryMapFile{
-			DirHash:  desDir.DirHash,
-			FileHash: file.Hash,
-			Owner:    body.WalletAddress,
+			DirHash:     desDir.DirHash,
+			FileHash:    file.Hash,
+			OwnerWallet: body.WalletAddress,
 		}
 		if _, err := s.CT.StoreTable(fileMap); err != nil {
 			rsp.Result.State = protos.ResultState_RES_FAIL

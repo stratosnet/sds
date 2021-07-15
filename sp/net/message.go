@@ -112,13 +112,13 @@ func (m *MsgHandler) Mining(p2pAddress, networkAddress, name string, puk []byte)
 
 	m.server.HashRing.SetOnline(p2pAddress)
 
-	user := &table.User{P2PAddress: p2pAddress}
+	user := &table.User{P2pAddress: p2pAddress}
 	if m.server.CT.Fetch(user) == nil {
 		user.Name = name
 		m.server.CT.Save(user)
 	}
 
-	pp := &table.PP{P2PAddress: p2pAddress}
+	pp := &table.PP{P2pAddress: p2pAddress}
 	if m.server.CT.Fetch(pp) == nil {
 		pp.State = table.STATE_ONLINE
 		pp.NetworkAddress = networkAddress
@@ -142,7 +142,7 @@ func (m *MsgHandler) Logout(name string) {
 	}
 	m.server.HashRing.SetOffline(p2pAddress)
 
-	pp := &table.PP{P2PAddress: p2pAddress}
+	pp := &table.PP{P2pAddress: p2pAddress}
 	if m.server.CT.Fetch(pp) == nil {
 		pp.State = table.STATE_OFFLINE
 		m.server.CT.Save(pp)
@@ -180,8 +180,8 @@ func (m *MsgHandler) BackupPP(p2pAddress string) {
 
 		_, newStoreP2PAddress := m.server.HashRing.GetNodeExcludedNodeIDs(key, m.server.System.MissingBackupWalletAddr)
 
-		if newStoreP2PAddress != "" && fs.P2PAddress != newStoreP2PAddress {
-			m.TransferNotice(fs.SliceHash, fs.P2PAddress, newStoreP2PAddress)
+		if newStoreP2PAddress != "" && fs.P2pAddress != newStoreP2PAddress {
+			m.TransferNotice(fs.SliceHash, fs.P2pAddress, newStoreP2PAddress)
 		}
 	}
 
@@ -197,13 +197,13 @@ func (m *MsgHandler) TransferNotice(sliceHash, fromP2PAddress, toP2PAddress stri
 		return
 	}
 
-	fromUser := &table.User{P2PAddress: fromP2PAddress}
+	fromUser := &table.User{P2pAddress: fromP2PAddress}
 	if m.server.CT.Fetch(fromUser) != nil {
 		utils.Log(fmt.Sprintf("Couldn't find origin P2P address %v in database", fromP2PAddress))
 		return
 	}
 
-	toUser := &table.User{P2PAddress: toP2PAddress}
+	toUser := &table.User{P2pAddress: toP2PAddress}
 	if m.server.CT.Fetch(toUser) != nil {
 		utils.Log(fmt.Sprintf("Couldn't find destination P2P address %v in database", toP2PAddress))
 		return
@@ -211,7 +211,7 @@ func (m *MsgHandler) TransferNotice(sliceHash, fromP2PAddress, toP2PAddress stri
 
 	fileSlice := &table.FileSlice{
 		FileSliceStorage: table.FileSliceStorage{
-			P2PAddress: fromP2PAddress,
+			P2pAddress: fromP2PAddress,
 		},
 		SliceHash: sliceHash,
 	}
@@ -236,7 +236,7 @@ func (m *MsgHandler) TransferNotice(sliceHash, fromP2PAddress, toP2PAddress stri
 			SliceHash: fileSlice.SliceHash,
 		},
 		StoragePpInfo: &protos.PPBaseInfo{
-			P2PAddress:     fromUser.P2PAddress,
+			P2PAddress:     fromUser.P2pAddress,
 			WalletAddress:  fromUser.WalletAddress,
 			NetworkAddress: fromUser.NetworkAddress,
 		},
@@ -246,10 +246,10 @@ func (m *MsgHandler) TransferNotice(sliceHash, fromP2PAddress, toP2PAddress stri
 		SliceHash:          fileSlice.SliceHash,
 		SliceSize:          fileSlice.SliceSize,
 		TransferCer:        transferCer,
-		FromP2PAddress:     fromUser.P2PAddress,
+		FromP2pAddress:     fromUser.P2pAddress,
 		FromWalletAddress:  fromUser.WalletAddress,
 		FromNetworkAddress: fromUser.NetworkAddress,
-		ToP2PAddress:       toUser.P2PAddress,
+		ToP2pAddress:       toUser.P2pAddress,
 		ToWalletAddress:    toUser.WalletAddress,
 		ToNetworkAddress:   toUser.NetworkAddress,
 		Status:             table.TRANSFER_RECORD_STATUS_CHECK,
@@ -398,7 +398,7 @@ func (m *MsgHandler) DeleteSlice(p2pAddress, sliceHash string) {
 	if sliceHash == "" || p2pAddress == "" {
 		utils.Log("DeleteSlice: msg data given incorrect ")
 		utils.Log("sliceHash = ", sliceHash)
-		utils.Log("P2PAddress = ", p2pAddress)
+		utils.Log("P2pAddress = ", p2pAddress)
 		return
 	}
 
