@@ -12,17 +12,17 @@ import (
 	"fmt"
 	"github.com/cosmos/cosmos-sdk/crypto/keys"
 	"github.com/cosmos/go-bip39"
+	"github.com/pborman/uuid"
 	"github.com/stratosnet/sds/utils/crypto"
+	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/types"
 	"github.com/vmihailenco/msgpack"
+	"golang.org/x/crypto/pbkdf2"
+	"golang.org/x/crypto/scrypt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-
-	"github.com/pborman/uuid"
-	"golang.org/x/crypto/pbkdf2"
-	"golang.org/x/crypto/scrypt"
 )
 
 const (
@@ -42,7 +42,7 @@ type KeyStorePassphrase struct {
 
 type encryptedKeyJSONV3 struct {
 	Address string     `json:"address"`
-	Account string     `json:"account"`
+	Name    string     `json:"name"`
 	Crypto  cryptoJSON `json:"crypto"`
 	Id      string     `json:"id"`
 	Version int        `json:"version"`
@@ -68,23 +68,39 @@ type hdKeyBytes struct {
 	PrivKey    []byte
 }
 
-// CreateAccount creates a new account, setting auth as the password and saving the key data into the dir folder
-func CreateAccount(dir, nickname, auth, hrp, mnemonic, bip39Passphrase, hdPath string, scryptN, scryptP int) (types.Address, error) {
-	keyStore := &KeyStorePassphrase{dir, scryptN, scryptP}
-
-	derivedKeyBytes, err := keys.SecpDeriveKey(mnemonic, bip39Passphrase, hdPath)
+// CreateWallet creates a new stratos-chain wallet with the given nickname and password, and saves the key data into the dir folder
+func CreateWallet(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPath string, scryptN, scryptP int) (types.Address, error) {
+	privateKey, err := keys.SecpDeriveKey(mnemonic, bip39Passphrase, hdPath)
 	if err != nil {
 		return types.Address{}, err
 	}
 
-	key := newKeyFromBytes(derivedKeyBytes)
-	key.Account = nickname
+	return saveAccountKey(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPath, scryptN, scryptP, privateKey, true)
+}
+
+// CreateP2PKey creates a P2P key to be used by one of the SDS nodes, and saves the key data into the dir folder
+func CreateP2PKey(dir, nickname, password, hrp string, scryptN, scryptP int) (types.Address, error) {
+	privateKey := ed25519.NewKey()
+
+	return saveAccountKey(dir, nickname, password, hrp, "", "", "", scryptN, scryptP, privateKey, false)
+}
+
+func saveAccountKey(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPath string, scryptN, scryptP int, privateKey []byte, isWallet bool) (types.Address, error) {
+	keyStore := &KeyStorePassphrase{dir, scryptN, scryptP}
+
+	key := newKeyFromBytes(privateKey, isWallet)
+	key.Name = nickname
 	key.HdPath = hdPath
 	key.Mnemonic = mnemonic
 	key.Passphrase = bip39Passphrase
 
-	filename := dir + "/" + key.Address.ToBech()
-	if err := keyStore.StoreKey(filename, key, auth); err != nil {
+	address, err := key.Address.ToBech(hrp)
+	if err != nil {
+		return types.Address{}, err
+	}
+
+	filename := dir + "/" + address
+	if err = keyStore.StoreKey(filename, key, password); err != nil {
 		zeroKey(key.PrivateKey)
 		return types.Address{}, err
 	}
@@ -100,12 +116,16 @@ func NewMnemonic() (string, error) {
 	return bip39.NewMnemonic(entropy)
 }
 
-func newKeyFromBytes(privateKey []byte) *AccountKey {
+func newKeyFromBytes(privateKey []byte, isWallet bool) *AccountKey {
 	id := uuid.NewRandom()
 	key := &AccountKey{
 		Id:         id,
-		Address:    crypto.PrivKeyToAddress(privateKey),
 		PrivateKey: privateKey,
+	}
+	if isWallet {
+		key.Address = crypto.PrivKeyToAddress(privateKey)
+	} else {
+		key.Address = ed25519.PrivKeyBytesToAddress(privateKey)
 	}
 	return key
 }
@@ -166,7 +186,7 @@ func EncryptKey(key *AccountKey, auth string, scryptN, scryptP int) ([]byte, err
 	}
 	encryptedKeyJSONV3 := encryptedKeyJSONV3{
 		hex.EncodeToString(key.Address[:]),
-		key.Account,
+		key.Name,
 		cryptoStruct,
 		key.Id.String(),
 		version,
@@ -204,7 +224,7 @@ func DecryptKey(keyjson []byte, auth string) (*AccountKey, error) {
 
 	return &AccountKey{
 		Id:         uuid.UUID(keyId),
-		Account:    k.Account,
+		Name:       k.Name,
 		Address:    crypto.PrivKeyToAddress(hdKeyBytesObject.PrivKey),
 		HdPath:     string(hdKeyBytesObject.HdPath),
 		Mnemonic:   string(hdKeyBytesObject.Mnemonic),
@@ -229,6 +249,9 @@ func (ks KeyStorePassphrase) StoreKey(filename string, key *AccountKey, auth str
 	keyjson, err := EncryptKey(key, auth, ks.ScryptN, ks.ScryptP)
 	if err != nil {
 		return err
+	}
+	if filename[len(filename)-5:] != ".json" {
+		filename = filename + ".json"
 	}
 	return WriteKeyFile(filename, keyjson)
 }
@@ -345,14 +368,14 @@ func ensureInt(x interface{}) int {
 
 type AccountKey struct {
 	Id uuid.UUID // Version 4 "random" for unique id not derived from key data
-	// a nickname
-	Account string
 	// to simplify lookups we also store the address
 	Address types.Address
 	// The HD path to use to derive this key
 	HdPath string
 	// The mnemonic for the underlying HD wallet
 	Mnemonic string
+	// a nickname
+	Name string
 	// The bip39 passphrase for the underlying HD wallet
 	Passphrase string
 	// we only store privkey as pubkey/address can be derived from it

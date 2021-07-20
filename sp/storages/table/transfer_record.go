@@ -39,9 +39,11 @@ type TransferRecord struct {
 	SliceHash          string
 	SliceSize          uint64
 	TransferCer        string
+	FromP2pAddress     string
 	FromWalletAddress  string
-	ToWalletAddress    string
 	FromNetworkAddress string
+	ToP2pAddress       string
+	ToWalletAddress    string
 	ToNetworkAddress   string
 	Status             byte
 	Time               int64

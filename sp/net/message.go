@@ -9,7 +9,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/relay/sds"
 	"github.com/stratosnet/sds/relay/stratoschain"
-	"github.com/stratosnet/sds/relay/stratoschain/pot"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 	"os"
 	"strconv"
@@ -75,19 +74,19 @@ func (m *MsgHandler) Run() {
 			if msgType == common.MSG_LOGOUT {
 				m.Logout(msg.(*common.MsgLogout).Name)
 			} else if msgType == common.MSG_MIMING {
-				msgMing := msg.(*common.MsgMining)
-				m.Mining(msgMing.WalletAddress, msgMing.NetworkAddress, msgMing.Name, msgMing.Puk)
+				msgMining := msg.(*common.MsgMining)
+				m.Mining(msgMining.P2PAddress, msgMining.NetworkAddress, msgMining.Name, msgMining.Puk)
 			} else if msgType == common.MSG_TRANSFER_NOTICE {
 				msgTransferNotice := msg.(*common.MsgTransferNotice)
-				m.TransferNotice(msgTransferNotice.SliceHash, msgTransferNotice.FromWalletAddress, msgTransferNotice.ToWalletAddress)
+				m.TransferNotice(msgTransferNotice.SliceHash, msgTransferNotice.FromP2PAddress, msgTransferNotice.ToP2PAddress)
 			} else if msgType == common.MSG_BACKUP_SLICE {
 				msgBackupSlice := msg.(*common.MsgBackupSlice)
-				m.BackupSlice(msgBackupSlice.SliceHash, msgBackupSlice.FromWalletAddress)
+				m.BackupSlice(msgBackupSlice.SliceHash, msgBackupSlice.FromP2PAddress)
 			} else if msgType == common.MSG_BACKUP_PP {
-				m.BackupPP(msg.(*common.MsgBackupPP).WalletAddress)
+				m.BackupPP(msg.(*common.MsgBackupPP).P2PAddress)
 			} else if msgType == common.MSG_DELETE_SLICE {
 				msgDeleteSlice := msg.(*common.MsgDeleteSlice)
-				m.DeleteSlice(msgDeleteSlice.WalletAddress, msgDeleteSlice.SliceHash)
+				m.DeleteSlice(msgDeleteSlice.P2PAddress, msgDeleteSlice.SliceHash)
 			} else if msgType == common.MSG_AGGREGATE_TRAFFIC {
 				msgAggregateTraffic := msg.(*common.MsgAggregateTraffic)
 				aggregatedTraffic, err := m.AggregateTraffic(msgAggregateTraffic.Time)
@@ -102,26 +101,24 @@ func (m *MsgHandler) Run() {
 }
 
 // Mining
-func (m *MsgHandler) Mining(walletAddress, networkAddress, name string, puk []byte) {
-
-	if !m.server.HashRing.IsOnline(walletAddress) {
+func (m *MsgHandler) Mining(p2pAddress, networkAddress, name string, puk []byte) {
+	if !m.server.HashRing.IsOnline(p2pAddress) {
 		node := &hashring.Node{
-			ID:   walletAddress,
+			ID:   p2pAddress,
 			Host: networkAddress,
 		}
 		m.server.HashRing.AddNode(node)
 	}
 
-	m.server.HashRing.SetOnline(walletAddress)
+	m.server.HashRing.SetOnline(p2pAddress)
 
-	user := &table.User{WalletAddress: walletAddress}
+	user := &table.User{P2pAddress: p2pAddress}
 	if m.server.CT.Fetch(user) == nil {
 		user.Name = name
 		m.server.CT.Save(user)
 	}
 
-	//
-	pp := &table.PP{WalletAddress: walletAddress}
+	pp := &table.PP{P2pAddress: p2pAddress}
 	if m.server.CT.Fetch(pp) == nil {
 		pp.State = table.STATE_ONLINE
 		pp.NetworkAddress = networkAddress
@@ -139,13 +136,13 @@ func (m *MsgHandler) Logout(name string) {
 		return
 	}
 
-	walletAddress := m.server.Who(name)
-	if walletAddress == "" {
+	p2pAddress := m.server.Who(name)
+	if p2pAddress == "" {
 		return
 	}
-	m.server.HashRing.SetOffline(walletAddress)
+	m.server.HashRing.SetOffline(p2pAddress)
 
-	pp := &table.PP{WalletAddress: walletAddress}
+	pp := &table.PP{P2pAddress: p2pAddress}
 	if m.server.CT.Fetch(pp) == nil {
 		pp.State = table.STATE_OFFLINE
 		m.server.CT.Save(pp)
@@ -153,22 +150,22 @@ func (m *MsgHandler) Logout(name string) {
 
 	m.server.RmConn(name)
 
-	utils.Log(fmt.Sprintf("!!! %s@%s disconnect, current online nodes: %d", walletAddress, name, m.server.HashRing.NodeOkCount))
+	utils.Log(fmt.Sprintf("!!! %s@%s disconnect, current online nodes: %d", p2pAddress, name, m.server.HashRing.NodeOkCount))
 
 }
 
 // BackupPP
-func (m *MsgHandler) BackupPP(walletAddress string) {
+func (m *MsgHandler) BackupPP(p2pAddress string) {
 
-	if walletAddress == "" {
+	if p2pAddress == "" {
 		utils.Log("BackupPP: msg data given incorrect ")
-		utils.Log("walletAddress = ", walletAddress)
+		utils.Log("p2pAddress = ", p2pAddress)
 		return
 	}
 
 	res, err := m.server.CT.FetchTables([]table.FileSlice{}, map[string]interface{}{
 		"where": map[string]interface{}{
-			"wallet_address = ?": walletAddress,
+			"p2p_address = ?": p2pAddress,
 		},
 	})
 
@@ -181,29 +178,40 @@ func (m *MsgHandler) BackupPP(walletAddress string) {
 
 		key := fs.SliceHash + "#" + strconv.FormatUint(fs.SliceNumber, 10) + "#" + strconv.Itoa(index)
 
-		_, newStorePPWalletAddress := m.server.HashRing.GetNodeExcludedNodeIDs(key, m.server.System.MissingBackupWalletAddr)
+		_, newStoreP2PAddress := m.server.HashRing.GetNodeExcludedNodeIDs(key, m.server.System.MissingBackupWalletAddr)
 
-		if newStorePPWalletAddress != "" && fs.WalletAddress != newStorePPWalletAddress {
-			m.TransferNotice(fs.SliceHash, fs.WalletAddress, newStorePPWalletAddress)
+		if newStoreP2PAddress != "" && fs.P2pAddress != newStoreP2PAddress {
+			m.TransferNotice(fs.SliceHash, fs.P2pAddress, newStoreP2PAddress)
 		}
 	}
 
 }
 
 // TransferNotice
-func (m *MsgHandler) TransferNotice(sliceHash, sliceInWalletAddress, newStorePPWalletAddress string) {
-
-	if sliceHash == "" || sliceInWalletAddress == "" || newStorePPWalletAddress == "" {
+func (m *MsgHandler) TransferNotice(sliceHash, fromP2PAddress, toP2PAddress string) {
+	if sliceHash == "" || fromP2PAddress == "" || toP2PAddress == "" {
 		utils.Log("TransferNotice: msg data given incorrect")
 		utils.Log("sliceHash:", sliceHash)
-		utils.Log("sliceInWalletAddress", sliceInWalletAddress)
-		utils.Log("newStorePPWalletAddress", newStorePPWalletAddress)
+		utils.Log("fromP2PAddress", fromP2PAddress)
+		utils.Log("toP2PAddress", toP2PAddress)
+		return
+	}
+
+	fromUser := &table.User{P2pAddress: fromP2PAddress}
+	if m.server.CT.Fetch(fromUser) != nil {
+		utils.Log(fmt.Sprintf("Couldn't find origin P2P address %v in database", fromP2PAddress))
+		return
+	}
+
+	toUser := &table.User{P2pAddress: toP2PAddress}
+	if m.server.CT.Fetch(toUser) != nil {
+		utils.Log(fmt.Sprintf("Couldn't find destination P2P address %v in database", toP2PAddress))
 		return
 	}
 
 	fileSlice := &table.FileSlice{
 		FileSliceStorage: table.FileSliceStorage{
-			WalletAddress: sliceInWalletAddress,
+			P2pAddress: fromP2PAddress,
 		},
 		SliceHash: sliceHash,
 	}
@@ -213,12 +221,12 @@ func (m *MsgHandler) TransferNotice(sliceHash, sliceInWalletAddress, newStorePPW
 	}
 
 	// get online PP info todo change to read from redis
-	node := m.server.HashRing.Node(newStorePPWalletAddress)
+	node := m.server.HashRing.Node(toP2PAddress)
 	if node == nil || node.Host == "" {
-		utils.Log("TransferNotice: new PP[", newStorePPWalletAddress, "] is not online")
+		utils.Log("TransferNotice: new PP[", toP2PAddress, "] is not online")
 		return
 	}
-	transferCer := utils.CalcHash([]byte(fileSlice.SliceHash + "#" + newStorePPWalletAddress + "#" + strconv.FormatInt(time.Now().UnixNano(), 10)))
+	transferCer := utils.CalcHash([]byte(fileSlice.SliceHash + "#" + toP2PAddress + "#" + strconv.FormatInt(time.Now().UnixNano(), 10)))
 
 	req := &protos.ReqTransferNotice{
 		TransferCer: transferCer,
@@ -228,8 +236,9 @@ func (m *MsgHandler) TransferNotice(sliceHash, sliceInWalletAddress, newStorePPW
 			SliceHash: fileSlice.SliceHash,
 		},
 		StoragePpInfo: &protos.PPBaseInfo{
-			WalletAddress:  fileSlice.WalletAddress,
-			NetworkAddress: fileSlice.NetworkAddress,
+			P2PAddress:     fromUser.P2pAddress,
+			WalletAddress:  fromUser.WalletAddress,
+			NetworkAddress: fromUser.NetworkAddress,
 		},
 	}
 
@@ -237,9 +246,12 @@ func (m *MsgHandler) TransferNotice(sliceHash, sliceInWalletAddress, newStorePPW
 		SliceHash:          fileSlice.SliceHash,
 		SliceSize:          fileSlice.SliceSize,
 		TransferCer:        transferCer,
-		FromWalletAddress:  fileSlice.WalletAddress,
-		ToWalletAddress:    newStorePPWalletAddress,
-		FromNetworkAddress: fileSlice.NetworkAddress,
+		FromP2pAddress:     fromUser.P2pAddress,
+		FromWalletAddress:  fromUser.WalletAddress,
+		FromNetworkAddress: fromUser.NetworkAddress,
+		ToP2pAddress:       toUser.P2pAddress,
+		ToWalletAddress:    toUser.WalletAddress,
+		ToNetworkAddress:   toUser.NetworkAddress,
 		Status:             table.TRANSFER_RECORD_STATUS_CHECK,
 		Time:               0,
 	}
@@ -251,23 +263,23 @@ func (m *MsgHandler) TransferNotice(sliceHash, sliceInWalletAddress, newStorePPW
 }
 
 type AggregatedTraffic struct {
-	WalletAddress string
-	Volume        uint64
+	P2PAddress string
+	Volume     uint64
 }
 
 func (m *MsgHandler) AggregateTraffic(time int64) ([]AggregatedTraffic, error) {
 	type TrafficGroup struct {
 		table.Traffic
-		WalletAddress string
-		TotalVolume   string
+		P2PAddress  string
+		TotalVolume string
 	}
 
 	res, err := m.server.CT.FetchTables([]TrafficGroup{}, map[string]interface{}{
-		"columns": "provider_wallet_address AS wallet_address, SUM(volume) AS total_volume",
+		"columns": "provider_p2p_address AS p2p_address, SUM(volume) AS total_volume",
 		"where": map[string]interface{}{
 			"delivery_time < ?": time,
 		},
-		"groupBy": "provider_wallet_address",
+		"groupBy": "provider_p2p_address",
 		"orderBy": "total_volume desc",
 	})
 
@@ -294,10 +306,10 @@ func (m *MsgHandler) AggregateTraffic(time int64) ([]AggregatedTraffic, error) {
 				volume, _ := strconv.Atoi(group.TotalVolume)
 				aggregatedVolume += uint64(volume)
 				aggregatedTraffic = append(aggregatedTraffic, AggregatedTraffic{
-					WalletAddress: group.WalletAddress,
-					Volume:        uint64(volume),
+					P2PAddress: group.P2PAddress,
+					Volume:     uint64(volume),
 				})
-				rewardAccounts = append(rewardAccounts, group.WalletAddress)
+				rewardAccounts = append(rewardAccounts, group.P2PAddress)
 			} else {
 				break
 			}
@@ -305,7 +317,7 @@ func (m *MsgHandler) AggregateTraffic(time int64) ([]AggregatedTraffic, error) {
 
 		res, err := m.server.CT.FetchTables([]table.Traffic{}, map[string]interface{}{
 			"where": map[string]interface{}{
-				"provider_wallet_address in (?" + strings.Repeat(",?", len(rewardAccounts)-1) + ")": rewardAccounts,
+				"provider_p2p_address in (?" + strings.Repeat(",?", len(rewardAccounts)-1) + ")": rewardAccounts,
 				"delivery_time < ?": time,
 			},
 		})
@@ -341,7 +353,7 @@ func (m *MsgHandler) AggregateTraffic(time int64) ([]AggregatedTraffic, error) {
 		}
 
 		num := m.server.CT.GetDriver().Delete("traffic", map[string]interface{}{
-			"provider_wallet_address in (?" + strings.Repeat(",?", len(rewardAccounts)-1) + ")": rewardAccounts,
+			"provider_p2p_address in (?" + strings.Repeat(",?", len(rewardAccounts)-1) + ")": rewardAccounts,
 			"delivery_time < ?": time,
 		})
 
@@ -381,42 +393,42 @@ func (m *MsgHandler) WriteTrafficToCsvFile(fileName string, records []table.Traf
 }
 
 // DeleteSlice from P or PP
-func (m *MsgHandler) DeleteSlice(walletAddress, sliceHash string) {
+func (m *MsgHandler) DeleteSlice(p2pAddress, sliceHash string) {
 
-	if sliceHash == "" || walletAddress == "" {
+	if sliceHash == "" || p2pAddress == "" {
 		utils.Log("DeleteSlice: msg data given incorrect ")
 		utils.Log("sliceHash = ", sliceHash)
-		utils.Log("WalletAddress = ", walletAddress)
+		utils.Log("P2pAddress = ", p2pAddress)
 		return
 	}
 
 	req := &protos.ReqDeleteSlice{
-		WalletAddress: walletAddress,
-		SliceHash:     sliceHash,
+		P2PAddress: p2pAddress,
+		SliceHash:  sliceHash,
 	}
 
-	m.server.SendMsg(walletAddress, header.ReqTransferNotice, req)
+	m.server.SendMsg(p2pAddress, header.ReqTransferNotice, req)
 }
 
 // BackupSlice
-func (m *MsgHandler) BackupSlice(sliceHash, sliceInWalletAddress string) {
+func (m *MsgHandler) BackupSlice(sliceHash, fileSliceP2PAddress string) {
 
-	if sliceHash == "" || sliceInWalletAddress == "" {
+	if sliceHash == "" || fileSliceP2PAddress == "" {
 		utils.Log("BackupSlice: msg data given incorrect ")
 		utils.Log("sliceHash = ", sliceHash)
-		utils.Log("sliceInWalletAddress = ", sliceInWalletAddress)
+		utils.Log("fileSliceP2PAddress = ", fileSliceP2PAddress)
 		return
 	}
 
-	up, down := m.server.HashRing.GetNodeUpDownNodes(sliceInWalletAddress)
+	up, down := m.server.HashRing.GetNodeUpDownNodes(fileSliceP2PAddress)
 
 	// if both up and down stream is empty, only have 1 node
-	if up != "" && down != "" && sliceInWalletAddress != up && sliceInWalletAddress != down {
+	if up != "" && down != "" && fileSliceP2PAddress != up && fileSliceP2PAddress != down {
 		// backup to up stream first
-		m.TransferNotice(sliceHash, sliceInWalletAddress, up)
+		m.TransferNotice(sliceHash, fileSliceP2PAddress, up)
 		if up != down {
 			// if up and down are not the same, backup to down stream
-			m.TransferNotice(sliceHash, sliceInWalletAddress, down)
+			m.TransferNotice(sliceHash, fileSliceP2PAddress, down)
 		}
 	}
 
@@ -431,12 +443,12 @@ func NewMsgHandler(server *Server) *MsgHandler {
 }
 
 func broadcastVolumeReportTx(traffic []table.Traffic, epoch uint64, fileHash string, s *Server) error {
-	spPubKey := s.PrivateKey.PubKey()
-	spPrivKey := s.PrivateKey.(secp256k1.PrivKeySecp256k1)
+	spPubKey := s.WalletPrivateKey.PubKey()
+	spPrivKey := s.WalletPrivateKey.(secp256k1.PrivKeySecp256k1)
 	spWalletAddress := spPubKey.Address()
 	spWalletAddressString := types.AccAddress(spPubKey.Address()).String()
 
-	txMsg, err := pot.BuildVolumeReportMsg(traffic, spWalletAddress, epoch, fileHash)
+	txMsg, err := stratoschain.BuildVolumeReportMsg(traffic, spWalletAddress, epoch, fileHash)
 	if err != nil {
 		return err
 	}

@@ -36,7 +36,7 @@ func activatedCallbackFunc(_ context.Context, s *net.Server, message proto.Messa
 	}
 
 	pp := &table.PP{
-		WalletAddress: body.WalletAddress,
+		P2pAddress: body.P2PAddress,
 	}
 
 	if s.CT.Fetch(pp) != nil {
@@ -50,7 +50,7 @@ func activatedCallbackFunc(_ context.Context, s *net.Server, message proto.Messa
 		utils.ErrorLog(err)
 	}
 
-	s.SendMsg(body.WalletAddress, header.RspActivated, rsp)
+	s.SendMsg(body.P2PAddress, header.RspActivated, rsp)
 	return rsp, header.RspActivated
 }
 

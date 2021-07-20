@@ -6,6 +6,7 @@ import (
 	"github.com/stratosnet/sds/utils/httpserv"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"regexp"
 )
 
@@ -53,7 +54,7 @@ func changePassword(w http.ResponseWriter, request *http.Request) {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "wallet address is required").ToBytes())
 		return
 	}
-	keyjson, err := ioutil.ReadFile(dir + "/" + walletAddress)
+	keyjson, err := ioutil.ReadFile(filepath.Join(dir, walletAddress+".json"))
 	if err != nil {
 		utils.ErrorLog("readfile err", err)
 		httpserv.NewJson(nil, setting.FAILCode, "wallet not exist").ToBytes()

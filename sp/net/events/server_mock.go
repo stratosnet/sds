@@ -62,7 +62,7 @@ func initializeMock(s *net.Server) {
 	s.NewMsgHandler()
 
 	// it's commented out
-	//s.puk = tools.LoadOrCreateAccount(s.Conf.Ecdsa.PrivateKeyPath, s.Conf.Ecdsa.PrivateKeyPass)
+	//s.puk = tools.LoadOrCreateAccount(s.Conf.Keys.P2PPath, s.Conf.Keys.P2PPassword)
 
 	s.NewConnPool()
 
@@ -126,9 +126,9 @@ func StartMock(cmd string, eventHandleFunc func(s *net.Server) EventHandleFunc) 
 		FileStorage: net.FileStorageConfig{},
 		Cache:       redisConfig,
 		Database:    mysqlC,
-		Ecdsa: net.EcdsaConfig{
-			PrivateKeyPath: "",
-			PrivateKeyPass: "",
+		Keys: net.KeysConfig{
+			P2PPath:     "",
+			P2PPassword: "",
 		},
 		User: net.UserConfig{
 			UpgradeReward:      0,

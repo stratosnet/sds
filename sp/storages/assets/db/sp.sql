@@ -136,7 +136,9 @@ DROP TABLE IF EXISTS `file_slice_download`;
 CREATE TABLE `file_slice_download` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
   `slice_hash` char(64) NOT NULL DEFAULT '' ,
+  `from_p2p_address` char(255) NOT NULL DEFAULT '' COMMENT 'PP P2P address',
   `from_wallet_address` char(42) NOT NULL DEFAULT '' COMMENT 'PP wallet address',
+  `to_p2p_address` char(255) NOT NULL DEFAULT '' COMMENT 'P P2P address',
   `to_wallet_address` char(42) NOT NULL DEFAULT '' COMMENT 'P wallet address',
   `status` tinyint(3) unsigned NOT NULL DEFAULT '1' COMMENT '0:success,1:pending,2:error',
   `task_id` char(64) NOT NULL DEFAULT '' ,
@@ -169,6 +171,7 @@ DROP TABLE IF EXISTS `pp`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `pp` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'Id of pp',
+  `p2p_address` char(255) NOT NULL DEFAULT '' ,
   `wallet_address` char(42) NOT NULL DEFAULT '' ,
   `network_address` varchar(32) NOT NULL DEFAULT '' ,
   `disk_size` bigint(20) unsigned NOT NULL DEFAULT '0' ,
@@ -182,7 +185,7 @@ CREATE TABLE `pp` (
   `state` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT '0:offline,1:online',
   `active` tinyint NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `IDX_WALLET_ADDRESS` (`wallet_address`) USING HASH
+  UNIQUE KEY `IDX_P2P_ADDRESS` (`p2p_address`) USING HASH
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -197,9 +200,11 @@ CREATE TABLE `transfer_record` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
   `slice_hash` char(64) NOT NULL DEFAULT '' ,
   `transfer_cer` char(64) NOT NULL DEFAULT '' ,
+  `from_p2p_address` char(255) NOT NULL DEFAULT '' COMMENT 'origin PP P2P address',
   `from_wallet_address` char(42) NOT NULL DEFAULT '' COMMENT 'origin PP wallet address',
-  `to_wallet_address` char(42) NOT NULL DEFAULT '' COMMENT 'target PP wallet address',
   `from_network_address` varchar(32) NOT NULL DEFAULT '' COMMENT 'origin PP network address',
+  `to_p2p_address` char(255) NOT NULL DEFAULT '' COMMENT 'target PP P2P address',
+  `to_wallet_address` char(42) NOT NULL DEFAULT '' COMMENT 'target PP wallet address',
   `to_network_address` varchar(32) NOT NULL DEFAULT '' COMMENT 'target network address',
   `status` tinyint(3) unsigned NOT NULL DEFAULT '1' COMMENT '0:success,1:waiting,2:pending,3:error',
   `time` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'transfer finish time',
@@ -219,6 +224,7 @@ CREATE TABLE `user` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
   `is_pp` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT '0:no, 1:yest',
   `belong` char(42) NOT NULL DEFAULT '' COMMENT 'parent wallet address',
+  `p2p_address` char(255) NOT NULL DEFAULT '' COMMENT 'p2p key address',
   `wallet_address` char(42) NOT NULL DEFAULT '' COMMENT 'wallet address',
   `network_address` varchar(32) NOT NULL DEFAULT '' COMMENT 'network address',
   `disk_size` bigint(20) unsigned NOT NULL DEFAULT '0' ,
@@ -235,8 +241,9 @@ CREATE TABLE `user` (
   `register_time` int(10) unsigned NOT NULL DEFAULT '0' ,
   PRIMARY KEY (`id`),
   UNIQUE KEY `IDX_INVITATION_CODE` (`invitation_code`),
-  KEY `IDX_WALLET_ADDRESS` (`wallet_address`) USING HASH,
+  KEY `IDX_P2P_ADDRESS` (`p2p_address`) USING HASH,
   KEY `IDX_BELONG` (`belong`),
+  KEY `IDX_WALLET_ADDRESS` (`wallet_address`),
   KEY `IDX_NAME` (`name`),
   KEY `IDX_NETWORK_ADDRESS` (`network_address`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
@@ -333,6 +340,7 @@ DROP TABLE IF EXISTS `user_invite_record`;
 CREATE TABLE `user_invite_record` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `invitation_code` char(8) NOT NULL DEFAULT '' ,
+  `p2p_address` char(255) NOT NULL DEFAULT '' ,
   `wallet_address` char(42) NOT NULL DEFAULT '' ,
   `reward` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'reward capacity',
   `time` int(10) unsigned NOT NULL DEFAULT '0' ,

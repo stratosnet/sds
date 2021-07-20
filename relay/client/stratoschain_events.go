@@ -3,9 +3,11 @@ package client
 import (
 	"fmt"
 	"github.com/golang/protobuf/proto"
+	setting "github.com/stratosnet/sds/cmd/relayd/config"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/utils/types"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
@@ -52,7 +54,19 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 			fmt.Println("No node address was specified in the create_resource_node message from stratos-chain")
 			return
 		}
-		activatedMsg := &protos.ReqActivated{WalletAddress: nodeAddressList[0]}
+
+		p2pAddress, err := types.BechToAddress(nodeAddressList[0])
+		if err != nil {
+			fmt.Println("Error when trying to convert P2P address to bytes: " + err.Error())
+			return
+		}
+		p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
+		if err != nil {
+			fmt.Println("Error when trying to convert P2P address to bech32: " + err.Error())
+			return
+		}
+
+		activatedMsg := &protos.ReqActivated{P2PAddress: p2pAddressString}
 		activatedMsgBytes, err := proto.Marshal(activatedMsg)
 		if err != nil {
 			fmt.Println("Error when trying to marshal activatedMsg proto: " + err.Error())
@@ -80,7 +94,19 @@ func (m *MultiClient) RemoveResourceNodeMsgHandler() func(event coretypes.Result
 			fmt.Println("No node address was specified in the remove_resource_node message from stratos-chain")
 			return
 		}
-		deactivatedMsg := &protos.ReqDeactivated{WalletAddress: nodeAddressList[0]}
+
+		p2pAddress, err := types.BechToAddress(nodeAddressList[0])
+		if err != nil {
+			fmt.Println("Error when trying to convert P2P address to bytes: " + err.Error())
+			return
+		}
+		p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
+		if err != nil {
+			fmt.Println("Error when trying to convert P2P address to bech32: " + err.Error())
+			return
+		}
+
+		deactivatedMsg := &protos.ReqDeactivated{P2PAddress: p2pAddressString}
 		deactivatedMsgBytes, err := proto.Marshal(deactivatedMsg)
 		if err != nil {
 			fmt.Println("Error when trying to marshal deactivatedMsg proto: " + err.Error())
@@ -132,10 +158,11 @@ func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 			return
 		}
 
-		// TODO: change the capacity amount once the calculation is done in stratos-chain
+		// TODO: change the capacity amount once the calculation is done in stratos-chain (QB-475)
+		// TODO: verify if it makes sense to use reporter as P2P address (QB-475)
 		prepaidMsg := &protos.ReqPrepaid{
-			WalletAddress: reporterList[0],
-			Capacity:      1,
+			P2PAddress: reporterList[0],
+			Capacity:   1,
 		}
 		prepaidMsgBytes, err := proto.Marshal(prepaidMsg)
 		if err != nil {

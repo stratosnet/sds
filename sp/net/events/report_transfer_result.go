@@ -59,7 +59,6 @@ func reportTransferResultCallbackFunc(_ context.Context, s *net.Server, message 
 	}
 
 	if transferRecord.SliceHash == "" {
-
 		rsp.Result.Msg = "transfer record info error, empty slice hash"
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		s.Unlock()
@@ -100,15 +99,14 @@ func reportTransferResultCallbackFunc(_ context.Context, s *net.Server, message 
 	fileSlice := &table.FileSlice{
 		SliceHash: transferRecord.SliceHash,
 		FileSliceStorage: table.FileSliceStorage{
-			WalletAddress: transferRecord.FromWalletAddress,
+			P2pAddress: transferRecord.FromP2pAddress,
 		},
 	}
 
 	if err := s.CT.Fetch(fileSlice); err == nil {
-
 		fileSliceStorage := &table.FileSliceStorage{
 			SliceHash:      fileSlice.SliceHash,
-			WalletAddress:  body.NewPp.WalletAddress,
+			P2pAddress:     body.NewPp.P2PAddress,
 			NetworkAddress: body.NewPp.NetworkAddress,
 		}
 
@@ -125,6 +123,7 @@ func reportTransferResultCallbackFunc(_ context.Context, s *net.Server, message 
 	trafficRecord := &table.Traffic{
 		TaskId:                body.TransferCer,
 		TaskType:              table.TRAFFIC_TASK_TYPE_TRANSFER,
+		ProviderP2pAddress:    transferRecord.FromP2pAddress,
 		ProviderWalletAddress: transferRecord.FromWalletAddress,
 		ConsumerWalletAddress: transferRecord.ToWalletAddress,
 		Volume:                transferRecord.SliceSize,

@@ -26,7 +26,7 @@ func ReqTransferNotice(ctx context.Context, conn spbf.WriteCloser) {
 	if target.FromSp { // if msg from SP, then self is new storage PP
 		utils.DebugLog("if msg from SP, then self is new storage PP")
 		// response to SP first, check whether has capacity to store
-		if target.StoragePpInfo.WalletAddress == setting.WalletAddress {
+		if target.StoragePpInfo.P2PAddress == setting.WalletAddress {
 
 			utils.ErrorLog("target is myself, drop msg")
 		}
@@ -49,7 +49,7 @@ func ReqTransferNotice(ctx context.Context, conn spbf.WriteCloser) {
 	// store the task
 	task.TransferTaskMap[target.TransferCer] = &target
 	// store transfer target register peer wallet address
-	serv.RegisterPeerMap.Store(target.StoragePpInfo.WalletAddress, spbf.NetIDFromContext(ctx))
+	serv.RegisterPeerMap.Store(target.StoragePpInfo.P2PAddress, spbf.NetIDFromContext(ctx))
 }
 
 // rspTransferNotice
@@ -86,7 +86,7 @@ func RspValidateTransferCer(ctx context.Context, conn spbf.WriteCloser) {
 			MSGHead: PPMsgHeader(data, header.RspValidateTransferCer),
 			MSGData: data,
 		}
-		transferSendMessageToClient(tTask.StoragePpInfo.WalletAddress, &msgBuf)
+		transferSendMessageToClient(tTask.StoragePpInfo.P2PAddress, &msgBuf)
 		delete(task.TransferTaskMap, target.TransferCer)
 
 		return
@@ -106,7 +106,7 @@ func RspValidateTransferCer(ctx context.Context, conn spbf.WriteCloser) {
 	} else {
 		// certificate validation success, resp to new PP to start download
 		utils.DebugLog("cert validation success, resp to new PP to start download")
-		transferSendMessageToClient(tTask.StoragePpInfo.WalletAddress, spbf.MessageFromContext(ctx))
+		transferSendMessageToClient(tTask.StoragePpInfo.P2PAddress, spbf.MessageFromContext(ctx))
 	}
 }
 
@@ -132,7 +132,7 @@ func ReqReportTransferResult(transferCer string, result bool) {
 	if tTask.FromSp {
 		req.IsNew = true
 		req.NewPp = &protos.PPBaseInfo{
-			WalletAddress:  setting.WalletAddress,
+			P2PAddress:     setting.P2PAddress,
 			NetworkAddress: setting.NetworkAddress,
 		}
 	} else {

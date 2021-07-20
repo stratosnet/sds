@@ -27,7 +27,7 @@ func downPause(w http.ResponseWriter, request *http.Request) {
 				State:  true,
 			}
 			list = append(list, l)
-			if val, ok := setting.DownLoadTaskIDMap.Load(f.(string)); ok {
+			if val, ok := setting.DownloadTaskIDMap.Load(f.(string)); ok {
 				event.DownloadSlicePause(val.(string), uuid.New().String(), w)
 			}
 		}

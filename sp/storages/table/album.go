@@ -104,9 +104,9 @@ func (a *Album) GetFiles(ct *database.CacheTable) []*protos.FileInfo {
 	}
 	type AlbumFile struct {
 		File
-		AddTime       int64
-		Path          string
-		WalletAddress string
+		AddTime    int64
+		Path       string
+		P2PAddress string
 	}
 
 	res, err := ct.FetchTables([]AlbumFile{}, map[string]interface{}{

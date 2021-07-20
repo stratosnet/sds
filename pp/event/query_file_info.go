@@ -44,7 +44,7 @@ func FindDirectoryTree(reqID, pathHash string, w http.ResponseWriter, isF bool) 
 	if setting.CheckLogin() {
 		// request is the same as AlbumContent
 		sendMessage(client.PPConn, reqFindDirectoryTreeData(reqID, pathHash), header.ReqFindDirectoryTree)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 		isFind = isF
 	} else {
 		notLogin(w)
@@ -64,7 +64,7 @@ func RspFindDirectoryTree(ctx context.Context, conn spbf.WriteCloser) {
 		if isFind {
 			putData(target.ReqId, HTTPDirectoryTree, &target)
 		}
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				utils.DebugLog("target>>>>>>>>>>>>>>>>>>>>>", target)
 				ts := DirectoryTreeMap[target.ReqId]
@@ -74,7 +74,7 @@ func RspFindDirectoryTree(ctx context.Context, conn spbf.WriteCloser) {
 				fmt.Println("action  failed", target.Result.Msg)
 			}
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }
@@ -87,7 +87,7 @@ func GetFileStorageInfo(path, savePath, reqID string, isImg bool, w http.Respons
 			sendMessage(client.PPConn, reqFileStorageInfoData(path, savePath, reqID), header.ReqFileStorageInfo)
 			if isImg {
 				isImage = isImg
-				stroeResponseWriter(reqID, w)
+				storeResponseWriter(reqID, w)
 			}
 		} else {
 			utils.ErrorLog("please input correct download link, eg: spb://address/fileHash|filename(optional)")
@@ -115,7 +115,7 @@ func RspFileStorageInfo(ctx context.Context, conn spbf.WriteCloser) {
 
 		utils.DebugLog("file hash", target.FileHash)
 		// utils.Log("target", target.WalletAddress)
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("download starts: ")
 				task.DownloadFileMap.Store(target.FileHash, &target)
@@ -129,8 +129,8 @@ func RspFileStorageInfo(ctx context.Context, conn spbf.WriteCloser) {
 			}
 		} else {
 			// store the task and transfer
-			task.AddDonwloadTask(&target)
-			transferSendMessageToClient(target.WalletAddress, rspFileStorageInfoData(&target))
+			task.AddDownloadTask(&target)
+			transferSendMessageToClient(target.P2PAddress, rspFileStorageInfoData(&target))
 		}
 	}
 }

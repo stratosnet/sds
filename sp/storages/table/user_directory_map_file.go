@@ -8,9 +8,9 @@ import (
 
 // UserDirectoryMapFile
 type UserDirectoryMapFile struct {
-	DirHash  string
-	FileHash string
-	Owner    string
+	DirHash     string
+	FileHash    string
+	OwnerWallet string
 	UserDirectory
 }
 

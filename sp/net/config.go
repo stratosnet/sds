@@ -14,7 +14,7 @@ type Config struct {
 	FileStorage    FileStorageConfig    `yaml:"FileStorage"`
 	Cache          cache.Config         `yaml:"Cache"`
 	Database       config.Connect       `yaml:"Database"`
-	Ecdsa          EcdsaConfig          `yaml:"Ecdsa"`
+	Keys           KeysConfig           `yaml:"Keys"`
 	User           UserConfig           `yaml:"User"`
 	BlockchainInfo BlockchainInfoConfig `yaml:"BlockchainInfo"`
 	Log            Log                  `yaml:"Log"`
@@ -41,14 +41,11 @@ type FileStorageConfig struct {
 	PictureLibAddress string `yaml:"PictureLibAddress"`
 }
 
-type BpConfig struct {
-	NetworkAddress string `yaml:"NetworkAddress"`
-	WalletAddress  string `yaml:"WalletAddress"`
-}
-
-type EcdsaConfig struct {
-	PrivateKeyPath string `yaml:"PrivateKeyPath"`
-	PrivateKeyPass string `yaml:"PrivateKeyPass"`
+type KeysConfig struct {
+	P2PPath        string `yaml:"P2PPath"`
+	P2PPassword    string `yaml:"P2PPassword"`
+	WalletPath     string `yaml:"WalletPath"`
+	WalletPassword string `yaml:"WalletPassword"`
 }
 
 type UserConfig struct {

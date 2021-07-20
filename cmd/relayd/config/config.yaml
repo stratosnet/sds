@@ -11,5 +11,6 @@ stratosChain:
   websocketPort: 26657
 blockchainInfo:
   addressPrefix: st
+  p2pAddressPrefix: stsdsp2p
   chainId: test-chain
   token: ustos

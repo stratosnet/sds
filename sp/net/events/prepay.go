@@ -39,7 +39,7 @@ func prepayCallbackFunc(_ context.Context, s *net.Server, message proto.Message,
 	}
 
 	pp := &table.PP{
-		WalletAddress: body.WalletAddress,
+		P2pAddress: body.P2PAddress,
 	}
 
 	if s.CT.Fetch(pp) != nil {

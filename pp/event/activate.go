@@ -18,7 +18,7 @@ func Activate(amount, fee, gas int64) error {
 		utils.ErrorLog("Couldn't build PP activate request: " + err.Error())
 		return err
 	}
-	fmt.Println("Sending activate message to SP! " + activateReq.WalletAddress)
+	fmt.Println("Sending activate message to SP! " + activateReq.P2PAddress)
 	SendMessageToSPServer(activateReq, header.ReqActivate)
 	return nil
 }

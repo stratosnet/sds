@@ -102,7 +102,7 @@ func (c *CONN) send(message proto.Message, cmd string) {
 func (c *CONN) pplist() {
 	c.send(&protos.ReqGetPPList{
 		MyAddress: &protos.PPBaseInfo{
-			WalletAddress:  "",
+			P2PAddress:     "",
 			NetworkAddress: "",
 		},
 	}, header.ReqGetPPList)
@@ -111,7 +111,7 @@ func (c *CONN) pplist() {
 func (c *CONN) login(w, n string) {
 	c.send(&protos.ReqRegister{
 		Address: &protos.PPBaseInfo{
-			WalletAddress:  w,
+			P2PAddress:     w,
 			NetworkAddress: n,
 		},
 		PublicKey: []byte(w + ":publicKey"),
@@ -120,13 +120,13 @@ func (c *CONN) login(w, n string) {
 
 func (c *CONN) registerPP(w string) {
 	c.send(&protos.ReqRegisterNewPP{
-		WalletAddress: w,
-		DiskSize:      1024 * 1024 * 1024 * 720,
-		MemorySize:    1024 * 1024 * 1024 * 2,
-		OsAndVer:      "CentOS 7",
-		CpuInfo:       "intel i7",
-		MacAddress:    "12345678901234567",
-		Version:       1,
-		PubKey:        []byte(w + ":publicKey"),
+		P2PAddress: w,
+		DiskSize:   1024 * 1024 * 1024 * 720,
+		MemorySize: 1024 * 1024 * 1024 * 2,
+		OsAndVer:   "CentOS 7",
+		CpuInfo:    "intel i7",
+		MacAddress: "12345678901234567",
+		Version:    1,
+		PubKey:     []byte(w + ":publicKey"),
 	}, header.ReqRegisterNewPP)
 }

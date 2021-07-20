@@ -14,10 +14,11 @@ func getConfig(w http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		return
 	}
-	if data["walletAddress"] != nil {
+	if data["walletAddress"] != nil && data["p2pAddress"] != nil {
 		walletAddress := data["walletAddress"].(string)
-		event.GetMyConfig(walletAddress, uuid.New().String(), w)
+		p2pAddress := data["p2pAddress"].(string)
+		event.GetMyConfig(p2pAddress, walletAddress, uuid.New().String(), w)
 	} else {
-		w.Write(httpserv.NewJson(nil, setting.FAILCode, "wallet address is required").ToBytes())
+		w.Write(httpserv.NewJson(nil, setting.FAILCode, "wallet address and P2P key address are required").ToBytes())
 	}
 }

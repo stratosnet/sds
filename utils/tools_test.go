@@ -28,7 +28,7 @@ func TestECCSignAndVerify(t *testing.T) {
 	msg := []byte("this is a random message")
 	sig1, err := ECCSign(msg, privateKeyECDSA)
 	if err != nil {
-		t.Fatal("couldn't sign with ecdsa.PrivateKey: " + err.Error())
+		t.Fatal("couldn't sign with ecdsa.P2PPrivateKey: " + err.Error())
 	}
 	sig2, err := ECCSignBytes(msg, privKeyBytes)
 	if err != nil {
