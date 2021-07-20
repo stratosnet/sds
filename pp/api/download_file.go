@@ -75,14 +75,14 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 				TaskID: downTaskID,
 				Path:   "",
 			}
-			setting.DownLoadTaskIDMap.Range(func(k, v interface{}) bool {
+			setting.DownloadTaskIDMap.Range(func(k, v interface{}) bool {
 				if v.(string) == p.hash {
 					tree.TaskID = k.(string)
 					return false
 				}
 				return true
 			})
-			setting.DownLoadTaskIDMap.Store(tree.TaskID, p.hash)
+			setting.DownloadTaskIDMap.Store(tree.TaskID, p.hash)
 			list = append(list, tree)
 			event.GetFileStorageInfo(path, "", uuid.New().String(), false, w)
 		}
@@ -118,14 +118,14 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 						FileSize: finfo.FileSize,
 					}
 					path := "spb://" + finfo.OwnerWalletAddress + "/" + tree.TaskID
-					setting.DownLoadTaskIDMap.Range(func(k, v interface{}) bool {
+					setting.DownloadTaskIDMap.Range(func(k, v interface{}) bool {
 						if v.(string) == finfo.FileHash {
 							tree.TaskID = k.(string)
 							return false
 						}
 						return true
 					})
-					setting.DownLoadTaskIDMap.Store(tree.TaskID, finfo.FileHash)
+					setting.DownloadTaskIDMap.Store(tree.TaskID, finfo.FileHash)
 					event.GetFileStorageInfo(path, finfo.StoragePath, uuid.New().String(), false, w)
 					list = append(list, tree)
 				}
@@ -143,7 +143,7 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 	// 	case dt := <-event.DirectoryTree:
 	// 		tree := &df{
 	// 			FileHash: dt.Hash,file.go:226
-	// 			Path:     dt.Dir,
+	// 			P2PPath:     dt.Dir,
 	// 		}
 	// 		// path := "spb://" + data["belongAddress"].(string) + "/" + tree.FileHash
 	// 		// event.GetFileStorageInfo(path, savePath, uuid.New().String(), w)

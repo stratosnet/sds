@@ -24,7 +24,7 @@ func CreateAlbum(albumName, albumBlurb, albumCoverHash, albumType, reqID string,
 	}
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqCreateAlbumData(albumName, albumBlurb, albumCoverHash, reqID, aType, files, isPrivate), header.ReqCreateAlbum)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -40,7 +40,7 @@ func ReqCreateAlbum(ctx context.Context, conn spbf.WriteCloser) {
 func RspCreateAlbum(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspCreateAlbum
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg, "AlbumId", target.AlbumId)
 			} else {
@@ -48,7 +48,7 @@ func RspCreateAlbum(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPCreateAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }
@@ -65,7 +65,7 @@ func FindMyAlbum(reqID string, page, number uint64, albumType, keyword string, w
 	}
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqFindMyAlbumData(aType, reqID, page, number, keyword), header.ReqFindMyAlbum)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -80,7 +80,7 @@ func ReqFindMyAlbum(ctx context.Context, conn spbf.WriteCloser) {
 func RspFindMyAlbum(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspFindMyAlbum
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				for _, info := range target.AlbumInfo {
 					fmt.Println("AlbumId:", info.AlbumId)
@@ -94,7 +94,7 @@ func RspFindMyAlbum(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPFindMyAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }
@@ -104,7 +104,7 @@ func EditAlbum(albumID, albumCoverHash, albumName, albumBlurb, reqID string, cha
 
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqEditAlbumData(albumID, albumCoverHash, albumName, albumBlurb, reqID, changeFiles, isPrivate), header.ReqEditAlbum)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -119,7 +119,7 @@ func ReqEditAlbum(ctx context.Context, conn spbf.WriteCloser) {
 func RspEditAlbum(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspEditAlbum
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
 			} else {
@@ -127,7 +127,7 @@ func RspEditAlbum(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPEditAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }
@@ -136,7 +136,7 @@ func RspEditAlbum(ctx context.Context, conn spbf.WriteCloser) {
 func AlbumContent(albumID, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqAlbumContentData(albumID, reqID), header.ReqAlbumContent)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -151,7 +151,7 @@ func ReqAlbumContent(ctx context.Context, conn spbf.WriteCloser) {
 func RspAlbumContent(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspAlbumContent
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("AlbumInfo", target.AlbumInfo)
 				fmt.Println("FileInfo", target.FileInfo)
@@ -160,7 +160,7 @@ func RspAlbumContent(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPAlbumContent, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }
@@ -182,7 +182,7 @@ func SearchAlbum(keyword, albumType, sortType, reqID string, page, number uint64
 
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqSearchAlbumData(keyword, reqID, aType, sType, page, number), header.ReqSearchAlbum)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -197,7 +197,7 @@ func ReqSearchAlbum(ctx context.Context, conn spbf.WriteCloser) {
 func RspSearchAlbum(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspSearchAlbum
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("AlbumInfo", target.AlbumInfo)
 			} else {
@@ -205,7 +205,7 @@ func RspSearchAlbum(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPSearchAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }
@@ -215,7 +215,7 @@ func CollectionAlbum(albumID, reqID string, isCollection bool, w http.ResponseWr
 	if setting.CheckLogin() {
 
 		sendMessage(client.PPConn, reqCollectionAlbumData(albumID, reqID, isCollection), header.ReqCollectionAlbum)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -230,7 +230,7 @@ func ReqCollectionAlbum(ctx context.Context, conn spbf.WriteCloser) {
 func RspCollectionAlbum(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspCollectionAlbum
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
 			} else {
@@ -238,7 +238,7 @@ func RspCollectionAlbum(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPCollectionAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }
@@ -248,7 +248,7 @@ func AbstractAlbum(reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 
 		sendMessage(client.PPConn, reqAbstractAlbumData(reqID), header.ReqAbstractAlbum)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -263,7 +263,7 @@ func ReqAbstractAlbum(ctx context.Context, conn spbf.WriteCloser) {
 func RspAbstractAlbum(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspAbstractAlbum
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
 				utils.DebugLog("target", target)
@@ -272,7 +272,7 @@ func RspAbstractAlbum(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPAbstractAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }
@@ -289,7 +289,7 @@ func MyCollectionAlbum(albumType, reqID string, page, number uint64, keyword str
 	}
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqMyCollectionAlbumData(aType, reqID, page, number, keyword), header.ReqMyCollectionAlbum)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -304,7 +304,7 @@ func ReqMyCollectionAlbum(ctx context.Context, conn spbf.WriteCloser) {
 func RspMyCollectionAlbum(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspMyCollectionAlbum
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
 				utils.DebugLog("target", target)
@@ -313,7 +313,7 @@ func RspMyCollectionAlbum(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPMyCollectionAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }
@@ -322,7 +322,7 @@ func RspMyCollectionAlbum(ctx context.Context, conn spbf.WriteCloser) {
 func DeleteAlbum(albumID, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqDeleteAlbumData(albumID, reqID), header.ReqDeleteAlbum)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -337,7 +337,7 @@ func ReqDeleteAlbum(ctx context.Context, conn spbf.WriteCloser) {
 func RspDeleteAlbum(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspDeleteAlbum
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
 				utils.DebugLog("target", target)
@@ -346,7 +346,7 @@ func RspDeleteAlbum(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPDeleteAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }

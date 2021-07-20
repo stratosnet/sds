@@ -3,15 +3,17 @@ NetworkAddress: 127.0.0.1
 SPNetAddress: 127.0.0.1:8888
 Debug: true
 PPListDir: "./peers/pp-list"
-AccountDir: "./account"
+AccountDir: "./accounts"
 scryptN: 4096
 scryptP: 6
 DefPassword:
 DefSavePath:
 StorehousePath:
 DownloadPath:
-Password: aaa
-Account: st145p208zkkha67sr2r0u28y3ncuk6hf2xkgkj69
+P2PAddress: stsdsp2p1gl9ywg6jdfdgcja70ffum4ectq4fmt26n6z7tt
+P2PPassword: aaa
+WalletAddress: st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg
+WalletPassword: aaa
 AutoRun: true
 Internal: false
 IsWallet: false
@@ -24,6 +26,7 @@ LimitUploadSpeed: 100
 IsCheckFileOperation:
 IsCheckFileTransferFinished:
 AddressPrefix: "st"
+P2PKeyPrefix: "stsdsp2p"
 ChainId: "test-chain"
 Token: "ustos"
 StratosChainAddress: 127.0.0.1

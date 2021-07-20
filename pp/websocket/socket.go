@@ -59,7 +59,7 @@ func SocketStart(conn net.Conn, upMap, downMap, m map[string]interface{}) error 
 		return true
 	})
 
-	setting.DownLoadTaskIDMap.Range(func(k, v interface{}) bool {
+	setting.DownloadTaskIDMap.Range(func(k, v interface{}) bool {
 		gress := &prog{
 			State: true,
 		}
@@ -77,7 +77,7 @@ func SocketStart(conn net.Conn, upMap, downMap, m map[string]interface{}) error 
 		// 	gress.Rate = 0
 		// 	gress.State = true
 		// }
-		if c, ok := client.PdownloadPassageway.Load(hash); ok {
+		if c, ok := client.PDownloadPassageway.Load(hash); ok {
 			conn := c.(*cf.ClientConn)
 			re := conn.GetSecondReadFlow()
 			gress.Rate = re

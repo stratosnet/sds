@@ -10,10 +10,10 @@ import (
 	sdkrest "github.com/cosmos/cosmos-sdk/types/rest"
 	"github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	pottypes "github.com/stratosnet/sds/relay/stratoschain/pot/types"
-	registertypes "github.com/stratosnet/sds/relay/stratoschain/register/types"
-	sdstypes "github.com/stratosnet/sds/relay/stratoschain/sds/types"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
+	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
+	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
+	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
 	"io/ioutil"
 	"net/http"
 )

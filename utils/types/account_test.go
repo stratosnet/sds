@@ -1,34 +1,25 @@
 package types
 
 import (
-	"fmt"
-	"github.com/stratosnet/sds/relay/stratoschain"
-	"io/ioutil"
-	"math/rand"
+	"github.com/stratosnet/sds/relay/stratoschain/prefix"
 	"testing"
 )
 
 func TestAccountAddressBechConversion(t *testing.T) {
 	hrp := "st"
-	stratoschain.SetConfig(hrp)
+	prefix.SetConfig(hrp)
 	addressString := "st1yx3kkx9jnqeck59j744nc5qgtv4lt4dc45jcwz"
 	addr, err := BechToAddress(addressString)
 	if err != nil {
 		t.Fatal("couldn't convert bech32 string to Address: " + err.Error())
 	}
 
-	addressString2 := addr.ToBech()
+	addressString2, err := addr.ToBech(hrp)
+	if err != nil {
+		t.Fatal("couldn't convert Address to bech32 string: " + err.Error())
+	}
 
 	if addressString != addressString2 {
 		t.Fatalf("the bech32 address conversion is broken. Expected [%v] Actual [%v]", addressString, addressString2)
-	}
-}
-
-func TestFake(t *testing.T) {
-	for i := 0; i < 10; i++ {
-		rand.Seed(int64(i))
-		data := make([]byte, 1024*1024*8)
-		rand.Read(data)
-		ioutil.WriteFile(fmt.Sprintf("tmp%v.dat", i), data, 0777)
 	}
 }

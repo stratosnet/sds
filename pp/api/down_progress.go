@@ -51,7 +51,7 @@ func downProgress(w http.ResponseWriter, request *http.Request) {
 				Rate:     0,
 				State:    true,
 			}
-			if ts, ok := setting.DownLoadTaskIDMap.Load(p.TaskID); ok {
+			if ts, ok := setting.DownloadTaskIDMap.Load(p.TaskID); ok {
 				if val, ok := setting.DownProssMap.Load(ts.(string)); ok {
 					p.Progress = val.(float32)
 					if val.(float32) > 100 {
@@ -64,7 +64,7 @@ func downProgress(w http.ResponseWriter, request *http.Request) {
 					p.Rate = 0
 					p.State = true
 				}
-				if c, ok := client.PdownloadPassageway.Load(ts.(string)); ok {
+				if c, ok := client.PDownloadPassageway.Load(ts.(string)); ok {
 					conn := c.(*cf.ClientConn)
 					re := conn.GetSecondReadFlow()
 					p.Rate = re

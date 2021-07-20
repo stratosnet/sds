@@ -18,7 +18,7 @@ func Deactivate(fee, gas int64) error {
 		utils.ErrorLog("Couldn't build PP deactivate request: " + err.Error())
 		return err
 	}
-	fmt.Println("Sending deactivate message to SP! " + deactivateReq.WalletAddress)
+	fmt.Println("Sending deactivate message to SP! " + deactivateReq.P2PAddress)
 	SendMessageToSPServer(deactivateReq, header.ReqDeactivate)
 	return nil
 }

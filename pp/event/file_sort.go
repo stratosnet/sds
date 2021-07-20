@@ -15,7 +15,7 @@ import (
 func FileSort(files []*protos.FileInfo, reqID, albumID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, fileSortData(files, reqID, albumID), header.ReqFileSort)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -32,11 +32,10 @@ func RspFileSort(ctx context.Context, conn spbf.WriteCloser) {
 	utils.DebugLog("get RspFindMyFileList")
 	var target protos.RspFileSort
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			putData(target.ReqId, HTTPFileSort, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
-
 	}
 }

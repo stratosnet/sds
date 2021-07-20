@@ -15,14 +15,14 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// DownloadTaskMap PP passway download task map   make(map[string]*DonwloadTask)
+// DownloadTaskMap PP passway download task map   make(map[string]*DownloadTask)
 var DownloadTaskMap = &sync.Map{}
 
 // DownloadFileMap P download info map  make(map[string]*protos.RspFileStorageInfo)
 var DownloadFileMap = &sync.Map{}
 
-// DonwloadFileProgress
-// var DonwloadFileProgress = &sync.Map{}
+// DownloadFileProgress
+// var DownloadFileProgress = &sync.Map{}
 
 // DownloadSpeedOfProgress DownloadSpeedOfProgress
 var DownloadSpeedOfProgress = &sync.Map{}
@@ -33,27 +33,27 @@ type DownloadSP struct {
 	DownloadSize int64
 }
 
-// DonwloadSliceProgress hash：size
-var DonwloadSliceProgress = &sync.Map{}
+// DownloadSliceProgress hash：size
+var DownloadSliceProgress = &sync.Map{}
 
 var reCount int
 
-// DonwloadTask singal task convert sliceHash list to map
-type DonwloadTask struct {
+// DownloadTask signal task convert sliceHash list to map
+type DownloadTask struct {
 	WalletAddress string
 	FileHash      string
 	VisitCer      string
 	SliceInfo     map[string]*protos.DownloadSliceInfo
 }
 
-// AddDonwloadTask
-func AddDonwloadTask(target *protos.RspFileStorageInfo) {
+// AddDownloadTask
+func AddDownloadTask(target *protos.RspFileStorageInfo) {
 	SliceInfoMap := make(map[string]*protos.DownloadSliceInfo)
 	for _, dlSliceInfo := range target.SliceInfo {
 		key := dlSliceInfo.SliceStorageInfo.SliceHash
 		SliceInfoMap[key] = dlSliceInfo
 	}
-	dTask := &DonwloadTask{
+	dTask := &DownloadTask{
 		WalletAddress: target.WalletAddress,
 		FileHash:      target.FileHash,
 		VisitCer:      target.VisitCer,
@@ -63,15 +63,15 @@ func AddDonwloadTask(target *protos.RspFileStorageInfo) {
 }
 
 // CleanDownloadTask
-func CleanDownloadTask(fileHash, sliceHash, wAddress string) {
-	if dlTask, ok := DownloadTaskMap.Load(fileHash + wAddress); ok {
+func CleanDownloadTask(fileHash, sliceHash, p2pAddress, walletAddress string) {
+	if dlTask, ok := DownloadTaskMap.Load(fileHash + walletAddress); ok {
 
-		donwloadTask := dlTask.(*DonwloadTask)
-		delete(donwloadTask.SliceInfo, sliceHash)
-		if len(donwloadTask.SliceInfo) == 0 {
-			DownloadTaskMap.Delete((fileHash + wAddress))
+		downloadTask := dlTask.(*DownloadTask)
+		delete(downloadTask.SliceInfo, sliceHash)
+		if len(downloadTask.SliceInfo) == 0 {
+			DownloadTaskMap.Delete(fileHash + walletAddress)
 			utils.DebugLog("PP reported, clean all slice task")
-			client.DownloadConnMap.Delete(wAddress + fileHash)
+			client.DownloadConnMap.Delete(p2pAddress + fileHash)
 		}
 		utils.DebugLog("PP reported, clean slice taks")
 	}
@@ -83,7 +83,7 @@ func PCleanDownloadTask(fileHash string) {
 	if f, ok := DownloadFileMap.Load(fileHash); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
 		for _, slice := range fInfo.SliceInfo {
-			DonwloadSliceProgress.Delete(slice.SliceStorageInfo.SliceHash)
+			DownloadSliceProgress.Delete(slice.SliceStorageInfo.SliceHash)
 		}
 	}
 	DownloadFileMap.Delete(fileHash)
@@ -94,16 +94,16 @@ func PCancelDownloadTask(fileHash string) {
 	file.DeleteDirectory(fileHash)
 }
 
-// DonwloadSliceData
-type DonwloadSliceData struct {
+// DownloadSliceData
+type DownloadSliceData struct {
 	Data    []byte
 	FileCrc uint32
 }
 
-// GetDonwloadSlice
-func GetDonwloadSlice(target *protos.ReqDownloadSlice) *DonwloadSliceData {
+// GetDownloadSlice
+func GetDownloadSlice(target *protos.ReqDownloadSlice) *DownloadSliceData {
 	data := file.GetSliceData(target.SliceInfo.SliceHash)
-	dSlice := &DonwloadSliceData{
+	dSlice := &DownloadSliceData{
 		FileCrc: utils.CalcCRC32(data),
 		Data:    data,
 	}
