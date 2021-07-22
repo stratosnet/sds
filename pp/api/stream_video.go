@@ -75,17 +75,17 @@ func redirectToResource(fileHash, sliceHash string, w http.ResponseWriter, req *
 	var targetIp string
 	if dlTask, ok := task.DownloadTaskMap.Load(fileHash + setting.WalletAddress); ok {
 		//self is the resource PP and has task info
-		downloadTask := dlTask.(*task.DonwloadTask)
+		downloadTask := dlTask.(*task.DownloadTask)
 		targetIp = getIpFromNetworkAddress(downloadTask.SliceInfo[sliceHash].StoragePpInfo.NetworkAddress)
 	} else {
 		//to ask resource pp for slice addresses
-		if c, ok := client.PdownloadPassageway.Load(fileHash); ok {
+		if c, ok := client.PDownloadPassageway.Load(fileHash); ok {
 			conn := c.(*cf.ClientConn)
 			targetIp = conn.GetIP()
 		} else {
 			conn := client.NewClient(client.PPConn.GetName(), false)
 			targetIp = conn.GetIP()
-			client.PdownloadPassageway.Store(fileHash, conn)
+			client.PDownloadPassageway.Store(fileHash, conn)
 		}
 	}
 	url := fmt.Sprintf("http://%s:%d/videoSlice/%s", targetIp, 9609, sliceHash)
@@ -105,7 +105,7 @@ func getVideoSlice(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if dlTask, ok := task.DownloadTaskMap.Load(body.FileHash + body.WalletAddress); ok {
-		downloadTask := dlTask.(*task.DonwloadTask)
+		downloadTask := dlTask.(*task.DownloadTask)
 		ppInfo := downloadTask.SliceInfo[sliceHash].StoragePpInfo
 		if ppInfo.WalletAddress != setting.WalletAddress {
 			targetIp := getIpFromNetworkAddress(ppInfo.NetworkAddress)
