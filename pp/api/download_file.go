@@ -126,7 +126,7 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 						}
 						return true
 					})
-					setting.DownLoadTaskIDMap.Store(tree.TaskID, finfo.FileHash)
+					setting.DownloadTaskIDMap.Store(tree.TaskID, finfo.FileHash)
 					event.GetFileStorageInfo(path, finfo.StoragePath, uuid.New().String(), false, false, w)
 					list = append(list, tree)
 				}

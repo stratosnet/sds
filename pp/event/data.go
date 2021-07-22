@@ -165,9 +165,9 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool, isVid
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
-		Sign:    setting.GetSign(p2pFileString),
-		IsCover: isCover,
-		ReqId:   reqID,
+		Sign:          setting.GetSign(p2pFileString),
+		IsCover:       isCover,
+		ReqId:         reqID,
 		IsVideoStream: isVideoStream,
 	}
 	if isCover {
@@ -183,7 +183,7 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool, isVid
 		req.FileInfo.Duration = duration
 	}
 	p2pFileHash := []byte(p2pFileString)
-	utils.DebugLogf("setting.WalletAddress + fileHash : %v", walletFileHash)
+	utils.DebugLogf("setting.WalletAddress + fileHash : %v", p2pFileHash)
 
 	if goed25519.Verify(setting.P2PPublicKey, p2pFileHash, req.Sign) {
 		utils.DebugLog("ECC verification ok")
@@ -516,8 +516,8 @@ func reqFileStorageInfoData(path, savePath, reqID string, isVideoStream bool) *p
 			FilePath:      path,
 			SavePath:      savePath,
 		},
-		Sign:  setting.GetSign(setting.P2PAddress + path),
-		ReqId: reqID,
+		Sign:          setting.GetSign(setting.P2PAddress + path),
+		ReqId:         reqID,
 		IsVideoStream: isVideoStream,
 	}
 }
