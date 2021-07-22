@@ -18,7 +18,7 @@ import (
 func DeleteFile(fileHash, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqDeleteFileData(fileHash, reqID), header.ReqDeleteFile)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}

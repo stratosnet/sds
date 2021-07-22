@@ -125,15 +125,21 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "store traffic record to cache", err)
 	}
 
-	s.Unlock()
-
 	// query file upload info
 	uploadFile := &data.UploadFile{
 		Key: body.TaskId,
 	}
 	if s.Load(uploadFile) != nil {
+		s.Unlock()
 		return rsp, header.RspReportUploadSliceResult
 	}
+	uploadFile.SetSliceFinish(fileSlice.SliceNumber)
+	if err := s.Store(uploadFile, 3600*time.Second); err != nil {
+		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "store file slice 2", err)
+	}
+
+	s.Unlock()
+
 	if fileSlice.Status != table.FILE_SLICE_STATUS_SUCCESS {
 		return rsp, header.RspReportUploadSliceResult
 	}
@@ -148,11 +154,6 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 
 	if ok, err := s.CT.StoreTable(traffic); !ok {
 		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "store traffic record table to db", err)
-	}
-
-	uploadFile.SetSliceFinish(fileSlice.SliceNumber)
-	if err := s.Store(uploadFile, 3600*time.Second); err != nil {
-		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "store file slice 2", err)
 	}
 
 	// check if all slice upload finished

@@ -4,6 +4,8 @@ package event
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -14,7 +16,6 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
-	"net/http"
 )
 
 //var m *sync.WaitGroup
@@ -32,9 +33,9 @@ func RequestUploadCoverImage(pathStr, reqID string, w http.ResponseWriter) {
 		}
 		return
 	}
-	p := RequestUploadFileData(tmpString, "", reqID, true)
+	p := RequestUploadFileData(tmpString, "", reqID, true, false)
 	SendMessageToSPServer(p, header.ReqUploadFile)
-	stroeResponseWriter(reqID, w)
+	storeResponseWriter(reqID, w)
 }
 
 // RequestUploadFile request to SP for upload file
@@ -51,7 +52,7 @@ func RequestUploadFile(path, reqID string, _ http.ResponseWriter) {
 		return
 	}
 	if isFile {
-		p := RequestUploadFileData(path, "", reqID, false)
+		p := RequestUploadFileData(path, "", reqID, false, false)
 		SendMessageToSPServer(p, header.ReqUploadFile)
 		data["fileHash"] = fileHash
 
@@ -65,11 +66,33 @@ func RequestUploadFile(path, reqID string, _ http.ResponseWriter) {
 		select {
 		case pathString := <-setting.UpChan:
 			utils.DebugLog("path string == ", pathString)
-			p := RequestUploadFileData(pathString, "", reqID, false)
+			p := RequestUploadFileData(pathString, "", reqID, false, false)
 			SendMessageToSPServer(p, header.ReqUploadFile)
 		default:
 			return
 		}
+	}
+}
+
+func RequestUploadStream(path, reqID string, _ http.ResponseWriter) {
+	utils.DebugLog("______________path", path)
+	if !setting.CheckLogin() {
+		return
+	}
+	isFile, err := file.IsFile(path)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if isFile {
+		p := RequestUploadFileData(path, "", reqID, false, true)
+		if p != nil {
+			SendMessageToSPServer(p, header.ReqUploadFile)
+		}
+		return
+	} else {
+		fmt.Println("could not find the file by the provided path.")
+		return
 	}
 }
 
@@ -125,13 +148,22 @@ func startUploadTask(target *protos.RspUploadFile) {
 	}
 	if prg, ok := task.UpLoadProgressMap.Load(target.FileHash); ok {
 		progress := prg.(*task.UpProgress)
+		if target.IsVideoStream {
+			progress.Total = 0
+		}
 		progress.HasUpload = (target.TotalSlice - int64(len(target.PpList))) * 32 * 1024 * 1024
 	}
-	go sendUploadFileSlice(target.FileHash, target.TaskId)
+	if target.IsVideoStream {
+		file.VideoToHls(target.FileHash)
+		if ok := file.GetHlsInfo(target.FileHash, uint64(len(target.PpList))); !ok {
+			return
+		}
+	}
+	go sendUploadFileSlice(target.FileHash, target.TaskId, target.IsVideoStream)
 
 }
 
-func up(ING *task.UpFileIng, fileHash string) {
+func up(ING *task.UpFileIng, fileHash string, isVideoStream bool) {
 	for {
 		select {
 		case goon := <-ING.UpChan:
@@ -149,7 +181,7 @@ func up(ING *task.UpFileIng, fileHash string) {
 			}
 			pp := ING.Slices[0]
 			utils.DebugLog("start upload!!!!!", pp.SliceNumber)
-			uploadTask := task.GetUploadSliceTask(pp, ING.FileHash, ING.TaskID)
+			uploadTask := task.GetUploadSliceTask(pp, ING.FileHash, ING.TaskID, isVideoStream)
 			if uploadTask == nil {
 				continue
 			}
@@ -163,7 +195,7 @@ func up(ING *task.UpFileIng, fileHash string) {
 	}
 }
 
-func sendUploadFileSlice(fileHash, taskID string) {
+func sendUploadFileSlice(fileHash, taskID string, isVideoStream bool) {
 	ing, ok := task.UpIngMap.Load(fileHash)
 	if !ok {
 		utils.DebugLog("all slices of the task are uploaded")
@@ -171,7 +203,7 @@ func sendUploadFileSlice(fileHash, taskID string) {
 	}
 	ING := ing.(*task.UpFileIng)
 	if len(ING.Slices) > task.MAXSLICE {
-		go up(ING, fileHash)
+		go up(ING, fileHash, isVideoStream)
 		for i := 0; i < task.MAXSLICE; i++ {
 			ING.UpChan <- true
 		}
@@ -181,7 +213,7 @@ func sendUploadFileSlice(fileHash, taskID string) {
 			if _, ok := client.UpConnMap.Load(fileHash); !ok {
 				return
 			}
-			uploadTask := task.GetUploadSliceTask(pp, fileHash, taskID)
+			uploadTask := task.GetUploadSliceTask(pp, fileHash, taskID, isVideoStream)
 			if uploadTask != nil {
 				UploadFileSlice(uploadTask)
 			}

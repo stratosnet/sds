@@ -24,7 +24,7 @@ func CreateAlbum(albumName, albumBlurb, albumCoverHash, albumType, reqID string,
 	}
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqCreateAlbumData(albumName, albumBlurb, albumCoverHash, reqID, aType, files, isPrivate), header.ReqCreateAlbum)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -65,7 +65,7 @@ func FindMyAlbum(reqID string, page, number uint64, albumType, keyword string, w
 	}
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqFindMyAlbumData(aType, reqID, page, number, keyword), header.ReqFindMyAlbum)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -104,7 +104,7 @@ func EditAlbum(albumID, albumCoverHash, albumName, albumBlurb, reqID string, cha
 
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqEditAlbumData(albumID, albumCoverHash, albumName, albumBlurb, reqID, changeFiles, isPrivate), header.ReqEditAlbum)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -136,7 +136,7 @@ func RspEditAlbum(ctx context.Context, conn spbf.WriteCloser) {
 func AlbumContent(albumID, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqAlbumContentData(albumID, reqID), header.ReqAlbumContent)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -182,7 +182,7 @@ func SearchAlbum(keyword, albumType, sortType, reqID string, page, number uint64
 
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqSearchAlbumData(keyword, reqID, aType, sType, page, number), header.ReqSearchAlbum)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -215,7 +215,7 @@ func CollectionAlbum(albumID, reqID string, isCollection bool, w http.ResponseWr
 	if setting.CheckLogin() {
 
 		sendMessage(client.PPConn, reqCollectionAlbumData(albumID, reqID, isCollection), header.ReqCollectionAlbum)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -248,7 +248,7 @@ func AbstractAlbum(reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 
 		sendMessage(client.PPConn, reqAbstractAlbumData(reqID), header.ReqAbstractAlbum)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -289,7 +289,7 @@ func MyCollectionAlbum(albumType, reqID string, page, number uint64, keyword str
 	}
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqMyCollectionAlbumData(aType, reqID, page, number, keyword), header.ReqMyCollectionAlbum)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -322,7 +322,7 @@ func RspMyCollectionAlbum(ctx context.Context, conn spbf.WriteCloser) {
 func DeleteAlbum(albumID, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqDeleteAlbumData(albumID, reqID), header.ReqDeleteAlbum)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}

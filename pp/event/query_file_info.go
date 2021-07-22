@@ -4,12 +4,15 @@ package event
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
@@ -44,7 +47,7 @@ func FindDirectoryTree(reqID, pathHash string, w http.ResponseWriter, isF bool) 
 	if setting.CheckLogin() {
 		// request is the same as AlbumContent
 		sendMessage(client.PPConn, reqFindDirectoryTreeData(reqID, pathHash), header.ReqFindDirectoryTree)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 		isFind = isF
 	} else {
 		notLogin(w)
@@ -80,14 +83,14 @@ func RspFindDirectoryTree(ctx context.Context, conn spbf.WriteCloser) {
 }
 
 // GetFileStorageInfo p to pp
-func GetFileStorageInfo(path, savePath, reqID string, isImg bool, w http.ResponseWriter) {
+func GetFileStorageInfo(path, savePath, reqID string, isImg bool, isVideoStream bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		if CheckDownloadPath(path) {
 			utils.DebugLog("path:", path)
-			sendMessage(client.PPConn, reqFileStorageInfoData(path, savePath, reqID), header.ReqFileStorageInfo)
+			sendMessage(client.PPConn, reqFileStorageInfoData(path, savePath, reqID, isVideoStream), header.ReqFileStorageInfo)
 			if isImg {
 				isImage = isImg
-				stroeResponseWriter(reqID, w)
+				storeResponseWriter(reqID, w)
 			}
 		} else {
 			utils.ErrorLog("please input correct download link, eg: spb://address/fileHash|filename(optional)")
@@ -98,6 +101,70 @@ func GetFileStorageInfo(path, savePath, reqID string, isImg bool, w http.Respons
 	} else {
 		notLogin(w)
 	}
+}
+
+func GetVideoSliceInfo(sliceName string, fInfo *protos.RspFileStorageInfo) *protos.DownloadSliceInfo {
+	var sliceNumber uint64
+	hlsInfo := GetHlsInfo(fInfo)
+	if sliceName == hlsInfo.Header {
+		sliceNumber = hlsInfo.HeaderSliceNumber
+	} else {
+		sliceNumber = hlsInfo.TsToSlice[sliceName]
+	}
+	sliceInfo := GetSliceInfoBySliceNumber(fInfo, sliceNumber)
+	return sliceInfo
+}
+
+func GetVideoSlice(sliceInfo *protos.DownloadSliceInfo, fInfo *protos.RspFileStorageInfo, w http.ResponseWriter) {
+	if setting.CheckLogin() {
+		utils.DebugLog("taskid ======= ", sliceInfo.TaskId)
+		sliceHash := sliceInfo.SliceStorageInfo.SliceHash
+		if file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceHash, fInfo.SavePath) {
+			utils.Log("slice exist already,", sliceHash)
+			slicePath := file.GetDownloadTmpPath(fInfo.FileHash, sliceHash, fInfo.SavePath)
+			video, _ := ioutil.ReadFile(slicePath)
+			w.Write(video)
+		} else {
+			req := reqDownloadSliceData(fInfo, sliceInfo)
+			SendReqDownloadSlice(fInfo, req)
+			if err := storeResponseWriter(req.ReqId, w); err != nil {
+				task.DownloadFileMap.Delete(fInfo.FileHash)
+			}
+		}
+	} else {
+		notLogin(w)
+	}
+}
+
+func GetHlsInfo(fInfo *protos.RspFileStorageInfo) *file.HlsInfo {
+	sliceInfo := GetSliceInfoBySliceNumber(fInfo, uint64(1))
+	sliceHash := sliceInfo.SliceStorageInfo.SliceHash
+	if !file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceHash, fInfo.SavePath) {
+		req := reqDownloadSliceData(fInfo, sliceInfo)
+		SendReqDownloadSlice(fInfo, req)
+
+		start := time.Now().Unix()
+		for {
+			if file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceHash, fInfo.SavePath) {
+				return file.LoadHlsInfo(fInfo.FileHash, sliceHash, fInfo.SavePath)
+			} else {
+				if time.Now().Unix()-start > setting.HTTPTIMEOUT {
+					return nil
+				}
+			}
+		}
+	} else {
+		return file.LoadHlsInfo(fInfo.FileHash, sliceHash, fInfo.SavePath)
+	}
+}
+
+func GetSliceInfoBySliceNumber(fInfo *protos.RspFileStorageInfo, sliceNumber uint64) *protos.DownloadSliceInfo {
+	for _, slice := range fInfo.SliceInfo {
+		if slice.SliceNumber == sliceNumber {
+			return slice
+		}
+	}
+	return nil
 }
 
 // ReqFileStorageInfo  P-PP , PP-SP
@@ -119,6 +186,9 @@ func RspFileStorageInfo(ctx context.Context, conn spbf.WriteCloser) {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("download starts: ")
 				task.DownloadFileMap.Store(target.FileHash, &target)
+				if target.IsVideoStream {
+					return
+				}
 				DownloadFileSlice(&target)
 				utils.DebugLog("DownloadFileSlice(&target)", target)
 			} else {
@@ -129,7 +199,7 @@ func RspFileStorageInfo(ctx context.Context, conn spbf.WriteCloser) {
 			}
 		} else {
 			// store the task and transfer
-			task.AddDonwloadTask(&target)
+			task.AddDownloadTask(&target)
 			transferSendMessageToClient(target.WalletAddress, rspFileStorageInfoData(&target))
 		}
 	}

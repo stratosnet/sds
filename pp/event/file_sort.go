@@ -15,7 +15,7 @@ import (
 func FileSort(files []*protos.FileInfo, reqID, albumID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, fileSortData(files, reqID, albumID), header.ReqFileSort)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}

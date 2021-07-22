@@ -38,6 +38,8 @@ type HashRingConfig struct {
 
 type FileStorageConfig struct {
 	SliceBlockSize    uint64 `yaml:"SliceBlockSize"`
+	HlsSegmentLength  uint64 `yaml:"HlsSegmentLength"`
+	HlsSegmentBuffer  uint64 `yaml:"HlsSegmentBuffer"`
 	PictureLibAddress string `yaml:"PictureLibAddress"`
 }
 
