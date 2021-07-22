@@ -88,8 +88,7 @@ func redirectToResource(fileHash, sliceHash string, w http.ResponseWriter, req *
 			client.PDownloadPassageway.Store(fileHash, conn)
 		}
 	}
-	url := fmt.Sprintf("http://%s:%d/videoSlice/%s", targetIp, 9609, sliceHash)
-	//url := fmt.Sprintf("http://%s:%d/videoSlice/%s/%s", targetIp, 9609, FileHash+setting.WalletAddress, sliceHash)
+	url := fmt.Sprintf("http://%s:%d/videoSlice/%s", targetIp, httpserv.API_PORT, sliceHash)
 	http.Redirect(w, req, url, http.StatusTemporaryRedirect)
 }
 
@@ -107,9 +106,9 @@ func getVideoSlice(w http.ResponseWriter, req *http.Request) {
 	if dlTask, ok := task.DownloadTaskMap.Load(body.FileHash + body.WalletAddress); ok {
 		downloadTask := dlTask.(*task.DownloadTask)
 		ppInfo := downloadTask.SliceInfo[sliceHash].StoragePpInfo
-		if ppInfo.WalletAddress != setting.WalletAddress {
+		if ppInfo.P2PAddress != setting.P2PAddress {
 			targetIp := getIpFromNetworkAddress(ppInfo.NetworkAddress)
-			url := fmt.Sprintf("http://%s:%d/videoSlice/%s/%s", targetIp, 9609, sliceHash)
+			url := fmt.Sprintf("http://%s:%d/videoSlice/%s", targetIp, httpserv.API_PORT, sliceHash)
 			http.Redirect(w, req, url, http.StatusTemporaryRedirect)
 			return
 		}
