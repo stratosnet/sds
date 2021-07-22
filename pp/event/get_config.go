@@ -16,7 +16,7 @@ import (
 func GetMyConfig(walletAddress, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqGetMyConfig(walletAddress, reqID), header.ReqConfig)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}

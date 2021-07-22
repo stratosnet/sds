@@ -1,13 +1,14 @@
 package api
 
 import (
+	"net/http"
+	"os"
+
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
-	"net/http"
-	"os"
 
 	"github.com/google/uuid"
 )
@@ -84,7 +85,7 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 			})
 			setting.DownLoadTaskIDMap.Store(tree.TaskID, p.hash)
 			list = append(list, tree)
-			event.GetFileStorageInfo(path, "", uuid.New().String(), false, w)
+			event.GetFileStorageInfo(path, "", uuid.New().String(), false, false, w)
 		}
 	}
 
@@ -126,7 +127,7 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 						return true
 					})
 					setting.DownLoadTaskIDMap.Store(tree.TaskID, finfo.FileHash)
-					event.GetFileStorageInfo(path, finfo.StoragePath, uuid.New().String(), false, w)
+					event.GetFileStorageInfo(path, finfo.StoragePath, uuid.New().String(), false, false, w)
 					list = append(list, tree)
 				}
 			}

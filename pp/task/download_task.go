@@ -46,8 +46,8 @@ type DonwloadTask struct {
 	SliceInfo     map[string]*protos.DownloadSliceInfo
 }
 
-// AddDonwloadTask
-func AddDonwloadTask(target *protos.RspFileStorageInfo) {
+// AddDownloadTask
+func AddDownloadTask(target *protos.RspFileStorageInfo) {
 	SliceInfoMap := make(map[string]*protos.DownloadSliceInfo)
 	for _, dlSliceInfo := range target.SliceInfo {
 		key := dlSliceInfo.SliceStorageInfo.SliceHash
@@ -112,14 +112,12 @@ func GetDonwloadSlice(target *protos.ReqDownloadSlice) *DonwloadSliceData {
 }
 
 // SaveDownloadFile
-func SaveDownloadFile(target *protos.RspDownloadSlice) bool {
-	if f, ok := DownloadFileMap.Load(target.FileHash); ok {
-		fInfo := f.(*protos.RspFileStorageInfo)
-
+func SaveDownloadFile(target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo) bool {
+	if fInfo.IsVideoStream {
+		return file.SaveDownloadedSliceData(target.Data, target.SliceInfo.SliceHash, fInfo.FileHash, fInfo.SavePath)
+	} else {
 		return file.SaveFileData(target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, fInfo.SavePath)
 	}
-	return file.SaveFileData(target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, target.FileHash, target.FileHash, "")
-
 }
 
 func checkAgain(fileHash string) {

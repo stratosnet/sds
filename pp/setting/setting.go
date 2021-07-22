@@ -2,14 +2,15 @@ package setting
 
 import (
 	"fmt"
-	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/relay/stratoschain"
-	"github.com/stratosnet/sds/utils"
 	"io/ioutil"
 	"os"
 	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/utils"
 )
 
 // REPROTDHTIME 1 hour
@@ -19,7 +20,7 @@ const REPROTDHTIME = 60 * 60
 const MAXDATA = 1024 * 1024 * 3
 
 // HTTPTIMEOUT  HTTPTIMEOUT second
-const HTTPTIMEOUT = 10
+const HTTPTIMEOUT = 20
 
 // FILEHASHLEN
 const FILEHASHLEN = 64
@@ -29,6 +30,8 @@ var IMAGEPATH = "./images/"
 
 // ImageMap download image hash map
 var ImageMap = &sync.Map{}
+
+var VIDEOPATH = "./videos"
 
 // DownProssMap download progress map
 var DownProssMap = &sync.Map{}
@@ -97,6 +100,7 @@ type config struct {
 	Token                       string `yaml:"Token"`
 	StratosChainAddress         string `yaml:"StratosChainAddress"`
 	StratosChainPort            string `yaml:"StratosChainPort"`
+	StreamingCache              bool   `yaml:"StreamingCache"`
 }
 
 var ostype = runtime.GOOS

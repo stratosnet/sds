@@ -43,7 +43,7 @@ func RspMakeDirectory(ctx context.Context, conn spbf.WriteCloser) {
 func MakeDirectory(path, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqMakeDirectoryData(path, reqID), header.ReqMakeDirectory)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -53,7 +53,7 @@ func MakeDirectory(path, reqID string, w http.ResponseWriter) {
 func RemoveDirectory(path, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqRemoveDirectoryData(path, reqID), header.ReqRemoveDirectory)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -88,7 +88,7 @@ func MoveFileDirectory(fileHash, originalDir, targetDir, reqID string, w http.Re
 
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqMoveFileDirectoryData(fileHash, originalDir, targetDir, reqID), header.ReqMoveFileDirectory)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}

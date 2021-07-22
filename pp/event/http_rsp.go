@@ -1,10 +1,7 @@
 package event
 
 import (
-	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/httpserv"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -12,6 +9,12 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/httpserv"
 )
 
 // HTTPType
@@ -48,6 +51,7 @@ const (
 	HTTPFileSort
 	HTTPDirectoryTree
 	HTTPGetAllDirectory
+	HTTPDownloadSlice
 )
 
 // HTTPRsp HTTPRsp
@@ -100,12 +104,13 @@ func putData(reqID string, httpType HTTPType, target interface{}) {
 	}
 }
 
-func stroeResponseWriter(reqID string, w http.ResponseWriter) {
+func storeResponseWriter(reqID string, w http.ResponseWriter) error {
 	if setting.Config.IsWallet {
 		if w != nil {
-			StroeReqID(reqID, w)
+			return StoreReqID(reqID, w)
 		}
 	}
+	return nil
 }
 
 func notLogin(w http.ResponseWriter) {
@@ -115,170 +120,181 @@ func notLogin(w http.ResponseWriter) {
 }
 
 // HTTPStartListen HTTPStartListen
-func HTTPStartListen(reqID string) {
+func HTTPStartListen(reqID string) error {
 	start := time.Now().Unix()
 	for {
+		var httpRsp *HTTPRsp
+		var write http.ResponseWriter
+
 		if d, ok := HTTPRspMap.Load(reqID); ok {
-			if w, ok := HTTPWriterMap.Load(reqID); ok {
-				write := w.(http.ResponseWriter)
-				httpRsp := d.(*HTTPRsp)
-				switch httpRsp.Type {
-				case HTTPDownloadFile:
-					{
-						HTTPDownloadFileFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPGetAllFile:
-					{
-						HTTPGetAllFileFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPDeleteFile:
-					{
-						HTTPDeleteFileFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPMkdir:
-					{
-						HTTPMKdirFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPMVdir:
-					{
-						HTTPMVdirFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPGetConfig:
-					{
-						HTTPGetConfigFun(httpRsp, write, reqID)
-						return
-					}
-				// case HTTPDownPause:
-				// 	{
-				// 		HTTPDownPauseFun(httpRsp, write, reqID)
-				// 		return
-				// 	}
-				case HTTPShareLink:
-					{
-						HTTPShareLinkFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPShareFile:
-					{
-						HTTPShareFileFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPDeleteShare:
-					{
-						HTTPDeleteShareFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPCreateAlbum:
-					{
-						HTTPCreateAlbumFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPFindMyAlbum:
-					{
-						HTTPFindMyAlbumFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPEditAlbum:
-					{
-						HTTPEditAlbumFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPAlbumContent:
-					{
-						HTTPAlbumContentFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPSearchAlbum:
-					{
-						HTTPSearchAlbumFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPGetShareFile:
-					{
-						HTTPGetShareFileFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPInvite:
-					{
-						HTTPInviteFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPReward:
-					{
-						HTTPRewardFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPRMdir:
-					{
-						HTTPRMdirFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPCollectionAlbum:
-					{
-						HTTPCollectionAlbumFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPAbstractAlbum:
-					{
-						HTTPAbstractAlbumFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPMyCollectionAlbum:
-					{
-						HTTPMyCollectionAlbumFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPDeleteAlbum:
-					{
-						HTTPDeleteAlbumFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPSaveFolder:
-					{
-						HTTPSaveFolderFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPGetCapacity:
-					{
-						HTTPGetCapacityFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPUploadFile:
-					{
-						HTTPUploadFileFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPFileSort:
-					{
-						HTTPFileSortFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPDirectoryTree:
-					{
-						HTTPDirectoryTreeFun(httpRsp, write, reqID)
-						return
-					}
-				case HTTPGetAllDirectory:
-					{
-						HTTPGetAllDirectoryFun(httpRsp, write, reqID)
-						return
-					}
-				}
-			} else {
-				HTTPWriterMap.Delete(reqID)
-				HTTPRspMap.Delete(reqID)
-				return
-			}
+			httpRsp = d.(*HTTPRsp)
 		} else {
 			// timeout
 			if time.Now().Unix()-start > setting.HTTPTIMEOUT {
 				utils.DebugLog("failed to get reqId!")
-				return
+				return errors.New("time out for reqId " + reqID)
+			}
+			continue
+		}
+
+		if w, ok := HTTPWriterMap.Load(reqID); ok {
+			write = w.(http.ResponseWriter)
+		} else {
+			HTTPWriterMap.Delete(reqID)
+			HTTPRspMap.Delete(reqID)
+			return errors.New("could not find ResponseWriter for reqId " + reqID)
+		}
+
+		switch httpRsp.Type {
+		case HTTPDownloadFile:
+			{
+				HTTPDownloadFileFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPDownloadSlice:
+			{
+				HTTPDownloadSliceFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPGetAllFile:
+			{
+				HTTPGetAllFileFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPDeleteFile:
+			{
+				HTTPDeleteFileFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPMkdir:
+			{
+				HTTPMKdirFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPMVdir:
+			{
+				HTTPMVdirFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPGetConfig:
+			{
+				HTTPGetConfigFun(httpRsp, write, reqID)
+				return nil
+			}
+		// case HTTPDownPause:
+		// 	{
+		// 		HTTPDownPauseFun(httpRsp, write, reqID)
+		// 		return nil
+		// 	}
+		case HTTPShareLink:
+			{
+				HTTPShareLinkFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPShareFile:
+			{
+				HTTPShareFileFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPDeleteShare:
+			{
+				HTTPDeleteShareFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPCreateAlbum:
+			{
+				HTTPCreateAlbumFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPFindMyAlbum:
+			{
+				HTTPFindMyAlbumFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPEditAlbum:
+			{
+				HTTPEditAlbumFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPAlbumContent:
+			{
+				HTTPAlbumContentFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPSearchAlbum:
+			{
+				HTTPSearchAlbumFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPGetShareFile:
+			{
+				HTTPGetShareFileFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPInvite:
+			{
+				HTTPInviteFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPReward:
+			{
+				HTTPRewardFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPRMdir:
+			{
+				HTTPRMdirFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPCollectionAlbum:
+			{
+				HTTPCollectionAlbumFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPAbstractAlbum:
+			{
+				HTTPAbstractAlbumFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPMyCollectionAlbum:
+			{
+				HTTPMyCollectionAlbumFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPDeleteAlbum:
+			{
+				HTTPDeleteAlbumFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPSaveFolder:
+			{
+				HTTPSaveFolderFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPGetCapacity:
+			{
+				HTTPGetCapacityFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPUploadFile:
+			{
+				HTTPUploadFileFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPFileSort:
+			{
+				HTTPFileSortFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPDirectoryTree:
+			{
+				HTTPDirectoryTreeFun(httpRsp, write, reqID)
+				return nil
+			}
+		case HTTPGetAllDirectory:
+			{
+				HTTPGetAllDirectoryFun(httpRsp, write, reqID)
+				return nil
 			}
 		}
 	}
@@ -1002,6 +1018,26 @@ func HTTPDownloadFileFun(httpRsp *HTTPRsp, write http.ResponseWriter, reqID stri
 	HTTPRspMap.Delete(reqID)
 }
 
+func HTTPDownloadSliceFun(httpRsp *HTTPRsp, write http.ResponseWriter, reqID string) {
+	target := httpRsp.Data.(*protos.RspDownloadSlice)
+	slicePath := file.GetDownloadTmpPath(target.FileHash, target.SliceInfo.SliceHash, target.SavePath)
+	if target.Result.State == protos.ResultState_RES_SUCCESS {
+		video, err := ioutil.ReadFile(slicePath)
+		if err != nil {
+			write.WriteHeader(setting.FAILCode)
+			write.Write(httpserv.NewJson(nil, setting.FAILCode, err.Error()).ToBytes())
+		}
+		write.Write(video)
+		HTTPWriterMap.Delete(reqID)
+		HTTPRspMap.Delete(reqID)
+		return
+	}
+	utils.DebugLog("HTTPDownloadSliceFun error ")
+	write.Write(httpserv.NewJson(nil, setting.FAILCode, target.Result.Msg).ToBytes())
+	HTTPWriterMap.Delete(reqID)
+	HTTPRspMap.Delete(reqID)
+}
+
 // HTTPGetAllFileFun HTTPGetAllFileFun
 func HTTPGetAllFileFun(httpRsp *HTTPRsp, write http.ResponseWriter, reqID string) {
 	target := httpRsp.Data.(*protos.RspFindMyFileList)
@@ -1030,8 +1066,8 @@ func HTTPGetAllFileFun(httpRsp *HTTPRsp, write http.ResponseWriter, reqID string
 	HTTPRspMap.Delete(reqID)
 }
 
-// StroeReqID
-func StroeReqID(reqID string, w http.ResponseWriter) {
+// StoreReqID
+func StoreReqID(reqID string, w http.ResponseWriter) error {
 	HTTPWriterMap.Store(reqID, w)
-	HTTPStartListen(reqID)
+	return HTTPStartListen(reqID)
 }

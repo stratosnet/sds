@@ -3,6 +3,7 @@ package event
 import (
 	"path"
 
+	"github.com/google/uuid"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -114,7 +115,7 @@ func reqGetPPlistData() *protos.ReqGetPPList {
 }
 
 // RequestUploadFileData RequestUploadFileData
-func RequestUploadFileData(paths, storagePath, reqID string, isCover bool) *protos.ReqUploadFile {
+func RequestUploadFileData(paths, storagePath, reqID string, isCover bool, isVideoStream bool) *protos.ReqUploadFile {
 	info := file.GetFileInfo(paths)
 	if info == nil {
 		utils.ErrorLog("wrong filePath")
@@ -138,13 +139,22 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool) *prot
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
-		Sign:    setting.GetSign(walletFileString),
-		IsCover: isCover,
-		ReqId:   reqID,
+		Sign:          setting.GetSign(walletFileString),
+		IsCover:       isCover,
+		ReqId:         reqID,
+		IsVideoStream: isVideoStream,
 	}
 	if isCover {
 		fileSuffix := path.Ext(paths)
 		req.FileInfo.FileName = fileHash + fileSuffix
+	}
+	if isVideoStream {
+		duration, err := file.GetVideoDuration(paths)
+		if err != nil {
+			utils.ErrorLog("Failed to get the length of the video: ", err)
+			return nil
+		}
+		req.FileInfo.Duration = duration
 	}
 	walletFileHash := []byte(walletFileString)
 	utils.DebugLogf("setting.WalletAddress + fileHash : %v", walletFileHash)
@@ -178,6 +188,7 @@ func rspDownloadSliceData(target *protos.ReqDownloadSlice) *protos.RspDownloadSl
 		Data:          slice.Data,
 		SliceSize:     uint64(len(slice.Data)),
 		SavePath:      target.SavePath,
+		ReqId:         target.ReqId,
 	}
 }
 
@@ -200,6 +211,7 @@ func rspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 			Result:        rsp.Result,
 			NeedReport:    last,
 			SavePath:      rsp.SavePath,
+			ReqId:         rsp.ReqId,
 		}
 	}
 	return &protos.RspDownloadSlice{
@@ -219,6 +231,7 @@ func rspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 		Result:        rsp.Result,
 		NeedReport:    last,
 		SavePath:      rsp.SavePath,
+		ReqId:         rsp.ReqId,
 	}
 
 }
@@ -330,6 +343,7 @@ func reqDownloadSliceData(target *protos.RspFileStorageInfo, rsp *protos.Downloa
 			SliceOffset: rsp.SliceOffset,
 		},
 		SavePath: target.SavePath,
+		ReqId:    uuid.New().String(),
 	}
 }
 
@@ -453,15 +467,16 @@ func reqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
 	}
 }
 
-func reqFileStorageInfoData(path, savePath, reqID string) *protos.ReqFileStorageInfo {
+func reqFileStorageInfoData(path, savePath, reqID string, isVideoStream bool) *protos.ReqFileStorageInfo {
 	return &protos.ReqFileStorageInfo{
 		FileIndexes: &protos.FileIndexes{
 			WalletAddress: setting.WalletAddress,
 			FilePath:      path,
 			SavePath:      savePath,
 		},
-		Sign:  setting.GetSign(setting.WalletAddress + path),
-		ReqId: reqID,
+		Sign:          setting.GetSign(setting.WalletAddress + path),
+		ReqId:         reqID,
+		IsVideoStream: isVideoStream,
 	}
 }
 

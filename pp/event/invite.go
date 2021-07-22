@@ -16,7 +16,7 @@ import (
 func Invite(code, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqInviteData(code, reqID), header.ReqInvite)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}
@@ -50,7 +50,7 @@ func RspInvite(ctx context.Context, conn spbf.WriteCloser) {
 func GetReward(reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		sendMessage(client.PPConn, reqGetRewardData(reqID), header.ReqGetReward)
-		stroeResponseWriter(reqID, w)
+		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
 	}

@@ -50,6 +50,7 @@ message ReqUploadFile {
   bytes sign = 3;
   string req_id = 4;
   bool is_cover = 5;
+  bool is_video_stream = 6;
 }
 
 message RspUploadFile {
@@ -61,6 +62,8 @@ message RspUploadFile {
   Result result = 6; // accept upload or not
   string req_id = 7;//
   string owner_wallet_address = 8;
+  bool is_video_stream = 9;
+  uint64 video_slice_duration = 10;  
 }
 
 message ReqUploadFileSlice {
@@ -148,6 +151,7 @@ message ReqFileStorageInfo {
   FileIndexes file_indexes = 1;
   bytes sign = 2;
   string req_id = 3;
+  bool is_video_stream = 4;
 }
 
 message RspFileStorageInfo {
@@ -160,6 +164,7 @@ message RspFileStorageInfo {
   string req_id = 7;
   string save_path = 8;
   uint64 file_size = 9;
+  bool is_video_stream = 10;
 }
 
 
@@ -169,6 +174,7 @@ message ReqDownloadSlice {
   string             file_hash = 3;
   string             task_id = 4;
   string             save_path = 5;
+  string             req_id = 6;
 }
 
 message RspDownloadSlice {
@@ -182,6 +188,7 @@ message RspDownloadSlice {
   bool   needReport = 8; // used for passagePP whether the last slice
   string save_path = 9;
   Result result = 10;
+  string req_id = 11;
 }
 
 message ReqDownloadSliceWrong {
