@@ -26,6 +26,8 @@ func RegisterEventHandle() {
 	spbf.Register(header.RspActivated, RspActivated)
 	spbf.Register(header.RspDeactivate, RspDeactivate)
 	spbf.Register(header.RspDeactivated, RspDeactivated)
+	spbf.Register(header.RspPrepay, RspPrepay)
+	spbf.Register(header.RspPrepaid, RspPrepaid)
 	spbf.Register(header.RspMining, RspMining)
 	spbf.Register(header.RspFindMyFileList, RspFindMyFileList)
 	spbf.Register(header.ReqFindMyFileList, ReqFindMyFileList)
@@ -172,12 +174,12 @@ func transferSendMessageToSPServer(msg *msg.RelayMsgBuf) {
 }
 
 // transferSendMessageToClient
-func transferSendMessageToClient(waller string, msgBuf *msg.RelayMsgBuf) {
-	if netid, ok := serv.RegisterPeerMap.Load(waller); ok {
+func transferSendMessageToClient(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
+	if netid, ok := serv.RegisterPeerMap.Load(p2pAddress); ok {
 		utils.Log("transfer to netid = ", netid)
 		serv.GetPPServer().Unicast(netid.(int64), msgBuf)
 	} else {
-		utils.DebugLog("waller ===== ", waller)
+		utils.DebugLog("waller ===== ", p2pAddress)
 	}
 }
 

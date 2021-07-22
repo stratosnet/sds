@@ -1,16 +1,20 @@
 package setting
 
 import (
+	ed25519crypto "crypto/ed25519"
+	"errors"
 	"fmt"
+	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/relay/stratoschain/prefix"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/console"
+	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
-
-	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/relay/stratoschain"
-	"github.com/stratosnet/sds/utils"
 )
 
 // REPROTDHTIME 1 hour
@@ -48,8 +52,8 @@ var IsLoad bool
 // UpLoadTaskIDMap
 var UpLoadTaskIDMap = &sync.Map{}
 
-// DownLoadTaskIDMap
-var DownLoadTaskIDMap = &sync.Map{}
+// DownloadTaskIDMap
+var DownloadTaskIDMap = &sync.Map{}
 
 // socket map
 var (
@@ -82,8 +86,10 @@ type config struct {
 	DefSavePath                 string `yaml:"DefSavePath"`
 	StorehousePath              string `yaml:"StorehousePath"`
 	DownloadPath                string `yaml:"DownloadPath"`
-	Password                    string `yaml:"Password"`
-	Account                     string `yaml:"Account"`
+	P2PAddress                  string `yaml:"P2PAddress"`
+	P2PPassword                 string `yaml:"P2PPassword"`
+	WalletAddress               string `yaml:"WalletAddress"`
+	WalletPassword              string `yaml:"WalletPassword"`
 	AutoRun                     bool   `yaml:"AutoRun"`  // is auto login
 	Internal                    bool   `yaml:"Internal"` // is internal net
 	IsWallet                    bool   `yaml:"IsWallet"` // is wallet
@@ -96,6 +102,7 @@ type config struct {
 	IsCheckFileOperation        bool   `yaml:"IsCheckFileOperation"`
 	IsCheckFileTransferFinished bool   `yaml:"IsCheckFileTransferFinished"`
 	AddressPrefix               string `yaml:"AddressPrefix"`
+	P2PKeyPrefix                string `yaml:"P2PKeyPrefix"`
 	ChainId                     string `yaml:"ChainId"`
 	Token                       string `yaml:"Token"`
 	StratosChainAddress         string `yaml:"StratosChainAddress"`
@@ -127,7 +134,7 @@ func LoadConfig(configPath string) {
 	}
 	cf.SetLimitDownloadSpeed(Config.LimitDownloadSpeed, Config.IsLimitDownloadSpeed)
 	cf.SetLimitUploadSpeed(Config.LimitUploadSpeed, Config.IsLimitUploadSpeed)
-	stratoschain.SetConfig(Config.AddressPrefix)
+	prefix.SetConfig(Config.AddressPrefix)
 }
 
 // CheckLogin
@@ -141,13 +148,9 @@ func CheckLogin() bool {
 
 // GetSign
 func GetSign(str string) []byte {
-	data, err := utils.ECCSignBytes([]byte(str), PrivateKey)
-	utils.DebugLog("GetSign == ", data)
-	if err != nil {
-		utils.ErrorLog("GetSign", err)
-		return nil
-	}
-	return data
+	sign := ed25519crypto.Sign(P2PPrivateKey, []byte(str))
+	utils.DebugLog("GetSign == ", sign)
+	return sign
 }
 
 // UpChan
@@ -226,4 +229,56 @@ func SetConfig(key, value string) bool {
 	LoadConfig(ConfigPath)
 	fmt.Println("failed to change configuration file ", key+": ", value)
 	return true
+}
+
+// SetupP2PKey Loads the existing P2P key for this node, or creates a new one if none is available.
+func SetupP2PKey() error {
+	if Config.P2PAddress == "" {
+		fmt.Println("No P2P key specified in config. Attempting to create one...")
+		nickname, err := console.Stdin.PromptInput("Enter P2pAddress nickname: ")
+		if err != nil {
+			return errors.New("couldn't read nickname from console: " + err.Error())
+		}
+
+		password, err := console.Stdin.PromptPassword("Enter password: ")
+		if err != nil {
+			return errors.New("couldn't read password from console: " + err.Error())
+		}
+		confimation, err := console.Stdin.PromptPassword("Enter password again: ")
+		if err != nil {
+			return errors.New("couldn't read confirmation password from console: " + err.Error())
+		}
+		if password != confimation {
+			return errors.New("invalid. The two passwords don't match")
+		}
+
+		p2pKeyAddress, err := utils.CreateP2PKey(Config.AccountDir, nickname, password, Config.P2PKeyPrefix, Config.ScryptN, Config.ScryptP)
+		if err != nil {
+			return errors.New("couldn't create WalletAddress: " + err.Error())
+		}
+
+		p2pKeyAddressString, err := p2pKeyAddress.ToBech(Config.P2PKeyPrefix)
+		if err != nil {
+			return errors.New("couldn't convert P2P key address to bech string: " + err.Error())
+		}
+		Config.P2PAddress = p2pKeyAddressString
+		Config.P2PPassword = password
+		SetConfig("P2pAddress", p2pKeyAddressString)
+		SetConfig("P2PPassword", password)
+	}
+
+	p2pKeyFile, err := ioutil.ReadFile(filepath.Join(Config.AccountDir, Config.P2PAddress+".json"))
+	if err != nil {
+		return errors.New("couldn't read P2P key file: " + err.Error())
+	}
+
+	p2pKey, err := utils.DecryptKey(p2pKeyFile, Config.P2PPassword)
+	if err != nil {
+		return errors.New("couldn't decrypt P2P key file: " + err.Error())
+	}
+
+	P2PAddress = Config.P2PAddress
+	P2PPrivateKey = p2pKey.PrivateKey
+	P2PPublicKey = ed25519.PrivKeyBytesToPubKeyBytes(P2PPrivateKey)
+	return nil
 }

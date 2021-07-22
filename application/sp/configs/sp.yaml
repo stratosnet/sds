@@ -29,14 +29,21 @@ Database:
   Debug: true
   LogFile: tmp/logs/db.log
 
-Ecdsa:
-  PrivateKeyPath: path_to_privatekey
-  PrivateKeyPass: privatekey_password
+Keys:
+  P2PPath: configs/stsdsp2p162xm62m75cjv2529p7yydkxmqfwhknslen0wgt.json
+  P2PPassword: aaa
+  WalletPath: configs/st1kfz5eal3a5ev472fpyyqkxyg9jtxurt3337yjh.json
+  WalletPassword: aaa
 
 BlockchainInfo:
   AddressPrefix: st
   ChainId: test-chain
-  Token: stos
+  StratosChainAddress: 127.0.0.1
+  StratosChainPort: 1317
+  Token: ustos
+  Transactions:
+    Fee: 1
+    Gas: 100000
 
 Log:
   Path: tmp/logs/sp-server.log

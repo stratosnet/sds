@@ -27,10 +27,10 @@ func downloadCancel(w http.ResponseWriter, request *http.Request) {
 				State:  true,
 			}
 			list = append(list, l)
-			if val, ok := setting.DownLoadTaskIDMap.Load(l.TaskID); ok {
+			if val, ok := setting.DownloadTaskIDMap.Load(l.TaskID); ok {
 				go event.DownloadSliceCancel(val.(string), uuid.New().String(), w)
 			}
-			setting.DownLoadTaskIDMap.Delete(l.TaskID)
+			setting.DownloadTaskIDMap.Delete(l.TaskID)
 			delete(setting.DownMap, l.TaskID)
 		}
 		result := make(map[string][]*pause, 0)

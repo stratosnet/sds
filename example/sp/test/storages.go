@@ -37,15 +37,15 @@ func main() {
 	savePP := new(table.PP)
 
 	data := map[string]interface{}{
-		"id":             1,
-		"wallet_address": "AABBCCDDeeffgghh",
-		"disk_size":      1024 * 1024 * 1024,
-		"memory_size":    1024 * 1024,
-		"os_and_ver":     "mac os 10",
-		"cpu_info":       "A9",
-		"mac_address":    "f0:18:98:37:15:26",
-		"version":        1,
-		"pub_key":        "90zsdjfwje020fjsdjjoij2900293",
+		"id":          1,
+		"p2p_address": "AABBCCDDeeffgghh",
+		"disk_size":   1024 * 1024 * 1024,
+		"memory_size": 1024 * 1024,
+		"os_and_ver":  "mac os 10",
+		"cpu_info":    "A9",
+		"mac_address": "f0:18:98:37:15:26",
+		"version":     1,
+		"pub_key":     "90zsdjfwje020fjsdjjoij2900293",
 	}
 
 	savePP.SetData(data)
@@ -68,7 +68,7 @@ func main() {
 		},
 		"join": [][]string{
 			{"file_slice_storage", "fss.slice_hash = e.slice_hash", "fss", "left"},
-			{"pp", "fss.wallet_address = p.wallet_address", "p", "left"},
+			{"pp", "fss.p2p_address = p.p2p_address", "p", "left"},
 		},
 		// 支持多个join或单个join, 最后一个表示join类型，如果没有填写，则表示join
 		//"join": []string{"file_slice_storage", "fss.slice_hash = e.slice_hash", "fss"},

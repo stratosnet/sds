@@ -1,6 +1,8 @@
 package event
 
 import (
+	goed25519 "crypto/ed25519"
+	"github.com/stratosnet/sds/utils/crypto"
 	"path"
 
 	"github.com/google/uuid"
@@ -11,31 +13,33 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/relay/stratoschain"
-	"github.com/stratosnet/sds/relay/stratoschain/register"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto"
+	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/types"
 
 	"github.com/golang/protobuf/proto"
 )
 
-func reqRegisterData(_ bool) *protos.ReqRegister {
+func reqRegisterData() *protos.ReqRegister {
 	return &protos.ReqRegister{
 		Address: &protos.PPBaseInfo{
+			P2PAddress:     setting.P2PAddress,
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
 		MyAddress: &protos.PPBaseInfo{
+			P2PAddress:     setting.P2PAddress,
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
-		PublicKey: setting.PublicKey,
+		PublicKey: setting.P2PPublicKey,
 	}
 }
 
 func reqRegisterDataTR(target *protos.ReqRegister) *msg.RelayMsgBuf {
 	req := target
 	req.MyAddress = &protos.PPBaseInfo{
+		P2PAddress:     setting.P2PAddress,
 		WalletAddress:  setting.WalletAddress,
 		NetworkAddress: setting.NetworkAddress,
 	}
@@ -56,39 +60,58 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivate, error) {
 		return nil, err
 	}
 
-	txMsg, err := register.BuildCreateResourceNodeMsg(setting.NetworkAddress, setting.Config.Token, setting.WalletAddress, "", setting.PublicKey, amount, ownerAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", setting.WalletAddress, "sync", txMsg, fee, gas, setting.PrivateKey)
+	// TODO: Send network ID instead of P2P address (QB-446)
+	txMsg := stratoschain.BuildCreateResourceNodeMsg(setting.P2PAddress, setting.Config.Token, setting.P2PAddress, "", setting.P2PPublicKey, amount, ownerAddress)
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", setting.WalletAddress, "sync", txMsg, fee, gas, setting.WalletPrivateKey)
 	if err != nil {
 		return nil, err
 	}
 
 	req := &protos.ReqActivate{
-		Tx:            txBytes,
-		WalletAddress: setting.WalletAddress,
+		Tx:         txBytes,
+		P2PAddress: setting.P2PAddress,
 	}
 	return req, nil
 }
 
 func reqDeactivateData(fee, gas int64) (*protos.ReqDeactivate, error) {
 	// Create and sign transaction to remove a resource node
-	nodeAddress, err := crypto.PubKeyToAddress(setting.PublicKey)
+	nodeAddress := ed25519.PubKeyBytesToAddress(setting.P2PPublicKey)
+	ownerAddress, err := crypto.PubKeyToAddress(setting.WalletPublicKey)
 	if err != nil {
 		return nil, err
 	}
 
-	txMsg := register.BuildRemoveResourceNodeMsg(nodeAddress, nodeAddress)
-
-	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", setting.WalletAddress, "sync", txMsg, fee, gas, setting.PrivateKey)
+	txMsg := stratoschain.BuildRemoveResourceNodeMsg(nodeAddress, ownerAddress)
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", setting.WalletAddress, "sync", txMsg, fee, gas, setting.WalletPrivateKey)
 	if err != nil {
 		return nil, err
 	}
 
 	req := &protos.ReqDeactivate{
+		Tx:         txBytes,
+		P2PAddress: setting.P2PAddress,
+	}
+	return req, nil
+}
+
+func reqPrepayData(amount, fee, gas int64) (*protos.ReqPrepay, error) {
+	// Create and sign a prepay transaction
+	// TODO: use P2P key as sender address (QB-475)
+	senderAddress, err := types.BechToAddress(setting.WalletAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	txMsg := stratoschain.BuildPrepayMsg(setting.Config.Token, amount, senderAddress[:])
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", setting.WalletAddress, "sync", txMsg, fee, gas, setting.WalletPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &protos.ReqPrepay{
 		Tx:            txBytes,
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 	}
 	return req, nil
@@ -97,17 +120,19 @@ func reqDeactivateData(fee, gas int64) (*protos.ReqDeactivate, error) {
 func reqMiningData() *protos.ReqMining {
 	return &protos.ReqMining{
 		Address: &protos.PPBaseInfo{
+			P2PAddress:     setting.P2PAddress,
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
-		PublicKey: setting.PublicKey,
-		Sign:      setting.GetSign(setting.WalletAddress),
+		PublicKey: setting.P2PPublicKey,
+		Sign:      setting.GetSign(setting.P2PAddress),
 	}
 }
 
 func reqGetPPlistData() *protos.ReqGetPPList {
 	return &protos.ReqGetPPList{
 		MyAddress: &protos.PPBaseInfo{
+			P2PAddress:     setting.P2PAddress,
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
@@ -126,7 +151,7 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool, isVid
 	fileHash := file.GetFileHash(paths)
 	utils.Log("fileHash~~~~~~~~~~~~~~~~~~~~~~", fileHash)
 
-	walletFileString := setting.WalletAddress + fileHash
+	p2pFileString := setting.P2PAddress + fileHash
 
 	req := &protos.ReqUploadFile{
 		FileInfo: &protos.FileInfo{
@@ -136,12 +161,13 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool, isVid
 			StoragePath: storagePath,
 		},
 		MyAddress: &protos.PPBaseInfo{
+			P2PAddress:     setting.P2PAddress,
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
-		Sign:          setting.GetSign(walletFileString),
-		IsCover:       isCover,
-		ReqId:         reqID,
+		Sign:    setting.GetSign(p2pFileString),
+		IsCover: isCover,
+		ReqId:   reqID,
 		IsVideoStream: isVideoStream,
 	}
 	if isCover {
@@ -156,10 +182,10 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool, isVid
 		}
 		req.FileInfo.Duration = duration
 	}
-	walletFileHash := []byte(walletFileString)
+	p2pFileHash := []byte(p2pFileString)
 	utils.DebugLogf("setting.WalletAddress + fileHash : %v", walletFileHash)
 
-	if utils.ECCVerifyBytes(walletFileHash, req.Sign, setting.PublicKey) {
+	if goed25519.Verify(setting.P2PPublicKey, p2pFileHash, req.Sign) {
 		utils.DebugLog("ECC verification ok")
 	} else {
 		utils.DebugLog("ECC verification failed")
@@ -178,8 +204,9 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool, isVid
 }
 
 func rspDownloadSliceData(target *protos.ReqDownloadSlice) *protos.RspDownloadSlice {
-	slice := task.GetDonwloadSlice(target)
+	slice := task.GetDownloadSlice(target)
 	return &protos.RspDownloadSlice{
+		P2PAddress:    target.P2PAddress,
 		WalletAddress: target.WalletAddress,
 		SliceInfo:     target.SliceInfo,
 		FileCrc:       slice.FileCrc,
@@ -205,6 +232,7 @@ func rspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 			FileCrc:       rsp.FileCrc,
 			FileHash:      rsp.FileHash,
 			Data:          rsp.Data[dataStart:],
+			P2PAddress:    rsp.P2PAddress,
 			WalletAddress: rsp.WalletAddress,
 			TaskId:        rsp.TaskId,
 			SliceSize:     rsp.SliceSize,
@@ -225,6 +253,7 @@ func rspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 		FileCrc:       rsp.FileCrc,
 		FileHash:      rsp.FileHash,
 		Data:          rsp.Data[dataStart:dataEnd],
+		P2PAddress:    rsp.P2PAddress,
 		WalletAddress: rsp.WalletAddress,
 		TaskId:        rsp.TaskId,
 		SliceSize:     rsp.SliceSize,
@@ -244,6 +273,7 @@ func reqUploadFileSliceData(task *task.UploadSliceTask) *protos.ReqUploadFileSli
 		SliceInfo:     task.SliceOffsetInfo,
 		Data:          task.Data,
 		FileHash:      task.FileHash,
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		SliceSize:     task.SliceTotalSize,
 	}
@@ -260,7 +290,8 @@ func reqReportUploadSliceResultData(target *protos.RspUploadFileSlice) *protos.R
 		UploadSuccess: true,
 		FileHash:      target.FileHash,
 		SliceSize:     target.SliceSize,
-		Sign:          setting.GetSign(setting.WalletAddress + target.FileHash),
+		Sign:          setting.GetSign(setting.P2PAddress + target.FileHash),
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 	}
 }
@@ -274,7 +305,8 @@ func reqReportUploadSliceResultDataPP(target *protos.ReqUploadFileSlice) *protos
 		UploadSuccess: true,
 		FileHash:      target.FileHash,
 		SliceSize:     target.SliceSize,
-		Sign:          setting.GetSign(setting.WalletAddress + target.FileHash),
+		Sign:          setting.GetSign(setting.P2PAddress + target.FileHash),
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 	}
 }
@@ -284,6 +316,7 @@ func rspUploadFileSliceData(target *protos.ReqUploadFileSlice) *protos.RspUpload
 		TaskId:        target.TaskId,
 		FileHash:      target.FileHash,
 		SliceHash:     target.SliceInfo.SliceHash,
+		P2PAddress:    target.P2PAddress,
 		WalletAddress: target.WalletAddress,
 		SliceNumAddr:  target.SliceNumAddr,
 		SliceSize:     target.SliceSize,
@@ -297,19 +330,21 @@ func reqReportDownloadResultData(target *protos.RspDownloadSlice, isPP bool) *pr
 
 	utils.DebugLog("#################################################################", target.SliceInfo.SliceHash)
 	repReq := &protos.ReqReportDownloadResult{
-		IsPP:            isPP,
-		WalletAddress:   target.WalletAddress,
-		FileHash:        target.FileHash,
-		Sign:            setting.GetSign(setting.WalletAddress + target.FileHash),
-		MyWalletAddress: setting.WalletAddress,
-		TaskId:          target.TaskId,
+		IsPP:                    isPP,
+		DownloaderP2PAddress:    target.P2PAddress,
+		DownloaderWalletAddress: target.WalletAddress,
+		MyP2PAddress:            setting.P2PAddress,
+		MyWalletAddress:         setting.WalletAddress,
+		FileHash:                target.FileHash,
+		Sign:                    setting.GetSign(setting.P2PAddress + target.FileHash),
+		TaskId:                  target.TaskId,
 	}
 	if isPP {
 		utils.Log("PP ReportDownloadResult ")
 		if dlTask, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress); ok {
-			donwloadTask := dlTask.(*task.DonwloadTask)
-			utils.DebugLog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^donwloadTask", donwloadTask)
-			if sInfo, ok := donwloadTask.SliceInfo[target.SliceInfo.SliceHash]; ok {
+			downloadTask := dlTask.(*task.DownloadTask)
+			utils.DebugLog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^downloadTask", downloadTask)
+			if sInfo, ok := downloadTask.SliceInfo[target.SliceInfo.SliceHash]; ok {
 				repReq.SliceInfo = sInfo
 				repReq.SliceInfo.VisitResult = true
 			} else {
@@ -335,6 +370,7 @@ func reqReportDownloadResultData(target *protos.RspDownloadSlice, isPP bool) *pr
 
 func reqDownloadSliceData(target *protos.RspFileStorageInfo, rsp *protos.DownloadSliceInfo) *protos.ReqDownloadSlice {
 	return &protos.ReqDownloadSlice{
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		FileHash:      target.FileHash,
 		TaskId:        rsp.TaskId,
@@ -376,6 +412,7 @@ func rspFileStorageInfoData(target *protos.RspFileStorageInfo) *msg.RelayMsgBuf 
 func reqRegisterNewPPData() *protos.ReqRegisterNewPP {
 	sysInfo := utils.GetSysInfo()
 	return &protos.ReqRegisterNewPP{
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		DiskSize:      sysInfo.DiskSize,
 		MemorySize:    sysInfo.MemorySize,
@@ -383,8 +420,8 @@ func reqRegisterNewPPData() *protos.ReqRegisterNewPP {
 		CpuInfo:       sysInfo.CPUInfo,
 		MacAddress:    sysInfo.MacAddress,
 		Version:       setting.Config.Version,
-		PubKey:        setting.PublicKey,
-		Sign:          setting.GetSign(setting.WalletAddress),
+		PubKey:        setting.P2PPublicKey,
+		Sign:          setting.GetSign(setting.P2PAddress),
 	}
 }
 
@@ -393,6 +430,7 @@ func reqValidateTransferCerData(target *protos.ReqTransferNotice) *protos.ReqVal
 		TransferCer: target.TransferCer,
 		NewPp:       target.StoragePpInfo,
 		OriginalPp: &protos.PPBaseInfo{
+			P2PAddress:     setting.P2PAddress,
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
@@ -404,6 +442,7 @@ func reqTransferNoticeData(target *protos.ReqTransferNotice) *msg.RelayMsgBuf {
 		FromSp:      false,
 		TransferCer: target.TransferCer,
 		StoragePpInfo: &protos.PPBaseInfo{
+			P2PAddress:     setting.P2PAddress,
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
@@ -423,6 +462,7 @@ func reqTransferNoticeData(target *protos.ReqTransferNotice) *msg.RelayMsgBuf {
 func rspTransferNoticeData(agree bool, cer string) *protos.RspTransferNotice {
 	rsp := &protos.RspTransferNotice{
 		StoragePpInfo: &protos.PPBaseInfo{
+			P2PAddress:     setting.P2PAddress,
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
@@ -453,6 +493,7 @@ func reqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
 		TaskId:  taskID,
 		Traffic: traffic,
 		Reporter: &protos.PPBaseInfo{
+			P2PAddress:     setting.P2PAddress,
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
@@ -470,12 +511,13 @@ func reqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
 func reqFileStorageInfoData(path, savePath, reqID string, isVideoStream bool) *protos.ReqFileStorageInfo {
 	return &protos.ReqFileStorageInfo{
 		FileIndexes: &protos.FileIndexes{
+			P2PAddress:    setting.P2PAddress,
 			WalletAddress: setting.WalletAddress,
 			FilePath:      path,
 			SavePath:      savePath,
 		},
-		Sign:          setting.GetSign(setting.WalletAddress + path),
-		ReqId:         reqID,
+		Sign:  setting.GetSign(setting.P2PAddress + path),
+		ReqId: reqID,
 		IsVideoStream: isVideoStream,
 	}
 }
@@ -483,6 +525,7 @@ func reqFileStorageInfoData(path, savePath, reqID string, isVideoStream bool) *p
 func findMyFileListData(fileName, dir, reqID, keyword string, fileType protos.FileSortType, isUp bool) *protos.ReqFindMyFileList {
 	return &protos.ReqFindMyFileList{
 		FileName:      fileName,
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		Directory:     dir,
 		ReqId:         reqID,
@@ -494,6 +537,7 @@ func findMyFileListData(fileName, dir, reqID, keyword string, fileType protos.Fi
 
 func findDirectoryData(reqID string) *protos.ReqFindDirectory {
 	return &protos.ReqFindDirectory{
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 	}
@@ -503,6 +547,7 @@ func fileSortData(files []*protos.FileInfo, reqID, albumID string) *protos.ReqFi
 	return &protos.ReqFileSort{
 		Files:         files,
 		ReqId:         reqID,
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		AlbumId:       albumID,
 	}
@@ -529,14 +574,16 @@ func rspTransferDownload(data []byte, transferCer string, offset, sliceSize uint
 func reqDeleteFileData(fileHash, reqID string) *protos.ReqDeleteFile {
 	return &protos.ReqDeleteFile{
 		FileHash:      fileHash,
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
-		Sign:          setting.GetSign(setting.WalletAddress + fileHash),
+		Sign:          setting.GetSign(setting.P2PAddress + fileHash),
 		ReqId:         reqID,
 	}
 }
 
-func reqDownloadSliceWrong(taskID, sliceHash, walletAddress string, wrongType protos.DownloadWrongType) *protos.ReqDownloadSliceWrong {
+func reqDownloadSliceWrong(taskID, sliceHash, p2pAddress, walletAddress string, wrongType protos.DownloadWrongType) *protos.ReqDownloadSliceWrong {
 	return &protos.ReqDownloadSliceWrong{
+		P2PAddress:    p2pAddress,
 		WalletAddress: walletAddress,
 		TaskId:        taskID,
 		SliceHash:     sliceHash,
@@ -550,6 +597,7 @@ func rspDownloadSliceWrong(target *protos.RspDownloadSliceWrong) *msg.RelayMsgBu
 			SliceHash:   target.NewSliceInfo.SliceStorageInfo.SliceHash,
 			SliceOffset: target.NewSliceInfo.SliceOffset,
 		},
+		P2PAddress:    target.P2PAddress,
 		WalletAddress: target.WalletAddress,
 		TaskId:        target.TaskId,
 		FileHash:      target.FileHash,
@@ -567,6 +615,7 @@ func rspDownloadSliceWrong(target *protos.RspDownloadSliceWrong) *msg.RelayMsgBu
 func rspGetHDInfoData() *protos.RspGetHDInfo {
 	size, free := setting.GetDHInfo()
 	return &protos.RspGetHDInfo{
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		DiskSize:      size,
 		DiskFree:      free,
@@ -579,8 +628,8 @@ func rspDeleteSliceData(sliceHash, msg string, result bool) *protos.RspDeleteSli
 		state = protos.ResultState_RES_FAIL
 	}
 	return &protos.RspDeleteSlice{
-		WalletAddress: setting.WalletAddress,
-		SliceHash:     sliceHash,
+		P2PAddress: setting.P2PAddress,
+		SliceHash:  sliceHash,
 		Result: &protos.Result{
 			State: state,
 			Msg:   msg,
@@ -590,6 +639,7 @@ func rspDeleteSliceData(sliceHash, msg string, result bool) *protos.RspDeleteSli
 
 func reqMakeDirectoryData(path, reqID string) *protos.ReqMakeDirectory {
 	return &protos.ReqMakeDirectory{
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		Directory:     path,
 		ReqId:         reqID,
@@ -598,6 +648,7 @@ func reqMakeDirectoryData(path, reqID string) *protos.ReqMakeDirectory {
 
 func reqRemoveDirectoryData(path, reqID string) *protos.ReqRemoveDirectory {
 	return &protos.ReqRemoveDirectory{
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		Directory:     path,
 		ReqId:         reqID,
@@ -606,6 +657,7 @@ func reqRemoveDirectoryData(path, reqID string) *protos.ReqRemoveDirectory {
 
 func reqShareLinkData(reqID string) *protos.ReqShareLink {
 	return &protos.ReqShareLink{
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 	}
@@ -616,6 +668,7 @@ func reqShareFileData(reqID, fileHash, pathHash string, isPrivate bool, shareTim
 		FileHash:      fileHash,
 		IsPrivate:     isPrivate,
 		ShareTime:     shareTime,
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		PathHash:      pathHash,
 		ReqId:         reqID,
@@ -625,6 +678,7 @@ func reqShareFileData(reqID, fileHash, pathHash string, isPrivate bool, shareTim
 func reqDeleteShareData(reqID, shareID string) *protos.ReqDeleteShare {
 	return &protos.ReqDeleteShare{
 		ReqId:         reqID,
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ShareId:       shareID,
 	}
@@ -634,6 +688,7 @@ func reqSaveFileData(fileHash, reqID, ownerAddress string) *protos.ReqSaveFile {
 	return &protos.ReqSaveFile{
 		FileHash:               fileHash,
 		FileOwnerWalletAddress: ownerAddress,
+		P2PAddress:             setting.P2PAddress,
 		WalletAddress:          setting.WalletAddress,
 		ReqId:                  reqID,
 	}
@@ -644,6 +699,7 @@ func reqSaveFolderData(folderHash, reqID, ownerAddress string) *protos.ReqSaveFo
 	return &protos.ReqSaveFolder{
 		FolderHash:               folderHash,
 		FolderOwnerWalletAddress: ownerAddress,
+		P2PAddress:               setting.P2PAddress,
 		WalletAddress:            setting.WalletAddress,
 		ReqId:                    reqID,
 	}
@@ -653,6 +709,7 @@ func reqSaveFolderData(folderHash, reqID, ownerAddress string) *protos.ReqSaveFo
 func reqMoveFileDirectoryData(fileHash, originalDir, targetDir, reqID string) *protos.ReqMoveFileDirectory {
 	return &protos.ReqMoveFileDirectory{
 		FileHash:          fileHash,
+		P2PAddress:        setting.P2PAddress,
 		WalletAddress:     setting.WalletAddress,
 		ReqId:             reqID,
 		DirectoryTarget:   targetDir,
@@ -660,8 +717,9 @@ func reqMoveFileDirectoryData(fileHash, originalDir, targetDir, reqID string) *p
 	}
 }
 
-func reqGetMyConfig(walletAddress, reqID string) *protos.ReqConfig {
+func reqGetMyConfig(p2pAddress, walletAddress, reqID string) *protos.ReqConfig {
 	return &protos.ReqConfig{
+		P2PAddress:     p2pAddress,
 		WalletAddress:  walletAddress,
 		ReqId:          reqID,
 		NetworkAddress: setting.NetworkAddress,
@@ -671,6 +729,7 @@ func reqGetMyConfig(walletAddress, reqID string) *protos.ReqConfig {
 func reqDownloadSlicePause(fileHash, reqID string) *protos.ReqDownloadSlicePause {
 	return &protos.ReqDownloadSlicePause{
 		FileHash:      fileHash,
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 	}
@@ -678,6 +737,7 @@ func reqDownloadSlicePause(fileHash, reqID string) *protos.ReqDownloadSlicePause
 
 func rspDownloadSlicePauseData(target *protos.ReqDownloadSlicePause) *msg.RelayMsgBuf {
 	sendTager := &protos.RspDownloadSlicePause{
+		P2PAddress:    target.P2PAddress,
 		WalletAddress: target.WalletAddress,
 		FileHash:      target.FileHash,
 		ReqId:         target.ReqId,
@@ -697,6 +757,7 @@ func rspDownloadSlicePauseData(target *protos.ReqDownloadSlicePause) *msg.RelayM
 
 func reqCreateAlbumData(albumName, albumBlurb, albumCoverHash, reqID string, albumType protos.AlbumType, files []*protos.FileInfo, isPrivate bool) *protos.ReqCreateAlbum {
 	return &protos.ReqCreateAlbum{
+		P2PAddress:     setting.P2PAddress,
 		WalletAddress:  setting.WalletAddress,
 		ReqId:          reqID,
 		AlbumName:      albumName,
@@ -711,6 +772,7 @@ func reqCreateAlbumData(albumName, albumBlurb, albumCoverHash, reqID string, alb
 func reqGetShareFileData(keyword, sharePassword, reqID string) *protos.ReqGetShareFile {
 	return &protos.ReqGetShareFile{
 		Keyword:       keyword,
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 		SharePassword: sharePassword,
@@ -719,6 +781,7 @@ func reqGetShareFileData(keyword, sharePassword, reqID string) *protos.ReqGetSha
 
 func reqFindMyAlbumData(albumType protos.AlbumType, reqID string, page, number uint64, keyword string) *protos.ReqFindMyAlbum {
 	return &protos.ReqFindMyAlbum{
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 		AlbumType:     albumType,
@@ -730,6 +793,7 @@ func reqFindMyAlbumData(albumType protos.AlbumType, reqID string, page, number u
 
 func reqEditAlbumData(albumID, albumCoverHash, albumName, albumBlurb, reqID string, changeFiles []*protos.FileInfo, isPrivate bool) *protos.ReqEditAlbum {
 	return &protos.ReqEditAlbum{
+		P2PAddress:     setting.P2PAddress,
 		WalletAddress:  setting.WalletAddress,
 		ReqId:          reqID,
 		AlbumId:        albumID,
@@ -743,6 +807,7 @@ func reqEditAlbumData(albumID, albumCoverHash, albumName, albumBlurb, reqID stri
 
 func reqAlbumContentData(albumID, reqID string) *protos.ReqAlbumContent {
 	return &protos.ReqAlbumContent{
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 		AlbumId:       albumID,
@@ -751,6 +816,7 @@ func reqAlbumContentData(albumID, reqID string) *protos.ReqAlbumContent {
 
 func reqCollectionAlbumData(albumID, reqID string, isCollection bool) *protos.ReqCollectionAlbum {
 	return &protos.ReqCollectionAlbum{
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 		AlbumId:       albumID,
@@ -760,6 +826,7 @@ func reqCollectionAlbumData(albumID, reqID string, isCollection bool) *protos.Re
 
 func reqDeleteAlbumData(albumID, reqID string) *protos.ReqDeleteAlbum {
 	return &protos.ReqDeleteAlbum{
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 		AlbumId:       albumID,
@@ -770,6 +837,7 @@ func reqSearchAlbumData(keyword, reqID string, aType protos.AlbumType, sType pro
 		AlbumType:     aType,
 		Keyword:       keyword,
 		AlbumSortType: sType,
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 		Page:          page,
@@ -779,6 +847,7 @@ func reqSearchAlbumData(keyword, reqID string, aType protos.AlbumType, sType pro
 
 func reqInviteData(code, reqID string) *protos.ReqInvite {
 	return &protos.ReqInvite{
+		P2PAddress:     setting.P2PAddress,
 		WalletAddress:  setting.WalletAddress,
 		ReqId:          reqID,
 		InvitationCode: code,
@@ -786,6 +855,7 @@ func reqInviteData(code, reqID string) *protos.ReqInvite {
 }
 func reqGetRewardData(reqID string) *protos.ReqGetReward {
 	return &protos.ReqGetReward{
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 	}
@@ -793,6 +863,7 @@ func reqGetRewardData(reqID string) *protos.ReqGetReward {
 
 func reqAbstractAlbumData(reqID string) *protos.ReqAbstractAlbum {
 	return &protos.ReqAbstractAlbum{
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 	}
@@ -801,6 +872,7 @@ func reqAbstractAlbumData(reqID string) *protos.ReqAbstractAlbum {
 func reqMyCollectionAlbumData(aType protos.AlbumType, reqID string, page, number uint64, keyword string) *protos.ReqMyCollectionAlbum {
 	return &protos.ReqMyCollectionAlbum{
 		AlbumType:     aType,
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 		Page:          page,
@@ -812,6 +884,7 @@ func reqMyCollectionAlbumData(aType protos.AlbumType, reqID string, page, number
 
 func reqFindDirectoryTreeData(reqID, pathHash string) *protos.ReqFindDirectoryTree {
 	return &protos.ReqFindDirectoryTree{
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 		PathHash:      pathHash,
@@ -828,6 +901,7 @@ func uploadSpeedOfProgressData(fileHash string, size uint64) *protos.UploadSpeed
 
 func reqGetCapacityData(reqID string) *protos.ReqGetCapacity {
 	return &protos.ReqGetCapacity{
+		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 	}

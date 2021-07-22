@@ -13,9 +13,9 @@ import (
 )
 
 // GetMyConfig
-func GetMyConfig(walletAddress, reqID string, w http.ResponseWriter) {
+func GetMyConfig(p2pAddress, walletAddress, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqGetMyConfig(walletAddress, reqID), header.ReqConfig)
+		sendMessage(client.PPConn, reqGetMyConfig(p2pAddress, walletAddress, reqID), header.ReqConfig)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -33,7 +33,7 @@ func RspGetMyConfig(ctx context.Context, conn spbf.WriteCloser) {
 	utils.DebugLog("get RspConfig")
 	var target protos.RspConfig
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
 			} else {
@@ -41,7 +41,7 @@ func RspGetMyConfig(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPGetConfig, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }

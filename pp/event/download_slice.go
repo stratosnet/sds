@@ -28,9 +28,9 @@ func ReqDownloadSlice(ctx context.Context, conn spbf.WriteCloser) {
 		// PP will go to DownloadTaskMap to check if has transfer task for this msg, if not, means this PP is the storage PP
 		if dlTask, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress); ok {
 
-			client.DownloadConnMap.Store(target.WalletAddress+target.FileHash, conn)
-			donwloadTask := dlTask.(*task.DonwloadTask)
-			if sInfo, ok := donwloadTask.SliceInfo[target.SliceInfo.SliceHash]; ok {
+			client.DownloadConnMap.Store(target.P2PAddress+target.FileHash, conn)
+			downloadTask := dlTask.(*task.DownloadTask)
+			if sInfo, ok := downloadTask.SliceInfo[target.SliceInfo.SliceHash]; ok {
 				// get all info for the slice
 				if sInfo.StoragePpInfo.NetworkAddress == setting.NetworkAddress {
 					utils.DebugLog("self is storagePP")
@@ -39,18 +39,18 @@ func ReqDownloadSlice(ctx context.Context, conn spbf.WriteCloser) {
 						sendReportDownloadResult(rsp, true)
 						splitSendDownloadSliceData(rsp, conn)
 					} else {
-						downloadWrong(target.TaskId, target.SliceInfo.SliceHash, target.WalletAddress, protos.DownloadWrongType_LOSESLICE)
+						downloadWrong(target.TaskId, target.SliceInfo.SliceHash, target.P2PAddress, target.WalletAddress, protos.DownloadWrongType_LOSESLICE)
 					}
 				} else {
 					utils.DebugLog("passagePP received downloadslice reqest, transfer to :", sInfo.StoragePpInfo.NetworkAddress)
 					// transferSendMessageToPPServ(sInfo.StoragePpInfo.NetworkAddress, spbf.MessageFromContext(ctx))
-					if c, ok := client.DownloadPassageway.Load(target.WalletAddress + target.SliceInfo.SliceHash); ok {
+					if c, ok := client.DownloadPassageway.Load(target.P2PAddress + target.SliceInfo.SliceHash); ok {
 						conn := c.(*cf.ClientConn)
 						conn.Write(spbf.MessageFromContext(ctx))
 					} else {
 						conn := client.NewClient(sInfo.StoragePpInfo.NetworkAddress, false)
 						conn.Write(spbf.MessageFromContext(ctx))
-						client.DownloadPassageway.Store((target.WalletAddress + target.SliceInfo.SliceHash), conn)
+						client.DownloadPassageway.Store(target.P2PAddress+target.SliceInfo.SliceHash, conn)
 					}
 				}
 			} else {
@@ -103,24 +103,24 @@ func RspDownloadSlice(ctx context.Context, conn spbf.WriteCloser) {
 	utils.DebugLog("get RspDownloadSlice")
 	var target protos.RspDownloadSlice
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress != setting.WalletAddress {
+		if target.P2PAddress != setting.P2PAddress {
 			// check if task still exist
 			if _, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress); ok {
 				if target.SliceSize > 0 {
 					// transfer to
-					utils.Log("get RspDownloadSlice transfer to", target.WalletAddress)
-					if c, ok := client.DownloadConnMap.Load(target.WalletAddress + target.FileHash); ok {
+					utils.Log("get RspDownloadSlice transfer to", target.P2PAddress)
+					if c, ok := client.DownloadConnMap.Load(target.P2PAddress + target.FileHash); ok {
 						conn := c.(*spbf.ServerConn)
 						conn.Write(spbf.MessageFromContext(ctx))
 					} else {
-						transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+						transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 					}
 					if target.NeedReport {
 						utils.DebugLog("arget.NeedReportarget.NeedReportarget.NeedReportarget.NeedReport")
 						sendReportDownloadResult(&target, true)
 					}
 				} else {
-					downloadWrong(target.TaskId, target.SliceInfo.SliceHash, target.WalletAddress, protos.DownloadWrongType_LOSESLICE)
+					downloadWrong(target.TaskId, target.SliceInfo.SliceHash, target.P2PAddress, target.WalletAddress, protos.DownloadWrongType_LOSESLICE)
 				}
 			} else {
 				utils.DebugLog("current task is stopped！！！！！！！！！！！！！！！！！！！！！！！！！！")
@@ -145,22 +145,22 @@ func RspDownloadSlice(ctx context.Context, conn spbf.WriteCloser) {
 func receiveSliceAndProgress(target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo) {
 	if task.SaveDownloadFile(target, fInfo) {
 		dataLen := uint64(len(target.Data))
-		if s, ok := task.DonwloadSliceProgress.Load(target.SliceInfo.SliceHash); ok {
+		if s, ok := task.DownloadSliceProgress.Load(target.SliceInfo.SliceHash); ok {
 			alreadySize := s.(uint64)
 			alreadySize += dataLen
 			if alreadySize == target.SliceSize {
 				utils.DebugLog("slice download finished", target.SliceInfo.SliceHash)
-				task.DonwloadSliceProgress.Delete(target.SliceInfo.SliceHash)
+				task.DownloadSliceProgress.Delete(target.SliceInfo.SliceHash)
 				receivedSlice(target, fInfo)
 			} else {
-				task.DonwloadSliceProgress.Store(target.SliceInfo.SliceHash, alreadySize)
+				task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash, alreadySize)
 			}
 		} else {
 			// if data is sent at once
 			if target.SliceSize == dataLen {
 				receivedSlice(target, fInfo)
 			} else {
-				task.DonwloadSliceProgress.Store(target.SliceInfo.SliceHash, dataLen)
+				task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash, dataLen)
 			}
 		}
 	}
@@ -190,7 +190,7 @@ func sendReportDownloadResult(target *protos.RspDownloadSlice, isPP bool) {
 		break
 	}
 
-	task.CleanDownloadTask(target.FileHash, target.SliceInfo.SliceHash, target.WalletAddress)
+	task.CleanDownloadTask(target.FileHash, target.SliceInfo.SliceHash, target.P2PAddress, target.WalletAddress)
 	// downloadPassageway.Delete(target.WalletAddress + target.SliceInfo.SliceHash)
 }
 
@@ -222,7 +222,7 @@ func DownloadFileSlice(target *protos.RspFileStorageInfo) {
 
 func SendReqDownloadSlice(target *protos.RspFileStorageInfo, req *protos.ReqDownloadSlice) {
 	utils.DebugLog("req = ", req)
-	if c, ok := client.PdownloadPassageway.Load(target.FileHash); ok {
+	if c, ok := client.PDownloadPassageway.Load(target.FileHash); ok {
 		conn := c.(*cf.ClientConn)
 		sendMessage(conn, req, header.ReqDownloadSlice)
 		utils.DebugLog("DDDDDDDDDDDDDD", conn)
@@ -231,7 +231,7 @@ func SendReqDownloadSlice(target *protos.RspFileStorageInfo, req *protos.ReqDown
 	} else {
 		conn := client.NewClient(client.PPConn.GetName(), false)
 		sendMessage(conn, req, header.ReqDownloadSlice)
-		client.PdownloadPassageway.Store((target.FileHash), conn)
+		client.PDownloadPassageway.Store((target.FileHash), conn)
 		utils.DebugLog("WWWWWWWWWWWWWWWWWW", conn)
 		utils.DebugLog("ccccccccccccccc", client.PPConn)
 	}
@@ -254,8 +254,9 @@ func RspDownloadSliceWrong(ctx context.Context, conn spbf.WriteCloser) {
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
 			utils.DebugLog("RspDownloadSliceWrongRspDownloadSliceWrongRspDownloadSliceWrong", target.NewSliceInfo.SliceStorageInfo.SliceHash)
 			if dlTask, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress); ok {
-				donwloadTask := dlTask.(*task.DonwloadTask)
-				if sInfo, ok := donwloadTask.SliceInfo[target.NewSliceInfo.SliceStorageInfo.SliceHash]; ok {
+				downloadTask := dlTask.(*task.DownloadTask)
+				if sInfo, ok := downloadTask.SliceInfo[target.NewSliceInfo.SliceStorageInfo.SliceHash]; ok {
+					sInfo.StoragePpInfo.P2PAddress = target.NewSliceInfo.StoragePpInfo.P2PAddress
 					sInfo.StoragePpInfo.WalletAddress = target.NewSliceInfo.StoragePpInfo.WalletAddress
 					sInfo.StoragePpInfo.NetworkAddress = target.NewSliceInfo.StoragePpInfo.NetworkAddress
 					transferSendMessageToPPServ(target.NewSliceInfo.StoragePpInfo.NetworkAddress, rspDownloadSliceWrong(&target))
@@ -265,9 +266,9 @@ func RspDownloadSliceWrong(ctx context.Context, conn spbf.WriteCloser) {
 	}
 }
 
-func downloadWrong(taskID, sliceHash, walletAddress string, wrongType protos.DownloadWrongType) {
+func downloadWrong(taskID, sliceHash, p2pAddress, walletAddress string, wrongType protos.DownloadWrongType) {
 	utils.DebugLog("downloadWrong, sliceHash: ", sliceHash)
-	SendMessageToSPServer(reqDownloadSliceWrong(taskID, sliceHash, walletAddress, wrongType), header.ReqDownloadSliceWrong)
+	SendMessageToSPServer(reqDownloadSliceWrong(taskID, sliceHash, p2pAddress, walletAddress, wrongType), header.ReqDownloadSliceWrong)
 }
 
 // DownloadSlicePause
@@ -276,7 +277,7 @@ func DownloadSlicePause(fileHash, reqID string, w http.ResponseWriter) {
 		sendMessage(client.PPConn, reqDownloadSlicePause(fileHash, reqID), header.ReqDownloadSlicePause)
 		// storeResponseWriter(reqID, w)
 		task.PCleanDownloadTask(fileHash)
-		if c, ok := client.PdownloadPassageway.Load(fileHash); ok {
+		if c, ok := client.PDownloadPassageway.Load(fileHash); ok {
 			conn := c.(*cf.ClientConn)
 			conn.ClientClose()
 		}
@@ -292,7 +293,7 @@ func DownloadSliceCancel(fileHash, reqID string, w http.ResponseWriter) {
 		storeResponseWriter(reqID, w)
 		task.PCleanDownloadTask(fileHash)
 		task.PCancelDownloadTask(fileHash)
-		if c, ok := client.PdownloadPassageway.Load(fileHash); ok {
+		if c, ok := client.PDownloadPassageway.Load(fileHash); ok {
 			conn := c.(*cf.ClientConn)
 			conn.ClientClose()
 		}
@@ -307,12 +308,12 @@ func ReqDownloadSlicePause(ctx context.Context, conn spbf.WriteCloser) {
 	utils.DebugLog("ReqDownloadSlicePause&*************************************** ")
 	var target protos.ReqDownloadSlicePause
 	if unmarshalData(ctx, &target) {
-		transferSendMessageToClient(target.WalletAddress, rspDownloadSlicePauseData(&target))
+		transferSendMessageToClient(target.P2PAddress, rspDownloadSlicePauseData(&target))
 		//
 		if dlTask, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress); ok {
-			donwloadTask := dlTask.(*task.DonwloadTask)
-			for k := range donwloadTask.SliceInfo {
-				key := target.WalletAddress + k
+			downloadTask := dlTask.(*task.DownloadTask)
+			for k := range downloadTask.SliceInfo {
+				key := target.P2PAddress + k
 				if c, ok := client.DownloadPassageway.Load(key); ok {
 					conn := c.(*cf.ClientConn)
 					conn.ClientClose()
@@ -320,7 +321,7 @@ func ReqDownloadSlicePause(ctx context.Context, conn spbf.WriteCloser) {
 				client.DownloadPassageway.Delete(key)
 			}
 		}
-		task.DownloadTaskMap.Delete((target.FileHash + target.WalletAddress))
+		task.DownloadTaskMap.Delete(target.FileHash + target.WalletAddress)
 	}
 }
 

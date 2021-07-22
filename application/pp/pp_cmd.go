@@ -1,16 +1,14 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
-	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/sp/storages/table"
 
 	"github.com/stratosnet/sds/msg/protos"
@@ -20,17 +18,22 @@ import (
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/websocket"
-	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
 )
 
 func main() {
-	// setConfig()
-	helpStr := "\nhelp                       show all the commands\n" +
-		"accounts                            acquire all wallet accounts’ address\n" +
-		"newaccount ->password               create new account\n" +
-		"login account ->password            unlock and log in account \n" +
+	err := setup()
+	if err != nil {
+		utils.ErrorLog("Couldn't setup PP node", err)
+		return
+	}
+
+	helpStr := "\n" +
+		"help                                show all the commands\n" +
+		"wallets                             acquire all wallet wallets' address\n" +
+		"newwallet ->password                create new wallet\n" +
+		"login walletAddress ->password      unlock and log in wallet \n" +
 		"registerminer                       apply to be PP miner\n" +
 		"activate                            send transaction to stratos-chain to become an active PP node\n" +
 		"deactivate                          send transaction to stratos-chain to stop being a PP node\n" +
@@ -45,29 +48,21 @@ func main() {
 		"monitor                             show monitor\n" +
 		"stopmonitor                         stop monitor\n" +
 		"config                              config key value"
-
-	setting.LoadConfig("./configs/config.yaml")
-	if setting.Config.Debug {
-		utils.MyLogger.SetLogLevel(utils.Debug)
-	} else {
-		utils.MyLogger.SetLogLevel(utils.Error)
-	}
-	peers.GetNetworkAddress()
 	fmt.Println(helpStr)
-
-	stratoschain.Url = "http://" + setting.Config.StratosChainAddress + ":" + setting.Config.StratosChainPort
 
 	help := func(line string, param []string) bool {
 		fmt.Println(helpStr)
 		return true
 	}
-	accounts := func(line string, param []string) bool {
-		peers.Accounts()
+
+	wallets := func(line string, param []string) bool {
+		peers.Wallets()
 		return true
 	}
-	newAccount := func(line string, param []string) bool {
+
+	newWallet := func(line string, param []string) bool {
 		if len(param) < 2 {
-			fmt.Println("Not enough arguments. Please provide the new account name and hdPath")
+			fmt.Println("Not enough arguments. Please provide the new wallet name and hdPath")
 			return false
 		}
 
@@ -80,17 +75,17 @@ func main() {
 		mnemonic := console.MyGetPassword("input bip39 mnemonic (leave blank to generate a new one)", false)
 		passphrase := console.MyGetPassword("input bip39 passphrase", false)
 
-		peers.CreateAccount(password, param[0], mnemonic, passphrase, param[1])
+		peers.CreateWallet(password, param[0], mnemonic, passphrase, param[1])
 		return true
 	}
 
 	login := func(line string, param []string) bool {
 		if len(param) < 1 {
-			fmt.Println("input account")
+			fmt.Println("input wallet address")
 			return false
 		}
 		if len(param[0]) != 41 {
-			fmt.Println("input correct account")
+			fmt.Println("input correct wallet address")
 			return false
 		}
 		password := console.MyGetPassword("input password", false)
@@ -168,6 +163,30 @@ func main() {
 		}
 
 		return event.Deactivate(fee, gas) == nil
+	}
+
+	prepay := func(line string, param []string) bool {
+		if len(param) < 3 {
+			fmt.Println("Expecting 3 params. Input amount of tokens, fee amount and gas amount")
+			return false
+		}
+		amount, err := strconv.ParseInt(param[0], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid amount param. Should be an integer")
+			return false
+		}
+		fee, err := strconv.ParseInt(param[1], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid fee param. Should be an integer")
+			return false
+		}
+		gas, err := strconv.ParseInt(param[2], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid gas param. Should be an integer")
+			return false
+		}
+
+		return event.Prepay(amount, fee, gas) == nil
 	}
 
 	upload := func(line string, param []string) bool {
@@ -291,12 +310,13 @@ func main() {
 
 	savefile := func(line string, param []string) bool {
 		if len(param) < 2 {
-			fmt.Println("input file hash and account address")
+			fmt.Println("input file hash and wallet address")
 			return false
 		}
 		event.SaveOthersFile(param[0], param[1], "", nil)
 		return true
 	}
+
 	sharepath := func(line string, param []string) bool {
 		if len(param) < 3 {
 			fmt.Println("input file hash and directory path, expire time(0 for non-expire), is private (0:public,1:private)")
@@ -355,6 +375,7 @@ func main() {
 		event.GetAllShareLink("", nil)
 		return true
 	}
+
 	cancelshare := func(line string, param []string) bool {
 		if len(param) < 1 {
 			fmt.Println("input share id")
@@ -363,6 +384,7 @@ func main() {
 		event.DeleteShare(param[0], "", nil)
 		return true
 	}
+
 	getsharefile := func(line string, param []string) bool {
 		if len(param) < 1 {
 			fmt.Println("input share link and retrieval secret key(if any)")
@@ -385,6 +407,7 @@ func main() {
 		event.DownloadSlicePause(param[0], "", nil)
 		return true
 	}
+
 	pauseput := func(line string, param []string) bool {
 		if len(param) < 1 {
 			fmt.Println("input file hash of the pause")
@@ -393,6 +416,7 @@ func main() {
 		event.UploadPause(param[0], "", nil)
 		return true
 	}
+
 	cancelget := func(line string, param []string) bool {
 		if len(param) < 1 {
 			fmt.Println("input file hash of the cancel")
@@ -466,17 +490,19 @@ func main() {
 		event.Invite(param[0], "", nil)
 		return true
 	}
+
 	reward := func(line string, param []string) bool {
 		event.GetReward("", nil)
 		return true
 	}
 
 	if setting.Config.AutoRun {
-		AutoStart(setting.Config.Account, setting.Config.Password)
+		AutoStart(setting.Config.WalletAddress, setting.Config.WalletPassword)
 	}
+
 	if setting.Config.IsWallet {
 		go api.StartHTTPServ()
-		peers.Login(setting.Config.Account, setting.Config.Password)
+		peers.Login(setting.Config.WalletAddress, setting.Config.WalletPassword)
 		// setting.ShowMonitor()
 		go func() {
 			netListen, err := net.Listen("tcp4", ":1203")
@@ -504,16 +530,18 @@ func main() {
 			}
 		}()
 	}
+
 	console.Mystdin.RegisterProcessFunc("help", help)
 	console.Mystdin.RegisterProcessFunc("h", help)
-	console.Mystdin.RegisterProcessFunc("accounts", accounts)
-	console.Mystdin.RegisterProcessFunc("newaccount", newAccount)
+	console.Mystdin.RegisterProcessFunc("wallets", wallets)
+	console.Mystdin.RegisterProcessFunc("newwallet", newWallet)
 	console.Mystdin.RegisterProcessFunc("login", login)
 	console.Mystdin.RegisterProcessFunc("start", start)
 	console.Mystdin.RegisterProcessFunc("rp", registerPP)
 	console.Mystdin.RegisterProcessFunc("registerminer", registerPP)
 	console.Mystdin.RegisterProcessFunc("activate", activate)
 	console.Mystdin.RegisterProcessFunc("deactivate", deactivate)
+	console.Mystdin.RegisterProcessFunc("prepay", prepay)
 	console.Mystdin.RegisterProcessFunc("u", upload)
 	console.Mystdin.RegisterProcessFunc("put", upload)
 	console.Mystdin.RegisterProcessFunc("putstream", uploadStream)
@@ -553,7 +581,19 @@ func main() {
 	console.Mystdin.RegisterProcessFunc("reward", reward)
 
 	console.Mystdin.Run()
+}
 
+func setup() error {
+	setting.LoadConfig("./configs/config.yaml")
+	if setting.Config.Debug {
+		utils.MyLogger.SetLogLevel(utils.Debug)
+	} else {
+		utils.MyLogger.SetLogLevel(utils.Error)
+	}
+
+	peers.GetNetworkAddress()
+	stratoschain.Url = "http://" + setting.Config.StratosChainAddress + ":" + setting.Config.StratosChainPort
+	return setting.SetupP2PKey()
 }
 
 // AutoStart
@@ -564,54 +604,4 @@ func AutoStart(account, password string) {
 	}
 	setting.IsAuto = true
 	peers.Login(account, password)
-}
-
-func setConfig() {
-
-	setting.LoadConfig("./config.yaml")
-	setting.WalletAddress = peers.CreateAccount(setting.Config.Password, "", "", "", "")
-	str := "Account: " + setting.WalletAddress
-	writerConfig(str)
-
-	resp, err1 := http.Get("http://ip.taobao.com/service/getIpInfo.php?ip=myip")
-
-	if err1 != nil {
-		utils.ErrorLog(err1)
-	}
-	defer resp.Body.Close()
-	content, _ := ioutil.ReadAll(resp.Body)
-	jsonStr := string(content)
-	ipString := ""
-	var dat map[string]interface{}
-	if err := json.Unmarshal([]byte(jsonStr), &dat); err == nil {
-		dataJs := dat["data"]
-		mm := dataJs.(map[string]interface{})
-		ipS := mm["ip"]
-		ipString = ipS.(string)
-		setting.NetworkAddress = ipString
-		setting.Config.NetworkAddress = ipString
-		netStr := "NetworkAddress: " + ipString
-		writerConfig("\n" + netStr)
-	}
-	st()
-
-}
-
-func st() {
-	for {
-		if setting.Config.NetworkAddress != "" && setting.WalletAddress != "" {
-			utils.DebugLog("setting.Config.NetworkAddress == ", setting.Config.NetworkAddress)
-			utils.DebugLog("setting.WalletAddress == ", setting.WalletAddress)
-			break
-		}
-	}
-}
-
-func writerConfig(str string) {
-	configOS, err := os.OpenFile("./config.yaml", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
-	defer configOS.Close()
-	if err != nil {
-		utils.ErrorLog("failed to open config file:", err)
-	}
-	configOS.WriteString("\n" + str)
 }
