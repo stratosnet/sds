@@ -57,7 +57,7 @@ func (e *File) Slice(params map[string]interface{}, r *http.Request) ([]map[stri
 		}
 
 		res, err := e.GetAPIServer().DB.FetchTables([]FileSliceGroup{}, map[string]interface{}{
-			"columns": "*, group_concat(wallet_address, '@', network_address) as store",
+			"columns": "*, group_concat(p2p_address, '@', network_address) as store",
 			"where": map[string]interface{}{
 				"file_hash = ?": fileHash,
 			},

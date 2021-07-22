@@ -2,12 +2,11 @@ package setting
 
 import (
 	"encoding/csv"
+	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/sp/storages/table"
+	"github.com/stratosnet/sds/utils"
 	"os"
 	"sync"
-
-	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/utils"
 )
 
 // IsPP
@@ -28,23 +27,28 @@ var IsAuto = false
 // WalletAddress
 var WalletAddress string
 
+// WalletPublicKey Public key in uncompressed format
+var WalletPublicKey []byte
+
+// WalletPrivateKey
+var WalletPrivateKey []byte
+
 // NetworkAddress
 var NetworkAddress string
 
-// PublicKey
-var PublicKey []byte
+// P2PAddress
+var P2PAddress string
 
-// PrivateKey
-var PrivateKey []byte
+// P2PPublicKey
+var P2PPublicKey []byte
+
+// P2PPrivateKey
+var P2PPrivateKey []byte
 
 // PPList
 var PPList []*protos.PPBaseInfo
 
 var rwmutex sync.RWMutex
-
-var TestDownload = false
-
-var TestUpload = false
 
 // GetLocalPPList
 func GetLocalPPList() []*protos.PPBaseInfo {
@@ -66,7 +70,7 @@ func GetLocalPPList() []*protos.PPBaseInfo {
 		for _, item := range record {
 			pp := protos.PPBaseInfo{
 				NetworkAddress: item[0],
-				WalletAddress:  item[1],
+				P2PAddress:     item[1],
 			}
 			PPList = append(PPList, &pp)
 		}
@@ -102,7 +106,7 @@ func savePPListLocal() {
 	writer := csv.NewWriter(csvFile)
 	utils.DebugLog("PPList len", len(PPList))
 	for _, post := range PPList {
-		line := []string{post.NetworkAddress, post.WalletAddress}
+		line := []string{post.NetworkAddress, post.P2PAddress}
 		err = writer.Write(line)
 		if err != nil {
 			utils.ErrorLog("csv line ", err)

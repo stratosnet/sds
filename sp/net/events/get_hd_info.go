@@ -24,7 +24,7 @@ func GetHDInfoHandler(s *net.Server) EventHandleFunc {
 func getHdInfoCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
 	body := message.(*protos.RspGetHDInfo)
 
-	user := &table.User{WalletAddress: body.WalletAddress}
+	user := &table.User{P2pAddress: body.P2PAddress}
 
 	if s.CT.Fetch(user) != nil {
 		return nil, ""
@@ -40,7 +40,7 @@ func getHdInfoCallbackFunc(_ context.Context, s *net.Server, message proto.Messa
 		return nil, ""
 	}
 
-	pp := &table.PP{WalletAddress: body.WalletAddress}
+	pp := &table.PP{P2pAddress: body.P2PAddress}
 
 	if s.CT.Fetch(pp) == nil {
 		return nil, ""
@@ -56,7 +56,7 @@ func getHdInfoCallbackFunc(_ context.Context, s *net.Server, message proto.Messa
 	if float32(body.DiskSize-body.DiskFree)/float32(body.DiskSize) > s.Conf.Peers.ProvideDiskScale {
 
 		// if over sized, removed from hashring, don't assign task anymore
-		s.HashRing.SetOffline(body.WalletAddress)
+		s.HashRing.SetOffline(body.P2PAddress)
 
 		// todo: disk clean or file re-allocation?
 	}

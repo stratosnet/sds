@@ -49,8 +49,9 @@ enum MsgType {
 
 
 message PPBaseInfo {
-     string wallet_address = 1;
-     string network_address = 2;
+     string p2p_address = 1;
+     string wallet_address = 2;
+     string network_address = 3;
 }
 
 
@@ -89,8 +90,9 @@ message SliceOffset {
 message FileIndexes{
     //  string file_hash = 1; // file hash
     string file_path = 1; //  spb://accunt/fileHash|fileName
-    string wallet_address = 2;
-    string save_path = 3;
+    string p2p_address = 2;
+    string wallet_address = 3;
+    string save_path = 4;
 }
 
 message DownloadSliceInfo {

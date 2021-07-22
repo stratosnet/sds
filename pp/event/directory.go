@@ -32,7 +32,7 @@ func RspFindDirectory(ctx context.Context, conn spbf.WriteCloser) {
 	utils.DebugLog("RspFindDirectory")
 	var target protos.RspFindDirectory
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			putData(target.ReqId, HTTPGetAllDirectory, &target)
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				if len(target.FileInfo) == 0 {
@@ -56,7 +56,7 @@ func RspFindDirectory(ctx context.Context, conn spbf.WriteCloser) {
 				fmt.Println(target.Result.Msg)
 			}
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 
 	}

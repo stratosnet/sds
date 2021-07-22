@@ -15,7 +15,9 @@ const (
 type FileSliceDownload struct {
 	Id                uint32
 	SliceHash         string
+	FromP2pAddress    string
 	FromWalletAddress string
+	ToP2pAddress      string
 	ToWalletAddress   string
 	TaskId            string
 	Status            byte

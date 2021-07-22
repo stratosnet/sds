@@ -33,13 +33,14 @@ func makeDirectoryCallbackFunc(_ context.Context, s *net.Server, message proto.M
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
+		P2PAddress:    body.P2PAddress,
 		WalletAddress: body.WalletAddress,
 		ReqId:         body.ReqId,
 	}
 
-	if body.WalletAddress == "" {
+	if body.P2PAddress == "" || body.WalletAddress == "" {
 		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "wallet address can't be empty"
+		rsp.Result.Msg = "P2P key address and wallet address can't be empty"
 		return rsp, header.RspMakeDirectory
 	}
 

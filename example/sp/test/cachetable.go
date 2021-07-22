@@ -30,7 +30,7 @@ func main() {
 
 	if ct.Fetch(file) != nil {
 
-		//file.Owner = &table.UserHasFile{
+		//file.OwnerWallet = &table.UserHasFile{
 		//	WalletAddress: "12345678",
 		//	FileHash:      file.Hash,
 		//}

@@ -51,7 +51,7 @@ func GenerateTaskID(mix string) string {
 }
 
 // LoadOrCreateAccount
-func LoadOrCreateAccount(path, pass string) string {
+func LoadOrCreateAccount(path, pass, addressPrefix string) string {
 
 	if path == "" && pass == "" {
 		utils.ErrorLog("missing privateKeyPath or privateKeyPass")
@@ -69,12 +69,18 @@ func LoadOrCreateAccount(path, pass string) string {
 	privKeyInStr, err := ioutil.ReadFile(path)
 	if err != nil {
 		keyPath := filepath.Dir(path)
-		account, err := utils.CreateAccount(keyPath, "", pass, "", "", "", "", 4096, 6)
+		wallet, err := utils.CreateWallet(keyPath, "", pass, "", "", "", "", 4096, 6)
 		if utils.CheckError(err) {
 			utils.ErrorLog("create account failed", err)
 			return ""
 		}
-		privKeyInStr, _ = ioutil.ReadFile(keyPath + "/" + account.String())
+
+		walletAddress, err := wallet.ToBech(addressPrefix)
+		if err != nil {
+			utils.ErrorLog("failed to convert wallet address to bech32 string", err)
+			return ""
+		}
+		privKeyInStr, _ = ioutil.ReadFile(filepath.Join(keyPath, walletAddress+".json"))
 	}
 
 	privKey, err := utils.DecryptKey(privKeyInStr, pass)

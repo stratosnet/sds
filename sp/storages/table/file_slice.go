@@ -66,8 +66,8 @@ func (f *FileSlice) SetData(data map[string]interface{}) (bool, error) {
 
 // GetCacheKey
 func (f *FileSlice) GetCacheKey() string {
-	if f.WalletAddress != "" {
-		return "file_slice#" + f.SliceHash + "-" + f.WalletAddress
+	if f.P2pAddress != "" {
+		return "file_slice#" + f.SliceHash + "-" + f.P2pAddress
 	}
 	return "file_slice#" + f.SliceHash
 }
@@ -79,7 +79,7 @@ func (f *FileSlice) GetTimeOut() time.Duration {
 
 // Where
 func (f *FileSlice) Where() map[string]interface{} {
-	if f.WalletAddress == "" {
+	if f.P2pAddress == "" {
 		where := map[string]interface{}{
 			"where": map[string]interface{}{
 				"slice_hash = ?": f.SliceHash,
@@ -90,13 +90,13 @@ func (f *FileSlice) Where() map[string]interface{} {
 
 	where := map[string]interface{}{
 		"alias":   "e",
-		"columns": "e.*, fss.wallet_address, fss.network_address",
+		"columns": "e.*, fss.p2p_address, fss.network_address",
 		"join": []string{
 			"file_slice_storage", "e.slice_hash = fss.slice_hash", "fss",
 		},
 		"where": map[string]interface{}{
-			"e.slice_hash = ? AND fss.wallet_address = ?": []interface{}{
-				f.SliceHash, f.WalletAddress,
+			"e.slice_hash = ? AND fss.p2p_address = ?": []interface{}{
+				f.SliceHash, f.P2pAddress,
 			},
 		},
 	}
@@ -108,12 +108,12 @@ func (f *FileSlice) Where() map[string]interface{} {
 func (f *FileSlice) Event(event int, dt *database.DataTable) {
 	switch event {
 	case database.AFTER_INSERT:
-		if f.WalletAddress != "" && f.SliceHash != "" {
-			dt.StoreTable(&FileSliceStorage{SliceHash: f.SliceHash, WalletAddress: f.WalletAddress, NetworkAddress: f.NetworkAddress})
+		if f.P2pAddress != "" && f.SliceHash != "" {
+			dt.StoreTable(&FileSliceStorage{SliceHash: f.SliceHash, P2pAddress: f.P2pAddress, NetworkAddress: f.NetworkAddress})
 		}
 	case database.BEFORE_DELETE:
-		if f.WalletAddress != "" && f.SliceHash != "" {
-			dt.DeleteTable(&FileSliceStorage{SliceHash: f.SliceHash, WalletAddress: f.WalletAddress, NetworkAddress: f.NetworkAddress})
+		if f.P2pAddress != "" && f.SliceHash != "" {
+			dt.DeleteTable(&FileSliceStorage{SliceHash: f.SliceHash, P2pAddress: f.P2pAddress, NetworkAddress: f.NetworkAddress})
 		}
 	}
 }

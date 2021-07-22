@@ -32,15 +32,16 @@ func findDirTreeCallbackFunc(_ context.Context, s *net.Server, message proto.Mes
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
+		P2PAddress:    body.P2PAddress,
 		WalletAddress: body.WalletAddress,
 		ReqId:         body.ReqId,
 		Directory:     "",
 		FileInfo:      nil,
 	}
 
-	if body.WalletAddress == "" || body.PathHash == "" {
+	if body.P2PAddress == "" || body.WalletAddress == "" || body.PathHash == "" {
 		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "wallet address or path hash can't be empty"
+		rsp.Result.Msg = "P2P key address, wallet address and path hash can't be empty"
 		return rsp, header.RspFindDirectoryTree
 	}
 

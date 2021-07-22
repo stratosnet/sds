@@ -31,7 +31,7 @@ func ReqInvite(ctx context.Context, conn spbf.WriteCloser) {
 func RspInvite(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspInvite
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
 				fmt.Println("added capacity: ", target.CapacityDelta)
@@ -41,7 +41,7 @@ func RspInvite(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPInvite, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }
@@ -66,7 +66,7 @@ func RspGetReward(ctx context.Context, conn spbf.WriteCloser) {
 	utils.DebugLog("RspGetReward>>>>>>>>>>>>>>>>>>>")
 	var target protos.RspGetReward
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
 				fmt.Println("current capacity: ", target.CurrentCapacity)
@@ -75,7 +75,7 @@ func RspGetReward(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPReward, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }

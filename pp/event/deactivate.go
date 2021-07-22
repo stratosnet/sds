@@ -18,7 +18,7 @@ func Deactivate(fee, gas int64) error {
 		utils.ErrorLog("Couldn't build PP deactivate request: " + err.Error())
 		return err
 	}
-	fmt.Println("Sending deactivate message to SP! " + deactivateReq.WalletAddress)
+	fmt.Println("Sending deactivate message to SP! " + deactivateReq.P2PAddress)
 	SendMessageToSPServer(deactivateReq, header.ReqDeactivate)
 	return nil
 }
@@ -48,4 +48,5 @@ func RspDeactivate(ctx context.Context, conn spbf.WriteCloser) {
 // RspActivated. Response when this PP node was successfully activated
 func RspDeactivated(ctx context.Context, conn spbf.WriteCloser) {
 	setting.State = table.PP_INACTIVE
+	fmt.Println("This PP node is now inactive")
 }

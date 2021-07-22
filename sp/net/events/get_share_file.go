@@ -33,6 +33,7 @@ func getShareFileCallbackFunc(_ context.Context, s *net.Server, message proto.Me
 			Msg:   "request success",
 		},
 		ReqId:         body.ReqId,
+		P2PAddress:    body.P2PAddress,
 		WalletAddress: body.WalletAddress,
 		FileInfo:      nil,
 		IsPrivate:     false,
@@ -44,9 +45,9 @@ func getShareFileCallbackFunc(_ context.Context, s *net.Server, message proto.Me
 		return rsp, header.RspGetShareFile
 	}
 
-	if body.WalletAddress == "" {
+	if body.P2PAddress == "" {
 		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "wallet address can't be empty"
+		rsp.Result.Msg = "P2P key address can't be empty"
 		return rsp, header.RspGetShareFile
 	}
 
@@ -64,7 +65,7 @@ func getShareFileCallbackFunc(_ context.Context, s *net.Server, message proto.Me
 
 	} else if len(body.Keyword) == 42 {
 
-		files, err := getWalletAddressFiles(s, body.Keyword)
+		files, err := getP2PAddressFiles(s, body.Keyword)
 		if err != nil {
 			rsp.Result.State = protos.ResultState_RES_FAIL
 			rsp.Result.Msg = err.Error()
@@ -181,8 +182,8 @@ func getFileFromServer(s *net.Server, fileHash string) (*protos.FileInfo, error)
 
 }
 
-func getWalletAddressFiles(s *net.Server, walletAddress string) ([]*protos.FileInfo, error) {
-	user := &table.User{WalletAddress: walletAddress}
+func getP2PAddressFiles(s *net.Server, p2pAddress string) ([]*protos.FileInfo, error) {
+	user := &table.User{P2pAddress: p2pAddress}
 	fileInfos := user.GetShareDirs(s.CT)
 	files := user.GetShareFiles(s.CT)
 	if len(files) > 0 {

@@ -57,8 +57,8 @@ func downloadTaskInfoCallbackFunc(_ context.Context, s *net.Server, message prot
 	rsp.TaskId = task.TaskId
 	rsp.SliceHash = task.SliceHash
 	rsp.SliceSize = task.SliceSize
-	rsp.StorageWalletAddress = task.StorageWalletAddress
-	rsp.WalletAddressList = task.WalletAddressList
+	rsp.StorageP2PAddress = task.StorageP2PAddress
+	rsp.P2PAddressList = task.P2PAddressList
 	rsp.SliceNumber = task.SliceNumber
 	rsp.Time = uint64(time.Now().Unix())
 

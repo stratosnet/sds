@@ -7,6 +7,7 @@ require (
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/alex023/clock v0.0.0-20191208111215-c265f1b2ab18
 	github.com/btcsuite/btcd v0.20.1-beta
+	github.com/btcsuite/btcutil v1.0.2 // indirect
 	github.com/cosmos/cosmos-sdk v0.39.2
 	github.com/cosmos/go-bip39 v1.0.0
 	github.com/go-ole/go-ole v1.2.5 // indirect
@@ -23,7 +24,7 @@ require (
 	github.com/pborman/uuid v1.2.1
 	github.com/peterh/liner v1.2.1
 	github.com/shirou/gopsutil v3.20.12+incompatible
-	github.com/tendermint/classic v0.0.0-20201012085102-0a11024b2668
+	github.com/stratosnet/stratos-chain v0.3.0
 	github.com/tendermint/tendermint v0.33.9
 	github.com/testcontainers/testcontainers-go v0.10.0
 	github.com/vmihailenco/msgpack v4.0.4+incompatible

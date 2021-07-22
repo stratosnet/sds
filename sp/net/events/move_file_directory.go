@@ -32,20 +32,21 @@ func moveFileDirCallbackFunc(_ context.Context, s *net.Server, message proto.Mes
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
+		P2PAddress:    body.P2PAddress,
 		WalletAddress: body.WalletAddress,
 		ReqId:         body.ReqId,
 		FilePath:      "",
 	}
 
-	if body.WalletAddress == "" || body.FileHash == "" {
+	if body.P2PAddress == "" || body.WalletAddress == "" || body.FileHash == "" {
 		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "wallet address or  file hash can't be empty"
+		rsp.Result.Msg = "P2P key address, wallet address and file hash can't be empty"
 		return rsp, header.RspMoveFileDirectory
 	}
 
 	if body.DirectoryOriginal == body.DirectoryTarget {
 		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "target directory can't be original"
+		rsp.Result.Msg = "target directory can't be the same as the original one"
 		return rsp, header.RspMoveFileDirectory
 	}
 
@@ -114,9 +115,9 @@ func moveFileDirCallbackFunc(_ context.Context, s *net.Server, message proto.Mes
 	// if original directory is empty, then move from root directory to target
 	if body.DirectoryOriginal == "" || body.DirectoryTarget != "" {
 		fileMap := &table.UserDirectoryMapFile{
-			DirHash:  desDir.DirHash,
-			FileHash: file.Hash,
-			Owner:    body.WalletAddress,
+			DirHash:     desDir.DirHash,
+			FileHash:    file.Hash,
+			OwnerWallet: body.WalletAddress,
 		}
 		if _, err := s.CT.StoreTable(fileMap); err != nil {
 			rsp.Result.State = protos.ResultState_RES_FAIL

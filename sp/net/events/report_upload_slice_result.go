@@ -2,19 +2,24 @@ package events
 
 import (
 	"context"
+	"crypto/ed25519"
 	"encoding/hex"
 	"path/filepath"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/relay/sds"
+	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/sp/common"
 	"github.com/stratosnet/sds/sp/net"
 	"github.com/stratosnet/sds/sp/storages/data"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
+	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
 
 // reportUploadSliceResult is a concrete implementation of event
@@ -40,6 +45,7 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 		},
 		SliceNumAddr: &protos.SliceNumAddr{
 			PpInfo: &protos.PPBaseInfo{
+				P2PAddress:     body.SliceNumAddr.PpInfo.P2PAddress,
 				WalletAddress:  body.SliceNumAddr.PpInfo.WalletAddress,
 				NetworkAddress: body.SliceNumAddr.PpInfo.NetworkAddress,
 			},
@@ -55,7 +61,7 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 
 	fileSlice := &table.FileSlice{
 		FileSliceStorage: table.FileSliceStorage{
-			WalletAddress: body.SliceNumAddr.PpInfo.WalletAddress,
+			P2pAddress: body.SliceNumAddr.PpInfo.P2PAddress,
 		},
 		SliceHash: body.SliceHash,
 		TaskId:    body.TaskId,
@@ -80,7 +86,7 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 		if fileSlice.SliceSize != body.SliceSize ||
 			fileSlice.SliceNumber != body.SliceNumAddr.SliceNumber ||
 			fileSlice.NetworkAddress != body.SliceNumAddr.PpInfo.NetworkAddress ||
-			fileSlice.WalletAddress != body.SliceNumAddr.PpInfo.WalletAddress ||
+			fileSlice.P2pAddress != body.SliceNumAddr.PpInfo.P2PAddress ||
 			fileSlice.FileHash != body.FileHash {
 
 			rsp.Result.Msg = "report result validate failed"
@@ -103,13 +109,14 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 		fileSlice.SliceNumber = body.SliceNumAddr.SliceNumber
 		fileSlice.SliceOffsetStart = body.SliceNumAddr.SliceOffset.SliceOffsetStart
 		fileSlice.SliceOffsetEnd = body.SliceNumAddr.SliceOffset.SliceOffsetEnd
-		fileSlice.WalletAddress = body.SliceNumAddr.PpInfo.WalletAddress
+		fileSlice.P2pAddress = body.SliceNumAddr.PpInfo.P2PAddress
 		fileSlice.NetworkAddress = body.SliceNumAddr.PpInfo.NetworkAddress
 		fileSlice.Status = table.FILE_SLICE_STATUS_CHECK
 		fileSlice.Time = time.Now().Unix()
 	}
 
 	s.Load(traffic)
+	// TODO: confirm this logic in QB-475
 	if body.IsPP {
 		traffic.ProviderWalletAddress = body.WalletAddress
 	} else {
@@ -190,7 +197,7 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 					dirMapFile.Path = uploadFile.FilePath
 					dirMapFile.FileHash = file.Hash
 					dirMapFile.DirHash = dirMapFile.GenericHash()
-					dirMapFile.Owner = uploadFile.WalletAddress
+					dirMapFile.OwnerWallet = uploadFile.WalletAddress
 					if _, err := s.CT.InsertTable(dirMapFile); err != nil {
 						utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "insert dir map", err)
 					}
@@ -200,13 +207,21 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 			if err := s.Remove(uploadFile.GetCacheKey()); err != nil {
 				utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "remove upload file", err)
 			}
+
+			// Broadcast file upload transaction
+			err := broadcastFileUploadTx(file, s)
+			if err != nil {
+				rsp.Result.State = protos.ResultState_RES_FAIL
+				rsp.Result.Msg = "couldn't broadcast file upload tx: " + err.Error()
+				return rsp, header.RspReportUploadSliceResult
+			}
 		}
 	}
 
 	// if upload finish, started backup
 	backupSliceMsg := &common.MsgBackupSlice{
-		SliceHash:         fileSlice.SliceHash,
-		FromWalletAddress: fileSlice.WalletAddress,
+		SliceHash:      fileSlice.SliceHash,
+		FromP2PAddress: fileSlice.P2pAddress,
 	}
 	s.HandleMsg(backupSliceMsg)
 
@@ -227,7 +242,7 @@ func (e *reportUploadSliceResult) Handle(ctx context.Context, conn spbf.WriteClo
 func validateReportUploadSliceResultRequest(req *protos.ReportUploadSliceResult, s *net.Server) (bool, string) {
 
 	if req.FileHash == "" || req.SliceHash == "" || req.SliceNumAddr.SliceNumber <= 0 ||
-		req.SliceNumAddr.PpInfo.WalletAddress == "" || req.SliceNumAddr.PpInfo.NetworkAddress == "" {
+		req.SliceNumAddr.PpInfo.P2PAddress == "" || req.SliceNumAddr.PpInfo.NetworkAddress == "" {
 		return false, "slice info invalid"
 	}
 
@@ -235,15 +250,15 @@ func validateReportUploadSliceResultRequest(req *protos.ReportUploadSliceResult,
 		return false, "task ID can't be empty"
 	}
 
-	if req.WalletAddress == "" {
-		return false, "wallet address can't be empty"
+	if req.P2PAddress == "" {
+		return false, "P2P key address can't be empty"
 	}
 
 	if len(req.Sign) <= 0 {
 		return false, "signature can't be empty"
 	}
 
-	user := &table.User{WalletAddress: req.WalletAddress}
+	user := &table.User{P2pAddress: req.P2PAddress}
 	if s.CT.Fetch(user) != nil {
 		return false, "not authorized to process"
 	}
@@ -253,10 +268,46 @@ func validateReportUploadSliceResultRequest(req *protos.ReportUploadSliceResult,
 		return false, err.Error()
 	}
 
-	d := req.WalletAddress + req.FileHash
-	if !utils.ECCVerifyBytes([]byte(d), req.Sign, puk) {
+	d := req.P2PAddress + req.FileHash
+	if !ed25519.Verify(puk, []byte(d), req.Sign) {
 		return false, "signature verification failed"
 	}
 
 	return true, ""
+}
+
+func broadcastFileUploadTx(file *table.File, s *net.Server) error {
+	fileHash, err := hex.DecodeString(file.Hash)
+	if err != nil {
+		return err
+	}
+
+	spPubKey := s.WalletPrivateKey.PubKey()
+	spPrivKey := s.WalletPrivateKey.(secp256k1.PrivKeySecp256k1)
+	ppWalletAddress, err := types.AccAddressFromBech32(file.WalletAddress)
+	if err != nil {
+		return err
+	}
+
+	spWalletAddress := spPubKey.Address()
+	spWalletAddressString := types.AccAddress(spPubKey.Address()).String()
+	txMsg := stratoschain.BuildFileUploadMsg(fileHash, spWalletAddress, ppWalletAddress)
+	txBytes, err := stratoschain.BuildTxBytes(s.Conf.BlockchainInfo.Token, s.Conf.BlockchainInfo.ChainId, "",
+		spWalletAddressString, "sync", txMsg, s.Conf.BlockchainInfo.Transactions.Fee,
+		s.Conf.BlockchainInfo.Transactions.Gas, spPrivKey[:])
+	if err != nil {
+		return err
+	}
+
+	relayMsg := &protos.RelayMessage{
+		Type: sds.TypeBroadcast,
+		Data: txBytes,
+	}
+	msgBytes, err := proto.Marshal(relayMsg)
+	if err != nil {
+		return err
+	}
+
+	s.SubscriptionServer.Broadcast("broadcast", msgBytes)
+	return nil
 }

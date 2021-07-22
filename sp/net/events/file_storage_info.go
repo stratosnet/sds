@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"crypto/ed25519"
 	"encoding/hex"
 	"errors"
 	"time"
@@ -41,6 +42,7 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
+		P2PAddress:    body.FileIndexes.P2PAddress,
 		WalletAddress: body.FileIndexes.WalletAddress,
 		ReqId:         body.ReqId,
 		SavePath:      body.FileIndexes.SavePath,
@@ -79,7 +81,7 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 
 	res, err := s.CT.FetchTables([]table.FileSlice{}, map[string]interface{}{
 		"alias":   "e",
-		"columns": "e.*, fss.wallet_address, fss.network_address",
+		"columns": "e.*, fss.p2p_address, fss.network_address",
 		"where":   map[string]interface{}{"e.file_hash = ?": fileHash},
 		"join":    []string{"file_slice_storage", "e.slice_hash = fss.slice_hash", "fss", "left"},
 		"orderBy": "e.slice_number ASC",
@@ -98,8 +100,8 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 		return rsp, header.RspFileStorageInfo
 	}
 
-	transferWalletAddress := s.Who(conn.(*spbf.ServerConn).GetName())
-	if transferWalletAddress == "" {
+	transferP2PAddress := s.Who(conn.(*spbf.ServerConn).GetName())
+	if transferP2PAddress == "" {
 		rsp.Result.Msg = "not miner"
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		return rsp, header.RspFileStorageInfo
@@ -129,7 +131,7 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 	}
 
 	for _, row := range fileSlices {
-		node := &hashring.Node{ID: row.WalletAddress, Host: row.NetworkAddress}
+		node := &hashring.Node{ID: row.P2pAddress, Host: row.NetworkAddress}
 		if s.HashRing.IsOnline(node.ID) {
 			storageRing[row.SliceHash].AddNode(node)
 			storageRing[row.SliceHash].SetOnline(node.ID)
@@ -157,7 +159,7 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 				SliceHash: row.SliceHash,
 			},
 			StoragePpInfo: &protos.PPBaseInfo{
-				WalletAddress:  node.ID,
+				P2PAddress:     node.ID,
 				NetworkAddress: node.Host,
 			},
 			SliceOffset: &protos.SliceOffset{
@@ -170,17 +172,17 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 		sliceInfo = append(sliceInfo, si)
 
 		task := &data.DownloadTask{
-			TaskId:               si.TaskId,
-			SliceHash:            row.SliceHash,
-			SliceSize:            row.SliceSize,
-			StorageWalletAddress: node.ID,
-			SliceNumber:          row.SliceNumber,
-			Time:                 uint64(time.Now().Unix()),
-			WalletAddressList: []string{
-				body.FileIndexes.WalletAddress, // download node
-				transferWalletAddress,          // transfer node
-				node.ID,                        // storage node
-				//row.WalletAddress,              // storage node wallet
+			TaskId:            si.TaskId,
+			SliceHash:         row.SliceHash,
+			SliceSize:         row.SliceSize,
+			StorageP2PAddress: node.ID,
+			SliceNumber:       row.SliceNumber,
+			Time:              uint64(time.Now().Unix()),
+			P2PAddressList: []string{
+				body.FileIndexes.P2PAddress, // download node
+				transferP2PAddress,          // transfer node
+				node.ID,                     // storage node
+				//row.WalletAddress,            // storage node wallet
 			},
 		}
 
@@ -219,8 +221,8 @@ func validateFileStorageInfoRequest(s *net.Server, req *protos.ReqFileStorageInf
 		return
 	}
 
-	if req.FileIndexes.WalletAddress == "" {
-		err = errors.New("wallet address can't be empty")
+	if req.FileIndexes.P2PAddress == "" || req.FileIndexes.WalletAddress == "" {
+		err = errors.New("P2P key address and wallet address can't be empty")
 		return
 	}
 
@@ -238,7 +240,7 @@ func validateFileStorageInfoRequest(s *net.Server, req *protos.ReqFileStorageInf
 		return
 	}
 
-	user := &table.User{WalletAddress: req.FileIndexes.WalletAddress}
+	user := &table.User{P2pAddress: req.FileIndexes.P2PAddress}
 	if s.CT.Fetch(user) != nil {
 		err = errors.New("not authorized to process")
 		return
@@ -249,8 +251,8 @@ func validateFileStorageInfoRequest(s *net.Server, req *protos.ReqFileStorageInf
 		return
 	}
 
-	d := req.FileIndexes.WalletAddress + fileHash
-	if !utils.ECCVerifyBytes([]byte(d), req.Sign, puk) {
+	d := req.FileIndexes.P2PAddress + filePath
+	if !ed25519.Verify(puk, []byte(d), req.Sign) {
 		err = errors.New("signature verification failed")
 		return
 	}

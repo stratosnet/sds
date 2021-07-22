@@ -30,7 +30,7 @@ func deleteSliceCallbackFunc(ctx context.Context, s *net.Server, message proto.M
 	fileSlice := &table.FileSlice{
 		SliceHash: body.SliceHash,
 		FileSliceStorage: table.FileSliceStorage{
-			WalletAddress: body.WalletAddress,
+			P2pAddress: body.P2PAddress,
 		},
 	}
 

@@ -22,10 +22,10 @@ func ReqGetHDInfo(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.ReqGetHDInfo
 	if unmarshalData(ctx, &target) {
 
-		if setting.WalletAddress == target.WalletAddress {
+		if setting.P2PAddress == target.P2PAddress {
 			SendMessageToSPServer(rspGetHDInfoData(), header.RspGetHDInfo)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }
@@ -71,7 +71,7 @@ func ReqGetCapacity(ctx context.Context, conn spbf.WriteCloser) {
 func RspGetCapacity(ctx context.Context, conn spbf.WriteCloser) {
 	var target protos.RspGetCapacity
 	if unmarshalData(ctx, &target) {
-		if target.WalletAddress == setting.WalletAddress {
+		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
 			} else {
@@ -79,7 +79,7 @@ func RspGetCapacity(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPGetCapacity, &target)
 		} else {
-			transferSendMessageToClient(target.WalletAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
 		}
 	}
 }

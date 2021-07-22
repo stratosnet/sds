@@ -24,7 +24,7 @@ type MsgWrapper struct {
 }
 
 type MsgMining struct {
-	WalletAddress  string
+	P2PAddress     string
 	NetworkAddress string
 	Name           string
 	Puk            []byte
@@ -43,9 +43,9 @@ func (m *MsgLogout) GetType() uint32 {
 }
 
 type MsgTransferNotice struct {
-	SliceHash         string
-	FromWalletAddress string
-	ToWalletAddress   string
+	SliceHash      string
+	FromP2PAddress string
+	ToP2PAddress   string
 }
 
 func (m *MsgTransferNotice) GetType() uint32 {
@@ -53,8 +53,8 @@ func (m *MsgTransferNotice) GetType() uint32 {
 }
 
 type MsgBackupSlice struct {
-	SliceHash         string
-	FromWalletAddress string
+	SliceHash      string
+	FromP2PAddress string
 }
 
 func (m *MsgBackupSlice) GetType() uint32 {
@@ -62,7 +62,7 @@ func (m *MsgBackupSlice) GetType() uint32 {
 }
 
 type MsgBackupPP struct {
-	WalletAddress string
+	P2PAddress string
 }
 
 func (m *MsgBackupPP) GetType() uint32 {
@@ -70,8 +70,8 @@ func (m *MsgBackupPP) GetType() uint32 {
 }
 
 type MsgDeleteSlice struct {
-	WalletAddress string
-	SliceHash     string
+	P2PAddress string
+	SliceHash  string
 }
 
 func (m *MsgDeleteSlice) GetType() uint32 {

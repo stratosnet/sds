@@ -19,9 +19,9 @@ func createWallet(w http.ResponseWriter, request *http.Request) {
 	}
 	files, _ := ioutil.ReadDir(setting.Config.AccountDir)
 	password := ""
-	againPassWord := ""
+	againPassword := ""
 	exp1 := regexp.MustCompile(`^[A-Za-z0-9]{8,16}$`)
-	name := "Account" + strconv.Itoa(len(files))
+	name := "Wallet" + strconv.Itoa(len(files))
 	mnemonic := ""
 	passphrase := ""
 	hdPath := ""
@@ -32,7 +32,7 @@ func createWallet(w http.ResponseWriter, request *http.Request) {
 		return
 	}
 	if data["againPassword"] != nil {
-		againPassWord = data["againPassword"].(string)
+		againPassword = data["againPassword"].(string)
 	} else {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "password is required again for confirmation").ToBytes())
 		return
@@ -62,30 +62,30 @@ func createWallet(w http.ResponseWriter, request *http.Request) {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "8-16characters,include letter and number").ToBytes())
 		return
 	}
-	if password != againPassWord {
+	if password != againPassword {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "password doesn't match").ToBytes())
 		return
 	}
-	account, err := utils.CreateAccount(setting.Config.AccountDir, name, password, setting.Config.AddressPrefix,
+	walletAddress, err := utils.CreateWallet(setting.Config.AccountDir, name, password, setting.Config.AddressPrefix,
 		mnemonic, passphrase, hdPath, setting.Config.ScryptN, setting.Config.ScryptP)
 	if err != nil {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to create wallet").ToBytes())
 		return
 	}
-	accountString, err := account.ToBech(setting.Config.AddressPrefix)
+	walletAddressString, err := walletAddress.ToBech(setting.Config.AddressPrefix)
 	if err != nil {
-		w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to convert wallet address to string: "+err.Error()).ToBytes())
+		w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to convert wallet address to bech32 string").ToBytes())
 		return
 	}
 
 	data1 := walletInfo{
 		WalletInfo: walletList{
-			WalletAddress: accountString,
+			WalletAddress: walletAddressString,
 			Balance:       0,
 		},
 	}
 	utils.DebugLog("add", data1)
-	setting.WalletAddress = accountString
+	setting.WalletAddress = walletAddressString
 	peers.Login(setting.WalletAddress, password)
 	w.Write(httpserv.NewJson(data1, setting.SUCCESSCode, "create wallet successfully").ToBytes())
 }

@@ -30,7 +30,7 @@ message ReqRegister {
 
 message RspRegister {
   Result result = 1; // if register success or not
-  string wallet_address = 2;
+  string p2p_address = 2;
   bool   isPP = 3;
 }
 
@@ -63,28 +63,30 @@ message RspUploadFile {
   string req_id = 7;//
   string owner_wallet_address = 8;
   bool is_video_stream = 9;
-  uint64 video_slice_duration = 10;  
+  uint64 video_slice_duration = 10;
 }
 
 message ReqUploadFileSlice {
-  SliceNumAddr slice_num_addr = 1; //
-  uint32             file_crc = 2; //
-  SliceOffsetInfo    slice_info = 3; //
-  bytes              data = 4; //
-  string             file_hash = 5; //
-  string             wallet_address = 6; //
-  string             task_id = 7; //
-  uint64              slice_size = 8; //
+  SliceNumAddr    slice_num_addr = 1; //
+  uint32          file_crc = 2; //
+  SliceOffsetInfo slice_info = 3; //
+  bytes           data = 4; //
+  string          file_hash = 5; //
+  string          p2p_address = 6;
+  string          wallet_address = 7; //
+  string          task_id = 8; //
+  uint64          slice_size = 9; //
 }
 
 message RspUploadFileSlice {
-  Result result = 1; //
+  Result       result = 1; //
   SliceNumAddr slice_num_addr = 2; //
-  string file_hash = 3; //
-  string          slice_hash = 4; //
-  string             wallet_address = 5; //
-  uint64             slice_size = 6; //
-  string             task_id = 7; //
+  string       file_hash = 3; //
+  string       slice_hash = 4; //
+  string       p2p_address = 5;
+  string       wallet_address = 6; //
+  uint64       slice_size = 7; //
+  string       task_id = 8; //
 }
 
 
@@ -102,7 +104,8 @@ message ReportUploadSliceResult {
   uint64     slice_size = 6; //
   bytes      sign = 7;
   string     task_id = 8;
-  string     wallet_address = 9;
+  string     p2p_address = 9;
+  string     wallet_address = 10;
 }
 
 message RspReportUploadSliceResult {
@@ -110,38 +113,47 @@ message RspReportUploadSliceResult {
   SliceNumAddr slice_num_addr = 2;
 }
 
+message Uploaded {
+  string reporter_address = 1;
+  string uploader_address = 2;
+  string file_hash = 3;
+}
 
 
 message ReqFindMyFileList {
-  string wallet_address = 1;
-  string file_name = 2; // return all if file name is empty
-  string directory = 3; // return first level directory if left empty
-  string req_id = 4;//
-  FileSortType file_type = 5;
-  bool is_up = 6;
-  string keyword = 7;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string file_name = 3; // return all if file name is empty
+  string directory = 4; // return first level directory if left empty
+  string req_id = 5;//
+  FileSortType file_type = 6;
+  bool is_up = 7;
+  string keyword = 8;
 
 }
 
 message RspFindMyFileList {
   repeated FileInfo file_info = 1;
-  string wallet_address = 2;
-  string req_id = 3;//
-  Result result = 4;
+  string p2p_address = 2;
+  string wallet_address = 3;
+  string req_id = 4;//
+  Result result = 5;
 }
 
 message ReqFindDirectoryTree {
-  string wallet_address = 1;
-  string path_hash = 2;
-  string req_id = 3; //
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string path_hash = 3;
+  string req_id = 4; //
 }
 
 message RspFindDirectoryTree {
-  string wallet_address = 1;
-  string directory = 2;
-  repeated FileInfo file_info = 3;
-  string req_id = 4;
-  Result result = 5;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string directory = 3;
+  repeated FileInfo file_info = 4;
+  string req_id = 5;
+  Result result = 6;
 }
 
 //get file and download -----------------------------------
@@ -156,25 +168,27 @@ message ReqFileStorageInfo {
 
 message RspFileStorageInfo {
   string visit_cer = 1;
-  string wallet_address = 2;
-  repeated DownloadSliceInfo slice_info = 3;
-  string     file_hash = 4;
-  string     file_name = 5;
-  Result result = 6;
-  string req_id = 7;
-  string save_path = 8;
-  uint64 file_size = 9;
-  bool is_video_stream = 10;
+  string p2p_address = 2;
+  string wallet_address = 3;
+  repeated DownloadSliceInfo slice_info = 4;
+  string     file_hash = 5;
+  string     file_name = 6;
+  Result result = 7;
+  string req_id = 8;
+  string save_path = 9;
+  uint64 file_size = 10;
+  bool is_video_stream = 11;
 }
 
 
 message ReqDownloadSlice {
   SliceOffsetInfo    slice_info = 1;
-  string             wallet_address = 2;
-  string             file_hash = 3;
-  string             task_id = 4;
-  string             save_path = 5;
-  string             req_id = 6;
+  string             p2p_address = 2;
+  string             wallet_address = 3;
+  string             file_hash = 4;
+  string             task_id = 5;
+  string             save_path = 6;
+  string             req_id = 7;
 }
 
 message RspDownloadSlice {
@@ -182,52 +196,60 @@ message RspDownloadSlice {
   uint32 file_crc = 2;
   string file_hash = 3;
   bytes  data = 4;
-  string wallet_address = 5;
-  string task_id = 6;
-  uint64 slice_size = 7;
-  bool   needReport = 8; // used for passagePP whether the last slice
-  string save_path = 9;
-  Result result = 10;
-  string req_id = 11;
+  string p2p_address = 5;
+  string wallet_address = 6;
+  string task_id = 7;
+  uint64 slice_size = 8;
+  bool   needReport = 9; // used for passagePP whether the last slice
+  string save_path = 10;
+  Result result = 11;
+  string req_id = 12;
 }
 
 message ReqDownloadSliceWrong {
-  string wallet_address = 1;
-  string task_id = 2;
-  string slice_hash = 3;
-  DownloadWrongType type = 4;
-  string save_path = 5;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string task_id = 3;
+  string slice_hash = 4;
+  DownloadWrongType type = 5;
+  string save_path = 6;
 }
 
 message RspDownloadSliceWrong {
-  string wallet_address = 1;
-  string file_hash = 2;
-  string task_id = 3;
-  DownloadSliceInfo new_slice_info = 4;
-  string             save_path = 5;
-  Result result = 6;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string file_hash = 3;
+  string task_id = 4;
+  DownloadSliceInfo new_slice_info = 5;
+  string save_path = 6;
+  Result result = 7;
 }
 
 message ReqDownloadSlicePause {
-  string wallet_address = 1;
-  string file_hash = 2;
-  string req_id = 3;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string file_hash = 3;
+  string req_id = 4;
 }
 message RspDownloadSlicePause {
-  string wallet_address = 1;
-  string file_hash = 2;
-  string req_id = 3;
-  Result result = 4;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string file_hash = 3;
+  string req_id = 4;
+  Result result = 5;
 }
 
 message ReqReportDownloadResult {
   bool isPP = 1; // p doesn't need DownloadSliceInfo
   DownloadSliceInfo slice_info = 2;
   string file_hash = 3;
-  string wallet_address = 4; // downloader address
-  bytes  sign = 5;
-  string task_id = 6;
-  string my_wallet_address = 7; // PP's address
+  string downloader_p2p_address = 4;
+  string downloader_wallet_address = 5;
+  string my_p2p_address = 6; // PP's P2P key address
+  string my_wallet_address = 7; // PP's wallet address
+  bytes  sign = 8;
+  string task_id = 9;
+
 }
 
 message RspReportDownloadResult {
@@ -242,15 +264,16 @@ message ReqReportTaskBP {
 }
 
 message ReqRegisterNewPP {
-  string  wallet_address = 1;
-  uint64  disk_size = 2;
-  uint64  memory_size = 3;
-  string  os_and_ver = 4;
-  string  cpu_info = 5;
-  string  mac_address = 6;
-  uint32  version = 7;
-  bytes  pub_key = 8;
-  bytes  sign = 9;
+  string  p2p_address = 1;
+  string  wallet_address = 2;
+  uint64  disk_size = 3;
+  uint64  memory_size = 4;
+  string  os_and_ver = 5;
+  string  cpu_info = 6;
+  string  mac_address = 7;
+  uint32  version = 8;
+  bytes  pub_key = 9;
+  bytes  sign = 10;
 }
 
 message RspRegisterNewPP {
@@ -259,7 +282,7 @@ message RspRegisterNewPP {
 
 message ReqActivate {
   bytes tx = 1;
-  string wallet_address = 2;
+  string p2p_address = 2;
 }
 
 message RspActivate {
@@ -268,7 +291,7 @@ message RspActivate {
 }
 
 message ReqActivated {
-  string wallet_address = 1;
+  string p2p_address = 1;
 }
 
 message RspActivated {
@@ -277,7 +300,7 @@ message RspActivated {
 
 message ReqDeactivate {
   bytes tx = 1;
-  string wallet_address = 2;
+  string p2p_address = 2;
 }
 
 message RspDeactivate {
@@ -286,25 +309,48 @@ message RspDeactivate {
 }
 
 message ReqDeactivated {
-  string wallet_address = 1;
+  string p2p_address = 1;
 }
 
 message RspDeactivated {
   Result result = 1;
 }
 
+message ReqPrepay {
+  bytes tx = 1;
+  string p2p_address = 2;
+  string wallet_address = 3;
+}
+
+message RspPrepay {
+  Result result = 1;
+}
+
+message ReqPrepaid {
+  string p2p_address = 1;
+  string wallet_address = 2;
+  uint64 capacity = 3;
+}
+
+message RspPrepaid {
+  Result result = 1;
+}
+
+
 message ReqDeleteFile {
-  string wallet_address = 1;
-  string file_hash = 2;
-  bytes  sign = 3;
-  string req_id = 4;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string file_hash = 3;
+  bytes  sign = 4;
+  string req_id = 5;
 }
 
 message RspDeleteFile {
-  string wallet_address = 1;
-  string file_hash = 2;
-  Result result = 3;
-  string req_id = 4;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string file_hash = 3;
+  Result result = 4;
+  string req_id = 5;
 }
 
 
@@ -374,13 +420,15 @@ message RspReportTransferResult {
 
 // sp - pp get storage info
 message ReqGetHDInfo {
-  string wallet_address = 1;
+  string p2p_address = 1;
+  string wallet_address = 2;
 }
 
 message RspGetHDInfo {
   uint64 disk_size = 1;
   uint64 disk_free = 2 ;
-  string wallet_address = 3;
+  string p2p_address = 3;
+  string wallet_address = 4;
 }
 
 
@@ -396,57 +444,63 @@ message RspSendChatMessages {
 
 // sp 
 message ReqDeleteSlice {
-  string wallet_address = 1;
+  string p2p_address = 1;
   string slice_hash = 2; //
   // bytes  sign = 3; //SP signature  wallet address + hash
 }
 
 message RspDeleteSlice {
-  string wallet_address = 1;
+  string p2p_address = 1;
   string slice_hash = 2;
   Result result = 3;
 }
 
 // 
 message ReqMakeDirectory {
-  string wallet_address = 1;
-  string directory = 2;
-  string req_id = 3;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string directory = 3;
+  string req_id = 4;
 }
 
 message RspMakeDirectory {
-  string wallet_address = 1;
-  string req_id = 2;
-  Result result = 3;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string req_id = 3;
+  Result result = 4;
 }
 
 
 message ReqRemoveDirectory {
-  string wallet_address = 1;
-  string directory = 2;
-  string req_id = 3;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string directory = 3;
+  string req_id = 4;
 }
 message RspRemoveDirectory {
-  string wallet_address = 1;
-  string req_id = 2;
-  Result result = 3;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string req_id = 3;
+  Result result = 4;
 }
 
 
 message ReqMoveFileDirectory {
-  string wallet_address = 1;
-  string req_id = 2;
-  string directory_target = 3;
-  string directory_original = 4;
-  string file_hash = 5;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string req_id = 3;
+  string directory_target = 4;
+  string directory_original = 5;
+  string file_hash = 6;
 
 }
 
 message RspMoveFileDirectory {
-  string wallet_address = 1;
-  string req_id = 2;
-  string file_path = 3;
-  Result result = 4;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string req_id = 3;
+  string file_path = 4;
+  Result result = 5;
 }
 
 
@@ -537,23 +591,25 @@ message RspDownloadTaskInfo {
   uint64 slice_size = 2;
   string slice_hash = 3;
   uint64 slice_number = 4;
-  string storage_wallet_address = 5;
-  repeated string wallet_address_list = 6;
+  string storage_p2p_address = 5;
+  repeated string p2p_address_list = 6;
   uint64 time = 7;
   Result result = 8;
   string id = 9;
 }
 
 message ReqShareLink {
-  string wallet_address = 1;
-  string req_id = 2;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string req_id = 3;
 }
 
 message RspShareLink {
   repeated ShareLinkInfo share_info = 1;
   string req_id = 2;
-  string wallet_address = 3; //
-  Result result = 4;
+  string p2p_address = 3;
+  string wallet_address = 4; //
+  Result result = 5;
 }
 
 message ReqShareFile {
@@ -561,48 +617,54 @@ message ReqShareFile {
   bool   is_private = 2;
   int64  share_time = 3;
   string req_id = 4;
-  string wallet_address = 5;
-  string path_hash = 6;// share whole directory if this field is non-empty
+  string p2p_address = 5;
+  string wallet_address = 6;
+  string path_hash = 7;// share whole directory if this field is non-empty
 }
 
 
 message RspShareFile {
   string share_link = 1;
   string share_password = 2;
-  string wallet_address = 3;
-  string share_id = 4;
-  string req_id = 5;
-  Result result = 6;
+  string p2p_address = 3;
+  string wallet_address = 4;
+  string share_id = 5;
+  string req_id = 6;
+  Result result = 7;
 }
 
 message ReqDeleteShare {
   string share_id = 1;
-  string wallet_address = 2; //
-  string req_id = 3;
+  string p2p_address = 2;
+  string wallet_address = 3; //
+  string req_id = 4;
 }
 
 message RspDeleteShare {
   string share_id = 1;
-  string wallet_address = 2; //
-  string req_id = 3;
-  Result result = 4;
+  string p2p_address = 2;
+  string wallet_address = 3; //
+  string req_id = 4;
+  Result result = 5;
 }
 
 
 message ReqGetShareFile {
   string keyword = 1; //
-  string wallet_address = 2; //
-  string req_id = 3;
-  string share_password = 4;// 提取码
+  string p2p_address = 2;
+  string wallet_address = 3; //
+  string req_id = 4;
+  string share_password = 5;//
 }
 
 
 message RspGetShareFile {
-  string wallet_address = 1; //
-  string req_id = 2;
-  Result result = 3;  // if failed, wrong share password
-  bool is_private = 4;
-  repeated FileInfo file_info = 5;
+  string p2p_address = 1;
+  string wallet_address = 2; //
+  string req_id = 3;
+  Result result = 4;  // if failed, wrong share password
+  bool is_private = 5;
+  repeated FileInfo file_info = 6;
 }
 
 
@@ -610,86 +672,96 @@ message RspGetShareFile {
 message ReqSaveFile {
   string file_hash = 1;
   string file_owner_wallet_address = 2; //
-  string wallet_address = 3; //
-  string req_id = 4;
+  string p2p_address = 3;
+  string wallet_address = 4; //
+  string req_id = 5;
 }
 
 message RspSaveFile {
   string file_path = 1;
-  string wallet_address = 2; //
-  string req_id = 3;
-  Result result = 4;
-  string file_hash = 5;
+  string p2p_address = 2;
+  string wallet_address = 3; //
+  string req_id = 4;
+  Result result = 5;
+  string file_hash = 6;
 }
 
 // 
 message ReqSaveFolder {
   string folder_hash = 1;
   string folder_owner_wallet_address = 2; //
-  string wallet_address = 3; //
-  string req_id = 4;
+  string p2p_address = 3;
+  string wallet_address = 4; //
+  string req_id = 5;
 }
 
 message RspSaveFolder {
   string folder_path = 1;
-  string wallet_address = 2; //
-  string req_id = 3;
-  Result result = 4;
-  string folder_hash = 5;
+  string p2p_address = 2;
+  string wallet_address = 3; //
+  string req_id = 4;
+  Result result = 5;
+  string folder_hash = 6;
 }
 
 
-// 
+//
 message ReqCreateAlbum {
-  string wallet_address = 1; //
-  string req_id = 2;
-  repeated FileInfo file_info = 3;
-  string album_name = 4;
-  string album_blurb = 5;
-  string album_cover_hash = 6; // album cover file hash
-  AlbumType album_type = 7;
-  bool is_private = 8;
+  string p2p_address = 1;
+  string wallet_address = 2; //
+  string req_id = 3;
+  repeated FileInfo file_info = 4;
+  string album_name = 5;
+  string album_blurb = 6;
+  string album_cover_hash = 7; // album cover file hash
+  AlbumType album_type = 8;
+  bool is_private = 9;
 }
 
 message RspCreateAlbum {
   string album_id = 1;
-  string wallet_address = 2; //
-  string req_id = 3;
-  Result result = 4;
+  string p2p_address = 2;
+  string wallet_address = 3; //
+  string req_id = 4;
+  Result result = 5;
 }
 
 
 message ReqEditAlbum {
-  string wallet_address = 1; //
-  string req_id = 2;
-  string album_id = 3;
-  bool   is_private = 4;
-  repeated FileInfo change_files = 5;  // optional add files
+  string p2p_address = 1;
+  string wallet_address = 2; //
+  string req_id = 3;
+  string album_id = 4;
+  bool   is_private = 5;
+  repeated FileInfo change_files = 6;  // optional add files
   string album_cover_hash = 7; // optinal album cover file hash
   string album_name = 8; // optional  album name
   string album_blurb = 9; // optional  album abstract
 }
 message RspEditAlbum {
-  string wallet_address = 1; //
-  string req_id = 2;
-  string album_id = 3;
-  Result result = 4;
+  string p2p_address = 1;
+  string wallet_address = 2; //
+  string req_id = 3;
+  string album_id = 4;
+  Result result = 5;
 }
 
 message ReqAlbumContent {
-  string wallet_address = 1; //
-  string req_id = 2;
-  string album_id = 3;
-}
-message RspAlbumContent {
-  string wallet_address = 1; //
-  string owner_wallet_address = 2; //
+  string p2p_address = 1;
+  string wallet_address = 2; //
   string req_id = 3;
   string album_id = 4;
-  AlbumInfo album_info = 5; //
-  repeated FileInfo file_info = 6;
-  bool is_collection = 7;
-  Result result = 8;
+}
+message RspAlbumContent {
+  string p2p_address = 1;
+  string wallet_address = 2; //
+  string owner_wallet_address = 3; //
+  string req_id = 4;
+  string album_id = 5;
+  AlbumInfo album_info = 6; //
+  repeated FileInfo file_info = 7;
+  bool is_collection = 8;
+  Result result = 9;
 
 }
 
@@ -698,102 +770,115 @@ message ReqSearchAlbum {
   AlbumType album_type = 1;
   string keyword = 2;
   AlbumSortType AlbumSortType = 3;
-  string wallet_address = 4; //
-  string req_id = 5;
-  uint64 page = 6;
-  uint64 number = 7;
+  string p2p_address = 4;
+  string wallet_address = 5; //
+  string req_id = 6;
+  uint64 page = 7;
+  uint64 number = 8;
 }
 message RspSearchAlbum {
-  string wallet_address = 1; //
-  string req_id = 2;
-  repeated AlbumInfo album_info = 3; //
-  Result result = 4;
-  uint64 page = 5;
-  uint64 total = 6;
+  string p2p_address = 1;
+  string wallet_address = 2; //
+  string req_id = 3;
+  repeated AlbumInfo album_info = 4; //
+  Result result = 5;
+  uint64 page = 6;
+  uint64 total = 7;
 }
 
 message ReqFindMyAlbum {
-  string wallet_address = 1; //
-  string req_id = 2;
-  AlbumType album_type = 3;
-  uint64 page = 4;
-  uint64 number = 5;
-  string keyword = 6;
+  string p2p_address = 1;
+  string wallet_address = 2; //
+  string req_id = 3;
+  AlbumType album_type = 4;
+  uint64 page = 5;
+  uint64 number = 6;
+  string keyword = 7;
 }
 
 message RspFindMyAlbum {
-  string wallet_address = 1; //
-  string req_id = 2;
-  repeated  AlbumInfo album_info = 3;
-  Result result = 4;
-  uint64 total = 5;
+  string p2p_address = 1;
+  string wallet_address = 2; //
+  string req_id = 3;
+  repeated  AlbumInfo album_info = 4;
+  Result result = 5;
+  uint64 total = 6;
 }
 
 message ReqCollectionAlbum {
-  string wallet_address = 1; //
-  string req_id = 2;
-  string album_id = 3;
-  bool is_collection = 4;
+  string p2p_address = 1;
+  string wallet_address = 2; //
+  string req_id = 3;
+  string album_id = 4;
+  bool is_collection = 5;
 }
 
 message RspCollectionAlbum {
-  string wallet_address = 1; //
-  string req_id = 2;
-  string album_id = 3;
-  Result result = 4;
-  bool is_collection = 5;
+  string p2p_address = 1;
+  string wallet_address = 2; //
+  string req_id = 3;
+  string album_id = 4;
+  Result result = 5;
+  bool is_collection = 6;
 }
 
 
 message ReqAbstractAlbum {
-  string wallet_address = 1; //
-  string req_id = 2;
+  string p2p_address = 1;
+  string wallet_address = 2; //
+  string req_id = 3;
 }
 
 message RspAbstractAlbum {
-  string wallet_address = 1; //
-  string req_id = 2;
-  AlbumNumber my_album = 3;
-  AlbumNumber collection_album = 4;
-  Result result = 5;
+  string p2p_address = 1;
+  string wallet_address = 2; //
+  string req_id = 3;
+  AlbumNumber my_album = 4;
+  AlbumNumber collection_album = 5;
+  Result result = 6;
 }
 
 
 message ReqMyCollectionAlbum {
   AlbumType album_type = 1;
-  string wallet_address = 2; //
-  string req_id = 3;
-  uint64 page = 4;
-  uint64 number = 5;
-  string keyword = 6;
+  string p2p_address = 2;
+  string wallet_address = 3; //
+  string req_id = 4;
+  uint64 page = 5;
+  uint64 number = 6;
+  string keyword = 7;
 }
 message RspMyCollectionAlbum {
-  string wallet_address = 1; //
-  string req_id = 2;
-  repeated AlbumInfo album_info = 3; //
-  Result result = 4;
-  uint64 page = 5;
+  string p2p_address = 1;
+  string wallet_address = 2; //
+  string req_id = 3;
+  repeated AlbumInfo album_info = 4; //
+  Result result = 5;
+  uint64 page = 6;
 }
 
 
 message ReqDeleteAlbum {
   string album_id = 1;
-  string wallet_address = 2; //
-  string req_id = 3;
+  string p2p_address = 2;
+  string wallet_address = 3; //
+  string req_id = 4;
 }
 
 message RspDeleteAlbum {
   string album_id = 1;
-  string wallet_address = 2; //
-  string req_id = 3;
-  Result result = 4;
+  string p2p_address = 2;
+  string wallet_address = 3; //
+  string req_id = 4;
+  Result result = 5;
 }
 
 
 message ReqConfig {
-  string wallet_address = 1; //
-  string req_id = 2;
-  string network_address = 3;
+  string p2p_address = 1;
+  string wallet_address = 2; //
+  string req_id = 3;
+  string network_address = 4;
 }
 
 message RspConfig {
@@ -803,14 +888,16 @@ message RspConfig {
   bool is_upgrade = 4;
   uint64 free_capacity = 5;
   Result result = 6;
-  string wallet_address = 7;
-  uint64 capacity = 8;
+  string p2p_address = 7;
+  string wallet_address = 8;
+  uint64 capacity = 9;
 }
 
 message ReqInvite {
-  string wallet_address = 1; // wallet used the invitation code
-  string invitation_code = 2; // invitation code
-  string req_id = 3;
+  string p2p_address = 1;
+  string wallet_address = 2; // wallet used the invitation code
+  string invitation_code = 3; // invitation code
+  string req_id = 4;
 }
 
 message RspInvite {
@@ -818,57 +905,66 @@ message RspInvite {
   uint64 capacity_delta = 2;
   uint64 current_capacity = 3;
   string req_id = 4;
-  string wallet_address = 5; //
+  string p2p_address = 5;
+  string wallet_address = 6; //
 }
 
 message ReqGetReward {
-  string wallet_address = 1;
-  string req_id = 2;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string req_id = 3;
 }
 
 message RspGetReward {
   Result result = 1;
   string req_id = 2;
-  string wallet_address = 3;
-  uint64 current_capacity = 4;
+  string p2p_address = 3;
+  string wallet_address = 4;
+  uint64 current_capacity = 5;
 }
 
 message ReqGetCapacity {
-  string wallet_address = 1;
-  string req_id = 2;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string req_id = 3;
 }
 
 message RspGetCapacity {
   Result result = 1;
   string req_id = 2;
-  string wallet_address = 3;
-  uint64 capacity = 4;
-  uint64 free_capacity = 5;
+  string p2p_address = 3;
+  string wallet_address = 4;
+  uint64 capacity = 5;
+  uint64 free_capacity = 6;
 }
 
 message ReqFileSort {
   repeated FileInfo files = 1;
   string req_id = 2;
-  string wallet_address = 3;
-  string album_id = 4;
+  string p2p_address = 3;
+  string wallet_address = 4;
+  string album_id = 5;
 }
 
 message RspFileSort {
   string req_id = 1;
-  string wallet_address = 2;
-  Result result = 3;
+  string p2p_address = 2;
+  string wallet_address = 3;
+  Result result = 4;
 }
 
 message ReqFindDirectory {
-  string wallet_address = 1;
-  string req_id = 2;
+  string p2p_address = 1;
+  string wallet_address = 2;
+  string req_id = 3;
 }
 
 message RspFindDirectory {
   repeated FileInfo file_info = 1;
-  string wallet_address = 2;
-  string req_id = 3;
-  Result result = 4;
+  string p2p_address = 2;
+  string wallet_address = 3;
+  string req_id = 4;
+  Result result = 5;
 }
 
 message ReqCustomerAddVolume {

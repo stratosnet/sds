@@ -12,12 +12,6 @@ type Transfer struct {
 	server *core.APIServer
 }
 
-type TransferRequest struct {
-	SliceHash         string `json:"SliceHash"`
-	FromWalletAddress string `json:"FromWalletAddress"`
-	ToWalletAddress   string `json:"ToWalletAddress"`
-}
-
 func (e *Transfer) GetAPIServer() *core.APIServer {
 	return e.server
 }
@@ -29,8 +23,8 @@ func (e *Transfer) SetAPIServer(server *core.APIServer) {
 func (e *Transfer) SliceTransfer(params map[string]interface{}, r *http.Request) ([]map[string]interface{}, int, string) {
 	data := make([]map[string]interface{}, 0)
 	var SliceHash string
-	var FromWalletAddress string
-	var ToWalletAddress string
+	var FromP2PAddress string
+	var ToP2PAddress string
 
 	if val, ok := params["SliceHash"]; ok {
 		SliceHash = val.(string)
@@ -38,14 +32,14 @@ func (e *Transfer) SliceTransfer(params map[string]interface{}, r *http.Request)
 		return data, 400, "Invalid SliceHash"
 	}
 
-	if val, ok := params["FromWalletAddress"]; ok {
-		FromWalletAddress = val.(string)
+	if val, ok := params["FromP2pAddress"]; ok {
+		FromP2PAddress = val.(string)
 	} else {
-		return data, 400, "Invalid FromWalletAddress"
+		return data, 400, "Invalid FromP2pAddress"
 	}
 
 	if val, ok := params["ToWalletAddress"]; ok {
-		ToWalletAddress = val.(string)
+		ToP2PAddress = val.(string)
 	} else {
 		return data, 400, "Invalid ToWalletAddress"
 	}
@@ -53,9 +47,9 @@ func (e *Transfer) SliceTransfer(params map[string]interface{}, r *http.Request)
 	msg := &common.MsgWrapper{
 		MsgType: common.MSG_TRANSFER_NOTICE,
 		Msg: &common.MsgTransferNotice{
-			SliceHash:         SliceHash,
-			FromWalletAddress: FromWalletAddress,
-			ToWalletAddress:   ToWalletAddress,
+			SliceHash:      SliceHash,
+			FromP2PAddress: FromP2PAddress,
+			ToP2PAddress:   ToP2PAddress,
 		},
 	}
 

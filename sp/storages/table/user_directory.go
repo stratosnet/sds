@@ -217,8 +217,8 @@ func (ud *UserDirectory) RecursFindFiles(ct *database.CacheTable) []*protos.File
 		"columns": "f.*, ud.path",
 		"join": [][]string{
 			{"user_has_file", "f.hash = uhf.file_hash AND uhf.wallet_address = ?", "uhf"},
-			{"user_directory_map_file", "udmf.file_hash = uhf.file_hash AND uhf.wallet_address = udmf.owner", "udmf"},
-			{"user_directory", "udmf.dir_hash = ud.dir_hash AND udmf.owner = ud.wallet_address AND ud.path LIKE '" + ud.Path + "%'", "ud"},
+			{"user_directory_map_file", "udmf.file_hash = uhf.file_hash AND uhf.wallet_address = udmf.owner_wallet", "udmf"},
+			{"user_directory", "udmf.dir_hash = ud.dir_hash AND udmf.owner_wallet = ud.wallet_address AND ud.path LIKE '" + ud.Path + "%'", "ud"},
 		},
 		"where": map[string]interface{}{"": ud.WalletAddress},
 	})

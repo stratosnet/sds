@@ -50,7 +50,7 @@ func (e *PP) Backup(params map[string]interface{}, r *http.Request) ([]map[strin
 
 	vals := mux.Vars(r)
 
-	walletAddress, ok := vals["wa"]
+	p2pAddress, ok := vals["p2pAddress"]
 	if !ok {
 		return nil, 400, "invalid parameter"
 	}
@@ -60,7 +60,7 @@ func (e *PP) Backup(params map[string]interface{}, r *http.Request) ([]map[strin
 	msg := &common.MsgWrapper{
 		MsgType: common.MSG_BACKUP_PP,
 		Msg: &common.MsgBackupPP{
-			WalletAddress: walletAddress,
+			P2PAddress: p2pAddress,
 		},
 	}
 
