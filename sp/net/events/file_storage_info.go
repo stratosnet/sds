@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -53,34 +54,21 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 	}
 
 	// validate
-	storageWalletAddress, fileHash, err := validateFileStorageInfoRequest(s, body)
+	file, err := validateFileStorageInfoRequest(s, body)
 	if err != nil {
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		rsp.Result.Msg = err.Error()
 		return rsp, header.RspFileStorageInfo
 	}
 
-	// search file
-	file := &table.File{
-		Hash: fileHash,
-		UserHasFile: table.UserHasFile{
-			WalletAddress: storageWalletAddress,
-		},
-	}
-	if s.CT.Fetch(file) != nil || file.State == table.STATE_DELETE {
-		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "wrong downloading address"
-		return rsp, header.RspFileStorageInfo
-	}
-
-	rsp.FileHash = fileHash
+	rsp.FileHash = file.Hash
 
 	//  todo change to read from redis
 
 	res, err := s.CT.FetchTables([]table.FileSlice{}, map[string]interface{}{
 		"alias":   "e",
 		"columns": "e.*, fss.p2p_address, fss.network_address",
-		"where":   map[string]interface{}{"e.file_hash = ?": fileHash},
+		"where":   map[string]interface{}{"e.file_hash = ?": file.Hash},
 		"join":    []string{"file_slice_storage", "e.slice_hash = fss.slice_hash", "fss", "left"},
 		"orderBy": "e.slice_number ASC",
 	})
@@ -109,7 +97,7 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 
 	downloadFile := &data.DownloadFile{
 		WalletAddress: body.FileIndexes.WalletAddress,
-		FileHash:      fileHash,
+		FileHash:      file.Hash,
 		FileName:      file.Name,
 		SliceNum:      file.SliceNum,
 		List:          make(map[uint64]bool),
@@ -212,7 +200,7 @@ func (e *fileStorageInfo) Handle(ctx context.Context, conn spbf.WriteCloser) {
 }
 
 // validateFileStorageInfoRequest validates request
-func validateFileStorageInfoRequest(s *net.Server, req *protos.ReqFileStorageInfo) (storageWalletAddress, fileHash string, err error) {
+func validateFileStorageInfoRequest(s *net.Server, req *protos.ReqFileStorageInfo) (file *table.File, err error) {
 
 	if len(req.Sign) <= 0 {
 		err = errors.New("signature can't be empty")
@@ -231,7 +219,7 @@ func validateFileStorageInfoRequest(s *net.Server, req *protos.ReqFileStorageInf
 		return
 	}
 
-	_, storageWalletAddress, fileHash, _, err = tools.ParseFileHandle(filePath)
+	_, storageWalletAddress, fileHash, _, err := tools.ParseFileHandle(filePath)
 
 	if err != nil {
 		err = errors.New("wrong file path format, failed to parse")
@@ -252,6 +240,27 @@ func validateFileStorageInfoRequest(s *net.Server, req *protos.ReqFileStorageInf
 	d := req.FileIndexes.P2PAddress + filePath
 	if !ed25519.Verify(puk, []byte(d), req.Sign) {
 		err = errors.New("signature verification failed")
+		return
+	}
+
+	// search for the requested file
+	file = &table.File{
+		Hash: fileHash,
+		UserHasFile: table.UserHasFile{
+			WalletAddress: storageWalletAddress,
+		},
+	}
+	err = s.CT.Fetch(file)
+	if err != nil || file.State == table.STATE_DELETE {
+		err = errors.New("file not found. Wrong downloading address")
+		return
+	}
+
+	requiredUoz := file.Size
+	userOzone := &table.UserOzone{WalletAddress: req.FileIndexes.WalletAddress}
+	err = s.CT.Fetch(userOzone)
+	if err != nil || userOzone.AvailableUoz < requiredUoz {
+		err = errors.New(fmt.Sprintf("not enough ozone to process (Available: %v Required: %v)", userOzone.AvailableUoz, requiredUoz))
 		return
 	}
 

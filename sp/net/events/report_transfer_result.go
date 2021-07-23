@@ -134,6 +134,22 @@ func reportTransferResultCallbackFunc(_ context.Context, s *net.Server, message 
 		utils.ErrorLogf(eventHandleErrorTemplate, reportTransferResultEvent, "store traffic record table to db", err)
 	}
 
+	// consume ozone
+	consumedUoz := transferRecord.SliceSize
+	userOzone := &table.UserOzone{WalletAddress: transferRecord.ToWalletAddress}
+	_ = s.CT.Fetch(userOzone)
+	if userOzone.AvailableUoz <= consumedUoz {
+		userOzone.AvailableUoz = 0
+	} else {
+		userOzone.AvailableUoz -= consumedUoz
+	}
+
+	if err := s.CT.Update(userOzone); err != nil {
+		if err := s.CT.Save(userOzone); err != nil {
+			utils.ErrorLogf(eventHandleErrorTemplate, reportTransferResultEvent, "store user ozone table to db", err)
+		}
+	}
+
 	return rsp, header.RspReportTransferResult
 }
 

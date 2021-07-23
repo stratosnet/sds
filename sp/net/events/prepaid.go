@@ -35,23 +35,22 @@ func prepaidCallbackFunc(_ context.Context, s *net.Server, message proto.Message
 		},
 	}
 
-	// TODO: change this logic in QB-475. Prepay doesn't increase capacity. It grants ozone to the user.
-	user := &table.User{
-		P2pAddress: body.P2PAddress,
+	userOzone := &table.UserOzone{
+		WalletAddress: body.WalletAddress,
+	}
+	err := s.CT.Fetch(userOzone)
+	if err != nil {
+		err = s.CT.Save(userOzone)
+		if err != nil {
+			utils.ErrorLog("Couldn't save user ozone to database")
+			return rsp, header.RspPrepaid
+		}
 	}
 
-	if s.CT.Fetch(user) != nil {
-		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "Could not find this user."
-		return rsp, header.RspPrepaid
-	}
-
-	user.Capacity += body.Capacity
-	if err := s.CT.Save(user); err != nil {
+	userOzone.AvailableUoz += body.PurchasedUoz
+	if err := s.CT.Update(userOzone); err != nil {
 		utils.ErrorLog(err)
 	}
-
-	s.SendMsg(body.P2PAddress, header.RspPrepaid, rsp)
 	return rsp, header.RspPrepaid
 }
 

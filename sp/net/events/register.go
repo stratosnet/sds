@@ -106,7 +106,7 @@ func registerCallbackFunc(ctx context.Context, s *net.Server, message proto.Mess
 
 	inv := &table.UserInvite{
 		InvitationCode: user.InvitationCode,
-		P2PAddress:     user.P2pAddress,
+		P2pAddress:     user.P2pAddress,
 		Times:          0,
 	}
 	if err := s.CT.Save(inv); err != nil {

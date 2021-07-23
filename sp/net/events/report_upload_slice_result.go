@@ -116,7 +116,6 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 	}
 
 	s.Load(traffic)
-	// TODO: confirm this logic in QB-475
 	if body.IsPP {
 		traffic.ProviderWalletAddress = body.WalletAddress
 	} else {
@@ -155,6 +154,22 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 
 	if ok, err := s.CT.StoreTable(traffic); !ok {
 		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "store traffic record table to db", err)
+	}
+
+	// consume ozone
+	consumedUoz := traffic.Volume
+	userOzone := &table.UserOzone{WalletAddress: traffic.ConsumerWalletAddress}
+	_ = s.CT.Fetch(userOzone)
+	if userOzone.AvailableUoz <= consumedUoz {
+		userOzone.AvailableUoz = 0
+	} else {
+		userOzone.AvailableUoz -= consumedUoz
+	}
+
+	if err := s.CT.Update(userOzone); err != nil {
+		if err := s.CT.Save(userOzone); err != nil {
+			utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "store user ozone table to db", err)
+		}
 	}
 
 	uploadFile.SetSliceFinish(fileSlice.SliceNumber)

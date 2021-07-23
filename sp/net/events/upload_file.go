@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"encoding/hex"
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -272,6 +273,15 @@ func validateUploadFileRequest(req *protos.ReqUploadFile, s *net.Server) (bool, 
 	d := req.MyAddress.P2PAddress + req.FileInfo.FileHash
 	if !ed25519.Verify(puk, []byte(d), req.Sign) {
 		return false, "signature verification failed"
+	}
+
+	// TODO: Change the calculation if the replication value is not 3
+	requiredUoz := req.FileInfo.FileSize * 3
+
+	userOzone := &table.UserOzone{WalletAddress: req.MyAddress.WalletAddress}
+	err = s.CT.Fetch(userOzone)
+	if err != nil || userOzone.AvailableUoz < requiredUoz {
+		return false, fmt.Sprintf("not enough ozone to process (Available: %v Required: %v)", userOzone.AvailableUoz, requiredUoz)
 	}
 
 	return true, ""

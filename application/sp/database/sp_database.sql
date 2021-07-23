@@ -64,7 +64,8 @@ create table user
 CREATE TABLE `transfer_record`
 (
     `id`                   int(10) unsigned    NOT NULL AUTO_INCREMENT COMMENT 'ID' PRIMARY KEY,
-    `file_slice_id`        int(10) unsigned    NOT NULL DEFAULT '0',
+    `slice_hash`           char(64)            NOT NULL DEFAULT '',
+    `slice_size`           bigint unsigned     NOT NULL DEFAULT '0',
     `transfer_cer`         char(64)            NOT NULL DEFAULT '',
     `from_p2p_address`     char(255)           NOT NULL DEFAULT '' COMMENT 'origin PP P2P key address',
     `from_wallet_address`  char(42)            NOT NULL DEFAULT '' COMMENT 'origin PP wallet address',
@@ -74,7 +75,6 @@ CREATE TABLE `transfer_record`
     `to_network_address`   varchar(32)         NOT NULL DEFAULT '' COMMENT 'target network address',
     `status`               tinyint(3) unsigned NOT NULL DEFAULT '1' COMMENT '0:success,1:waiting,2:pending,3:error',
     `time`                 int(10) unsigned    NOT NULL DEFAULT '0' COMMENT 'transfer finish time',
-    KEY `IDX_FILE_SLICE_ID` (`file_slice_id`) USING BTREE,
     KEY `IDX_TRANSFER_CER` (`transfer_cer`) USING HASH
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
@@ -154,4 +154,10 @@ CREATE TABLE variables (
     name  varchar(64)  NOT NULL DEFAULT '',
     value varchar(256) NOT NULL DEFAULT '',
     PRIMARY KEY (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE user_ozone (
+    wallet_address varchar(42) NOT NULL DEFAULT '',
+    available_uoz  bigint      NOT NULL DEFAULT '0',
+    PRIMARY KEY (wallet_address)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
