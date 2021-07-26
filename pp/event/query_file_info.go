@@ -129,6 +129,8 @@ func GetVideoSlice(sliceInfo *protos.DownloadSliceInfo, fInfo *protos.RspFileSto
 			SendReqDownloadSlice(fInfo, req)
 			if err := storeResponseWriter(req.ReqId, w); err != nil {
 				task.DownloadFileMap.Delete(fInfo.FileHash)
+				w.WriteHeader(setting.FAILCode)
+				w.Write(httpserv.NewErrorJson(setting.FAILCode, "Get video segment time out").ToBytes())
 			}
 		}
 	} else {

@@ -235,7 +235,7 @@ func SetConfig(key, value string) bool {
 func SetupP2PKey() error {
 	if Config.P2PAddress == "" {
 		fmt.Println("No P2P key specified in config. Attempting to create one...")
-		nickname, err := console.Stdin.PromptInput("Enter P2pAddress nickname: ")
+		nickname, err := console.Stdin.PromptInput("Enter P2PAddress nickname: ")
 		if err != nil {
 			return errors.New("couldn't read nickname from console: " + err.Error())
 		}
@@ -263,7 +263,7 @@ func SetupP2PKey() error {
 		}
 		Config.P2PAddress = p2pKeyAddressString
 		Config.P2PPassword = password
-		SetConfig("P2pAddress", p2pKeyAddressString)
+		SetConfig("P2PAddress", p2pKeyAddressString)
 		SetConfig("P2PPassword", password)
 	}
 
