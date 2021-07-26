@@ -190,6 +190,10 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 				file.IsCover = table.IS_COVER
 			}
 
+			if uploadFile.IsVideoStream {
+				file.IsVideoStream = table.IS_VIDEO_STREAM
+			}
+
 			if s.CT.Save(file) == nil {
 				if uploadFile.FilePath != "" {
 					dirMapFile := new(table.UserDirectoryMapFile)

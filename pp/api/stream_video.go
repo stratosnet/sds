@@ -7,6 +7,7 @@ import (
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/sp/storages/table"
+	"github.com/stratosnet/sds/utils"
 	"io/ioutil"
 	"net/http"
 	"path"
@@ -39,17 +40,23 @@ func streamVideo(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	utils.Log("Received stream video request :", url)
+	utils.DebugLog("The request body is ", body)
+
 	var fInfo *protos.RspFileStorageInfo
 	if value, ok := task.DownloadFileMap.Load(body.FileHash); ok {
 		//TODO use go routine to clean the map on daily basis
+		utils.DebugLog("Found file storage info")
 		fInfo = value.(*protos.RspFileStorageInfo)
 	} else {
+		utils.DebugLog("Could not find file storage info, send request to SP")
 		event.GetFileStorageInfo("spb://"+body.WalletAddress+"/"+body.FileHash, setting.VIDEOPATH, uuid.New().String(),
 			false, true, w)
 		start := time.Now().Unix()
 		for {
 			if f, ok := task.DownloadFileMap.Load(body.FileHash); ok {
 				fInfo = f.(*protos.RspFileStorageInfo)
+				utils.DebugLog("Received file storage info from sp ", fInfo)
 				break
 			} else {
 				// timeout
@@ -64,14 +71,16 @@ func streamVideo(w http.ResponseWriter, req *http.Request) {
 
 	sliceInfo := event.GetVideoSliceInfo(segmentName, fInfo)
 	if path.Ext(segmentName) == ".m3u8" || (setting.State != table.PP_ACTIVE && setting.Config.StreamingCache) {
+		utils.DebugLog("Send request to sp to retrieve the segment ", segmentName)
 		event.GetVideoSlice(sliceInfo, fInfo, w)
 	} else {
+		utils.DebugLog("Redirect the request to resource node.")
 		sliceHash := sliceInfo.SliceStorageInfo.SliceHash
-		redirectToResource(body.FileHash, sliceHash, w, req)
+		redirectToResourceNode(body.FileHash, sliceHash, w, req)
 	}
 }
 
-func redirectToResource(fileHash, sliceHash string, w http.ResponseWriter, req *http.Request) {
+func redirectToResourceNode(fileHash, sliceHash string, w http.ResponseWriter, req *http.Request) {
 	var targetIp string
 	if dlTask, ok := task.DownloadTaskMap.Load(fileHash + setting.WalletAddress); ok {
 		//self is the resource PP and has task info
@@ -89,12 +98,15 @@ func redirectToResource(fileHash, sliceHash string, w http.ResponseWriter, req *
 		}
 	}
 	url := fmt.Sprintf("http://%s:%d/videoSlice/%s", targetIp, httpserv.API_PORT, sliceHash)
+	utils.DebugLog("Redirect URL ", url)
 	http.Redirect(w, req, url, http.StatusTemporaryRedirect)
 }
 
 func getVideoSlice(w http.ResponseWriter, req *http.Request) {
 	url := req.URL.Path
 	sliceHash := url[strings.LastIndex(url, "/")+1:]
+
+	utils.Log("Received get video slice request :", url)
 
 	body, err := parseStreamReqBody(req)
 	if err != nil {
@@ -103,16 +115,23 @@ func getVideoSlice(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	utils.DebugLog("The request body is ", body)
+
 	if dlTask, ok := task.DownloadTaskMap.Load(body.FileHash + body.WalletAddress); ok {
+		utils.DebugLog("Found task info ", body)
 		downloadTask := dlTask.(*task.DownloadTask)
 		ppInfo := downloadTask.SliceInfo[sliceHash].StoragePpInfo
 		if ppInfo.P2PAddress != setting.P2PAddress {
+			utils.DebugLog("Current P2PAddress does not have the requested slice")
 			targetIp := getIpFromNetworkAddress(ppInfo.NetworkAddress)
 			url := fmt.Sprintf("http://%s:%d/videoSlice/%s", targetIp, httpserv.API_PORT, sliceHash)
+			utils.DebugLog("Redirect the request to " + url)
 			http.Redirect(w, req, url, http.StatusTemporaryRedirect)
 			return
 		}
 	}
+
+	utils.DebugLog("Start getting the slice from local storage", body)
 
 	video := file.GetSliceData(sliceHash)
 	if video == nil {
@@ -121,6 +140,7 @@ func getVideoSlice(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	utils.DebugLog("Found the slice and return", body)
 	w.Write(video)
 }
 

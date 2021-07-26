@@ -39,6 +39,14 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 	hlsSegmentLength := s.Conf.FileStorage.HlsSegmentLength
 	hlsSegmentBuffer := s.Conf.FileStorage.HlsSegmentBuffer
 
+	if hlsSegmentBuffer <= 1 {
+		utils.ErrorLogf("The value of config hlsSegmentBuffer should be bigger than 1")
+	}
+
+	if hlsSegmentLength <= 0 {
+		utils.ErrorLogf("The value of config hlsSegmentLength should be bigger than 0")
+	}
+
 	sliceSize := s.Conf.FileStorage.SliceBlockSize
 
 	rsp := &protos.RspUploadFile{
@@ -99,8 +107,6 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 			sliceOffsetEnd = uint64(math.Max(float64(int(i)-int(hlsSegmentBuffer)-1), 0))
 		}
 
-		//
-
 		if len(fileSlices) > 0 {
 			if existsFileSlice(fileSlices, sliceNumber, sliceOffsetStart, sliceOffsetEnd) {
 				utils.DebugLogf(eventHandleErrorTemplate, uploadFileEvent, "file not uploaded", "file slice already existed")
@@ -158,6 +164,7 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 			WalletAddress: walletAddress,
 			IsCover:       body.IsCover,
 			List:          make(map[uint64]bool),
+			IsVideoStream: body.IsVideoStream,
 		}
 
 		for _, fs := range slices {

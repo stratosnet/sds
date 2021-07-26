@@ -99,10 +99,9 @@ func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID string) 
 
 	if pp.SliceNumber == 1 {
 		jsonStr, _ := json.Marshal(videoSliceInfo)
-		data = []byte(jsonStr)
+		data = jsonStr
 		sliceTotalSize = uint64(len(data))
 	} else if pp.SliceNumber < videoSliceInfo.HeaderSliceNumber {
-		// data = []byte(fileHash + strconv.Itoa(int(pp.SliceNumber)))
 		data = []byte(fmt.Sprintf("%v%d", fileHash, pp.SliceNumber))
 		sliceTotalSize = uint64(len(data))
 	} else {
