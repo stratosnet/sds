@@ -126,44 +126,53 @@ func RspDownloadSlice(ctx context.Context, conn spbf.WriteCloser) {
 				utils.DebugLog("current task is stopped！！！！！！！！！！！！！！！！！！！！！！！！！！")
 			}
 		} else {
-			if _, ok := task.DownloadFileMap.Load(target.FileHash); ok {
+			if f, ok := task.DownloadFileMap.Load(target.FileHash); ok {
+				fInfo := f.(*protos.RspFileStorageInfo)
 				utils.DebugLog("get a slice -------")
 				utils.DebugLog("SliceHash", target.SliceInfo.SliceHash)
 				utils.DebugLog("SliceOffset", target.SliceInfo.SliceOffset)
 				utils.DebugLog("length", len(target.Data))
 				utils.DebugLog("sliceSize", target.SliceSize)
-				task.DownloadProgress(target.FileHash, uint64(len(target.Data)))
-
-				if task.SaveDownloadFile(&target) {
-					dataLen := uint64(len(target.Data))
-					if s, ok := task.DownloadSliceProgress.Load(target.SliceInfo.SliceHash); ok {
-						alreadySize := s.(uint64)
-						alreadySize += dataLen
-						if alreadySize == target.SliceSize {
-							utils.DebugLog("slice download finished", target.SliceInfo.SliceHash)
-							task.DownloadSliceProgress.Delete(target.SliceInfo.SliceHash)
-							receivedSlice(&target)
-						} else {
-							task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash, alreadySize)
-						}
-					} else {
-						// if data is sent at once
-						if target.SliceSize == dataLen {
-							receivedSlice(&target)
-						} else {
-							task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash, dataLen)
-						}
-					}
+				if !fInfo.IsVideoStream {
+					task.DownloadProgress(target.FileHash, uint64(len(target.Data)))
 				}
+				receiveSliceAndProgress(&target, fInfo)
 			}
 		}
 	}
 }
 
-func receivedSlice(target *protos.RspDownloadSlice) {
-	if f, ok := task.DownloadFileMap.Load(target.FileHash); ok {
-		fInfo := f.(*protos.RspFileStorageInfo)
-		file.SaveDownloadProgress(target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, target.SavePath)
+func receiveSliceAndProgress(target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo) {
+	if task.SaveDownloadFile(target, fInfo) {
+		dataLen := uint64(len(target.Data))
+		if s, ok := task.DownloadSliceProgress.Load(target.SliceInfo.SliceHash); ok {
+			alreadySize := s.(uint64)
+			alreadySize += dataLen
+			if alreadySize == target.SliceSize {
+				utils.DebugLog("slice download finished", target.SliceInfo.SliceHash)
+				task.DownloadSliceProgress.Delete(target.SliceInfo.SliceHash)
+				receivedSlice(target, fInfo)
+			} else {
+				task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash, alreadySize)
+			}
+		} else {
+			// if data is sent at once
+			if target.SliceSize == dataLen {
+				receivedSlice(target, fInfo)
+			} else {
+				task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash, dataLen)
+			}
+		}
+	}
+}
+
+func receivedSlice(target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo) {
+	file.SaveDownloadProgress(target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, target.SavePath)
+	target.Result = &protos.Result{
+		State: protos.ResultState_RES_SUCCESS,
+	}
+	if fInfo.IsVideoStream {
+		putData(target.ReqId, HTTPDownloadSlice, target)
 	}
 	sendReportDownloadResult(target, false)
 }
@@ -203,24 +212,28 @@ func DownloadFileSlice(target *protos.RspFileStorageInfo) {
 			} else {
 				utils.DebugLog("request download data")
 				req := reqDownloadSliceData(target, rsp)
-				utils.DebugLog("req = ", req)
-				if c, ok := client.PDownloadPassageway.Load(target.FileHash); ok {
-					conn := c.(*cf.ClientConn)
-					sendMessage(conn, req, header.ReqDownloadSlice)
-					utils.DebugLog("DDDDDDDDDDDDDD", conn)
-					utils.DebugLog("RRRRRRRRRRRR", client.PPConn)
-
-				} else {
-					conn := client.NewClient(client.PPConn.GetName(), false)
-					sendMessage(conn, req, header.ReqDownloadSlice)
-					client.PDownloadPassageway.Store((target.FileHash), conn)
-					utils.DebugLog("WWWWWWWWWWWWWWWWWW", conn)
-					utils.DebugLog("ccccccccccccccc", client.PPConn)
-				}
+				SendReqDownloadSlice(target, req)
 			}
 		}
 	} else {
 		fmt.Println("file exist already!")
+	}
+}
+
+func SendReqDownloadSlice(target *protos.RspFileStorageInfo, req *protos.ReqDownloadSlice) {
+	utils.DebugLog("req = ", req)
+	if c, ok := client.PDownloadPassageway.Load(target.FileHash); ok {
+		conn := c.(*cf.ClientConn)
+		sendMessage(conn, req, header.ReqDownloadSlice)
+		utils.DebugLog("DDDDDDDDDDDDDD", conn)
+		utils.DebugLog("RRRRRRRRRRRR", client.PPConn)
+
+	} else {
+		conn := client.NewClient(client.PPConn.GetName(), false)
+		sendMessage(conn, req, header.ReqDownloadSlice)
+		client.PDownloadPassageway.Store((target.FileHash), conn)
+		utils.DebugLog("WWWWWWWWWWWWWWWWWW", conn)
+		utils.DebugLog("ccccccccccccccc", client.PPConn)
 	}
 }
 

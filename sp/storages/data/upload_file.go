@@ -12,6 +12,7 @@ type UploadFile struct {
 	WalletAddress string
 	IsCover       bool
 	List          map[uint64]bool
+	IsVideoStream bool
 }
 
 // GetCacheKey

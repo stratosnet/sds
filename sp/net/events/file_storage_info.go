@@ -5,6 +5,8 @@ import (
 	"crypto/ed25519"
 	"encoding/hex"
 	"errors"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -15,7 +17,6 @@ import (
 	"github.com/stratosnet/sds/sp/tools"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/hashring"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -50,6 +51,7 @@ func fileStorageInfoCallbackFunc(_ context.Context, s *net.Server, message proto
 		FileName:      "",
 		SliceInfo:     nil,
 		FileSize:      0,
+		IsVideoStream: body.IsVideoStream,
 	}
 
 	// validate

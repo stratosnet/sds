@@ -1,14 +1,15 @@
 package api
 
 import (
-	"github.com/stratosnet/sds/pp/event"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/httpserv"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/stratosnet/sds/pp/event"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/httpserv"
 
 	"github.com/google/uuid"
 )
@@ -30,7 +31,7 @@ func downImg(w http.ResponseWriter, request *http.Request) {
 		utils.DebugLog("openpath>>>>>>", openPath)
 		f, err = os.Open(openPath)
 		if err != nil {
-			event.GetFileStorageInfo(path, "images", uuid.New().String(), true, w)
+			event.GetFileStorageInfo(path, "images", uuid.New().String(), true, false, w)
 		} else {
 			data1 := make(map[string]interface{}, 0)
 			img, err := ioutil.ReadAll(f)

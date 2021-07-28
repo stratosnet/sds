@@ -66,6 +66,7 @@ message FileInfo {
      string owner_wallet_address = 8;
      string share_link = 9;
      uint64 sort_id = 10;
+     uint64 duration = 11;
 }
 
 // slice number and pp address

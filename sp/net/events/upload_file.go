@@ -4,6 +4,11 @@ import (
 	"context"
 	"crypto/ed25519"
 	"encoding/hex"
+	"math"
+	"path/filepath"
+	"strconv"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -13,10 +18,6 @@ import (
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/sp/tools"
 	"github.com/stratosnet/sds/utils"
-	"math"
-	"path/filepath"
-	"strconv"
-	"time"
 )
 
 // uploadFile is a concrete implementation of event
@@ -35,6 +36,16 @@ func GetUploadFileHandler(s *net.Server) EventHandleFunc {
 // uploadFileCallbackFunc is the main process of uploading file
 func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Message, _ spbf.WriteCloser) (proto.Message, string) {
 	body := message.(*protos.ReqUploadFile)
+	hlsSegmentLength := s.Conf.FileStorage.HlsSegmentLength
+	hlsSegmentBuffer := s.Conf.FileStorage.HlsSegmentBuffer
+
+	if hlsSegmentBuffer <= 1 {
+		utils.ErrorLogf("The value of config hlsSegmentBuffer should be bigger than 1")
+	}
+
+	if hlsSegmentLength <= 0 {
+		utils.ErrorLogf("The value of config hlsSegmentLength should be bigger than 0")
+	}
 
 	sliceSize := s.Conf.FileStorage.SliceBlockSize
 
@@ -55,7 +66,15 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 		return rsp, header.RspUploadFile
 	}
 
-	sliceNum := uint64(math.Ceil(float64(body.FileInfo.FileSize) / float64(sliceSize)))
+	var sliceNum uint64
+	var sliceDuration float64
+	if !body.IsVideoStream {
+		sliceNum = uint64(math.Ceil(float64(body.FileInfo.FileSize) / float64(sliceSize)))
+	} else {
+		sliceDuration = math.Floor(float64(body.FileInfo.Duration) * float64(sliceSize) / float64(body.FileInfo.FileSize))
+		sliceDuration = math.Min(float64(hlsSegmentLength), sliceDuration)
+		sliceNum = uint64(math.Ceil(float64(body.FileInfo.Duration)/sliceDuration)) + hlsSegmentBuffer + 1
+	}
 
 	// query file slice exist or not todo change to read from redis
 	res, err := s.CT.FetchTables([]table.FileSlice{}, map[string]interface{}{
@@ -72,18 +91,21 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 
 	var i uint64
 	for i = 1; i <= sliceNum; i++ {
-
-		sliceNumber := i
-		sliceOffsetStart := (i - 1) * sliceSize
-
+		var sliceOffsetStart uint64
 		var sliceOffsetEnd uint64
-		if i == sliceNum {
-			sliceOffsetEnd = body.FileInfo.FileSize
-		} else {
-			sliceOffsetEnd = i * sliceSize
-		}
+		sliceNumber := i
+		if !body.IsVideoStream {
+			sliceOffsetStart = (i - 1) * sliceSize
 
-		//
+			if i == sliceNum {
+				sliceOffsetEnd = body.FileInfo.FileSize
+			} else {
+				sliceOffsetEnd = i * sliceSize
+			}
+		} else {
+			sliceOffsetStart = uint64(math.Max(float64(int(i)-int(hlsSegmentBuffer)-2), 0))
+			sliceOffsetEnd = uint64(math.Max(float64(int(i)-int(hlsSegmentBuffer)-1), 0))
+		}
 
 		if len(fileSlices) > 0 {
 			if existsFileSlice(fileSlices, sliceNumber, sliceOffsetStart, sliceOffsetEnd) {
@@ -125,6 +147,10 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 		isCover = table.IS_COVER
 		walletAddress = s.Conf.FileStorage.PictureLibAddress
 	}
+	var isVideoStream byte
+	if body.IsVideoStream {
+		isVideoStream = table.IS_VIDEO_STREAM
+	}
 
 	if len(slices) > 0 {
 		uploadFile := &data.UploadFile{
@@ -138,6 +164,7 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 			WalletAddress: walletAddress,
 			IsCover:       body.IsCover,
 			List:          make(map[uint64]bool),
+			IsVideoStream: body.IsVideoStream,
 		}
 
 		for _, fs := range slices {
@@ -164,6 +191,7 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 			file.Time = time.Now().Unix()
 			file.WalletAddress = walletAddress
 			file.IsCover = isCover
+			file.IsVideoStream = isVideoStream
 			if err = s.CT.Save(file); err != nil {
 				utils.ErrorLogf(eventHandleErrorTemplate, uploadFileEvent, "save file to DB", err)
 			}
@@ -215,6 +243,8 @@ func uploadFileCallbackFunc(_ context.Context, s *net.Server, message proto.Mess
 	rsp.TotalSlice = int64(sliceNum)
 	rsp.Result.State = protos.ResultState_RES_SUCCESS
 	rsp.ReqId = body.ReqId
+	rsp.IsVideoStream = body.IsVideoStream
+	rsp.VideoSliceDuration = uint64(sliceDuration)
 
 	return rsp, header.RspUploadFile
 }

@@ -6,11 +6,12 @@ import (
 	"io"
 	"strings"
 
+	"io/ioutil"
+	"net/http"
+
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
-	"io/ioutil"
-	"net/http"
 )
 
 var (
@@ -76,6 +77,8 @@ func StartHTTPServ() {
 	httpServ.MyRoute("/myCollectionAlbum", myCollectionAlbum)
 	httpServ.MyRoute("/abstractAlbum", abstractAlbum)
 	httpServ.MyRoute("/downImg", downImg)
+	httpServ.MyRoute("/streamVideo/", streamVideo)
+	httpServ.MyRoute("/videoSlice/", getVideoSlice)
 	httpServ.MyRoute("/deleteAlbum", deleteAlbum)
 	httpServ.MyRoute("/closeHTTP", closeHTTP)
 	httpServ.MyRoute("/saveFolder", saveFolder)
