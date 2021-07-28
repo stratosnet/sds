@@ -5,6 +5,7 @@ import (
 	"github.com/stratosnet/sds/utils/crypto"
 	"path"
 
+	"github.com/google/uuid"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -139,7 +140,7 @@ func reqGetPPlistData() *protos.ReqGetPPList {
 }
 
 // RequestUploadFileData RequestUploadFileData
-func RequestUploadFileData(paths, storagePath, reqID string, isCover bool) *protos.ReqUploadFile {
+func RequestUploadFileData(paths, storagePath, reqID string, isCover bool, isVideoStream bool) *protos.ReqUploadFile {
 	info := file.GetFileInfo(paths)
 	if info == nil {
 		utils.ErrorLog("wrong filePath")
@@ -164,13 +165,22 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover bool) *prot
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
-		Sign:    setting.GetSign(p2pFileString),
-		IsCover: isCover,
-		ReqId:   reqID,
+		Sign:          setting.GetSign(p2pFileString),
+		IsCover:       isCover,
+		ReqId:         reqID,
+		IsVideoStream: isVideoStream,
 	}
 	if isCover {
 		fileSuffix := path.Ext(paths)
 		req.FileInfo.FileName = fileHash + fileSuffix
+	}
+	if isVideoStream {
+		duration, err := file.GetVideoDuration(paths)
+		if err != nil {
+			utils.ErrorLog("Failed to get the length of the video: ", err)
+			return nil
+		}
+		req.FileInfo.Duration = duration
 	}
 	p2pFileHash := []byte(p2pFileString)
 	utils.DebugLogf("setting.WalletAddress + fileHash : %v", p2pFileHash)
@@ -205,6 +215,7 @@ func rspDownloadSliceData(target *protos.ReqDownloadSlice) *protos.RspDownloadSl
 		Data:          slice.Data,
 		SliceSize:     uint64(len(slice.Data)),
 		SavePath:      target.SavePath,
+		ReqId:         target.ReqId,
 	}
 }
 
@@ -228,6 +239,7 @@ func rspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 			Result:        rsp.Result,
 			NeedReport:    last,
 			SavePath:      rsp.SavePath,
+			ReqId:         rsp.ReqId,
 		}
 	}
 	return &protos.RspDownloadSlice{
@@ -248,6 +260,7 @@ func rspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 		Result:        rsp.Result,
 		NeedReport:    last,
 		SavePath:      rsp.SavePath,
+		ReqId:         rsp.ReqId,
 	}
 
 }
@@ -366,6 +379,7 @@ func reqDownloadSliceData(target *protos.RspFileStorageInfo, rsp *protos.Downloa
 			SliceOffset: rsp.SliceOffset,
 		},
 		SavePath: target.SavePath,
+		ReqId:    uuid.New().String(),
 	}
 }
 
@@ -494,7 +508,7 @@ func reqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
 	}
 }
 
-func reqFileStorageInfoData(path, savePath, reqID string) *protos.ReqFileStorageInfo {
+func reqFileStorageInfoData(path, savePath, reqID string, isVideoStream bool) *protos.ReqFileStorageInfo {
 	return &protos.ReqFileStorageInfo{
 		FileIndexes: &protos.FileIndexes{
 			P2PAddress:    setting.P2PAddress,
@@ -502,8 +516,9 @@ func reqFileStorageInfoData(path, savePath, reqID string) *protos.ReqFileStorage
 			FilePath:      path,
 			SavePath:      savePath,
 		},
-		Sign:  setting.GetSign(setting.P2PAddress + path),
-		ReqId: reqID,
+		Sign:          setting.GetSign(setting.P2PAddress + path),
+		ReqId:         reqID,
+		IsVideoStream: isVideoStream,
 	}
 }
 

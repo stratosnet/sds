@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/stratosnet/sds/relay/stratoschain"
-	"github.com/stratosnet/sds/sp/storages/table"
 	"net"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/sp/storages/table"
 
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/api"
@@ -197,6 +198,16 @@ func main() {
 		return true
 	}
 
+	uploadStream := func(line string, param []string) bool {
+		if len(param) == 0 {
+			fmt.Println("input upload file path")
+			return false
+		}
+		pathStr := file.EscapePath(param)
+		event.RequestUploadStream(pathStr, "", nil)
+		return true
+	}
+
 	list := func(line string, param []string) bool {
 		if len(param) == 0 {
 			event.FindMyFileList("", event.NowDir, "", "", 0, true, nil)
@@ -212,7 +223,7 @@ func main() {
 			fmt.Println("input download path, e.g: spb://account_address/file_hash|filename(optional)")
 			return false
 		}
-		event.GetFileStorageInfo(param[0], "", "", false, nil)
+		event.GetFileStorageInfo(param[0], "", "", false, false, nil)
 		return true
 	}
 
@@ -532,6 +543,7 @@ func main() {
 	console.Mystdin.RegisterProcessFunc("prepay", prepay)
 	console.Mystdin.RegisterProcessFunc("u", upload)
 	console.Mystdin.RegisterProcessFunc("put", upload)
+	console.Mystdin.RegisterProcessFunc("putstream", uploadStream)
 	console.Mystdin.RegisterProcessFunc("d", download)
 	console.Mystdin.RegisterProcessFunc("get", download)
 	console.Mystdin.RegisterProcessFunc("list", list)

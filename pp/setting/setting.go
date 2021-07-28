@@ -24,7 +24,7 @@ const REPROTDHTIME = 60 * 60
 const MAXDATA = 1024 * 1024 * 3
 
 // HTTPTIMEOUT  HTTPTIMEOUT second
-const HTTPTIMEOUT = 10
+const HTTPTIMEOUT = 20
 
 // FILEHASHLEN
 const FILEHASHLEN = 64
@@ -34,6 +34,8 @@ var IMAGEPATH = "./images/"
 
 // ImageMap download image hash map
 var ImageMap = &sync.Map{}
+
+var VIDEOPATH = "./videos"
 
 // DownProssMap download progress map
 var DownProssMap = &sync.Map{}
@@ -105,6 +107,7 @@ type config struct {
 	Token                       string `yaml:"Token"`
 	StratosChainAddress         string `yaml:"StratosChainAddress"`
 	StratosChainPort            string `yaml:"StratosChainPort"`
+	StreamingCache              bool   `yaml:"StreamingCache"`
 }
 
 var ostype = runtime.GOOS
@@ -232,7 +235,7 @@ func SetConfig(key, value string) bool {
 func SetupP2PKey() error {
 	if Config.P2PAddress == "" {
 		fmt.Println("No P2P key specified in config. Attempting to create one...")
-		nickname, err := console.Stdin.PromptInput("Enter P2pAddress nickname: ")
+		nickname, err := console.Stdin.PromptInput("Enter P2PAddress nickname: ")
 		if err != nil {
 			return errors.New("couldn't read nickname from console: " + err.Error())
 		}
@@ -260,7 +263,7 @@ func SetupP2PKey() error {
 		}
 		Config.P2PAddress = p2pKeyAddressString
 		Config.P2PPassword = password
-		SetConfig("P2pAddress", p2pKeyAddressString)
+		SetConfig("P2PAddress", p2pKeyAddressString)
 		SetConfig("P2PPassword", password)
 	}
 
