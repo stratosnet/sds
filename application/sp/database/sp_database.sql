@@ -3,15 +3,16 @@ USE sds;
 
 CREATE TABLE `file`
 (
-    `id`        int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'id',
-    `name`      varchar(128) NOT NULL DEFAULT '',
-    `hash`      char(64)     NOT NULL DEFAULT '',
-    `size`      bigint(20) unsigned NOT NULL DEFAULT '0',
-    `slice_num` int(10) unsigned NOT NULL DEFAULT '0',
-    `state`     tinyint(3) unsigned NOT NULL DEFAULT '0',
-    `download`  int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'download count',
-    `time`      int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'upload time',
-    `is_cover`  tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT 'is cover',
+    `id`                int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `name`              varchar(128) NOT NULL DEFAULT '',
+    `hash`              char(64)     NOT NULL DEFAULT '',
+    `size`              bigint(20) unsigned NOT NULL DEFAULT '0',
+    `slice_num`         int(10) unsigned NOT NULL DEFAULT '0',
+    `state`             tinyint(3) unsigned NOT NULL DEFAULT '0',
+    `download`          int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'download count',
+    `time`              int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'upload time',
+    `is_cover`          tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT 'is cover',
+    `is_video_stream`   tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT 'is video steam',
     PRIMARY KEY (`id`),
     UNIQUE KEY `IDX_HASH` (`hash`) USING HASH,
     KEY         `IDX_NAME` (`name`) USING HASH
@@ -135,6 +136,28 @@ CREATE TABLE `file_slice_storage`
     `network_address` varchar(32) NOT NULL DEFAULT '' COMMENT 'storage PP network address',
     PRIMARY KEY (`slice_hash`, `p2p_address`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `file_download` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'id',
+  `file_hash` char(64) NOT NULL DEFAULT '' ,
+  `to_wallet_address` char(42) NOT NULL DEFAULT '' COMMENT 'downloader wallet address',
+  `task_id` char(64) NOT NULL DEFAULT '' ,
+  `time` int(11) NOT NULL DEFAULT '0' COMMENT 'download time',
+  PRIMARY KEY (`id`),
+  KEY `IDX_FILE_HASH` (`file_hash`) USING HASH,
+  KEY `IDX_TASK_ID` (`task_id`) USING HASH
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `file_slice_download` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `slice_hash` char(64) NOT NULL DEFAULT '' ,
+  `from_wallet_address` char(42) NOT NULL DEFAULT '' COMMENT 'PP wallet address',
+  `to_wallet_address` char(42) NOT NULL DEFAULT '' COMMENT 'P wallet address',
+  `status` tinyint(3) unsigned NOT NULL DEFAULT '1' COMMENT '0:success,1:pending,2:error',
+  `task_id` char(64) NOT NULL DEFAULT '' ,
+  `time` int(11) NOT NULL DEFAULT '0' COMMENT 'download time',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
 CREATE TABLE traffic (
   id                      int(10) unsigned    NOT NULL AUTO_INCREMENT COMMENT 'ID',
