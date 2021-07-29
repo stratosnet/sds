@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/stratosnet/sds/utils"
 )
+
+const API_PORT = 9608
 
 // HTTPServ Http server
 type HTTPServ struct {
@@ -120,6 +123,11 @@ type funcMyHandler func(w http.ResponseWriter, request *http.Request)
 
 func (hh *myHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, "+
+		"X-Auth-Token, Authorization, Code, accept, origin, Cache-Control, X-Requested-With")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
 	hh.fh(w, r)
 }
 
@@ -138,5 +146,5 @@ func (hs *MyHTTPServ) MyStart() {
 	}
 	h := http.TimeoutHandler(mux, hs.timeout, "http time out!")
 	utils.Log("Start HTTP Server...")
-	http.ListenAndServe(":9608", h)
+	http.ListenAndServe(":"+strconv.Itoa(API_PORT), h)
 }

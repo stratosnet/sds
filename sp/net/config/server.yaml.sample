@@ -13,6 +13,8 @@ Peers:
 
 FileStorage:
   SliceBlockSize: 33554432
+  HlsSegmentLength: 10
+  HlsSegmentBuffer: 4
   PictureLibAddress: 0x0000000000000000000000000000000000000000
 
 Cache:

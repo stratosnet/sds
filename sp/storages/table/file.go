@@ -1,8 +1,9 @@
 package table
 
 import (
-	"github.com/stratosnet/sds/utils/database"
 	"time"
+
+	"github.com/stratosnet/sds/utils/database"
 )
 
 const (
@@ -13,19 +14,23 @@ const (
 
 	// IS_COVER
 	IS_COVER = 1
+
+	//IS_VIDEO_STREAM
+	IS_VIDEO_STREAM = 1
 )
 
 // File
 type File struct {
-	Id       uint32
-	Name     string
-	Hash     string
-	Size     uint64
-	SliceNum uint64
-	Download uint32
-	State    byte
-	Time     int64
-	IsCover  byte
+	Id            uint32
+	Name          string
+	Hash          string
+	Size          uint64
+	SliceNum      uint64
+	Download      uint32
+	State         byte
+	Time          int64
+	IsCover       byte
+	IsVideoStream byte
 	UserHasFile
 }
 

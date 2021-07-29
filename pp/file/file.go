@@ -2,14 +2,15 @@ package file
 
 import (
 	"encoding/csv"
-	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
 	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
 	"sync"
+
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
 )
 
 var rmutex sync.RWMutex
@@ -79,9 +80,13 @@ func GetFileData(filePath string, offset *protos.SliceOffset) []byte {
 
 // GetSliceData
 func GetSliceData(sliceHash string) []byte {
+	return GetWholeFileData(getSlicePath(sliceHash))
+}
+
+func GetWholeFileData(filePath string) []byte {
 	rmutex.Lock()
 	defer rmutex.Unlock()
-	data, err := ioutil.ReadFile(getSlicePath(sliceHash))
+	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return nil
 	}
@@ -143,6 +148,31 @@ func SaveFileData(data []byte, offset int64, sliceHash, fileName, fileHash, save
 		return false
 	}
 	fileMg.Write(data)
+	wmutex.Unlock()
+	return true
+}
+
+// SaveDownloadedSliceData
+func SaveDownloadedSliceData(data []byte, sliceHash, fileHash, savePath string) bool {
+	utils.DebugLog("sliceHash", sliceHash)
+	utils.DebugLog("fileHash", fileHash)
+	wmutex.Lock()
+	fileMg, err := os.OpenFile(GetDownloadTmpPath(fileHash, sliceHash, savePath), os.O_CREATE|os.O_RDWR, 0777)
+	defer fileMg.Close()
+	if err != nil {
+		utils.Log("SaveFileData err", err)
+	}
+	if err != nil {
+		utils.ErrorLog("error initialize file")
+		wmutex.Unlock()
+		return false
+	}
+	fileMg.Write(data)
+	if err != nil {
+		utils.ErrorLog("error save file")
+		wmutex.Unlock()
+		return false
+	}
 	wmutex.Unlock()
 	return true
 }
