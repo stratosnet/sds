@@ -9,7 +9,6 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/utils/types"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
-	"strconv"
 )
 
 func (m *MultiClient) SubscribeToStratosChainEvents() error {
@@ -164,15 +163,10 @@ func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 			fmt.Println("No purchased ozone amount was specified in the prepay message from stratos-chain")
 			return
 		}
-		purchasedUoz, err := strconv.ParseUint(purchasedUozList[0], 10, 64)
-		if err != nil {
-			fmt.Println("Couldn't convert purchased ozone amount to integer in the prepay message form stratos-chain: " + err.Error())
-			return
-		}
 
 		prepaidMsg := &protos.ReqPrepaid{
 			WalletAddress: reporterList[0],
-			PurchasedUoz:  purchasedUoz,
+			PurchasedUoz:  purchasedUozList[0],
 		}
 		prepaidMsgBytes, err := proto.Marshal(prepaidMsg)
 		if err != nil {
