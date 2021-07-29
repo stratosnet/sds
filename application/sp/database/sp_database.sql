@@ -1,6 +1,7 @@
 # docker run -d --name sds-mysql -e MYSQL_ROOT_PASSWORD=111111 -e MYSQL_DATABASE=sds -e MYSQL_USER=user1 -e MYSQL_PASSWORD=111111 -p 3306:3306 mysql
 USE sds;
 
+DROP TABLE IF EXISTS `file`;
 CREATE TABLE `file`
 (
     `id`                int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'id',
@@ -18,6 +19,7 @@ CREATE TABLE `file`
     KEY         `IDX_NAME` (`name`) USING HASH
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS pp;
 CREATE TABLE pp
 (
     id              int unsigned     NOT NULL AUTO_INCREMENT COMMENT 'Id of pp' PRIMARY KEY,
@@ -38,6 +40,7 @@ CREATE TABLE pp
 ) ENGINE = InnoDB
   DEFAULT CHARSET = UTF8MB4;
 
+DROP TABLE IF EXISTS user;
 create table user
 (
     id              int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Id of user' PRIMARY KEY,
@@ -62,10 +65,12 @@ create table user
 ) ENGINE = InnoDB
   DEFAULT CHARSET = UTF8MB4;
 
+DROP TABLE IF EXISTS `transfer_record`;
 CREATE TABLE `transfer_record`
 (
     `id`                   int(10) unsigned    NOT NULL AUTO_INCREMENT COMMENT 'ID' PRIMARY KEY,
-    `file_slice_id`        int(10) unsigned    NOT NULL DEFAULT '0',
+    `slice_hash`           char(64)            NOT NULL DEFAULT '',
+    `slice_size`           bigint unsigned     NOT NULL DEFAULT '0',
     `transfer_cer`         char(64)            NOT NULL DEFAULT '',
     `from_p2p_address`     char(255)           NOT NULL DEFAULT '' COMMENT 'origin PP P2P key address',
     `from_wallet_address`  char(42)            NOT NULL DEFAULT '' COMMENT 'origin PP wallet address',
@@ -75,18 +80,19 @@ CREATE TABLE `transfer_record`
     `to_network_address`   varchar(32)         NOT NULL DEFAULT '' COMMENT 'target network address',
     `status`               tinyint(3) unsigned NOT NULL DEFAULT '1' COMMENT '0:success,1:waiting,2:pending,3:error',
     `time`                 int(10) unsigned    NOT NULL DEFAULT '0' COMMENT 'transfer finish time',
-    KEY `IDX_FILE_SLICE_ID` (`file_slice_id`) USING BTREE,
     KEY `IDX_TRANSFER_CER` (`transfer_cer`) USING HASH
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = UTF8MB4;
 
+DROP TABLE IF EXISTS user_has_file;
 create table user_has_file
 (
     file_hash      varchar(256) null,
     wallet_address varchar(42) null
 );
 
+DROP TABLE IF EXISTS user_invite;
 create table user_invite
 (
     invitation_code varchar(256) null,
@@ -94,6 +100,7 @@ create table user_invite
     times           int          null
 );
 
+DROP TABLE IF EXISTS `user_directory`;
 CREATE TABLE `user_directory`
 (
     `dir_hash`       char(64)         NOT NULL DEFAULT '',
@@ -104,6 +111,7 @@ CREATE TABLE `user_directory`
     UNIQUE KEY `IDX_WALLET_ADDRESS_PATH` (`wallet_address`,`path`) USING HASH
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `user_directory_map_file`;
 CREATE TABLE `user_directory_map_file`
 (
     `dir_hash`     char(64)  NOT NULL DEFAULT '' COMMENT 'directory hash',
@@ -113,6 +121,7 @@ CREATE TABLE `user_directory_map_file`
     KEY         `IDX_WALLET_ADDRESS` (`owner_wallet`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `file_slice`;
 CREATE TABLE `file_slice`
 (
     `id`                 int(11) NOT NULL AUTO_INCREMENT COMMENT 'ID',
@@ -129,6 +138,7 @@ CREATE TABLE `file_slice`
     KEY                  `IDX_FILE_HASH` (`file_hash`) USING HASH
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `file_slice_storage`;
 CREATE TABLE `file_slice_storage`
 (
     `slice_hash`      char(64)    NOT NULL DEFAULT '',
@@ -137,6 +147,7 @@ CREATE TABLE `file_slice_storage`
     PRIMARY KEY (`slice_hash`, `p2p_address`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `file_download`;
 CREATE TABLE `file_download` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'id',
   `file_hash` char(64) NOT NULL DEFAULT '' ,
@@ -148,6 +159,7 @@ CREATE TABLE `file_download` (
   KEY `IDX_TASK_ID` (`task_id`) USING HASH
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `file_slice_download`;
 CREATE TABLE `file_slice_download` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'ID',
   `slice_hash` char(64) NOT NULL DEFAULT '' ,
@@ -159,6 +171,7 @@ CREATE TABLE `file_slice_download` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS traffic;
 CREATE TABLE traffic (
   id                      int(10) unsigned    NOT NULL AUTO_INCREMENT COMMENT 'ID',
   provider_p2p_address    char(255)           NOT NULL DEFAULT '' COMMENT 'PP P2P address',
@@ -173,8 +186,16 @@ CREATE TABLE traffic (
 ) ENGINE=InnoDB  
 DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS variables;
 CREATE TABLE variables (
     name  varchar(64)  NOT NULL DEFAULT '',
     value varchar(256) NOT NULL DEFAULT '',
     PRIMARY KEY (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+DROP TABLE IF EXISTS user_ozone;
+CREATE TABLE user_ozone (
+    wallet_address varchar(42) NOT NULL DEFAULT '',
+    available_uoz  text,
+    PRIMARY KEY (wallet_address)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
