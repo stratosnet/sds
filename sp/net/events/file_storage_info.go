@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -258,10 +259,27 @@ func validateFileStorageInfoRequest(s *net.Server, req *protos.ReqFileStorageInf
 		return
 	}
 
-	requiredUoz := file.Size
+	requiredUoz := &big.Int{}
+	requiredUoz.SetUint64(file.Size)
 	userOzone := &table.UserOzone{WalletAddress: req.FileIndexes.WalletAddress}
 	err = s.CT.Fetch(userOzone)
-	if err != nil || userOzone.AvailableUoz < requiredUoz {
+	if err != nil {
+		err = errors.New(fmt.Sprintf("not enough ozone to process (Available: 0  Required: %v)", requiredUoz))
+		return
+	}
+
+	availableUoz := &big.Int{}
+	_, success := availableUoz.SetString(userOzone.AvailableUoz, 10)
+	if !success {
+		utils.ErrorLog(fmt.Sprintf("Invalid user ozone stored in database: {%v}. User ozone set to 0.", userOzone.AvailableUoz))
+		_ = availableUoz.Set(big.NewInt(0))
+		userOzone.AvailableUoz = availableUoz.String()
+		if err := s.CT.Update(userOzone); err != nil {
+			utils.ErrorLog(err)
+		}
+	}
+
+	if availableUoz.Cmp(requiredUoz) < 0 {
 		err = errors.New(fmt.Sprintf("not enough ozone to process (Available: %v Required: %v)", userOzone.AvailableUoz, requiredUoz))
 		return
 	}

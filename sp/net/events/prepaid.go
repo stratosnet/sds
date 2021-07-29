@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -9,6 +10,7 @@ import (
 	"github.com/stratosnet/sds/sp/net"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
+	"math/big"
 )
 
 // prepaid is a concrete implementation of event
@@ -37,6 +39,7 @@ func prepaidCallbackFunc(_ context.Context, s *net.Server, message proto.Message
 
 	userOzone := &table.UserOzone{
 		WalletAddress: body.WalletAddress,
+		AvailableUoz:  big.NewInt(0).String(),
 	}
 	err := s.CT.Fetch(userOzone)
 	if err != nil {
@@ -47,7 +50,22 @@ func prepaidCallbackFunc(_ context.Context, s *net.Server, message proto.Message
 		}
 	}
 
-	userOzone.AvailableUoz += body.PurchasedUoz
+	availableUoz := &big.Int{}
+	_, success := availableUoz.SetString(userOzone.AvailableUoz, 10)
+	if !success {
+		utils.ErrorLog(fmt.Sprintf("Invalid user ozone stored in database: {%v}. User ozone set to 0.", userOzone.AvailableUoz))
+		_ = availableUoz.Set(big.NewInt(0))
+	}
+
+	purchasedUoz := &big.Int{}
+	_, success = purchasedUoz.SetString(body.PurchasedUoz, 10)
+	if !success {
+		utils.ErrorLog("Invalid purchased ozone in ReqPrepaid message: " + body.PurchasedUoz)
+		return rsp, header.RspPrepaid
+	}
+
+	_ = availableUoz.Add(availableUoz, purchasedUoz)
+	userOzone.AvailableUoz = availableUoz.String()
 	if err := s.CT.Update(userOzone); err != nil {
 		utils.ErrorLog(err)
 	}

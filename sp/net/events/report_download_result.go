@@ -2,6 +2,8 @@ package events
 
 import (
 	"context"
+	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -128,14 +130,24 @@ func reportDownloadResultCallbackFunc(_ context.Context, s *net.Server, message 
 		}
 
 		// consume ozone
-		consumedUoz := fileSlice.SliceSize
+		consumedUoz := &big.Int{}
+		consumedUoz.SetUint64(fileSlice.SliceSize)
 		userOzone := &table.UserOzone{WalletAddress: record.ToWalletAddress}
 		_ = s.CT.Fetch(userOzone)
-		if userOzone.AvailableUoz <= consumedUoz {
-			userOzone.AvailableUoz = 0
-		} else {
-			userOzone.AvailableUoz -= consumedUoz
+
+		availableUoz := &big.Int{}
+		_, success := availableUoz.SetString(userOzone.AvailableUoz, 10)
+		if !success {
+			utils.ErrorLog(fmt.Sprintf("Invalid user ozone stored in database: {%v}. User ozone set to 0.", userOzone.AvailableUoz))
+			_ = availableUoz.Set(big.NewInt(0))
 		}
+
+		if availableUoz.Cmp(consumedUoz) < 0 {
+			_ = availableUoz.Set(big.NewInt(0))
+		} else {
+			_ = availableUoz.Sub(availableUoz, consumedUoz)
+		}
+		userOzone.AvailableUoz = availableUoz.String()
 
 		if err := s.CT.Update(userOzone); err != nil {
 			if err := s.CT.Save(userOzone); err != nil {

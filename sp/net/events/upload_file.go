@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
+	"math/big"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -306,11 +307,27 @@ func validateUploadFileRequest(req *protos.ReqUploadFile, s *net.Server) (bool, 
 	}
 
 	// TODO: Change the calculation if the replication value is not 3
-	requiredUoz := req.FileInfo.FileSize * 3
+	requiredUoz := &big.Int{}
+	requiredUoz.SetUint64(req.FileInfo.FileSize * 3)
 
 	userOzone := &table.UserOzone{WalletAddress: req.MyAddress.WalletAddress}
 	err = s.CT.Fetch(userOzone)
-	if err != nil || userOzone.AvailableUoz < requiredUoz {
+	if err != nil {
+		return false, fmt.Sprintf("not enough ozone to process (Available: 0  Required: %v)", requiredUoz)
+	}
+
+	availableUoz := &big.Int{}
+	_, success := availableUoz.SetString(userOzone.AvailableUoz, 10)
+	if !success {
+		utils.ErrorLog(fmt.Sprintf("Invalid user ozone stored in database: {%v}. User ozone set to 0.", userOzone.AvailableUoz))
+		_ = availableUoz.Set(big.NewInt(0))
+		userOzone.AvailableUoz = availableUoz.String()
+		if err := s.CT.Update(userOzone); err != nil {
+			utils.ErrorLog(err)
+		}
+	}
+
+	if availableUoz.Cmp(requiredUoz) < 0 {
 		return false, fmt.Sprintf("not enough ozone to process (Available: %v Required: %v)", userOzone.AvailableUoz, requiredUoz)
 	}
 

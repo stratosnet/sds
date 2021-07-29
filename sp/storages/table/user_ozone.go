@@ -8,7 +8,7 @@ import (
 // UserOzone
 type UserOzone struct {
 	WalletAddress string
-	AvailableUoz  uint64
+	AvailableUoz  string
 }
 
 // TableName
