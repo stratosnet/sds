@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/ed25519"
 	"encoding/hex"
+	"fmt"
+	"math/big"
 	"path/filepath"
 	"time"
 
@@ -116,7 +118,6 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 	}
 
 	s.Load(traffic)
-	// TODO: confirm this logic in QB-475
 	if body.IsPP {
 		traffic.ProviderWalletAddress = body.WalletAddress
 	} else {
@@ -161,6 +162,37 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 
 	if ok, err := s.CT.StoreTable(traffic); !ok {
 		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "store traffic record table to db", err)
+	}
+
+	// consume ozone
+	consumedUoz := &big.Int{}
+	consumedUoz.SetUint64(traffic.Volume)
+	userOzone := &table.UserOzone{WalletAddress: traffic.ConsumerWalletAddress}
+	_ = s.CT.Fetch(userOzone)
+
+	availableUoz := &big.Int{}
+	_, success := availableUoz.SetString(userOzone.AvailableUoz, 10)
+	if !success {
+		utils.ErrorLog(fmt.Sprintf("Invalid user ozone stored in database: {%v}. User ozone set to 0.", userOzone.AvailableUoz))
+		_ = availableUoz.Set(big.NewInt(0))
+	}
+
+	if availableUoz.Cmp(consumedUoz) < 0 {
+		_ = availableUoz.Set(big.NewInt(0))
+	} else {
+		_ = availableUoz.Sub(availableUoz, consumedUoz)
+	}
+	userOzone.AvailableUoz = availableUoz.String()
+
+	if err := s.CT.Update(userOzone); err != nil {
+		if err := s.CT.Save(userOzone); err != nil {
+			utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "store user ozone table to db", err)
+		}
+	}
+
+	uploadFile.SetSliceFinish(fileSlice.SliceNumber)
+	if err := s.Store(uploadFile, 3600*time.Second); err != nil {
+		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "store file slice 2", err)
 	}
 
 	// check if all slice upload finished

@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -9,6 +10,7 @@ import (
 	"github.com/stratosnet/sds/sp/net"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
+	"math/big"
 )
 
 // prepaid is a concrete implementation of event
@@ -35,23 +37,38 @@ func prepaidCallbackFunc(_ context.Context, s *net.Server, message proto.Message
 		},
 	}
 
-	// TODO: change this logic in QB-475. Prepay doesn't increase capacity. It grants ozone to the user.
-	user := &table.User{
-		P2pAddress: body.P2PAddress,
+	userOzone := &table.UserOzone{
+		WalletAddress: body.WalletAddress,
+		AvailableUoz:  big.NewInt(0).String(),
+	}
+	err := s.CT.Fetch(userOzone)
+	if err != nil {
+		err = s.CT.Save(userOzone)
+		if err != nil {
+			utils.ErrorLog("Couldn't save user ozone to database")
+			return rsp, header.RspPrepaid
+		}
 	}
 
-	if s.CT.Fetch(user) != nil {
-		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "Could not find this user."
+	availableUoz := &big.Int{}
+	_, success := availableUoz.SetString(userOzone.AvailableUoz, 10)
+	if !success {
+		utils.ErrorLog(fmt.Sprintf("Invalid user ozone stored in database: {%v}. User ozone set to 0.", userOzone.AvailableUoz))
+		_ = availableUoz.Set(big.NewInt(0))
+	}
+
+	purchasedUoz := &big.Int{}
+	_, success = purchasedUoz.SetString(body.PurchasedUoz, 10)
+	if !success {
+		utils.ErrorLog("Invalid purchased ozone in ReqPrepaid message: " + body.PurchasedUoz)
 		return rsp, header.RspPrepaid
 	}
 
-	user.Capacity += body.Capacity
-	if err := s.CT.Save(user); err != nil {
+	_ = availableUoz.Add(availableUoz, purchasedUoz)
+	userOzone.AvailableUoz = availableUoz.String()
+	if err := s.CT.Update(userOzone); err != nil {
 		utils.ErrorLog(err)
 	}
-
-	s.SendMsg(body.P2PAddress, header.RspPrepaid, rsp)
 	return rsp, header.RspPrepaid
 }
 

@@ -327,9 +327,8 @@ message RspPrepay {
 }
 
 message ReqPrepaid {
-  string p2p_address = 1;
-  string wallet_address = 2;
-  uint64 capacity = 3;
+  string wallet_address = 1;
+  string purchased_uoz = 2;
 }
 
 message RspPrepaid {

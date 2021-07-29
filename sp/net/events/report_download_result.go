@@ -2,6 +2,8 @@ package events
 
 import (
 	"context"
+	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -88,7 +90,6 @@ func reportDownloadResultCallbackFunc(_ context.Context, s *net.Server, message 
 		record.Time = time.Now().Unix()
 	}
 
-	// TODO: confirm this logic in QB-475
 	if body.IsPP {
 		record.FromP2pAddress = body.MyP2PAddress
 		record.FromWalletAddress = body.MyWalletAddress
@@ -126,6 +127,32 @@ func reportDownloadResultCallbackFunc(_ context.Context, s *net.Server, message 
 
 		if ok, err := s.CT.StoreTable(traffic); !ok {
 			utils.ErrorLogf(eventHandleErrorTemplate, reportDownloadResultEvent, "store traffic record table to db", err)
+		}
+
+		// consume ozone
+		consumedUoz := &big.Int{}
+		consumedUoz.SetUint64(fileSlice.SliceSize)
+		userOzone := &table.UserOzone{WalletAddress: record.ToWalletAddress}
+		_ = s.CT.Fetch(userOzone)
+
+		availableUoz := &big.Int{}
+		_, success := availableUoz.SetString(userOzone.AvailableUoz, 10)
+		if !success {
+			utils.ErrorLog(fmt.Sprintf("Invalid user ozone stored in database: {%v}. User ozone set to 0.", userOzone.AvailableUoz))
+			_ = availableUoz.Set(big.NewInt(0))
+		}
+
+		if availableUoz.Cmp(consumedUoz) < 0 {
+			_ = availableUoz.Set(big.NewInt(0))
+		} else {
+			_ = availableUoz.Sub(availableUoz, consumedUoz)
+		}
+		userOzone.AvailableUoz = availableUoz.String()
+
+		if err := s.CT.Update(userOzone); err != nil {
+			if err := s.CT.Save(userOzone); err != nil {
+				utils.ErrorLogf(eventHandleErrorTemplate, reportDownloadResultEvent, "store user ozone table to db", err)
+			}
 		}
 
 		// verify download

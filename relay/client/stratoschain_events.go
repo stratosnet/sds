@@ -158,11 +158,15 @@ func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 			return
 		}
 
-		// TODO: change the capacity amount once the calculation is done in stratos-chain (QB-475)
-		// TODO: verify if it makes sense to use reporter as P2P address (QB-475)
+		purchasedUozList := result.Events["Prepay.purchased"]
+		if len(purchasedUozList) < 1 {
+			fmt.Println("No purchased ozone amount was specified in the prepay message from stratos-chain")
+			return
+		}
+
 		prepaidMsg := &protos.ReqPrepaid{
-			P2PAddress: reporterList[0],
-			Capacity:   1,
+			WalletAddress: reporterList[0],
+			PurchasedUoz:  purchasedUozList[0],
 		}
 		prepaidMsgBytes, err := proto.Marshal(prepaidMsg)
 		if err != nil {
