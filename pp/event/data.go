@@ -447,6 +447,7 @@ func reqTransferNoticeData(target *protos.ReqTransferNotice) *msg.RelayMsgBuf {
 		},
 
 		SliceStorageInfo: target.SliceStorageInfo,
+		DeleteOrigin:     target.DeleteOrigin,
 	}
 	data, err := proto.Marshal(sendTager)
 	if err != nil {

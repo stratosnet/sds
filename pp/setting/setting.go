@@ -134,7 +134,9 @@ func LoadConfig(configPath string) {
 	}
 	cf.SetLimitDownloadSpeed(Config.LimitDownloadSpeed, Config.IsLimitDownloadSpeed)
 	cf.SetLimitUploadSpeed(Config.LimitUploadSpeed, Config.IsLimitUploadSpeed)
-	prefix.SetConfig(Config.AddressPrefix)
+	if P2PAddress != "" {
+		prefix.SetConfig(Config.AddressPrefix)
+	}
 }
 
 // CheckLogin
