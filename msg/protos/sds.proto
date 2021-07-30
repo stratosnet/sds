@@ -361,6 +361,7 @@ message ReqTransferNotice {
   string transfer_cer = 2;
   bool from_sp = 3;
   PPBaseInfo storage_pp_info = 4;
+  bool deleteOrigin = 5;
 }
 message RspTransferNotice {
   Result result = 1;
@@ -409,6 +410,7 @@ message ReqReportTransferResult {
   PPBaseInfo new_pp = 2;
   Result result = 3;
   bool is_new = 4;
+  bool origin_deleted = 5;
 }
 
 message RspReportTransferResult {

@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 	"encoding/hex"
 	"fmt"
+	"github.com/stratosnet/sds/sp/common"
 	"math/big"
 	"path/filepath"
 	"time"
@@ -16,7 +17,6 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/relay/sds"
 	"github.com/stratosnet/sds/relay/stratoschain"
-	"github.com/stratosnet/sds/sp/common"
 	"github.com/stratosnet/sds/sp/net"
 	"github.com/stratosnet/sds/sp/storages/data"
 	"github.com/stratosnet/sds/sp/storages/table"
@@ -120,6 +120,7 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 	s.Load(traffic)
 	if body.IsPP {
 		traffic.ProviderWalletAddress = body.WalletAddress
+		traffic.ProviderP2pAddress = body.P2PAddress
 	} else {
 		traffic.ConsumerWalletAddress = body.WalletAddress
 	}
@@ -151,6 +152,13 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 	if fileSlice.Status != table.FILE_SLICE_STATUS_SUCCESS {
 		return rsp, header.RspReportUploadSliceResult
 	}
+
+	// if upload finish, started backup
+	backupSliceMsg := &common.MsgBackupSlice{
+		SliceHash:      fileSlice.SliceHash,
+		FromP2PAddress: fileSlice.P2pAddress,
+	}
+	s.HandleMsg(backupSliceMsg)
 
 	if err := s.CT.Save(fileSlice); err != nil {
 		utils.ErrorLogf(eventHandleErrorTemplate, reportUploadSliceResultEvent, "save file slice", err)
@@ -253,13 +261,6 @@ func reportUploadSliceResultCallbackFunc(_ context.Context, s *net.Server, messa
 			}
 		}
 	}
-
-	// if upload finish, started backup
-	backupSliceMsg := &common.MsgBackupSlice{
-		SliceHash:      fileSlice.SliceHash,
-		FromP2PAddress: fileSlice.P2pAddress,
-	}
-	s.HandleMsg(backupSliceMsg)
 
 	return rsp, header.RspReportUploadSliceResult
 }

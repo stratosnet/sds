@@ -78,7 +78,8 @@ func (m *MsgHandler) Run() {
 				m.Mining(msgMining.P2PAddress, msgMining.NetworkAddress, msgMining.Name, msgMining.Puk)
 			} else if msgType == common.MSG_TRANSFER_NOTICE {
 				msgTransferNotice := msg.(*common.MsgTransferNotice)
-				m.TransferNotice(msgTransferNotice.SliceHash, msgTransferNotice.FromP2PAddress, msgTransferNotice.ToP2PAddress)
+				m.TransferNotice(msgTransferNotice.SliceHash, msgTransferNotice.FromP2PAddress,
+					msgTransferNotice.ToP2PAddress, msgTransferNotice.DeleteOrigin)
 			} else if msgType == common.MSG_BACKUP_SLICE {
 				msgBackupSlice := msg.(*common.MsgBackupSlice)
 				m.BackupSlice(msgBackupSlice.SliceHash, msgBackupSlice.FromP2PAddress)
@@ -164,8 +165,10 @@ func (m *MsgHandler) BackupPP(p2pAddress string) {
 	}
 
 	res, err := m.server.CT.FetchTables([]table.FileSlice{}, map[string]interface{}{
+		"alias": "fs",
+		"join":  []string{"file_slice_storage", "fs.slice_hash = fss.slice_hash", "fss"},
 		"where": map[string]interface{}{
-			"p2p_address = ?": p2pAddress,
+			"fss.p2p_address = ?": p2pAddress,
 		},
 	})
 
@@ -181,19 +184,20 @@ func (m *MsgHandler) BackupPP(p2pAddress string) {
 		_, newStoreP2PAddress := m.server.HashRing.GetNodeExcludedNodeIDs(key, m.server.System.MissingBackupWalletAddr)
 
 		if newStoreP2PAddress != "" && fs.P2pAddress != newStoreP2PAddress {
-			m.TransferNotice(fs.SliceHash, fs.P2pAddress, newStoreP2PAddress)
+			m.TransferNotice(fs.SliceHash, fs.P2pAddress, newStoreP2PAddress, false)
 		}
 	}
 
 }
 
 // TransferNotice
-func (m *MsgHandler) TransferNotice(sliceHash, fromP2PAddress, toP2PAddress string) {
+func (m *MsgHandler) TransferNotice(sliceHash, fromP2PAddress, toP2PAddress string, deleteOrigin bool) {
 	if sliceHash == "" || fromP2PAddress == "" || toP2PAddress == "" {
 		utils.Log("TransferNotice: msg data given incorrect")
 		utils.Log("sliceHash:", sliceHash)
 		utils.Log("fromP2PAddress", fromP2PAddress)
 		utils.Log("toP2PAddress", toP2PAddress)
+		utils.Log("DeleteOrigin:", deleteOrigin)
 		return
 	}
 
@@ -240,6 +244,7 @@ func (m *MsgHandler) TransferNotice(sliceHash, fromP2PAddress, toP2PAddress stri
 			WalletAddress:  fromUser.WalletAddress,
 			NetworkAddress: fromUser.NetworkAddress,
 		},
+		DeleteOrigin: deleteOrigin,
 	}
 
 	transferRecord := &table.TransferRecord{
@@ -421,14 +426,16 @@ func (m *MsgHandler) BackupSlice(sliceHash, fileSliceP2PAddress string) {
 	}
 
 	up, down := m.server.HashRing.GetNodeUpDownNodes(fileSliceP2PAddress)
+	utils.DebugLog("Up stream ", up)
+	utils.DebugLog("Down stream ", down)
 
 	// if both up and down stream is empty, only have 1 node
 	if up != "" && down != "" && fileSliceP2PAddress != up && fileSliceP2PAddress != down {
 		// backup to up stream first
-		m.TransferNotice(sliceHash, fileSliceP2PAddress, up)
+		m.TransferNotice(sliceHash, fileSliceP2PAddress, up, false)
 		if up != down {
 			// if up and down are not the same, backup to down stream
-			m.TransferNotice(sliceHash, fileSliceP2PAddress, down)
+			m.TransferNotice(sliceHash, fileSliceP2PAddress, down, false)
 		}
 	}
 
