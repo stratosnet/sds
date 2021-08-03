@@ -8,6 +8,7 @@ import (
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
@@ -26,7 +27,7 @@ func ReqTransferNotice(ctx context.Context, conn spbf.WriteCloser) {
 	if target.FromSp { // if msg from SP, then self is new storage PP
 		utils.DebugLog("if msg from SP, then self is new storage PP")
 		// response to SP first, check whether has capacity to store
-		if target.StoragePpInfo.P2PAddress == setting.WalletAddress {
+		if target.StoragePpInfo.P2PAddress == setting.P2PAddress {
 
 			utils.ErrorLog("target is myself, drop msg")
 		}
@@ -111,13 +112,14 @@ func RspValidateTransferCer(ctx context.Context, conn spbf.WriteCloser) {
 }
 
 // ReqReportTransferResult
-func ReqReportTransferResult(transferCer string, result bool) {
+func ReqReportTransferResult(transferCer string, result bool, originDeleted bool) {
 	tTask, ok := task.TransferTaskMap[transferCer]
 	if !ok {
 		return
 	}
 	req := &protos.ReqReportTransferResult{
-		TransferCer: transferCer,
+		TransferCer:   transferCer,
+		OriginDeleted: originDeleted,
 	}
 	if result {
 		req.Result = &protos.Result{
@@ -195,7 +197,7 @@ func RspTransferDownload(ctx context.Context, conn spbf.WriteCloser) {
 		return
 	}
 	if task.SaveTransferData(&target) {
-		ReqReportTransferResult(target.TransferCer, true)
+		ReqReportTransferResult(target.TransferCer, true, false)
 		sendMessage(conn, rspTransferDownloadResultData(target.TransferCer), header.RspTransferDownloadResult)
 	}
 }
@@ -209,5 +211,20 @@ func RspTransferDownloadResult(ctx context.Context, conn spbf.WriteCloser) {
 	}
 
 	isSuccessful := target.Result.State == protos.ResultState_RES_SUCCESS
-	ReqReportTransferResult(target.TransferCer, isSuccessful)
+	if !isSuccessful {
+		ReqReportTransferResult(target.TransferCer, isSuccessful, false)
+		return
+	}
+
+	deleteOrigin := false
+	if tTask, ok := task.TransferTaskMap[target.TransferCer]; ok && tTask.DeleteOrigin {
+		//if msg from PP, then self is the original storage PP, delete original file if required
+		if err := file.DeleteSlice(tTask.SliceStorageInfo.SliceHash); err == nil {
+			utils.Log("Delete original slice successfully")
+			deleteOrigin = true
+		} else {
+			utils.ErrorLog("Fail to delete original slice ", err)
+		}
+	}
+	ReqReportTransferResult(target.TransferCer, isSuccessful, deleteOrigin)
 }

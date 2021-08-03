@@ -25,6 +25,7 @@ func (e *Transfer) SliceTransfer(params map[string]interface{}, r *http.Request)
 	var SliceHash string
 	var FromP2PAddress string
 	var ToP2PAddress string
+	deleteOrigin := false
 
 	if val, ok := params["SliceHash"]; ok {
 		SliceHash = val.(string)
@@ -32,16 +33,20 @@ func (e *Transfer) SliceTransfer(params map[string]interface{}, r *http.Request)
 		return data, 400, "Invalid SliceHash"
 	}
 
-	if val, ok := params["FromP2pAddress"]; ok {
+	if val, ok := params["FromP2PAddress"]; ok {
 		FromP2PAddress = val.(string)
 	} else {
 		return data, 400, "Invalid FromP2pAddress"
 	}
 
-	if val, ok := params["ToWalletAddress"]; ok {
+	if val, ok := params["ToP2PAddress"]; ok {
 		ToP2PAddress = val.(string)
 	} else {
 		return data, 400, "Invalid ToWalletAddress"
+	}
+
+	if val, ok := params["DeleteOrigin"]; ok {
+		deleteOrigin = val.(bool)
 	}
 
 	msg := &common.MsgWrapper{
@@ -50,6 +55,38 @@ func (e *Transfer) SliceTransfer(params map[string]interface{}, r *http.Request)
 			SliceHash:      SliceHash,
 			FromP2PAddress: FromP2PAddress,
 			ToP2PAddress:   ToP2PAddress,
+			DeleteOrigin:   deleteOrigin,
+		},
+	}
+
+	msgJson, _ := json.Marshal(msg)
+	e.GetAPIServer().Cache.EnQueue("msg_queue", msgJson)
+
+	return data, 200, "ok"
+}
+
+func (e *Transfer) SliceBackup(params map[string]interface{}, r *http.Request) ([]map[string]interface{}, int, string) {
+	data := make([]map[string]interface{}, 0)
+	var SliceHash string
+	var FromP2PAddress string
+
+	if val, ok := params["SliceHash"]; ok {
+		SliceHash = val.(string)
+	} else {
+		return data, 400, "Invalid SliceHash"
+	}
+
+	if val, ok := params["FromP2PAddress"]; ok {
+		FromP2PAddress = val.(string)
+	} else {
+		return data, 400, "Invalid FromP2PAddress"
+	}
+
+	msg := &common.MsgWrapper{
+		MsgType: common.MSG_BACKUP_SLICE,
+		Msg: &common.MsgBackupSlice{
+			SliceHash:      SliceHash,
+			FromP2PAddress: FromP2PAddress,
 		},
 	}
 

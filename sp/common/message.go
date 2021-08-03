@@ -46,6 +46,7 @@ type MsgTransferNotice struct {
 	SliceHash      string
 	FromP2PAddress string
 	ToP2PAddress   string
+	DeleteOrigin   bool
 }
 
 func (m *MsgTransferNotice) GetType() uint32 {
@@ -119,6 +120,12 @@ func (w *MsgWrapper) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		w.Msg = &msgBackupPP
+	case MSG_BACKUP_SLICE:
+		var msgBackupSlice MsgBackupSlice
+		if err := json.Unmarshal(m["Msg"], &msgBackupSlice); err != nil {
+			return err
+		}
+		w.Msg = &msgBackupSlice
 	}
 
 	return nil

@@ -105,6 +105,17 @@ func reportTransferResultCallbackFunc(_ context.Context, s *net.Server, message 
 		},
 	}
 
+	if body.OriginDeleted {
+		fileSliceStorage := &table.FileSliceStorage{
+			SliceHash:      fileSlice.SliceHash,
+			P2pAddress:     transferRecord.FromP2pAddress,
+			NetworkAddress: transferRecord.FromNetworkAddress,
+		}
+		if _, err := s.CT.DeleteTable(fileSliceStorage); err != nil {
+			utils.ErrorLogf(eventHandleErrorTemplate, reportTransferResultEvent, "delete file slice storage table from db", err)
+		}
+	}
+
 	if err := s.CT.Fetch(fileSlice); err == nil {
 		fileSliceStorage := &table.FileSliceStorage{
 			SliceHash:      fileSlice.SliceHash,
