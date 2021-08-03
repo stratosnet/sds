@@ -211,20 +211,20 @@ func RspTransferDownloadResult(ctx context.Context, conn spbf.WriteCloser) {
 	}
 
 	isSuccessful := target.Result.State == protos.ResultState_RES_SUCCESS
-	deleteOrigin := false
-	if isSuccessful {
-		if tTask, ok := task.TransferTaskMap[target.TransferCer]; ok {
-			//if msg from PP, then self is the original storage PP, delete original file if required
-			if tTask.DeleteOrigin {
-				if file.DeleteSlice(tTask.SliceStorageInfo.SliceHash) != nil {
-					utils.ErrorLog("Fail to delete original slice")
-				} else {
-					deleteOrigin = true
-					utils.Log("Delete original slice successfully")
-				}
-			}
-		}
+	if !isSuccessful {
+		ReqReportTransferResult(target.TransferCer, isSuccessful, false)
+		return
 	}
 
+	deleteOrigin := false
+	if tTask, ok := task.TransferTaskMap[target.TransferCer]; ok && tTask.DeleteOrigin {
+		//if msg from PP, then self is the original storage PP, delete original file if required
+		if err := file.DeleteSlice(tTask.SliceStorageInfo.SliceHash); err == nil {
+			utils.Log("Delete original slice successfully")
+			deleteOrigin = true
+		} else {
+			utils.ErrorLog("Fail to delete original slice ", err)
+		}
+	}
 	ReqReportTransferResult(target.TransferCer, isSuccessful, deleteOrigin)
 }
