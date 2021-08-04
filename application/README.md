@@ -1,8 +1,3 @@
-### RUN SP
-cd into application directory then 
-
-    make run-sp-server
-
 ### RUN PP as miner
 To run PP, cd into application/pp/node1 and node2
     

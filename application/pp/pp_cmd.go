@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/stratosnet/sds/relay/stratoschain"
-	"github.com/stratosnet/sds/sp/storages/table"
 
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/api"
@@ -128,7 +127,7 @@ func main() {
 			return false
 		}
 
-		if setting.State != table.PP_INACTIVE {
+		if setting.State != setting.PP_INACTIVE {
 			return true
 		}
 
@@ -156,7 +155,7 @@ func main() {
 			return false
 		}
 
-		if setting.State == table.PP_INACTIVE {
+		if setting.State == setting.PP_INACTIVE {
 			fmt.Println("The node is already inactive")
 			return true
 		}

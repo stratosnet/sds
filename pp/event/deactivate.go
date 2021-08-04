@@ -7,7 +7,6 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -38,7 +37,7 @@ func RspDeactivate(ctx context.Context, conn spbf.WriteCloser) {
 
 	setting.State = byte(target.ActivationState)
 
-	if target.ActivationState == table.PP_INACTIVE {
+	if target.ActivationState == setting.PP_INACTIVE {
 		fmt.Println("Current node is already inactive")
 	} else {
 		fmt.Println("The deactivation transaction was broadcast")
@@ -47,6 +46,6 @@ func RspDeactivate(ctx context.Context, conn spbf.WriteCloser) {
 
 // RspActivated. Response when this PP node was successfully activated
 func RspDeactivated(ctx context.Context, conn spbf.WriteCloser) {
-	setting.State = table.PP_INACTIVE
+	setting.State = setting.PP_INACTIVE
 	fmt.Println("This PP node is now inactive")
 }

@@ -7,7 +7,6 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -36,7 +35,7 @@ func RspActivate(ctx context.Context, conn spbf.WriteCloser) {
 		return
 	}
 
-	if target.ActivationState != table.PP_INACTIVE {
+	if target.ActivationState != setting.PP_INACTIVE {
 		fmt.Println("Current node is already active")
 		setting.State = byte(target.ActivationState)
 	} else {
@@ -46,6 +45,6 @@ func RspActivate(ctx context.Context, conn spbf.WriteCloser) {
 
 // RspActivated. Response when this PP node was successfully activated
 func RspActivated(ctx context.Context, conn spbf.WriteCloser) {
-	setting.State = table.PP_ACTIVE
+	setting.State = setting.PP_ACTIVE
 	fmt.Println("This PP node is now active")
 }

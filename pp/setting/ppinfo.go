@@ -3,10 +3,15 @@ package setting
 import (
 	"encoding/csv"
 	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
 	"os"
 	"sync"
+)
+
+const (
+	PP_INACTIVE = iota
+	PP_ACTIVE
+	PP_SUSPENDED
 )
 
 // IsPP
@@ -16,7 +21,7 @@ var IsPP = false
 var IsLoginToSP = false
 
 // State
-var State byte = table.PP_INACTIVE
+var State byte = PP_INACTIVE
 
 // IsStartMining
 var IsStartMining = false
