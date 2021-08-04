@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/pp/client"
-	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
 	"io/ioutil"
 	"net/http"
@@ -70,7 +69,7 @@ func streamVideo(w http.ResponseWriter, req *http.Request) {
 	}
 
 	sliceInfo := event.GetVideoSliceInfo(segmentName, fInfo)
-	if path.Ext(segmentName) == ".m3u8" || (setting.State != table.PP_ACTIVE && setting.Config.StreamingCache) {
+	if path.Ext(segmentName) == ".m3u8" || (setting.State != setting.PP_ACTIVE && setting.Config.StreamingCache) {
 		utils.DebugLog("Send request to sp to retrieve the segment ", segmentName)
 		event.GetVideoSlice(sliceInfo, fInfo, w)
 	} else {
