@@ -1,4 +1,4 @@
-package spbf
+package core
 
 import (
 	"context"

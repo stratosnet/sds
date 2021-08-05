@@ -3,7 +3,7 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -17,13 +17,13 @@ import (
 var NowDir = ""
 
 // ReqMakeDirectory ReqMakeDirectory
-func ReqMakeDirectory(ctx context.Context, conn spbf.WriteCloser) {
+func ReqMakeDirectory(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspMakeDirectory RspMakeDirectory
-func RspMakeDirectory(ctx context.Context, conn spbf.WriteCloser) {
+func RspMakeDirectory(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspMakeDirectory
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -34,7 +34,7 @@ func RspMakeDirectory(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPMkdir, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -60,13 +60,13 @@ func RemoveDirectory(path, reqID string, w http.ResponseWriter) {
 }
 
 // ReqRemoveDirectory ReqRemoveDirectory
-func ReqRemoveDirectory(ctx context.Context, conn spbf.WriteCloser) {
+func ReqRemoveDirectory(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspRemoveDirectory RspRemoveDirectory
-func RspRemoveDirectory(ctx context.Context, conn spbf.WriteCloser) {
+func RspRemoveDirectory(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspRemoveDirectory
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -77,7 +77,7 @@ func RspRemoveDirectory(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPRMdir, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -95,13 +95,13 @@ func MoveFileDirectory(fileHash, originalDir, targetDir, reqID string, w http.Re
 }
 
 // ReqMoveFileDirectory ReqMoveFileDirectory
-func ReqMoveFileDirectory(ctx context.Context, conn spbf.WriteCloser) {
+func ReqMoveFileDirectory(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("ReqMoveFileDirectory")
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspMoveFileDirectory RspMoveFileDirectory
-func RspMoveFileDirectory(ctx context.Context, conn spbf.WriteCloser) {
+func RspMoveFileDirectory(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspMoveFileDirectory
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -112,7 +112,7 @@ func RspMoveFileDirectory(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPMVdir, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }

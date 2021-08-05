@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -28,12 +28,12 @@ func RegisterChain(toSP bool) {
 }
 
 // ReqRegisterChain if get this, must be PP
-func ReqRegisterChain(ctx context.Context, conn spbf.WriteCloser) {
+func ReqRegisterChain(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("PP get ReqRegisterChain")
 	var target protos.ReqRegister
 	if unmarshalData(ctx, &target) {
 		// store register P wallet address
-		serv.RegisterPeerMap.Store(target.Address.P2PAddress, spbf.NetIDFromContext(ctx))
+		serv.RegisterPeerMap.Store(target.Address.P2PAddress, core.NetIDFromContext(ctx))
 		transferSendMessageToSPServer(reqRegisterDataTR(&target))
 
 		// IPProt := strings.Split(target.Address.NetworkAddress, ":")
@@ -50,7 +50,7 @@ func ReqRegisterChain(ctx context.Context, conn spbf.WriteCloser) {
 		// 	req := target
 		// 	req.Address = &protos.PPBaseInfo{
 		// 		WalletAddress:  target.Address.WalletAddress,
-		// 		NetworkAddress: conn.(*spbf.ServerConn).GetIP() + ":" + port,
+		// 		NetworkAddress: conn.(*core.ServerConn).GetIP() + ":" + port,
 		// 	}
 		// 	utils.DebugLog("req", req)
 		// 	SendMessageToSPServer(&req, header.ReqRegister)
@@ -62,7 +62,7 @@ func ReqRegisterChain(ctx context.Context, conn spbf.WriteCloser) {
 }
 
 // RspRegisterChain  PP -> SP, SP -> PP, PP -> P
-func RspRegisterChain(ctx context.Context, conn spbf.WriteCloser) {
+func RspRegisterChain(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspRegisterChain", conn)
 	var target protos.RspRegister
 	if !unmarshalData(ctx, &target) {
@@ -71,7 +71,7 @@ func RspRegisterChain(ctx context.Context, conn spbf.WriteCloser) {
 	utils.Log("target.RspRegister", target.P2PAddress)
 	if target.P2PAddress != setting.P2PAddress {
 		utils.Log("transfer RspRegisterChain to: ", target.P2PAddress)
-		transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+		transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		return
 	}
 
@@ -99,7 +99,7 @@ func RspRegisterChain(ctx context.Context, conn spbf.WriteCloser) {
 }
 
 // RspMining RspMining
-func RspMining(ctx context.Context, conn spbf.WriteCloser) {
+func RspMining(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspMining", conn)
 	var target protos.RspMining
 	if unmarshalData(ctx, &target) {

@@ -3,7 +3,7 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/setting"
@@ -23,7 +23,7 @@ func Activate(amount, fee, gas int64) error {
 }
 
 // RspActivate. Response to asking the SP node to activate this PP node
-func RspActivate(ctx context.Context, conn spbf.WriteCloser) {
+func RspActivate(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspActivate
 	success := unmarshalData(ctx, &target)
 	if !success {
@@ -44,7 +44,7 @@ func RspActivate(ctx context.Context, conn spbf.WriteCloser) {
 }
 
 // RspActivated. Response when this PP node was successfully activated
-func RspActivated(ctx context.Context, conn spbf.WriteCloser) {
+func RspActivated(ctx context.Context, conn core.WriteCloser) {
 	setting.State = setting.PP_ACTIVE
 	fmt.Println("This PP node is now active")
 }

@@ -3,7 +3,7 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -23,12 +23,12 @@ func Invite(code, reqID string, w http.ResponseWriter) {
 }
 
 // ReqInvite
-func ReqInvite(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqInvite(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspInvite
-func RspInvite(ctx context.Context, conn spbf.WriteCloser) {
+func RspInvite(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspInvite
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -41,7 +41,7 @@ func RspInvite(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPInvite, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -57,12 +57,12 @@ func GetReward(reqID string, w http.ResponseWriter) {
 }
 
 // ReqGetReward
-func ReqGetReward(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqGetReward(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspGetReward
-func RspGetReward(ctx context.Context, conn spbf.WriteCloser) {
+func RspGetReward(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("RspGetReward>>>>>>>>>>>>>>>>>>>")
 	var target protos.RspGetReward
 	if unmarshalData(ctx, &target) {
@@ -75,7 +75,7 @@ func RspGetReward(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPReward, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }

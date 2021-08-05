@@ -3,7 +3,7 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -22,12 +22,12 @@ func SaveOthersFile(fileHash, ownerAddress, reqID string, w http.ResponseWriter)
 }
 
 // ReqSaveFile ReqSaveFile
-func ReqSaveFile(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqSaveFile(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspSaveFile RspSaveFile
-func RspSaveFile(ctx context.Context, conn spbf.WriteCloser) {
+func RspSaveFile(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspSaveFile
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -38,7 +38,7 @@ func RspSaveFile(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPMVdir, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -54,12 +54,12 @@ func SaveFolder(folderHash, ownerAddress, reqID string, w http.ResponseWriter) {
 }
 
 // ReqSaveFolder ReqSaveFolder
-func ReqSaveFolder(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqSaveFolder(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspSaveFolder RspSaveFolder
-func RspSaveFolder(ctx context.Context, conn spbf.WriteCloser) {
+func RspSaveFolder(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspSaveFolder
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -70,7 +70,7 @@ func RspSaveFolder(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPSaveFolder, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }

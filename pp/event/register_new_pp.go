@@ -4,7 +4,7 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/setting"
@@ -19,7 +19,7 @@ func RegisterNewPP() {
 }
 
 // RspRegisterNewPP  SP-P
-func RspRegisterNewPP(ctx context.Context, conn spbf.WriteCloser) {
+func RspRegisterNewPP(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspRegisterNewPP")
 	var target protos.RspRegisterNewPP
 	if unmarshalData(ctx, &target) {

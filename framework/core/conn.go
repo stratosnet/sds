@@ -1,4 +1,4 @@
-package spbf
+package core
 
 // server readloop writeloop handleloop
 import (

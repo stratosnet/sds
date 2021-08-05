@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -22,7 +22,7 @@ import (
 var ProgressMap = &sync.Map{}
 
 // ReqUploadFileSlice
-func ReqUploadFileSlice(ctx context.Context, conn spbf.WriteCloser) {
+func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	//check whether self is the target, if not, transfer
 	var target protos.ReqUploadFileSlice
 	if unmarshalData(ctx, &target) {
@@ -30,7 +30,7 @@ func ReqUploadFileSlice(ctx context.Context, conn spbf.WriteCloser) {
 		sendMessage(conn, uploadSpeedOfProgressData(target.FileHash, uint64(len(target.Data))), header.UploadSpeedOfProgress)
 		if target.SliceNumAddr.PpInfo.NetworkAddress != setting.NetworkAddress {
 			utils.DebugLog("transfer to", target.SliceNumAddr.PpInfo.NetworkAddress)
-			transferSendMessageToPPServ(target.SliceNumAddr.PpInfo.NetworkAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToPPServ(target.SliceNumAddr.PpInfo.NetworkAddress, core.MessageFromContext(ctx))
 		} else {
 			if !task.SaveUploadFile(&target) {
 				// save failed, not handing yet
@@ -56,7 +56,7 @@ func ReqUploadFileSlice(ctx context.Context, conn spbf.WriteCloser) {
 }
 
 // RspUploadFileSlice
-func RspUploadFileSlice(ctx context.Context, conn spbf.WriteCloser) {
+func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	//check whether self is the target, if not, transfer
 	utils.DebugLog("get RspUploadFileSlice")
 	var target protos.RspUploadFileSlice
@@ -64,7 +64,7 @@ func RspUploadFileSlice(ctx context.Context, conn spbf.WriteCloser) {
 		if target.P2PAddress != setting.P2PAddress {
 
 			utils.DebugLog("PP get resp upload slice success, transfer to WalletAddress = ", target.P2PAddress, "sliceNumber= ", target.SliceNumAddr.SliceNumber)
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		} else {
 			// target is self, report to SP if success
 			utils.DebugLog("P get resp upload slice success sliceNumber", target.SliceNumAddr.SliceNumber, "target.FileHash", target.FileHash)
@@ -87,7 +87,7 @@ func RspUploadFileSlice(ctx context.Context, conn spbf.WriteCloser) {
 }
 
 // RspReportUploadSliceResult  SP-P OR SP-PP
-func RspReportUploadSliceResult(ctx context.Context, conn spbf.WriteCloser) {
+func RspReportUploadSliceResult(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspReportUploadSliceResult")
 	var target protos.RspReportUploadSliceResult
 	if unmarshalData(ctx, &target) {
@@ -153,7 +153,7 @@ func sendSlice(pb proto.Message, fileHash string) {
 }
 
 // UploadSpeedOfProgress UploadSpeedOfProgress
-func UploadSpeedOfProgress(ctx context.Context, conn spbf.WriteCloser) {
+func UploadSpeedOfProgress(ctx context.Context, conn core.WriteCloser) {
 
 	var target protos.UploadSpeedOfProgress
 	if unmarshalData(ctx, &target) {

@@ -2,7 +2,7 @@ package client
 
 import (
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/utils"
 	"net"
@@ -68,14 +68,14 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 		return nil
 	}
 	utils.Log("connect success")
-	onConnect := cf.OnConnectOption(func(c spbf.WriteCloser) bool {
+	onConnect := cf.OnConnectOption(func(c core.WriteCloser) bool {
 		utils.DebugLog("on connect")
 		return true
 	})
-	onError := cf.OnErrorOption(func(c spbf.WriteCloser) {
+	onError := cf.OnErrorOption(func(c core.WriteCloser) {
 		utils.Log("on error")
 	})
-	onClose := cf.OnCloseOption(func(c spbf.WriteCloser) {
+	onClose := cf.OnCloseOption(func(c core.WriteCloser) {
 		utils.Log("on close", c.(*cf.ClientConn).GetName())
 		delete(ConnMap, c.(*cf.ClientConn).GetName())
 
@@ -109,7 +109,7 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 		}
 
 	})
-	onMessage := cf.OnMessageOption(func(msg msg.RelayMsgBuf, c spbf.WriteCloser) {
+	onMessage := cf.OnMessageOption(func(msg msg.RelayMsgBuf, c core.WriteCloser) {
 	})
 	heartClose := cf.HeartCloseOption(!heartbeat)
 	bufferSize := cf.BufferSizeOption(100)
