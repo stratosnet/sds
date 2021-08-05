@@ -5,6 +5,7 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/sp/storages/table"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/types"
 	"os"
 	"sync"
 )
@@ -68,11 +69,16 @@ func GetLocalPPList() []*protos.PPBaseInfo {
 	}
 	if len(record) > 0 {
 		for _, item := range record {
-			pp := protos.PPBaseInfo{
-				NetworkAddress: item[0],
-				P2PAddress:     item[1],
+			networkID, err := types.IDFromString(item[0])
+			if err == nil {
+				pp := protos.PPBaseInfo{
+					NetworkAddress: networkID.NetworkAddress,
+					P2PAddress:     networkID.P2pAddress,
+				}
+				PPList = append(PPList, &pp)
+			} else {
+				utils.ErrorLog("invalid networkID in local PP list: " + item[0])
 			}
-			PPList = append(PPList, &pp)
 		}
 	} else {
 		utils.Log("PPList == nil")
@@ -106,7 +112,7 @@ func savePPListLocal() {
 	writer := csv.NewWriter(csvFile)
 	utils.DebugLog("PPList len", len(PPList))
 	for _, post := range PPList {
-		line := []string{post.NetworkAddress, post.P2PAddress}
+		line := []string{types.NetworkID{P2pAddress: post.P2PAddress, NetworkAddress: post.NetworkAddress}.String()}
 		err = writer.Write(line)
 		if err != nil {
 			utils.ErrorLog("csv line ", err)
@@ -124,5 +130,12 @@ func DeletePPList(networkAddress string) {
 			savePPListLocal()
 			return
 		}
+	}
+}
+
+func GetNetworkID() types.NetworkID {
+	return types.NetworkID{
+		P2pAddress:     P2PAddress,
+		NetworkAddress: NetworkAddress,
 	}
 }

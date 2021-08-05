@@ -45,7 +45,7 @@ func main() {
 		"cpu_info":    "A9",
 		"mac_address": "f0:18:98:37:15:26",
 		"version":     1,
-		"pub_key":     "90zsdjfwje020fjsdjjoij2900293",
+		"p2p_pubkey":  "90zsdjfwje020fjsdjjoij2900293",
 	}
 
 	savePP.SetData(data)

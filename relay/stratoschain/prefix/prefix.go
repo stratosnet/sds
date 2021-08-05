@@ -1,8 +1,6 @@
 package prefix
 
-import (
-	"github.com/cosmos/cosmos-sdk/types"
-)
+import "github.com/cosmos/cosmos-sdk/types"
 
 var (
 	AccountPubKeyPrefix    = "pub"
@@ -12,10 +10,16 @@ var (
 	ConsNodePubKeyPrefix   = "valconspub"
 )
 
+var sealed = false
+
 func SetConfig(addressPrefix string) {
-	config := types.GetConfig()
-	config.SetBech32PrefixForAccount(addressPrefix, addressPrefix+AccountPubKeyPrefix)
-	config.SetBech32PrefixForValidator(addressPrefix+ValidatorAddressPrefix, addressPrefix+ValidatorPubKeyPrefix)
-	config.SetBech32PrefixForConsensusNode(addressPrefix+ConsNodeAddressPrefix, addressPrefix+ConsNodePubKeyPrefix)
-	config.Seal()
+	if !sealed {
+		config := types.GetConfig()
+		config.SetBech32PrefixForAccount(addressPrefix, addressPrefix+AccountPubKeyPrefix)
+		config.SetBech32PrefixForValidator(addressPrefix+ValidatorAddressPrefix, addressPrefix+ValidatorPubKeyPrefix)
+		config.SetBech32PrefixForConsensusNode(addressPrefix+ConsNodeAddressPrefix, addressPrefix+ConsNodePubKeyPrefix)
+		config.Seal()
+
+		sealed = true
+	}
 }
