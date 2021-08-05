@@ -329,9 +329,12 @@ func broadcastFileUploadTx(file *table.File, s *net.Server) error {
 	spWalletAddress := spPubKey.Address()
 	spWalletAddressString := types.AccAddress(spPubKey.Address()).String()
 	txMsg := stratoschain.BuildFileUploadMsg(fileHash, spWalletAddress, ppWalletAddress)
+	signatureKeys := []stratoschain.SignatureKey{
+		{Address: spWalletAddressString, PrivateKey: spPrivKey[:], Type: stratoschain.SignatureSecp256k1},
+	}
 	txBytes, err := stratoschain.BuildTxBytes(s.Conf.BlockchainInfo.Token, s.Conf.BlockchainInfo.ChainId, "",
-		spWalletAddressString, "sync", txMsg, s.Conf.BlockchainInfo.Transactions.Fee,
-		s.Conf.BlockchainInfo.Transactions.Gas, spPrivKey[:])
+		"sync", txMsg, s.Conf.BlockchainInfo.Transactions.Fee,
+		s.Conf.BlockchainInfo.Transactions.Gas, signatureKeys)
 	if err != nil {
 		return err
 	}

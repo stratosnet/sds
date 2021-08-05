@@ -33,7 +33,7 @@ CREATE TABLE pp
     cpu_info        varchar(64)   NOT NULL DEFAULT '',
     mac_address     varchar(17)   NOT NULL DEFAULT '',
     version         int unsigned NOT NULL DEFAULT '0',
-    pub_key         varchar(1000) NOT NULL DEFAULT '',
+    p2p_pubkey      varchar(1000) NOT NULL DEFAULT '',
     state           tinyint unsigned NOT NULL DEFAULT '0' COMMENT '0:offline,1:online',
     active          tinyint       NOT NULL DEFAULT '0',
     UNIQUE KEY IDX_P2P_ADDRESS (p2p_address) USING HASH

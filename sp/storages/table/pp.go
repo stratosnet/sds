@@ -51,7 +51,7 @@ type PP struct {
 	CpuInfo        string
 	MacAddress     string
 	Version        uint32
-	PubKey         string
+	P2pPubkey      string
 	State          byte
 	Active         byte // Whether or not the PP is an active resource node on the stratos-chain
 }

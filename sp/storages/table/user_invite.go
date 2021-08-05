@@ -7,7 +7,7 @@ import (
 
 type UserInvite struct {
 	InvitationCode string
-	P2pAddress     string // invitor
+	WalletAddress  string // invitor
 	Times          byte   // invite times
 }
 

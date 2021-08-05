@@ -46,6 +46,7 @@ func activatedCallbackFunc(_ context.Context, s *net.Server, message proto.Messa
 	}
 
 	pp.Active = table.PP_ACTIVE
+	pp.P2pPubkey = body.P2PPubkey
 	if err := s.CT.Save(pp); err != nil {
 		utils.ErrorLog(err)
 	}

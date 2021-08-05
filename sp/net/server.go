@@ -129,7 +129,7 @@ func (s *Server) BuildHashRing() {
 
 	// initialize hashring
 	ppList, err := s.CT.GetDriver().FetchAll("pp", map[string]interface{}{
-		"columns": "p2p_address, network_address, pub_key",
+		"columns": "p2p_address, network_address, p2p_pubkey",
 	})
 	if err == nil {
 		for _, pp := range ppList {

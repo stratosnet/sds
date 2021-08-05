@@ -3,7 +3,6 @@ package events
 import (
 	"context"
 	"crypto/ed25519"
-	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/spbf"
 	"github.com/stratosnet/sds/msg/header"
@@ -59,7 +58,6 @@ func registerNewPPCallbackFunc(_ context.Context, s *net.Server, message proto.M
 		CpuInfo:        body.CpuInfo,
 		MacAddress:     body.MacAddress,
 		Version:        body.Version,
-		PubKey:         fmt.Sprintf("PubKeySecp256k1{%X}", body.PubKey),
 		State:          table.STATE_OFFLINE,
 		Active:         table.PP_INACTIVE,
 	}
