@@ -292,6 +292,7 @@ message RspActivate {
 
 message ReqActivated {
   string p2p_address = 1;
+  string p2p_pubkey = 2;
 }
 
 message RspActivated {
