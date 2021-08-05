@@ -51,7 +51,7 @@ func miningCallbackFunc(_ context.Context, s *net.Server, message proto.Message,
 		return rsp, header.RspMining
 	}
 
-	// map net address with wallet address
+	// map net address with p2p address
 	name := conn.(*spbf.ServerConn).GetName()
 	s.AddConn(name, body.Address.P2PAddress, conn)
 

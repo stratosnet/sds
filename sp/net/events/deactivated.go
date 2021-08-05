@@ -46,6 +46,7 @@ func deactivatedCallbackFunc(_ context.Context, s *net.Server, message proto.Mes
 	}
 
 	pp.Active = table.PP_INACTIVE
+	pp.P2pPubkey = ""
 	if err := s.CT.Save(pp); err != nil {
 		utils.ErrorLog(err)
 	}

@@ -123,7 +123,6 @@ func (m *MsgHandler) Mining(p2pAddress, networkAddress, name string, puk []byte)
 	if m.server.CT.Fetch(pp) == nil {
 		pp.State = table.STATE_ONLINE
 		pp.NetworkAddress = networkAddress
-		pp.PubKey = fmt.Sprintf("PubKeySecp256k1{%X}", puk)
 		m.server.CT.Save(pp)
 	}
 }
@@ -412,7 +411,7 @@ func (m *MsgHandler) DeleteSlice(p2pAddress, sliceHash string) {
 		SliceHash:  sliceHash,
 	}
 
-	m.server.SendMsg(p2pAddress, header.ReqTransferNotice, req)
+	m.server.SendMsg(p2pAddress, header.ReqDeleteSlice, req)
 }
 
 // BackupSlice
@@ -455,14 +454,18 @@ func broadcastVolumeReportTx(traffic []table.Traffic, epoch uint64, fileHash str
 	spWalletAddress := spPubKey.Address()
 	spWalletAddressString := types.AccAddress(spPubKey.Address()).String()
 
-	txMsg, err := stratoschain.BuildVolumeReportMsg(traffic, spWalletAddress, epoch, fileHash)
+	txMsg, err := stratoschain.BuildVolumeReportMsg(traffic, spWalletAddress, spWalletAddress, epoch, fileHash)
 	if err != nil {
 		return err
 	}
 
+	signatureKeys := []stratoschain.SignatureKey{
+		{Address: spWalletAddressString, PrivateKey: spPrivKey[:], Type: stratoschain.SignatureSecp256k1},
+		{Address: spWalletAddressString, PrivateKey: spPrivKey[:], Type: stratoschain.SignatureSecp256k1},
+	}
 	txBytes, err := stratoschain.BuildTxBytes(s.Conf.BlockchainInfo.Token, s.Conf.BlockchainInfo.ChainId, "",
-		spWalletAddressString, "sync", txMsg, s.Conf.BlockchainInfo.Transactions.Fee,
-		s.Conf.BlockchainInfo.Transactions.Gas, spPrivKey[:])
+		"sync", txMsg, s.Conf.BlockchainInfo.Transactions.Fee,
+		s.Conf.BlockchainInfo.Transactions.Gas, signatureKeys)
 	if err != nil {
 		return err
 	}

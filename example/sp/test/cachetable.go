@@ -55,7 +55,7 @@ func main() {
 	////ct.Fetch(pp)
 	//
 	////fmt.Println(pp)
-	//pp.PubKey = "654321"
+	//pp.P2pPubkey = "654321"
 	//
 	//ct.Save(pp)
 	//

@@ -60,9 +60,11 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivate, error) {
 		return nil, err
 	}
 
-	// TODO: Send network ID instead of P2P address (QB-446)
-	txMsg := stratoschain.BuildCreateResourceNodeMsg(setting.P2PAddress, setting.Config.Token, setting.P2PAddress, "", setting.P2PPublicKey, amount, ownerAddress)
-	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", setting.WalletAddress, "sync", txMsg, fee, gas, setting.WalletPrivateKey)
+	txMsg := stratoschain.BuildCreateResourceNodeMsg(setting.GetNetworkID().String(), setting.Config.Token, setting.P2PAddress, "", setting.P2PPublicKey, amount, ownerAddress)
+	signatureKeys := []stratoschain.SignatureKey{
+		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: stratoschain.SignatureSecp256k1},
+	}
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", "sync", txMsg, fee, gas, signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +85,10 @@ func reqDeactivateData(fee, gas int64) (*protos.ReqDeactivate, error) {
 	}
 
 	txMsg := stratoschain.BuildRemoveResourceNodeMsg(nodeAddress, ownerAddress)
-	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", setting.WalletAddress, "sync", txMsg, fee, gas, setting.WalletPrivateKey)
+	signatureKeys := []stratoschain.SignatureKey{
+		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: stratoschain.SignatureSecp256k1},
+	}
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", "sync", txMsg, fee, gas, signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +108,10 @@ func reqPrepayData(amount, fee, gas int64) (*protos.ReqPrepay, error) {
 	}
 
 	txMsg := stratoschain.BuildPrepayMsg(setting.Config.Token, amount, senderAddress[:])
-	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", setting.WalletAddress, "sync", txMsg, fee, gas, setting.WalletPrivateKey)
+	signatureKeys := []stratoschain.SignatureKey{
+		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: stratoschain.SignatureSecp256k1},
+	}
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", "sync", txMsg, fee, gas, signatureKeys)
 	if err != nil {
 		return nil, err
 	}

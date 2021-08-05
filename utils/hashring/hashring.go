@@ -91,7 +91,7 @@ func (r *HashRing) AddNode(node *Node) {
 
 	var i uint32
 	for i = 0; i < numberOfNode; i++ {
-		index := r.hashToCRC32(r.hashKey(r.virtualKey(node.ID, i)))
+		index := r.CalcIndex(r.virtualKey(node.ID, i))
 		r.VRing.Insert(&VNode{Index: index, NodeID: node.ID})
 	}
 
@@ -121,7 +121,7 @@ func (r *HashRing) RemoveNode(nodeID string) bool {
 
 	var i uint32
 	for i = 0; i < numberOfNode; i++ {
-		index := r.hashToCRC32(r.hashKey(r.virtualKey(node.ID, i)))
+		index := r.CalcIndex(r.virtualKey(node.ID, i))
 		r.VRing.Delete(&VNode{Index: index, NodeID: node.ID})
 	}
 
@@ -200,9 +200,7 @@ func (r *HashRing) RandomGetNodes(num int) []*Node {
 // GetNode
 // @params key
 func (r *HashRing) GetNode(key string) (uint32, string) {
-
-	keyIndex := r.hashToCRC32(r.hashKey(key))
-
+	keyIndex := r.CalcIndex(key)
 	return r.GetNodeByIndex(keyIndex)
 }
 
@@ -223,11 +221,6 @@ func (r *HashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string) (uint32,
 	}
 
 	index, id := r.GetNode(key)
-
-	for _, id := range NodeIDs {
-		r.SetOffline(id)
-	}
-
 	return index, id
 
 	//tmpRing := New(r.NumberOfVirtual)
