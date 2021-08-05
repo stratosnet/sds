@@ -4,7 +4,7 @@ package cf
 
 import (
 	"errors"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/utils/cmem"
@@ -31,13 +31,13 @@ var (
 // MsgHandler
 type MsgHandler struct {
 	message msg.RelayMsgBuf
-	handler spbf.HandlerFunc
+	handler core.HandlerFunc
 }
 
-type onConnectFunc func(spbf.WriteCloser) bool
-type onMessageFunc func(msg.RelayMsgBuf, spbf.WriteCloser)
-type onCloseFunc func(spbf.WriteCloser)
-type onErrorFunc func(spbf.WriteCloser)
+type onConnectFunc func(core.WriteCloser) bool
+type onMessageFunc func(msg.RelayMsgBuf, core.WriteCloser)
+type onCloseFunc func(core.WriteCloser)
+type onErrorFunc func(core.WriteCloser)
 
 type options struct {
 	onConnect  onConnectFunc
@@ -221,7 +221,7 @@ func (cc *ClientConn) Start() {
 	if onConnect != nil {
 		onConnect(cc)
 	}
-	loopers := []func(spbf.WriteCloser, *sync.WaitGroup){readLoop, writeLoop, handleLoop}
+	loopers := []func(core.WriteCloser, *sync.WaitGroup){readLoop, writeLoop, handleLoop}
 	for _, l := range loopers {
 		looper := l
 		cc.wg.Add(1)
@@ -229,7 +229,7 @@ func (cc *ClientConn) Start() {
 	}
 	var (
 		myClock = clock.NewClock()
-		handler = spbf.GetHandlerFunc(header.ReqHeart)
+		handler = core.GetHandlerFunc(header.ReqHeart)
 		jobFunc = func() {
 			if handler != nil {
 				cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
@@ -421,7 +421,7 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf) (err error) {
 }
 
 // readLoop
-func readLoop(c spbf.WriteCloser, wg *sync.WaitGroup) {
+func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	var (
 		spbConn net.Conn
 		cDone   <-chan struct{}
@@ -473,7 +473,7 @@ func readLoop(c spbf.WriteCloser, wg *sync.WaitGroup) {
 				buffer = nil
 				// Mylog(cc.opts.logOpen,"client msg size", msgH.Cmd)
 				if msgH.Len == 0 {
-					handler := spbf.GetHandlerFunc(utils.ByteToString(msgH.Cmd))
+					handler := core.GetHandlerFunc(utils.ByteToString(msgH.Cmd))
 					if handler != nil {
 						handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
 					}
@@ -508,12 +508,12 @@ func readLoop(c spbf.WriteCloser, wg *sync.WaitGroup) {
 						MSGHead: msgH,
 						MSGData: msgBuf[0:msgH.Len],
 					}
-					handler := spbf.GetHandlerFunc(utils.ByteToString(msgH.Cmd))
+					handler := core.GetHandlerFunc(utils.ByteToString(msgH.Cmd))
 					Mylog(cc.opts.logOpen, "read handler:", handler, utils.ByteToString(msgH.Cmd))
 					if handler == nil {
 						if onMessage != nil {
 							Mylog(cc.opts.logOpen, "client message", message, " call onMessage()\n")
-							onMessage(*message, c.(spbf.WriteCloser))
+							onMessage(*message, c.(core.WriteCloser))
 						} else {
 							// Mylog(cc.opts.logOpen,"client no handler or onMessage() found for message\n")
 						}
@@ -540,7 +540,7 @@ func readLoop(c spbf.WriteCloser, wg *sync.WaitGroup) {
 }
 
 // writeLoop
-func writeLoop(c spbf.WriteCloser, wg *sync.WaitGroup) {
+func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	var (
 		spbConn net.Conn
 		sendCh  chan *msg.RelayMsgBuf
@@ -649,7 +649,7 @@ func writeLoop(c spbf.WriteCloser, wg *sync.WaitGroup) {
 }
 
 // handleLoop
-func handleLoop(c spbf.WriteCloser, wg *sync.WaitGroup) {
+func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	var (
 		cDone     <-chan struct{}
 		handlerCh chan MsgHandler
@@ -681,34 +681,34 @@ func handleLoop(c spbf.WriteCloser, wg *sync.WaitGroup) {
 			return
 		case msgHandler := <-handlerCh:
 			msg, handler := msgHandler.message, msgHandler.handler
-			handler(spbf.CreateContextWithNetID(spbf.CreateContextWithMessage(ctx, &msg), netID), c)
+			handler(core.CreateContextWithNetID(core.CreateContextWithMessage(ctx, &msg), netID), c)
 		}
 	}
 }
 
 // OnConnectOption
-func OnConnectOption(cb func(spbf.WriteCloser) bool) ClientOption {
+func OnConnectOption(cb func(core.WriteCloser) bool) ClientOption {
 	return func(o *options) {
 		o.onConnect = cb
 	}
 }
 
 // OnMessageOption
-func OnMessageOption(cb func(msg.RelayMsgBuf, spbf.WriteCloser)) ClientOption {
+func OnMessageOption(cb func(msg.RelayMsgBuf, core.WriteCloser)) ClientOption {
 	return func(o *options) {
 		o.onMessage = cb
 	}
 }
 
 // OnCloseOption
-func OnCloseOption(cb func(spbf.WriteCloser)) ClientOption {
+func OnCloseOption(cb func(core.WriteCloser)) ClientOption {
 	return func(o *options) {
 		o.onClose = cb
 	}
 }
 
 // OnErrorOption
-func OnErrorOption(cb func(spbf.WriteCloser)) ClientOption {
+func OnErrorOption(cb func(core.WriteCloser)) ClientOption {
 	return func(o *options) {
 		o.onError = cb
 	}

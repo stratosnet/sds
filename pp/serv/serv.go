@@ -1,7 +1,7 @@
 package serv
 
 import (
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/utils"
 	"net"
 	"sync"
@@ -9,7 +9,7 @@ import (
 
 // PPServer
 type PPServer struct {
-	*spbf.Server
+	*core.Server
 }
 
 var ppServ *PPServer
@@ -39,22 +39,22 @@ func StartListenServer(port string) {
 
 // NewServer returns a server.
 func NewServer() *PPServer {
-	onConnectOption := spbf.OnConnectOption(func(conn spbf.WriteCloser) bool {
+	onConnectOption := core.OnConnectOption(func(conn core.WriteCloser) bool {
 		utils.Log("on connect")
 		return true
 	})
-	onErrorOption := spbf.OnErrorOption(func(conn spbf.WriteCloser) {
+	onErrorOption := core.OnErrorOption(func(conn core.WriteCloser) {
 		utils.Log("on error")
 	})
-	onCloseOption := spbf.OnCloseOption(func(conn spbf.WriteCloser) {
-		net := conn.(*spbf.ServerConn).GetName()
-		netID := conn.(*spbf.ServerConn).GetNetID()
+	onCloseOption := core.OnCloseOption(func(conn core.WriteCloser) {
+		net := conn.(*core.ServerConn).GetName()
+		netID := conn.(*core.ServerConn).GetNetID()
 		removePeer(netID)
 		utils.DebugLog(net, netID, "offline")
 	})
-	bufferSize := spbf.BufferSizeOption(10000)
+	bufferSize := core.BufferSizeOption(10000)
 	return &PPServer{
-		spbf.CreateServer(onConnectOption, onErrorOption, onCloseOption, bufferSize),
+		core.CreateServer(onConnectOption, onErrorOption, onCloseOption, bufferSize),
 	}
 }
 

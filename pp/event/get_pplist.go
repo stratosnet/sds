@@ -5,7 +5,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -22,7 +22,7 @@ func GetPPList() {
 }
 
 // RspGetPPList
-func RspGetPPList(ctx context.Context, conn spbf.WriteCloser) {
+func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get GetPPList RSP")
 	var target protos.RspGetPPList
 	if !unmarshalData(ctx, &target) {

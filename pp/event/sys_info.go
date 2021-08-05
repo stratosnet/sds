@@ -3,7 +3,7 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -18,22 +18,22 @@ var myClock = clock.NewClock()
 var job clock.Job
 
 // ReqGetHDInfo
-func ReqGetHDInfo(ctx context.Context, conn spbf.WriteCloser) {
+func ReqGetHDInfo(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqGetHDInfo
 	if unmarshalData(ctx, &target) {
 
 		if setting.P2PAddress == target.P2PAddress {
 			SendMessageToSPServer(rspGetHDInfoData(), header.RspGetHDInfo)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
 
 // RspGetHDInfo
-func RspGetHDInfo(ctx context.Context, conn spbf.WriteCloser) {
+func RspGetHDInfo(ctx context.Context, conn core.WriteCloser) {
 
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 func reportDHInfo() {
@@ -63,12 +63,12 @@ func GetCapacity(reqID string, w http.ResponseWriter) {
 }
 
 // ReqGetCapacity
-func ReqGetCapacity(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqGetCapacity(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspGetCapacity
-func RspGetCapacity(ctx context.Context, conn spbf.WriteCloser) {
+func RspGetCapacity(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspGetCapacity
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -79,7 +79,7 @@ func RspGetCapacity(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPGetCapacity, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }

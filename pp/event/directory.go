@@ -3,7 +3,7 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -23,12 +23,12 @@ func FindDirectory(reqID string, w http.ResponseWriter) {
 }
 
 // ReqFindDirectory ReqFindDirectory
-func ReqFindDirectory(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqFindDirectory(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspFindDirectory
-func RspFindDirectory(ctx context.Context, conn spbf.WriteCloser) {
+func RspFindDirectory(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("RspFindDirectory")
 	var target protos.RspFindDirectory
 	if unmarshalData(ctx, &target) {
@@ -56,7 +56,7 @@ func RspFindDirectory(ctx context.Context, conn spbf.WriteCloser) {
 				fmt.Println(target.Result.Msg)
 			}
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 
 	}

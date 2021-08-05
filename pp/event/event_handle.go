@@ -6,7 +6,7 @@ import (
 	"reflect"
 
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/pp/client"
@@ -19,103 +19,103 @@ import (
 
 // RegisterEventHandle
 func RegisterEventHandle() {
-	spbf.Register(header.RspGetPPList, RspGetPPList)
-	spbf.Register(header.RspRegister, RspRegisterChain)
-	spbf.Register(header.ReqRegister, ReqRegisterChain)
-	spbf.Register(header.RspActivate, RspActivate)
-	spbf.Register(header.RspActivated, RspActivated)
-	spbf.Register(header.RspDeactivate, RspDeactivate)
-	spbf.Register(header.RspDeactivated, RspDeactivated)
-	spbf.Register(header.RspPrepay, RspPrepay)
-	spbf.Register(header.RspPrepaid, RspPrepaid)
-	spbf.Register(header.RspMining, RspMining)
-	spbf.Register(header.RspFindMyFileList, RspFindMyFileList)
-	spbf.Register(header.ReqFindMyFileList, ReqFindMyFileList)
-	spbf.Register(header.ReqUploadFileSlice, ReqUploadFileSlice)
-	spbf.Register(header.RspUploadFile, RspUploadFile)
-	spbf.Register(header.RspUploadFileSlice, RspUploadFileSlice)
-	spbf.Register(header.RspReportUploadSliceResult, RspReportUploadSliceResult)
-	spbf.Register(header.ReqFileStorageInfo, ReqFileStorageInfo)
-	spbf.Register(header.ReqDownloadSlice, ReqDownloadSlice)
-	spbf.Register(header.RspDownloadSlice, RspDownloadSlice)
-	spbf.Register(header.RspReportDownloadResult, RspReportDownloadResult)
-	spbf.Register(header.RspRegisterNewPP, RspRegisterNewPP)
-	spbf.Register(header.ReqTransferNotice, ReqTransferNotice)
-	spbf.Register(header.RspValidateTransferCer, RspValidateTransferCer)
-	spbf.Register(header.ReqTransferDownload, ReqTransferDownload)
-	spbf.Register(header.RspTransferDownload, RspTransferDownload)
-	spbf.Register(header.RspTransferDownloadResult, RspTransferDownloadResult)
-	spbf.Register(header.RspReportTransferResult, RspReportTransferResult)
-	spbf.Register(header.RspDownloadSliceWrong, RspDownloadSliceWrong)
-	spbf.Register(header.RspFileStorageInfo, RspFileStorageInfo)
-	spbf.Register(header.ReqGetHDInfo, ReqGetHDInfo)
-	spbf.Register(header.RspGetHDInfo, RspGetHDInfo)
-	spbf.Register(header.ReqDeleteSlice, ReqDeleteSlice)
-	spbf.Register(header.RspDeleteSlice, RspDeleteSlice)
-	spbf.Register(header.ReqMakeDirectory, ReqMakeDirectory)
-	spbf.Register(header.RspMakeDirectory, RspMakeDirectory)
-	spbf.Register(header.ReqRemoveDirectory, ReqRemoveDirectory)
-	spbf.Register(header.RspRemoveDirectory, RspRemoveDirectory)
-	spbf.Register(header.ReqMoveFileDirectory, ReqMoveFileDirectory)
-	spbf.Register(header.RspMoveFileDirectory, RspMoveFileDirectory)
-	spbf.Register(header.ReqDownloadSlicePause, ReqDownloadSlicePause)
-	spbf.Register(header.RspDownloadSlicePause, RspDownloadSlicePause)
-	spbf.Register(header.ReqCreateAlbum, ReqCreateAlbum)
-	spbf.Register(header.RspCreateAlbum, RspCreateAlbum)
-	spbf.Register(header.ReqFindMyAlbum, ReqFindMyAlbum)
-	spbf.Register(header.RspFindMyAlbum, RspFindMyAlbum)
-	spbf.Register(header.ReqEditAlbum, ReqEditAlbum)
-	spbf.Register(header.RspEditAlbum, RspEditAlbum)
-	spbf.Register(header.ReqAlbumContent, ReqAlbumContent)
-	spbf.Register(header.RspAlbumContent, RspAlbumContent)
-	spbf.Register(header.ReqSearchAlbum, ReqSearchAlbum)
-	spbf.Register(header.RspSearchAlbum, RspSearchAlbum)
-	spbf.Register(header.ReqCollectionAlbum, ReqCollectionAlbum)
-	spbf.Register(header.RspCollectionAlbum, RspCollectionAlbum)
-	spbf.Register(header.ReqAbstractAlbum, ReqAbstractAlbum)
-	spbf.Register(header.RspAbstractAlbum, RspAbstractAlbum)
-	spbf.Register(header.ReqMyCollectionAlbum, ReqMyCollectionAlbum)
-	spbf.Register(header.RspMyCollectionAlbum, RspMyCollectionAlbum)
-	spbf.Register(header.ReqDeleteAlbum, ReqDeleteAlbum)
-	spbf.Register(header.RspDeleteAlbum, RspDeleteAlbum)
-	spbf.Register(header.ReqSaveFolder, ReqSaveFolder)
-	spbf.Register(header.RspSaveFolder, RspSaveFolder)
-	spbf.Register(header.UploadSpeedOfProgress, UploadSpeedOfProgress)
-	spbf.Register(header.ReqGetCapacity, ReqGetCapacity)
-	spbf.Register(header.RspGetCapacity, RspGetCapacity)
+	core.Register(header.RspGetPPList, RspGetPPList)
+	core.Register(header.RspRegister, RspRegisterChain)
+	core.Register(header.ReqRegister, ReqRegisterChain)
+	core.Register(header.RspActivate, RspActivate)
+	core.Register(header.RspActivated, RspActivated)
+	core.Register(header.RspDeactivate, RspDeactivate)
+	core.Register(header.RspDeactivated, RspDeactivated)
+	core.Register(header.RspPrepay, RspPrepay)
+	core.Register(header.RspPrepaid, RspPrepaid)
+	core.Register(header.RspMining, RspMining)
+	core.Register(header.RspFindMyFileList, RspFindMyFileList)
+	core.Register(header.ReqFindMyFileList, ReqFindMyFileList)
+	core.Register(header.ReqUploadFileSlice, ReqUploadFileSlice)
+	core.Register(header.RspUploadFile, RspUploadFile)
+	core.Register(header.RspUploadFileSlice, RspUploadFileSlice)
+	core.Register(header.RspReportUploadSliceResult, RspReportUploadSliceResult)
+	core.Register(header.ReqFileStorageInfo, ReqFileStorageInfo)
+	core.Register(header.ReqDownloadSlice, ReqDownloadSlice)
+	core.Register(header.RspDownloadSlice, RspDownloadSlice)
+	core.Register(header.RspReportDownloadResult, RspReportDownloadResult)
+	core.Register(header.RspRegisterNewPP, RspRegisterNewPP)
+	core.Register(header.ReqTransferNotice, ReqTransferNotice)
+	core.Register(header.RspValidateTransferCer, RspValidateTransferCer)
+	core.Register(header.ReqTransferDownload, ReqTransferDownload)
+	core.Register(header.RspTransferDownload, RspTransferDownload)
+	core.Register(header.RspTransferDownloadResult, RspTransferDownloadResult)
+	core.Register(header.RspReportTransferResult, RspReportTransferResult)
+	core.Register(header.RspDownloadSliceWrong, RspDownloadSliceWrong)
+	core.Register(header.RspFileStorageInfo, RspFileStorageInfo)
+	core.Register(header.ReqGetHDInfo, ReqGetHDInfo)
+	core.Register(header.RspGetHDInfo, RspGetHDInfo)
+	core.Register(header.ReqDeleteSlice, ReqDeleteSlice)
+	core.Register(header.RspDeleteSlice, RspDeleteSlice)
+	core.Register(header.ReqMakeDirectory, ReqMakeDirectory)
+	core.Register(header.RspMakeDirectory, RspMakeDirectory)
+	core.Register(header.ReqRemoveDirectory, ReqRemoveDirectory)
+	core.Register(header.RspRemoveDirectory, RspRemoveDirectory)
+	core.Register(header.ReqMoveFileDirectory, ReqMoveFileDirectory)
+	core.Register(header.RspMoveFileDirectory, RspMoveFileDirectory)
+	core.Register(header.ReqDownloadSlicePause, ReqDownloadSlicePause)
+	core.Register(header.RspDownloadSlicePause, RspDownloadSlicePause)
+	core.Register(header.ReqCreateAlbum, ReqCreateAlbum)
+	core.Register(header.RspCreateAlbum, RspCreateAlbum)
+	core.Register(header.ReqFindMyAlbum, ReqFindMyAlbum)
+	core.Register(header.RspFindMyAlbum, RspFindMyAlbum)
+	core.Register(header.ReqEditAlbum, ReqEditAlbum)
+	core.Register(header.RspEditAlbum, RspEditAlbum)
+	core.Register(header.ReqAlbumContent, ReqAlbumContent)
+	core.Register(header.RspAlbumContent, RspAlbumContent)
+	core.Register(header.ReqSearchAlbum, ReqSearchAlbum)
+	core.Register(header.RspSearchAlbum, RspSearchAlbum)
+	core.Register(header.ReqCollectionAlbum, ReqCollectionAlbum)
+	core.Register(header.RspCollectionAlbum, RspCollectionAlbum)
+	core.Register(header.ReqAbstractAlbum, ReqAbstractAlbum)
+	core.Register(header.RspAbstractAlbum, RspAbstractAlbum)
+	core.Register(header.ReqMyCollectionAlbum, ReqMyCollectionAlbum)
+	core.Register(header.RspMyCollectionAlbum, RspMyCollectionAlbum)
+	core.Register(header.ReqDeleteAlbum, ReqDeleteAlbum)
+	core.Register(header.RspDeleteAlbum, RspDeleteAlbum)
+	core.Register(header.ReqSaveFolder, ReqSaveFolder)
+	core.Register(header.RspSaveFolder, RspSaveFolder)
+	core.Register(header.UploadSpeedOfProgress, UploadSpeedOfProgress)
+	core.Register(header.ReqGetCapacity, ReqGetCapacity)
+	core.Register(header.RspGetCapacity, RspGetCapacity)
 
-	spbf.Register(header.ReqShareLink, ReqShareLink)
-	spbf.Register(header.RspShareLink, RspShareLink)
-	spbf.Register(header.ReqShareFile, ReqShareFile)
-	spbf.Register(header.RspShareFile, RspShareFile)
-	spbf.Register(header.ReqDeleteShare, ReqDeleteShare)
-	spbf.Register(header.RspDeleteShare, RspDeleteShare)
-	spbf.Register(header.ReqGetShareFile, ReqGetShareFile)
-	spbf.Register(header.RspGetShareFile, RspGetShareFile)
+	core.Register(header.ReqShareLink, ReqShareLink)
+	core.Register(header.RspShareLink, RspShareLink)
+	core.Register(header.ReqShareFile, ReqShareFile)
+	core.Register(header.RspShareFile, RspShareFile)
+	core.Register(header.ReqDeleteShare, ReqDeleteShare)
+	core.Register(header.RspDeleteShare, RspDeleteShare)
+	core.Register(header.ReqGetShareFile, ReqGetShareFile)
+	core.Register(header.RspGetShareFile, RspGetShareFile)
 
-	spbf.Register(header.ReqSaveFile, ReqSaveFile)
-	spbf.Register(header.RspSaveFile, RspSaveFile)
+	core.Register(header.ReqSaveFile, ReqSaveFile)
+	core.Register(header.RspSaveFile, RspSaveFile)
 
-	spbf.Register(header.ReqHeart, SendHeartBeat)
-	spbf.Register(header.RspHeart, RspHeartBeat)
-	spbf.Register(header.ReqDeleteFile, ReqDeleteFile)
-	spbf.Register(header.RspDeleteFile, RspDeleteFile)
-	spbf.Register(header.ReqConfig, ReqGetMyConfig)
-	spbf.Register(header.RspConfig, RspGetMyConfig)
+	core.Register(header.ReqHeart, SendHeartBeat)
+	core.Register(header.RspHeart, RspHeartBeat)
+	core.Register(header.ReqDeleteFile, ReqDeleteFile)
+	core.Register(header.RspDeleteFile, RspDeleteFile)
+	core.Register(header.ReqConfig, ReqGetMyConfig)
+	core.Register(header.RspConfig, RspGetMyConfig)
 
-	spbf.Register(header.ReqInvite, ReqInvite)
-	spbf.Register(header.RspInvite, RspInvite)
-	spbf.Register(header.ReqGetReward, ReqGetReward)
-	spbf.Register(header.RspGetReward, RspGetReward)
+	core.Register(header.ReqInvite, ReqInvite)
+	core.Register(header.RspInvite, RspInvite)
+	core.Register(header.ReqGetReward, ReqGetReward)
+	core.Register(header.RspGetReward, RspGetReward)
 
-	spbf.Register(header.ReqFindDirectoryTree, ReqFindDirectoryTree)
-	spbf.Register(header.RspFindDirectoryTree, RspFindDirectoryTree)
+	core.Register(header.ReqFindDirectoryTree, ReqFindDirectoryTree)
+	core.Register(header.RspFindDirectoryTree, RspFindDirectoryTree)
 
-	spbf.Register(header.ReqFileSort, ReqFileSort)
-	spbf.Register(header.RspFileSort, RspFileSort)
+	core.Register(header.ReqFileSort, ReqFileSort)
+	core.Register(header.RspFileSort, RspFileSort)
 
-	spbf.Register(header.ReqFindDirectory, ReqFindDirectory)
-	spbf.Register(header.RspFindDirectory, RspFindDirectory)
+	core.Register(header.ReqFindDirectory, ReqFindDirectory)
+	core.Register(header.RspFindDirectory, RspFindDirectory)
 }
 
 // PPMsgHeader
@@ -125,7 +125,7 @@ func PPMsgHeader(data []byte, head string) header.MessageHead {
 }
 
 // SendMessage
-func sendMessage(conn spbf.WriteCloser, pb proto.Message, cmd string) {
+func sendMessage(conn core.WriteCloser, pb proto.Message, cmd string) {
 	data, err := proto.Marshal(pb)
 
 	if err != nil {
@@ -137,8 +137,8 @@ func sendMessage(conn spbf.WriteCloser, pb proto.Message, cmd string) {
 		MSGData: data,
 	}
 	switch conn.(type) {
-	case *spbf.ServerConn:
-		conn.(*spbf.ServerConn).Write(msg)
+	case *core.ServerConn:
+		conn.(*core.ServerConn).Write(msg)
 	case *cf.ClientConn:
 		conn.(*cf.ClientConn).Write(msg)
 	}
@@ -184,7 +184,7 @@ func transferSendMessageToClient(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
 }
 
 func unmarshalData(ctx context.Context, target interface{}) bool {
-	msgBuf := spbf.MessageFromContext(ctx)
+	msgBuf := core.MessageFromContext(ctx)
 	utils.DebugLog("msgBuf len = ", len(msgBuf.MSGData))
 	if err := proto.Unmarshal(msgBuf.MSGData, target.(proto.Message)); err != nil {
 		utils.ErrorLog("protobuf Unmarshal error,target =", reflect.TypeOf(target))
@@ -199,6 +199,6 @@ func unmarshalData(ctx context.Context, target interface{}) bool {
 }
 
 // ReqTransferSendSP
-func ReqTransferSendSP(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqTransferSendSP(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }

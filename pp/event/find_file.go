@@ -3,7 +3,7 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -23,13 +23,13 @@ func FindMyFileList(fileName, dir, reqID, keyword string, fileType int, isUp boo
 }
 
 // ReqFindMyFileList ReqFindMyFileList
-func ReqFindMyFileList(ctx context.Context, conn spbf.WriteCloser) {
+func ReqFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("+++++++++++++++++++++++++++++++++++++++++++++++++++")
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspFindMyFileList
-func RspFindMyFileList(ctx context.Context, conn spbf.WriteCloser) {
+func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspFindMyFileList")
 	var target protos.RspFindMyFileList
 	if unmarshalData(ctx, &target) {
@@ -57,7 +57,7 @@ func RspFindMyFileList(ctx context.Context, conn spbf.WriteCloser) {
 				fmt.Println(target.Result.Msg)
 			}
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 
 	}

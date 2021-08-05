@@ -20,7 +20,10 @@ target/
 *.log
 application/sp/spServer
 cmd/relayd/relayd
-application/pp/account
-application/pp/[a-zA-Z0-9]
+example/network/account
+example/network/[a-zA-Z0-9]
+example/network/tmp
+example/network/*/tmp
+tmp
 bp-list
 pp-list

@@ -3,7 +3,7 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -23,13 +23,13 @@ func GetMyConfig(p2pAddress, walletAddress, reqID string, w http.ResponseWriter)
 }
 
 // ReqGetMyConfig ReqGetMyConfig
-func ReqGetMyConfig(ctx context.Context, conn spbf.WriteCloser) {
+func ReqGetMyConfig(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("+++++++++++++++++++++++++++++++++++++++++++++++++++")
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspGetMyConfig
-func RspGetMyConfig(ctx context.Context, conn spbf.WriteCloser) {
+func RspGetMyConfig(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspConfig")
 	var target protos.RspConfig
 	if unmarshalData(ctx, &target) {
@@ -41,7 +41,7 @@ func RspGetMyConfig(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPGetConfig, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }

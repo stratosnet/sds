@@ -3,7 +3,7 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -32,12 +32,12 @@ func CreateAlbum(albumName, albumBlurb, albumCoverHash, albumType, reqID string,
 }
 
 // ReqCreateAlbum ReqCreateAlbum
-func ReqCreateAlbum(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqCreateAlbum(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspCreateAlbum  RspCreateAlbum
-func RspCreateAlbum(ctx context.Context, conn spbf.WriteCloser) {
+func RspCreateAlbum(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspCreateAlbum
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -48,7 +48,7 @@ func RspCreateAlbum(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPCreateAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -72,12 +72,12 @@ func FindMyAlbum(reqID string, page, number uint64, albumType, keyword string, w
 }
 
 // ReqFindMyAlbum
-func ReqFindMyAlbum(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqFindMyAlbum(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspFindMyAlbum
-func RspFindMyAlbum(ctx context.Context, conn spbf.WriteCloser) {
+func RspFindMyAlbum(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspFindMyAlbum
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -94,7 +94,7 @@ func RspFindMyAlbum(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPFindMyAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -111,12 +111,12 @@ func EditAlbum(albumID, albumCoverHash, albumName, albumBlurb, reqID string, cha
 }
 
 // ReqEditAlbum
-func ReqEditAlbum(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqEditAlbum(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspEditAlbum
-func RspEditAlbum(ctx context.Context, conn spbf.WriteCloser) {
+func RspEditAlbum(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspEditAlbum
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -127,7 +127,7 @@ func RspEditAlbum(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPEditAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -143,12 +143,12 @@ func AlbumContent(albumID, reqID string, w http.ResponseWriter) {
 }
 
 // ReqAlbumContent
-func ReqAlbumContent(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqAlbumContent(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspAlbumContent
-func RspAlbumContent(ctx context.Context, conn spbf.WriteCloser) {
+func RspAlbumContent(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspAlbumContent
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -160,7 +160,7 @@ func RspAlbumContent(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPAlbumContent, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -189,12 +189,12 @@ func SearchAlbum(keyword, albumType, sortType, reqID string, page, number uint64
 }
 
 // ReqSearchAlbum
-func ReqSearchAlbum(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqSearchAlbum(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspSearchAlbum
-func RspSearchAlbum(ctx context.Context, conn spbf.WriteCloser) {
+func RspSearchAlbum(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspSearchAlbum
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -205,7 +205,7 @@ func RspSearchAlbum(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPSearchAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -222,12 +222,12 @@ func CollectionAlbum(albumID, reqID string, isCollection bool, w http.ResponseWr
 }
 
 // ReqCollectionAlbum
-func ReqCollectionAlbum(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqCollectionAlbum(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspCollectionAlbum
-func RspCollectionAlbum(ctx context.Context, conn spbf.WriteCloser) {
+func RspCollectionAlbum(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspCollectionAlbum
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -238,7 +238,7 @@ func RspCollectionAlbum(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPCollectionAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -255,12 +255,12 @@ func AbstractAlbum(reqID string, w http.ResponseWriter) {
 }
 
 // ReqAbstractAlbum
-func ReqAbstractAlbum(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqAbstractAlbum(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspAbstractAlbum
-func RspAbstractAlbum(ctx context.Context, conn spbf.WriteCloser) {
+func RspAbstractAlbum(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspAbstractAlbum
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -272,7 +272,7 @@ func RspAbstractAlbum(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPAbstractAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -296,12 +296,12 @@ func MyCollectionAlbum(albumType, reqID string, page, number uint64, keyword str
 }
 
 // ReqMyCollectionAlbum
-func ReqMyCollectionAlbum(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqMyCollectionAlbum(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspMyCollectionAlbum
-func RspMyCollectionAlbum(ctx context.Context, conn spbf.WriteCloser) {
+func RspMyCollectionAlbum(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspMyCollectionAlbum
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -313,7 +313,7 @@ func RspMyCollectionAlbum(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPMyCollectionAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -329,12 +329,12 @@ func DeleteAlbum(albumID, reqID string, w http.ResponseWriter) {
 }
 
 // ReqDeleteAlbum
-func ReqDeleteAlbum(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqDeleteAlbum(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspDeleteAlbum
-func RspDeleteAlbum(ctx context.Context, conn spbf.WriteCloser) {
+func RspDeleteAlbum(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeleteAlbum
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -346,7 +346,7 @@ func RspDeleteAlbum(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPDeleteAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }

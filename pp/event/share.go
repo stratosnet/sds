@@ -3,7 +3,7 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -43,15 +43,15 @@ func DeleteShare(shareID, reqID string, w http.ResponseWriter) {
 }
 
 // ReqShareLink
-func ReqShareLink(ctx context.Context, conn spbf.WriteCloser) {
+func ReqShareLink(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
 	utils.DebugLog("ReqShareLinkReqShareLinkReqShareLinkReqShareLink")
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspShareLink
-func RspShareLink(ctx context.Context, conn spbf.WriteCloser) {
-	utils.DebugLog("RspShareLink(ctx context.Context, conn spbf.WriteCloser) {RspShareLink(ctx context.Context, conn spbf.WriteCloser) {")
+func RspShareLink(ctx context.Context, conn core.WriteCloser) {
+	utils.DebugLog("RspShareLink(ctx context.Context, conn core.WriteCloser) {RspShareLink(ctx context.Context, conn core.WriteCloser) {")
 	var target protos.RspShareLink
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -71,19 +71,19 @@ func RspShareLink(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPShareLink, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
 
 // ReqShareFile
-func ReqShareFile(ctx context.Context, conn spbf.WriteCloser) {
+func ReqShareFile(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspShareFile
-func RspShareFile(ctx context.Context, conn spbf.WriteCloser) {
+func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspShareFile
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -96,19 +96,19 @@ func RspShareFile(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPShareFile, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
 
 // ReqDeleteShare
-func ReqDeleteShare(ctx context.Context, conn spbf.WriteCloser) {
+func ReqDeleteShare(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspDeleteShare
-func RspDeleteShare(ctx context.Context, conn spbf.WriteCloser) {
+func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeleteShare
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -119,7 +119,7 @@ func RspDeleteShare(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPDeleteShare, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 
@@ -137,14 +137,14 @@ func GetShareFile(keyword, sharePassword, reqID string, w http.ResponseWriter) {
 }
 
 // ReqGetShareFile
-func ReqGetShareFile(ctx context.Context, conn spbf.WriteCloser) {
+func ReqGetShareFile(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
 	utils.DebugLog("ReqGetShareFileReqGetShareFileReqGetShareFileReqGetShareFileReqGetShareFileReqGetShareFile")
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspGetShareFile
-func RspGetShareFile(ctx context.Context, conn spbf.WriteCloser) {
+func RspGetShareFile(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspGetShareFile
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -155,7 +155,7 @@ func RspGetShareFile(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPGetShareFile, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 

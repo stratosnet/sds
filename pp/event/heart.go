@@ -2,13 +2,13 @@ package event
 
 import (
 	"context"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 )
 
 // SendHeartBeat
-func SendHeartBeat(ctx context.Context, conn spbf.WriteCloser) {
+func SendHeartBeat(ctx context.Context, conn core.WriteCloser) {
 	// utils.DebugLog("send HeartBeat")
 	msg := msg.RelayMsgBuf{
 		MSGHead: PPMsgHeader(nil, header.RspHeart),
@@ -17,10 +17,10 @@ func SendHeartBeat(ctx context.Context, conn spbf.WriteCloser) {
 }
 
 // RspHeartBeat
-func RspHeartBeat(ctx context.Context, conn spbf.WriteCloser) {
+func RspHeartBeat(ctx context.Context, conn core.WriteCloser) {
 	// utils.DebugLog("ResHeartBeat")
 	switch conn.(type) {
-	case *spbf.ServerConn:
+	case *core.ServerConn:
 		msg := msg.RelayMsgBuf{
 			MSGHead: PPMsgHeader(nil, header.RspHeart),
 		}

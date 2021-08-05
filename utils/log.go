@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 )
 
@@ -31,11 +32,14 @@ type Logger struct {
 
 var MyLogger *Logger // = NewLogger("tmp/logs/stdout.log", true, true)
 
-func newLogger(filepath string, enableStd, enableFile bool) *Logger {
+func newLogger(logFilepath string, enableStd, enableFile bool) *Logger {
+	if err := os.MkdirAll(filepath.Dir(logFilepath), os.ModePerm); err != nil {
+		panic(fmt.Sprintf("log file '%v' initialize failed: %v", logFilepath, err.Error()))
+	}
 	//init file output
-	outfile, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666) //open file, if not exist, create at filepath
+	outfile, err := os.OpenFile(logFilepath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666) //open file, if not exist, create at logFilepath
 	if err != nil {
-		panic(fmt.Sprintf("log file '%v' open failed: %v", filepath, err.Error()))
+		panic(fmt.Sprintf("log file '%v' open failed: %v", logFilepath, err.Error()))
 	}
 
 	logger := &Logger{

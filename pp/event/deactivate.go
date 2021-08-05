@@ -3,7 +3,7 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/setting"
@@ -23,7 +23,7 @@ func Deactivate(fee, gas int64) error {
 }
 
 // RspDeactivate. Response to asking the SP node to deactivate this PP node
-func RspDeactivate(ctx context.Context, conn spbf.WriteCloser) {
+func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeactivate
 	success := unmarshalData(ctx, &target)
 	if !success {
@@ -45,7 +45,7 @@ func RspDeactivate(ctx context.Context, conn spbf.WriteCloser) {
 }
 
 // RspActivated. Response when this PP node was successfully activated
-func RspDeactivated(ctx context.Context, conn spbf.WriteCloser) {
+func RspDeactivated(ctx context.Context, conn core.WriteCloser) {
 	setting.State = setting.PP_INACTIVE
 	fmt.Println("This PP node is now inactive")
 }

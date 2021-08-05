@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -25,12 +25,12 @@ func DeleteFile(fileHash, reqID string, w http.ResponseWriter) {
 }
 
 // ReqDeleteFile
-func ReqDeleteFile(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqDeleteFile(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspDeleteFile
-func RspDeleteFile(ctx context.Context, conn spbf.WriteCloser) {
+func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeleteFile
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
@@ -41,13 +41,13 @@ func RspDeleteFile(ctx context.Context, conn spbf.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPDeleteFile, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
 
 // ReqDeleteSlice delete slice sp-pp  or pp-p only works if sent from server to client
-func ReqDeleteSlice(ctx context.Context, conn spbf.WriteCloser) {
+func ReqDeleteSlice(ctx context.Context, conn core.WriteCloser) {
 	switch conn.(type) {
 	case *cf.ClientConn:
 		{
@@ -71,6 +71,6 @@ func ReqDeleteSlice(ctx context.Context, conn spbf.WriteCloser) {
 }
 
 // RspDeleteSlice RspDeleteSlice
-func RspDeleteSlice(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func RspDeleteSlice(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }

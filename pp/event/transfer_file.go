@@ -4,7 +4,7 @@ package event
 import (
 	"context"
 	"github.com/golang/protobuf/proto"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -16,7 +16,7 @@ import (
 )
 
 // ReqTransferNotice  SP- original PP  OR  new PP - old PP
-func ReqTransferNotice(ctx context.Context, conn spbf.WriteCloser) {
+func ReqTransferNotice(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get ReqTransferNotice")
 	var target protos.ReqTransferNotice
 	if !unmarshalData(ctx, &target) {
@@ -50,7 +50,7 @@ func ReqTransferNotice(ctx context.Context, conn spbf.WriteCloser) {
 	// store the task
 	task.TransferTaskMap[target.TransferCer] = &target
 	// store transfer target register peer wallet address
-	serv.RegisterPeerMap.Store(target.StoragePpInfo.P2PAddress, spbf.NetIDFromContext(ctx))
+	serv.RegisterPeerMap.Store(target.StoragePpInfo.P2PAddress, core.NetIDFromContext(ctx))
 }
 
 // rspTransferNotice
@@ -59,7 +59,7 @@ func rspTransferNotice(agree bool, cer string) {
 }
 
 // RspValidateTransferCer  SP-PP OR PP-PP
-func RspValidateTransferCer(ctx context.Context, conn spbf.WriteCloser) {
+func RspValidateTransferCer(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspValidateTransferCer")
 	var target protos.RspValidateTransferCer
 	if !unmarshalData(ctx, &target) {
@@ -107,7 +107,7 @@ func RspValidateTransferCer(ctx context.Context, conn spbf.WriteCloser) {
 	} else {
 		// certificate validation success, resp to new PP to start download
 		utils.DebugLog("cert validation success, resp to new PP to start download")
-		transferSendMessageToClient(tTask.StoragePpInfo.P2PAddress, spbf.MessageFromContext(ctx))
+		transferSendMessageToClient(tTask.StoragePpInfo.P2PAddress, core.MessageFromContext(ctx))
 	}
 }
 
@@ -148,7 +148,7 @@ func ReqReportTransferResult(transferCer string, result bool, originDeleted bool
 }
 
 // RspReportTransferResult
-func RspReportTransferResult(ctx context.Context, conn spbf.WriteCloser) {
+func RspReportTransferResult(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspReportTransferResult")
 	var target protos.RspReportTransferResult
 	if !unmarshalData(ctx, &target) {
@@ -165,7 +165,7 @@ func RspReportTransferResult(ctx context.Context, conn spbf.WriteCloser) {
 }
 
 // ReqTransferDownload
-func ReqTransferDownload(ctx context.Context, conn spbf.WriteCloser) {
+func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get ReqTransferDownload")
 	var target protos.ReqTransferDownload
 	if !unmarshalData(ctx, &target) {
@@ -190,7 +190,7 @@ func ReqTransferDownload(ctx context.Context, conn spbf.WriteCloser) {
 }
 
 // RspTransferDownload
-func RspTransferDownload(ctx context.Context, conn spbf.WriteCloser) {
+func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspTransferDownload")
 	var target protos.RspTransferDownload
 	if !unmarshalData(ctx, &target) {
@@ -203,7 +203,7 @@ func RspTransferDownload(ctx context.Context, conn spbf.WriteCloser) {
 }
 
 // RspTransferDownloadResult original storage PP get this msg means download finished, can report and delete file
-func RspTransferDownloadResult(ctx context.Context, conn spbf.WriteCloser) {
+func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspTransferDownloadResult")
 	var target protos.RspTransferDownloadResult
 	if !unmarshalData(ctx, &target) {

@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -55,12 +55,12 @@ func FindDirectoryTree(reqID, pathHash string, w http.ResponseWriter, isF bool) 
 }
 
 // ReqFindDirectoryTree
-func ReqFindDirectoryTree(ctx context.Context, conn spbf.WriteCloser) {
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+func ReqFindDirectoryTree(ctx context.Context, conn core.WriteCloser) {
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspFindDirectoryTree
-func RspFindDirectoryTree(ctx context.Context, conn spbf.WriteCloser) {
+func RspFindDirectoryTree(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("target>>context>>>>>>>>>>>>>>>>>>>")
 	var target protos.RspFindDirectoryTree
 	if unmarshalData(ctx, &target) {
@@ -77,7 +77,7 @@ func RspFindDirectoryTree(ctx context.Context, conn spbf.WriteCloser) {
 				fmt.Println("action  failed", target.Result.Msg)
 			}
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -170,13 +170,13 @@ func GetSliceInfoBySliceNumber(fInfo *protos.RspFileStorageInfo, sliceNumber uin
 }
 
 // ReqFileStorageInfo  P-PP , PP-SP
-func ReqFileStorageInfo(ctx context.Context, conn spbf.WriteCloser) {
+func ReqFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("pp get ReqFileStorageInfo directly transfer to SP")
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspFileStorageInfo SP-PP , PP-P
-func RspFileStorageInfo(ctx context.Context, conn spbf.WriteCloser) {
+func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	// PP check whether itself is the storage PP, if not transfer
 	utils.Log("get，RspFileStorageInfo")
 	var target protos.RspFileStorageInfo

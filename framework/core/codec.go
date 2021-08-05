@@ -1,4 +1,4 @@
-package spbf
+package core
 
 //event register
 import (
