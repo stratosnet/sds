@@ -17,6 +17,12 @@ func PrivKeyBytesToPrivKey(privKey []byte) crypto.PrivKey {
 	return ed25519.PrivKeyEd25519(privKey2)
 }
 
+func PrivKeyBytesToPubKey(privKey []byte) crypto.PubKey {
+	pubKey := PrivKeyBytesToPrivKey(privKey).PubKey()
+	pubKey2 := pubKey.(ed25519.PubKeyEd25519)
+	return pubKey2
+}
+
 func PrivKeyBytesToPubKeyBytes(privKey []byte) []byte {
 	pubKey := PrivKeyBytesToPrivKey(privKey).PubKey()
 	pubKey2 := pubKey.(ed25519.PubKeyEd25519)

@@ -1,13 +1,16 @@
 package client
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/golang/protobuf/proto"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils/types"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
@@ -66,7 +69,27 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 			return
 		}
 
-		activatedMsg := &protos.ReqActivated{P2PAddress: p2pAddressString}
+		nodePubkeyList := result.Events["create_resource_node.node_pubkey"]
+		if len(nodePubkeyList) < 1 {
+			fmt.Println("No node pubkey was specified in the create_resource_node message from stratos-chain")
+			return
+		}
+		p2pPubkeyRaw, err := hex.DecodeString(nodePubkeyList[0])
+		if err != nil {
+			fmt.Println("Error when trying to decode P2P pubkey hex: " + err.Error())
+			return
+		}
+		p2pPubkey := ed25519.PubKeyEd25519{}
+		err = stratoschain.Cdc.UnmarshalBinaryBare(p2pPubkeyRaw, &p2pPubkey)
+		if err != nil {
+			fmt.Println("Error when trying to read P2P pubkey ed25519 binary: " + err.Error())
+			return
+		}
+
+		activatedMsg := &protos.ReqActivated{
+			P2PAddress: p2pAddressString,
+			P2PPubkey:  hex.EncodeToString(p2pPubkey[:]),
+		}
 		activatedMsgBytes, err := proto.Marshal(activatedMsg)
 		if err != nil {
 			fmt.Println("Error when trying to marshal activatedMsg proto: " + err.Error())
