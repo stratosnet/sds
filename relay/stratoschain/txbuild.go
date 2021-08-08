@@ -11,7 +11,7 @@ import (
 )
 
 // Stratos-chain 'pot' module
-func BuildVolumeReportMsg(traffic []*core.Traffic, reporterAddress []byte, epoch uint64, reportReference string) (sdktypes.Msg, error) {
+func BuildVolumeReportMsg(traffic []*core.Traffic, reporterAddress, reporterOwnerAddress []byte, epoch uint64, reportReference string) (sdktypes.Msg, error) {
 	aggregatedVolume := make(map[string]uint64)
 	for _, trafficReccord := range traffic {
 		aggregatedVolume[trafficReccord.P2PAddress] += trafficReccord.Volume
@@ -30,7 +30,7 @@ func BuildVolumeReportMsg(traffic []*core.Traffic, reporterAddress []byte, epoch
 		})
 	}
 
-	return pottypes.NewMsgVolumeReport(nodesVolume, reporterAddress, sdktypes.NewIntFromUint64(epoch), reportReference), nil
+	return pottypes.NewMsgVolumeReport(nodesVolume, reporterAddress, sdktypes.NewIntFromUint64(epoch), reportReference, reporterOwnerAddress), nil
 }
 
 // Stratos-chain 'register' module
