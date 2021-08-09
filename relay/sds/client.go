@@ -3,7 +3,7 @@ package sds
 import (
 	"fmt"
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"net"
 )
@@ -20,7 +20,7 @@ func NewClient(server string) *cf.ClientConn {
 		return nil
 	}
 
-	onMessage := cf.OnMessageOption(func(msg msg.RelayMsgBuf, c spbf.WriteCloser) {})
+	onMessage := cf.OnMessageOption(func(msg msg.RelayMsgBuf, c core.WriteCloser) {})
 	bufferSize := cf.BufferSizeOption(100)
 	logOpen := cf.LogOpenOption(true)
 	options := []cf.ClientOption{

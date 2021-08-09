@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -97,7 +97,7 @@ func RequestUploadStream(path, reqID string, _ http.ResponseWriter) {
 }
 
 // RspUploadFile response of upload file event
-func RspUploadFile(ctx context.Context, _ spbf.WriteCloser) {
+func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 	utils.DebugLog("get RspUploadFile")
 	target := &protos.RspUploadFile{}
 	if !unmarshalData(ctx, target) {

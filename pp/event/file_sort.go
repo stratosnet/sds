@@ -2,7 +2,7 @@ package event
 
 import (
 	"context"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -22,20 +22,20 @@ func FileSort(files []*protos.FileInfo, reqID, albumID string, w http.ResponseWr
 }
 
 // ReqFileSort ReqFileSort
-func ReqFileSort(ctx context.Context, conn spbf.WriteCloser) {
+func ReqFileSort(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("+++++++++++++++++++++++++++++++++++++++++++++++++++")
-	transferSendMessageToSPServer(spbf.MessageFromContext(ctx))
+	transferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspFileSort
-func RspFileSort(ctx context.Context, conn spbf.WriteCloser) {
+func RspFileSort(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspFindMyFileList")
 	var target protos.RspFileSort
 	if unmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			putData(target.ReqId, HTTPFileSort, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }

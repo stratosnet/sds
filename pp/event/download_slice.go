@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/framework/spbf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -21,7 +21,7 @@ import (
 var bpChan = make(chan *msg.RelayMsgBuf, 100)
 
 // ReqDownloadSlice download slice P-PP-storagePP
-func ReqDownloadSlice(ctx context.Context, conn spbf.WriteCloser) {
+func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("ReqDownloadSlice", conn)
 	var target protos.ReqDownloadSlice
 	if unmarshalData(ctx, &target) {
@@ -43,13 +43,13 @@ func ReqDownloadSlice(ctx context.Context, conn spbf.WriteCloser) {
 					}
 				} else {
 					utils.DebugLog("passagePP received downloadslice reqest, transfer to :", sInfo.StoragePpInfo.NetworkAddress)
-					// transferSendMessageToPPServ(sInfo.StoragePpInfo.NetworkAddress, spbf.MessageFromContext(ctx))
+					// transferSendMessageToPPServ(sInfo.StoragePpInfo.NetworkAddress, core.MessageFromContext(ctx))
 					if c, ok := client.DownloadPassageway.Load(target.P2PAddress + target.SliceInfo.SliceHash); ok {
 						conn := c.(*cf.ClientConn)
-						conn.Write(spbf.MessageFromContext(ctx))
+						conn.Write(core.MessageFromContext(ctx))
 					} else {
 						conn := client.NewClient(sInfo.StoragePpInfo.NetworkAddress, false)
-						conn.Write(spbf.MessageFromContext(ctx))
+						conn.Write(core.MessageFromContext(ctx))
 						client.DownloadPassageway.Store(target.P2PAddress+target.SliceInfo.SliceHash, conn)
 					}
 				}
@@ -75,7 +75,7 @@ func ReqDownloadSlice(ctx context.Context, conn spbf.WriteCloser) {
 	}
 }
 
-func splitSendDownloadSliceData(rsp *protos.RspDownloadSlice, conn spbf.WriteCloser) {
+func splitSendDownloadSliceData(rsp *protos.RspDownloadSlice, conn core.WriteCloser) {
 	dataLen := uint64(len(rsp.Data))
 	utils.DebugLog("dataLen=========", dataLen)
 	dataStart := uint64(0)
@@ -99,7 +99,7 @@ func splitSendDownloadSliceData(rsp *protos.RspDownloadSlice, conn spbf.WriteClo
 }
 
 // RspDownloadSlice storagePP-PP-P
-func RspDownloadSlice(ctx context.Context, conn spbf.WriteCloser) {
+func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspDownloadSlice")
 	var target protos.RspDownloadSlice
 	if unmarshalData(ctx, &target) {
@@ -110,10 +110,10 @@ func RspDownloadSlice(ctx context.Context, conn spbf.WriteCloser) {
 					// transfer to
 					utils.Log("get RspDownloadSlice transfer to", target.P2PAddress)
 					if c, ok := client.DownloadConnMap.Load(target.P2PAddress + target.FileHash); ok {
-						conn := c.(*spbf.ServerConn)
-						conn.Write(spbf.MessageFromContext(ctx))
+						conn := c.(*core.ServerConn)
+						conn.Write(core.MessageFromContext(ctx))
 					} else {
-						transferSendMessageToClient(target.P2PAddress, spbf.MessageFromContext(ctx))
+						transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 					}
 					if target.NeedReport {
 						utils.DebugLog("arget.NeedReportarget.NeedReportarget.NeedReportarget.NeedReport")
@@ -238,7 +238,7 @@ func SendReqDownloadSlice(target *protos.RspFileStorageInfo, req *protos.ReqDown
 }
 
 // RspReportDownloadResult  SP-P OR SP-PP
-func RspReportDownloadResult(ctx context.Context, conn spbf.WriteCloser) {
+func RspReportDownloadResult(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspReportDownloadResult")
 	var target protos.RspReportDownloadResult
 	if unmarshalData(ctx, &target) {
@@ -247,7 +247,7 @@ func RspReportDownloadResult(ctx context.Context, conn spbf.WriteCloser) {
 }
 
 // RspDownloadSliceWrong
-func RspDownloadSliceWrong(ctx context.Context, conn spbf.WriteCloser) {
+func RspDownloadSliceWrong(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("RspDownloadSlice")
 	var target protos.RspDownloadSliceWrong
 	if unmarshalData(ctx, &target) {
@@ -304,7 +304,7 @@ func DownloadSliceCancel(fileHash, reqID string, w http.ResponseWriter) {
 }
 
 // ReqDownloadSlicePause ReqDownloadSlicePause
-func ReqDownloadSlicePause(ctx context.Context, conn spbf.WriteCloser) {
+func ReqDownloadSlicePause(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("ReqDownloadSlicePause&*************************************** ")
 	var target protos.ReqDownloadSlicePause
 	if unmarshalData(ctx, &target) {
@@ -326,7 +326,7 @@ func ReqDownloadSlicePause(ctx context.Context, conn spbf.WriteCloser) {
 }
 
 // RspDownloadSlicePause RspDownloadSlicePause
-func RspDownloadSlicePause(ctx context.Context, conn spbf.WriteCloser) {
+func RspDownloadSlicePause(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDownloadSlicePause
 	if unmarshalData(ctx, &target) {
 		if target.Result.State == protos.ResultState_RES_SUCCESS {

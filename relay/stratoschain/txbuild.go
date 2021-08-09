@@ -2,7 +2,7 @@ package stratoschain
 
 import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stratosnet/sds/sp/storages/table"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
@@ -11,10 +11,10 @@ import (
 )
 
 // Stratos-chain 'pot' module
-func BuildVolumeReportMsg(traffic []table.Traffic, reporterAddress, reporterOwnerAddress []byte, epoch uint64, reportReference string) (sdktypes.Msg, error) {
+func BuildVolumeReportMsg(traffic []*core.Traffic, reporterAddress, reporterOwnerAddress []byte, epoch uint64, reportReference string) (sdktypes.Msg, error) {
 	aggregatedVolume := make(map[string]uint64)
 	for _, trafficReccord := range traffic {
-		aggregatedVolume[trafficReccord.ProviderP2pAddress] += trafficReccord.Volume
+		aggregatedVolume[trafficReccord.P2PAddress] += trafficReccord.Volume
 	}
 
 	var nodesVolume []pottypes.SingleNodeVolume
