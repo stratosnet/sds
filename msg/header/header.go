@@ -35,22 +35,26 @@ func GetMessageHeader(tag int16, varsion uint16, length uint32, cmd string, data
 
 //cmd, 8 bytes string, exceeded will be truncate
 const (
-	ReqGetPPList   = "ReqGPPL"  // request to get pp list
-	RspGetPPList   = "RspGPPL"  // response to get pp list
-	ReqRegister    = "ReqReg"   // request to register
-	RspRegister    = "RspReg"   // response to register
-	ReqActivate    = "ReqActiv" // request to activate a PP node
-	RspActivate    = "RspActiv" // response to activate a PP node
-	ReqActivated   = "ReqActvd" // request when a PP node was successfully activated
-	RspActivated   = "RspActvd" // response when a PP node was successfully activated
-	ReqDeactivate  = "ReqDctiv" // request to deactivate a PP node
-	RspDeactivate  = "RspDctiv" // response to deactivate a PP node
-	ReqDeactivated = "ReqDctvd" // request when a PP node was successfully deactivated
-	RspDeactivated = "RspDctvd" // response when a PP node was successfully deactivated
-	ReqPrepay      = "ReqPrpay" // request for a PP node sending a prepay transaction
-	RspPrepay      = "RspPrpay" // response for a PP node sending a prepay transaction
-	ReqPrepaid     = "ReqPrpad" // request when a PP node prepay transaction was successful
-	RspPrepaid     = "RspPrpad" // response when a PP node prepay transaction was successful
+	ReqGetPPList = "ReqGPPL" // request to get pp list
+	RspGetPPList = "RspGPPL" // response to get pp list
+	ReqRegister  = "ReqReg"  // request to register
+	RspRegister  = "RspReg"  // response to register
+
+	ReqActivatePP  = "ReqActvp" // request to activate a PP node
+	RspActivatePP  = "RspActvp" // response to activate a PP node
+	ReqActivatedPP = "ReqActdp" // request when a PP node was successfully activated
+	ReqActivatedSP = "ReqActds" // request when a SP node was successfully activated
+	RspActivatedPP = "RspActdp" // response when a PP node was successfully activated
+
+	ReqDeactivatePP  = "ReqDctvp" // request to deactivate a PP node
+	RspDeactivatePP  = "RspDctvp" // response to deactivate a PP node
+	ReqDeactivatedPP = "ReqDctdp" // request when a PP node was successfully deactivated
+	RspDeactivatedPP = "RspDctdp" // response when a PP node was successfully deactivated
+
+	ReqPrepay  = "ReqPrpay" // request for a PP node sending a prepay transaction
+	RspPrepay  = "RspPrpay" // response for a PP node sending a prepay transaction
+	ReqPrepaid = "ReqPrpad" // request when a PP node prepay transaction was successful
+	RspPrepaid = "RspPrpad" // response when a PP node prepay transaction was successful
 
 	ReqMining = "ReqMin" // request to mining
 	RspMining = "RspMin" //  response to mining
@@ -178,6 +182,9 @@ const (
 
 	ReqCUseVolume = "ReqCUV"
 	RspCUseVolume = "RspCUV"
+
+	ReqTransferAggregateTraffic = "ReqTrAgT"
+	ReqTransferRecordTraffic    = "ReqTrRcT"
 )
 
 // DecodeHeader

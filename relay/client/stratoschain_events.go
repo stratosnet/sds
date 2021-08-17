@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/hex"
 	"fmt"
+	sdkTypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/golang/protobuf/proto"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
 	"github.com/stratosnet/sds/msg"
@@ -31,8 +32,7 @@ func (m *MultiClient) SubscribeToStratosChainEvents() error {
 	if err != nil {
 		return err
 	}
-	// TODO: query will probably change when this is implemented in stratos-chain
-	err = m.SubscribeToStratosChain("message.action='sp_registration_approved'", m.SPRegistrationApprovedMsgHandler())
+	err = m.SubscribeToStratosChain("message.action='indexing_node_reg_vote'", m.IndexingNodeVoteMsgHandler())
 	if err != nil {
 		return err
 	}
@@ -86,18 +86,18 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 			return
 		}
 
-		activatedMsg := &protos.ReqActivated{
+		activatedMsg := &protos.ReqActivatedPP{
 			P2PAddress: p2pAddressString,
 			P2PPubkey:  hex.EncodeToString(p2pPubkey[:]),
 		}
 		activatedMsgBytes, err := proto.Marshal(activatedMsg)
 		if err != nil {
-			fmt.Println("Error when trying to marshal activatedMsg proto: " + err.Error())
+			fmt.Println("Error when trying to marshal ReqActivatedPP proto: " + err.Error())
 			return
 		}
 		msgToSend := &msg.RelayMsgBuf{
 			MSGData: activatedMsgBytes,
-			MSGHead: header.MakeMessageHeader(1, 1, uint32(len(activatedMsgBytes)), header.ReqActivated),
+			MSGHead: header.MakeMessageHeader(1, 1, uint32(len(activatedMsgBytes)), header.ReqActivatedPP),
 		}
 
 		err = conn.Write(msgToSend)
@@ -129,15 +129,15 @@ func (m *MultiClient) RemoveResourceNodeMsgHandler() func(event coretypes.Result
 			return
 		}
 
-		deactivatedMsg := &protos.ReqDeactivated{P2PAddress: p2pAddressString}
+		deactivatedMsg := &protos.ReqDeactivatedPP{P2PAddress: p2pAddressString}
 		deactivatedMsgBytes, err := proto.Marshal(deactivatedMsg)
 		if err != nil {
-			fmt.Println("Error when trying to marshal deactivatedMsg proto: " + err.Error())
+			fmt.Println("Error when trying to marshal ReqDeactivatedPP proto: " + err.Error())
 			return
 		}
 		msgToSend := &msg.RelayMsgBuf{
 			MSGData: deactivatedMsgBytes,
-			MSGHead: header.MakeMessageHeader(1, 1, uint32(len(deactivatedMsgBytes)), header.ReqDeactivated),
+			MSGHead: header.MakeMessageHeader(1, 1, uint32(len(deactivatedMsgBytes)), header.ReqDeactivatedPP),
 		}
 
 		err = conn.Write(msgToSend)
@@ -162,11 +162,54 @@ func (m *MultiClient) RemoveIndexingNodeMsgHandler() func(event coretypes.Result
 	}
 }
 
-func (m *MultiClient) SPRegistrationApprovedMsgHandler() func(event coretypes.ResultEvent) {
-
+func (m *MultiClient) IndexingNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		// TODO
-		fmt.Printf("%+v\n", result)
+		conn := m.GetSdsClientConn()
+
+		candidateNetworkAddressList := result.Events["indexing_node_reg_vote.candidate_network_address"]
+		if len(candidateNetworkAddressList) < 1 {
+			fmt.Println("No candidate network address was specified in the indexing_node_reg_vote message from stratos-chain")
+			return
+		}
+		p2pAddress, err := types.BechToAddress(candidateNetworkAddressList[0])
+		if err != nil {
+			fmt.Println("Error when trying to convert P2P address to bytes: " + err.Error())
+			return
+		}
+		p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
+		if err != nil {
+			fmt.Println("Error when trying to convert P2P address to bech32: " + err.Error())
+			return
+		}
+
+		candidateStatusList := result.Events["indexing_node_reg_vote.candidate_status"]
+		if len(candidateStatusList) < 1 {
+			fmt.Println("No candidate status was specified in the indexing_node_reg_vote message from stratos-chain")
+			return
+		}
+		if candidateStatusList[0] != sdkTypes.BondStatusBonded {
+			// The candidate needs more votes before being considered active
+			return
+		}
+
+		activatedMsg := &protos.ReqActivatedSP{
+			P2PAddress: p2pAddressString,
+		}
+		activatedMsgBytes, err := proto.Marshal(activatedMsg)
+		if err != nil {
+			fmt.Println("Error when trying to marshal ReqActivatedSP proto: " + err.Error())
+			return
+		}
+		msgToSend := &msg.RelayMsgBuf{
+			MSGData: activatedMsgBytes,
+			MSGHead: header.MakeMessageHeader(1, 1, uint32(len(activatedMsgBytes)), header.ReqActivatedSP),
+		}
+
+		err = conn.Write(msgToSend)
+		if err != nil {
+			fmt.Println("Error when sending message to SDS: " + err.Error())
+			return
+		}
 	}
 }
 
@@ -193,7 +236,7 @@ func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 		}
 		prepaidMsgBytes, err := proto.Marshal(prepaidMsg)
 		if err != nil {
-			fmt.Println("Error when trying to marshal prepaidMsg proto: " + err.Error())
+			fmt.Println("Error when trying to marshal ReqPrepaid proto: " + err.Error())
 			return
 		}
 		msgToSend := &msg.RelayMsgBuf{
@@ -238,7 +281,7 @@ func (m *MultiClient) FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 		}
 		uploadedMsgBytes, err := proto.Marshal(uploadedMsg)
 		if err != nil {
-			fmt.Println("Error when trying to marshal uploadedMsg proto: " + err.Error())
+			fmt.Println("Error when trying to marshal Uploaded proto: " + err.Error())
 			return
 		}
 		msgToSend := &msg.RelayMsgBuf{
