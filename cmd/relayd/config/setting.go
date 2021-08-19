@@ -18,9 +18,8 @@ type sds struct {
 }
 
 type stratoschain struct {
-	NetworkAddress string `yaml:"networkAddress"`
-	RestPort       string `yaml:"restPort"`
-	WebsocketPort  string `yaml:"websocketPort"`
+	RestServer      string `yaml:"restServer"`
+	WebsocketServer string `yaml:"websocketServer"`
 }
 
 type config struct {
