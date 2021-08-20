@@ -40,19 +40,32 @@ func CreateWallet(password, name, mnemonic, passphrase, hdPath string) string {
 }
 
 // GetWalletAddress
-func GetWalletAddress() {
+func GetWalletAddress() error {
 	files, err := ioutil.ReadDir(setting.Config.AccountDir)
+
 	if len(files) == 0 {
-		// CreateWallet(setting.Config.DefPassword)
-		return
+		return errors.New("account Dir is empty")
 	}
 	if err != nil {
-		// CreateWallet(setting.Config.DefPassword)
-		return
+		return err
 	}
-	setting.WalletAddress = files[0].Name()
-	getPublicKey(filepath.Join(setting.Config.AccountDir, setting.WalletAddress+".json"), setting.Config.DefPassword)
-	utils.Log("setting.WalletAddress,", setting.WalletAddress)
+
+	walletAddress := setting.Config.WalletAddress
+	password := setting.Config.WalletPassword
+	fileName := walletAddress + ".json"
+
+	for _, info := range files {
+		if info.Name() == ".placeholder" || info.Name() != fileName {
+			continue
+		}
+		utils.Log(info.Name())
+		if getPublicKey(filepath.Join(setting.Config.AccountDir, fileName), password) {
+			setting.WalletAddress = walletAddress
+			return nil
+		}
+		return errors.New("wrong password")
+	}
+	return errors.New("could not find the account file corresponds to the configured wallet address")
 }
 
 func getPublicKey(filePath, password string) bool {
