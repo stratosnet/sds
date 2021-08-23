@@ -31,12 +31,15 @@ func GetElement(key string, themap map[interface{}]interface{}) string {
 }
 
 // LoadYamlConfig
-func LoadYamlConfig(s interface{}, path string) {
+func LoadYamlConfig(s interface{}, path string) error {
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
 		MyLogger.ErrorLog(err)
+		return err
 	}
 	if err = yaml.Unmarshal(file, s); err != nil {
 		MyLogger.ErrorLog(err)
+		return err
 	}
+	return nil
 }
