@@ -71,10 +71,31 @@ func TestCreateP2PKey(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	pubKey := ed25519.PrivKeyBytesToPubKeyBytes(key.PrivateKey)
-	bechPub, err := bech32.ConvertAndEncode(hrp, pubKey)
+	pubKey := ed25519.PrivKeyBytesToPubKey(key.PrivateKey)
+	bechPub, err := bech32.ConvertAndEncode(hrp, pubKey.Bytes())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+	fmt.Printf("Address: %v  PublicKey: %v", bechAddr, bechPub)
+}
+
+func TestDecryptP2PKeyJson(t *testing.T) {
+	hrp := "stsdsp2p"
+	key, err := DecryptKey([]byte("put the content of the P2P key JSON file here"), "aaa")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	pubKey := ed25519.PrivKeyBytesToPubKey(key.PrivateKey)
+	bechPub, err := bech32.ConvertAndEncode(hrp, pubKey.Bytes())
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	bechAddr, err := bech32.ConvertAndEncode(hrp, pubKey.Address().Bytes())
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
 	fmt.Printf("Address: %v  PublicKey: %v", bechAddr, bechPub)
 }
