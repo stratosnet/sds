@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/stratosnet/sds/pp/api"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/relay/stratoschain"
@@ -23,6 +24,10 @@ func main() {
 	if err != nil {
 		utils.ErrorLog("Couldn't setup PP node", err)
 		return
+	}
+
+	if setting.Config.IsWallet {
+		go api.StartHTTPServ()
 	}
 
 	peers.StartPP()
