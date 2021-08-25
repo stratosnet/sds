@@ -52,13 +52,13 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 	return func(result coretypes.ResultEvent) {
 		conn := m.GetSdsClientConn()
 
-		nodeAddressList := result.Events["create_resource_node.node_address"]
-		if len(nodeAddressList) < 1 {
-			fmt.Println("No node address was specified in the create_resource_node message from stratos-chain")
+		networkAddressList := result.Events["create_resource_node.network_address"]
+		if len(networkAddressList) < 1 {
+			fmt.Println("No network address was specified in the create_resource_node message from stratos-chain")
 			return
 		}
 
-		p2pAddress, err := types.BechToAddress(nodeAddressList[0])
+		p2pAddress, err := types.BechToAddress(networkAddressList[0])
 		if err != nil {
 			fmt.Println("Error when trying to convert P2P address to bytes: " + err.Error())
 			return
@@ -69,7 +69,7 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 			return
 		}
 
-		nodePubkeyList := result.Events["create_resource_node.node_pubkey"]
+		nodePubkeyList := result.Events["create_resource_node.pub_key"]
 		if len(nodePubkeyList) < 1 {
 			fmt.Println("No node pubkey was specified in the create_resource_node message from stratos-chain")
 			return
