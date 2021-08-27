@@ -53,7 +53,7 @@ func reqRegisterDataTR(target *protos.ReqRegister) *msg.RelayMsgBuf {
 	}
 }
 
-func reqActivateData(amount, fee, gas int64) (*protos.ReqActivate, error) {
+func reqActivateData(amount, fee, gas int64) (*protos.ReqActivatePP, error) {
 	// Create and sign transaction to add new resource node
 	ownerAddress, err := types.BechToAddress(setting.WalletAddress)
 	if err != nil {
@@ -69,14 +69,14 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivate, error) {
 		return nil, err
 	}
 
-	req := &protos.ReqActivate{
+	req := &protos.ReqActivatePP{
 		Tx:         txBytes,
 		P2PAddress: setting.P2PAddress,
 	}
 	return req, nil
 }
 
-func reqDeactivateData(fee, gas int64) (*protos.ReqDeactivate, error) {
+func reqDeactivateData(fee, gas int64) (*protos.ReqDeactivatePP, error) {
 	// Create and sign transaction to remove a resource node
 	nodeAddress := ed25519.PubKeyBytesToAddress(setting.P2PPublicKey)
 	ownerAddress, err := crypto.PubKeyToAddress(setting.WalletPublicKey)
@@ -93,7 +93,7 @@ func reqDeactivateData(fee, gas int64) (*protos.ReqDeactivate, error) {
 		return nil, err
 	}
 
-	req := &protos.ReqDeactivate{
+	req := &protos.ReqDeactivatePP{
 		Tx:         txBytes,
 		P2PAddress: setting.P2PAddress,
 	}

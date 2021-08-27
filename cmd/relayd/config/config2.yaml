@@ -1,0 +1,15 @@
+sds:
+  networkAddress: 127.0.0.1
+  clientPort: 18888
+  websocketPort: 18889
+  connectionRetries:
+    max: 100
+    sleepDuration: 1000 # milliseconds
+stratosChain:
+  restServer: 127.0.0.1:1317
+  websocketServer: 127.0.0.1:26657
+blockchainInfo:
+  addressPrefix: st
+  p2pAddressPrefix: stsdsp2p
+  chainId: test-chain
+  token: ustos

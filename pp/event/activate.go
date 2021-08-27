@@ -18,13 +18,13 @@ func Activate(amount, fee, gas int64) error {
 		return err
 	}
 	fmt.Println("Sending activate message to SP! " + activateReq.P2PAddress)
-	SendMessageToSPServer(activateReq, header.ReqActivate)
+	SendMessageToSPServer(activateReq, header.ReqActivatePP)
 	return nil
 }
 
 // RspActivate. Response to asking the SP node to activate this PP node
 func RspActivate(ctx context.Context, conn core.WriteCloser) {
-	var target protos.RspActivate
+	var target protos.RspActivatePP
 	success := unmarshalData(ctx, &target)
 	if !success {
 		return

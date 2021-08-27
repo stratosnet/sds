@@ -18,9 +18,8 @@ type sds struct {
 }
 
 type stratoschain struct {
-	NetworkAddress string `yaml:"networkAddress"`
-	RestPort       string `yaml:"restPort"`
-	WebsocketPort  string `yaml:"websocketPort"`
+	RestServer      string `yaml:"restServer"`
+	WebsocketServer string `yaml:"websocketServer"`
 }
 
 type config struct {
@@ -38,8 +37,13 @@ type blockchainInfoConfig struct {
 
 var Config *config
 
-func LoadConfig(path string) {
+func LoadConfig(path string) error {
 	Config = new(config)
-	utils.LoadYamlConfig(Config, path)
+	err := utils.LoadYamlConfig(Config, path)
+	if err != nil {
+		return err
+	}
+
 	prefix.SetConfig(Config.BlockchainInfo.AddressPrefix)
+	return nil
 }

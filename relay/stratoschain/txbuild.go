@@ -34,11 +34,11 @@ func BuildVolumeReportMsg(traffic []*core.Traffic, reporterAddress, reporterOwne
 }
 
 // Stratos-chain 'register' module
-func BuildCreateResourceNodeMsg(networkID, token, moniker, nodeType string, pubKey []byte, amount int64, ownerAddress utiltypes.Address) sdktypes.Msg {
+func BuildCreateResourceNodeMsg(networkID, token, moniker, nodeType string, pubKey []byte, stakeAmount int64, ownerAddress utiltypes.Address) sdktypes.Msg {
 	return registertypes.NewMsgCreateResourceNode(
 		networkID,
 		ed25519.PubKeyBytesToPubKey(pubKey),
-		sdktypes.NewInt64Coin(token, amount),
+		sdktypes.NewInt64Coin(token, stakeAmount),
 		ownerAddress[:],
 		registertypes.Description{
 			Moniker: moniker,
@@ -47,11 +47,11 @@ func BuildCreateResourceNodeMsg(networkID, token, moniker, nodeType string, pubK
 	)
 }
 
-func BuildCreateIndexingNodeMsg(networkAddress, token, moniker string, pubKey []byte, amount int64, ownerAddress utiltypes.Address) sdktypes.Msg {
+func BuildCreateIndexingNodeMsg(networkID, token, moniker string, pubKey []byte, stakeAmount int64, ownerAddress utiltypes.Address) sdktypes.Msg {
 	return registertypes.NewMsgCreateIndexingNode(
-		networkAddress,
+		networkID,
 		ed25519.PubKeyBytesToPubKey(pubKey),
-		sdktypes.NewInt64Coin(token, amount),
+		sdktypes.NewInt64Coin(token, stakeAmount),
 		ownerAddress[:],
 		registertypes.Description{
 			Moniker: moniker,
@@ -70,6 +70,16 @@ func BuildRemoveIndexingNodeMsg(nodeAddress, ownerAddress utiltypes.Address) sdk
 	return registertypes.NewMsgRemoveIndexingNode(
 		nodeAddress[:],
 		ownerAddress[:],
+	)
+}
+
+func BuildIndexingNodeRegistrationVoteMsg(candidateNetworkAddress, candidateOwnerAddress, voterNetworkAddress, voterOwnerAddress utiltypes.Address, voteOpinion bool) sdktypes.Msg {
+	return registertypes.NewMsgIndexingNodeRegistrationVote(
+		candidateNetworkAddress[:],
+		candidateOwnerAddress[:],
+		registertypes.VoteOpinionFromBool(voteOpinion),
+		voterNetworkAddress[:],
+		voterOwnerAddress[:],
 	)
 }
 
