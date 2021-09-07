@@ -18,13 +18,13 @@ func Deactivate(fee, gas int64) error {
 		return err
 	}
 	fmt.Println("Sending deactivate message to SP! " + deactivateReq.P2PAddress)
-	SendMessageToSPServer(deactivateReq, header.ReqDeactivate)
+	SendMessageToSPServer(deactivateReq, header.ReqDeactivatePP)
 	return nil
 }
 
 // RspDeactivate. Response to asking the SP node to deactivate this PP node
 func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
-	var target protos.RspDeactivate
+	var target protos.RspDeactivatePP
 	success := unmarshalData(ctx, &target)
 	if !success {
 		return

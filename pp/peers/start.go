@@ -21,17 +21,19 @@ func Start(isPP bool) {
 
 // StartPP StartPP
 func StartPP() {
-	GetWalletAddress()
+	err := GetWalletAddress()
+	if err != nil {
+		utils.ErrorLog(err)
+		return
+	}
 	GetNetworkAddress()
 	event.RegisterEventHandle()
-	// client.SPConn = client.NewClient(setting.Config.SPNetAddress, true)
 	initPPList()
-	go listenOffline()
+	listenOffline()
 }
 
 // InitPeer InitPeer
 func InitPeer() {
-
 	utils.DebugLog("InitPeer InitPeerInitPeer InitPeerInitPeer InitPeer")
 	event.RegisterEventHandle()
 	initPPList()

@@ -103,11 +103,11 @@ func (m *MultiClient) Start() error {
 	}()
 
 	// REST client to send messages to stratos-chain
-	scRestUrl := "http://" + setting.Config.StratosChain.NetworkAddress + ":" + setting.Config.StratosChain.RestPort
+	scRestUrl := "http://" + setting.Config.StratosChain.RestServer
 	stratoschain.Url = scRestUrl
 
 	// Client to subscribe to stratos-chain events and receive messages via websocket
-	m.stratosWebsocketUrl = setting.Config.StratosChain.NetworkAddress + ":" + setting.Config.StratosChain.WebsocketPort
+	m.stratosWebsocketUrl = setting.Config.StratosChain.WebsocketServer
 	err := m.SubscribeToStratosChainEvents()
 	if err != nil {
 		return err

@@ -6,9 +6,8 @@ sds:
     max: 100
     sleepDuration: 1000 # milliseconds
 stratosChain:
-  networkAddress: 127.0.0.1
-  restPort: 1317
-  websocketPort: 26657
+  restServer: 127.0.0.1:1317
+  websocketServer: 127.0.0.1:26657
 blockchainInfo:
   addressPrefix: st
   p2pAddressPrefix: stsdsp2p

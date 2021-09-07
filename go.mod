@@ -22,7 +22,7 @@ require (
 	github.com/pborman/uuid v1.2.1
 	github.com/peterh/liner v1.2.1
 	github.com/shirou/gopsutil v3.20.12+incompatible
-	github.com/stratosnet/stratos-chain v0.0.0-20210804161928-6b5517f834ff
+	github.com/stratosnet/stratos-chain v0.0.0-20210812183433-04850109b2fd
 	github.com/tendermint/tendermint v0.33.9
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
