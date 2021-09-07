@@ -108,6 +108,7 @@ type config struct {
 	StratosChainAddress         string `yaml:"StratosChainAddress"`
 	StratosChainPort            string `yaml:"StratosChainPort"`
 	StreamingCache              bool   `yaml:"StreamingCache"`
+	StreamingPort               string `yaml:"StreamingPort"`
 }
 
 var ostype = runtime.GOOS

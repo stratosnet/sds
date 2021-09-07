@@ -4,13 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/stratosnet/sds/utils"
 )
-
-const API_PORT = 9608
 
 // HTTPServ Http server
 type HTTPServ struct {
@@ -105,13 +102,15 @@ func NewErrorJson(errcode int, msg string) *jsonResult {
 type MyHTTPServ struct {
 	routeMap map[string]*myHTTPHandler
 	timeout  time.Duration
+	port     string
 }
 
 // MyNewHTTPServ
-func MyNewHTTPServ() *MyHTTPServ {
+func MyNewHTTPServ(port string) *MyHTTPServ {
 	return &MyHTTPServ{
 		routeMap: make(map[string]*myHTTPHandler),
 		timeout:  30 * time.Second,
+		port:     port,
 	}
 }
 
@@ -146,5 +145,5 @@ func (hs *MyHTTPServ) MyStart() {
 	}
 	h := http.TimeoutHandler(mux, hs.timeout, "http time out!")
 	utils.Log("Start HTTP Server...")
-	http.ListenAndServe(":"+strconv.Itoa(API_PORT), h)
+	http.ListenAndServe(":"+hs.port, h)
 }

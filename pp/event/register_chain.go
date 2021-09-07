@@ -75,6 +75,11 @@ func RspRegisterChain(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
+	if target.SpPublicKey != nil {
+		utils.DebugLog("sp public key ", target.SpPublicKey)
+		setting.SPPublicKey = target.SpPublicKey
+	}
+
 	utils.Log("get RspRegisterChain ", target.Result.State, target.Result.Msg)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		setting.P2PAddress = ""

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/stratosnet/sds/pp/api/streaming"
 	"net"
 	"strconv"
 	"strings"
@@ -528,6 +529,8 @@ func main() {
 			}
 		}()
 	}
+
+	go streaming.StartHTTPServ()
 
 	console.Mystdin.RegisterProcessFunc("help", help)
 	console.Mystdin.RegisterProcessFunc("h", help)

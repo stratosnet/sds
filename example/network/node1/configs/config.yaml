@@ -31,3 +31,4 @@ ChainId: "test-chain"
 Token: "ustos"
 StratosChainAddress: 127.0.0.1
 StratosChainPort: 1317
+StreamingPort: 18091

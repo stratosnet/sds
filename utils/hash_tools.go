@@ -66,3 +66,17 @@ func CalcFileHash(filePath string) string {
 func CalcHash(data []byte) string {
 	return hex.EncodeToString(crypto.Keccak256(data))
 }
+
+// CalcHash
+func CalcSliceHash(data []byte, fileHash string) string {
+	fileKeccak256, _ := hex.DecodeString(fileHash)
+	sliceKeccak256 := crypto.Keccak256(data)
+	if len(fileKeccak256) != len(sliceKeccak256) {
+
+	}
+	hash := make([]byte, len(fileKeccak256))
+	for i := 0; i < len(fileKeccak256); i++ {
+		hash[i] = fileKeccak256[i] ^ sliceKeccak256[i]
+	}
+	return hex.EncodeToString(hash)
+}

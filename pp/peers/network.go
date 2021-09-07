@@ -12,8 +12,10 @@ func GetNetworkAddress() {
 
 	if setting.Config.Internal {
 		setting.NetworkAddress = getInternal() + setting.Config.Port
+		setting.StreamingAddress = getInternal() + ":" + setting.Config.StreamingPort
 	} else {
 		setting.NetworkAddress = getExternal() + setting.Config.Port
+		setting.StreamingAddress = getExternal() + ":" + setting.Config.StreamingPort
 	}
 	// utils.Log("setting.NetworkAddress", setting.NetworkAddress)
 

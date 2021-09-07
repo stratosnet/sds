@@ -106,11 +106,7 @@ func GetFileStorageInfo(path, savePath, reqID string, isImg bool, isVideoStream 
 func GetVideoSliceInfo(sliceName string, fInfo *protos.RspFileStorageInfo) *protos.DownloadSliceInfo {
 	var sliceNumber uint64
 	hlsInfo := GetHlsInfo(fInfo)
-	if sliceName == hlsInfo.Header {
-		sliceNumber = hlsInfo.HeaderSliceNumber
-	} else {
-		sliceNumber = hlsInfo.TsToSlice[sliceName]
-	}
+	sliceNumber = hlsInfo.SegmentToSlice[sliceName]
 	sliceInfo := GetSliceInfoBySliceNumber(fInfo, sliceNumber)
 	return sliceInfo
 }

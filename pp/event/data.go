@@ -127,9 +127,10 @@ func reqPrepayData(amount, fee, gas int64) (*protos.ReqPrepay, error) {
 func reqMiningData() *protos.ReqMining {
 	return &protos.ReqMining{
 		Address: &protos.PPBaseInfo{
-			P2PAddress:     setting.P2PAddress,
-			WalletAddress:  setting.WalletAddress,
-			NetworkAddress: setting.NetworkAddress,
+			P2PAddress:       setting.P2PAddress,
+			WalletAddress:    setting.WalletAddress,
+			NetworkAddress:   setting.NetworkAddress,
+			StreamingAddress: setting.StreamingAddress,
 		},
 		PublicKey: setting.P2PPublicKey,
 		Sign:      setting.GetSign(setting.P2PAddress),
@@ -406,6 +407,7 @@ func rspFileStorageInfoData(target *protos.RspFileStorageInfo) *msg.RelayMsgBuf 
 		sliceInfoArr = append(sliceInfoArr, &newInfo)
 	}
 	sendTarget.SliceInfo = sliceInfoArr
+	sendTarget.StreamingAddress = setting.StreamingAddress
 	sendData, err := proto.Marshal(sendTarget)
 	if err != nil {
 		utils.ErrorLog(err)

@@ -36,7 +36,7 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 					utils.DebugLog("self is storagePP")
 					rsp := rspDownloadSliceData(&target)
 					if rsp.SliceSize > 0 {
-						sendReportDownloadResult(rsp, true)
+						SendReportDownloadResult(rsp, true)
 						splitSendDownloadSliceData(rsp, conn)
 					} else {
 						downloadWrong(target.TaskId, target.SliceInfo.SliceHash, target.P2PAddress, target.WalletAddress, protos.DownloadWrongType_LOSESLICE)
@@ -117,7 +117,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 					}
 					if target.NeedReport {
 						utils.DebugLog("arget.NeedReportarget.NeedReportarget.NeedReportarget.NeedReport")
-						sendReportDownloadResult(&target, true)
+						SendReportDownloadResult(&target, true)
 					}
 				} else {
 					downloadWrong(target.TaskId, target.SliceInfo.SliceHash, target.P2PAddress, target.WalletAddress, protos.DownloadWrongType_LOSESLICE)
@@ -174,11 +174,11 @@ func receivedSlice(target *protos.RspDownloadSlice, fInfo *protos.RspFileStorage
 	if fInfo.IsVideoStream {
 		putData(target.ReqId, HTTPDownloadSlice, target)
 	}
-	sendReportDownloadResult(target, false)
+	SendReportDownloadResult(target, false)
 }
 
 // ReportDownloadResult  P-SP OR PP-SP
-func sendReportDownloadResult(target *protos.RspDownloadSlice, isPP bool) {
+func SendReportDownloadResult(target *protos.RspDownloadSlice, isPP bool) {
 	utils.DebugLog("ReportDownloadResult report result target.FileHash = ", target.FileHash)
 	SendMessageToSPServer(reqReportDownloadResultData(target, isPP), header.ReqReportDownloadResult)
 	select {
@@ -192,6 +192,11 @@ func sendReportDownloadResult(target *protos.RspDownloadSlice, isPP bool) {
 
 	task.CleanDownloadTask(target.FileHash, target.SliceInfo.SliceHash, target.P2PAddress, target.WalletAddress)
 	// downloadPassageway.Delete(target.WalletAddress + target.SliceInfo.SliceHash)
+}
+
+// ReportDownloadResult  P-SP OR PP-SP
+func SendReportStreamingResult(target *protos.RspDownloadSlice, isPP bool) {
+	SendMessageToSPServer(reqReportDownloadResultData(target, isPP), header.ReqReportDownloadResult)
 }
 
 // DownloadFileSlice

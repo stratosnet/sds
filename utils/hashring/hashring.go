@@ -18,9 +18,10 @@ import (
 
 // Node
 type Node struct {
-	ID   string
-	Host string
-	Data *sync.Map
+	ID        string
+	Host      string
+	Streaming string
+	Data      *sync.Map
 }
 
 // nodeKey
