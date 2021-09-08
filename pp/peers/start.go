@@ -29,6 +29,8 @@ func StartPP() {
 	GetNetworkAddress()
 	event.RegisterEventHandle()
 	initPPList()
+	// add task to report NodeStatus
+	reportNodeStatusToSP()
 	listenOffline()
 }
 

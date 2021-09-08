@@ -2,8 +2,12 @@ package event
 
 import (
 	goed25519 "crypto/ed25519"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/mem"
 	"github.com/stratosnet/sds/utils/crypto"
 	"path"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stratosnet/sds/msg"
@@ -913,4 +917,28 @@ func reqGetCapacityData(reqID string) *protos.ReqGetCapacity {
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 	}
+}
+
+func reqNodeStatusData() (*protos.ReqReportNodeStatus, error) {
+	// cpu
+	totalPercent, _ := cpu.Percent(3*time.Second, false)
+	//perPercents, _ := cpu.Percent(3*time.Second, true)
+
+	// Memory
+	swapMemory, _ := mem.SwapMemory()
+	memPercent := swapMemory.UsedPercent
+	// Disk
+	info, _ := disk.Usage("/")
+	diskPercent := info.UsedPercent
+
+	// Bandwidth
+	//totalPercent, _ := net
+
+	req := &protos.ReqReportNodeStatus{
+		Cpu:       int64(totalPercent[0]),
+		Memory:    int64(memPercent),
+		Disk:      int64(diskPercent),
+		Bandwidth: int64(totalPercent[0]),
+	}
+	return req, nil
 }

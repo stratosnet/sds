@@ -438,7 +438,7 @@ message RspGetHDInfo {
 }
 
 
-// 
+//
 message ReqSendChatMessages {
   string wallet_address = 1;
   string message = 2;
@@ -586,7 +586,7 @@ message BlockCheckInfo {
 }
 
 
-// 
+//
 message ReqDownloadTaskInfo {
   string task_id = 1;
   string id = 2;
@@ -1017,4 +1017,11 @@ message ReqTransferRecordTraffic {
   uint64 volume = 6;
   int64  delivery_time = 7;
   int64  response_time = 8;
+}
+
+message ReqReportNodeStatus {
+  int64  cpu = 1;
+  int64  memory = 2;
+  int64  disk = 3;
+  int64  bandwidth = 4;
 }
