@@ -1020,8 +1020,9 @@ message ReqTransferRecordTraffic {
 }
 
 message ReqReportNodeStatus {
-  int64  cpu = 1;
-  int64  memory = 2;
-  int64  disk = 3;
-  int64  bandwidth = 4;
+  string        p2p_address = 1;
+  CpuStat       cpu = 2;
+  MemoryStat    memory = 3;
+  DiskStat         disk = 4;
+  BandwithStat  bandwidth = 5;
 }

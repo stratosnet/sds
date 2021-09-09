@@ -920,25 +920,35 @@ func reqGetCapacityData(reqID string) *protos.ReqGetCapacity {
 }
 
 func reqNodeStatusData() (*protos.ReqReportNodeStatus, error) {
-	// cpu
+	// cpu total used percent
 	totalPercent, _ := cpu.Percent(3*time.Second, false)
-	//perPercents, _ := cpu.Percent(3*time.Second, true)
+	// num of cpu cores
+	coreNum, _ := cpu.Counts(false)
+	cpuStat := &protos.CpuStat{NumCores: int64(coreNum), TotalUsedPercent: int64(totalPercent[0])}
 
-	// Memory
+	// Memory physical + swap
+	virtualMem, _ := mem.VirtualMemory()
+	virtualMemPercent := int64(virtualMem.UsedPercent)
 	swapMemory, _ := mem.SwapMemory()
-	memPercent := swapMemory.UsedPercent
-	// Disk
+	swapMemPercent := int64(swapMemory.UsedPercent)
+	memStat := &protos.MemoryStat{MemPercent: virtualMemPercent, SwapMemPercent: swapMemPercent}
+	// Disk root path
 	info, _ := disk.Usage("/")
-	diskPercent := info.UsedPercent
+	diskPercentRoot := info.UsedPercent
 
-	// Bandwidth
-	//totalPercent, _ := net
+	infoWorkingPath, _ := disk.Usage("./")
+	diskPercentWorkingPath := infoWorkingPath.UsedPercent
+	diskStat := &protos.DiskStat{RootPercent: int64(diskPercentRoot), WorkingDirPercent: int64(diskPercentWorkingPath)}
+
+	// TODO Bandwidth
+	bwStat := &protos.BandwithStat{}
 
 	req := &protos.ReqReportNodeStatus{
-		Cpu:       int64(totalPercent[0]),
-		Memory:    int64(memPercent),
-		Disk:      int64(diskPercent),
-		Bandwidth: int64(totalPercent[0]),
+		P2PAddress: setting.P2PAddress,
+		Cpu:        cpuStat,
+		Memory:     memStat,
+		Disk:       diskStat,
+		Bandwidth:  bwStat,
 	}
 	return req, nil
 }
