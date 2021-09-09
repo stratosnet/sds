@@ -39,5 +39,7 @@ func InitPeer() {
 	utils.DebugLog("InitPeer InitPeerInitPeer InitPeerInitPeer InitPeer")
 	event.RegisterEventHandle()
 	initPPList()
+	// add task to report NodeStatus
+	reportNodeStatusToSP()
 	go listenOffline()
 }
