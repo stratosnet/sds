@@ -118,7 +118,6 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 			utils.DebugLog("Start reporting node status to SP")
 			clock := clock.NewClock()
 			clock.AddJobRepeat(time.Second*60, 0, ReportNodeStatus)
-			//task.ReportNodeStatusToSP()
 		} else {
 			utils.Log(target.Result.Msg)
 		}

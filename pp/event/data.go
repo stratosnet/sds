@@ -6,6 +6,7 @@ import (
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
 	"github.com/stratosnet/sds/utils/crypto"
+	"math"
 	"path"
 	"time"
 
@@ -924,21 +925,34 @@ func reqNodeStatusData() (*protos.ReqReportNodeStatus, error) {
 	totalPercent, _ := cpu.Percent(3*time.Second, false)
 	// num of cpu cores
 	coreNum, _ := cpu.Counts(false)
-	cpuStat := &protos.CpuStat{NumCores: int64(coreNum), TotalUsedPercent: int64(totalPercent[0])}
+	var cpuPercent float64
+	if len(totalPercent) == 0 {
+		cpuPercent = 0
+	} else {
+		cpuPercent = totalPercent[0]
+	}
+	cpuStat := &protos.CpuStat{NumCores: int64(coreNum), TotalUsedPercent: math.Round(cpuPercent*100) / 100}
 
 	// Memory physical + swap
 	virtualMem, _ := mem.VirtualMemory()
-	virtualMemPercent := int64(virtualMem.UsedPercent)
+	virtualUsedMem := virtualMem.Used
+	virtualTotalMem := virtualMem.Total
+	virtualMemPercent := virtualMem.UsedPercent
+
 	swapMemory, _ := mem.SwapMemory()
-	swapMemPercent := int64(swapMemory.UsedPercent)
-	memStat := &protos.MemoryStat{MemPercent: virtualMemPercent, SwapMemPercent: swapMemPercent}
+	swapUsedMem := swapMemory.Used
+	swapTotalMem := swapMemory.Total
+	swapMemPercent := swapMemory.UsedPercent
+	memStat := &protos.MemoryStat{
+		MemUsed: int64(virtualUsedMem), MemTotal: int64(virtualTotalMem), MemPercent: math.Round(virtualMemPercent*100) / 100,
+		SwapMemUsed: int64(swapUsedMem), SwapMemTotal: int64(swapTotalMem), SwapMemPercent: math.Round(swapMemPercent*100) / 100,
+	}
 	// Disk root path
 	info, _ := disk.Usage("/")
+	diskUsedRoot := info.Used
+	diskTotalRoot := info.Total
 	diskPercentRoot := info.UsedPercent
-
-	infoWorkingPath, _ := disk.Usage("./")
-	diskPercentWorkingPath := infoWorkingPath.UsedPercent
-	diskStat := &protos.DiskStat{RootPercent: int64(diskPercentRoot), WorkingDirPercent: int64(diskPercentWorkingPath)}
+	diskStat := &protos.DiskStat{RootUsed: int64(diskUsedRoot), RootTotal: int64(diskTotalRoot), RootPercent: math.Round(diskPercentRoot*100) / 100}
 
 	// TODO Bandwidth
 	bwStat := &protos.BandwithStat{}

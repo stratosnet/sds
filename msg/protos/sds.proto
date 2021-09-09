@@ -1023,6 +1023,6 @@ message ReqReportNodeStatus {
   string        p2p_address = 1;
   CpuStat       cpu = 2;
   MemoryStat    memory = 3;
-  DiskStat         disk = 4;
+  DiskStat      disk = 4;
   BandwithStat  bandwidth = 5;
 }
