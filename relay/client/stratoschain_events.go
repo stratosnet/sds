@@ -20,6 +20,10 @@ func (m *MultiClient) SubscribeToStratosChainEvents() error {
 	if err != nil {
 		return err
 	}
+	err = m.SubscribeToStratosChain("message.action='unbonding_resource_node'", m.UnbondingResourceNodeMsgHandler())
+	if err != nil {
+		return err
+	}
 	err = m.SubscribeToStratosChain("message.action='remove_resource_node'", m.RemoveResourceNodeMsgHandler())
 	if err != nil {
 		return err
@@ -28,7 +32,15 @@ func (m *MultiClient) SubscribeToStratosChainEvents() error {
 	if err != nil {
 		return err
 	}
+	err = m.SubscribeToStratosChain("message.action='unbonding_indexing_node'", m.UnbondingIndexingNodeMsgHandler())
+	if err != nil {
+		return err
+	}
 	err = m.SubscribeToStratosChain("message.action='remove_indexing_node'", m.RemoveIndexingNodeMsgHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='complete_unbonding_node'", m.CompleteUnbondingNodeMsgHandler())
 	if err != nil {
 		return err
 	}
@@ -108,6 +120,13 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 	}
 }
 
+func (m *MultiClient) UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
+		// TODO
+		fmt.Printf("%+v\n", result)
+	}
+}
+
 func (m *MultiClient) RemoveResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		conn := m.GetSdsClientConn()
@@ -155,7 +174,19 @@ func (m *MultiClient) CreateIndexingNodeMsgHandler() func(event coretypes.Result
 	}
 }
 
+func (m *MultiClient) UnbondingIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
+		// TODO
+		fmt.Printf("%+v\n", result)
+	}
+}
 func (m *MultiClient) RemoveIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
+		// TODO
+		fmt.Printf("%+v\n", result)
+	}
+}
+func (m *MultiClient) CompleteUnbondingNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
 		fmt.Printf("%+v\n", result)
