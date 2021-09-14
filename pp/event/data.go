@@ -146,6 +146,16 @@ func reqGetPPlistData() *protos.ReqGetPPList {
 	}
 }
 
+func reqGetSPlistData() *protos.ReqGetSPList {
+	return &protos.ReqGetSPList{
+		MyAddress: &protos.PPBaseInfo{
+			P2PAddress:     setting.P2PAddress,
+			WalletAddress:  setting.WalletAddress,
+			NetworkAddress: setting.NetworkAddress,
+		},
+	}
+}
+
 // RequestUploadFileData RequestUploadFileData
 func RequestUploadFileData(paths, storagePath, reqID string, isCover bool, isVideoStream bool) *protos.ReqUploadFile {
 	info := file.GetFileInfo(paths)
