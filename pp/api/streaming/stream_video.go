@@ -25,10 +25,11 @@ type StreamReqBody struct {
 	FileName         string
 	WalletAddress    string
 	P2PAddress       string
+	SpP2pAddress     string
 	StreamingAddress string
 	Sign             []byte
 	SavePath         string
-	sliceInfo        protos.DownloadSliceInfo
+	SliceInfo        *protos.DownloadSliceInfo
 }
 
 type StreamInfo struct {
@@ -38,6 +39,7 @@ type StreamInfo struct {
 	StreamingAddress   string
 	HeaderFile         string
 	SavePath           string
+	SpP2pAddress       string
 	SegmentToSliceInfo map[string]*protos.DownloadSliceInfo
 	FileInfo           *protos.RspFileStorageInfo
 	HlsInfo            *file.HlsInfo
@@ -85,10 +87,11 @@ func fileStorageInfo(w http.ResponseWriter, req *http.Request) {
 			StreamingAddress:   fInfo.StreamingAddress,
 			FileHash:           fileHash,
 			SavePath:           fInfo.SavePath,
+			SpP2pAddress:       fInfo.SpP2PAddress,
 			SegmentToSliceInfo: segmentToSliceInfo,
 			FileInfo:           fInfo,
 		})
-	task.DownloadFileMap.Delete(fileHash)
+	//task.DownloadFileMap.Delete(fileHash)
 	w.Write(ret)
 }
 
@@ -112,7 +115,7 @@ func streamVideo(w http.ResponseWriter, req *http.Request) {
 			FileName: body.FileName,
 		}
 
-		event.GetVideoSlice(&body.sliceInfo, fInfo, w)
+		event.GetVideoSlice(body.SliceInfo, fInfo, w)
 	} else {
 		utils.DebugLog("Redirect the request to resource node.")
 		redirectToResourceNode(body.FileHash, sliceHash, body.StreamingAddress, w, req)
@@ -215,7 +218,11 @@ func verifySignature(reqBody *StreamReqBody, sliceHash string, data []byte) bool
 	if sliceHash != utils.CalcSliceHash(data, reqBody.FileHash) {
 		return false
 	}
-	return ed25519.Verify(setting.SPPublicKey, []byte(reqBody.P2PAddress+reqBody.FileHash), reqBody.Sign)
+	if pubKey, ok := setting.SPPublicKey[reqBody.SpP2pAddress]; ok {
+		return ed25519.Verify(pubKey, []byte(reqBody.P2PAddress+reqBody.FileHash), reqBody.Sign)
+	} else {
+		return false
+	}
 }
 
 func sendReportStreamResult(body *StreamReqBody, sliceHash string, isPP bool) {
@@ -224,6 +231,6 @@ func sendReportStreamResult(body *StreamReqBody, sliceHash string, isPP bool) {
 		FileHash:      body.FileHash,
 		WalletAddress: body.WalletAddress,
 		P2PAddress:    body.P2PAddress,
-		TaskId:        body.sliceInfo.TaskId,
+		TaskId:        body.SliceInfo.TaskId,
 	}, isPP)
 }

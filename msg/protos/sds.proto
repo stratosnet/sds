@@ -32,7 +32,6 @@ message RspRegister {
   Result result = 1; // if register success or not
   string p2p_address = 2;
   bool   isPP = 3;
-  bytes  sp_public_key = 4;
 }
 
 message ReqMining {
@@ -181,6 +180,7 @@ message RspFileStorageInfo {
   bool is_video_stream = 11;
   string streaming_address = 12;
   bytes sign = 13; //sp signature
+  string sp_p2p_address = 14;
 }
 
 
