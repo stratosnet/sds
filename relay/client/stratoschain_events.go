@@ -98,9 +98,12 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 			return
 		}
 
+		ozoneLimitChangeStr := result.Events["create_resource_node.ozone_limit_changes"]
+
 		activatedMsg := &protos.ReqActivatedPP{
-			P2PAddress: p2pAddressString,
-			P2PPubkey:  hex.EncodeToString(p2pPubkey[:]),
+			P2PAddress:        p2pAddressString,
+			P2PPubkey:         hex.EncodeToString(p2pPubkey[:]),
+			OzoneLimitChanges: ozoneLimitChangeStr[0],
 		}
 		activatedMsgBytes, err := proto.Marshal(activatedMsg)
 		if err != nil {
