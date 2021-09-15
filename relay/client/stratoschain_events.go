@@ -125,8 +125,51 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 
 func (m *MultiClient) UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		// TODO
-		fmt.Printf("%+v\n", result)
+		conn := m.GetSdsClientConn()
+
+		nodeAddressList := result.Events["unbonding_resource_node.resource_node"]
+		if len(nodeAddressList) < 1 {
+			fmt.Println("No node address was specified in the remove_resource_node message from stratos-chain")
+			return
+		}
+
+		p2pAddress, err := types.BechToAddress(nodeAddressList[0])
+		if err != nil {
+			fmt.Println("Error when trying to convert P2P address to bytes: " + err.Error())
+			return
+		}
+		p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
+		if err != nil {
+			fmt.Println("Error when trying to convert P2P address to bech32: " + err.Error())
+			return
+		}
+
+		// get ozone limit change
+		ozoneLimitChange := result.Events["unbonding_resource_node.ozone_limit_changes"]
+		ozoneLimitChangeStr := ozoneLimitChange[0]
+		// get mature time
+		ubdMatureTime := result.Events["unbonding_resource_node.unbonding_mature_time"]
+		ubdMatureTimeStr := ubdMatureTime[0]
+		ubdMsg := &protos.ReqUnbondingPP{
+			P2PAddress:          p2pAddressString,
+			OzoneLimitChanges:   ozoneLimitChangeStr,
+			UnbondingMatureTime: ubdMatureTimeStr,
+		}
+		ubdMsgBytes, err := proto.Marshal(ubdMsg)
+		if err != nil {
+			fmt.Println("Error when trying to marshal ReqDeactivatedPP proto: " + err.Error())
+			return
+		}
+		msgToSend := &msg.RelayMsgBuf{
+			MSGData: ubdMsgBytes,
+			MSGHead: header.MakeMessageHeader(1, 1, uint32(len(ubdMsgBytes)), header.ReqUnbondingPP),
+		}
+
+		err = conn.Write(msgToSend)
+		if err != nil {
+			fmt.Println("Error when sending message to SDS: " + err.Error())
+			return
+		}
 	}
 }
 
