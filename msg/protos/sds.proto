@@ -312,6 +312,7 @@ message ReqDeactivatePP {
 
 message RspDeactivatePP {
   Result result = 1;
+  uint32 activation_state = 2;
 }
 
 message ReqUnbondingPP {
