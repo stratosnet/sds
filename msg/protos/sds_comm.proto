@@ -55,6 +55,10 @@ message PPBaseInfo {
      string streaming_address = 4;
 }
 
+message SPBaseInfo {
+     string p2p_address = 1;
+     bytes  p2p_pub_key = 2;
+}
 
 message FileInfo { 
      uint64 file_size = 1;

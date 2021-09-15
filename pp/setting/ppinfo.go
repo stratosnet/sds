@@ -55,7 +55,7 @@ var P2PPublicKey []byte
 var P2PPrivateKey []byte
 
 //SPPublicKey
-var SPPublicKey []byte
+var SPPublicKey map[string][]byte
 
 // PPList
 var PPList []*protos.PPBaseInfo

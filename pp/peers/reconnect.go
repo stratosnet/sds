@@ -18,6 +18,7 @@ func listenOffline() {
 				if setting.IsPP {
 					utils.DebugLog("SP is offline")
 					reloadConnectSP()
+					event.GetSPList()
 				}
 			} else {
 				utils.Log("PP is offline")

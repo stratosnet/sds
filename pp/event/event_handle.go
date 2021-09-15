@@ -20,6 +20,7 @@ import (
 // RegisterEventHandle
 func RegisterEventHandle() {
 	core.Register(header.RspGetPPList, RspGetPPList)
+	core.Register(header.RspGetSPList, RspGetSPList)
 	core.Register(header.RspRegister, RspRegisterChain)
 	core.Register(header.ReqRegister, ReqRegisterChain)
 	core.Register(header.RspActivatePP, RspActivate)

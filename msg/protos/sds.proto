@@ -21,6 +21,14 @@ message RspGetPPList{
   Result result = 2;
 }
 
+message ReqGetSPList {
+  PPBaseInfo my_address = 1;
+}
+
+message RspGetSPList{
+  repeated SPBaseInfo sp_list = 1;
+  Result result = 2;
+}
 
 message ReqRegister {
   PPBaseInfo address = 1;
