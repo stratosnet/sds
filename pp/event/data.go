@@ -937,22 +937,19 @@ func reqNodeStatusData() (*protos.ReqReportNodeStatus, error) {
 	virtualMem, _ := mem.VirtualMemory()
 	virtualUsedMem := virtualMem.Used
 	virtualTotalMem := virtualMem.Total
-	virtualMemPercent := virtualMem.UsedPercent
 
 	swapMemory, _ := mem.SwapMemory()
 	swapUsedMem := swapMemory.Used
 	swapTotalMem := swapMemory.Total
-	swapMemPercent := swapMemory.UsedPercent
 	memStat := &protos.MemoryStat{
-		MemUsed: int64(virtualUsedMem), MemTotal: int64(virtualTotalMem), MemPercent: math.Round(virtualMemPercent*100) / 100,
-		SwapMemUsed: int64(swapUsedMem), SwapMemTotal: int64(swapTotalMem), SwapMemPercent: math.Round(swapMemPercent*100) / 100,
+		MemUsed: int64(virtualUsedMem), MemTotal: int64(virtualTotalMem),
+		SwapMemUsed: int64(swapUsedMem), SwapMemTotal: int64(swapTotalMem),
 	}
 	// Disk root path
 	info, _ := disk.Usage("/")
 	diskUsedRoot := info.Used
 	diskTotalRoot := info.Total
-	diskPercentRoot := info.UsedPercent
-	diskStat := &protos.DiskStat{RootUsed: int64(diskUsedRoot), RootTotal: int64(diskTotalRoot), RootPercent: math.Round(diskPercentRoot*100) / 100}
+	diskStat := &protos.DiskStat{RootUsed: int64(diskUsedRoot), RootTotal: int64(diskTotalRoot)}
 
 	// TODO Bandwidth
 	bwStat := &protos.BandwithStat{}
