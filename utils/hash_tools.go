@@ -72,7 +72,8 @@ func CalcSliceHash(data []byte, fileHash string) string {
 	fileKeccak256, _ := hex.DecodeString(fileHash)
 	sliceKeccak256 := crypto.Keccak256(data)
 	if len(fileKeccak256) != len(sliceKeccak256) {
-
+		Log(errors.New("length of fileKeccak256 and sliceKeccak256 doesn't match"))
+		return ""
 	}
 	hash := make([]byte, len(fileKeccak256))
 	for i := 0; i < len(fileKeccak256); i++ {
