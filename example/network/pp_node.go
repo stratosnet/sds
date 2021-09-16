@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/stratosnet/sds/pp/api"
+	"github.com/stratosnet/sds/pp/api/rest"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/relay/stratoschain"
@@ -26,8 +27,12 @@ func main() {
 		return
 	}
 
-	if setting.Config.IsWallet {
+	if setting.WalletAddress != "" && setting.Config.InternalPort != "" {
 		go api.StartHTTPServ()
+	}
+
+	if setting.Config.RestPort != "" {
+		go rest.StartHTTPServ()
 	}
 
 	peers.StartPP()
