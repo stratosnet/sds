@@ -77,6 +77,10 @@ func CleanDownloadTask(fileHash, sliceHash, p2pAddress, walletAddress string) {
 	}
 }
 
+func DeleteDownloadTask(fileHash, walletAddress string) {
+	DownloadFileMap.Delete(fileHash + walletAddress)
+}
+
 // PCleanDownloadTask p
 func PCleanDownloadTask(fileHash string) {
 	DownloadSpeedOfProgress.Delete(fileHash)

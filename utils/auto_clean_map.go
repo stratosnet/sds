@@ -26,7 +26,7 @@ func NewAutoCleanMap(delay time.Duration) *AutoCleanMap {
 func (m *AutoCleanMap) Store(key, value interface{}) {
 	m.Delete(key)
 	wg := &sync.WaitGroup{}
-	deletedCh := make(chan bool)
+	deletedCh := make(chan bool, 1)
 	m.myMap.Store(key, &MyValue{
 		value:     value,
 		wg:        wg,
@@ -60,8 +60,8 @@ func (m *AutoCleanMap) Load(key interface{}) (interface{}, bool) {
 func (m *AutoCleanMap) Delete(key interface{}) {
 	if value, ok := m.myMap.Load(key); ok {
 		myValue := value.(*MyValue)
-		myValue.deletedCh <- true
 		m.myMap.Delete(key)
+		myValue.deletedCh <- true
 	}
 }
 

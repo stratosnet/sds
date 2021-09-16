@@ -103,6 +103,29 @@ func GetFileStorageInfo(path, savePath, reqID string, isImg bool, isVideoStream 
 	}
 }
 
+func ClearFileInfoAndDownloadTask(fileHash string, w http.ResponseWriter) {
+	if setting.CheckLogin() {
+		task.DownloadFileMap.Delete(fileHash)
+		task.DeleteDownloadTask(fileHash, setting.WalletAddress)
+		req := &protos.ReqClearDownloadTask{
+			WalletAddress: setting.WalletAddress,
+			FileHash:      fileHash,
+			P2PAddress:    setting.P2PAddress,
+		}
+		sendMessage(client.PPConn, req, header.ReqClearDownloadTask)
+		w.Write([]byte("ok"))
+	} else {
+		notLogin(w)
+	}
+}
+
+func ReqClearDownloadTask(ctx context.Context, conn core.WriteCloser) {
+	var target protos.ReqClearDownloadTask
+	if unmarshalData(ctx, &target) {
+		task.DeleteDownloadTask(target.WalletAddress, target.WalletAddress)
+	}
+}
+
 func GetVideoSliceInfo(sliceName string, fInfo *protos.RspFileStorageInfo) *protos.DownloadSliceInfo {
 	var sliceNumber uint64
 	hlsInfo := GetHlsInfo(fInfo)
@@ -124,7 +147,6 @@ func GetVideoSlice(sliceInfo *protos.DownloadSliceInfo, fInfo *protos.RspFileSto
 			req := reqDownloadSliceData(fInfo, sliceInfo)
 			SendReqDownloadSlice(fInfo, req)
 			if err := storeResponseWriter(req.ReqId, w); err != nil {
-				task.DownloadFileMap.Delete(fInfo.FileHash)
 				w.WriteHeader(setting.FAILCode)
 				w.Write(httpserv.NewErrorJson(setting.FAILCode, "Get video segment time out").ToBytes())
 			}
@@ -146,6 +168,9 @@ func GetHlsInfo(fInfo *protos.RspFileStorageInfo) *file.HlsInfo {
 			if file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceHash, fInfo.SavePath) {
 				return file.LoadHlsInfo(fInfo.FileHash, sliceHash, fInfo.SavePath)
 			} else {
+				select {
+				case <-time.After(time.Second):
+				}
 				if time.Now().Unix()-start > setting.HTTPTIMEOUT {
 					return nil
 				}

@@ -52,7 +52,7 @@ message PPBaseInfo {
      string p2p_address = 1;
      string wallet_address = 2;
      string network_address = 3;
-     string streaming_address = 4;
+     string rest_address = 4;
 }
 
 message SPBaseInfo {

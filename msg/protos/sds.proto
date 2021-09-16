@@ -186,7 +186,7 @@ message RspFileStorageInfo {
   string save_path = 9;
   uint64 file_size = 10;
   bool is_video_stream = 11;
-  string streaming_address = 12;
+  string rest_address = 12;
   bytes sign = 13; //sp signature
   string sp_p2p_address = 14;
 }
@@ -613,6 +613,12 @@ message RspDownloadTaskInfo {
   uint64 time = 7;
   Result result = 8;
   string id = 9;
+}
+
+message ReqClearDownloadTask {
+  string wallet_address = 1;
+  string file_hash = 2;
+  string p2p_address = 3;
 }
 
 message ReqShareLink {

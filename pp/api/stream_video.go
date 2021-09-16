@@ -1,4 +1,4 @@
-package streaming
+package api
 
 import (
 	"crypto/ed25519"
@@ -21,28 +21,21 @@ import (
 )
 
 type StreamReqBody struct {
-	FileHash         string
-	FileName         string
-	WalletAddress    string
-	P2PAddress       string
-	SpP2pAddress     string
-	StreamingAddress string
-	Sign             []byte
-	SavePath         string
-	SliceInfo        *protos.DownloadSliceInfo
+	FileHash      string
+	FileName      string
+	WalletAddress string
+	P2PAddress    string
+	SpP2pAddress  string
+	RestAddress   string
+	Sign          []byte
+	SavePath      string
+	SliceInfo     *protos.DownloadSliceInfo
 }
 
 type StreamInfo struct {
-	FileHash           string
-	FileName           string
-	Sign               []byte
-	StreamingAddress   string
 	HeaderFile         string
-	SavePath           string
-	SpP2pAddress       string
 	SegmentToSliceInfo map[string]*protos.DownloadSliceInfo
 	FileInfo           *protos.RspFileStorageInfo
-	HlsInfo            *file.HlsInfo
 }
 
 type SliceInfo struct {
@@ -50,11 +43,12 @@ type SliceInfo struct {
 	TaskId    string
 }
 
-func fileStorageInfo(w http.ResponseWriter, req *http.Request) {
+func streamVideoStorageInfo(w http.ResponseWriter, req *http.Request) {
 	url := req.URL.Path
 	fileHash := url[strings.LastIndex(url, "/")+1:]
 
 	var fInfo *protos.RspFileStorageInfo
+	task.DownloadFileMap.Delete(fileHash)
 	event.GetFileStorageInfo("spb://"+setting.WalletAddress+"/"+fileHash, setting.VIDEOPATH, uuid.New().String(), false, true, w)
 	start := time.Now().Unix()
 	for {
@@ -63,6 +57,9 @@ func fileStorageInfo(w http.ResponseWriter, req *http.Request) {
 			utils.DebugLog("Received file storage info from sp ", fInfo)
 			break
 		} else {
+			select {
+			case <-time.After(time.Second):
+			}
 			// timeout
 			if time.Now().Unix()-start > setting.HTTPTIMEOUT {
 				w.WriteHeader(setting.FAILCode)
@@ -81,17 +78,10 @@ func fileStorageInfo(w http.ResponseWriter, req *http.Request) {
 
 	ret, _ := json.Marshal(
 		StreamInfo{
-			HlsInfo:            hlsInfo,
 			HeaderFile:         hlsInfo.HeaderFile,
-			Sign:               fInfo.Sign,
-			StreamingAddress:   fInfo.StreamingAddress,
-			FileHash:           fileHash,
-			SavePath:           fInfo.SavePath,
-			SpP2pAddress:       fInfo.SpP2PAddress,
 			SegmentToSliceInfo: segmentToSliceInfo,
 			FileInfo:           fInfo,
 		})
-	//task.DownloadFileMap.Delete(fileHash)
 	w.Write(ret)
 }
 
@@ -118,27 +108,33 @@ func streamVideo(w http.ResponseWriter, req *http.Request) {
 		event.GetVideoSlice(body.SliceInfo, fInfo, w)
 	} else {
 		utils.DebugLog("Redirect the request to resource node.")
-		redirectToResourceNode(body.FileHash, sliceHash, body.StreamingAddress, w, req)
+		redirectToResourceNode(body.FileHash, sliceHash, body.RestAddress, w, req)
 		sendReportStreamResult(body, sliceHash, false)
 	}
 }
 
-func redirectToResourceNode(fileHash, sliceHash, streamingAddress string, w http.ResponseWriter, req *http.Request) {
+func redirectToResourceNode(fileHash, sliceHash, restAddress string, w http.ResponseWriter, req *http.Request) {
 	var targetAddress string
 	if dlTask, ok := task.DownloadTaskMap.Load(fileHash + setting.WalletAddress); ok {
 		//self is the resource PP and has task info
 		downloadTask := dlTask.(*task.DownloadTask)
-		targetAddress = downloadTask.SliceInfo[sliceHash].StoragePpInfo.StreamingAddress
+		targetAddress = downloadTask.SliceInfo[sliceHash].StoragePpInfo.RestAddress
 	} else {
 		//to ask resource pp for slice addresses
-		targetAddress = streamingAddress
+		targetAddress = restAddress
 	}
 	url := fmt.Sprintf("http://%s/videoSlice/%s", targetAddress, sliceHash)
 	utils.DebugLog("Redirect URL ", url)
 	http.Redirect(w, req, url, http.StatusTemporaryRedirect)
 }
 
-func getVideoSlice(w http.ResponseWriter, req *http.Request) {
+func clearStreamTask(w http.ResponseWriter, req *http.Request) {
+	url := req.URL.Path
+	fileHash := url[strings.LastIndex(url, "/")+1:]
+	event.ClearFileInfoAndDownloadTask(fileHash, w)
+}
+
+func GetVideoSlice(w http.ResponseWriter, req *http.Request) {
 	url := req.URL.Path
 	sliceHash := url[strings.LastIndex(url, "/")+1:]
 
@@ -159,7 +155,7 @@ func getVideoSlice(w http.ResponseWriter, req *http.Request) {
 		ppInfo := downloadTask.SliceInfo[sliceHash].StoragePpInfo
 		if ppInfo.P2PAddress != setting.P2PAddress {
 			utils.DebugLog("Current P2PAddress does not have the requested slice")
-			targetAddress := ppInfo.StreamingAddress
+			targetAddress := ppInfo.RestAddress
 			url := fmt.Sprintf("http://%s/videoSlice/%s", targetAddress, sliceHash)
 			utils.DebugLog("Redirect the request to " + url)
 			http.Redirect(w, req, url, http.StatusTemporaryRedirect)
@@ -209,6 +205,22 @@ func verifyStreamReqBody(req *http.Request, sliceHash string) (*StreamReqBody, e
 
 	if len(reqBody.WalletAddress) != 41 {
 		return nil, errors.New("incorrect wallet address")
+	}
+
+	if len(reqBody.P2PAddress) != 47 {
+		return nil, errors.New("incorrect P2P address")
+	}
+
+	if reqBody.FileName == "" {
+		return nil, errors.New("please give file name")
+	}
+
+	if len(reqBody.SpP2pAddress) != 47 {
+		return nil, errors.New("incorrect SP P2P address")
+	}
+
+	if reqBody.RestAddress == "" {
+		return nil, errors.New("please give correct rest address to the file slice")
 	}
 
 	return &reqBody, nil

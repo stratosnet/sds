@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/stratosnet/sds/pp/api/streaming"
+	"github.com/stratosnet/sds/pp/api/rest"
 	"net"
 	"strconv"
 	"strings"
@@ -499,7 +499,7 @@ func main() {
 		AutoStart(setting.Config.WalletAddress, setting.Config.WalletPassword)
 	}
 
-	if setting.Config.IsWallet {
+	if setting.WalletAddress != "" && setting.Config.InternalPort != "" {
 		go api.StartHTTPServ()
 		peers.Login(setting.Config.WalletAddress, setting.Config.WalletPassword)
 		// setting.ShowMonitor()
@@ -530,7 +530,9 @@ func main() {
 		}()
 	}
 
-	go streaming.StartHTTPServ()
+	if setting.Config.RestPort != "" {
+		go rest.StartHTTPServ()
+	}
 
 	console.Mystdin.RegisterProcessFunc("help", help)
 	console.Mystdin.RegisterProcessFunc("h", help)
