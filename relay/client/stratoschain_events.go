@@ -233,10 +233,10 @@ func (m *MultiClient) RemoveIndexingNodeMsgHandler() func(event coretypes.Result
 	}
 }
 func (m *MultiClient) CompleteUnbondingNodeMsgHandler() func(event coretypes.ResultEvent) {
-	return func(result coretypes.ResultEvent) {
-		// TODO
-		fmt.Printf("%+v\n", result)
-	}
+	// if networkAddr implies a resource node
+	return m.RemoveResourceNodeMsgHandler()
+	// else
+	//return m.RemoveIndexingNodeMsgHandler()
 }
 
 func (m *MultiClient) IndexingNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
