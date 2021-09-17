@@ -54,6 +54,10 @@ message PPBaseInfo {
      string network_address = 3;
 }
 
+message SPBaseInfo {
+     string p2p_address = 1;
+     bytes  p2p_pub_key = 2;
+}
 
 message FileInfo { 
      uint64 file_size = 1;
@@ -150,21 +154,18 @@ message CpuStat {
 message MemoryStat {
     int64 mem_used = 1;
     int64 mem_total = 2;
-    double mem_percent = 3;
-    int64 swap_mem_used = 4;
-    int64 swap_mem_total = 5;
-    double swap_mem_percent = 6;
+    int64 swap_mem_used = 3;
+    int64 swap_mem_total = 4;
 }
 
 message DiskStat {
     int64 root_used = 1;
     int64 root_total = 2;
-    double root_percent = 3;
 }
 
-message BandwithStat {
-    int64 used_percent = 1;
-    int64 swap_mem_percent = 2;
+message BandwidthStat {
+    int64 used = 1;
+    int64 total = 2;
 }
 
 

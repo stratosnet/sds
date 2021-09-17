@@ -43,6 +43,9 @@ var WalletPrivateKey []byte
 // NetworkAddress
 var NetworkAddress string
 
+//StreamingAddress
+var StreamingAddress string
+
 // P2PAddress
 var P2PAddress string
 
@@ -51,6 +54,9 @@ var P2PPublicKey []byte
 
 // P2PPrivateKey
 var P2PPrivateKey []byte
+
+//SPPublicKey
+var SPPublicKey map[string][]byte
 
 // PPList
 var PPList []*protos.PPBaseInfo
