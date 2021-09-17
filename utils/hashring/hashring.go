@@ -45,12 +45,24 @@ func (vn *VNode) Less(than rbtree.Item) bool {
 	return vn.Index < than.(*VNode).Index
 }
 
+type WeightedNode struct {
+	ID            string
+	OngoingWeight float64
+}
+
+type WeightedNodeList []WeightedNode
+
+func (p WeightedNodeList) Len() int           { return len(p) }
+func (p WeightedNodeList) Less(i, j int) bool { return p[i].OngoingWeight < p[j].OngoingWeight }
+func (p WeightedNodeList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+
 // HashRing
 type HashRing struct {
 	VRing           *rbtree.Rbtree
 	NRing           *rbtree.Rbtree
-	Nodes           *sync.Map       // map(NodeID => *Node)
-	NodeStatus      map[string]bool // map(NodeID => status)
+	Nodes           *sync.Map          // map(NodeID => *Node)
+	NodeStatus      map[string]bool    // map(NodeID => status)
+	NodeTaskWeight  map[string]float64 // map(NodeId => 17.00
 	NodeCount       uint32
 	NodeOkCount     uint32
 	NumberOfVirtual uint32
@@ -241,6 +253,18 @@ func (r *HashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string) (uint32,
 
 }
 
+// GetNodeIdFromWeightedNodeList get node from weighted node list
+// @params sliceIndex
+func (r *HashRing) GetNodeIdFromWeightedNodeList(sliceIndex uint64, wnl WeightedNodeList) string {
+	nodeNum := len(wnl)
+	if nodeNum < 1 {
+		return ""
+	}
+	indexPrime := int(sliceIndex)%wnl.Len() - 1
+	candidateNodeId := wnl[indexPrime].ID
+	return candidateNodeId
+}
+
 // GetNodeUpDownNodes get upstream of downstream of node
 // @params
 func (r *HashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
@@ -348,6 +372,7 @@ func New(numOfVNode uint32) *HashRing {
 	r := new(HashRing)
 	r.Nodes = new(sync.Map)
 	r.NodeStatus = make(map[string]bool)
+	r.NodeTaskWeight = make(map[string]float64)
 	r.NodeCount = 0
 	r.NumberOfVirtual = numOfVNode
 
