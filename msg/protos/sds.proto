@@ -1032,5 +1032,5 @@ message ReqReportNodeStatus {
   CpuStat       cpu = 2;
   MemoryStat    memory = 3;
   DiskStat      disk = 4;
-  BandwithStat  bandwidth = 5;
+  BandwidthStat bandwidth = 5;
 }

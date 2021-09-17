@@ -163,7 +163,7 @@ message DiskStat {
     int64 root_total = 2;
 }
 
-message BandwithStat {
+message BandwidthStat {
     int64 used = 1;
     int64 total = 2;
 }
