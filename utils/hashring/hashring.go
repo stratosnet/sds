@@ -45,24 +45,12 @@ func (vn *VNode) Less(than rbtree.Item) bool {
 	return vn.Index < than.(*VNode).Index
 }
 
-type WeightedNode struct {
-	ID            string
-	OngoingWeight float64
-}
-
-type WeightedNodeList []WeightedNode
-
-func (p WeightedNodeList) Len() int           { return len(p) }
-func (p WeightedNodeList) Less(i, j int) bool { return p[i].OngoingWeight < p[j].OngoingWeight }
-func (p WeightedNodeList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
-
 // HashRing
 type HashRing struct {
 	VRing           *rbtree.Rbtree
 	NRing           *rbtree.Rbtree
-	Nodes           *sync.Map          // map(NodeID => *Node)
-	NodeStatus      map[string]bool    // map(NodeID => status)
-	NodeTaskWeight  map[string]float64 // map(NodeId => 17.00
+	Nodes           *sync.Map       // map(NodeID => *Node)
+	NodeStatus      map[string]bool // map(NodeID => status)
 	NodeCount       uint32
 	NodeOkCount     uint32
 	NumberOfVirtual uint32
@@ -372,7 +360,6 @@ func New(numOfVNode uint32) *HashRing {
 	r := new(HashRing)
 	r.Nodes = new(sync.Map)
 	r.NodeStatus = make(map[string]bool)
-	r.NodeTaskWeight = make(map[string]float64)
 	r.NodeCount = 0
 	r.NumberOfVirtual = numOfVNode
 
