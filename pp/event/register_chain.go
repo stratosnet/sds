@@ -4,6 +4,8 @@ package event
 import (
 	"context"
 	"fmt"
+	"github.com/alex023/clock"
+	"time"
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
@@ -113,6 +115,9 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 				client.SPConn = client.NewClient(setting.Config.SPNetAddress, setting.IsPP)
 				RegisterChain(true)
 			}
+			utils.DebugLog("Start reporting node status to SP")
+			clock := clock.NewClock()
+			clock.AddJobRepeat(time.Second*60, 0, ReportNodeStatus)
 		} else {
 			utils.Log(target.Result.Msg)
 		}

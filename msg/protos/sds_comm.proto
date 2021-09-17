@@ -146,5 +146,27 @@ message AlbumNumber {
     int64 other = 4;
 }
 
+message CpuStat {
+    double total_used_percent = 1;
+    int64 num_cores = 2;
+}
+
+message MemoryStat {
+    int64 mem_used = 1;
+    int64 mem_total = 2;
+    int64 swap_mem_used = 3;
+    int64 swap_mem_total = 4;
+}
+
+message DiskStat {
+    int64 root_used = 1;
+    int64 root_total = 2;
+}
+
+message BandwidthStat {
+    int64 used = 1;
+    int64 total = 2;
+}
+
 
 
