@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 //for future protoc-gen-go requirement
-//option go_package = "github.com/stratosnet/sds/msg/protos";
+option go_package = "github.com/stratosnet/sds/msg/protos";
 
 package protos;
 // j
@@ -449,7 +449,7 @@ message RspGetHDInfo {
 }
 
 
-// 
+//
 message ReqSendChatMessages {
   string wallet_address = 1;
   string message = 2;
@@ -597,7 +597,7 @@ message BlockCheckInfo {
 }
 
 
-// 
+//
 message ReqDownloadTaskInfo {
   string task_id = 1;
   string id = 2;
@@ -1034,4 +1034,12 @@ message ReqTransferRecordTraffic {
   uint64 volume = 6;
   int64  delivery_time = 7;
   int64  response_time = 8;
+}
+
+message ReqReportNodeStatus {
+  string        p2p_address = 1;
+  CpuStat       cpu = 2;
+  MemoryStat    memory = 3;
+  DiskStat      disk = 4;
+  BandwidthStat bandwidth = 5;
 }

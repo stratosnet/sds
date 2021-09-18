@@ -2,10 +2,14 @@ package event
 
 import (
 	goed25519 "crypto/ed25519"
-	"github.com/stratosnet/sds/utils/crypto"
+	"math"
 	"path"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/mem"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -14,6 +18,7 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/types"
 
@@ -925,4 +930,48 @@ func reqGetCapacityData(reqID string) *protos.ReqGetCapacity {
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 	}
+}
+
+func reqNodeStatusData() (*protos.ReqReportNodeStatus, error) {
+	// cpu total used percent
+	totalPercent, _ := cpu.Percent(3*time.Second, false)
+	// num of cpu cores
+	coreNum, _ := cpu.Counts(false)
+	var cpuPercent float64
+	if len(totalPercent) == 0 {
+		cpuPercent = 0
+	} else {
+		cpuPercent = totalPercent[0]
+	}
+	cpuStat := &protos.CpuStat{NumCores: int64(coreNum), TotalUsedPercent: math.Round(cpuPercent*100) / 100}
+
+	// Memory physical + swap
+	virtualMem, _ := mem.VirtualMemory()
+	virtualUsedMem := virtualMem.Used
+	virtualTotalMem := virtualMem.Total
+
+	swapMemory, _ := mem.SwapMemory()
+	swapUsedMem := swapMemory.Used
+	swapTotalMem := swapMemory.Total
+	memStat := &protos.MemoryStat{
+		MemUsed: int64(virtualUsedMem), MemTotal: int64(virtualTotalMem),
+		SwapMemUsed: int64(swapUsedMem), SwapMemTotal: int64(swapTotalMem),
+	}
+	// Disk root path
+	info, _ := disk.Usage("/")
+	diskUsedRoot := info.Used
+	diskTotalRoot := info.Total
+	diskStat := &protos.DiskStat{RootUsed: int64(diskUsedRoot), RootTotal: int64(diskTotalRoot)}
+
+	// TODO Bandwidth
+	bwStat := &protos.BandwidthStat{}
+
+	req := &protos.ReqReportNodeStatus{
+		P2PAddress: setting.P2PAddress,
+		Cpu:        cpuStat,
+		Memory:     memStat,
+		Disk:       diskStat,
+		Bandwidth:  bwStat,
+	}
+	return req, nil
 }

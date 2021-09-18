@@ -179,6 +179,10 @@ const (
 	ReqHeart = "ReqHeart"
 	RspHeart = "RspHeart"
 
+	// report node status
+	ReqReportNodeStatus = "ReqRNS"
+	RspReportNodeStatus = "RspRNS"
+
 	// customer volume
 	ReqCAddVolume = "ReqCAV"
 	RspCAddVolume = "RspCAV"
