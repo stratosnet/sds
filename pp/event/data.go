@@ -962,7 +962,7 @@ func reqNodeStatusData() (*protos.ReqReportNodeStatus, error) {
 	diskStat := &protos.DiskStat{RootUsed: int64(diskUsedRoot), RootTotal: int64(diskTotalRoot)}
 
 	// TODO Bandwidth
-	bwStat := &protos.BandwithStat{}
+	bwStat := &protos.BandwidthStat{}
 
 	req := &protos.ReqReportNodeStatus{
 		P2PAddress: setting.P2PAddress,
