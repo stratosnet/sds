@@ -44,7 +44,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 			if file.GetSliceSize(target.SliceInfo.SliceHash) == int64(target.SliceSize) {
 				utils.DebugLog("the slice upload finished", target.SliceInfo.SliceHash)
 				// respond to PP in case the size is correct but actually not success
-				if utils.CalcHash(file.GetSliceData(target.SliceInfo.SliceHash)) == target.SliceInfo.SliceHash {
+				if utils.CalcSliceHash(file.GetSliceData(target.SliceInfo.SliceHash), target.FileHash) == target.SliceInfo.SliceHash {
 					sendMessage(conn, rspUploadFileSliceData(&target), header.RspUploadFileSlice)
 					// report upload result to SP
 					SendMessageToSPServer(reqReportUploadSliceResultDataPP(&target), header.ReqReportUploadSliceResult)

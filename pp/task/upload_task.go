@@ -76,7 +76,7 @@ func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID string) *U
 	}
 	data := file.GetFileData(filePath, offset)
 	sl := &protos.SliceOffsetInfo{
-		SliceHash:   utils.CalcHash(data),
+		SliceHash:   utils.CalcSliceHash(data, fileHash),
 		SliceOffset: offset,
 	}
 	tk := &UploadSliceTask{
@@ -101,16 +101,12 @@ func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID string) 
 		jsonStr, _ := json.Marshal(videoSliceInfo)
 		data = jsonStr
 		sliceTotalSize = uint64(len(data))
-	} else if pp.SliceNumber < videoSliceInfo.HeaderSliceNumber {
+	} else if pp.SliceNumber < videoSliceInfo.StartSliceNumber {
 		data = []byte(fmt.Sprintf("%v%d", fileHash, pp.SliceNumber))
 		sliceTotalSize = uint64(len(data))
 	} else {
 		var sliceName string
-		if pp.SliceNumber == videoSliceInfo.HeaderSliceNumber {
-			sliceName = videoSliceInfo.Header
-		} else {
-			sliceName = videoSliceInfo.SliceToTs[pp.SliceNumber]
-		}
+		sliceName = videoSliceInfo.SliceToSegment[pp.SliceNumber]
 		slicePath := videoFolder + "/" + sliceName
 		if file.GetFileInfo(slicePath) == nil {
 			utils.ErrorLog("wrong file path")
@@ -135,7 +131,7 @@ func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID string) 
 		SliceOffsetEnd:   endOffsize,
 	}
 	sl := &protos.SliceOffsetInfo{
-		SliceHash:   utils.CalcHash(data),
+		SliceHash:   utils.CalcSliceHash(data, fileHash),
 		SliceOffset: offset,
 	}
 	tk := &UploadSliceTask{

@@ -20,6 +20,7 @@ import (
 type Node struct {
 	ID   string
 	Host string
+	Rest string
 	Data *sync.Map
 }
 

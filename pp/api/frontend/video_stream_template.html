@@ -1,34 +1,69 @@
 <head>
-    <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet" />
-  
+    <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet"/>
+
     <!-- If you'd like to support IE8 (for Video.js versions prior to v7) -->
     <!-- <script src="https://vjs.zencdn.net/ie8/1.1.2/videojs-ie8.min.js"></script> -->
-  </head>
-  
-  <body>
-    <video-js
-    id=vid1 width=600 height=300 class="vjs-default-skin" controls
-    >
-    </video-js>
-  
-    <script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
-    <script>
+</head>
+
+<body>
+<video-js id=vid1 width=600 height=300 class="vjs-default-skin" controls>
+</video-js>
+
+<script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
+<script>
+    const url = "localhost"
+    const internalPort = 9608 //corresponds to the InternalPort in the config of pp node
+    const fileHash = "[Hash of the file to be streamed]";
+    const walletAddress = "[wallet address of the owner]";
+    const p2pAddress = "[p2p address of the owner]";
+    let streamInfo;
+    httpGetAsync(`http://${url}:${internalPort}/streamVideoStorageInfo/${fileHash}`, function(responseText) {
+        streamInfo = JSON.parse(responseText);
+        playVideo();
+    })
+
+    function playVideo() {
         var player = videojs('vid1');
-        videojs.Hls.xhr.beforeRequest = function(options) {
-          options.method = 'POST';
-          options.body = JSON.stringify({
-            fileHash : '[fileHash]',
-            walletAddress: '[wallet address]',
-            token: 'testToken'
-          })
-          return options;
+        videojs.Hls.xhr.beforeRequest = function (options) {
+            const videoSegment = options.uri.split('/').pop();
+            const sliceInfo = getSliceInfo(videoSegment);
+            options.uri = `http://${url}:${internalPort}/streamVideo/${sliceInfo.slice_storage_info.slice_hash}`
+            options.method = 'POST';
+            options.body = JSON.stringify({
+                fileHash,
+                fileName: streamInfo.FileInfo.file_name,
+                walletAddress,
+                p2pAddress,
+                restAddress: streamInfo.FileInfo.rest_address,
+                sign: streamInfo.FileInfo.sign,
+                spP2pAddress: streamInfo.FileInfo.sp_p2p_address,
+                savePath: streamInfo.FileInfo.save_path,
+                sliceInfo
+            })
+            return options;
         };
-        player.ready(function() {
-        player.src({
-                src: 'http://localhost:9608/streamVideo/index.m3u8',
+        player.ready(function () {
+            player.src({
+                src: `http://${url}:${internalPort}/streamVideo/${streamInfo.HeaderFile}`,
                 type: 'application/x-mpegURL',
             });
         });
         player.play();
-    </script>
-  </body>
+    }
+
+    function getSliceInfo(videoSegment) {
+        return streamInfo.SegmentToSliceInfo[videoSegment]
+    }
+
+    function httpGetAsync(theUrl, callback)
+    {
+        const xmlHttp = new XMLHttpRequest();
+        xmlHttp.onreadystatechange = function() {
+            if (xmlHttp.readyState === 4 && xmlHttp.status === 200)
+                callback(xmlHttp.responseText);
+        }
+        xmlHttp.open("GET", theUrl, true); // true for asynchronous
+        xmlHttp.send(null);
+    }
+</script>
+</body>

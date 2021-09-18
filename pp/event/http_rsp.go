@@ -94,7 +94,7 @@ var HTTPRspMap = &sync.Map{}
 var HTTPWriterMap = &sync.Map{}
 
 func putData(reqID string, httpType HTTPType, target interface{}) {
-	if setting.Config.IsWallet {
+	if setting.Config.InternalPort != "" && setting.WalletAddress != "" {
 		// httpRsp(target.ReqId, HTTPDownloadFile, &target)
 		rsp := &HTTPRsp{
 			Data: target,
@@ -105,7 +105,7 @@ func putData(reqID string, httpType HTTPType, target interface{}) {
 }
 
 func storeResponseWriter(reqID string, w http.ResponseWriter) error {
-	if setting.Config.IsWallet {
+	if setting.Config.InternalPort != "" && setting.WalletAddress != "" {
 		if w != nil {
 			return StoreReqID(reqID, w)
 		}

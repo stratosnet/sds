@@ -40,7 +40,7 @@ type httpres struct {
 
 // StartHTTPServ
 func StartHTTPServ() {
-	httpServ := httpserv.MyNewHTTPServ()
+	httpServ := httpserv.MyNewHTTPServ(setting.Config.InternalPort)
 	httpServ.MyRoute("/unlock", login)
 	httpServ.MyRoute("/walletList", getWalletList)
 	httpServ.MyRoute("/createWallet", createWallet)
@@ -77,8 +77,6 @@ func StartHTTPServ() {
 	httpServ.MyRoute("/myCollectionAlbum", myCollectionAlbum)
 	httpServ.MyRoute("/abstractAlbum", abstractAlbum)
 	httpServ.MyRoute("/downImg", downImg)
-	httpServ.MyRoute("/streamVideo/", streamVideo)
-	httpServ.MyRoute("/videoSlice/", getVideoSlice)
 	httpServ.MyRoute("/deleteAlbum", deleteAlbum)
 	httpServ.MyRoute("/closeHTTP", closeHTTP)
 	httpServ.MyRoute("/saveFolder", saveFolder)
@@ -88,6 +86,9 @@ func StartHTTPServ() {
 	httpServ.MyRoute("/changeName", changeName)
 	httpServ.MyRoute("/fileSort", fileSort)
 	httpServ.MyRoute("/directory", directory)
+	httpServ.MyRoute("/streamVideoStorageInfo/", streamVideoStorageInfo)
+	httpServ.MyRoute("/streamVideo/", streamVideo)
+	httpServ.MyRoute("/clearStreamTask/", clearStreamTask)
 	httpServ.MyStart()
 }
 

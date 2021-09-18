@@ -4,8 +4,9 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/alex023/clock"
 	"time"
+
+	"github.com/alex023/clock"
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"

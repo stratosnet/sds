@@ -16,10 +16,10 @@ import (
 )
 
 // DownloadTaskMap PP passway download task map   make(map[string]*DownloadTask)
-var DownloadTaskMap = &sync.Map{}
+var DownloadTaskMap = utils.NewAutoCleanMap(5 * time.Minute)
 
 // DownloadFileMap P download info map  make(map[string]*protos.RspFileStorageInfo)
-var DownloadFileMap = &sync.Map{}
+var DownloadFileMap = utils.NewAutoCleanMap(5 * time.Minute)
 
 // DownloadFileProgress
 // var DownloadFileProgress = &sync.Map{}
@@ -75,6 +75,10 @@ func CleanDownloadTask(fileHash, sliceHash, p2pAddress, walletAddress string) {
 		}
 		utils.DebugLog("PP reported, clean slice taks")
 	}
+}
+
+func DeleteDownloadTask(fileHash, walletAddress string) {
+	DownloadFileMap.Delete(fileHash + walletAddress)
 }
 
 // PCleanDownloadTask p

@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 //for future protoc-gen-go requirement
-//option go_package = "github.com/stratosnet/sds/msg/protos";
+option go_package = "github.com/stratosnet/sds/msg/protos";
 
 // j
 package protos;
@@ -52,6 +52,7 @@ message PPBaseInfo {
      string p2p_address = 1;
      string wallet_address = 2;
      string network_address = 3;
+     string rest_address = 4;
 }
 
 message SPBaseInfo {

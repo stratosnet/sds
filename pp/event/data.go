@@ -2,15 +2,14 @@ package event
 
 import (
 	goed25519 "crypto/ed25519"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/disk"
-	"github.com/shirou/gopsutil/mem"
-	"github.com/stratosnet/sds/utils/crypto"
 	"math"
 	"path"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/mem"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -19,6 +18,7 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/types"
 
@@ -135,6 +135,7 @@ func reqMiningData() *protos.ReqMining {
 			P2PAddress:     setting.P2PAddress,
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
+			RestAddress:    setting.RestAddress,
 		},
 		PublicKey: setting.P2PPublicKey,
 		Sign:      setting.GetSign(setting.P2PAddress),
@@ -421,6 +422,7 @@ func rspFileStorageInfoData(target *protos.RspFileStorageInfo) *msg.RelayMsgBuf 
 		sliceInfoArr = append(sliceInfoArr, &newInfo)
 	}
 	sendTarget.SliceInfo = sliceInfoArr
+	sendTarget.RestAddress = setting.RestAddress
 	sendData, err := proto.Marshal(sendTarget)
 	if err != nil {
 		utils.ErrorLog(err)
