@@ -46,7 +46,7 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-// ReqDeleteSlice delete slice sp-pp  or pp-p only works if sent from server to client
+// ReqDeleteSlice delete slice spd-pp  or pp-p only works if sent from server to client
 func ReqDeleteSlice(ctx context.Context, conn core.WriteCloser) {
 	switch conn.(type) {
 	case *cf.ClientConn:

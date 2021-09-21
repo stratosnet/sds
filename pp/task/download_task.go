@@ -235,7 +235,7 @@ func CheckFileOver(fileHash, filePath string) bool {
 			return false
 		}
 		utils.DebugLog("info", info.Size())
-		utils.DebugLog("sp.TotalSize", sp.TotalSize)
+		utils.DebugLog("spd.TotalSize", sp.TotalSize)
 		if info.Size() == sp.TotalSize {
 			utils.DebugLog("ok!")
 			return true

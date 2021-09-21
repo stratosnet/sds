@@ -54,7 +54,7 @@ func streamVideoStorageInfo(w http.ResponseWriter, req *http.Request) {
 	for {
 		if f, ok := task.DownloadFileMap.Load(fileHash); ok {
 			fInfo = f.(*protos.RspFileStorageInfo)
-			utils.DebugLog("Received file storage info from sp ", fInfo)
+			utils.DebugLog("Received file storage info from spd ", fInfo)
 			break
 		} else {
 			select {
@@ -97,7 +97,7 @@ func streamVideo(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if setting.State != setting.PP_ACTIVE && setting.Config.StreamingCache {
-		utils.DebugLog("Send request to sp to retrieve the slice ", sliceHash)
+		utils.DebugLog("Send request to spd to retrieve the slice ", sliceHash)
 
 		fInfo := &protos.RspFileStorageInfo{
 			FileHash: body.FileHash,

@@ -17,7 +17,6 @@ WalletPassword: aaa
 AutoRun: true
 Internal: false
 IsWallet: true
-BPURL:
 IsCheckDefaultPath:
 IsLimitDownloadSpeed: false
 LimitDownloadSpeed: 100
@@ -33,3 +32,4 @@ StratosChainAddress: 127.0.0.1
 StratosChainPort: 1317
 RestPort: 18091
 InternalPort: 9608
+StreamingCache: false

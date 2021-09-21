@@ -29,7 +29,7 @@ type upLoadFileResult struct {
 
 func upLoadFile(w http.ResponseWriter, request *http.Request) {
 
-	// check differently for sp
+	// check differently for spd
 	if !setting.CheckLogin() {
 		_, _ = w.Write(httpserv.NewJson(nil, setting.FAILCode, "login first").ToBytes())
 		return
@@ -113,7 +113,7 @@ func upLoadFile(w http.ResponseWriter, request *http.Request) {
 			TODO change this func to not directly send file into chan, because total file size needs to be calculated first
 
 		*/
-		file.GetAllFiles(path) // this func should be per connection for sp
+		file.GetAllFiles(path) // this func should be per connection for spd
 
 		dir := filepath.Dir(path)
 		for {

@@ -1,6 +1,6 @@
 package utils
 
-// Author cc
+
 import (
 	"fmt"
 	"io/ioutil"
@@ -42,4 +42,13 @@ func LoadYamlConfig(s interface{}, path string) error {
 		return err
 	}
 	return nil
+}
+
+
+func WriteConfig(data interface{}, filePath string) error {
+	yamlData, err := yaml.Marshal(&data)
+	if err != nil {
+		fmt.Printf("Error while Marshaling. %v", err)
+	}
+	return ioutil.WriteFile(filePath, yamlData, 0644)
 }

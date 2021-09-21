@@ -2,19 +2,16 @@ package setting
 
 import (
 	ed25519crypto "crypto/ed25519"
-	"errors"
 	"fmt"
-	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/relay/stratoschain/prefix"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/console"
-	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/relay/stratoschain/prefix"
+	"github.com/stratosnet/sds/utils"
 )
 
 // REPROTDHTIME 1 hour
@@ -29,7 +26,7 @@ const HTTPTIMEOUT = 20
 // FILEHASHLEN
 const FILEHASHLEN = 64
 
-// IMAGEPATH 保存图片路径
+// IMAGEPATH
 var IMAGEPATH = "./images/"
 
 // ImageMap download image hash map
@@ -69,6 +66,8 @@ var (
 	ShareErrorCode = 1002
 	IsWindows      bool
 )
+
+const HD_PATH = "m/44'/606'/0'/0/0"
 
 type config struct {
 	Version                     uint32
@@ -115,19 +114,16 @@ type config struct {
 var ostype = runtime.GOOS
 
 // LoadConfig
-func LoadConfig(configPath string) {
+func LoadConfig(configPath string) error {
 	ConfigPath = configPath
 	Config = &config{}
-	utils.LoadYamlConfig(Config, configPath)
-
-	Config.Version = 5
-
-	Config.VersionShow = "1.4"
+	err := utils.LoadYamlConfig(Config, configPath)
+	if err != nil {
+		return err
+	}
 
 	Config.DownloadPathMinLen = 112
 
-	Config.ScryptN = 4096
-	Config.ScryptP = 6
 	if ostype == "windows" {
 		IsWindows = true
 		// imagePath = filepath.FromSlash(imagePath)
@@ -137,6 +133,7 @@ func LoadConfig(configPath string) {
 	cf.SetLimitDownloadSpeed(Config.LimitDownloadSpeed, Config.IsLimitDownloadSpeed)
 	cf.SetLimitUploadSpeed(Config.LimitUploadSpeed, Config.IsLimitUploadSpeed)
 	prefix.SetConfig(Config.AddressPrefix)
+	return nil
 }
 
 // CheckLogin
@@ -229,58 +226,61 @@ func SetConfig(key, value string) bool {
 	}
 
 	LoadConfig(ConfigPath)
-	fmt.Println("failed to change configuration file ", key+": ", value)
+	if !(strings.Contains(strings.ToLower(key), "password") || strings.Contains(strings.ToLower(key), "pw")) {
+		fmt.Println("finish changing configuration file ", key+": ", value)
+	}
+
 	return true
 }
 
 // SetupP2PKey Loads the existing P2P key for this node, or creates a new one if none is available.
-func SetupP2PKey() error {
-	if Config.P2PAddress == "" {
-		fmt.Println("No P2P key specified in config. Attempting to create one...")
-		nickname, err := console.Stdin.PromptInput("Enter P2PAddress nickname: ")
-		if err != nil {
-			return errors.New("couldn't read nickname from console: " + err.Error())
-		}
 
-		password, err := console.Stdin.PromptPassword("Enter password: ")
-		if err != nil {
-			return errors.New("couldn't read password from console: " + err.Error())
-		}
-		confimation, err := console.Stdin.PromptPassword("Enter password again: ")
-		if err != nil {
-			return errors.New("couldn't read confirmation password from console: " + err.Error())
-		}
-		if password != confimation {
-			return errors.New("invalid. The two passwords don't match")
-		}
-
-		p2pKeyAddress, err := utils.CreateP2PKey(Config.AccountDir, nickname, password, Config.P2PKeyPrefix, Config.ScryptN, Config.ScryptP)
-		if err != nil {
-			return errors.New("couldn't create WalletAddress: " + err.Error())
-		}
-
-		p2pKeyAddressString, err := p2pKeyAddress.ToBech(Config.P2PKeyPrefix)
-		if err != nil {
-			return errors.New("couldn't convert P2P key address to bech string: " + err.Error())
-		}
-		Config.P2PAddress = p2pKeyAddressString
-		Config.P2PPassword = password
-		SetConfig("P2PAddress", p2pKeyAddressString)
-		SetConfig("P2PPassword", password)
+func defaultConfig() *config {
+	return &config{
+		Version:                     2,
+		VersionShow:                 "v0.2.0",
+		DownloadPathMinLen:          0,
+		Port:                        ":18081",
+		NetworkAddress:              "127.0.0.1",
+		SPNetAddress:                "127.0.0.1:8888",
+		Debug:                       false,
+		PPListDir:                   "./peers/pp-list",
+		AccountDir:                  "./accounts",
+		ScryptN:                     4096,
+		ScryptP:                     6,
+		DefPassword:                 "",
+		DefSavePath:                 "",
+		StorehousePath:              "",
+		DownloadPath:                "",
+		P2PAddress:                  "",
+		P2PPassword:                 "",
+		WalletAddress:               "",
+		WalletPassword:              "",
+		AutoRun:                     true,
+		Internal:                    false,
+		IsWallet:                    true,
+		BPURL:                       "",
+		IsCheckDefaultPath:          false,
+		IsLimitDownloadSpeed:        false,
+		LimitDownloadSpeed:          0,
+		IsLimitUploadSpeed:          false,
+		LimitUploadSpeed:            0,
+		IsCheckFileOperation:        false,
+		IsCheckFileTransferFinished: false,
+		AddressPrefix:               "st",
+		P2PKeyPrefix:                "stsdsp2p",
+		ChainId:                     "stratos-testnet-2",
+		Token:                       "ustos",
+		StratosChainAddress:         "127.0.0.1",
+		StratosChainPort:            "1317",
+		StreamingCache:              false,
+		RestPort:                    "",
+		InternalPort:                "",
 	}
+}
 
-	p2pKeyFile, err := ioutil.ReadFile(filepath.Join(Config.AccountDir, Config.P2PAddress+".json"))
-	if err != nil {
-		return errors.New("couldn't read P2P key file: " + err.Error())
-	}
+func GenDefaultConfig(filePath string) error {
+	cfg := defaultConfig()
 
-	p2pKey, err := utils.DecryptKey(p2pKeyFile, Config.P2PPassword)
-	if err != nil {
-		return errors.New("couldn't decrypt P2P key file: " + err.Error())
-	}
-
-	P2PAddress = Config.P2PAddress
-	P2PPrivateKey = p2pKey.PrivateKey
-	P2PPublicKey = ed25519.PrivKeyBytesToPubKeyBytes(P2PPrivateKey)
-	return nil
+	return utils.WriteConfig(cfg, filePath)
 }
