@@ -9,12 +9,12 @@ import (
 type AccumulatedTaskWeight []float64
 
 type WeightedRing interface {
-	QueryWeightByNodeId(ct *database.CacheTable, nodeID string) float64
-	RefreshIndexByWeight()
+	//ReloadWeightsForOnlineNodes() map[string]float64
+	//RefreshIndexByWeight()
 	GetNodeIDByIndex(index int) string
 }
 
-type WeightQuerier func(*database.CacheTable, string) float64
+type WeightQuerier func(*database.CacheTable, []interface{}) map[string]float64
 
 type WeightedHashRing struct {
 	WeightedRing
@@ -31,12 +31,11 @@ type WeightedHashRing struct {
 func (whr *WeightedHashRing) AddNode(node *Node) {
 	utils.DebugLogf("adding node [%v] to hashring", node.ID)
 	whr.hashRing.AddNode(node)
-	whr.nodeTaskWeight[node.ID] = whr.QueryWeightByNodeId(node.ID)
 }
 
 func (whr *WeightedHashRing) RemoveNode(nodeID string) {
 	whr.hashRing.RemoveNode(nodeID)
-	delete(whr.nodeTaskWeight, nodeID)
+	//delete(whr.nodeTaskWeight, nodeID)
 }
 
 func (whr *WeightedHashRing) SetOnline(nodeID string) {
@@ -45,6 +44,7 @@ func (whr *WeightedHashRing) SetOnline(nodeID string) {
 
 func (whr *WeightedHashRing) SetOffline(nodeID string) {
 	whr.hashRing.SetOffline(nodeID)
+	//delete(whr.nodeTaskWeight, nodeID)
 }
 
 func (whr *WeightedHashRing) GetHashRing() *HashRing {
@@ -64,20 +64,32 @@ func (whr *WeightedHashRing) WithCacheTable(ct *database.CacheTable) *WeightedHa
 	return whr
 }
 
-func (whr *WeightedHashRing) WithWeightQuerier(querier func(*database.CacheTable, string) float64) *WeightedHashRing {
+func (whr *WeightedHashRing) WithWeightQuerier(querier func(*database.CacheTable, []interface{}) map[string]float64) *WeightedHashRing {
 	whr.querier = querier
 	return whr
 }
 
-func (whr *WeightedHashRing) QueryWeightByNodeId(nodeID string) float64 {
+func (whr *WeightedHashRing) reloadWeightsForVNodes() map[string]float64 {
 	if whr.querier == nil || whr.ct == nil {
 		utils.DebugLog("no weight querier or cTable specified")
-		return 0.00
+		var ret = make(map[string]float64, 0)
+		return ret
 	}
-	return whr.querier(whr.ct, nodeID)
+	if whr.hashRing.NodeCount <= 0 {
+		var ret = make(map[string]float64, 0)
+		return ret
+	}
+	var nodeIDs = make([]interface{}, 0, whr.hashRing.NodeCount)
+	whr.hashRing.Nodes.Range(func(key, value interface{}) bool {
+		nodeID := value.(*Node).ID
+		nodeIDs = append(nodeIDs, nodeID)
+		return true
+	})
+	return whr.querier(whr.ct, nodeIDs)
 }
 
-func (whr *WeightedHashRing) RefreshIndexByWeight() {
+func (whr *WeightedHashRing) refreshIndexByWeight() {
+	whr.nodeTaskWeight = whr.reloadWeightsForVNodes()
 }
 
 func NewWeightedHashRing(numOfVNode uint32) *WeightedHashRing {
