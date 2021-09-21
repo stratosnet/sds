@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/relay/stratoschain/prefix"
 	"github.com/stratosnet/sds/utils"
 )
@@ -133,6 +134,7 @@ func LoadConfig(configPath string) error {
 	cf.SetLimitDownloadSpeed(Config.LimitDownloadSpeed, Config.IsLimitDownloadSpeed)
 	cf.SetLimitUploadSpeed(Config.LimitUploadSpeed, Config.IsLimitUploadSpeed)
 	prefix.SetConfig(Config.AddressPrefix)
+	stratoschain.Url = "http://" + Config.StratosChainAddress + ":" + Config.StratosChainPort
 	return nil
 }
 

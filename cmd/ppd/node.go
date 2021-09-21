@@ -12,7 +12,6 @@ import (
 	"github.com/stratosnet/sds/pp/api/rest"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
@@ -33,8 +32,6 @@ func nodePP(cmd *cobra.Command, args []string) error {
 	}
 
 	setting.IsAuto = true
-	stratoschain.Url = "http://" + setting.Config.StratosChainAddress + ":" + setting.Config.StratosChainPort
-
 
 	if setting.WalletAddress != "" && setting.Config.InternalPort != "" {
 		go api.StartHTTPServ()
