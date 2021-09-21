@@ -32,14 +32,6 @@ func nodePP(cmd *cobra.Command, args []string) error {
 		utils.MyLogger.SetLogLevel(utils.Error)
 	}
 
-	err := SetupP2PKey()
-	if err != nil {
-		err := errors.Wrap(err, "Couldn't setup PP node")
-		utils.ErrorLog(err)
-		return err
-	}
-
-
 	setting.IsAuto = true
 	stratoschain.Url = "http://" + setting.Config.StratosChainAddress + ":" + setting.Config.StratosChainPort
 
@@ -78,6 +70,11 @@ func nodePreRunE(cmd *cobra.Command, args []string) error {
 	err = setting.LoadConfig(configPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to load config file")
+	}
+
+	err = SetupP2PKey()
+	if err != nil {
+		return errors.Wrap(err, "Couldn't setup PP node")
 	}
 	return nil
 }
