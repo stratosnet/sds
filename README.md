@@ -9,7 +9,8 @@ git checkout latest
 make build
 ```
 then you can find the binary `ppd` under `./target`
-the binary can be install to default $GOPTH by  
+#### Install binary
+the binary can be installed to default $GOPATH/bin by  
 ```bash
 make install
 ```

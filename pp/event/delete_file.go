@@ -3,6 +3,8 @@ package event
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
@@ -11,7 +13,6 @@ import (
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
-	"net/http"
 )
 
 // DeleteFile
@@ -46,7 +47,7 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-// ReqDeleteSlice delete slice spd-pp  or pp-p only works if sent from server to client
+// ReqDeleteSlice delete slice sp-pp  or pp-p only works if sent from server to client
 func ReqDeleteSlice(ctx context.Context, conn core.WriteCloser) {
 	switch conn.(type) {
 	case *cf.ClientConn:
