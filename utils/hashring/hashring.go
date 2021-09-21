@@ -241,18 +241,6 @@ func (r *HashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string) (uint32,
 
 }
 
-// GetNodeIdFromWeightedNodeList get node from weighted node list
-// @params sliceIndex
-func (r *HashRing) GetNodeIdFromWeightedNodeList(sliceIndex uint64, wnl WeightedNodeList) string {
-	nodeNum := len(wnl)
-	if nodeNum < 1 {
-		return ""
-	}
-	indexPrime := int(sliceIndex)%wnl.Len() - 1
-	candidateNodeId := wnl[indexPrime].ID
-	return candidateNodeId
-}
-
 // GetNodeUpDownNodes get upstream of downstream of node
 // @params
 func (r *HashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
