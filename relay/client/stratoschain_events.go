@@ -28,6 +28,10 @@ func (m *MultiClient) SubscribeToStratosChainEvents() error {
 	if err != nil {
 		return err
 	}
+	err = m.SubscribeToStratosChain("message.action='complete_unbonding_resource_node'", m.CompleteUnbondingResourceNodeMsgHandler())
+	if err != nil {
+		return err
+	}
 	err = m.SubscribeToStratosChain("message.action='create_indexing_node'", m.CreateIndexingNodeMsgHandler())
 	if err != nil {
 		return err
@@ -40,7 +44,7 @@ func (m *MultiClient) SubscribeToStratosChainEvents() error {
 	if err != nil {
 		return err
 	}
-	err = m.SubscribeToStratosChain("message.action='complete_unbonding_node'", m.CompleteUnbondingNodeMsgHandler())
+	err = m.SubscribeToStratosChain("message.action='complete_unbonding_indexing_node'", m.CompleteUnbondingIndexingNodeMsgHandler())
 	if err != nil {
 		return err
 	}
@@ -213,6 +217,10 @@ func (m *MultiClient) RemoveResourceNodeMsgHandler() func(event coretypes.Result
 	}
 }
 
+func (m *MultiClient) CompleteUnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
+	return m.RemoveResourceNodeMsgHandler()
+}
+
 func (m *MultiClient) CreateIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
@@ -232,11 +240,8 @@ func (m *MultiClient) RemoveIndexingNodeMsgHandler() func(event coretypes.Result
 		fmt.Printf("%+v\n", result)
 	}
 }
-func (m *MultiClient) CompleteUnbondingNodeMsgHandler() func(event coretypes.ResultEvent) {
-	// if networkAddr implies a resource node
-	return m.RemoveResourceNodeMsgHandler()
-	// else
-	//return m.RemoveIndexingNodeMsgHandler()
+func (m *MultiClient) CompleteUnbondingIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
+	return m.RemoveIndexingNodeMsgHandler()
 }
 
 func (m *MultiClient) IndexingNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
