@@ -68,7 +68,7 @@ func getTerminalCmd() *cobra.Command {
 func getGenConfigCmd() *cobra.Command{
 	cmd := &cobra.Command{
 		Use: "config",
-		Short: "create default configration file",
+		Short: "create default configuration file",
 		RunE:  genConfig,
 	}
 	return cmd
