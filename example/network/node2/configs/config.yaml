@@ -16,12 +16,11 @@ WalletAddress: st1ppcc7hmgwnr6e67ad4tcxxyskqpahuc2y4w7yq
 WalletPassword: aaa
 AutoRun: true
 Internal: false
-IsWallet: false
-BPURL:
+IsWallet: true
 IsCheckDefaultPath:
-IsLimitDownloadSpeed: true
+IsLimitDownloadSpeed: false
 LimitDownloadSpeed: 100
-IsLimitUploadSpeed: true
+IsLimitUploadSpeed: false
 LimitUploadSpeed: 100
 IsCheckFileOperation:
 IsCheckFileTransferFinished:
@@ -31,3 +30,6 @@ ChainId: "test-chain"
 Token: "ustos"
 StratosChainAddress: 127.0.0.1
 StratosChainPort: 1317
+RestPort: 18092
+InternalPort: 9608
+StreamingCache: false

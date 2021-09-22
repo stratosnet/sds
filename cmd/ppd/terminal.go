@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stratosnet/sds/relay/stratoschain"
-
+	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/api"
+	"github.com/stratosnet/sds/pp/api/rest"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
@@ -20,12 +20,7 @@ import (
 	"github.com/stratosnet/sds/utils/console"
 )
 
-func main() {
-	err := setup()
-	if err != nil {
-		utils.ErrorLog("Couldn't setup PP node", err)
-		return
-	}
+func terminal(cmd *cobra.Command, args []string) {
 
 	helpStr := "\n" +
 		"help                                show all the commands\n" +
@@ -226,7 +221,7 @@ func main() {
 		return true
 	}
 
-	delete := func(line string, param []string) bool {
+	deleteFn := func(line string, param []string) bool {
 		if len(param) == 0 {
 			fmt.Println("input file hash")
 			return false
@@ -498,7 +493,7 @@ func main() {
 		AutoStart(setting.Config.WalletAddress, setting.Config.WalletPassword)
 	}
 
-	if setting.Config.IsWallet {
+	if setting.WalletAddress != "" && setting.Config.InternalPort != "" {
 		go api.StartHTTPServ()
 		peers.Login(setting.Config.WalletAddress, setting.Config.WalletPassword)
 		// setting.ShowMonitor()
@@ -529,6 +524,10 @@ func main() {
 		}()
 	}
 
+	if setting.Config.RestPort != "" {
+		go rest.StartHTTPServ()
+	}
+
 	console.Mystdin.RegisterProcessFunc("help", help)
 	console.Mystdin.RegisterProcessFunc("h", help)
 	console.Mystdin.RegisterProcessFunc("wallets", wallets)
@@ -547,8 +546,8 @@ func main() {
 	console.Mystdin.RegisterProcessFunc("get", download)
 	console.Mystdin.RegisterProcessFunc("list", list)
 	console.Mystdin.RegisterProcessFunc("ls", list)
-	console.Mystdin.RegisterProcessFunc("delete", delete)
-	console.Mystdin.RegisterProcessFunc("rm", delete)
+	console.Mystdin.RegisterProcessFunc("delete", deleteFn)
+	console.Mystdin.RegisterProcessFunc("rm", deleteFn)
 	console.Mystdin.RegisterProcessFunc("ver", ver)
 	console.Mystdin.RegisterProcessFunc("monitor", monitor)
 	console.Mystdin.RegisterProcessFunc("stopmonitor", stopmonitor)
@@ -581,17 +580,10 @@ func main() {
 	console.Mystdin.Run()
 }
 
-func setup() error {
-	setting.LoadConfig("./configs/config.yaml")
-	if setting.Config.Debug {
-		utils.MyLogger.SetLogLevel(utils.Debug)
-	} else {
-		utils.MyLogger.SetLogLevel(utils.Error)
-	}
-
+func terminalPreRunE(cmd *cobra.Command, args []string) error {
+	err := nodePreRunE(cmd, args)
 	peers.GetNetworkAddress()
-	stratoschain.Url = "http://" + setting.Config.StratosChainAddress + ":" + setting.Config.StratosChainPort
-	return setting.SetupP2PKey()
+	return err
 }
 
 // AutoStart
@@ -603,3 +595,4 @@ func AutoStart(account, password string) {
 	setting.IsAuto = true
 	peers.Login(account, password)
 }
+

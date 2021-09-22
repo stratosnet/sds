@@ -1,6 +1,6 @@
 package utils
 
-// Author cc
+
 import (
 	"fmt"
 	"sync/atomic"

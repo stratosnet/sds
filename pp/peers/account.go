@@ -3,11 +3,12 @@ package peers
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
+
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
-	"io/ioutil"
-	"path/filepath"
 )
 
 // CreateWallet
@@ -30,6 +31,9 @@ func CreateWallet(password, name, mnemonic, passphrase, hdPath string) string {
 	if utils.CheckError(err) {
 		utils.ErrorLog("CreateWallet error", err)
 		return ""
+	}
+	if setting.WalletAddress != "" {
+		setting.SetConfig("WalletAddress", setting.WalletAddress)
 	}
 	getPublicKey(filepath.Join(setting.Config.AccountDir, setting.WalletAddress+".json"), password)
 	utils.Log("Create account success ,", setting.WalletAddress)

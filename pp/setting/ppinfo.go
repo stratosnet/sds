@@ -43,8 +43,8 @@ var WalletPrivateKey []byte
 // NetworkAddress
 var NetworkAddress string
 
-//StreamingAddress
-var StreamingAddress string
+//RestAddress
+var RestAddress string
 
 // P2PAddress
 var P2PAddress string

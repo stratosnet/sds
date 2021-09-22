@@ -30,7 +30,7 @@ type Logger struct {
 	loglevel   LogLevel
 }
 
-var MyLogger *Logger // = NewLogger("tmp/logs/stdout.log", true, true)
+var MyLogger *Logger
 
 func newLogger(logFilepath string, enableStd, enableFile bool) *Logger {
 	if err := os.MkdirAll(filepath.Dir(logFilepath), os.ModePerm); err != nil {
@@ -72,7 +72,7 @@ func init() {
 	level2String[Warn] = "[WARN]"
 	level2String[Error] = "[ERROR]"
 	level2String[Fatal] = "[FATAL]"
-	MyLogger = newLogger("tmp/logs/stdout.log", true, true)
+	MyLogger = newLogger("./tmp/logs/stdout.log", true, true)
 }
 
 //SetLogLevel

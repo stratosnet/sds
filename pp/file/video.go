@@ -25,11 +25,11 @@ const TEMP_FOLDER = "tmp"
 var HlsInfoMap = make(map[string]*HlsInfo)
 
 type HlsInfo struct {
-	FileHash          string
-	Header            string
-	HeaderSliceNumber uint64
-	TsToSlice         map[string]uint64
-	SliceToTs         map[uint64]string
+	FileHash         string
+	HeaderFile       string
+	StartSliceNumber uint64
+	SegmentToSlice   map[string]uint64
+	SliceToSegment   map[uint64]string
 }
 
 func GetVideoDuration(path string) (uint64, error) {
@@ -82,21 +82,22 @@ func GetHlsInfo(fileHash string, maxSliceCount uint64) bool {
 	}
 
 	startSliceNumber := maxSliceCount - uint64(sliceCount)
-	currSliceNumber := startSliceNumber + 1
+	currSliceNumber := startSliceNumber
 	hlsInfo := &HlsInfo{
-		FileHash:          fileHash,
-		HeaderSliceNumber: startSliceNumber,
-		TsToSlice:         make(map[string]uint64),
-		SliceToTs:         make(map[uint64]string),
+		FileHash:         fileHash,
+		StartSliceNumber: startSliceNumber,
+		SegmentToSlice:   make(map[string]uint64),
+		SliceToSegment:   make(map[uint64]string),
 	}
 	for _, f := range files {
-		if filepath.Ext(f.Name()) == ".m3u8" {
-			hlsInfo.Header = f.Name()
-		} else if filepath.Ext(f.Name()) == ".ts" {
-			hlsInfo.TsToSlice[f.Name()] = currSliceNumber
-			hlsInfo.SliceToTs[currSliceNumber] = f.Name()
-			currSliceNumber += 1
+		ext := filepath.Ext(f.Name())
+		if ext == ".m3u8" {
+			hlsInfo.HeaderFile = f.Name()
 		}
+
+		hlsInfo.SegmentToSlice[f.Name()] = currSliceNumber
+		hlsInfo.SliceToSegment[currSliceNumber] = f.Name()
+		currSliceNumber += 1
 	}
 	HlsInfoMap[fileHash] = hlsInfo
 	return true

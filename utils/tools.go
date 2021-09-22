@@ -6,14 +6,15 @@ import (
 	"crypto/ecdsa"
 	"encoding/binary"
 	"errors"
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/stratosnet/sds/utils/crypto"
 	"hash/crc32"
 	"math/big"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/stratosnet/sds/utils/crypto"
 
 	"github.com/google/uuid"
 )
@@ -220,7 +221,7 @@ func CheckStructField(field string, structName interface{}) bool {
 	for i := 0; i < fieldNum; i++ {
 		tagName := t.Field(i).Name
 		if tagName == field {
-			DebugLog("include field: " + field)
+			//DebugLog("include field: " + field)
 			return true
 		}
 	}
