@@ -129,7 +129,7 @@ func (whr *WeightedHashRing) refreshIndexByWeight(nodeIDsToExclude []string) flo
 	// exclude offline nodes
 	var filteredNodeTaskWeight = make(map[string]float64)
 	for k, v := range tmpNodeTaskWeight {
-		if whr.hashRing.NodeStatus[k] == true {
+		if whr.hashRing.IsOnline(k) {
 			filteredNodeTaskWeight[k] = v
 		}
 		utils.DebugLogf("whr.hashRing.NodeStatus[%s] is %v", k, whr.hashRing.NodeStatus[k])
