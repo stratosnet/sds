@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stratosnet/sds/utils"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/stratosnet/sds/utils"
 
 	"github.com/google/uuid"
 	"github.com/stratosnet/sds/msg/protos"
