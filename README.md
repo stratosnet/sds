@@ -23,28 +23,40 @@ mkdir rsnode
 cd rsnode
 ```
 
-generate configuration file and/or necessary key pairs
+Then generate a configuration file and/or necessary key pairs
 ```bash
 ./ppd config
 # then follow the steps
 ```
 
-run a node 
+To run a node as a daemon:
 ```bash
 ./ppd start
-
 ```
 
-#### register to indexing node
+To run a node with a terminal for inputting commands: 
+```bash
+./ppd terminal
+```
 
+#### Registering to an indexing node
+When you have a resource node running with a terminal, input one of the two following identical commands:
+```bash
+rp
+registerminer
+```
 
+#### Activating the resource node by staking
+Use this command in the terminal:
+```bash
+activate stakingAmount feeAmount gasAmount
+```
 
-#### activate resource node by staking
-
-
-#### start mining 
-
-
+#### Starting to mine
+Use this command in the terminal:
+```bash
+start
+```
 
 
 ## Contribution
