@@ -21,9 +21,9 @@ require (
 	github.com/onsi/gomega v1.11.0 // indirect
 	github.com/pborman/uuid v1.2.1
 	github.com/peterh/liner v1.2.1
-	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pkg/errors v0.9.1
 	github.com/shirou/gopsutil v3.20.12+incompatible
-	github.com/spf13/cobra v1.0.0 // indirect
+	github.com/spf13/cobra v1.0.0
 	github.com/stratosnet/stratos-chain v0.0.0-20210812183433-04850109b2fd
 	github.com/tendermint/tendermint v0.33.9
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
