@@ -33,5 +33,5 @@ func initPPList() {
 func startStatusReportToSP() {
 	utils.DebugLog("Status will be reported to SP while mining")
 	clock := clock.NewClock()
-	clock.AddJobRepeat(time.Second*60, 0, event.ReportNodeStatus)
+	clock.AddJobRepeat(time.Minute*5, 0, event.ReportNodeStatus)
 }
