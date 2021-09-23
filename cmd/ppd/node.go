@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	HOME string = "home"
-	CONFIG string = "config"
+	HOME              string = "home"
+	CONFIG            string = "config"
 	defaultConfigPath string = "./configs/config.yaml"
 )
 
@@ -73,9 +73,14 @@ func nodePreRunE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "Couldn't setup PP node")
 	}
+
+	if _, err := os.Stat(setting.Config.PPListDir); os.IsNotExist(err) {
+		if err = os.Mkdir(setting.Config.PPListDir, os.ModePerm); err != nil {
+			return errors.Wrap(err, "Couldn't create PP list directory")
+		}
+	}
 	return nil
 }
-
 
 func SetupP2PKey() error {
 	if setting.Config.P2PAddress == "" {
@@ -128,4 +133,3 @@ func SetupP2PKey() error {
 	setting.P2PPublicKey = ed25519.PrivKeyBytesToPubKeyBytes(setting.P2PPrivateKey)
 	return nil
 }
-

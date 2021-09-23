@@ -6,12 +6,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkrest "github.com/cosmos/cosmos-sdk/types/rest"
 	"github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
@@ -96,7 +96,6 @@ func BuildAndSignTx(token, chainId, memo string, msg sdktypes.Msg, fee, gas int6
 
 			signedBytes = ed25519crypto.Sign(signatureKey.PrivateKey, unsignedBytes)
 			pubKey = ed25519.PrivKeyBytesToPubKey(signatureKey.PrivateKey)
-			fmt.Printf("This time it worked: %v\n", pubKey.VerifyBytes(unsignedBytes, signedBytes))
 		default:
 			var err error
 
@@ -182,7 +181,7 @@ func BroadcastTxBytes(txBytes []byte) error {
 	}
 
 	responseBody, err := ioutil.ReadAll(resp.Body)
-	fmt.Println(string(responseBody))
+	utils.Log(string(responseBody))
 
 	if resp.StatusCode != 200 {
 		return errors.New("invalid http response: " + resp.Status)

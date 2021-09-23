@@ -1,22 +1,22 @@
 package sds
 
 import (
-	"fmt"
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
+	"github.com/stratosnet/sds/utils"
 	"net"
 )
 
 func NewClient(server string) *cf.ClientConn {
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", server)
 	if err != nil {
-		fmt.Println("Couldn't resolve TCP address: " + err.Error())
+		utils.ErrorLog("Couldn't resolve TCP address", err)
 		return nil
 	}
 	c, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
-		fmt.Println("DialTCP failed for SDS: " + err.Error())
+		utils.ErrorLog("DialTCP failed for SDS", err)
 		return nil
 	}
 

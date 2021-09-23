@@ -23,24 +23,27 @@ import (
 func terminal(cmd *cobra.Command, args []string) {
 
 	helpStr := "\n" +
-		"help                                show all the commands\n" +
-		"wallets                             acquire all wallet wallets' address\n" +
-		"newwallet ->password                create new wallet\n" +
-		"login walletAddress ->password      unlock and log in wallet \n" +
-		"registerminer                       apply to be PP miner\n" +
-		"activate                            send transaction to stratos-chain to become an active PP node\n" +
-		"deactivate                          send transaction to stratos-chain to stop being a PP node\n" +
-		"start                               start mining\n" +
-		"put filepath                        upload file\n" +
-		"list filename                       inquire uploaded file by self\n" +
-		"list                                inquire all files\n" +
-		"delete filehash                     delete file\n" +
-		"get spb://account/filehash|filename download file\n" +
-		"For example: get spb://0x96983DA5Aed28Ac0FF7646fE1C3260AACe9ECB7B/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe|test.mp4\n" +
-		"ver                                 version\n" +
-		"monitor                             show monitor\n" +
-		"stopmonitor                         stop monitor\n" +
-		"config                              config key value"
+		"help                                   show all the commands\n" +
+		"wallets                                acquire all wallet wallets' address\n" +
+		"newwallet ->password                   create new wallet, input password in prompt\n" +
+		"login <walletAddress> ->password       unlock and log in wallet, input password in prompt\n" +
+		"registerpeer                           register peer to index node\n" +
+		"rp                                     register peer to index node\n" +
+		"activate <amount> <fee> <gas>          send transaction to stchain to become an active PP node\n" +
+		"deactivate                             send transaction to stchain to stop being an active PP node\n" +
+		"startmining                            start mining\n" +
+		"prepay <amount> <fee> <gas>            prepay stos to get ozone, amount in ustos\n" +
+		"put <filepath>                         upload file, need to consume ozone\n" +
+		"putstream <filepath>                   upload video file for streaming, need to consume ozone (alpha version, encode format config impossible)\n" +
+		"list <filename>                        query uploaded file by self\n" +
+		"list                                   query all files\n" +
+		"delete <filehash>                      delete file\n" +
+		"get <spb://account/filehash|filename>  download file, need to consume ozone\n" +
+		"	e.g: get spb://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe|test.mp4\n" +
+		"ver                                    version\n" +
+		"monitor                                show monitor\n" +
+		"stopmonitor                            stop monitor\n" +
+		"config  <key> <value>                  set config key value\n"
 	fmt.Println(helpStr)
 
 	help := func(line string, param []string) bool {
@@ -533,9 +536,9 @@ func terminal(cmd *cobra.Command, args []string) {
 	console.Mystdin.RegisterProcessFunc("wallets", wallets)
 	console.Mystdin.RegisterProcessFunc("newwallet", newWallet)
 	console.Mystdin.RegisterProcessFunc("login", login)
-	console.Mystdin.RegisterProcessFunc("start", start)
+	console.Mystdin.RegisterProcessFunc("startmining", start)
 	console.Mystdin.RegisterProcessFunc("rp", registerPP)
-	console.Mystdin.RegisterProcessFunc("registerminer", registerPP)
+	console.Mystdin.RegisterProcessFunc("registerpeer", registerPP)
 	console.Mystdin.RegisterProcessFunc("activate", activate)
 	console.Mystdin.RegisterProcessFunc("deactivate", deactivate)
 	console.Mystdin.RegisterProcessFunc("prepay", prepay)
@@ -595,4 +598,3 @@ func AutoStart(account, password string) {
 	setting.IsAuto = true
 	peers.Login(account, password)
 }
-

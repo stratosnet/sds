@@ -1,6 +1,5 @@
 package utils
 
-
 import (
 	"fmt"
 	"io/ioutil"
@@ -43,7 +42,6 @@ func LoadYamlConfig(s interface{}, path string) error {
 	}
 	return nil
 }
-
 
 func WriteConfig(data interface{}, filePath string) error {
 	yamlData, err := yaml.Marshal(&data)

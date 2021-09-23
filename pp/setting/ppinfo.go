@@ -6,6 +6,7 @@ import (
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/types"
 	"os"
+	"path/filepath"
 	"sync"
 )
 
@@ -67,7 +68,8 @@ func GetLocalPPList() []*protos.PPBaseInfo {
 	if len(PPList) > 0 {
 		return PPList
 	}
-	csvFile, err := os.OpenFile(Config.PPListDir, os.O_CREATE|os.O_RDWR, 0777)
+
+	csvFile, err := os.OpenFile(filepath.Join(Config.PPListDir, "pp-list"), os.O_CREATE|os.O_RDWR, 0777)
 	defer csvFile.Close()
 	if err != nil {
 		utils.Log("InitPPList err", err)
@@ -113,8 +115,9 @@ func savePPListLocal() {
 	rwmutex.Lock()
 	defer rwmutex.Unlock()
 
-	os.Truncate(Config.PPListDir, 0)
-	csvFile, err := os.OpenFile(Config.PPListDir, os.O_CREATE|os.O_RDWR, 0777)
+	ppListPath := filepath.Join(Config.PPListDir, "pp-list")
+	os.Truncate(ppListPath, 0)
+	csvFile, err := os.OpenFile(ppListPath, os.O_CREATE|os.O_RDWR, 0777)
 	if err != nil {
 		utils.ErrorLog("InitPPList err", err)
 		return

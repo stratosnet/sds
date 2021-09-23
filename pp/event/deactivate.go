@@ -2,11 +2,11 @@ package event
 
 import (
 	"context"
-	"fmt"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -17,7 +17,7 @@ func Deactivate(fee, gas int64) error {
 		utils.ErrorLog("Couldn't build PP deactivate request: " + err.Error())
 		return err
 	}
-	fmt.Println("Sending deactivate message to SP! " + deactivateReq.P2PAddress)
+	utils.Log("Sending deactivate message to SP! " + deactivateReq.P2PAddress)
 	SendMessageToSPServer(deactivateReq, header.ReqDeactivatePP)
 	return nil
 }
@@ -30,7 +30,7 @@ func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	utils.Log("get RspActivate", target.Result.State, target.Result.Msg)
+	utils.Log("get RspDeactivatePP", target.Result.State, target.Result.Msg)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		return
 	}
@@ -38,14 +38,20 @@ func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 	setting.State = byte(target.ActivationState)
 
 	if target.ActivationState == setting.PP_INACTIVE {
-		fmt.Println("Current node is already inactive")
+		utils.Log("Current node is already inactive")
+		return
+	}
+
+	err := stratoschain.BroadcastTxBytes(target.Tx)
+	if err != nil {
+		utils.ErrorLog("The deactivation transaction couldn't be broadcast", err)
 	} else {
-		fmt.Println("The deactivation transaction was broadcast")
+		utils.Log("The deactivation transaction was broadcast")
 	}
 }
 
-// RspActivated. Response when this PP node was successfully activated
+// RspDeactivated. Response when this PP node was successfully deactivated
 func RspDeactivated(ctx context.Context, conn core.WriteCloser) {
 	setting.State = setting.PP_INACTIVE
-	fmt.Println("This PP node is now inactive")
+	utils.Log("This PP node is now inactive")
 }
