@@ -1,9 +1,12 @@
 package peers
 
 import (
+	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
+	"time"
 )
 
 // InitPPList
@@ -25,4 +28,10 @@ func initPPList() {
 
 		event.GetPPList()
 	}
+}
+
+func startStatusReportToSP() {
+	utils.DebugLog("Status will be reported to SP while mining")
+	clock := clock.NewClock()
+	clock.AddJobRepeat(time.Second*60, 0, event.ReportNodeStatus)
 }

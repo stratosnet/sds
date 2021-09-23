@@ -1,8 +1,6 @@
 package event
 
 import (
-	"fmt"
-
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 
@@ -22,6 +20,6 @@ func doReportNodeStatus() {
 		utils.ErrorLog("Couldn't build PP RNS request: " + err.Error())
 		return
 	}
-	fmt.Println("Sending RNS message to SP! " + rnsReq.String())
+	utils.DebugLog("Sending RNS message to SP! " + rnsReq.String())
 	SendMessageToSPServer(rnsReq, header.ReqReportNodeStatus)
 }
