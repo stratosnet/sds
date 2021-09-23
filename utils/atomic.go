@@ -1,6 +1,5 @@
 package utils
 
-
 import (
 	"fmt"
 	"sync/atomic"

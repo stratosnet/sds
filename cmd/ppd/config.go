@@ -80,8 +80,8 @@ func SetupWalletKey() error {
 				"======================================================================= \n")
 		}
 
-		hdPath, err := console.Stdin.PromptInput("input hd-path for the account, default: m/44'/606'/0'/0/0 " )
-		if err != nil  {
+		hdPath, err := console.Stdin.PromptInput("input hd-path for the account, default: m/44'/606'/0'/0/0 ")
+		if err != nil {
 			return errors.New("couldn't read the hd-path")
 		}
 		if hdPath == "" {
@@ -89,7 +89,7 @@ func SetupWalletKey() error {
 		}
 		//hrp, mnemonic, bip39Passphrase, hdPath
 		walletKeyAddress, err := utils.CreateWallet(setting.Config.AccountDir, nickname, password,
-			setting.Config.AddressPrefix, mnemonic, "mnemonic", hdPath ,setting.Config.ScryptN, setting.Config.ScryptP)
+			setting.Config.AddressPrefix, mnemonic, "mnemonic", hdPath, setting.Config.ScryptN, setting.Config.ScryptP)
 		if err != nil {
 			return errors.New("couldn't create WalletAddress: " + err.Error())
 		}
@@ -100,7 +100,7 @@ func SetupWalletKey() error {
 		}
 		setting.SetConfig("WalletAddress", walletKeyAddressString)
 
-		save , err := console.Stdin.PromptInput("save wallet passward to config file: Y(es)/N(o)")
+		save, err := console.Stdin.PromptInput("save wallet passward to config file: Y(es)/N(o)")
 		if err != nil {
 			return errors.New("couldn't read the input, not saving by default")
 		}

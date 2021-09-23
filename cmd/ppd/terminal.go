@@ -595,4 +595,3 @@ func AutoStart(account, password string) {
 	setting.IsAuto = true
 	peers.Login(account, password)
 }
-
