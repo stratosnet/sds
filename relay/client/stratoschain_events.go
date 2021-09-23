@@ -10,6 +10,7 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -54,35 +55,35 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 
 		networkAddressList := result.Events["create_resource_node.network_address"]
 		if len(networkAddressList) < 1 {
-			fmt.Println("No network address was specified in the create_resource_node message from stratos-chain")
+			utils.ErrorLog("No network address was specified in the create_resource_node message from stratos-chain")
 			return
 		}
 
 		p2pAddress, err := types.BechToAddress(networkAddressList[0])
 		if err != nil {
-			fmt.Println("Error when trying to convert P2P address to bytes: " + err.Error())
+			utils.ErrorLog("Error when trying to convert P2P address to bytes", err)
 			return
 		}
 		p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
 		if err != nil {
-			fmt.Println("Error when trying to convert P2P address to bech32: " + err.Error())
+			utils.ErrorLog("Error when trying to convert P2P address to bech32", err)
 			return
 		}
 
 		nodePubkeyList := result.Events["create_resource_node.pub_key"]
 		if len(nodePubkeyList) < 1 {
-			fmt.Println("No node pubkey was specified in the create_resource_node message from stratos-chain")
+			utils.ErrorLog("No node pubkey was specified in the create_resource_node message from stratos-chain")
 			return
 		}
 		p2pPubkeyRaw, err := hex.DecodeString(nodePubkeyList[0])
 		if err != nil {
-			fmt.Println("Error when trying to decode P2P pubkey hex: " + err.Error())
+			utils.ErrorLog("Error when trying to decode P2P pubkey hex", err)
 			return
 		}
 		p2pPubkey := ed25519.PubKeyEd25519{}
 		err = stratoschain.Cdc.UnmarshalBinaryBare(p2pPubkeyRaw, &p2pPubkey)
 		if err != nil {
-			fmt.Println("Error when trying to read P2P pubkey ed25519 binary: " + err.Error())
+			utils.ErrorLog("Error when trying to read P2P pubkey ed25519 binary", err)
 			return
 		}
 
@@ -92,7 +93,7 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 		}
 		activatedMsgBytes, err := proto.Marshal(activatedMsg)
 		if err != nil {
-			fmt.Println("Error when trying to marshal ReqActivatedPP proto: " + err.Error())
+			utils.ErrorLog("Error when trying to marshal ReqActivatedPP proto", err)
 			return
 		}
 		msgToSend := &msg.RelayMsgBuf{
@@ -102,7 +103,7 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 
 		err = conn.Write(msgToSend)
 		if err != nil {
-			fmt.Println("Error when sending message to SDS: " + err.Error())
+			utils.ErrorLog("Error when sending message to SDS", err)
 			return
 		}
 	}
@@ -114,25 +115,25 @@ func (m *MultiClient) RemoveResourceNodeMsgHandler() func(event coretypes.Result
 
 		nodeAddressList := result.Events["remove_resource_node.resource_node"]
 		if len(nodeAddressList) < 1 {
-			fmt.Println("No node address was specified in the remove_resource_node message from stratos-chain")
+			utils.ErrorLog("No node address was specified in the remove_resource_node message from stratos-chain")
 			return
 		}
 
 		p2pAddress, err := types.BechToAddress(nodeAddressList[0])
 		if err != nil {
-			fmt.Println("Error when trying to convert P2P address to bytes: " + err.Error())
+			utils.ErrorLog("Error when trying to convert P2P address to bytes", err)
 			return
 		}
 		p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
 		if err != nil {
-			fmt.Println("Error when trying to convert P2P address to bech32: " + err.Error())
+			utils.ErrorLog("Error when trying to convert P2P address to bech32", err)
 			return
 		}
 
 		deactivatedMsg := &protos.ReqDeactivatedPP{P2PAddress: p2pAddressString}
 		deactivatedMsgBytes, err := proto.Marshal(deactivatedMsg)
 		if err != nil {
-			fmt.Println("Error when trying to marshal ReqDeactivatedPP proto: " + err.Error())
+			utils.ErrorLog("Error when trying to marshal ReqDeactivatedPP proto", err)
 			return
 		}
 		msgToSend := &msg.RelayMsgBuf{
@@ -142,7 +143,7 @@ func (m *MultiClient) RemoveResourceNodeMsgHandler() func(event coretypes.Result
 
 		err = conn.Write(msgToSend)
 		if err != nil {
-			fmt.Println("Error when sending message to SDS: " + err.Error())
+			utils.ErrorLog("Error when sending message to SDS", err)
 			return
 		}
 	}
@@ -151,14 +152,14 @@ func (m *MultiClient) RemoveResourceNodeMsgHandler() func(event coretypes.Result
 func (m *MultiClient) CreateIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
-		fmt.Printf("%+v\n", result)
+		utils.Log(fmt.Sprintf("%+v", result))
 	}
 }
 
 func (m *MultiClient) RemoveIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
-		fmt.Printf("%+v\n", result)
+		utils.Log(fmt.Sprintf("%+v", result))
 	}
 }
 
@@ -168,23 +169,23 @@ func (m *MultiClient) IndexingNodeVoteMsgHandler() func(event coretypes.ResultEv
 
 		candidateNetworkAddressList := result.Events["indexing_node_reg_vote.candidate_network_address"]
 		if len(candidateNetworkAddressList) < 1 {
-			fmt.Println("No candidate network address was specified in the indexing_node_reg_vote message from stratos-chain")
+			utils.ErrorLog("No candidate network address was specified in the indexing_node_reg_vote message from stratos-chain")
 			return
 		}
 		p2pAddress, err := types.BechToAddress(candidateNetworkAddressList[0])
 		if err != nil {
-			fmt.Println("Error when trying to convert P2P address to bytes: " + err.Error())
+			utils.ErrorLog("Error when trying to convert P2P address to bytes", err)
 			return
 		}
 		p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
 		if err != nil {
-			fmt.Println("Error when trying to convert P2P address to bech32: " + err.Error())
+			utils.ErrorLog("Error when trying to convert P2P address to bech32", err)
 			return
 		}
 
 		candidateStatusList := result.Events["indexing_node_reg_vote.candidate_status"]
 		if len(candidateStatusList) < 1 {
-			fmt.Println("No candidate status was specified in the indexing_node_reg_vote message from stratos-chain")
+			utils.ErrorLog("No candidate status was specified in the indexing_node_reg_vote message from stratos-chain")
 			return
 		}
 		if candidateStatusList[0] != sdkTypes.BondStatusBonded {
@@ -197,7 +198,7 @@ func (m *MultiClient) IndexingNodeVoteMsgHandler() func(event coretypes.ResultEv
 		}
 		activatedMsgBytes, err := proto.Marshal(activatedMsg)
 		if err != nil {
-			fmt.Println("Error when trying to marshal ReqActivatedSP proto: " + err.Error())
+			utils.ErrorLog("Error when trying to marshal ReqActivatedSP proto", err)
 			return
 		}
 		msgToSend := &msg.RelayMsgBuf{
@@ -207,7 +208,7 @@ func (m *MultiClient) IndexingNodeVoteMsgHandler() func(event coretypes.ResultEv
 
 		err = conn.Write(msgToSend)
 		if err != nil {
-			fmt.Println("Error when sending message to SDS: " + err.Error())
+			utils.ErrorLog("Error when sending message to SDS", err)
 			return
 		}
 	}
@@ -215,18 +216,18 @@ func (m *MultiClient) IndexingNodeVoteMsgHandler() func(event coretypes.ResultEv
 
 func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		fmt.Printf("%+v\n", result)
+		utils.Log(fmt.Sprintf("%+v", result))
 		conn := m.GetSdsClientConn()
 
 		reporterList := result.Events["Prepay.reporter"]
 		if len(reporterList) < 1 {
-			fmt.Println("No reporter address was specified in the prepay message from stratos-chain")
+			utils.ErrorLog("No reporter address was specified in the prepay message from stratos-chain")
 			return
 		}
 
 		purchasedUozList := result.Events["Prepay.purchased"]
 		if len(purchasedUozList) < 1 {
-			fmt.Println("No purchased ozone amount was specified in the prepay message from stratos-chain")
+			utils.ErrorLog("No purchased ozone amount was specified in the prepay message from stratos-chain")
 			return
 		}
 
@@ -236,7 +237,7 @@ func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 		}
 		prepaidMsgBytes, err := proto.Marshal(prepaidMsg)
 		if err != nil {
-			fmt.Println("Error when trying to marshal ReqPrepaid proto: " + err.Error())
+			utils.ErrorLog("Error when trying to marshal ReqPrepaid proto", err)
 			return
 		}
 		msgToSend := &msg.RelayMsgBuf{
@@ -246,7 +247,7 @@ func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 
 		err = conn.Write(msgToSend)
 		if err != nil {
-			fmt.Println("Error when sending message to SDS: " + err.Error())
+			utils.ErrorLog("Error when sending message to SDS", err)
 			return
 		}
 	}
@@ -258,19 +259,19 @@ func (m *MultiClient) FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 
 		reporterAddressList := result.Events["FileUploadTx.reporter"]
 		if len(reporterAddressList) < 1 {
-			fmt.Println("No reporter address was specified in the FileUploadTx message from stratos-chain")
+			utils.ErrorLog("No reporter address was specified in the FileUploadTx message from stratos-chain")
 			return
 		}
 
 		uploaderAddressList := result.Events["FileUploadTx.uploader"]
 		if len(uploaderAddressList) < 1 {
-			fmt.Println("No uploader address was specified in the FileUploadTx message from stratos-chain")
+			utils.ErrorLog("No uploader address was specified in the FileUploadTx message from stratos-chain")
 			return
 		}
 
 		fileHashList := result.Events["FileUploadTx.file_hash"]
 		if len(fileHashList) < 1 {
-			fmt.Println("No file hash was specified in the FileUploadTx message from stratos-chain")
+			utils.ErrorLog("No file hash was specified in the FileUploadTx message from stratos-chain")
 			return
 		}
 
@@ -281,7 +282,7 @@ func (m *MultiClient) FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 		}
 		uploadedMsgBytes, err := proto.Marshal(uploadedMsg)
 		if err != nil {
-			fmt.Println("Error when trying to marshal Uploaded proto: " + err.Error())
+			utils.ErrorLog("Error when trying to marshal Uploaded proto", err)
 			return
 		}
 		msgToSend := &msg.RelayMsgBuf{
@@ -291,7 +292,7 @@ func (m *MultiClient) FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 
 		err = conn.Write(msgToSend)
 		if err != nil {
-			fmt.Println("Error when sending message to SDS: " + err.Error())
+			utils.ErrorLog("Error when sending message to SDS", err)
 			return
 		}
 	}
@@ -300,6 +301,6 @@ func (m *MultiClient) FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 func (m *MultiClient) VolumeReportHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
-		fmt.Printf("%+v\n", result)
+		utils.Log(fmt.Sprintf("%+v", result))
 	}
 }

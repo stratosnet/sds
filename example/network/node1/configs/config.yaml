@@ -2,7 +2,7 @@ Port: :18081
 NetworkAddress: 127.0.0.1
 SPNetAddress: 127.0.0.1:8888
 Debug: true
-PPListDir: "./peers/pp-list"
+PPListDir: "./peers"
 AccountDir: "./accounts"
 scryptN: 4096
 scryptP: 6
