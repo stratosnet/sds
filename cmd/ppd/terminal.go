@@ -106,7 +106,7 @@ func terminal(cmd *cobra.Command, args []string) {
 
 	activate := func(line string, param []string) bool {
 		amount := int64(1000000000)
-		fee := int64(1)
+		fee := int64(10000)
 		gas := int64(1000000)
 		if len(param) > 3 {
 			fmt.Println("Expecting at most 3 params. Input amount of tokens, fee amount and gas amount")
@@ -149,7 +149,7 @@ func terminal(cmd *cobra.Command, args []string) {
 	}
 
 	deactivate := func(line string, param []string) bool {
-		fee := int64(1)
+		fee := int64(10000)
 		gas := int64(1000000)
 		if len(param) > 2 {
 			fmt.Println("Expecting at most 2 params. Input fee amount and gas amount")
@@ -182,7 +182,7 @@ func terminal(cmd *cobra.Command, args []string) {
 
 	prepay := func(line string, param []string) bool {
 		amount := int64(1000000000)
-		fee := int64(1)
+		fee := int64(10000)
 		gas := int64(1000000)
 		if len(param) > 3 {
 			fmt.Println("Expecting at most 3 params. Input amount of tokens, fee amount and gas amount")
