@@ -246,7 +246,7 @@ func defaultConfig() *config {
 		NetworkAddress:              "127.0.0.1",
 		SPNetAddress:                "127.0.0.1:8888",
 		Debug:                       false,
-		PPListDir:                   "./peers/pp-list",
+		PPListDir:                   "./peers",
 		AccountDir:                  "./accounts",
 		ScryptN:                     4096,
 		ScryptP:                     6,

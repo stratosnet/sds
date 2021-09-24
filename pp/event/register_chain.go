@@ -3,10 +3,6 @@ package event
 // Author j
 import (
 	"context"
-	"fmt"
-	"time"
-
-	"github.com/alex023/clock"
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
@@ -82,11 +78,11 @@ func RspRegisterChain(ctx context.Context, conn core.WriteCloser) {
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		setting.P2PAddress = ""
 		setting.WalletAddress = ""
-		fmt.Println("login failed", target.Result.Msg)
+		utils.Log("login failed", target.Result.Msg)
 		return
 	}
 
-	fmt.Println("login successfully", target.Result.Msg)
+	utils.Log("login successful", target.Result.Msg)
 	setting.IsLoad = true
 	utils.DebugLog("@@@@@@@@@@@@@@@@@@@@@@@@@@@@", conn.(*cf.ClientConn).GetName())
 	setting.IsPP = target.IsPP
@@ -107,7 +103,7 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspMining
 	if unmarshalData(ctx, &target) {
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
-			fmt.Println("start mining")
+			utils.Log("start mining")
 			if serv.GetPPServer() == nil {
 				go serv.StartListenServer(setting.Config.Port)
 			}
@@ -117,8 +113,6 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 				RegisterChain(true)
 			}
 			utils.DebugLog("Start reporting node status to SP")
-			clock := clock.NewClock()
-			clock.AddJobRepeat(time.Second*60, 0, ReportNodeStatus)
 		} else {
 			utils.Log(target.Result.Msg)
 		}
@@ -129,10 +123,10 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 func StartMining() {
 	if setting.CheckLogin() {
 		if setting.IsPP {
-			utils.DebugLog("StartMining")
+			utils.DebugLog("Sending ReqMining message to SP")
 			SendMessageToSPServer(reqMiningData(), header.ReqMining)
 		} else {
-			fmt.Println("register as miner first")
+			utils.Log("register as miner first")
 		}
 	}
 }

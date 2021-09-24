@@ -11,6 +11,7 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/relay/sds"
 	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/utils"
 	tmHttp "github.com/tendermint/tendermint/rpc/client/http"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 	"sync"
@@ -53,7 +54,7 @@ func (m *MultiClient) Start() error {
 		defer m.wg.Done()
 		defer func() {
 			if r := recover(); r != nil {
-				fmt.Printf("Recovering from panic in SDS connection goroutine: %v\n", r)
+				utils.ErrorLog("Recovering from panic in SDS connection goroutine", r)
 			}
 		}()
 
@@ -89,15 +90,15 @@ func (m *MultiClient) Start() error {
 			m.wg.Add(1)
 			go m.sdsEventsReaderLoop()
 
-			fmt.Println("Successfully subscribed to events from SDS SP node and started client to send messages back")
+			utils.Log("Successfully subscribed to events from SDS SP node and started client to send messages back")
 			return
 		}
 
 		// This is reached when we couldn't establish the connection to the SP node
 		if i == setting.Config.SDS.ConnectionRetries.Max {
-			fmt.Println("Couldn't connect to SDS SP node after many tries. Relay will shutdown")
+			utils.Log("Couldn't connect to SDS SP node after many tries. Relay will shutdown")
 		} else {
-			fmt.Println("Couldn't subscribe to SDS events through websockets. Relay will shutdown")
+			utils.Log("Couldn't subscribe to SDS events through websockets. Relay will shutdown")
 		}
 		m.cancel()
 	}()
@@ -112,7 +113,7 @@ func (m *MultiClient) Start() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Successfully subscribed to events from stratos-chain")
+	utils.Log("Successfully subscribed to events from stratos-chain")
 
 	return nil
 }
@@ -135,7 +136,7 @@ func (m *MultiClient) Stop() {
 		}
 
 		m.wg.Wait()
-		fmt.Println("All client connections have been stopped")
+		utils.Log("All client connections have been stopped")
 	})
 }
 
@@ -147,7 +148,7 @@ func (m *MultiClient) sdsEventsReaderLoop() {
 		}
 		_, data, err := m.sdsWebsocketConn.ReadMessage()
 		if err != nil {
-			fmt.Println("error when reading from the SDS websocket: " + err.Error())
+			utils.ErrorLog("error when reading from the SDS websocket", err)
 			return
 		}
 
@@ -155,7 +156,7 @@ func (m *MultiClient) sdsEventsReaderLoop() {
 		msg := protos.RelayMessage{}
 		err = proto.Unmarshal(data, &msg)
 		if err != nil {
-			fmt.Println("couldn't unmarshal message to protos.RelayMessage: " + err.Error())
+			utils.ErrorLog("couldn't unmarshal message to protos.RelayMessage", err)
 			continue
 		}
 
@@ -163,7 +164,7 @@ func (m *MultiClient) sdsEventsReaderLoop() {
 		case sds.TypeBroadcast:
 			err = stratoschain.BroadcastTxBytes(msg.Data)
 			if err != nil {
-				fmt.Println("couldn't broadcast transaction: " + err.Error())
+				utils.ErrorLog("couldn't broadcast transaction", err)
 				continue
 			}
 		}
@@ -175,9 +176,9 @@ func (m *MultiClient) stratosSubscriptionReaderLoop(subscription websocketSubscr
 		if subscription.client != nil {
 			err := subscription.client.Unsubscribe(context.Background(), "", subscription.query)
 			if err != nil {
-				fmt.Printf("couldn't unsubscribe from %v: %v\n", subscription.query, err.Error())
+				utils.ErrorLog(fmt.Sprintf("couldn't unsubscribe from %v", subscription.query), err)
 			} else {
-				fmt.Println("unsubscribed from " + subscription.query)
+				utils.Log("unsubscribed from " + subscription.query)
 			}
 			_ = subscription.client.Stop()
 			delete(m.stratosEventsChannels, subscription.query)
@@ -191,10 +192,10 @@ func (m *MultiClient) stratosSubscriptionReaderLoop(subscription websocketSubscr
 			return
 		case message, ok := <-subscription.channel:
 			if !ok {
-				fmt.Println("The stratos-chain events websocket channel has been closed")
+				utils.Log("The stratos-chain events websocket channel has been closed")
 				return
 			}
-			fmt.Println("Received a new message from stratos-chain!")
+			utils.Log("Received a new message from stratos-chain!")
 			/*
 				// Example of how to send a message to SDS
 				msgToSend := &msg.RelayMsgBuf{

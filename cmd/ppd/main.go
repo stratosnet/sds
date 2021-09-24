@@ -9,7 +9,6 @@ import (
 
 func main() {
 
-
 	rootCmd := getRootCmd()
 	nodeCmd := getNodeCmd()
 	terminalCmd := getTerminalCmd()
@@ -26,11 +25,10 @@ func main() {
 	return
 }
 
-
 func getRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:               "ppd",
-		Short:             "meta(indexing) node",
+		Use:   "ppd",
+		Short: "meta(indexing) node",
 	}
 
 	dir, err := os.Getwd()
@@ -46,10 +44,10 @@ func getRootCmd() *cobra.Command {
 
 func getNodeCmd() *cobra.Command {
 	nodeCmd := &cobra.Command{
-		Use: "start",
-		Short:  "start the node",
-		PreRunE:           nodePreRunE,
-		RunE:              nodePP,
+		Use:     "start",
+		Short:   "start the node",
+		PreRunE: nodePreRunE,
+		RunE:    nodePP,
 	}
 	return nodeCmd
 }
@@ -65,9 +63,9 @@ func getTerminalCmd() *cobra.Command {
 	return cmd
 }
 
-func getGenConfigCmd() *cobra.Command{
+func getGenConfigCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "config",
+		Use:   "config",
 		Short: "create default configuration file",
 		RunE:  genConfig,
 	}

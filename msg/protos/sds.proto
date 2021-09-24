@@ -299,6 +299,7 @@ message ReqActivatePP {
 message RspActivatePP {
   Result result = 1;
   uint32 activation_state = 2;
+  bytes  tx = 3;
 }
 
 message ReqActivatedPP {
@@ -324,6 +325,7 @@ message ReqDeactivatePP {
 message RspDeactivatePP {
   Result result = 1;
   uint32 activation_state = 2;
+  bytes  tx = 3;
 }
 
 message ReqUnbondingPP {
@@ -370,6 +372,7 @@ message ReqPrepay {
 
 message RspPrepay {
   Result result = 1;
+  bytes  tx = 2;
 }
 
 message ReqPrepaid {

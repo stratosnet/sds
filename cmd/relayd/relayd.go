@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
 	"github.com/stratosnet/sds/relay/client"
+	"github.com/stratosnet/sds/utils"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,12 +11,12 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Not enough arguments. Please specify the config file to use")
+		utils.Log("Not enough arguments. Please specify the config file to use")
 		return
 	}
 	err := setting.LoadConfig(os.Args[1])
 	if err != nil {
-		fmt.Println("Error loading the config file: " + err.Error())
+		utils.ErrorLog("Error loading the config file", err)
 		return
 	}
 
@@ -25,7 +25,7 @@ func main() {
 
 	err = multiClient.Start()
 	if err != nil {
-		fmt.Println("Shutting down. Could not start relay client: " + err.Error())
+		utils.ErrorLog("Shutting down. Could not start relay client", err)
 		return
 	}
 
