@@ -3,7 +3,6 @@ package client
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
@@ -25,7 +24,7 @@ type MultiClient struct {
 	sdsClientConn         *cf.ClientConn
 	sdsWebsocketConn      *websocket.Conn
 	stratosWebsocketUrl   string
-	stratosEventsChannels map[string]websocketSubscription
+	stratosEventsChannels *sync.Map
 	wg                    *sync.WaitGroup
 }
 
@@ -41,79 +40,21 @@ func NewClient() *MultiClient {
 		cancel:                cancel,
 		Ctx:                   ctx,
 		once:                  &sync.Once{},
-		stratosEventsChannels: make(map[string]websocketSubscription),
+		stratosEventsChannels: &sync.Map{},
 		wg:                    &sync.WaitGroup{},
 	}
 	return client
 }
 
 func (m *MultiClient) Start() error {
-	m.wg.Add(1)
-	go func() {
-		// Connect to SDS SP node in a loop
-		defer m.wg.Done()
-		defer func() {
-			if r := recover(); r != nil {
-				utils.ErrorLog("Recovering from panic in SDS connection goroutine", r)
-			}
-		}()
-
-		sdsClientUrl := setting.Config.SDS.NetworkAddress + ":" + setting.Config.SDS.ClientPort
-		sdsWebsocketUrl := setting.Config.SDS.NetworkAddress + ":" + setting.Config.SDS.WebsocketPort
-
-		i := 0
-		for ; i < setting.Config.SDS.ConnectionRetries.Max; i++ {
-			if m.Ctx.Err() != nil {
-				return
-			}
-
-			if i != 0 {
-				time.Sleep(time.Millisecond * time.Duration(setting.Config.SDS.ConnectionRetries.SleepDuration))
-			}
-
-			// Client to send messages to SDS SP node
-			sdsClient := sds.NewClient(sdsClientUrl)
-			if sdsClient == nil {
-				continue
-			}
-			m.sdsClientConn = sdsClient
-
-			// Client to subscribe to events from SDS SP node
-			fullSdsWebsocketUrl := "ws://" + sdsWebsocketUrl + "/websocket"
-			sdsTopics := []string{"broadcast"}
-			ws := sds.DialWebsocket(fullSdsWebsocketUrl, sdsTopics)
-			if ws == nil {
-				break
-			}
-			m.sdsWebsocketConn = ws
-
-			m.wg.Add(1)
-			go m.sdsEventsReaderLoop()
-
-			utils.Log("Successfully subscribed to events from SDS SP node and started client to send messages back")
-			return
-		}
-
-		// This is reached when we couldn't establish the connection to the SP node
-		if i == setting.Config.SDS.ConnectionRetries.Max {
-			utils.Log("Couldn't connect to SDS SP node after many tries. Relay will shutdown")
-		} else {
-			utils.Log("Couldn't subscribe to SDS events through websockets. Relay will shutdown")
-		}
-		m.cancel()
-	}()
-
 	// REST client to send messages to stratos-chain
 	scRestUrl := "http://" + setting.Config.StratosChain.RestServer
 	stratoschain.Url = scRestUrl
-
 	// Client to subscribe to stratos-chain events and receive messages via websocket
 	m.stratosWebsocketUrl = setting.Config.StratosChain.WebsocketServer
-	err := m.SubscribeToStratosChainEvents()
-	if err != nil {
-		return err
-	}
-	utils.Log("Successfully subscribed to events from stratos-chain")
+
+	go m.connectToSDS()
+	go m.connectToStratosChain()
 
 	return nil
 }
@@ -128,20 +69,130 @@ func (m *MultiClient) Stop() {
 			_ = m.sdsWebsocketConn.Close()
 		}
 
-		for query, subscription := range m.stratosEventsChannels {
-			if subscription.client != nil {
-				_ = subscription.client.Unsubscribe(context.Background(), "", query)
-				_ = subscription.client.Stop()
+		m.stratosEventsChannels.Range(func(k, v interface{}) bool {
+			subscription, ok := v.(websocketSubscription)
+			if !ok {
+				return false
 			}
-		}
+
+			go func() {
+				err := subscription.client.Unsubscribe(context.Background(), "", subscription.query)
+				if err != nil {
+					utils.ErrorLog("couldn't unsubscribe from "+subscription.query, err)
+				} else {
+					utils.Log("unsubscribed from " + subscription.query)
+				}
+				_ = subscription.client.Stop()
+			}()
+			return false
+		})
 
 		m.wg.Wait()
 		utils.Log("All client connections have been stopped")
 	})
 }
 
-func (m *MultiClient) sdsEventsReaderLoop() {
+func (m *MultiClient) connectToSDS() {
+	m.wg.Add(1)
 	defer m.wg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+			utils.ErrorLog("Recovering from panic in SDS connection goroutine", r)
+		}
+	}()
+
+	sdsClientUrl := setting.Config.SDS.NetworkAddress + ":" + setting.Config.SDS.ClientPort
+	sdsWebsocketUrl := setting.Config.SDS.NetworkAddress + ":" + setting.Config.SDS.WebsocketPort
+
+	// Connect to SDS SP node in a loop
+	i := 0
+	for ; i < setting.Config.SDS.ConnectionRetries.Max; i++ {
+		if m.Ctx.Err() != nil {
+			return
+		}
+
+		if i != 0 {
+			time.Sleep(time.Millisecond * time.Duration(setting.Config.SDS.ConnectionRetries.SleepDuration))
+		}
+
+		// Client to send messages to SDS SP node
+		sdsClient := sds.NewClient(sdsClientUrl)
+		if sdsClient == nil {
+			continue
+		}
+		m.sdsClientConn = sdsClient
+
+		// Client to subscribe to events from SDS SP node
+		fullSdsWebsocketUrl := "ws://" + sdsWebsocketUrl + "/websocket"
+		sdsTopics := []string{"broadcast"}
+		ws := sds.DialWebsocket(fullSdsWebsocketUrl, sdsTopics)
+		if ws == nil {
+			break
+		}
+		m.sdsWebsocketConn = ws
+
+		go m.sdsEventsReaderLoop()
+
+		utils.Log("Successfully subscribed to events from SDS SP node and started client to send messages back")
+		return
+	}
+
+	// This is reached when we couldn't establish the connection to the SP node
+	if i == setting.Config.SDS.ConnectionRetries.Max {
+		utils.ErrorLog("Couldn't connect to SDS SP node after many tries. Relayd will shutdown")
+	} else {
+		utils.ErrorLog("Couldn't subscribe to SDS events through websockets. Relayd will shutdown")
+	}
+	m.cancel()
+}
+
+func (m *MultiClient) connectToStratosChain() {
+	m.wg.Add(1)
+	defer m.wg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+			utils.ErrorLog("Recovering from panic in stratos-chain connection goroutine", r)
+		}
+	}()
+
+	// Connect to stratos-chain in a loop
+	i := 0
+	for ; i < setting.Config.StratosChain.ConnectionRetries.Max; i++ {
+		if m.Ctx.Err() != nil {
+			return
+		}
+
+		if i != 0 {
+			time.Sleep(time.Millisecond * time.Duration(setting.Config.StratosChain.ConnectionRetries.SleepDuration))
+		}
+
+		err := m.SubscribeToStratosChainEvents()
+		if err != nil {
+			utils.ErrorLog(err)
+			continue
+		}
+
+		utils.Log("Successfully subscribed to events from stratos-chain")
+		return
+	}
+
+	// This is reached when we couldn't establish the connection to the stratos-chain
+	if i == setting.Config.StratosChain.ConnectionRetries.Max {
+		utils.ErrorLog("Couldn't connect to stratos-chain after many tries. Relayd will shutdown")
+	} else {
+		utils.ErrorLog("Couldn't subscribe to stratos-chain events through websockets. Relayd will shutdown")
+	}
+	m.cancel()
+}
+
+func (m *MultiClient) sdsEventsReaderLoop() {
+	m.wg.Add(1)
+	defer func() {
+		if m.Ctx.Err() == nil {
+			go m.connectToSDS()
+		}
+		m.wg.Done()
+	}()
 	for {
 		if m.Ctx.Err() != nil {
 			return
@@ -152,7 +203,7 @@ func (m *MultiClient) sdsEventsReaderLoop() {
 			return
 		}
 
-		fmt.Println("received: " + string(data))
+		utils.Log("received: " + string(data))
 		msg := protos.RelayMessage{}
 		err = proto.Unmarshal(data, &msg)
 		if err != nil {
@@ -172,17 +223,20 @@ func (m *MultiClient) sdsEventsReaderLoop() {
 }
 
 func (m *MultiClient) stratosSubscriptionReaderLoop(subscription websocketSubscription, handler func(coretypes.ResultEvent)) {
+	m.wg.Add(1)
 	defer func() {
 		if subscription.client != nil {
-			err := subscription.client.Unsubscribe(context.Background(), "", subscription.query)
-			if err != nil {
-				utils.ErrorLog(fmt.Sprintf("couldn't unsubscribe from %v", subscription.query), err)
-			} else {
-				utils.Log("unsubscribed from " + subscription.query)
-			}
-			_ = subscription.client.Stop()
-			delete(m.stratosEventsChannels, subscription.query)
+			go func() {
+				err := subscription.client.Unsubscribe(context.Background(), "", subscription.query)
+				if err != nil {
+					utils.ErrorLog("couldn't unsubscribe from "+subscription.query, err)
+				} else {
+					utils.Log("unsubscribed from " + subscription.query)
+				}
+				_ = subscription.client.Stop()
+			}()
 		}
+		m.stratosEventsChannels.Delete(subscription.query)
 		m.wg.Done()
 	}()
 
@@ -196,25 +250,16 @@ func (m *MultiClient) stratosSubscriptionReaderLoop(subscription websocketSubscr
 				return
 			}
 			utils.Log("Received a new message from stratos-chain!")
-			/*
-				// Example of how to send a message to SDS
-				msgToSend := &msg.RelayMsgBuf{
-					MSGHead: header.MakeMessageHeader(1, 1, 0, header.ReqGetPPList),
-				}
-				err = m.sdsClientConn.Write(msgToSend)
-				if err != nil {
-					fmt.Println("Error when sending message to SDS: " + err.Error())
-				} else {
-					fmt.Println("Sent msg to SDS")
-				}
-			*/
-			//fmt.Println(message)
 			handler(message)
 		}
 	}
 }
 
 func (m *MultiClient) SubscribeToStratosChain(query string, handler func(coretypes.ResultEvent)) error {
+	if _, ok := m.stratosEventsChannels.Load(query); ok {
+		return nil
+	}
+
 	client, err := stratoschain.DialWebsocket(m.stratosWebsocketUrl)
 	if err != nil {
 		return err
@@ -224,13 +269,13 @@ func (m *MultiClient) SubscribeToStratosChain(query string, handler func(coretyp
 	if err != nil {
 		return errors.New("failed to subscribe to query in stratos-chain: " + err.Error())
 	}
-	m.wg.Add(1)
+
 	subscription := websocketSubscription{
 		channel: out,
 		client:  client,
 		query:   query,
 	}
-	m.stratosEventsChannels[query] = subscription
+	m.stratosEventsChannels.Store(query, subscription)
 	go m.stratosSubscriptionReaderLoop(subscription, handler)
 
 	return nil

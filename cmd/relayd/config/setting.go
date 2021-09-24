@@ -18,8 +18,9 @@ type sds struct {
 }
 
 type stratoschain struct {
-	RestServer      string `yaml:"restServer"`
-	WebsocketServer string `yaml:"websocketServer"`
+	RestServer        string            `yaml:"restServer"`
+	WebsocketServer   string            `yaml:"websocketServer"`
+	ConnectionRetries connectionRetries `yaml:"connectionRetries"`
 }
 
 type config struct {
