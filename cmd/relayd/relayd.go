@@ -41,6 +41,7 @@ func main() {
 	for {
 		select {
 		case <-quit:
+			utils.Log("Quit signal detected. Shutting down...")
 			return
 		case <-multiClient.Ctx.Done():
 			return
