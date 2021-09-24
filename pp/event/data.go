@@ -6,6 +6,7 @@ import (
 	"path"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
@@ -21,8 +22,6 @@ import (
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/types"
-
-	"github.com/golang/protobuf/proto"
 )
 
 func reqRegisterData() *protos.ReqRegister {
