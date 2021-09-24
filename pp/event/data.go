@@ -21,6 +21,7 @@ import (
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/types"
+	registerTypes "github.com/stratosnet/stratos-chain/x/register/types"
 
 	"github.com/golang/protobuf/proto"
 )
@@ -65,7 +66,7 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivatePP, error) {
 		return nil, err
 	}
 
-	txMsg := stratoschain.BuildCreateResourceNodeMsg(setting.GetNetworkID().String(), setting.Config.Token, setting.P2PAddress, "", setting.P2PPublicKey, amount, ownerAddress)
+	txMsg := stratoschain.BuildCreateResourceNodeMsg(setting.GetNetworkID().String(), setting.Config.Token, setting.P2PAddress, registerTypes.STORAGE.Type(), setting.P2PPublicKey, amount, ownerAddress)
 	signatureKeys := []stratoschain.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: stratoschain.SignatureSecp256k1},
 	}
