@@ -105,8 +105,7 @@ type config struct {
 	P2PKeyPrefix                string `yaml:"P2PKeyPrefix"`
 	ChainId                     string `yaml:"ChainId"`
 	Token                       string `yaml:"Token"`
-	StratosChainAddress         string `yaml:"StratosChainAddress"`
-	StratosChainPort            string `yaml:"StratosChainPort"`
+	StratosChainUrl             string `yaml:"StratosChainUrl"`
 	StreamingCache              bool   `yaml:"StreamingCache"`
 	RestPort                    string `yaml:"RestPort"`
 	InternalPort                string `yaml:"InternalPort"`
@@ -134,7 +133,7 @@ func LoadConfig(configPath string) error {
 	cf.SetLimitDownloadSpeed(Config.LimitDownloadSpeed, Config.IsLimitDownloadSpeed)
 	cf.SetLimitUploadSpeed(Config.LimitUploadSpeed, Config.IsLimitUploadSpeed)
 	prefix.SetConfig(Config.AddressPrefix)
-	stratoschain.Url = "http://" + Config.StratosChainAddress + ":" + Config.StratosChainPort
+	stratoschain.Url = Config.StratosChainUrl
 	return nil
 }
 
@@ -273,8 +272,7 @@ func defaultConfig() *config {
 		P2PKeyPrefix:                "stsdsp2p",
 		ChainId:                     "stratos-testnet-2",
 		Token:                       "ustos",
-		StratosChainAddress:         "127.0.0.1",
-		StratosChainPort:            "1317",
+		StratosChainUrl:             "http://127.0.0.1:1317",
 		StreamingCache:              false,
 		RestPort:                    "",
 		InternalPort:                "",
