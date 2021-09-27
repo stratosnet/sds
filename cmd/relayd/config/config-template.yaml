@@ -6,7 +6,7 @@ sds:
     max: 100
     sleepDuration: 3000 # milliseconds
 stratosChain:
-  restServer: 127.0.0.1:1317
+  restServer: http://127.0.0.1:1317
   websocketServer: 127.0.0.1:26657
   connectionRetries:
     max: 100
