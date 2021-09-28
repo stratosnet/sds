@@ -94,11 +94,11 @@ func SetupP2PKey() error {
 		if err != nil {
 			return errors.New("couldn't read password from console: " + err.Error())
 		}
-		confimation, err := console.Stdin.PromptPassword("Enter password again: ")
+		confirmation, err := console.Stdin.PromptPassword("Enter password again: ")
 		if err != nil {
 			return errors.New("couldn't read confirmation password from console: " + err.Error())
 		}
-		if password != confimation {
+		if password != confirmation {
 			return errors.New("invalid. The two passwords don't match")
 		}
 

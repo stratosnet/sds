@@ -35,6 +35,9 @@ func BuildVolumeReportMsg(traffic []*core.Traffic, reporterAddress, reporterOwne
 
 // Stratos-chain 'register' module
 func BuildCreateResourceNodeMsg(networkID, token, moniker, nodeType string, pubKey []byte, stakeAmount int64, ownerAddress utiltypes.Address) sdktypes.Msg {
+	if nodeType == "" {
+		nodeType = registertypes.STORAGE.Type()
+	}
 	return registertypes.NewMsgCreateResourceNode(
 		networkID,
 		ed25519.PubKeyBytesToPubKey(pubKey),
