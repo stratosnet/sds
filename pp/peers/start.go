@@ -42,4 +42,5 @@ func InitPeer() {
 	event.GetSPList()
 	initPPList()
 	go listenOffline()
+	startStatusReportToSP()
 }

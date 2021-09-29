@@ -5,6 +5,7 @@ import (
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/database"
 	"math/rand"
+	"sync"
 )
 
 type AccumulatedTaskWeight []float64
@@ -23,6 +24,8 @@ type WeightedHashRing struct {
 	nodeIndex      map[int]string        // 0 -> nodeID3, 1 -> nodeID2, 2 -> nodeID5
 	ct             *database.CacheTable
 	querier        WeightQuerier
+
+	mutex sync.Mutex
 }
 
 func (whr *WeightedHashRing) AddNode(node *Node) {
@@ -92,6 +95,8 @@ func (whr *WeightedHashRing) reloadWeightsForVNodes() map[string]float64 {
 }
 
 func (whr *WeightedHashRing) WeightDrawExcludeNodeIDs(rollTimes int, nodeIDsToExclude []string) ([]interface{}, error) {
+	whr.mutex.Lock()
+	defer whr.mutex.Unlock()
 	retNodeIDs := make([]interface{}, 0)
 	maxAcmWeights := whr.refreshIndexByWeight(nodeIDsToExclude)
 	if maxAcmWeights == float64(0) {

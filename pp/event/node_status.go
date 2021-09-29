@@ -7,7 +7,9 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 )
 
-const ReportIntervalSec = 300
+const (
+	ReportIntervalSec = 300
+)
 
 // ReportNodeStatus
 func ReportNodeStatus() {
