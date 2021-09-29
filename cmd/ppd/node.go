@@ -33,7 +33,7 @@ func nodePP(cmd *cobra.Command, args []string) error {
 
 	setting.IsAuto = true
 
-	if setting.WalletAddress != "" && setting.Config.InternalPort != "" {
+	if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
 		go api.StartHTTPServ()
 	}
 
