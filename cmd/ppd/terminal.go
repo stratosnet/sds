@@ -526,7 +526,7 @@ func terminal(cmd *cobra.Command, args []string) {
 		AutoStart(setting.Config.WalletAddress, setting.Config.WalletPassword)
 	}
 
-	if setting.WalletAddress != "" && setting.Config.InternalPort != "" {
+	if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
 		go api.StartHTTPServ()
 		peers.Login(setting.Config.WalletAddress, setting.Config.WalletPassword)
 		// setting.ShowMonitor()
