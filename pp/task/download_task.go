@@ -118,7 +118,7 @@ func GetDownloadSlice(target *protos.ReqDownloadSlice) *DownloadSliceData {
 // SaveDownloadFile
 func SaveDownloadFile(target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo) bool {
 	if fInfo.IsVideoStream {
-		return file.SaveDownloadedSliceData(target.Data, target.SliceInfo.SliceHash, fInfo.FileHash, fInfo.SavePath)
+		return file.SaveFileData(target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, target.SliceInfo.SliceHash, fInfo.FileHash, fInfo.SavePath)
 	} else {
 		return file.SaveFileData(target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, fInfo.SavePath)
 	}
