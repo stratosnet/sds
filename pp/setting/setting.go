@@ -2,7 +2,6 @@ package setting
 
 import (
 	ed25519crypto "crypto/ed25519"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -117,6 +116,10 @@ var ostype = runtime.GOOS
 func LoadConfig(configPath string) error {
 	ConfigPath = configPath
 	Config = &config{}
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		utils.Log("The config at location", configPath, "does not exist")
+		return err
+	}
 	err := utils.LoadYamlConfig(Config, configPath)
 	if err != nil {
 		return err
@@ -160,22 +163,21 @@ var UpChan = make(chan string, 100)
 func SetConfig(key, value string) bool {
 
 	if !utils.CheckStructField(key, Config) {
-		fmt.Println("configuration not found")
+		utils.Log("configuration not found")
 		return false
 	}
 
 	f, err := os.Open(ConfigPath)
 	defer f.Close()
-
 	if err != nil {
-		fmt.Println("failed to change configuration file")
+		utils.ErrorLog("failed to change configuration file", err)
 		return false
 	}
 
 	var contents []byte
 	contents, err = ioutil.ReadAll(f)
 	if err != nil {
-		fmt.Println("failed to change configuration file")
+		utils.ErrorLog("failed to read configuration file", err)
 		return false
 	}
 
@@ -206,8 +208,8 @@ func SetConfig(key, value string) bool {
 		return false
 	}
 
-	if os.Truncate(ConfigPath, 0) != nil {
-		fmt.Println("failed to change configuration file")
+	if err = os.Truncate(ConfigPath, 0); err != nil {
+		utils.ErrorLog("failed to change configuration file", err)
 		return false
 	}
 
@@ -216,25 +218,23 @@ func SetConfig(key, value string) bool {
 	defer configOS.Close()
 
 	if err != nil {
-		fmt.Println("failed to change configuration file")
+		utils.ErrorLog("failed to change configuration file", err)
 		return false
 	}
 
 	_, err = configOS.WriteString(newString)
 	if err != nil {
-		fmt.Println("failed to change configuration file")
+		utils.ErrorLog("failed to change configuration file", err)
 		return false
 	}
 
 	LoadConfig(ConfigPath)
 	if !(strings.Contains(strings.ToLower(key), "password") || strings.Contains(strings.ToLower(key), "pw")) {
-		fmt.Println("finish changing configuration file ", key+": ", value)
+		utils.Log("finished changing configuration file ", key+": ", value)
 	}
 
 	return true
 }
-
-// SetupP2PKey Loads the existing P2P key for this node, or creates a new one if none is available.
 
 func defaultConfig() *config {
 	return &config{

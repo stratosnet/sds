@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -82,9 +81,10 @@ func nodePreRunE(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// SetupP2PKey Loads the existing P2P key for this node, or creates a new one if none is available.
 func SetupP2PKey() error {
 	if setting.Config.P2PAddress == "" {
-		fmt.Println("No P2P key specified in config. Attempting to create one...")
+		utils.Log("No P2P key specified in config. Attempting to create one...")
 		//nickname, err := console.Stdin.PromptInput("Enter P2PAddress nickname: ")
 		//if err != nil {
 		//	return errors.New("couldn't read nickname from console: " + err.Error())
