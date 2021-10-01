@@ -167,8 +167,8 @@ func UploadSpeedOfProgress(ctx context.Context, conn core.WriteCloser) {
 			setting.ShowProgress(p)
 			ProgressMap.Store(target.FileHash, p)
 			if progress.HasUpload >= progress.Total {
-				fmt.Println("file upload finished")
-				fmt.Println("fileHash：", target.FileHash)
+				utils.Log("fileHash：", target.FileHash)
+				utils.Log(fmt.Sprintf("uploaded：%.2f %% \n", p))
 				task.UpLoadProgressMap.Delete(target.FileHash)
 				client.UpConnMap.Delete(target.FileHash)
 			}
