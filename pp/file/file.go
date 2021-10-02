@@ -154,6 +154,8 @@ func SaveFileData(data []byte, offset int64, sliceHash, fileName, fileHash, save
 
 // SaveDownloadProgress
 func SaveDownloadProgress(sliceHash, fileName, fileHash, savePath string) {
+	wmutex.Lock()
+	defer wmutex.Unlock()
 	csvFile, err := os.OpenFile(GetDownloadCsvPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
 	defer csvFile.Close()
 	if err != nil {
