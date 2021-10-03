@@ -3,7 +3,6 @@ package event
 // Author j
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -74,7 +73,7 @@ func RspFindDirectoryTree(ctx context.Context, conn core.WriteCloser) {
 				ts.Reqs = append(ts.Reqs, &target)
 				utils.DebugLog("Reqs>>>>>>>>>>>>>>>>>>>>>", len(ts.Reqs))
 			} else {
-				fmt.Println("action  failed", target.Result.Msg)
+				utils.Log("action failed", target.Result.Msg)
 			}
 		} else {
 			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
@@ -87,7 +86,7 @@ func GetFileStorageInfo(path, savePath, reqID string, isImg bool, isVideoStream 
 	if setting.CheckLogin() {
 		if CheckDownloadPath(path) {
 			utils.DebugLog("path:", path)
-			sendMessage(client.PPConn, reqFileStorageInfoData(path, savePath, reqID, isVideoStream), header.ReqFileStorageInfo)
+			sendMessage(client.PPConn, reqFileStorageInfoData(path, savePath, reqID, isVideoStream, nil), header.ReqFileStorageInfo)
 			if isImg {
 				isImage = isImg
 				storeResponseWriter(reqID, w)
@@ -208,7 +207,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		// utils.Log("target", target.WalletAddress)
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
-				fmt.Println("download starts: ")
+				utils.Log("download starts: ")
 				task.DownloadFileMap.Store(target.FileHash, &target)
 				if target.IsVideoStream {
 					return
@@ -216,7 +215,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 				DownloadFileSlice(&target)
 				utils.DebugLog("DownloadFileSlice(&target)", target)
 			} else {
-				fmt.Println("failed to download，", target.Result.Msg)
+				utils.Log("failed to download，", target.Result.Msg)
 			}
 			if isImage {
 				putData(target.ReqId, HTTPDownloadFile, &target)

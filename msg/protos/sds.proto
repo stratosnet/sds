@@ -168,10 +168,11 @@ message RspFindDirectoryTree {
 
 
 message ReqFileStorageInfo {
-  FileIndexes file_indexes = 1;
-  bytes sign = 2;
-  string req_id = 3;
-  bool is_video_stream = 4;
+  FileIndexes     file_indexes = 1;
+  bytes           sign = 2;
+  string          req_id = 3;
+  bool            is_video_stream = 4;
+  ReqGetShareFile share_request = 5;
 }
 
 message RspFileStorageInfo {
@@ -685,12 +686,10 @@ message ReqGetShareFile {
 
 
 message RspGetShareFile {
-  string p2p_address = 1;
-  string wallet_address = 2; //
-  string req_id = 3;
-  Result result = 4;  // if failed, wrong share password
-  bool is_private = 5;
-  repeated FileInfo file_info = 6;
+  ReqGetShareFile share_request = 1;
+  Result          result = 2;  // if failed, wrong share password
+  bool            is_private = 3;
+  repeated        FileInfo file_info = 4;
 }
 
 

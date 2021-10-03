@@ -532,7 +532,7 @@ func reqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
 	}
 }
 
-func reqFileStorageInfoData(path, savePath, reqID string, isVideoStream bool) *protos.ReqFileStorageInfo {
+func reqFileStorageInfoData(path, savePath, reqID string, isVideoStream bool, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
 	return &protos.ReqFileStorageInfo{
 		FileIndexes: &protos.FileIndexes{
 			P2PAddress:    setting.P2PAddress,
@@ -543,6 +543,7 @@ func reqFileStorageInfoData(path, savePath, reqID string, isVideoStream bool) *p
 		Sign:          setting.GetSign(setting.P2PAddress + path),
 		ReqId:         reqID,
 		IsVideoStream: isVideoStream,
+		ShareRequest:  shareRequest,
 	}
 }
 
