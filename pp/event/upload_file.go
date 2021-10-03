@@ -3,6 +3,7 @@ package event
 // Author j
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -146,21 +147,27 @@ func startUploadTask(target *protos.RspUploadFile) {
 		client.UpConnMap.Store(target.FileHash, conn)
 		utils.DebugLog("task.UpConnMap.Store(target.FileHash, conn)", target.FileHash)
 	}
+	var streamTotalSize int64
+	var hlsInfo file.HlsInfo
+	if target.IsVideoStream {
+		file.VideoToHls(target.FileHash)
+		if hlsInfo, err := file.GetHlsInfo(target.FileHash, uint64(len(target.PpList))); err != nil {
+			utils.ErrorLog("Hls transformation failed: ", err)
+			return
+		} else {
+			streamTotalSize = hlsInfo.TotalSize
+			file.HlsInfoMap[target.FileHash] = hlsInfo
+		}
+	}
 	if prg, ok := task.UpLoadProgressMap.Load(target.FileHash); ok {
 		progress := prg.(*task.UpProgress)
 		if target.IsVideoStream {
-			progress.Total = 0
+			jsonStr, _ := json.Marshal(hlsInfo)
+			progress.Total = streamTotalSize + int64(len(jsonStr))
 		}
 		progress.HasUpload = (target.TotalSlice - int64(len(target.PpList))) * 32 * 1024 * 1024
 	}
-	if target.IsVideoStream {
-		file.VideoToHls(target.FileHash)
-		if ok := file.GetHlsInfo(target.FileHash, uint64(len(target.PpList))); !ok {
-			return
-		}
-	}
 	go sendUploadFileSlice(target.FileHash, target.TaskId, target.IsVideoStream)
-
 }
 
 func up(ING *task.UpFileIng, fileHash string, isVideoStream bool) {

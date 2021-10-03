@@ -152,33 +152,10 @@ func SaveFileData(data []byte, offset int64, sliceHash, fileName, fileHash, save
 	return true
 }
 
-// SaveDownloadedSliceData
-func SaveDownloadedSliceData(data []byte, sliceHash, fileHash, savePath string) bool {
-	utils.DebugLog("sliceHash", sliceHash)
-	utils.DebugLog("fileHash", fileHash)
-	wmutex.Lock()
-	fileMg, err := os.OpenFile(GetDownloadTmpPath(fileHash, sliceHash, savePath), os.O_CREATE|os.O_RDWR, 0777)
-	defer fileMg.Close()
-	if err != nil {
-		utils.Log("SaveFileData err", err)
-	}
-	if err != nil {
-		utils.ErrorLog("error initialize file")
-		wmutex.Unlock()
-		return false
-	}
-	fileMg.Write(data)
-	if err != nil {
-		utils.ErrorLog("error save file")
-		wmutex.Unlock()
-		return false
-	}
-	wmutex.Unlock()
-	return true
-}
-
 // SaveDownloadProgress
 func SaveDownloadProgress(sliceHash, fileName, fileHash, savePath string) {
+	wmutex.Lock()
+	defer wmutex.Unlock()
 	csvFile, err := os.OpenFile(GetDownloadCsvPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
 	defer csvFile.Close()
 	if err != nil {

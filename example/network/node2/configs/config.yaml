@@ -29,6 +29,6 @@ P2PKeyPrefix: "stsdsp2p"
 ChainId: "test-chain"
 Token: "ustos"
 StratosChainUrl: http://127.0.0.1:1317
-RestPort:
+RestPort: 18092
 InternalPort:
 StreamingCache: false

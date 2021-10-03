@@ -2,7 +2,6 @@ package task
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 
 	"github.com/stratosnet/sds/msg/protos"
@@ -102,7 +101,7 @@ func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID string) 
 		data = jsonStr
 		sliceTotalSize = uint64(len(data))
 	} else if pp.SliceNumber < videoSliceInfo.StartSliceNumber {
-		data = []byte(fmt.Sprintf("%v%d", fileHash, pp.SliceNumber))
+		data = file.GetDumpySliceData(fileHash, pp.SliceNumber)
 		sliceTotalSize = uint64(len(data))
 	} else {
 		var sliceName string
@@ -116,28 +115,26 @@ func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID string) 
 		sliceTotalSize = uint64(file.GetFileInfo(slicePath).Size())
 	}
 
-	if prg, ok := UpLoadProgressMap.Load(fileHash); ok {
-		progress := prg.(*UpProgress)
-		progress.Total = progress.Total + int64(sliceTotalSize)
-	}
-
-	utils.DebugLog("offsetStart =", pp.SliceOffset.SliceOffsetStart, "offsetEnd", pp.SliceOffset.SliceOffsetEnd)
 	utils.DebugLog("sliceNumber", pp.SliceNumber)
-	startOffsize := pp.SliceOffset.SliceOffsetStart
-	endOffsize := pp.SliceOffset.SliceOffsetEnd
 
 	offset := &protos.SliceOffset{
-		SliceOffsetStart: startOffsize,
-		SliceOffsetEnd:   endOffsize,
+		SliceOffsetStart: uint64(0),
+		SliceOffsetEnd:   sliceTotalSize,
 	}
 	sl := &protos.SliceOffsetInfo{
 		SliceHash:   utils.CalcSliceHash(data, fileHash),
 		SliceOffset: offset,
 	}
+	SliceNumAddr := &protos.SliceNumAddr{
+		SliceNumber: pp.SliceNumber,
+		SliceOffset: offset,
+		PpInfo:      pp.PpInfo,
+	}
+	pp.SliceOffset = offset
 	tk := &UploadSliceTask{
 		TaskID:          taskID,
 		FileHash:        fileHash,
-		SliceNumAddr:    pp,
+		SliceNumAddr:    SliceNumAddr,
 		SliceOffsetInfo: sl,
 		FileCRC:         utils.CalcFileCRC32(file.GetFilePath(fileHash)),
 		Data:            data,

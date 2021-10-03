@@ -1027,6 +1027,7 @@ func HTTPDownloadSliceFun(httpRsp *HTTPRsp, write http.ResponseWriter, reqID str
 			write.WriteHeader(setting.FAILCode)
 			write.Write(httpserv.NewJson(nil, setting.FAILCode, err.Error()).ToBytes())
 		}
+		utils.Log("Received video slice: ", target.SliceInfo.SliceHash, "from file: ", target.FileHash)
 		write.Write(video)
 		HTTPWriterMap.Delete(reqID)
 		HTTPRspMap.Delete(reqID)

@@ -145,6 +145,7 @@ func GetVideoSlice(sliceInfo *protos.DownloadSliceInfo, fInfo *protos.RspFileSto
 			w.Write(video)
 		} else {
 			req := reqDownloadSliceData(fInfo, sliceInfo)
+			utils.Log("Send request for downloading slice: ", sliceInfo.SliceStorageInfo.SliceHash)
 			SendReqDownloadSlice(fInfo, req)
 			if err := storeResponseWriter(req.ReqId, w); err != nil {
 				w.WriteHeader(setting.FAILCode)

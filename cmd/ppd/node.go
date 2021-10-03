@@ -24,13 +24,6 @@ const (
 )
 
 func nodePP(cmd *cobra.Command, args []string) error {
-
-	if setting.Config.Debug {
-		utils.MyLogger.SetLogLevel(utils.Debug)
-	} else {
-		utils.MyLogger.SetLogLevel(utils.Error)
-	}
-
 	setting.IsAuto = true
 
 	if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
@@ -67,6 +60,12 @@ func nodePreRunE(cmd *cobra.Command, args []string) error {
 	err = setting.LoadConfig(configPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to load config file")
+	}
+
+	if setting.Config.Debug {
+		utils.MyLogger.SetLogLevel(utils.Debug)
+	} else {
+		utils.MyLogger.SetLogLevel(utils.Info)
 	}
 
 	err = SetupP2PKey()
