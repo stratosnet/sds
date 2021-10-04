@@ -100,7 +100,7 @@ func SetupWalletKey() error {
 		}
 		setting.SetConfig("WalletAddress", walletKeyAddressString)
 
-		save, err := console.Stdin.PromptInput("save wallet passward to config file: Y(es)/N(o)")
+		save, err := console.Stdin.PromptInput("save wallet password to config file: Y(es)/N(o)")
 		if err != nil {
 			return errors.New("couldn't read the input, not saving by default")
 		}
