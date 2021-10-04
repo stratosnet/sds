@@ -23,7 +23,9 @@ cmd/relayd/relayd
 example/network/account
 example/network/[a-zA-Z0-9]
 example/network/tmp
-example/network/*/tmp
+example/network/*/
+!example/network/*/accounts
+!example/network/*/configs
 tmp
 bp-list
 pp-list

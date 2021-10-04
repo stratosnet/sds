@@ -2,7 +2,6 @@ package event
 
 import (
 	"context"
-	"fmt"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -32,33 +31,34 @@ func ReqFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspFindMyFileList")
 	var target protos.RspFindMyFileList
-	if unmarshalData(ctx, &target) {
-		if target.P2PAddress == setting.P2PAddress {
-			putData(target.ReqId, HTTPGetAllFile, &target)
-			if target.Result.State == protos.ResultState_RES_SUCCESS {
-				if len(target.FileInfo) == 0 {
-					fmt.Println("There are no files stored")
-					return
-				}
-				for _, info := range target.FileInfo {
+	if !unmarshalData(ctx, &target) {
+		return
+	}
 
-					fmt.Println("_______________________________")
-					if info.IsDirectory {
-						fmt.Println("Directory:", info.FileName)
-					} else {
-						fmt.Println("name:", info.FileName)
-						fmt.Println("hash:", info.FileHash)
-					}
-					fmt.Println("CreateTime :", info.CreateTime)
+	if target.P2PAddress != setting.P2PAddress {
+		transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+		return
+	}
 
-				}
-			} else {
-				utils.ErrorLog(target.Result.Msg)
-				fmt.Println(target.Result.Msg)
-			}
+	putData(target.ReqId, HTTPGetAllFile, &target)
+	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		utils.ErrorLog(target.Result.Msg)
+		return
+	}
+
+	if len(target.FileInfo) == 0 {
+		utils.Log("There are no files stored")
+		return
+	}
+	for _, info := range target.FileInfo {
+		utils.Log("_______________________________")
+		if info.IsDirectory {
+			utils.Log("Directory name:", info.FileName)
+			utils.Log("Directory hash:", info.FileHash)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			utils.Log("File name:", info.FileName)
+			utils.Log("File hash:", info.FileHash)
 		}
-
+		utils.Log("CreateTime :", info.CreateTime)
 	}
 }

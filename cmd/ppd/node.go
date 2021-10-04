@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -24,13 +23,6 @@ const (
 )
 
 func nodePP(cmd *cobra.Command, args []string) error {
-
-	if setting.Config.Debug {
-		utils.MyLogger.SetLogLevel(utils.Debug)
-	} else {
-		utils.MyLogger.SetLogLevel(utils.Error)
-	}
-
 	setting.IsAuto = true
 
 	if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
@@ -69,6 +61,12 @@ func nodePreRunE(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "failed to load config file")
 	}
 
+	if setting.Config.Debug {
+		utils.MyLogger.SetLogLevel(utils.Debug)
+	} else {
+		utils.MyLogger.SetLogLevel(utils.Info)
+	}
+
 	err = SetupP2PKey()
 	if err != nil {
 		return errors.Wrap(err, "Couldn't setup PP node")
@@ -82,9 +80,10 @@ func nodePreRunE(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// SetupP2PKey Loads the existing P2P key for this node, or creates a new one if none is available.
 func SetupP2PKey() error {
 	if setting.Config.P2PAddress == "" {
-		fmt.Println("No P2P key specified in config. Attempting to create one...")
+		utils.Log("No P2P key specified in config. Attempting to create one...")
 		//nickname, err := console.Stdin.PromptInput("Enter P2PAddress nickname: ")
 		//if err != nil {
 		//	return errors.New("couldn't read nickname from console: " + err.Error())
