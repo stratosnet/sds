@@ -345,7 +345,7 @@ func terminal(cmd *cobra.Command, args []string) {
 
 	sharepath := func(line string, param []string) bool {
 		if len(param) < 3 {
-			fmt.Println("input file hash and directory path, expire time(0 for non-expire), is private (0:public,1:private)")
+			fmt.Println("input directory hash, expire time(0 for non-expire), is private (0:public,1:private)")
 			return false
 		}
 		time, timeErr := strconv.Atoi(param[1])
