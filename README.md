@@ -104,7 +104,7 @@ The other two parameters are the same as above.
 ### Upload a File
 Put the file in your resource node folder, then type:
 ```bash
-put FILE_NAME
+put FILE_PATH
 ```
 
 ### List Your Uploaded Files
