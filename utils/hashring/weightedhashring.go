@@ -56,6 +56,18 @@ func (whr *WeightedHashRing) IsOnline(ID string) bool {
 	return whr.hashRing.IsOnline(ID)
 }
 
+func (whr *WeightedHashRing) RandomGetNodes(num int) []*Node {
+	return whr.hashRing.RandomGetNodes(num)
+}
+
+func (whr *WeightedHashRing) Node(ID string) *Node {
+	return whr.hashRing.Node(ID)
+}
+
+func (whr *WeightedHashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
+	return whr.hashRing.GetNodeUpDownNodes(NodeID)
+}
+
 func (whr *WeightedHashRing) GetNodeTaskWeight() map[string]float64 {
 	return whr.nodeTaskWeight
 }
