@@ -3,7 +3,6 @@ package hashring
 import (
 	"errors"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/database"
 	"math/rand"
 	"sync"
 )
@@ -11,10 +10,10 @@ import (
 type AccumulatedTaskWeight []float64
 
 type WeightedRing interface {
-	WeightDrawExcludeNodeIDs(int, []string) ([]interface{}, error)
+	WeightDrawExcludeNodeIDs(int, []string) ([]string, error)
 }
 
-type WeightQuerier func(*database.CacheTable, []interface{}) map[string]float64
+type WeightQuerier func([]interface{}) map[string]float64
 
 type WeightedHashRing struct {
 	WeightedRing
@@ -22,7 +21,6 @@ type WeightedHashRing struct {
 	nodeTaskWeight map[string]float64    // map(NodeId => 17.00
 	acmWeight      AccumulatedTaskWeight // [100.00, 400.32, 600.88, 742.30]
 	nodeIndex      map[int]string        // 0 -> nodeID3, 1 -> nodeID2, 2 -> nodeID5
-	ct             *database.CacheTable
 	querier        WeightQuerier
 
 	mutex sync.Mutex
@@ -31,12 +29,6 @@ type WeightedHashRing struct {
 func (whr *WeightedHashRing) AddNode(node *Node) {
 	utils.DebugLogf("adding node [%v] to hashring", node.ID)
 	whr.hashRing.AddNode(node)
-	// test only - to be removed later
-	//whr.hashRing.SetOnline(node.ID)
-	//if whr.hashRing.NodeCount >= 3 {
-	//	_, err := whr.WeightDrawExcludeNodeIDs(10, nil)
-	//	utils.DebugLogf("nodeTaskWeight to-date is %v, %v", whr.nodeTaskWeight, err)
-	//}
 }
 
 func (whr *WeightedHashRing) RemoveNode(nodeID string) {
@@ -50,11 +42,18 @@ func (whr *WeightedHashRing) SetOnline(nodeID string) {
 
 func (whr *WeightedHashRing) SetOffline(nodeID string) {
 	whr.hashRing.SetOffline(nodeID)
-	//delete(whr.nodeTaskWeight, nodeID)
 }
 
 func (whr *WeightedHashRing) GetHashRing() *HashRing {
 	return whr.hashRing
+}
+
+func (whr *WeightedHashRing) GetNode(key string) (uint32, string) {
+	return whr.hashRing.GetNode(key)
+}
+
+func (whr *WeightedHashRing) IsOnline(ID string) bool {
+	return whr.hashRing.IsOnline(ID)
 }
 
 func (whr *WeightedHashRing) GetNodeTaskWeight() map[string]float64 {
@@ -64,20 +63,14 @@ func (whr *WeightedHashRing) GetNodeTaskWeight() map[string]float64 {
 func (whr *WeightedHashRing) GetAcmWeight() AccumulatedTaskWeight {
 	return whr.acmWeight
 }
-
-func (whr *WeightedHashRing) WithCacheTable(ct *database.CacheTable) *WeightedHashRing {
-	whr.ct = ct
-	return whr
-}
-
-func (whr *WeightedHashRing) WithWeightQuerier(querier func(*database.CacheTable, []interface{}) map[string]float64) *WeightedHashRing {
+func (whr *WeightedHashRing) WithWeightQuerier(querier WeightQuerier) *WeightedHashRing {
 	whr.querier = querier
 	return whr
 }
 
-func (whr *WeightedHashRing) reloadWeightsForVNodes() map[string]float64 {
-	if whr.querier == nil || whr.ct == nil {
-		utils.DebugLog("no weight querier or cTable specified")
+func (whr *WeightedHashRing) reloadWeightsForNodes() map[string]float64 {
+	if whr.querier == nil {
+		utils.DebugLog("no weight querier specified")
 		var ret = make(map[string]float64, 0)
 		return ret
 	}
@@ -91,13 +84,13 @@ func (whr *WeightedHashRing) reloadWeightsForVNodes() map[string]float64 {
 		nodeIDs = append(nodeIDs, nodeID)
 		return true
 	})
-	return whr.querier(whr.ct, nodeIDs)
+	return whr.querier(nodeIDs)
 }
 
-func (whr *WeightedHashRing) WeightDrawExcludeNodeIDs(rollTimes int, nodeIDsToExclude []string) ([]interface{}, error) {
+func (whr *WeightedHashRing) WeightDrawExcludeNodeIDs(rollTimes int, nodeIDsToExclude []string) ([]string, error) {
 	whr.mutex.Lock()
 	defer whr.mutex.Unlock()
-	retNodeIDs := make([]interface{}, 0)
+	retNodeIDs := make([]string, 0)
 	maxAcmWeights := whr.refreshIndexByWeight(nodeIDsToExclude)
 	if maxAcmWeights == float64(0) {
 		return nil, errors.New("no available node in hashring")
@@ -125,7 +118,7 @@ func (whr *WeightedHashRing) WeightDrawExcludeNodeIDs(rollTimes int, nodeIDsToEx
 
 func (whr *WeightedHashRing) refreshIndexByWeight(nodeIDsToExclude []string) float64 {
 	// reload latest weights for VNodes
-	whr.nodeTaskWeight = whr.reloadWeightsForVNodes()
+	whr.nodeTaskWeight = whr.reloadWeightsForNodes()
 	// exclude node IDs
 	tmpNodeTaskWeight := whr.nodeTaskWeight
 	for _, k := range nodeIDsToExclude {
