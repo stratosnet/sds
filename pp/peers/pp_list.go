@@ -32,6 +32,9 @@ func initPPList() {
 
 func startStatusReportToSP() {
 	utils.DebugLog("Status will be reported to SP while mining")
+	// trigger first report at time-0 immediately
+	event.ReportNodeStatus()
+	// trigger consecutive reports with interval
 	clock := clock.NewClock()
-	clock.AddJobRepeat(time.Minute*5, 0, event.ReportNodeStatus)
+	clock.AddJobRepeat(time.Second*event.ReportIntervalSec, 0, event.ReportNodeStatus)
 }

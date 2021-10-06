@@ -7,6 +7,10 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 )
 
+const (
+	ReportIntervalSec = 300
+)
+
 // ReportNodeStatus
 func ReportNodeStatus() {
 	if setting.IsStartMining {
