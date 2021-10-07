@@ -23,27 +23,31 @@ import (
 func terminal(cmd *cobra.Command, args []string) {
 
 	helpStr := "\n" +
-		"help                                   show all the commands\n" +
-		"wallets                                acquire all wallet wallets' address\n" +
-		"newwallet ->password                   create new wallet, input password in prompt\n" +
-		"login <walletAddress> ->password       unlock and log in wallet, input password in prompt\n" +
-		"registerpeer                           register peer to index node\n" +
-		"rp                                     register peer to index node\n" +
-		"activate <amount> <fee> <gas>          send transaction to stchain to become an active PP node\n" +
-		"deactivate                             send transaction to stchain to stop being an active PP node\n" +
-		"startmining                            start mining\n" +
-		"prepay <amount> <fee> <gas>            prepay stos to get ozone, amount in ustos\n" +
-		"put <filepath>                         upload file, need to consume ozone\n" +
-		"putstream <filepath>                   upload video file for streaming, need to consume ozone (alpha version, encode format config impossible)\n" +
-		"list <filename>                        query uploaded file by self\n" +
-		"list                                   query all files\n" +
-		"delete <filehash>                      delete file\n" +
-		"get <spb://account/filehash|filename>  download file, need to consume ozone\n" +
+		"help                                       show all the commands\n" +
+		"wallets                                    acquire all wallet wallets' address\n" +
+		"newwallet ->password                       create new wallet, input password in prompt\n" +
+		"login <walletAddress> ->password           unlock and log in wallet, input password in prompt\n" +
+		"registerpeer                               register peer to index node\n" +
+		"rp                                         register peer to index node\n" +
+		"activate <amount> <fee> <gas>              send transaction to stchain to become an active PP node\n" +
+		"deactivate <fee> <gas>                     send transaction to stchain to stop being an active PP node\n" +
+		"startmining                                start mining\n" +
+		"prepay <amount> <fee> <gas>                prepay stos to get ozone, amount in ustos\n" +
+		"put <filepath>                             upload file, need to consume ozone\n" +
+		"putstream <filepath>                       upload video file for streaming, need to consume ozone (alpha version, encode format config impossible)\n" +
+		"list <filename>                            query uploaded file by self\n" +
+		"list                                       query all files\n" +
+		"delete <filehash>                          delete file\n" +
+		"get <spb://account/filehash|filename>      download file, need to consume ozone\n" +
 		"	e.g: get spb://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe|test.mp4\n" +
-		"ver                                    version\n" +
-		"monitor                                show monitor\n" +
-		"stopmonitor                            stop monitor\n" +
-		"config  <key> <value>                  set config key value\n"
+		"sharefile <filehash> <expiry> <private>    share an uploaded file\n" +
+		"allshare                                   list all shared files\n" +
+		"getsharefile <sharelink> <password>        download a shared file, need to consume ozone\n" +
+		"cancelshare <shareID>                      cancel a shared file\n" +
+		"ver                                        version\n" +
+		"monitor                                    show monitor\n" +
+		"stopmonitor                                stop monitor\n" +
+		"config  <key> <value>                      set config key value\n"
 	fmt.Println(helpStr)
 
 	help := func(line string, param []string) bool {

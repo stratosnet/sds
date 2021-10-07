@@ -179,7 +179,7 @@ func up(ING *task.UpFileIng, fileHash string, isVideoStream bool) {
 			}
 
 			if len(ING.Slices) == 0 {
-				utils.DebugLog("all slices of the task are uploaded")
+				utils.DebugLog("all slices of the task have begun uploading")
 				if _, ok := <-ING.UpChan; ok {
 					close(ING.UpChan)
 				}
@@ -205,7 +205,7 @@ func up(ING *task.UpFileIng, fileHash string, isVideoStream bool) {
 func sendUploadFileSlice(fileHash, taskID string, isVideoStream bool) {
 	ing, ok := task.UpIngMap.Load(fileHash)
 	if !ok {
-		utils.DebugLog("all slices of the task are uploaded")
+		utils.DebugLog("all slices of the task have begun uploading")
 		return
 	}
 	ING := ing.(*task.UpFileIng)
@@ -225,7 +225,7 @@ func sendUploadFileSlice(fileHash, taskID string, isVideoStream bool) {
 				UploadFileSlice(uploadTask)
 			}
 		}
-		utils.DebugLog("all slices of the task are uploaded")
+		utils.DebugLog("all slices of the task have begun uploading")
 		_, ok := <-ING.UpChan
 		if ok {
 			close(ING.UpChan)

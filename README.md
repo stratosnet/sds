@@ -38,8 +38,12 @@ This should create a configuration file at `configs/config.yaml`.
 You will need to edit a few lines in that file to specify the blockchain you want to connect to.  
 To connect to the Stratos dev-chain, make the following changes:
 ```yaml
-SPNetAddress: 54.212.112.93:8888
 StratosChainUrl: https://rest-dev.thestratos.org:443
+
+SPList:
+- P2PAddress: ""
+  P2PPublicKey: ""
+  NetworkAddress: 54.212.112.93:8888
 ```
 You also need to change the `ChainId` to the value visible [on this page](https://big-dipper-dev.thestratos.org/) right next to the search bar at the top of the page.  
 Finally, make sure to set the `NetworkAddress` to your public IP address.
