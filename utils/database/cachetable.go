@@ -28,14 +28,17 @@ func (ct *CacheTable) Fetch(table CTable) error {
 	ct.Lock()
 	defer ct.Unlock()
 
-	err := ct.Cache.Get(table.GetCacheKey(), table)
-	if err == nil {
-		return nil
-	}
+	// TODO readjust the ttl for each table
+	//err := ct.Cache.Get(table.GetCacheKey(), table)
+	//if err == nil {
+	//	return nil
+	//}
 
-	err = ct.FetchTable(table, table.Where())
+	err := ct.FetchTable(table, table.Where())
 	if err == nil {
-		return ct.Cache.Set(table.GetCacheKey(), table, table.GetTimeOut())
+		// TODO readjust the ttl for each table
+		//return ct.Cache.Set(table.GetCacheKey(), table, table.GetTimeOut())
+		return nil
 	}
 	return errors.New("not found")
 }
@@ -99,18 +102,19 @@ func (ct *CacheTable) handleSmt() {
 
 		cTable := table.(CTable)
 		switch action.(string) {
+		// TODO readjust the ttl for each table
 		case "store":
 			ct.Lock()
 			ct.StoreTable(cTable)
-			ct.Cache.Delete(cTable.GetCacheKey())
+			//ct.Cache.Delete(cTable.GetCacheKey())
 			ct.Unlock()
-			ct.Fetch(cTable)
+			//ct.Fetch(cTable)
 		case "update":
 			ct.Lock()
 			ct.UpdateTable(cTable)
-			ct.Cache.Delete(cTable.GetCacheKey())
+			//ct.Cache.Delete(cTable.GetCacheKey())
 			ct.Unlock()
-			ct.Fetch(cTable)
+			//ct.Fetch(cTable)
 		case "remove":
 			ct.DeleteTable(cTable)
 		}
