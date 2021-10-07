@@ -6,6 +6,7 @@ require (
 	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/alex023/clock v0.0.0-20191208111215-c265f1b2ab18
+	github.com/bsipos/thist v1.0.0 // indirect
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/cosmos/cosmos-sdk v0.39.2
 	github.com/cosmos/go-bip39 v1.0.0

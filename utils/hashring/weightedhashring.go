@@ -87,18 +87,14 @@ func (r *WeightedHashRing) AddNode(node *WeightedNode) {
 
 	defer r.Unlock()
 
-	//var numberOfNode uint32 = 1
-	//if r.NumberOfVirtual > 0 {
-	//	numberOfNode = r.NumberOfVirtual
-	//}
-
 	// min weight is math.E, that is, WeightedNode should have at least 1 copy
 	effectiveWeight := math.Max(node.Weight, math.E)
 	numOfCopies := math.Ceil(math.Log(effectiveWeight))
-	utils.DebugLogf("effectiveWeight is %v, numOfCopies is %v", effectiveWeight, numOfCopies)
+	//utils.DebugLogf("effectiveWeight is %v, numOfCopies is %v", effectiveWeight, numOfCopies)
 	var i uint32
 	for i = 0; i < uint32(numOfCopies); i++ {
 		index := r.CalcIndex(r.virtualKey(node.ID, i))
+		//utils.DebugLogf("---- index is %v", index)
 		r.VRing.Insert(&VWeightedNode{Index: index, NodeID: node.ID})
 	}
 
@@ -208,6 +204,7 @@ func (r *WeightedHashRing) RandomGetNodes(num int) []*WeightedNode {
 // @params key
 func (r *WeightedHashRing) GetNode(key string) (uint32, string) {
 	keyIndex := r.CalcIndex(key)
+	//utils.DebugLogf("calc key index is %v", keyIndex)
 	return r.GetNodeByIndex(keyIndex)
 }
 
