@@ -248,7 +248,7 @@ func (m *MultiClient) stratosSubscriptionReaderLoop(subscription websocketSubscr
 				utils.Log("The stratos-chain events websocket channel has been closed")
 				return
 			}
-			utils.Log("Received a new message from stratos-chain!")
+			utils.Log("Received a new message from stratos-chain!", subscription.query)
 			handler(message)
 		}
 	}

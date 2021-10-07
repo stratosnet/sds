@@ -2,9 +2,12 @@ package setting
 
 import (
 	"encoding/csv"
+	"errors"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/types"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"sync"
@@ -55,8 +58,8 @@ var P2PPublicKey []byte
 // P2PPrivateKey
 var P2PPrivateKey []byte
 
-//SPPublicKey
-var SPPublicKey map[string][]byte
+// SPMap
+var SPMap = &sync.Map{}
 
 // PPList
 var PPList []*protos.PPBaseInfo
@@ -152,4 +155,27 @@ func GetNetworkID() types.NetworkID {
 		P2pAddress:     P2PAddress,
 		NetworkAddress: NetworkAddress,
 	}
+}
+
+// ConnectToSP Checks if there is a connection to an SP node. If it doesn't, it attempts to create one with a random SP node.
+func ConnectToSP() (newConnection bool, err error) {
+	if client.SPConn != nil {
+		return false, nil
+	}
+
+	if len(Config.SPList) == 0 {
+		return false, errors.New("there are no SP nodes in the config file")
+	}
+
+	// Select a random SP node to connect to
+	spListOrder := rand.Perm(len(Config.SPList))
+	for _, index := range spListOrder {
+		selectedSP := Config.SPList[index]
+		client.SPConn = client.NewClient(selectedSP.NetworkAddress, IsPP)
+		if client.SPConn != nil {
+			return true, nil
+		}
+	}
+
+	return false, errors.New("couldn't connect to any SP node")
 }

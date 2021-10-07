@@ -108,10 +108,16 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 				go serv.StartListenServer(setting.Config.Port)
 			}
 			setting.IsStartMining = true
-			if client.SPConn == nil {
-				client.SPConn = client.NewClient(setting.Config.SPNetAddress, setting.IsPP)
+
+			newConnection, err := setting.ConnectToSP()
+			if err != nil {
+				utils.ErrorLog(err)
+				return
+			}
+			if newConnection {
 				RegisterChain(true)
 			}
+
 			utils.DebugLog("Start reporting node status to SP")
 		} else {
 			utils.Log(target.Result.Msg)

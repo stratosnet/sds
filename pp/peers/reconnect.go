@@ -30,14 +30,16 @@ func listenOffline() {
 }
 
 func reloadConnectSP() {
-	if client.SPConn == nil {
-		utils.Log("reconnect SP")
-		clock := clock.NewClock()
-		clock.AddJobRepeat(time.Second*3, 1, reloadConnectSP)
-		client.SPConn = client.NewClient(setting.Config.SPNetAddress, setting.IsPP)
+	newConnection, err := setting.ConnectToSP()
+	if newConnection {
 		event.RegisterChain(true)
 		if setting.IsStartMining {
 			event.StartMining()
 		}
+	}
+
+	if err != nil {
+		utils.Log("couldn't connect to SP node. Retrying in 3 seconds...")
+		clock.NewClock().AddJobRepeat(time.Second*3, 1, reloadConnectSP)
 	}
 }

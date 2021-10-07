@@ -32,12 +32,36 @@ func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	spMap := make(map[string][]byte)
+	changed := false
 	for _, sp := range target.SpList {
-		spMap[sp.P2PAddress] = sp.P2PPubKey
-	}
+		existing, ok := setting.SPMap.Load(sp.P2PAddress)
+		if ok {
+			existingSp := existing.(setting.SPBaseInfo)
+			if sp.P2PPubKey != existingSp.P2PPublicKey || sp.NetworkAddress != existingSp.NetworkAddress {
+				changed = true
+			}
+		} else {
+			changed = true
+		}
 
-	setting.SPPublicKey = spMap
+		setting.SPMap.Store(sp.P2PAddress, setting.SPBaseInfo{
+			P2PAddress:     sp.P2PAddress,
+			P2PPublicKey:   sp.P2PPubKey,
+			NetworkAddress: sp.NetworkAddress,
+		})
+	}
+	if changed {
+		setting.SPMap.Delete("unknown")
+		setting.Config.SPList = nil
+		setting.SPMap.Range(func(k, v interface{}) bool {
+			sp := v.(setting.SPBaseInfo)
+			setting.Config.SPList = append(setting.Config.SPList, sp)
+			return true
+		})
+		if err := utils.WriteConfig(setting.Config, setting.ConfigPath); err != nil {
+			utils.ErrorLog("Couldn't write config with updated SP list to yaml file", err)
+		}
+	}
 }
 
 func reloadSPlist() {

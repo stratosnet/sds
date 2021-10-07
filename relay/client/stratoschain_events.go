@@ -189,7 +189,7 @@ func (m *MultiClient) IndexingNodeVoteMsgHandler() func(event coretypes.ResultEv
 			return
 		}
 		if candidateStatusList[0] != sdkTypes.BondStatusBonded {
-			// The candidate needs more votes before being considered active
+			utils.DebugLog("Indexing node vote handler: The candidate needs more votes before being considered active")
 			return
 		}
 

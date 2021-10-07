@@ -57,7 +57,8 @@ message PPBaseInfo {
 
 message SPBaseInfo {
      string p2p_address = 1;
-     bytes  p2p_pub_key = 2;
+     string p2p_pub_key = 2;
+     string network_address = 3;
 }
 
 message FileInfo { 
