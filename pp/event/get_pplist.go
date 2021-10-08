@@ -39,9 +39,6 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	if success := peers.SendRegisterRequestViaPP(setting.PPList); !success {
-		//if !setting.IsLoad {
-		//peers.RegisterChain(true)
-		//}
 		reloadPPlist()
 	}
 }
