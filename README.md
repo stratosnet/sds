@@ -106,11 +106,10 @@ prepay purchaseAmount feeAmount gasAmount
 The other two parameters are the same as above.
 
 ### Upload a File
-Put the file in your resource node folder, then type:
 ```bash
 put FILE_PATH
 ```
-
+`FILE_PATH` is the location of the file to upload, starting from your resource node folder.
 ### List Your Uploaded Files
 ```bash
 list
