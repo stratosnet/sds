@@ -40,6 +40,7 @@ func GetPPList() {
 func SendRegisterRequestViaPP(pplist []*protos.PPBaseInfo) bool {
 	for _, ppInfo := range pplist {
 		if ppInfo.NetworkAddress == setting.NetworkAddress {
+			setting.DeletePPList(ppInfo.NetworkAddress)
 			continue
 		}
 		client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
