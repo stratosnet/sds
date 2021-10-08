@@ -1,4 +1,4 @@
-package peers
+package serv
 
 import (
 	"errors"
@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/stratosnet/sds/pp/event"
+	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
@@ -38,7 +40,7 @@ func CreateWallet(password, name, mnemonic, passphrase, hdPath string) string {
 	getPublicKey(filepath.Join(setting.Config.AccountDir, setting.WalletAddress+".json"), password)
 	utils.Log("Create account success ,", setting.WalletAddress)
 	if setting.NetworkAddress != "" {
-		InitPeer()
+		peers.InitPeer(event.RegisterEventHandle)
 	}
 	return setting.WalletAddress
 }
@@ -137,7 +139,7 @@ func Login(walletAddress, password string) error {
 		utils.Log(info.Name())
 		if getPublicKey(filepath.Join(setting.Config.AccountDir, fileName), password) {
 			setting.WalletAddress = walletAddress
-			InitPeer()
+			peers.InitPeer(event.RegisterEventHandle)
 			return nil
 		}
 		fmt.Println("wrong password")

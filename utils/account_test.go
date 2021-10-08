@@ -2,19 +2,20 @@ package utils
 
 import (
 	"fmt"
+	"io/ioutil"
+	"testing"
+
 	"github.com/cosmos/cosmos-sdk/types"
-	"github.com/stratosnet/sds/relay/stratoschain/prefix"
+	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/tendermint/tendermint/libs/bech32"
-	"io/ioutil"
-	"testing"
 )
 
 func TestCreateWallet(t *testing.T) {
 	password := "aaa"
 	hrp := "st"
-	prefix.SetConfig(hrp)
+	stratoschain.SetConfig(hrp)
 
 	mnemonic, err := NewMnemonic()
 	if err != nil {

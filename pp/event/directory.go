@@ -3,19 +3,22 @@ package event
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
-	"net/http"
 )
 
 // FindDirectory
 func FindDirectory(reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, findDirectoryData(reqID), header.ReqFindDirectory)
+		peers.SendMessage(client.PPConn, types.FindDirectoryData(reqID), header.ReqFindDirectory)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -24,14 +27,14 @@ func FindDirectory(reqID string, w http.ResponseWriter) {
 
 // ReqFindDirectory ReqFindDirectory
 func ReqFindDirectory(ctx context.Context, conn core.WriteCloser) {
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspFindDirectory
 func RspFindDirectory(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("RspFindDirectory")
 	var target protos.RspFindDirectory
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			putData(target.ReqId, HTTPGetAllDirectory, &target)
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
@@ -56,7 +59,7 @@ func RspFindDirectory(ctx context.Context, conn core.WriteCloser) {
 				fmt.Println(target.Result.Msg)
 			}
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 
 	}

@@ -6,26 +6,21 @@ import (
 	"time"
 
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 
 	"github.com/alex023/clock"
 )
 
-// GetPPList P node get PPList
-func GetPPList() {
-	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetPPList)")
-	SendMessageToSPServer(reqGetPPlistData(), header.ReqGetPPList)
-}
-
 // RspGetPPList
 func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get GetPPList RSP")
 	var target protos.RspGetPPList
-	if !unmarshalData(ctx, &target) {
+	if !types.UnmarshalData(ctx, &target) {
 		return
 	}
 	utils.Log("get GetPPList RSP", target.PpList)
@@ -37,7 +32,7 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 	if len(setting.PPList) == 0 {
 		// no PP exist, register to SP
 		if !setting.IsLoginToSP {
-			RegisterChain(true)
+			peers.RegisterChain(true)
 			setting.IsLoginToSP = true
 		}
 		reloadPPlist()
@@ -51,7 +46,7 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 		}
 		client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
 		if client.PPConn != nil {
-			RegisterChain(false)
+			peers.RegisterChain(false)
 			return
 		}
 		utils.DebugLog("failed to conn PP，delete:", ppInfo)
@@ -63,6 +58,6 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 func reloadPPlist() {
 	utils.DebugLog("failed to get PPlist. retry after 3 second")
 	clock := clock.NewClock()
-	clock.AddJobRepeat(time.Second*3, 1, GetPPList)
+	clock.AddJobRepeat(time.Second*3, 1, peers.GetPPList)
 	// defer job.Cancel()
 }

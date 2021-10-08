@@ -2,9 +2,10 @@ package peers
 
 import (
 	"fmt"
+	"net"
+
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
-	"net"
 )
 
 // GetNetworkAddress
@@ -43,3 +44,5 @@ func getInternal() string {
 	}
 	return ""
 }
+
+

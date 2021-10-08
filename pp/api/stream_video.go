@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/stratosnet/sds/relay/stratoschain"
+	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/tendermint/tendermint/libs/bech32"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -231,8 +234,25 @@ func verifySignature(reqBody *StreamReqBody, sliceHash string, data []byte) bool
 	if sliceHash != utils.CalcSliceHash(data, reqBody.FileHash) {
 		return false
 	}
-	if pubKey, ok := setting.SPPublicKey[reqBody.SpP2pAddress]; ok {
-		return ed25519.Verify(pubKey, []byte(reqBody.P2PAddress+reqBody.FileHash), reqBody.Sign)
+	if val, ok := setting.SPMap.Load(reqBody.SpP2pAddress); ok {
+		spInfo, ok := val.(setting.SPBaseInfo)
+		if !ok {
+			return false
+		}
+		_, pubKeyRaw, err := bech32.DecodeAndConvert(spInfo.P2PPublicKey)
+		if err != nil {
+			utils.ErrorLog("Error when trying to decode P2P pubKey bech32", err)
+			return false
+		}
+
+		p2pPubKey := tmed25519.PubKeyEd25519{}
+		err = stratoschain.Cdc.UnmarshalBinaryBare(pubKeyRaw, &p2pPubKey)
+		if err != nil {
+			utils.ErrorLog("Error when trying to read P2P pubKey ed25519 binary", err)
+			return false
+		}
+
+		return ed25519.Verify(p2pPubKey[:], []byte(reqBody.P2PAddress+reqBody.FileHash), reqBody.Sign)
 	} else {
 		return false
 	}

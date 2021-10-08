@@ -1,17 +1,17 @@
-package setting
+package serv
 
 import (
 	"fmt"
-	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/pp/client"
-	"github.com/stratosnet/sds/pp/serv"
-	"github.com/stratosnet/sds/utils"
 	"time"
 
 	"github.com/alex023/clock"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
+	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/setting"
 )
 
 var myClock = clock.NewClock()
@@ -55,9 +55,9 @@ func monitor() {
 	// fmt.Printf("        Hostname  : %v  \n", n.Hostname)
 	r := int64(0)
 	w := int64(0)
-	if IsPP && serv.GetPPServer() != nil {
-		r = serv.GetPPServer().Server.GetSecondReadFlow()
-		w = serv.GetPPServer().Server.GetSecondWriteFlow()
+	if setting.IsPP && peers.GetPPServer() != nil {
+		r = peers.GetPPServer().Server.GetSecondReadFlow()
+		w = peers.GetPPServer().Server.GetSecondWriteFlow()
 		fmt.Printf("        Upload      : %f MB/s \n", float64(w)/1024/1024)
 		fmt.Printf("        Download    : %f MB/s \n", float64(r)/1024/1024)
 	} else if client.PPConn != nil {
@@ -94,12 +94,3 @@ func StopMonitor() {
 	}
 }
 
-// GetDHInfo
-func GetDHInfo() (uint64, uint64) {
-	d, err := disk.Usage("/")
-	if err != nil {
-		utils.ErrorLog("GetDHInfo", err)
-		return 0, 0
-	}
-	return d.Total, d.Free
-}

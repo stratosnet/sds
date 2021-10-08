@@ -2,27 +2,16 @@ package event
 
 // client pp event handler
 import (
-	"context"
-	"reflect"
-
-	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/pp/client"
-	"github.com/stratosnet/sds/pp/serv"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-
-	"github.com/golang/protobuf/proto"
 )
 
 // RegisterEventHandle
 func RegisterEventHandle() {
 	core.Register(header.RspGetPPList, RspGetPPList)
 	core.Register(header.RspGetSPList, RspGetSPList)
-	core.Register(header.RspRegister, RspRegisterChain)
-	core.Register(header.ReqRegister, ReqRegisterChain)
+	core.Register(header.RspRegister, RspRegister)
+	core.Register(header.ReqRegister, ReqRegister)
 	core.Register(header.RspActivatePP, RspActivate)
 	core.Register(header.RspActivatedPP, RspActivated)
 	core.Register(header.RspDeactivatePP, RspDeactivate)
@@ -120,87 +109,4 @@ func RegisterEventHandle() {
 	core.Register(header.RspFindDirectory, RspFindDirectory)
 }
 
-// PPMsgHeader
-func PPMsgHeader(data []byte, head string) header.MessageHead {
-	return header.MakeMessageHeader(1, uint16(setting.Config.Version), uint32(len(data)), head)
 
-}
-
-// SendMessage
-func sendMessage(conn core.WriteCloser, pb proto.Message, cmd string) {
-	data, err := proto.Marshal(pb)
-
-	if err != nil {
-		utils.ErrorLog("error decoding")
-		return
-	}
-	msg := &msg.RelayMsgBuf{
-		MSGHead: PPMsgHeader(data, cmd),
-		MSGData: data,
-	}
-	switch conn.(type) {
-	case *core.ServerConn:
-		conn.(*core.ServerConn).Write(msg)
-	case *cf.ClientConn:
-		conn.(*cf.ClientConn).Write(msg)
-	}
-}
-
-// SendMessageToSPServer SendMessageToSPServer
-func SendMessageToSPServer(pb proto.Message, cmd string) {
-	if client.SPConn == nil {
-		utils.DebugLog("client.SPConn = client.NewClient(setting.Config.SPNetAddress, setting.IsPP)")
-		client.SPConn = client.NewClient(setting.Config.SPNetAddress, setting.IsPP)
-	}
-	sendMessage(client.SPConn, pb, cmd)
-}
-
-// TransferSendMessageToPPServ
-func transferSendMessageToPPServ(addr string, msgBuf *msg.RelayMsgBuf) {
-	if client.ConnMap[addr] != nil {
-
-		client.ConnMap[addr].Write(msgBuf)
-		utils.DebugLog("conn exist, transfer")
-	} else {
-		utils.DebugLog("new conn, connect and transfer")
-		client.NewClient(addr, false).Write(msgBuf)
-	}
-}
-
-// transferSendMessageToSPServer
-func transferSendMessageToSPServer(msg *msg.RelayMsgBuf) {
-	if client.SPConn == nil {
-		client.SPConn = client.NewClient(setting.Config.SPNetAddress, setting.IsPP)
-	}
-	client.SPConn.Write(msg)
-}
-
-// transferSendMessageToClient
-func transferSendMessageToClient(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
-	if netid, ok := serv.RegisterPeerMap.Load(p2pAddress); ok {
-		utils.Log("transfer to netid = ", netid)
-		serv.GetPPServer().Unicast(netid.(int64), msgBuf)
-	} else {
-		utils.DebugLog("waller ===== ", p2pAddress)
-	}
-}
-
-func unmarshalData(ctx context.Context, target interface{}) bool {
-	msgBuf := core.MessageFromContext(ctx)
-	utils.DebugLog("msgBuf len = ", len(msgBuf.MSGData))
-	if err := proto.Unmarshal(msgBuf.MSGData, target.(proto.Message)); err != nil {
-		utils.ErrorLog("protobuf Unmarshal error,target =", reflect.TypeOf(target))
-		return false
-	}
-	if _, ok := reflect.TypeOf(target).Elem().FieldByName("Data"); !ok {
-		utils.DebugLog("target = ", target)
-	} else {
-		utils.DebugLog("analyse target")
-	}
-	return true
-}
-
-// ReqTransferSendSP
-func ReqTransferSendSP(ctx context.Context, conn core.WriteCloser) {
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
-}
