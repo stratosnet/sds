@@ -7,6 +7,24 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
+//todo: pp server should be move out of peers package
+
+// PPServer
+type PPServer struct {
+	*core.Server
+}
+
+var ppServ *PPServer
+
+// GetPPServer
+func GetPPServer() *PPServer {
+	return ppServ
+}
+
+func SetPPServer(pp *PPServer) {
+	ppServ = pp
+}
+
 // StartListenServer
 func StartListenServer(port string) {
 	netListen, err := net.Listen("tcp4", port)

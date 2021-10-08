@@ -11,6 +11,7 @@ import (
 // StartPP
 func StartPP(registerFn func()) {
 	GetNetworkAddress()
+	//todo: register func call shouldn't be in peers package
 	registerFn()
 	GetSPList()
 	InitPPList()
@@ -21,6 +22,7 @@ func StartPP(registerFn func()) {
 // InitPeer
 func InitPeer(registerFn func()) {
 	utils.DebugLog("InitPeer InitPeerInitPeer InitPeerInitPeer InitPeer")
+	//todo: register func call shouldn't be in peers package
 	registerFn()
 	GetSPList()
 	InitPPList()
