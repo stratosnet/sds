@@ -2,19 +2,22 @@ package event
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
-	"net/http"
 )
 
 // GetAllShareLink GetShareLink
 func GetAllShareLink(reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqShareLinkData(reqID), header.ReqShareLink)
+		peers.SendMessage(client.PPConn, types.ReqShareLinkData(reqID), header.ReqShareLink)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -24,7 +27,7 @@ func GetAllShareLink(reqID string, w http.ResponseWriter) {
 // GetReqShareFile GetReqShareFile
 func GetReqShareFile(reqID, fileHash, pathHash string, shareTime int64, isPrivate bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqShareFileData(reqID, fileHash, pathHash, isPrivate, shareTime), header.ReqShareFile)
+		peers.SendMessage(client.PPConn, types.ReqShareFileData(reqID, fileHash, pathHash, isPrivate, shareTime), header.ReqShareFile)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -34,7 +37,7 @@ func GetReqShareFile(reqID, fileHash, pathHash string, shareTime int64, isPrivat
 // DeleteShare DeleteShare
 func DeleteShare(shareID, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqDeleteShareData(reqID, shareID), header.ReqDeleteShare)
+		peers.SendMessage(client.PPConn, types.ReqDeleteShareData(reqID, shareID), header.ReqDeleteShare)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -45,14 +48,14 @@ func DeleteShare(shareID, reqID string, w http.ResponseWriter) {
 func ReqShareLink(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
 	utils.DebugLog("ReqShareLinkReqShareLinkReqShareLinkReqShareLink")
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspShareLink
 func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("RspShareLink(ctx context.Context, conn core.WriteCloser) {RspShareLink(ctx context.Context, conn core.WriteCloser) {")
 	var target protos.RspShareLink
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				for _, info := range target.ShareInfo {
@@ -70,7 +73,7 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPShareLink, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -78,13 +81,13 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 // ReqShareFile
 func ReqShareFile(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspShareFile
 func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspShareFile
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				utils.Log("ShareId", target.ShareId)
@@ -95,7 +98,7 @@ func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPShareFile, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -103,13 +106,13 @@ func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 // ReqDeleteShare
 func ReqDeleteShare(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspDeleteShare
 func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeleteShare
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				utils.Log("cancel share success:", target.ShareId)
@@ -118,7 +121,7 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPDeleteShare, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 
@@ -128,7 +131,7 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 func GetShareFile(keyword, sharePassword, reqID string, w http.ResponseWriter) {
 	utils.DebugLog("GetShareFile for file ", keyword)
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqGetShareFileData(keyword, sharePassword, reqID), header.ReqGetShareFile)
+		peers.SendMessage(client.PPConn, types.ReqGetShareFileData(keyword, sharePassword, reqID), header.ReqGetShareFile)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -139,18 +142,18 @@ func GetShareFile(keyword, sharePassword, reqID string, w http.ResponseWriter) {
 func ReqGetShareFile(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
 	utils.DebugLog("ReqGetShareFile: transferring message to SP server")
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspGetShareFile
 func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	var target protos.RspGetShareFile
-	if !unmarshalData(ctx, &target) {
+	if !types.UnmarshalData(ctx, &target) {
 		return
 	}
 
 	if target.ShareRequest.P2PAddress != setting.P2PAddress {
-		transferSendMessageToClient(target.ShareRequest.P2PAddress, core.MessageFromContext(ctx))
+		peers.TransferSendMessageToClient(target.ShareRequest.P2PAddress, core.MessageFromContext(ctx))
 		return
 	}
 
@@ -164,6 +167,6 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 
 	for _, fileInfo := range target.FileInfo {
 		filePath := "spb://" + fileInfo.OwnerWalletAddress + "/" + fileInfo.FileHash
-		sendMessage(client.PPConn, reqFileStorageInfoData(filePath, "", "", false, target.ShareRequest), header.ReqFileStorageInfo)
+		peers.SendMessage(client.PPConn, types.ReqFileStorageInfoData(filePath, "", "", false, target.ShareRequest), header.ReqFileStorageInfo)
 	}
 }

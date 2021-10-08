@@ -10,7 +10,6 @@ import (
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/relay/stratoschain"
-	"github.com/stratosnet/sds/relay/stratoschain/prefix"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -142,9 +141,7 @@ func LoadConfig(configPath string) error {
 	cf.SetLimitDownloadSpeed(Config.LimitDownloadSpeed, Config.IsLimitDownloadSpeed)
 	cf.SetLimitUploadSpeed(Config.LimitUploadSpeed, Config.IsLimitUploadSpeed)
 
-	prefix.SetConfig(Config.AddressPrefix)
 	stratoschain.Url = Config.StratosChainUrl
-
 	// Initialize SPMap
 	for _, sp := range Config.SPList {
 		key := sp.P2PAddress
@@ -249,6 +246,7 @@ func SetConfig(key, value string) bool {
 	if !(strings.Contains(strings.ToLower(key), "password") || strings.Contains(strings.ToLower(key), "pw")) {
 		utils.Log("finished changing configuration file ", key+": ", value)
 	}
+	//prefix.SetConfig(Config.AddressPrefix)
 
 	return true
 }

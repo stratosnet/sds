@@ -2,10 +2,13 @@ package event
 
 import (
 	"context"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
 )
@@ -18,14 +21,14 @@ func Activate(amount, fee, gas int64) error {
 		return err
 	}
 	utils.Log("Sending activate message to SP! " + activateReq.P2PAddress)
-	SendMessageToSPServer(activateReq, header.ReqActivatePP)
+	peers.SendMessageToSPServer(activateReq, header.ReqActivatePP)
 	return nil
 }
 
 // RspActivate. Response to asking the SP node to activate this PP node
 func RspActivate(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspActivatePP
-	success := unmarshalData(ctx, &target)
+	success := types.UnmarshalData(ctx, &target)
 	if !success {
 		return
 	}
@@ -52,7 +55,7 @@ func RspActivate(ctx context.Context, conn core.WriteCloser) {
 // RspActivated. Response when this PP node was successfully activated
 func RspActivated(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspActivatePP
-	success := unmarshalData(ctx, &target)
+	success := types.UnmarshalData(ctx, &target)
 	if !success {
 		return
 	}

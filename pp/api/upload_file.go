@@ -9,7 +9,9 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
 
@@ -80,8 +82,8 @@ func upLoadFile(w http.ResponseWriter, request *http.Request) {
 		}
 
 		if isFile {
-			f := event.RequestUploadFileData(path, sdPath, "", false, false)
-			go event.SendMessageToSPServer(f, header.ReqUploadFile)
+			f := types.RequestUploadFileData(path, sdPath, "", false, false)
+			go peers.SendMessageToSPServer(f, header.ReqUploadFile)
 			taskID := uuid.New().String()
 			r := &upLoadFileResult{
 				FailInfo: "",
@@ -135,7 +137,7 @@ func upLoadFile(w http.ResponseWriter, request *http.Request) {
 					lastPaths = sdPath + "/" + lastPaths
 				}
 
-				f := event.RequestUploadFileData(pathstring, lastPaths, "", false, false)
+				f := types.RequestUploadFileData(pathstring, lastPaths, "", false, false)
 				utils.DebugLog("lastPaths>>>>", lastPaths)
 				utils.DebugLog("storagePath+relativePath", lastPaths, pathstring)
 				taskID := uuid.New().String()
@@ -156,7 +158,7 @@ func upLoadFile(w http.ResponseWriter, request *http.Request) {
 				})
 				setting.UpLoadTaskIDMap.Store(r.TaskID, f.FileInfo.FileHash)
 				resultArr = append(resultArr, r)
-				go event.SendMessageToSPServer(f, header.ReqUploadFile)
+				go peers.SendMessageToSPServer(f, header.ReqUploadFile)
 				utils.DebugLog("resust>>>>>>>>>>>>>>", resultArr)
 
 			default:

@@ -2,12 +2,13 @@ package api
 
 import (
 	"fmt"
-	"github.com/stratosnet/sds/pp/peers"
+	"net/http"
+
+	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/stratosnet/sds/utils/httpserv"
-	"net/http"
 )
 
 // importWallet POST, params：(keystore , password)
@@ -74,5 +75,5 @@ func importWallet(w http.ResponseWriter, request *http.Request) {
 		},
 	}
 	w.Write(httpserv.NewJson(data1, setting.SUCCESSCode, "successfully import wallet").ToBytes())
-	peers.Login(setting.WalletAddress, password)
+	serv.Login(setting.WalletAddress, password)
 }

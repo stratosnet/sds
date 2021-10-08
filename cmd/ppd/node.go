@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/pp/api"
 	"github.com/stratosnet/sds/pp/api/rest"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
@@ -33,7 +33,7 @@ func nodePP(cmd *cobra.Command, args []string) error {
 		go rest.StartHTTPServ()
 	}
 
-	peers.StartPP()
+	serv.Start()
 	return nil
 }
 

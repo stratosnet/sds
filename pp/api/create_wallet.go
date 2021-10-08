@@ -1,14 +1,15 @@
 package api
 
 import (
-	"github.com/stratosnet/sds/pp/peers"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/httpserv"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strconv"
+
+	"github.com/stratosnet/sds/pp/serv"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/httpserv"
 )
 
 // createWallet POST, params：(password，againpassword，name, mnemonic, passphrase, hdpath)
@@ -86,6 +87,6 @@ func createWallet(w http.ResponseWriter, request *http.Request) {
 	}
 	utils.DebugLog("add", data1)
 	setting.WalletAddress = walletAddressString
-	peers.Login(setting.WalletAddress, password)
+	serv.Login(setting.WalletAddress, password)
 	w.Write(httpserv.NewJson(data1, setting.SUCCESSCode, "create wallet successfully").ToBytes())
 }

@@ -3,14 +3,17 @@ package event
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
-	"net/http"
-	"strings"
 )
 
 // NowDir current dir
@@ -19,13 +22,13 @@ var NowDir = ""
 // ReqMakeDirectory ReqMakeDirectory
 func ReqMakeDirectory(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspMakeDirectory RspMakeDirectory
 func RspMakeDirectory(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspMakeDirectory
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
@@ -34,7 +37,7 @@ func RspMakeDirectory(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPMkdir, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -42,7 +45,7 @@ func RspMakeDirectory(ctx context.Context, conn core.WriteCloser) {
 // MakeDirectory
 func MakeDirectory(path, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqMakeDirectoryData(path, reqID), header.ReqMakeDirectory)
+		peers.SendMessage(client.PPConn, types.ReqMakeDirectoryData(path, reqID), header.ReqMakeDirectory)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -52,7 +55,7 @@ func MakeDirectory(path, reqID string, w http.ResponseWriter) {
 // RemoveDirectory
 func RemoveDirectory(path, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqRemoveDirectoryData(path, reqID), header.ReqRemoveDirectory)
+		peers.SendMessage(client.PPConn, types.ReqRemoveDirectoryData(path, reqID), header.ReqRemoveDirectory)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -62,13 +65,13 @@ func RemoveDirectory(path, reqID string, w http.ResponseWriter) {
 // ReqRemoveDirectory ReqRemoveDirectory
 func ReqRemoveDirectory(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspRemoveDirectory RspRemoveDirectory
 func RspRemoveDirectory(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspRemoveDirectory
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
@@ -77,7 +80,7 @@ func RspRemoveDirectory(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPRMdir, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -87,7 +90,7 @@ func MoveFileDirectory(fileHash, originalDir, targetDir, reqID string, w http.Re
 	utils.DebugLog("MoveFileDirectory fileHash", fileHash, "originalDir", originalDir, "targetDir", targetDir, reqID)
 
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqMoveFileDirectoryData(fileHash, originalDir, targetDir, reqID), header.ReqMoveFileDirectory)
+		peers.SendMessage(client.PPConn, types.ReqMoveFileDirectoryData(fileHash, originalDir, targetDir, reqID), header.ReqMoveFileDirectory)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -97,13 +100,13 @@ func MoveFileDirectory(fileHash, originalDir, targetDir, reqID string, w http.Re
 // ReqMoveFileDirectory ReqMoveFileDirectory
 func ReqMoveFileDirectory(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("ReqMoveFileDirectory")
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspMoveFileDirectory RspMoveFileDirectory
 func RspMoveFileDirectory(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspMoveFileDirectory
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
@@ -112,7 +115,7 @@ func RspMoveFileDirectory(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPMVdir, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }

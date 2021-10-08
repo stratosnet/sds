@@ -3,19 +3,22 @@ package event
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
-	"net/http"
 )
 
 // GetMyConfig
 func GetMyConfig(p2pAddress, walletAddress, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqGetMyConfig(p2pAddress, walletAddress, reqID), header.ReqConfig)
+		peers.SendMessage(client.PPConn, types.ReqGetMyConfig(p2pAddress, walletAddress, reqID), header.ReqConfig)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -25,14 +28,14 @@ func GetMyConfig(p2pAddress, walletAddress, reqID string, w http.ResponseWriter)
 // ReqGetMyConfig ReqGetMyConfig
 func ReqGetMyConfig(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("+++++++++++++++++++++++++++++++++++++++++++++++++++")
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspGetMyConfig
 func RspGetMyConfig(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspConfig")
 	var target protos.RspConfig
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
@@ -41,7 +44,7 @@ func RspGetMyConfig(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPGetConfig, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }

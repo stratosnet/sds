@@ -14,6 +14,7 @@ import (
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/websocket"
 	"github.com/stratosnet/sds/utils"
@@ -56,7 +57,7 @@ func terminal(cmd *cobra.Command, args []string) {
 	}
 
 	wallets := func(line string, param []string) bool {
-		peers.Wallets()
+		serv.Wallets()
 		return true
 	}
 
@@ -75,7 +76,7 @@ func terminal(cmd *cobra.Command, args []string) {
 		mnemonic := console.MyGetPassword("input bip39 mnemonic (leave blank to generate a new one)", false)
 		passphrase := console.MyGetPassword("input bip39 passphrase", false)
 
-		peers.CreateWallet(password, param[0], mnemonic, passphrase, param[1])
+		serv.CreateWallet(password, param[0], mnemonic, passphrase, param[1])
 		return true
 	}
 
@@ -93,13 +94,13 @@ func terminal(cmd *cobra.Command, args []string) {
 			fmt.Println("empty password")
 			return false
 		}
-		peers.Login(param[0], password)
+		serv.Login(param[0], password)
 
 		return false
 	}
 
 	start := func(line string, param []string) bool {
-		event.StartMining()
+		peers.StartMining()
 		return true
 	}
 
@@ -276,12 +277,12 @@ func terminal(cmd *cobra.Command, args []string) {
 	}
 
 	monitor := func(line string, param []string) bool {
-		setting.ShowMonitor()
+		serv.ShowMonitor()
 		return true
 	}
 
 	stopmonitor := func(line string, param []string) bool {
-		setting.StopMonitor()
+		serv.StopMonitor()
 		return true
 	}
 
@@ -532,7 +533,7 @@ func terminal(cmd *cobra.Command, args []string) {
 
 	if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
 		go api.StartHTTPServ()
-		peers.Login(setting.Config.WalletAddress, setting.Config.WalletPassword)
+		serv.Login(setting.Config.WalletAddress, setting.Config.WalletPassword)
 		// setting.ShowMonitor()
 		go func() {
 			netListen, err := net.Listen("tcp4", ":1203")
@@ -630,5 +631,5 @@ func AutoStart(account, password string) {
 		return
 	}
 	setting.IsAuto = true
-	peers.Login(account, password)
+	serv.Login(account, password)
 }

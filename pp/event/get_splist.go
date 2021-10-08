@@ -2,28 +2,23 @@ package event
 
 import (
 	"context"
-	"github.com/stratosnet/sds/pp/setting"
 	"time"
 
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 
 	"github.com/alex023/clock"
 )
 
-// GetPPList P node get PPList
-func GetSPList() {
-	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetSPList)")
-	SendMessageToSPServer(reqGetSPlistData(), header.ReqGetSPList)
-}
-
 // RspGetPPList
 func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get GetSPList RSP")
 	var target protos.RspGetSPList
-	if !unmarshalData(ctx, &target) {
+	if !types.UnmarshalData(ctx, &target) {
 		return
 	}
 	utils.Log("get GetSPList RSP", target.SpList)
@@ -67,5 +62,5 @@ func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
 func reloadSPlist() {
 	utils.DebugLog("failed to get SPlist. retry after 3 second")
 	newClock := clock.NewClock()
-	newClock.AddJobRepeat(time.Second*3, 1, GetSPList)
+	newClock.AddJobRepeat(time.Second*3, 1, peers.GetSPList)
 }

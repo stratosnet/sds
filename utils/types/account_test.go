@@ -1,13 +1,14 @@
 package types
 
 import (
-	"github.com/stratosnet/sds/relay/stratoschain/prefix"
 	"testing"
+
+	"github.com/stratosnet/sds/relay/stratoschain"
 )
 
 func TestAccountAddressBechConversion(t *testing.T) {
 	hrp := "st"
-	prefix.SetConfig(hrp)
+	stratoschain.SetConfig(hrp)
 	addressString := "st1yx3kkx9jnqeck59j744nc5qgtv4lt4dc45jcwz"
 	addr, err := BechToAddress(addressString)
 	if err != nil {
