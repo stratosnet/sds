@@ -1,6 +1,7 @@
 package peers
 
 import (
+	"github.com/stratosnet/sds/msg/protos"
 	"sync"
 	"time"
 
@@ -18,18 +19,9 @@ func InitPPList() {
 	if len(pplist) == 0 {
 		GetPPList()
 	} else {
-		for _, ppInfo := range pplist {
-			client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
-			if client.PPConn == nil {
-
-				setting.DeletePPList(ppInfo.NetworkAddress)
-			} else {
-				RegisterChain(false)
-				return
-			}
+		if success := SendRegisterRequestViaPP(pplist); !success {
+			GetPPList()
 		}
-
-		GetPPList()
 	}
 }
 
@@ -39,14 +31,27 @@ func StartStatusReportToSP() {
 	clock.AddJobRepeat(time.Minute*5, 0, ReportNodeStatus)
 }
 
-
-
 // GetPPList P node get PPList
 func GetPPList() {
 	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetPPList)")
 	SendMessageToSPServer(types.ReqGetPPlistData(), header.ReqGetPPList)
 }
 
+func SendRegisterRequestViaPP(pplist []*protos.PPBaseInfo) bool {
+	for _, ppInfo := range pplist {
+		if ppInfo.NetworkAddress == setting.NetworkAddress {
+			continue
+		}
+		client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
+		if client.PPConn != nil {
+			RegisterChain(false)
+			return true
+		}
+		utils.DebugLog("failed to conn PP，delete:", ppInfo)
+		setting.DeletePPList(ppInfo.NetworkAddress)
+	}
+	return false
+}
+
 // RegisterPeerMap
 var RegisterPeerMap = &sync.Map{} // make(map[string]int64)
-
