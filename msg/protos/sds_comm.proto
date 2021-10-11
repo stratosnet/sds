@@ -95,7 +95,7 @@ message SliceOffset {
 
 message FileIndexes{
     //  string file_hash = 1; // file hash
-    string file_path = 1; //  spb://accunt/fileHash|fileName
+    string file_path = 1; //  sdm://accunt/fileHash|fileName
     string p2p_address = 2;
     string wallet_address = 3;
     string save_path = 4;

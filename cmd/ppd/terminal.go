@@ -39,8 +39,8 @@ func terminal(cmd *cobra.Command, args []string) {
 		"list <filename>                            query uploaded file by self\n" +
 		"list                                       query all files\n" +
 		"delete <filehash>                          delete file\n" +
-		"get <spb://account/filehash|filename>      download file, need to consume ozone\n" +
-		"	e.g: get spb://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe|test.mp4\n" +
+		"get <sdm://account/filehash|filename>      download file, need to consume ozone\n" +
+		"	e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe|test.mp4\n" +
 		"sharefile <filehash> <expiry> <private>    share an uploaded file\n" +
 		"allshare                                   list all shared files\n" +
 		"getsharefile <sharelink> <password>        download a shared file, need to consume ozone\n" +
@@ -252,7 +252,7 @@ func terminal(cmd *cobra.Command, args []string) {
 
 	download := func(line string, param []string) bool {
 		if len(param) == 0 {
-			fmt.Println("input download path, e.g: spb://account_address/file_hash|filename(optional)")
+			fmt.Println("input download path, e.g: sdm://account_address/file_hash|filename(optional)")
 			return false
 		}
 		event.GetFileStorageInfo(param[0], "", "", false, false, nil)
