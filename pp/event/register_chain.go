@@ -6,34 +6,21 @@ import (
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/client"
-	"github.com/stratosnet/sds/pp/serv"
+	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
-// RegisterChain
-func RegisterChain(toSP bool) {
-	if toSP {
-		SendMessageToSPServer(reqRegisterData(), header.ReqRegister)
-		utils.Log("SendMessage(conn, req, header.ReqRegister) to SP")
-	} else {
-		sendMessage(client.PPConn, reqRegisterData(), header.ReqRegister)
-		utils.Log("SendMessage(conn, req, header.ReqRegister) to PP")
-	}
-
-}
-
-// ReqRegisterChain if get this, must be PP
-func ReqRegisterChain(ctx context.Context, conn core.WriteCloser) {
-	utils.Log("PP get ReqRegisterChain")
+// ReqRegister if get this, must be PP
+func ReqRegister(ctx context.Context, conn core.WriteCloser) {
+	utils.Log("PP get ReqRegister")
 	var target protos.ReqRegister
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		// store register P wallet address
-		serv.RegisterPeerMap.Store(target.Address.P2PAddress, core.NetIDFromContext(ctx))
-		transferSendMessageToSPServer(reqRegisterDataTR(&target))
+		peers.RegisterPeerMap.Store(target.Address.P2PAddress, core.NetIDFromContext(ctx))
+		peers.TransferSendMessageToSPServer(types.ReqRegisterDataTR(&target))
 
 		// IPProt := strings.Split(target.Address.NetworkAddress, ":")
 		// ip := ""
@@ -60,21 +47,21 @@ func ReqRegisterChain(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-// RspRegisterChain  PP -> SP, SP -> PP, PP -> P
-func RspRegisterChain(ctx context.Context, conn core.WriteCloser) {
-	utils.Log("get RspRegisterChain", conn)
+// RspRegister  PP -> SP, SP -> PP, PP -> P
+func RspRegister(ctx context.Context, conn core.WriteCloser) {
+	utils.Log("get RspRegister", conn)
 	var target protos.RspRegister
-	if !unmarshalData(ctx, &target) {
+	if !types.UnmarshalData(ctx, &target) {
 		return
 	}
 	utils.Log("target.RspRegister", target.P2PAddress)
 	if target.P2PAddress != setting.P2PAddress {
-		utils.Log("transfer RspRegisterChain to: ", target.P2PAddress)
-		transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+		utils.Log("transfer RspRegister to: ", target.P2PAddress)
+		peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		return
 	}
 
-	utils.Log("get RspRegisterChain ", target.Result.State, target.Result.Msg)
+	utils.Log("get RspRegister ", target.Result.State, target.Result.Msg)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		setting.P2PAddress = ""
 		setting.WalletAddress = ""
@@ -91,7 +78,7 @@ func RspRegisterChain(ctx context.Context, conn core.WriteCloser) {
 	}
 	if setting.IsAuto {
 		if setting.IsPP {
-			StartMining()
+			peers.StartMining()
 		}
 	}
 
@@ -101,17 +88,23 @@ func RspRegisterChain(ctx context.Context, conn core.WriteCloser) {
 func RspMining(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspMining", conn)
 	var target protos.RspMining
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
 			utils.Log("start mining")
-			if serv.GetPPServer() == nil {
-				go serv.StartListenServer(setting.Config.Port)
+			if peers.GetPPServer() == nil {
+				go peers.StartListenServer(setting.Config.Port)
 			}
 			setting.IsStartMining = true
-			if client.SPConn == nil {
-				client.SPConn = client.NewClient(setting.Config.SPNetAddress, setting.IsPP)
-				RegisterChain(true)
+
+			newConnection, err := peers.ConnectToSP()
+			if err != nil {
+				utils.ErrorLog(err)
+				return
 			}
+			if newConnection {
+				peers.RegisterChain(true)
+			}
+
 			utils.DebugLog("Start reporting node status to SP")
 			// trigger 1 stat report immediately
 			ReportNodeStatus()
@@ -121,14 +114,3 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-// StartMining
-func StartMining() {
-	if setting.CheckLogin() {
-		if setting.IsPP {
-			utils.DebugLog("Sending ReqMining message to SP")
-			SendMessageToSPServer(reqMiningData(), header.ReqMining)
-		} else {
-			utils.Log("register as miner first")
-		}
-	}
-}

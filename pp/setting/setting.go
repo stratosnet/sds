@@ -10,7 +10,6 @@ import (
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/relay/stratoschain"
-	"github.com/stratosnet/sds/relay/stratoschain/prefix"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -69,45 +68,51 @@ var (
 
 const HD_PATH = "m/44'/606'/0'/0/0"
 
+type SPBaseInfo struct {
+	P2PAddress     string `yaml:"P2PAddress"`
+	P2PPublicKey   string `yaml:"P2PPublicKey"`
+	NetworkAddress string `yaml:"NetworkAddress"`
+}
+
 type config struct {
 	Version                     uint32
 	VersionShow                 string
 	DownloadPathMinLen          int
-	Port                        string `yaml:"Port"`
-	NetworkAddress              string `yaml:"NetworkAddress"`
-	SPNetAddress                string `yaml:"SPNetAddress"`
-	Debug                       bool   `yaml:"Debug"`
-	PPListDir                   string `yaml:"PPListDir"`
-	AccountDir                  string `yaml:"AccountDir"`
-	ScryptN                     int    `yaml:"scryptN"`
-	ScryptP                     int    `yaml:"scryptP"`
-	DefPassword                 string `yaml:"DefPassword"`
-	DefSavePath                 string `yaml:"DefSavePath"`
-	StorehousePath              string `yaml:"StorehousePath"`
-	DownloadPath                string `yaml:"DownloadPath"`
-	P2PAddress                  string `yaml:"P2PAddress"`
-	P2PPassword                 string `yaml:"P2PPassword"`
-	WalletAddress               string `yaml:"WalletAddress"`
-	WalletPassword              string `yaml:"WalletPassword"`
-	AutoRun                     bool   `yaml:"AutoRun"`  // is auto login
-	Internal                    bool   `yaml:"Internal"` // is internal net
-	IsWallet                    bool   `yaml:"IsWallet"` // is wallet
-	BPURL                       string `yaml:"BPURL"`    // bphttp
-	IsCheckDefaultPath          bool   `yaml:"IsCheckDefaultPath"`
-	IsLimitDownloadSpeed        bool   `yaml:"IsLimitDownloadSpeed"`
-	LimitDownloadSpeed          uint64 `yaml:"LimitDownloadSpeed"`
-	IsLimitUploadSpeed          bool   `yaml:"IsLimitUploadSpeed"`
-	LimitUploadSpeed            uint64 `yaml:"LimitUploadSpeed"`
-	IsCheckFileOperation        bool   `yaml:"IsCheckFileOperation"`
-	IsCheckFileTransferFinished bool   `yaml:"IsCheckFileTransferFinished"`
-	AddressPrefix               string `yaml:"AddressPrefix"`
-	P2PKeyPrefix                string `yaml:"P2PKeyPrefix"`
-	ChainId                     string `yaml:"ChainId"`
-	Token                       string `yaml:"Token"`
-	StratosChainUrl             string `yaml:"StratosChainUrl"`
-	StreamingCache              bool   `yaml:"StreamingCache"`
-	RestPort                    string `yaml:"RestPort"`
-	InternalPort                string `yaml:"InternalPort"`
+	Port                        string       `yaml:"Port"`
+	NetworkAddress              string       `yaml:"NetworkAddress"`
+	Debug                       bool         `yaml:"Debug"`
+	PPListDir                   string       `yaml:"PPListDir"`
+	AccountDir                  string       `yaml:"AccountDir"`
+	ScryptN                     int          `yaml:"scryptN"`
+	ScryptP                     int          `yaml:"scryptP"`
+	DefPassword                 string       `yaml:"DefPassword"`
+	DefSavePath                 string       `yaml:"DefSavePath"`
+	StorehousePath              string       `yaml:"StorehousePath"`
+	DownloadPath                string       `yaml:"DownloadPath"`
+	P2PAddress                  string       `yaml:"P2PAddress"`
+	P2PPassword                 string       `yaml:"P2PPassword"`
+	WalletAddress               string       `yaml:"WalletAddress"`
+	WalletPassword              string       `yaml:"WalletPassword"`
+	AutoRun                     bool         `yaml:"AutoRun"`  // is auto login
+	Internal                    bool         `yaml:"Internal"` // is internal net
+	IsWallet                    bool         `yaml:"IsWallet"` // is wallet
+	BPURL                       string       `yaml:"BPURL"`    // bphttp
+	IsCheckDefaultPath          bool         `yaml:"IsCheckDefaultPath"`
+	IsLimitDownloadSpeed        bool         `yaml:"IsLimitDownloadSpeed"`
+	LimitDownloadSpeed          uint64       `yaml:"LimitDownloadSpeed"`
+	IsLimitUploadSpeed          bool         `yaml:"IsLimitUploadSpeed"`
+	LimitUploadSpeed            uint64       `yaml:"LimitUploadSpeed"`
+	IsCheckFileOperation        bool         `yaml:"IsCheckFileOperation"`
+	IsCheckFileTransferFinished bool         `yaml:"IsCheckFileTransferFinished"`
+	AddressPrefix               string       `yaml:"AddressPrefix"`
+	P2PKeyPrefix                string       `yaml:"P2PKeyPrefix"`
+	ChainId                     string       `yaml:"ChainId"`
+	Token                       string       `yaml:"Token"`
+	StratosChainUrl             string       `yaml:"StratosChainUrl"`
+	StreamingCache              bool         `yaml:"StreamingCache"`
+	RestPort                    string       `yaml:"RestPort"`
+	InternalPort                string       `yaml:"InternalPort"`
+	SPList                      []SPBaseInfo `yaml:"SPList"`
 }
 
 var ostype = runtime.GOOS
@@ -135,8 +140,18 @@ func LoadConfig(configPath string) error {
 	}
 	cf.SetLimitDownloadSpeed(Config.LimitDownloadSpeed, Config.IsLimitDownloadSpeed)
 	cf.SetLimitUploadSpeed(Config.LimitUploadSpeed, Config.IsLimitUploadSpeed)
-	prefix.SetConfig(Config.AddressPrefix)
+
+	// todo: we shouldn't call stratoschain package to setup a global variable
 	stratoschain.Url = Config.StratosChainUrl
+	// Initialize SPMap
+	for _, sp := range Config.SPList {
+		key := sp.P2PAddress
+		if key == "" {
+			key = "unknown"
+		}
+		SPMap.Store(key, sp)
+	}
+
 	return nil
 }
 
@@ -232,6 +247,7 @@ func SetConfig(key, value string) bool {
 	if !(strings.Contains(strings.ToLower(key), "password") || strings.Contains(strings.ToLower(key), "pw")) {
 		utils.Log("finished changing configuration file ", key+": ", value)
 	}
+	//prefix.SetConfig(Config.AddressPrefix)
 
 	return true
 }
@@ -243,7 +259,6 @@ func defaultConfig() *config {
 		DownloadPathMinLen:          0,
 		Port:                        ":18081",
 		NetworkAddress:              "127.0.0.1",
-		SPNetAddress:                "127.0.0.1:8888",
 		Debug:                       false,
 		PPListDir:                   "./peers",
 		AccountDir:                  "./accounts",
@@ -276,6 +291,7 @@ func defaultConfig() *config {
 		StreamingCache:              false,
 		RestPort:                    "",
 		InternalPort:                "",
+		SPList:                      []SPBaseInfo{{NetworkAddress: "127.0.0.1:8888"}},
 	}
 }
 

@@ -1,11 +1,12 @@
 package api
 
 import (
-	"github.com/stratosnet/sds/pp/peers"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils/httpserv"
 	"net/http"
 	"time"
+
+	"github.com/stratosnet/sds/pp/serv"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils/httpserv"
 )
 
 func login(w http.ResponseWriter, request *http.Request) {
@@ -27,7 +28,7 @@ func login(w http.ResponseWriter, request *http.Request) {
 	}
 	password = data["password"].(string)
 
-	err = peers.Login(walletAddress, password)
+	err = serv.Login(walletAddress, password)
 	if err != nil {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, err.Error()).ToBytes())
 		return

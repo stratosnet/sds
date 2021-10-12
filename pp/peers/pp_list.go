@@ -1,19 +1,22 @@
 package peers
 
 import (
-	"github.com/alex023/clock"
-	"github.com/stratosnet/sds/pp/client"
-	"github.com/stratosnet/sds/pp/event"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
+	"sync"
 	"time"
+
+	"github.com/alex023/clock"
+	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
+	"github.com/stratosnet/sds/utils"
 )
 
 // InitPPList
-func initPPList() {
+func InitPPList() {
 	pplist := setting.GetLocalPPList()
 	if len(pplist) == 0 {
-		event.GetPPList()
+		GetPPList()
 	} else {
 		for _, ppInfo := range pplist {
 			client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
@@ -21,20 +24,32 @@ func initPPList() {
 
 				setting.DeletePPList(ppInfo.NetworkAddress)
 			} else {
-				event.RegisterChain(false)
+				RegisterChain(false)
 				return
 			}
 		}
 
-		event.GetPPList()
+		GetPPList()
 	}
 }
 
-func startStatusReportToSP() {
+func StartStatusReportToSP() {
 	utils.DebugLog("Status will be reported to SP while mining")
 	// trigger first report at time-0 immediately
-	event.ReportNodeStatus()
+	ReportNodeStatus()
 	// trigger consecutive reports with interval
 	clock := clock.NewClock()
-	clock.AddJobRepeat(time.Second*event.ReportIntervalSec, 0, event.ReportNodeStatus)
+	clock.AddJobRepeat(time.Second*ReportIntervalSec, 0, ReportNodeStatus)
 }
+
+
+
+// GetPPList P node get PPList
+func GetPPList() {
+	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetPPList)")
+	SendMessageToSPServer(types.ReqGetPPlistData(), header.ReqGetPPList)
+}
+
+// RegisterPeerMap
+var RegisterPeerMap = &sync.Map{} // make(map[string]int64)
+

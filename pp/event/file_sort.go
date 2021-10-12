@@ -2,19 +2,22 @@ package event
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
-	"net/http"
 )
 
 // FileSort
 func FileSort(files []*protos.FileInfo, reqID, albumID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, fileSortData(files, reqID, albumID), header.ReqFileSort)
+		peers.SendMessage(client.PPConn, types.FileSortData(files, reqID, albumID), header.ReqFileSort)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -24,18 +27,18 @@ func FileSort(files []*protos.FileInfo, reqID, albumID string, w http.ResponseWr
 // ReqFileSort ReqFileSort
 func ReqFileSort(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("+++++++++++++++++++++++++++++++++++++++++++++++++++")
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspFileSort
 func RspFileSort(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspFindMyFileList")
 	var target protos.RspFileSort
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			putData(target.ReqId, HTTPFileSort, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }

@@ -3,19 +3,22 @@ package event
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
-	"net/http"
 )
 
 // Invite
 func Invite(code, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqInviteData(code, reqID), header.ReqInvite)
+		peers.SendMessage(client.PPConn, types.ReqInviteData(code, reqID), header.ReqInvite)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -24,13 +27,13 @@ func Invite(code, reqID string, w http.ResponseWriter) {
 
 // ReqInvite
 func ReqInvite(ctx context.Context, conn core.WriteCloser) {
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspInvite
 func RspInvite(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspInvite
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
@@ -41,7 +44,7 @@ func RspInvite(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPInvite, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -49,7 +52,7 @@ func RspInvite(ctx context.Context, conn core.WriteCloser) {
 // GetReward
 func GetReward(reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqGetRewardData(reqID), header.ReqGetReward)
+		peers.SendMessage(client.PPConn, types.ReqGetRewardData(reqID), header.ReqGetReward)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -58,14 +61,14 @@ func GetReward(reqID string, w http.ResponseWriter) {
 
 // ReqGetReward
 func ReqGetReward(ctx context.Context, conn core.WriteCloser) {
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspGetReward
 func RspGetReward(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("RspGetReward>>>>>>>>>>>>>>>>>>>")
 	var target protos.RspGetReward
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
@@ -75,7 +78,7 @@ func RspGetReward(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPReward, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }

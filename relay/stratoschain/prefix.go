@@ -1,8 +1,8 @@
-package prefix
+package stratoschain
 
 import "github.com/cosmos/cosmos-sdk/types"
 
-var (
+const (
 	AccountPubKeyPrefix    = "pub"
 	ValidatorAddressPrefix = "valoper"
 	ValidatorPubKeyPrefix  = "valoperpub"
@@ -12,7 +12,10 @@ var (
 
 var sealed = false
 
-func SetConfig(addressPrefix string) {
+func init() {
+	setConfig("st")
+}
+func setConfig(addressPrefix string) {
 	if !sealed {
 		config := types.GetConfig()
 		config.SetBech32PrefixForAccount(addressPrefix, addressPrefix+AccountPubKeyPrefix)

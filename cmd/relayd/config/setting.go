@@ -1,7 +1,6 @@
 package setting
 
 import (
-	"github.com/stratosnet/sds/relay/stratoschain/prefix"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -45,6 +44,6 @@ func LoadConfig(path string) error {
 		return err
 	}
 
-	prefix.SetConfig(Config.BlockchainInfo.AddressPrefix)
+	//prefix.SetConfig(Config.BlockchainInfo.AddressPrefix)
 	return nil
 }

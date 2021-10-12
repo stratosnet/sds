@@ -3,13 +3,16 @@ package event
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
-	"net/http"
 )
 
 // CreateAlbum
@@ -23,7 +26,7 @@ func CreateAlbum(albumName, albumBlurb, albumCoverHash, albumType, reqID string,
 		aType = protos.AlbumType_OTHER
 	}
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqCreateAlbumData(albumName, albumBlurb, albumCoverHash, reqID, aType, files, isPrivate), header.ReqCreateAlbum)
+		peers.SendMessage(client.PPConn, types.ReqCreateAlbumData(albumName, albumBlurb, albumCoverHash, reqID, aType, files, isPrivate), header.ReqCreateAlbum)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -33,13 +36,13 @@ func CreateAlbum(albumName, albumBlurb, albumCoverHash, albumType, reqID string,
 
 // ReqCreateAlbum ReqCreateAlbum
 func ReqCreateAlbum(ctx context.Context, conn core.WriteCloser) {
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspCreateAlbum  RspCreateAlbum
 func RspCreateAlbum(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspCreateAlbum
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg, "AlbumId", target.AlbumId)
@@ -48,7 +51,7 @@ func RspCreateAlbum(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPCreateAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -64,7 +67,7 @@ func FindMyAlbum(reqID string, page, number uint64, albumType, keyword string, w
 		aType = protos.AlbumType_OTHER
 	}
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqFindMyAlbumData(aType, reqID, page, number, keyword), header.ReqFindMyAlbum)
+		peers.SendMessage(client.PPConn, types.ReqFindMyAlbumData(aType, reqID, page, number, keyword), header.ReqFindMyAlbum)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -73,13 +76,13 @@ func FindMyAlbum(reqID string, page, number uint64, albumType, keyword string, w
 
 // ReqFindMyAlbum
 func ReqFindMyAlbum(ctx context.Context, conn core.WriteCloser) {
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspFindMyAlbum
 func RspFindMyAlbum(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspFindMyAlbum
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				for _, info := range target.AlbumInfo {
@@ -94,7 +97,7 @@ func RspFindMyAlbum(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPFindMyAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -103,7 +106,7 @@ func RspFindMyAlbum(ctx context.Context, conn core.WriteCloser) {
 func EditAlbum(albumID, albumCoverHash, albumName, albumBlurb, reqID string, changeFiles []*protos.FileInfo, isPrivate bool, w http.ResponseWriter) {
 
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqEditAlbumData(albumID, albumCoverHash, albumName, albumBlurb, reqID, changeFiles, isPrivate), header.ReqEditAlbum)
+		peers.SendMessage(client.PPConn, types.ReqEditAlbumData(albumID, albumCoverHash, albumName, albumBlurb, reqID, changeFiles, isPrivate), header.ReqEditAlbum)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -112,13 +115,13 @@ func EditAlbum(albumID, albumCoverHash, albumName, albumBlurb, reqID string, cha
 
 // ReqEditAlbum
 func ReqEditAlbum(ctx context.Context, conn core.WriteCloser) {
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspEditAlbum
 func RspEditAlbum(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspEditAlbum
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
@@ -127,7 +130,7 @@ func RspEditAlbum(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPEditAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -135,7 +138,7 @@ func RspEditAlbum(ctx context.Context, conn core.WriteCloser) {
 // AlbumContent
 func AlbumContent(albumID, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqAlbumContentData(albumID, reqID), header.ReqAlbumContent)
+		peers.SendMessage(client.PPConn, types.ReqAlbumContentData(albumID, reqID), header.ReqAlbumContent)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -144,13 +147,13 @@ func AlbumContent(albumID, reqID string, w http.ResponseWriter) {
 
 // ReqAlbumContent
 func ReqAlbumContent(ctx context.Context, conn core.WriteCloser) {
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspAlbumContent
 func RspAlbumContent(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspAlbumContent
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("AlbumInfo", target.AlbumInfo)
@@ -160,7 +163,7 @@ func RspAlbumContent(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPAlbumContent, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -181,7 +184,7 @@ func SearchAlbum(keyword, albumType, sortType, reqID string, page, number uint64
 	}
 
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqSearchAlbumData(keyword, reqID, aType, sType, page, number), header.ReqSearchAlbum)
+		peers.SendMessage(client.PPConn, types.ReqSearchAlbumData(keyword, reqID, aType, sType, page, number), header.ReqSearchAlbum)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -190,13 +193,13 @@ func SearchAlbum(keyword, albumType, sortType, reqID string, page, number uint64
 
 // ReqSearchAlbum
 func ReqSearchAlbum(ctx context.Context, conn core.WriteCloser) {
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspSearchAlbum
 func RspSearchAlbum(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspSearchAlbum
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("AlbumInfo", target.AlbumInfo)
@@ -205,7 +208,7 @@ func RspSearchAlbum(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPSearchAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -214,7 +217,7 @@ func RspSearchAlbum(ctx context.Context, conn core.WriteCloser) {
 func CollectionAlbum(albumID, reqID string, isCollection bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 
-		sendMessage(client.PPConn, reqCollectionAlbumData(albumID, reqID, isCollection), header.ReqCollectionAlbum)
+		peers.SendMessage(client.PPConn, types.ReqCollectionAlbumData(albumID, reqID, isCollection), header.ReqCollectionAlbum)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -223,13 +226,13 @@ func CollectionAlbum(albumID, reqID string, isCollection bool, w http.ResponseWr
 
 // ReqCollectionAlbum
 func ReqCollectionAlbum(ctx context.Context, conn core.WriteCloser) {
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspCollectionAlbum
 func RspCollectionAlbum(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspCollectionAlbum
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
@@ -238,7 +241,7 @@ func RspCollectionAlbum(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPCollectionAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -247,7 +250,7 @@ func RspCollectionAlbum(ctx context.Context, conn core.WriteCloser) {
 func AbstractAlbum(reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 
-		sendMessage(client.PPConn, reqAbstractAlbumData(reqID), header.ReqAbstractAlbum)
+		peers.SendMessage(client.PPConn, types.ReqAbstractAlbumData(reqID), header.ReqAbstractAlbum)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -256,13 +259,13 @@ func AbstractAlbum(reqID string, w http.ResponseWriter) {
 
 // ReqAbstractAlbum
 func ReqAbstractAlbum(ctx context.Context, conn core.WriteCloser) {
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspAbstractAlbum
 func RspAbstractAlbum(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspAbstractAlbum
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
@@ -272,7 +275,7 @@ func RspAbstractAlbum(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPAbstractAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -288,7 +291,7 @@ func MyCollectionAlbum(albumType, reqID string, page, number uint64, keyword str
 		aType = protos.AlbumType_OTHER
 	}
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqMyCollectionAlbumData(aType, reqID, page, number, keyword), header.ReqMyCollectionAlbum)
+		peers.SendMessage(client.PPConn, types.ReqMyCollectionAlbumData(aType, reqID, page, number, keyword), header.ReqMyCollectionAlbum)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -297,13 +300,13 @@ func MyCollectionAlbum(albumType, reqID string, page, number uint64, keyword str
 
 // ReqMyCollectionAlbum
 func ReqMyCollectionAlbum(ctx context.Context, conn core.WriteCloser) {
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspMyCollectionAlbum
 func RspMyCollectionAlbum(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspMyCollectionAlbum
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
@@ -313,7 +316,7 @@ func RspMyCollectionAlbum(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPMyCollectionAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -321,7 +324,7 @@ func RspMyCollectionAlbum(ctx context.Context, conn core.WriteCloser) {
 // DeleteAlbum
 func DeleteAlbum(albumID, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqDeleteAlbumData(albumID, reqID), header.ReqDeleteAlbum)
+		peers.SendMessage(client.PPConn, types.ReqDeleteAlbumData(albumID, reqID), header.ReqDeleteAlbum)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -330,13 +333,13 @@ func DeleteAlbum(albumID, reqID string, w http.ResponseWriter) {
 
 // ReqDeleteAlbum
 func ReqDeleteAlbum(ctx context.Context, conn core.WriteCloser) {
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspDeleteAlbum
 func RspDeleteAlbum(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeleteAlbum
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
@@ -346,7 +349,7 @@ func RspDeleteAlbum(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPDeleteAlbum, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }

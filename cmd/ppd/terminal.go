@@ -14,6 +14,7 @@ import (
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/websocket"
 	"github.com/stratosnet/sds/utils"
@@ -23,27 +24,31 @@ import (
 func terminal(cmd *cobra.Command, args []string) {
 
 	helpStr := "\n" +
-		"help                                   show all the commands\n" +
-		"wallets                                acquire all wallet wallets' address\n" +
-		"newwallet ->password                   create new wallet, input password in prompt\n" +
-		"login <walletAddress> ->password       unlock and log in wallet, input password in prompt\n" +
-		"registerpeer                           register peer to index node\n" +
-		"rp                                     register peer to index node\n" +
-		"activate <amount> <fee> <gas>          send transaction to stchain to become an active PP node\n" +
-		"deactivate                             send transaction to stchain to stop being an active PP node\n" +
-		"startmining                            start mining\n" +
-		"prepay <amount> <fee> <gas>            prepay stos to get ozone, amount in ustos\n" +
-		"put <filepath>                         upload file, need to consume ozone\n" +
-		"putstream <filepath>                   upload video file for streaming, need to consume ozone (alpha version, encode format config impossible)\n" +
-		"list <filename>                        query uploaded file by self\n" +
-		"list                                   query all files\n" +
-		"delete <filehash>                      delete file\n" +
-		"get <spb://account/filehash|filename>  download file, need to consume ozone\n" +
+		"help                                       show all the commands\n" +
+		"wallets                                    acquire all wallet wallets' address\n" +
+		"newwallet ->password                       create new wallet, input password in prompt\n" +
+		"login <walletAddress> ->password           unlock and log in wallet, input password in prompt\n" +
+		"registerpeer                               register peer to index node\n" +
+		"rp                                         register peer to index node\n" +
+		"activate <amount> <fee> <gas>              send transaction to stchain to become an active PP node\n" +
+		"deactivate <fee> <gas>                     send transaction to stchain to stop being an active PP node\n" +
+		"startmining                                start mining\n" +
+		"prepay <amount> <fee> <gas>                prepay stos to get ozone, amount in ustos\n" +
+		"put <filepath>                             upload file, need to consume ozone\n" +
+		"putstream <filepath>                       upload video file for streaming, need to consume ozone (alpha version, encode format config impossible)\n" +
+		"list <filename>                            query uploaded file by self\n" +
+		"list                                       query all files\n" +
+		"delete <filehash>                          delete file\n" +
+		"get <spb://account/filehash|filename>      download file, need to consume ozone\n" +
 		"	e.g: get spb://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe|test.mp4\n" +
-		"ver                                    version\n" +
-		"monitor                                show monitor\n" +
-		"stopmonitor                            stop monitor\n" +
-		"config  <key> <value>                  set config key value\n"
+		"sharefile <filehash> <expiry> <private>    share an uploaded file\n" +
+		"allshare                                   list all shared files\n" +
+		"getsharefile <sharelink> <password>        download a shared file, need to consume ozone\n" +
+		"cancelshare <shareID>                      cancel a shared file\n" +
+		"ver                                        version\n" +
+		"monitor                                    show monitor\n" +
+		"stopmonitor                                stop monitor\n" +
+		"config  <key> <value>                      set config key value\n"
 	fmt.Println(helpStr)
 
 	help := func(line string, param []string) bool {
@@ -52,7 +57,7 @@ func terminal(cmd *cobra.Command, args []string) {
 	}
 
 	wallets := func(line string, param []string) bool {
-		peers.Wallets()
+		serv.Wallets()
 		return true
 	}
 
@@ -71,7 +76,7 @@ func terminal(cmd *cobra.Command, args []string) {
 		mnemonic := console.MyGetPassword("input bip39 mnemonic (leave blank to generate a new one)", false)
 		passphrase := console.MyGetPassword("input bip39 passphrase", false)
 
-		peers.CreateWallet(password, param[0], mnemonic, passphrase, param[1])
+		serv.CreateWallet(password, param[0], mnemonic, passphrase, param[1])
 		return true
 	}
 
@@ -89,13 +94,13 @@ func terminal(cmd *cobra.Command, args []string) {
 			fmt.Println("empty password")
 			return false
 		}
-		peers.Login(param[0], password)
+		serv.Login(param[0], password)
 
 		return false
 	}
 
 	start := func(line string, param []string) bool {
-		event.StartMining()
+		peers.StartMining()
 		return true
 	}
 
@@ -272,12 +277,12 @@ func terminal(cmd *cobra.Command, args []string) {
 	}
 
 	monitor := func(line string, param []string) bool {
-		setting.ShowMonitor()
+		serv.ShowMonitor()
 		return true
 	}
 
 	stopmonitor := func(line string, param []string) bool {
-		setting.StopMonitor()
+		serv.StopMonitor()
 		return true
 	}
 
@@ -528,7 +533,7 @@ func terminal(cmd *cobra.Command, args []string) {
 
 	if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
 		go api.StartHTTPServ()
-		peers.Login(setting.Config.WalletAddress, setting.Config.WalletPassword)
+		serv.Login(setting.Config.WalletAddress, setting.Config.WalletPassword)
 		// setting.ShowMonitor()
 		go func() {
 			netListen, err := net.Listen("tcp4", ":1203")
@@ -626,5 +631,5 @@ func AutoStart(account, password string) {
 		return
 	}
 	setting.IsAuto = true
-	peers.Login(account, password)
+	serv.Login(account, password)
 }

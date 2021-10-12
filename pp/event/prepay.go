@@ -2,9 +2,12 @@ package event
 
 import (
 	"context"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
 )
@@ -17,14 +20,14 @@ func Prepay(amount, fee, gas int64) error {
 		return err
 	}
 	utils.Log("Sending prepay message to SP! " + prepayReq.WalletAddress)
-	SendMessageToSPServer(prepayReq, header.ReqPrepay)
+	peers.SendMessageToSPServer(prepayReq, header.ReqPrepay)
 	return nil
 }
 
 // RspPrepay. Response to asking the SP node to send a prepay transaction
 func RspPrepay(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspPrepay
-	success := unmarshalData(ctx, &target)
+	success := types.UnmarshalData(ctx, &target)
 	if !success {
 		return
 	}

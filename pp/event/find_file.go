@@ -2,19 +2,22 @@ package event
 
 import (
 	"context"
+	"net/http"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
-	"net/http"
 )
 
 // FindMyFileList
 func FindMyFileList(fileName, dir, reqID, keyword string, fileType int, isUp bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, findMyFileListData(fileName, dir, reqID, keyword, protos.FileSortType(fileType), isUp), header.ReqFindMyFileList)
+		peers.SendMessage(client.PPConn, types.FindMyFileListData(fileName, dir, reqID, keyword, protos.FileSortType(fileType), isUp), header.ReqFindMyFileList)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -24,19 +27,19 @@ func FindMyFileList(fileName, dir, reqID, keyword string, fileType int, isUp boo
 // ReqFindMyFileList ReqFindMyFileList
 func ReqFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("+++++++++++++++++++++++++++++++++++++++++++++++++++")
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspFindMyFileList
 func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspFindMyFileList")
 	var target protos.RspFindMyFileList
-	if !unmarshalData(ctx, &target) {
+	if !types.UnmarshalData(ctx, &target) {
 		return
 	}
 
 	if target.P2PAddress != setting.P2PAddress {
-		transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+		peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		return
 	}
 

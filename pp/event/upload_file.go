@@ -13,8 +13,10 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
 )
@@ -34,8 +36,8 @@ func RequestUploadCoverImage(pathStr, reqID string, w http.ResponseWriter) {
 		}
 		return
 	}
-	p := RequestUploadFileData(tmpString, "", reqID, true, false)
-	SendMessageToSPServer(p, header.ReqUploadFile)
+	p := types.RequestUploadFileData(tmpString, "", reqID, true, false)
+	peers.SendMessageToSPServer(p, header.ReqUploadFile)
 	storeResponseWriter(reqID, w)
 }
 
@@ -53,8 +55,8 @@ func RequestUploadFile(path, reqID string, _ http.ResponseWriter) {
 		return
 	}
 	if isFile {
-		p := RequestUploadFileData(path, "", reqID, false, false)
-		SendMessageToSPServer(p, header.ReqUploadFile)
+		p := types.RequestUploadFileData(path, "", reqID, false, false)
+		peers.SendMessageToSPServer(p, header.ReqUploadFile)
 		data["fileHash"] = fileHash
 
 		return
@@ -67,8 +69,8 @@ func RequestUploadFile(path, reqID string, _ http.ResponseWriter) {
 		select {
 		case pathString := <-setting.UpChan:
 			utils.DebugLog("path string == ", pathString)
-			p := RequestUploadFileData(pathString, "", reqID, false, false)
-			SendMessageToSPServer(p, header.ReqUploadFile)
+			p := types.RequestUploadFileData(pathString, "", reqID, false, false)
+			peers.SendMessageToSPServer(p, header.ReqUploadFile)
 		default:
 			return
 		}
@@ -86,9 +88,9 @@ func RequestUploadStream(path, reqID string, _ http.ResponseWriter) {
 		return
 	}
 	if isFile {
-		p := RequestUploadFileData(path, "", reqID, false, true)
+		p := types.RequestUploadFileData(path, "", reqID, false, true)
 		if p != nil {
-			SendMessageToSPServer(p, header.ReqUploadFile)
+			peers.SendMessageToSPServer(p, header.ReqUploadFile)
 		}
 		return
 	} else {
@@ -101,7 +103,7 @@ func RequestUploadStream(path, reqID string, _ http.ResponseWriter) {
 func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 	utils.DebugLog("get RspUploadFile")
 	target := &protos.RspUploadFile{}
-	if !unmarshalData(ctx, target) {
+	if !types.UnmarshalData(ctx, target) {
 		utils.ErrorLog("unmarshal error")
 		return
 	}
@@ -179,7 +181,7 @@ func up(ING *task.UpFileIng, fileHash string, isVideoStream bool) {
 			}
 
 			if len(ING.Slices) == 0 {
-				utils.DebugLog("all slices of the task are uploaded")
+				utils.DebugLog("all slices of the task have begun uploading")
 				if _, ok := <-ING.UpChan; ok {
 					close(ING.UpChan)
 				}
@@ -205,7 +207,7 @@ func up(ING *task.UpFileIng, fileHash string, isVideoStream bool) {
 func sendUploadFileSlice(fileHash, taskID string, isVideoStream bool) {
 	ing, ok := task.UpIngMap.Load(fileHash)
 	if !ok {
-		utils.DebugLog("all slices of the task are uploaded")
+		utils.DebugLog("all slices of the task have begun uploading")
 		return
 	}
 	ING := ing.(*task.UpFileIng)
@@ -225,7 +227,7 @@ func sendUploadFileSlice(fileHash, taskID string, isVideoStream bool) {
 				UploadFileSlice(uploadTask)
 			}
 		}
-		utils.DebugLog("all slices of the task are uploaded")
+		utils.DebugLog("all slices of the task have begun uploading")
 		_, ok := <-ING.UpChan
 		if ok {
 			close(ING.UpChan)

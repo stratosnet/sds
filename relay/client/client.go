@@ -3,6 +3,9 @@ package client
 import (
 	"context"
 	"errors"
+	"sync"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
@@ -13,8 +16,6 @@ import (
 	"github.com/stratosnet/sds/utils"
 	tmHttp "github.com/tendermint/tendermint/rpc/client/http"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
-	"sync"
-	"time"
 )
 
 type MultiClient struct {
@@ -47,8 +48,6 @@ func NewClient() *MultiClient {
 }
 
 func (m *MultiClient) Start() error {
-	// REST client to send messages to stratos-chain
-	stratoschain.Url = setting.Config.StratosChain.RestServer
 	// Client to subscribe to stratos-chain events and receive messages via websocket
 	m.stratosWebsocketUrl = setting.Config.StratosChain.WebsocketServer
 
@@ -248,7 +247,7 @@ func (m *MultiClient) stratosSubscriptionReaderLoop(subscription websocketSubscr
 				utils.Log("The stratos-chain events websocket channel has been closed")
 				return
 			}
-			utils.Log("Received a new message from stratos-chain!")
+			utils.Log("Received a new message from stratos-chain!", subscription.query)
 			handler(message)
 		}
 	}

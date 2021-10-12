@@ -3,15 +3,17 @@ package event
 // Author j
 import (
 	"context"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/serv"
+	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -19,7 +21,7 @@ import (
 func ReqTransferNotice(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get ReqTransferNotice")
 	var target protos.ReqTransferNotice
-	if !unmarshalData(ctx, &target) {
+	if !types.UnmarshalData(ctx, &target) {
 		return
 	}
 
@@ -36,7 +38,7 @@ func ReqTransferNotice(ctx context.Context, conn core.WriteCloser) {
 			task.TransferTaskMap[target.TransferCer] = &target
 			rspTransferNotice(true, target.TransferCer)
 			// if accept task, send request transfer notice to original PP
-			transferSendMessageToPPServ(target.StoragePpInfo.NetworkAddress, reqTransferNoticeData(&target))
+			peers.TransferSendMessageToPPServ(target.StoragePpInfo.NetworkAddress, types.ReqTransferNoticeData(&target))
 			utils.DebugLog("rspTransferNotice sendTransferToPP ")
 		} else {
 			rspTransferNotice(false, target.TransferCer)
@@ -46,23 +48,23 @@ func ReqTransferNotice(ctx context.Context, conn core.WriteCloser) {
 	// if msg from PP, then self is the original storage PP, transfer file to new storage PP
 	utils.DebugLog("if msg from PP, then self is the original storage PP, transfer file to new storage PP")
 	// check task with SP first
-	SendMessageToSPServer(reqValidateTransferCerData(&target), header.ReqValidateTransferCer)
+	peers.SendMessageToSPServer(types.ReqValidateTransferCerData(&target), header.ReqValidateTransferCer)
 	// store the task
 	task.TransferTaskMap[target.TransferCer] = &target
 	// store transfer target register peer wallet address
-	serv.RegisterPeerMap.Store(target.StoragePpInfo.P2PAddress, core.NetIDFromContext(ctx))
+	peers.RegisterPeerMap.Store(target.StoragePpInfo.P2PAddress, core.NetIDFromContext(ctx))
 }
 
 // rspTransferNotice
 func rspTransferNotice(agree bool, cer string) {
-	SendMessageToSPServer(rspTransferNoticeData(agree, cer), header.RspTransferNotice)
+	peers.SendMessageToSPServer(types.RspTransferNoticeData(agree, cer), header.RspTransferNotice)
 }
 
 // RspValidateTransferCer  SP-PP OR PP-PP
 func RspValidateTransferCer(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspValidateTransferCer")
 	var target protos.RspValidateTransferCer
-	if !unmarshalData(ctx, &target) {
+	if !types.UnmarshalData(ctx, &target) {
 		return
 	}
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
@@ -84,10 +86,10 @@ func RspValidateTransferCer(ctx context.Context, conn core.WriteCloser) {
 			return
 		}
 		msgBuf := msg.RelayMsgBuf{
-			MSGHead: PPMsgHeader(data, header.RspValidateTransferCer),
+			MSGHead: types.PPMsgHeader(data, header.RspValidateTransferCer),
 			MSGData: data,
 		}
-		transferSendMessageToClient(tTask.StoragePpInfo.P2PAddress, &msgBuf)
+		peers.TransferSendMessageToClient(tTask.StoragePpInfo.P2PAddress, &msgBuf)
 		delete(task.TransferTaskMap, target.TransferCer)
 
 		return
@@ -103,11 +105,11 @@ func RspValidateTransferCer(ctx context.Context, conn core.WriteCloser) {
 	if tTask.FromSp {
 		utils.DebugLog("if transfer cert from SP, then self is the transfer target ")
 
-		sendMessage(conn, reqTransferDownloadData(target.TransferCer), header.ReqTransferDownload)
+		peers.SendMessage(conn, types.ReqTransferDownloadData(target.TransferCer), header.ReqTransferDownload)
 	} else {
 		// certificate validation success, resp to new PP to start download
 		utils.DebugLog("cert validation success, resp to new PP to start download")
-		transferSendMessageToClient(tTask.StoragePpInfo.P2PAddress, core.MessageFromContext(ctx))
+		peers.TransferSendMessageToClient(tTask.StoragePpInfo.P2PAddress, core.MessageFromContext(ctx))
 	}
 }
 
@@ -141,7 +143,7 @@ func ReqReportTransferResult(transferCer string, result bool, originDeleted bool
 		req.IsNew = false
 		req.NewPp = tTask.StoragePpInfo
 	}
-	SendMessageToSPServer(req, header.ReqReportTransferResult)
+	peers.SendMessageToSPServer(req, header.ReqReportTransferResult)
 
 	//todo: whether clean task after get report resp or not.  if not get report, whether add timeout mechanism
 
@@ -151,7 +153,7 @@ func ReqReportTransferResult(transferCer string, result bool, originDeleted bool
 func RspReportTransferResult(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspReportTransferResult")
 	var target protos.RspReportTransferResult
-	if !unmarshalData(ctx, &target) {
+	if !types.UnmarshalData(ctx, &target) {
 		return
 	}
 	// remove task
@@ -168,7 +170,7 @@ func RspReportTransferResult(ctx context.Context, conn core.WriteCloser) {
 func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get ReqTransferDownload")
 	var target protos.ReqTransferDownload
-	if !unmarshalData(ctx, &target) {
+	if !types.UnmarshalData(ctx, &target) {
 		return
 	}
 	sliceData := task.GetTransferSliceData(target.TransferCer)
@@ -180,10 +182,10 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	dataEnd := setting.MAXDATA
 	for {
 		if dataEnd >= (sliceDataLen + 1) {
-			sendMessage(conn, rspTransferDownload(sliceData[dataStart:], target.TransferCer, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
+			peers.SendMessage(conn, types.RspTransferDownload(sliceData[dataStart:], target.TransferCer, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 			return
 		}
-		sendMessage(conn, rspTransferDownload(sliceData[dataStart:dataEnd], target.TransferCer, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
+		peers.SendMessage(conn, types.RspTransferDownload(sliceData[dataStart:dataEnd], target.TransferCer, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 		dataStart += setting.MAXDATA
 		dataEnd += setting.MAXDATA
 	}
@@ -193,12 +195,12 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspTransferDownload")
 	var target protos.RspTransferDownload
-	if !unmarshalData(ctx, &target) {
+	if !types.UnmarshalData(ctx, &target) {
 		return
 	}
 	if task.SaveTransferData(&target) {
 		ReqReportTransferResult(target.TransferCer, true, false)
-		sendMessage(conn, rspTransferDownloadResultData(target.TransferCer), header.RspTransferDownloadResult)
+		peers.SendMessage(conn, types.RspTransferDownloadResultData(target.TransferCer), header.RspTransferDownloadResult)
 	}
 }
 
@@ -206,7 +208,7 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspTransferDownloadResult")
 	var target protos.RspTransferDownloadResult
-	if !unmarshalData(ctx, &target) {
+	if !types.UnmarshalData(ctx, &target) {
 		return
 	}
 

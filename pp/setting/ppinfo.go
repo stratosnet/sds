@@ -2,12 +2,13 @@ package setting
 
 import (
 	"encoding/csv"
-	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/types"
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/types"
 )
 
 const (
@@ -56,8 +57,8 @@ var P2PPublicKey []byte
 // P2PPrivateKey
 var P2PPrivateKey []byte
 
-//SPPublicKey
-var SPPublicKey map[string][]byte
+// SPMap
+var SPMap = &sync.Map{}
 
 // PPList
 var PPList []*protos.PPBaseInfo

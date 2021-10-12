@@ -11,14 +11,16 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
 // DeleteFile
 func DeleteFile(fileHash, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		sendMessage(client.PPConn, reqDeleteFileData(fileHash, reqID), header.ReqDeleteFile)
+		peers.SendMessage(client.PPConn, types.ReqDeleteFileData(fileHash, reqID), header.ReqDeleteFile)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -27,13 +29,13 @@ func DeleteFile(fileHash, reqID string, w http.ResponseWriter) {
 
 // ReqDeleteFile
 func ReqDeleteFile(ctx context.Context, conn core.WriteCloser) {
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }
 
 // RspDeleteFile
 func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeleteFile
-	if unmarshalData(ctx, &target) {
+	if types.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("delete success ", target.Result.Msg)
@@ -42,7 +44,7 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPDeleteFile, &target)
 		} else {
-			transferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -53,12 +55,12 @@ func ReqDeleteSlice(ctx context.Context, conn core.WriteCloser) {
 	case *cf.ClientConn:
 		{
 			var target protos.ReqDeleteSlice
-			if unmarshalData(ctx, &target) {
+			if types.UnmarshalData(ctx, &target) {
 				if target.P2PAddress == setting.P2PAddress {
 					if file.DeleteSlice(target.SliceHash) != nil {
-						rspDeleteSliceData(target.SliceHash, "failed to delete, file not exist", false)
+						types.RspDeleteSliceData(target.SliceHash, "failed to delete, file not exist", false)
 					} else {
-						rspDeleteSliceData(target.SliceHash, "delete successfully", true)
+						types.RspDeleteSliceData(target.SliceHash, "delete successfully", true)
 					}
 				}
 			}
@@ -73,5 +75,5 @@ func ReqDeleteSlice(ctx context.Context, conn core.WriteCloser) {
 
 // RspDeleteSlice RspDeleteSlice
 func RspDeleteSlice(ctx context.Context, conn core.WriteCloser) {
-	transferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 }

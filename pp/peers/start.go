@@ -1,46 +1,54 @@
 package peers
 
 import (
+	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/pp/client"
-	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
-// Start Start
-func Start(isPP bool) {
-	GetWalletAddress()
+// StartPP
+func StartPP(registerFn func()) {
 	GetNetworkAddress()
-	event.RegisterEventHandle()
-	if !isPP {
-		event.GetSPList()
-		initPPList()
-	} else {
-		client.SPConn = client.NewClient(setting.Config.SPNetAddress, true)
-	}
+	//todo: register func call shouldn't be in peers package
+	registerFn()
+	GetSPList()
+	InitPPList()
+	ListenOffline()
+	StartStatusReportToSP()
 }
 
-// StartPP StartPP
-func StartPP() {
-	err := GetWalletAddress()
-	if err != nil {
-		utils.ErrorLog(err)
-		return
-	}
-	GetNetworkAddress()
-	event.RegisterEventHandle()
-	event.GetSPList()
-	initPPList()
-	listenOffline()
-	startStatusReportToSP()
-}
-
-// InitPeer InitPeer
-func InitPeer() {
+// InitPeer
+func InitPeer(registerFn func()) {
 	utils.DebugLog("InitPeer InitPeerInitPeer InitPeerInitPeer InitPeer")
-	event.RegisterEventHandle()
-	event.GetSPList()
-	initPPList()
-	go listenOffline()
-	startStatusReportToSP()
+	//todo: register func call shouldn't be in peers package
+	registerFn()
+	GetSPList()
+	InitPPList()
+	go ListenOffline()
+}
+
+// RegisterChain
+func RegisterChain(toSP bool) {
+	if toSP {
+		SendMessageToSPServer(types.ReqRegisterData(), header.ReqRegister)
+		utils.Log("SendMessage(conn, req, header.ReqRegister) to SP")
+	} else {
+		SendMessage(client.PPConn, types.ReqRegisterData(), header.ReqRegister)
+		utils.Log("SendMessage(conn, req, header.ReqRegister) to PP")
+	}
+
+}
+
+// StartMining
+func StartMining() {
+	if setting.CheckLogin() {
+		if setting.IsPP {
+			utils.DebugLog("Sending ReqMining message to SP")
+			SendMessageToSPServer(types.ReqMiningData(), header.ReqMining)
+		} else {
+			utils.Log("register as miner first")
+		}
+	}
 }

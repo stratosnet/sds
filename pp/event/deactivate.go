@@ -2,10 +2,13 @@ package event
 
 import (
 	"context"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
 )
@@ -18,14 +21,14 @@ func Deactivate(fee, gas int64) error {
 		return err
 	}
 	utils.Log("Sending deactivate message to SP! " + deactivateReq.P2PAddress)
-	SendMessageToSPServer(deactivateReq, header.ReqDeactivatePP)
+	peers.SendMessageToSPServer(deactivateReq, header.ReqDeactivatePP)
 	return nil
 }
 
 // RspDeactivate. Response to asking the SP node to deactivate this PP node
 func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeactivatePP
-	success := unmarshalData(ctx, &target)
+	success := types.UnmarshalData(ctx, &target)
 	if !success {
 		return
 	}
