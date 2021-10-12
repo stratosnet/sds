@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -13,10 +14,12 @@ func main() {
 	nodeCmd := getNodeCmd()
 	terminalCmd := getTerminalCmd()
 	configCmd := getGenConfigCmd()
+	verCmd := getVersionCmd()
 
 	rootCmd.AddCommand(nodeCmd)
 	rootCmd.AddCommand(terminalCmd)
 	rootCmd.AddCommand(configCmd)
+	rootCmd.AddCommand(verCmd)
 
 	err := rootCmd.Execute()
 	if err != nil {
@@ -68,6 +71,21 @@ func getGenConfigCmd() *cobra.Command {
 		Use:   "config",
 		Short: "create default configuration file",
 		RunE:  genConfig,
+	}
+	return cmd
+}
+
+
+
+func getVersionCmd() *cobra.Command{
+
+	version := "v0.3.0"
+	cmd := &cobra.Command{
+		Use:    "version",
+		Short:  "get version of the build",
+		Run: 	func(cmd *cobra.Command, args []string) {
+			fmt.Println(version)
+		},
 	}
 	return cmd
 }
