@@ -16,6 +16,9 @@ import (
 // REPROTDHTIME 1 hour
 const REPROTDHTIME = 60 * 60
 
+// Interval of node stat report
+const NodeReportIntervalSec = 300 // in seconds
+
 // MAXDATA max slice size
 const MAXDATA = 1024 * 1024 * 3
 

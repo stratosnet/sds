@@ -39,10 +39,8 @@ func StartStatusReportToSP() {
 	ReportNodeStatus()
 	// trigger consecutive reports with interval
 	clock := clock.NewClock()
-	clock.AddJobRepeat(time.Second*ReportIntervalSec, 0, ReportNodeStatus)
+	clock.AddJobRepeat(time.Second*setting.NodeReportIntervalSec, 0, ReportNodeStatus)
 }
-
-
 
 // GetPPList P node get PPList
 func GetPPList() {
@@ -52,4 +50,3 @@ func GetPPList() {
 
 // RegisterPeerMap
 var RegisterPeerMap = &sync.Map{} // make(map[string]int64)
-

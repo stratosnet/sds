@@ -107,10 +107,9 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 
 			utils.DebugLog("Start reporting node status to SP")
 			// trigger 1 stat report immediately
-			ReportNodeStatus()
+			peers.ReportNodeStatus()
 		} else {
 			utils.Log(target.Result.Msg)
 		}
 	}
 }
-
