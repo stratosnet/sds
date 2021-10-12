@@ -7,20 +7,25 @@ import (
 	"math"
 	"strconv"
 	"testing"
+	"time"
 )
 
 func TestWHRTrend(t *testing.T) {
 	testRing := NewWeightedHashRing()
 
+	start := time.Now()
 	numNode := 100
 	for i := 1; i <= numNode; i++ {
 		tmpVWN := &WeightedNode{ID: "stsdsp2p1faej5w4q6hgnt0ft598dlm408g4p747ymg5jq6_" + strconv.Itoa(i), Host: "127.0.0.1:18092_" + strconv.Itoa(i), Rest: "127.0.0.1:18092_" + strconv.Itoa(i), Weight: math.Exp(float64(i))}
 		testRing.AddNode(tmpVWN)
 		testRing.NodeStatus[tmpVWN.ID] = true
 	}
+	logPointA := time.Now()
+	utils.DebugLogf("it cost %v(s) for creating a weighted hashring of %v nodes with numOfCopies [1-%v]", logPointA.Sub(start).Seconds(), numNode, numNode)
 
-	numDraw := 10000
+	numDraw := 1000000
 
+	startDraw := time.Now()
 	drawnStat := make(map[string]int)
 	for i := 0; i < numDraw; i++ {
 		ranStr := uuid.New().String()
@@ -28,6 +33,9 @@ func TestWHRTrend(t *testing.T) {
 		existingDrawnNum := drawnStat[drawnID]
 		drawnStat[drawnID] = existingDrawnNum + 1
 	}
+	logPointB := time.Now()
+	totalDrawDuration := logPointB.Sub(startDraw)
+	utils.DebugLogf("it cost %v(s) for %v draws, average draw time is %v(s)", totalDrawDuration, numDraw, totalDrawDuration.Seconds()/float64(numDraw))
 
 	h := thist.NewHist(nil, "\n       Draw Stat histogram\n", "auto", 100, true)
 	c := make(chan float64, numNode)
