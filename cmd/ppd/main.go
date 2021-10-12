@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -79,7 +80,7 @@ func getGenConfigCmd() *cobra.Command {
 
 func getVersionCmd() *cobra.Command{
 
-	version := "v0.3.0"
+	version := setting.Version
 	cmd := &cobra.Command{
 		Use:    "version",
 		Short:  "get version of the build",

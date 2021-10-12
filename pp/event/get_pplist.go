@@ -17,13 +17,14 @@ import (
 
 // RspGetPPList
 func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
-	utils.Log("get GetPPList RSP")
+	utils.DebugLog("get GetPPList RSP")
 	var target protos.RspGetPPList
 	if !types.UnmarshalData(ctx, &target) {
 		return
 	}
-	utils.Log("get GetPPList RSP", target.PpList)
+	utils.DebugLog("get GetPPList RSP", target.PpList)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		utils.Log("failed to get any peers, reloading")
 		reloadPPlist()
 		return
 	}
