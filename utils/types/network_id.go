@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-const NetworkIDPrefix = "sdm://"
+const NetworkIDPrefix = "snode:"
 
 type NetworkID struct {
 	P2pAddress     string
