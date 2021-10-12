@@ -16,13 +16,14 @@ import (
 
 // RspGetPPList
 func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
-	utils.Log("get GetSPList RSP")
+	utils.DebugLog("get GetSPList RSP")
 	var target protos.RspGetSPList
 	if !types.UnmarshalData(ctx, &target) {
 		return
 	}
-	utils.Log("get GetSPList RSP", target.SpList)
+	utils.DebugLog("get GetSPList RSP", target.SpList)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		utils.Log("failed to get any indexing nodes, reloading")
 		reloadSPlist()
 		return
 	}
