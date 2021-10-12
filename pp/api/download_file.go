@@ -70,7 +70,7 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 			go event.FindDirectoryTree(reqID, p.hash, w, false)
 			count++
 		} else {
-			path := "spb://" + p.belongToAddress + "/" + p.hash
+			path := "sdm://" + p.belongToAddress + "/" + p.hash
 			downTaskID := uuid.New().String()
 			tree := &df{
 				TaskID: downTaskID,
@@ -118,7 +118,7 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 						FileName: finfo.FileName,
 						FileSize: finfo.FileSize,
 					}
-					path := "spb://" + finfo.OwnerWalletAddress + "/" + tree.TaskID
+					path := "sdm://" + finfo.OwnerWalletAddress + "/" + tree.TaskID
 					setting.DownloadTaskIDMap.Range(func(k, v interface{}) bool {
 						if v.(string) == finfo.FileHash {
 							tree.TaskID = k.(string)
@@ -146,7 +146,7 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 	// 			FileHash: dt.Hash,file.go:226
 	// 			P2PPath:     dt.Dir,
 	// 		}
-	// 		// path := "spb://" + data["belongAddress"].(string) + "/" + tree.FileHash
+	// 		// path := "sdm://" + data["belongAddress"].(string) + "/" + tree.FileHash
 	// 		// event.GetFileStorageInfo(path, savePath, uuid.New().String(), w)
 	// 		list = append(list, tree)
 	// 		utils.DebugLog("DirectoryTree>>>>>>>>>>>")

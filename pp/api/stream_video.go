@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stratosnet/sds/relay/stratoschain"
-	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/bech32"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/stratosnet/sds/relay/stratoschain"
+	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/tendermint/tendermint/libs/bech32"
 
 	"github.com/stratosnet/sds/utils"
 
@@ -53,7 +54,7 @@ func streamVideoStorageInfo(w http.ResponseWriter, req *http.Request) {
 
 	var fInfo *protos.RspFileStorageInfo
 	task.DownloadFileMap.Delete(fileHash)
-	event.GetFileStorageInfo("spb://"+setting.WalletAddress+"/"+fileHash, setting.VIDEOPATH, uuid.New().String(), false, true, w)
+	event.GetFileStorageInfo("sdm://"+setting.WalletAddress+"/"+fileHash, setting.VIDEOPATH, uuid.New().String(), false, true, w)
 	start := time.Now().Unix()
 	for {
 		if f, ok := task.DownloadFileMap.Load(fileHash); ok {
