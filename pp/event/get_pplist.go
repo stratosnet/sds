@@ -7,7 +7,6 @@ import (
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
@@ -18,13 +17,14 @@ import (
 
 // RspGetPPList
 func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
-	utils.Log("get GetPPList RSP")
+	utils.DebugLog("get GetPPList RSP")
 	var target protos.RspGetPPList
 	if !types.UnmarshalData(ctx, &target) {
 		return
 	}
-	utils.Log("get GetPPList RSP", target.PpList)
+	utils.DebugLog("get GetPPList RSP", target.PpList)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		utils.Log("failed to get any peers, reloading")
 		reloadPPlist()
 		return
 	}
@@ -39,20 +39,9 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	ppList := setting.PPList
-	for _, ppInfo := range ppList {
-		if ppInfo.NetworkAddress == setting.NetworkAddress {
-			continue
-		}
-		client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
-		if client.PPConn != nil {
-			peers.RegisterChain(false)
-			return
-		}
-		utils.DebugLog("failed to conn PP，delete:", ppInfo)
-		setting.DeletePPList(ppInfo.NetworkAddress)
+	if success := peers.SendRegisterRequestViaPP(setting.PPList); !success {
+		reloadPPlist()
 	}
-	reloadPPlist()
 }
 
 func reloadPPlist() {

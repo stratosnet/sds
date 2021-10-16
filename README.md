@@ -117,7 +117,7 @@ list
 
 ### Download a File
 ```bash
-get spb://WALLET_ADDRESS/FILE_HASH
+get sdm://WALLET_ADDRESS/FILE_HASH
 ```
 Every file uploaded to SDS is attributed a unique file hash. You can view the file hash for each of your files when your list your uploaded files.
 

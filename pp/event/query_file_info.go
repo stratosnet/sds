@@ -94,9 +94,9 @@ func GetFileStorageInfo(path, savePath, reqID string, isImg bool, isVideoStream 
 				storeResponseWriter(reqID, w)
 			}
 		} else {
-			utils.ErrorLog("please input correct download link, eg: spb://address/fileHash|filename(optional)")
+			utils.ErrorLog("please input correct download link, eg: sdm://address/fileHash|filename(optional)")
 			if w != nil {
-				w.Write(httpserv.NewJson(nil, setting.FAILCode, "please input correct download link, eg:  spb://address/fileHash|filename(optional)").ToBytes())
+				w.Write(httpserv.NewJson(nil, setting.FAILCode, "please input correct download link, eg:  sdm://address/fileHash|filename(optional)").ToBytes())
 			}
 		}
 	} else {
@@ -237,7 +237,7 @@ func CheckDownloadPath(path string) bool {
 		utils.DebugLog("invalid path length")
 		return false
 	}
-	if path[:6] != "spb://" {
+	if path[:6] != "sdm://" {
 		return false
 	}
 	if path[47:48] != "/" {
