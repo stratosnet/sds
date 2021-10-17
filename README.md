@@ -47,7 +47,7 @@ and then the indexing node list:
 SPList: 
 - P2PAddress: ""
   P2PPublicKey: ""
-  NetworkAddress: 54.212.112.93:8888 
+  NetworkAddress: 3.12.6.122:8888 
 ```
 You also need to change the `ChainId` to the value visible [on this page](https://big-dipper-test.thestratos.org/) right next to the search bar at the top of the page.  
 ```yaml
