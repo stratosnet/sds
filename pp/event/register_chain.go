@@ -111,4 +111,3 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 		}
 	}
 }
-
