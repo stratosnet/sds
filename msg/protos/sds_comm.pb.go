@@ -803,7 +803,7 @@ type FileIndexes struct {
 	unknownFields protoimpl.UnknownFields
 
 	//  string file_hash = 1; // file hash
-	FilePath      string `protobuf:"bytes,1,opt,name=file_path,json=filePath,proto3" json:"file_path,omitempty"` //  spb://accunt/fileHash|fileName
+	FilePath      string `protobuf:"bytes,1,opt,name=file_path,json=filePath,proto3" json:"file_path,omitempty"` //  sdm://accunt/fileHash|fileName
 	P2PAddress    string `protobuf:"bytes,2,opt,name=p2p_address,json=p2pAddress,proto3" json:"p2p_address,omitempty"`
 	WalletAddress string `protobuf:"bytes,3,opt,name=wallet_address,json=walletAddress,proto3" json:"wallet_address,omitempty"`
 	SavePath      string `protobuf:"bytes,4,opt,name=save_path,json=savePath,proto3" json:"save_path,omitempty"`
