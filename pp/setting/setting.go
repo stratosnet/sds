@@ -133,7 +133,7 @@ func LoadConfig(configPath string) error {
 		return err
 	}
 
-	Config.DownloadPathMinLen = 112
+	Config.DownloadPathMinLen = 113
 
 	if ostype == "windows" {
 		IsWindows = true

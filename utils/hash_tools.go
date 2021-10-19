@@ -1,11 +1,14 @@
 package utils
 
 import (
-	"crypto/md5"
 	"encoding/hex"
 	"errors"
+	"github.com/ipfs/go-cid"
+	mbase "github.com/multiformats/go-multibase"
+	mh "github.com/multiformats/go-multihash"
 	"hash/crc32"
 	"io"
+	"io/ioutil"
 	"os"
 
 	"github.com/stratosnet/sds/utils/crypto"
@@ -16,27 +19,6 @@ func CalcCRC32(data []byte) uint32 {
 	iEEE := crc32.NewIEEE()
 	io.WriteString(iEEE, string(data))
 	return iEEE.Sum32()
-}
-
-// CalcMD5
-func CalcMD5(data []byte) []byte {
-	MD5 := md5.New()
-	MD5.Write(data)
-	MD5.Sum(nil)
-	return MD5.Sum(nil)
-}
-
-// CalcFileMD5
-func CalcFileMD5(filePath string) []byte {
-	file, err := os.Open(filePath)
-	if err != nil {
-		Log(err.Error())
-		return nil
-	}
-	defer file.Close()
-	MD5 := md5.New()
-	io.Copy(MD5, file)
-	return MD5.Sum(nil)
 }
 
 // CalcFileCRC32
@@ -59,7 +41,7 @@ func CalcFileHash(filePath string) string {
 		Log(errors.New("CalcFileHash: missing file path"))
 		return ""
 	}
-	return hex.EncodeToString(crypto.Keccak256(CalcFileMD5(filePath)))
+	return calcFileHash(getFileData(filePath))
 }
 
 // CalcHash
@@ -69,15 +51,34 @@ func CalcHash(data []byte) string {
 
 // CalcHash
 func CalcSliceHash(data []byte, fileHash string) string {
-	fileKeccak256, _ := hex.DecodeString(fileHash)
-	sliceKeccak256 := crypto.Keccak256(data)
+	fileCid, _ := cid.Decode(fileHash)
+	fileKeccak256 := fileCid.Hash()
+	sliceKeccak256, _ := mh.Sum(data, mh.KECCAK_256, 32)
 	if len(fileKeccak256) != len(sliceKeccak256) {
 		Log(errors.New("length of fileKeccak256 and sliceKeccak256 doesn't match"))
 		return ""
 	}
-	hash := make([]byte, len(fileKeccak256))
+	sliceHash := make([]byte, len(fileKeccak256))
 	for i := 0; i < len(fileKeccak256); i++ {
-		hash[i] = fileKeccak256[i] ^ sliceKeccak256[i]
+		sliceHash[i] = fileKeccak256[i] ^ sliceKeccak256[i]
 	}
-	return hex.EncodeToString(hash)
+	sliceHash, _ = mh.Sum(sliceHash, mh.KECCAK_256, 32)
+	sliceCid := cid.NewCidV1(cid.Raw, sliceHash)
+	encoder, _ := mbase.NewEncoder(mbase.Base32hexPad)
+	return sliceCid.Encode(encoder)
+}
+
+func getFileData(filePath string) []byte {
+	data, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil
+	}
+	return data
+}
+
+func calcFileHash(data []byte) string {
+	fileHash, _ := mh.Sum(data, mh.KECCAK_256, 32)
+	fileCid := cid.NewCidV1(cid.Raw, fileHash)
+	encoder, _ := mbase.NewEncoder(mbase.Base32hexPad)
+	return fileCid.Encode(encoder)
 }
