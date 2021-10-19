@@ -288,7 +288,7 @@ func defaultConfig() *config {
 		IsCheckFileTransferFinished: false,
 		AddressPrefix:               "st",
 		P2PKeyPrefix:                "stsdsp2p",
-		ChainId:                     "stratos-testnet-2",
+		ChainId:                     "stratos-testnet-3",
 		Token:                       "ustos",
 		StratosChainUrl:             "http://127.0.0.1:1317",
 		StreamingCache:              false,
