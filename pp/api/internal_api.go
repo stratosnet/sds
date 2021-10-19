@@ -49,7 +49,7 @@ func StartHTTPServ() {
 	httpServ.MyRoute("/getAllFile", getAllFile)
 	httpServ.MyRoute("/getShareLink", getAllShareLink)
 	httpServ.MyRoute("/downloadFile", downloadFile)
-	httpServ.MyRoute("/uploadFile", upLoadFile)
+	httpServ.MyRoute("/uploadFile", uploadFile)
 	httpServ.MyRoute("/mkdir", mkdir)
 	httpServ.MyRoute("/deleteFile", deleteFile)
 	httpServ.MyRoute("/setConfig", setConfig)

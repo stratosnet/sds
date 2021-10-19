@@ -73,6 +73,7 @@ message FileInfo {
      string share_link = 9;
      uint64 sort_id = 10;
      uint64 duration = 11;
+     string encryption_tag = 12;
 }
 
 // slice number and pp address
@@ -86,6 +87,7 @@ message SliceNumAddr {
 message SliceOffsetInfo {
      string slice_hash = 1;
      SliceOffset slice_offset = 2;
+     SliceOffset encrypted_slice_offset = 3;
 }
 message SliceOffset {
      uint64 slice_offset_start = 1;
@@ -114,6 +116,13 @@ message DownloadSliceInfo {
 message SliceStorageInfo {
      uint64 slice_size = 1; //
      string slice_hash = 2; //
+}
+
+message EncryptedSlice {
+    uint32 hdkey_nonce = 1;
+    uint64 aes_nonce = 2;
+    bytes  data = 3;
+    uint64 raw_size = 4;
 }
 
 message ShareLinkInfo{

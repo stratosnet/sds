@@ -4,6 +4,7 @@ package event
 import (
 	"context"
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	"net/http"
 
 	"github.com/stratosnet/sds/framework/client/cf"
@@ -18,6 +19,8 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/encryption"
+	"github.com/stratosnet/sds/utils/encryption/hdkey"
 )
 
 var bpChan = make(chan *msg.RelayMsgBuf, 100)
@@ -44,7 +47,7 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 						downloadWrong(target.TaskId, target.SliceInfo.SliceHash, target.P2PAddress, target.WalletAddress, protos.DownloadWrongType_LOSESLICE)
 					}
 				} else {
-					utils.DebugLog("passagePP received downloadslice reqest, transfer to :", sInfo.StoragePpInfo.NetworkAddress)
+					utils.DebugLog("passagePP received downloadslice request, transfer to :", sInfo.StoragePpInfo.NetworkAddress)
 					// transferSendMessageToPPServ(sInfo.StoragePpInfo.NetworkAddress, core.MessageFromContext(ctx))
 					if c, ok := client.DownloadPassageway.Load(target.P2PAddress + target.SliceInfo.SliceHash); ok {
 						conn := c.(*cf.ClientConn)
@@ -88,13 +91,15 @@ func splitSendDownloadSliceData(rsp *protos.RspDownloadSlice, conn core.WriteClo
 		utils.DebugLog("_____________________________")
 		utils.DebugLog(dataStart, dataEnd, offsetStart, offsetEnd)
 		if dataEnd < dataLen {
-			peers.SendMessage(conn, types.RspDownloadSliceDataSplit(rsp, dataStart, dataEnd, offsetStart, offsetEnd, false), header.RspDownloadSlice)
+			peers.SendMessage(conn, types.RspDownloadSliceDataSplit(rsp, dataStart, dataEnd, offsetStart, offsetEnd,
+				rsp.SliceInfo.SliceOffset.SliceOffsetStart, rsp.SliceInfo.SliceOffset.SliceOffsetEnd, false), header.RspDownloadSlice)
 			dataStart += setting.MAXDATA
 			dataEnd += setting.MAXDATA
 			offsetStart += setting.MAXDATA
 			offsetEnd += setting.MAXDATA
 		} else {
-			peers.SendMessage(conn, types.RspDownloadSliceDataSplit(rsp, dataStart, 0, offsetStart, rsp.SliceInfo.SliceOffset.SliceOffsetEnd, true), header.RspDownloadSlice)
+			peers.SendMessage(conn, types.RspDownloadSliceDataSplit(rsp, dataStart, 0, offsetStart, 0,
+				rsp.SliceInfo.SliceOffset.SliceOffsetStart, rsp.SliceInfo.SliceOffset.SliceOffsetEnd, true), header.RspDownloadSlice)
 			return
 		}
 	}
@@ -145,6 +150,50 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 }
 
 func receiveSliceAndProgress(target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo) {
+	if fInfo.EncryptionTag != "" {
+		dataToDecrypt := target.Data
+		dataToDecryptSize := uint64(len(dataToDecrypt))
+		encryptedOffset := target.SliceInfo.EncryptedSliceOffset
+
+		if existingSlice, ok := task.DownloadEncryptedSlices.Load(target.SliceInfo.SliceHash); ok {
+			existingSliceData := existingSlice.([]byte)
+			copy(existingSliceData[encryptedOffset.SliceOffsetStart:encryptedOffset.SliceOffsetEnd], dataToDecrypt)
+			dataToDecrypt = existingSliceData
+
+			if s, ok := task.DownloadSliceProgress.Load(target.SliceInfo.SliceHash); ok {
+				existingSize := s.(uint64)
+				dataToDecryptSize += existingSize
+			}
+		}
+
+		if dataToDecryptSize >= target.SliceSize {
+			// Decrypt slice data and save it to file
+			decryptedData, err := decryptSliceData(dataToDecrypt)
+			if err != nil {
+				utils.ErrorLog("Couldn't decrypt slice", err)
+				return
+			}
+			target.Data = decryptedData
+
+			if task.SaveDownloadFile(target, fInfo) {
+				utils.DebugLog("slice download finished", target.SliceInfo.SliceHash)
+				task.DownloadSliceProgress.Delete(target.SliceInfo.SliceHash)
+				task.DownloadEncryptedSlices.Delete(target.SliceInfo.SliceHash)
+				receivedSlice(target, fInfo)
+			}
+		} else {
+			// Store partial slice data to memory
+			dataToStore := dataToDecrypt
+			if uint64(len(dataToStore)) < target.SliceSize {
+				dataToStore = make([]byte, target.SliceSize)
+				copy(dataToStore[encryptedOffset.SliceOffsetStart:encryptedOffset.SliceOffsetEnd], dataToDecrypt)
+			}
+			task.DownloadEncryptedSlices.Store(target.SliceInfo.SliceHash, dataToStore)
+			task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash, dataToDecryptSize)
+		}
+		return
+	}
+
 	if task.SaveDownloadFile(target, fInfo) {
 		dataLen := uint64(len(target.Data))
 		if s, ok := task.DownloadSliceProgress.Load(target.SliceInfo.SliceHash); ok {
@@ -203,13 +252,19 @@ func SendReportStreamingResult(target *protos.RspDownloadSlice, isPP bool) {
 
 // DownloadFileSlice
 func DownloadFileSlice(target *protos.RspFileStorageInfo) {
-	utils.DebugLog("file size: ", target.FileSize)
+	fileSize := uint64(0)
+	for _, sliceInfo := range target.SliceInfo {
+		fileSize += sliceInfo.SliceStorageInfo.SliceSize
+	}
+	utils.DebugLog(fmt.Sprintf("file size: %v  raw file size: %v\n", fileSize, target.FileSize))
+
 	sp := &task.DownloadSP{
-		TotalSize:    int64(target.FileSize),
-		DownloadSize: 0,
+		RawSize:        int64(target.FileSize),
+		TotalSize:      int64(fileSize),
+		DownloadedSize: 0,
 	}
 	task.DownloadSpeedOfProgress.Store(target.FileHash, sp)
-	if !file.CheckFileExisting(target.FileHash, target.FileName, target.SavePath) {
+	if !file.CheckFileExisting(target.FileHash, target.FileName, target.SavePath, target.EncryptionTag) {
 		for _, rsp := range target.SliceInfo {
 
 			utils.DebugLog("taskid ======= ", rsp.TaskId)
@@ -342,4 +397,21 @@ func RspDownloadSlicePause(ctx context.Context, conn core.WriteCloser) {
 			utils.DebugLog("pause failed, fileHash", target.FileHash, target.Result.Msg)
 		}
 	}
+}
+
+func decryptSliceData(dataToDecrypt []byte) ([]byte, error) {
+	encryptedSlice := protos.EncryptedSlice{}
+	err := proto.Unmarshal(dataToDecrypt, &encryptedSlice)
+	if err != nil {
+		utils.ErrorLog("Couldn't unmarshal protobuf to encrypted slice", err)
+		return nil, err
+	}
+
+	key, err := hdkey.MasterKeyForSliceEncryption(setting.WalletPrivateKey, encryptedSlice.HdkeyNonce)
+	if err != nil {
+		utils.ErrorLog("Couldn't generate slice encryption master key", err)
+		return nil, err
+	}
+
+	return encryption.DecryptAES(key.PrivateKey(), encryptedSlice.Data, encryptedSlice.AesNonce)
 }
