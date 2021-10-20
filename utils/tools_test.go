@@ -51,11 +51,11 @@ func TestECCSignAndVerify(t *testing.T) {
 }
 
 func TestCid(t *testing.T) {
-	fileData := "file data"
-	sliceData := "slice data"
+	fileData := []byte("file data")
+	sliceData := []byte("slice data")
 
-	fileHash := calcFileHash([]byte(fileData))
-	sliceHash := CalcSliceHash([]byte(sliceData), fileHash)
+	fileHash := calcFileHash(fileData)
+	sliceHash := CalcSliceHash(sliceData, fileHash)
 	fileCid, _ := cid.Decode(fileHash)
 	sliceCid, _ := cid.Decode(sliceHash)
 	filePrefix := fileCid.Prefix()
@@ -82,5 +82,10 @@ func TestCid(t *testing.T) {
 
 	if slicePrefix != expectedPrefix {
 		t.Fatal("incorrect slice cid prefix after decoding")
+	}
+
+	fakeFileHash := "t05ahm87h28vdd04qu3pbv0op4jnjnkpete9eposh2l6r1hp8i0hbqictcc======"
+	if sliceHash == CalcSliceHash(sliceData, fakeFileHash) {
+		t.Fatal("slice hash should be different when being generated with different file hash")
 	}
 }
