@@ -3,6 +3,7 @@ package utils
 import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/hd"
 	"github.com/cosmos/go-bip39"
+	"github.com/ipfs/go-cid"
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/math"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
@@ -46,5 +47,40 @@ func TestECCSignAndVerify(t *testing.T) {
 	}
 	if !ECCVerifyBytes(msg, sig2, pubKeyBytes) {
 		t.Fatal("couldn't ECCVerifyBytes sig from ECCSignBytes")
+	}
+}
+
+func TestCid(t *testing.T) {
+	fileData := "file data"
+	sliceData := "slice data"
+
+	fileHash := calcFileHash([]byte(fileData))
+	sliceHash := CalcSliceHash([]byte(sliceData), fileHash)
+	fileCid, _ := cid.Decode(fileHash)
+	sliceCid, _ := cid.Decode(sliceHash)
+	filePrefix := fileCid.Prefix()
+	slicePrefix := sliceCid.Prefix()
+
+	expectedPrefix := cid.Prefix{
+		Version:  1,
+		Codec:    85,
+		MhType:   27,
+		MhLength: 32,
+	}
+
+	if len(fileHash) != 65 {
+		t.Fatal("incorrect file hash length")
+	}
+
+	if len(sliceHash) != 65 {
+		t.Fatal("incorrect slice hash length")
+	}
+
+	if filePrefix != expectedPrefix {
+		t.Fatal("incorrect file cid prefix after decoding")
+	}
+
+	if slicePrefix != expectedPrefix {
+		t.Fatal("incorrect slice cid prefix after decoding")
 	}
 }
