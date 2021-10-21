@@ -65,14 +65,14 @@ func TestCid(t *testing.T) {
 		Version:  1,
 		Codec:    85,
 		MhType:   27,
-		MhLength: 32,
+		MhLength: 20,
 	}
 
-	if len(fileHash) != 65 {
+	if len(fileHash) != 40 {
 		t.Fatal("incorrect file hash length")
 	}
 
-	if len(sliceHash) != 65 {
+	if len(sliceHash) != 40 {
 		t.Fatal("incorrect slice hash length")
 	}
 

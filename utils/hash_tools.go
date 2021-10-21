@@ -53,7 +53,7 @@ func CalcHash(data []byte) string {
 func CalcSliceHash(data []byte, fileHash string) string {
 	fileCid, _ := cid.Decode(fileHash)
 	fileKeccak256 := fileCid.Hash()
-	sliceKeccak256, _ := mh.Sum(data, mh.KECCAK_256, 32)
+	sliceKeccak256, _ := mh.Sum(data, mh.KECCAK_256, 20)
 	if len(fileKeccak256) != len(sliceKeccak256) {
 		Log(errors.New("length of fileKeccak256 and sliceKeccak256 doesn't match"))
 		return ""
@@ -62,9 +62,9 @@ func CalcSliceHash(data []byte, fileHash string) string {
 	for i := 0; i < len(fileKeccak256); i++ {
 		sliceHash[i] = fileKeccak256[i] ^ sliceKeccak256[i]
 	}
-	sliceHash, _ = mh.Sum(sliceHash, mh.KECCAK_256, 32)
+	sliceHash, _ = mh.Sum(sliceHash, mh.KECCAK_256, 20)
 	sliceCid := cid.NewCidV1(cid.Raw, sliceHash)
-	encoder, _ := mbase.NewEncoder(mbase.Base32hexPad)
+	encoder, _ := mbase.NewEncoder(mbase.Base32hex)
 	return sliceCid.Encode(encoder)
 }
 
@@ -77,8 +77,8 @@ func getFileData(filePath string) []byte {
 }
 
 func calcFileHash(data []byte) string {
-	fileHash, _ := mh.Sum(data, mh.KECCAK_256, 32)
+	fileHash, _ := mh.Sum(data, mh.KECCAK_256, 20)
 	fileCid := cid.NewCidV1(cid.Raw, fileHash)
-	encoder, _ := mbase.NewEncoder(mbase.Base32hexPad)
+	encoder, _ := mbase.NewEncoder(mbase.Base32hex)
 	return fileCid.Encode(encoder)
 }

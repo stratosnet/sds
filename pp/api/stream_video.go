@@ -204,7 +204,7 @@ func verifyStreamReqBody(req *http.Request, sliceHash string) (*StreamReqBody, e
 		return nil, err
 	}
 
-	if len(reqBody.FileHash) != 65 {
+	if len(reqBody.FileHash) != 40 {
 		return nil, errors.New("incorrect file hash")
 	}
 
