@@ -35,13 +35,13 @@ func GetFileInfo(filePath string) os.FileInfo {
 
 // GetFileSuffix
 func GetFileSuffix(fileName string) string {
-	fileSuffix := path.Ext(fileName) //获取文件后缀
+	fileSuffix := path.Ext(fileName)
 	return fileSuffix
 }
 
 // GetFileHash
-func GetFileHash(filePath string) string {
-	filehash := utils.CalcFileHash(filePath)
+func GetFileHash(filePath, encryptionTag string) string {
+	filehash := utils.CalcFileHash(filePath, encryptionTag)
 	utils.DebugLog("filehash", filehash)
 	fileMap[filehash] = filePath
 	return filehash
@@ -207,7 +207,7 @@ func RecordDownloadCSV(target *protos.RspFileStorageInfo) {
 }
 
 // CheckFileExisting
-func CheckFileExisting(fileHash, fileName, savePath string) bool {
+func CheckFileExisting(fileHash, fileName, savePath, encryptionTag string) bool {
 	utils.DebugLog("CheckFileExisting: file Hash", fileHash)
 	filePath := ""
 	if savePath == "" {
@@ -226,7 +226,7 @@ func CheckFileExisting(fileHash, fileName, savePath string) bool {
 		return false
 	}
 
-	hash := utils.CalcFileHash(filePath)
+	hash := utils.CalcFileHash(filePath, encryptionTag)
 	utils.DebugLog("hash", hash)
 	if hash == fileHash {
 		utils.DebugLog("file hash matched")

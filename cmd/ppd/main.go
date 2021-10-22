@@ -76,15 +76,13 @@ func getGenConfigCmd() *cobra.Command {
 	return cmd
 }
 
-
-
-func getVersionCmd() *cobra.Command{
+func getVersionCmd() *cobra.Command {
 
 	version := setting.Version
 	cmd := &cobra.Command{
-		Use:    "version",
-		Short:  "get version of the build",
-		Run: 	func(cmd *cobra.Command, args []string) {
+		Use:   "version",
+		Short: "get version of the build",
+		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println(version)
 		},
 	}

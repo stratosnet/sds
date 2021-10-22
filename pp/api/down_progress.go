@@ -52,7 +52,7 @@ func downProgress(w http.ResponseWriter, request *http.Request) {
 				State:    true,
 			}
 			if ts, ok := setting.DownloadTaskIDMap.Load(p.TaskID); ok {
-				if val, ok := setting.DownProssMap.Load(ts.(string)); ok {
+				if val, ok := setting.DownloadProgressMap.Load(ts.(string)); ok {
 					p.Progress = val.(float32)
 					if val.(float32) > 100 {
 						p.Progress = 100

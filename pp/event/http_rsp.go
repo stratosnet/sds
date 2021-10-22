@@ -375,7 +375,7 @@ func HTTPUploadFileFun(httpRsp *HTTPRsp, write http.ResponseWriter, reqID string
 			FileHash:           target.FileHash,
 			ImageWalletAddress: target.OwnerWalletAddress,
 		}
-		setting.UpLoadTaskIDMap.Store(r.TaskID, target.FileHash)
+		setting.UploadTaskIDMap.Store(r.TaskID, target.FileHash)
 		result["cover"] = r
 		utils.DebugLog("cover?>>>>>>>>>", result)
 		write.Write(httpserv.NewJson(result, setting.SUCCESSCode, target.Result.Msg).ToBytes())

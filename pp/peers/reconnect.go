@@ -45,8 +45,6 @@ func reloadConnectSP() {
 	}
 }
 
-
-
 // ConnectToSP Checks if there is a connection to an SP node. If it doesn't, it attempts to create one with a random SP node.
 func ConnectToSP() (newConnection bool, err error) {
 	if client.SPConn != nil {
@@ -69,4 +67,3 @@ func ConnectToSP() (newConnection bool, err error) {
 
 	return false, errors.New("couldn't connect to any SP node")
 }
-

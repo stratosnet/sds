@@ -28,7 +28,7 @@ func upPause(w http.ResponseWriter, request *http.Request) {
 				State:  true,
 			}
 			list = append(list, l)
-			if val, ok := setting.UpLoadTaskIDMap.Load(f.(string)); ok {
+			if val, ok := setting.UploadTaskIDMap.Load(f.(string)); ok {
 				go event.UploadPause(val.(string), uuid.New().String(), w)
 			}
 		}
