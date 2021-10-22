@@ -143,57 +143,17 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 				if !fInfo.IsVideoStream {
 					task.DownloadProgress(target.FileHash, uint64(len(target.Data)))
 				}
-				receiveSliceAndProgress(&target, fInfo)
+				if fInfo.EncryptionTag != "" {
+					receiveSliceAndProgressEncrypted(&target, fInfo)
+				} else {
+					receiveSliceAndProgress(&target, fInfo)
+				}
 			}
 		}
 	}
 }
 
 func receiveSliceAndProgress(target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo) {
-	if fInfo.EncryptionTag != "" {
-		dataToDecrypt := target.Data
-		dataToDecryptSize := uint64(len(dataToDecrypt))
-		encryptedOffset := target.SliceInfo.EncryptedSliceOffset
-
-		if existingSlice, ok := task.DownloadEncryptedSlices.Load(target.SliceInfo.SliceHash); ok {
-			existingSliceData := existingSlice.([]byte)
-			copy(existingSliceData[encryptedOffset.SliceOffsetStart:encryptedOffset.SliceOffsetEnd], dataToDecrypt)
-			dataToDecrypt = existingSliceData
-
-			if s, ok := task.DownloadSliceProgress.Load(target.SliceInfo.SliceHash); ok {
-				existingSize := s.(uint64)
-				dataToDecryptSize += existingSize
-			}
-		}
-
-		if dataToDecryptSize >= target.SliceSize {
-			// Decrypt slice data and save it to file
-			decryptedData, err := decryptSliceData(dataToDecrypt)
-			if err != nil {
-				utils.ErrorLog("Couldn't decrypt slice", err)
-				return
-			}
-			target.Data = decryptedData
-
-			if task.SaveDownloadFile(target, fInfo) {
-				utils.DebugLog("slice download finished", target.SliceInfo.SliceHash)
-				task.DownloadSliceProgress.Delete(target.SliceInfo.SliceHash)
-				task.DownloadEncryptedSlices.Delete(target.SliceInfo.SliceHash)
-				receivedSlice(target, fInfo)
-			}
-		} else {
-			// Store partial slice data to memory
-			dataToStore := dataToDecrypt
-			if uint64(len(dataToStore)) < target.SliceSize {
-				dataToStore = make([]byte, target.SliceSize)
-				copy(dataToStore[encryptedOffset.SliceOffsetStart:encryptedOffset.SliceOffsetEnd], dataToDecrypt)
-			}
-			task.DownloadEncryptedSlices.Store(target.SliceInfo.SliceHash, dataToStore)
-			task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash, dataToDecryptSize)
-		}
-		return
-	}
-
 	if task.SaveDownloadFile(target, fInfo) {
 		dataLen := uint64(len(target.Data))
 		if s, ok := task.DownloadSliceProgress.Load(target.SliceInfo.SliceHash); ok {
@@ -214,6 +174,49 @@ func receiveSliceAndProgress(target *protos.RspDownloadSlice, fInfo *protos.RspF
 				task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash, dataLen)
 			}
 		}
+	}
+}
+
+func receiveSliceAndProgressEncrypted(target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo) {
+	dataToDecrypt := target.Data
+	dataToDecryptSize := uint64(len(dataToDecrypt))
+	encryptedOffset := target.SliceInfo.EncryptedSliceOffset
+
+	if existingSlice, ok := task.DownloadEncryptedSlices.Load(target.SliceInfo.SliceHash); ok {
+		existingSliceData := existingSlice.([]byte)
+		copy(existingSliceData[encryptedOffset.SliceOffsetStart:encryptedOffset.SliceOffsetEnd], dataToDecrypt)
+		dataToDecrypt = existingSliceData
+
+		if s, ok := task.DownloadSliceProgress.Load(target.SliceInfo.SliceHash); ok {
+			existingSize := s.(uint64)
+			dataToDecryptSize += existingSize
+		}
+	}
+
+	if dataToDecryptSize >= target.SliceSize {
+		// Decrypt slice data and save it to file
+		decryptedData, err := decryptSliceData(dataToDecrypt)
+		if err != nil {
+			utils.ErrorLog("Couldn't decrypt slice", err)
+			return
+		}
+		target.Data = decryptedData
+
+		if task.SaveDownloadFile(target, fInfo) {
+			utils.DebugLog("slice download finished", target.SliceInfo.SliceHash)
+			task.DownloadSliceProgress.Delete(target.SliceInfo.SliceHash)
+			task.DownloadEncryptedSlices.Delete(target.SliceInfo.SliceHash)
+			receivedSlice(target, fInfo)
+		}
+	} else {
+		// Store partial slice data to memory
+		dataToStore := dataToDecrypt
+		if uint64(len(dataToStore)) < target.SliceSize {
+			dataToStore = make([]byte, target.SliceSize)
+			copy(dataToStore[encryptedOffset.SliceOffsetStart:encryptedOffset.SliceOffsetEnd], dataToDecrypt)
+		}
+		task.DownloadEncryptedSlices.Store(target.SliceInfo.SliceHash, dataToStore)
+		task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash, dataToDecryptSize)
 	}
 }
 

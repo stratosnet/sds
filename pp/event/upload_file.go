@@ -166,10 +166,10 @@ func startUploadTask(target *protos.RspUploadFile) {
 		}
 		progress.HasUpload = (target.TotalSlice - int64(len(target.PpList))) * 32 * 1024 * 1024
 	}
-	go sendUploadFileSlice(target.FileHash, target.TaskId, target.IsVideoStream, target.IsEncrypted)
+	go sendUploadFileSlice(target)
 }
 
-func up(ING *task.UpFileIng, fileHash string, isVideoStream, isEncrypted bool) {
+func up(ING *task.UpFileIng, target *protos.RspUploadFile) {
 	for {
 		select {
 		case goon := <-ING.UpChan:
@@ -182,17 +182,17 @@ func up(ING *task.UpFileIng, fileHash string, isVideoStream, isEncrypted bool) {
 				if _, ok := <-ING.UpChan; ok {
 					close(ING.UpChan)
 				}
-				task.UpIngMap.Delete(fileHash)
+				task.UpIngMap.Delete(target.FileHash)
 				return
 			}
 			pp := ING.Slices[0]
 			utils.DebugLog("start upload!!!!!", pp.SliceNumber)
-			uploadTask := task.GetUploadSliceTask(pp, ING.FileHash, ING.TaskID, isVideoStream, isEncrypted)
+			uploadTask := task.GetUploadSliceTask(pp, ING.FileHash, ING.TaskID, target.IsVideoStream, target.IsEncrypted)
 			if uploadTask == nil {
 				continue
 			}
 
-			if _, ok := client.UpConnMap.Load(fileHash); !ok {
+			if _, ok := client.UpConnMap.Load(target.FileHash); !ok {
 				return
 			}
 			UploadFileSlice(uploadTask)
@@ -201,25 +201,25 @@ func up(ING *task.UpFileIng, fileHash string, isVideoStream, isEncrypted bool) {
 	}
 }
 
-func sendUploadFileSlice(fileHash, taskID string, isVideoStream, isEncrypted bool) {
-	ing, ok := task.UpIngMap.Load(fileHash)
+func sendUploadFileSlice(target *protos.RspUploadFile) {
+	ing, ok := task.UpIngMap.Load(target.FileHash)
 	if !ok {
 		utils.DebugLog("all slices of the task have begun uploading")
 		return
 	}
 	ING := ing.(*task.UpFileIng)
 	if len(ING.Slices) > task.MAXSLICE {
-		go up(ING, fileHash, isVideoStream, isEncrypted)
+		go up(ING, target)
 		for i := 0; i < task.MAXSLICE; i++ {
 			ING.UpChan <- true
 		}
 
 	} else {
 		for _, pp := range ING.Slices {
-			if _, ok := client.UpConnMap.Load(fileHash); !ok {
+			if _, ok := client.UpConnMap.Load(target.FileHash); !ok {
 				return
 			}
-			uploadTask := task.GetUploadSliceTask(pp, fileHash, taskID, isVideoStream, isEncrypted)
+			uploadTask := task.GetUploadSliceTask(pp, target.FileHash, target.TaskId, target.IsVideoStream, target.IsEncrypted)
 			if uploadTask != nil {
 				UploadFileSlice(uploadTask)
 			}
@@ -229,7 +229,7 @@ func sendUploadFileSlice(fileHash, taskID string, isVideoStream, isEncrypted boo
 		if ok {
 			close(ING.UpChan)
 		}
-		task.UpIngMap.Delete(fileHash)
+		task.UpIngMap.Delete(target.FileHash)
 	}
 }
 
