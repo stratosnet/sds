@@ -7,7 +7,7 @@ require (
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/alex023/clock v0.0.0-20191208111215-c265f1b2ab18
 	github.com/bgadrian/go-mnemonic v0.0.0-20170924142112-3188dc747a1b
-	github.com/bsipos/thist v1.0.0 // indirect
+	github.com/bsipos/thist v1.0.0
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/cosmos/cosmos-sdk v0.39.2
