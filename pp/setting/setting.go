@@ -36,8 +36,8 @@ var ImageMap = &sync.Map{}
 
 var VIDEOPATH = "./videos"
 
-// DownProssMap download progress map
-var DownProssMap = &sync.Map{}
+// DownloadProgressMap download progress map
+var DownloadProgressMap = &sync.Map{}
 
 // Config
 var Config *config
@@ -48,8 +48,8 @@ var ConfigPath string
 // IsLoad
 var IsLoad bool
 
-// UpLoadTaskIDMap
-var UpLoadTaskIDMap = &sync.Map{}
+// UploadTaskIDMap
+var UploadTaskIDMap = &sync.Map{}
 
 // DownloadTaskIDMap
 var DownloadTaskIDMap = &sync.Map{}

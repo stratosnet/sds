@@ -44,5 +44,3 @@ func getInternal() string {
 	}
 	return ""
 }
-
-

@@ -66,6 +66,7 @@ func TransferSendMessageToSPServer(msg *msg.RelayMsgBuf) {
 
 	client.SPConn.Write(msg)
 }
+
 // ReqTransferSendSP
 func ReqTransferSendSP(ctx context.Context, conn core.WriteCloser) {
 	TransferSendMessageToSPServer(core.MessageFromContext(ctx))
@@ -86,4 +87,3 @@ func GetSPList() {
 	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetSPList)")
 	SendMessageToSPServer(types.ReqGetSPlistData(), header.ReqGetSPList)
 }
-

@@ -6,16 +6,15 @@ import (
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/types"
-	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/tendermint/tendermint/libs/bech32"
 )
 
 func TestCreateWallet(t *testing.T) {
+	t.SkipNow() // Comment this line out to run the method and create a wallet
 	password := "aaa"
 	hrp := "st"
-	stratoschain.SetConfig(hrp)
 
 	mnemonic, err := NewMnemonic()
 	if err != nil {
@@ -50,6 +49,7 @@ func TestCreateWallet(t *testing.T) {
 }
 
 func TestCreateP2PKey(t *testing.T) {
+	t.SkipNow() // Comment this line out to run the method and create a P2PKey
 	password := "aaa"
 	hrp := "stsdsp2p"
 
@@ -81,6 +81,7 @@ func TestCreateP2PKey(t *testing.T) {
 }
 
 func TestDecryptP2PKeyJson(t *testing.T) {
+	t.SkipNow() // Comment this line out to run the method and decrypt a P2PKey JSON file
 	hrp := "stsdsp2p"
 	key, err := DecryptKey([]byte("put the content of the P2P key JSON file here"), "aaa")
 	if err != nil {

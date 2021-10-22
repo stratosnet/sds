@@ -2,6 +2,7 @@ package task
 
 import (
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -29,12 +30,17 @@ var DownloadSpeedOfProgress = &sync.Map{}
 
 // DownloadSP download progress
 type DownloadSP struct {
-	TotalSize    int64
-	DownloadSize int64
+	RawSize        int64
+	TotalSize      int64
+	DownloadedSize int64
 }
 
 // DownloadSliceProgress hash：size
 var DownloadSliceProgress = &sync.Map{}
+
+// DownloadEncryptedSlices stores the partially downloaded encrypted slices, indexed by the slice hash.
+// This is used because slices can only be decrypted after being fully downloaded
+var DownloadEncryptedSlices = &sync.Map{}
 
 var reCount int
 
@@ -44,6 +50,13 @@ type DownloadTask struct {
 	FileHash      string
 	VisitCer      string
 	SliceInfo     map[string]*protos.DownloadSliceInfo
+}
+
+// DownloadSliceData
+type DownloadSliceData struct {
+	Data    []byte
+	FileCrc uint32
+	RawSize uint64
 }
 
 // AddDownloadTask
@@ -98,18 +111,24 @@ func PCancelDownloadTask(fileHash string) {
 	file.DeleteDirectory(fileHash)
 }
 
-// DownloadSliceData
-type DownloadSliceData struct {
-	Data    []byte
-	FileCrc uint32
-}
-
 // GetDownloadSlice
 func GetDownloadSlice(target *protos.ReqDownloadSlice) *DownloadSliceData {
 	data := file.GetSliceData(target.SliceInfo.SliceHash)
+	rawSize := uint64(len(data))
+	if target.IsEncrypted {
+		encryptedSlice := protos.EncryptedSlice{}
+		err := proto.Unmarshal(data, &encryptedSlice)
+		if err == nil {
+			rawSize = encryptedSlice.RawSize
+		} else {
+			utils.ErrorLog("Couldn't unmarshal encrypted slice to protobuf", err)
+			data = []byte{}
+		}
+	}
 	dSlice := &DownloadSliceData{
 		FileCrc: utils.CalcCRC32(data),
 		Data:    data,
+		RawSize: rawSize,
 	}
 	return dSlice
 
@@ -120,6 +139,7 @@ func SaveDownloadFile(target *protos.RspDownloadSlice, fInfo *protos.RspFileStor
 	if fInfo.IsVideoStream {
 		return file.SaveFileData(target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, target.SliceInfo.SliceHash, fInfo.FileHash, fInfo.SavePath)
 	} else {
+		utils.DebugLog("sliceHash", target.SliceInfo.SliceHash)
 		return file.SaveFileData(target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, fInfo.SavePath)
 	}
 }
@@ -235,8 +255,8 @@ func CheckFileOver(fileHash, filePath string) bool {
 			return false
 		}
 		utils.DebugLog("info", info.Size())
-		utils.DebugLog("sp.TotalSize", sp.TotalSize)
-		if info.Size() == sp.TotalSize {
+		utils.DebugLog("sp.RawSize", sp.RawSize)
+		if info.Size() == sp.RawSize {
 			utils.DebugLog("ok!")
 			return true
 		}
@@ -252,7 +272,7 @@ func CheckDownloadOver(fileHash string) (bool, float32) {
 		fInfo := f.(*protos.RspFileStorageInfo)
 		if s, ok := DownloadSpeedOfProgress.Load(fileHash); ok {
 			sp := s.(*DownloadSP)
-			if sp.DownloadSize >= sp.TotalSize {
+			if sp.DownloadedSize >= sp.TotalSize {
 				fName := fInfo.FileName
 				if fName == "" {
 					fName = fileHash
@@ -269,7 +289,7 @@ func CheckDownloadOver(fileHash string) (bool, float32) {
 				checkAgain(fileHash)
 				return true, 1
 			}
-			return false, float32(sp.DownloadSize) / float32(sp.TotalSize)
+			return false, float32(sp.DownloadedSize) / float32(sp.TotalSize)
 		}
 		return false, 0
 	}
@@ -279,16 +299,16 @@ func CheckDownloadOver(fileHash string) (bool, float32) {
 }
 
 // DownloadProgress
-func DownloadProgress(fielHash string, size uint64) {
-	if s, ok := DownloadSpeedOfProgress.Load(fielHash); ok {
+func DownloadProgress(fileHash string, size uint64) {
+	if s, ok := DownloadSpeedOfProgress.Load(fileHash); ok {
 		sp := s.(*DownloadSP)
-		sp.DownloadSize += int64(size)
-		p := float32(sp.DownloadSize) / float32(sp.TotalSize) * 100
+		sp.DownloadedSize += int64(size)
+		p := float32(sp.DownloadedSize) / float32(sp.TotalSize) * 100
 		fmt.Printf("downloaded：%.2f %% \n", p)
-		setting.DownProssMap.Store(fielHash, p)
+		setting.DownloadProgressMap.Store(fileHash, p)
 		setting.ShowProgress(p)
-		if sp.DownloadSize >= sp.TotalSize {
-			go CheckDownloadOver(fielHash)
+		if sp.DownloadedSize >= sp.TotalSize {
+			go CheckDownloadOver(fileHash)
 		}
 	}
 }

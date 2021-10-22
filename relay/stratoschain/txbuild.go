@@ -8,6 +8,7 @@ import (
 	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
+	"github.com/tendermint/tendermint/libs/bech32"
 )
 
 // Stratos-chain 'pot' module
@@ -19,11 +20,11 @@ func BuildVolumeReportMsg(traffic []*core.Traffic, reporterAddress, reporterOwne
 
 	var nodesVolume []pottypes.SingleNodeVolume
 	for p2pAddressString, volume := range aggregatedVolume {
-		p2pAddressBytes, err := utiltypes.BechToAddress(p2pAddressString)
-		p2pAddress := sdktypes.AccAddress(p2pAddressBytes[:])
+		_, p2pAddressBytes, err := bech32.DecodeAndConvert(p2pAddressString)
 		if err != nil {
 			return nil, err
 		}
+		p2pAddress := sdktypes.AccAddress(p2pAddressBytes[:])
 		nodesVolume = append(nodesVolume, pottypes.SingleNodeVolume{
 			NodeAddress: p2pAddress,
 			Volume:      sdktypes.NewIntFromUint64(volume),

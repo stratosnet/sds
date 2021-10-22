@@ -3,15 +3,24 @@ package utils
 import (
 	"bytes"
 	"crypto/md5"
+	cryptorand "crypto/rand"
+	"encoding/binary"
 	"encoding/hex"
+	"github.com/google/uuid"
 	"math/rand"
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/google/uuid"
 )
+
+func init() {
+	var seed [8]byte
+	_, err := cryptorand.Read(seed[:])
+	if err != nil {
+		panic("cannot set random seed from cryptographically secure random number")
+	}
+	rand.Seed(int64(binary.LittleEndian.Uint64(seed[:])))
+}
 
 // Camel2Snake
 // eg. HelloWorld => hello_world
@@ -117,11 +126,9 @@ func GenerateRandomNumber(start int, end int, count int) []int {
 
 	// output numbers
 	nums := make([]int, 0)
-	// RNG, add timestamp to make sure the outcome differs
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for len(nums) < count {
 
-		num := r.Intn((end - start)) + start
+		num := rand.Intn(end-start) + start
 
 		// find duplicates
 		exist := false
@@ -145,9 +152,9 @@ func GetRandomString(length int) string {
 	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	bytes := []byte(str)
 	result := []byte{}
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+
 	for i := 0; i < length; i++ {
-		result = append(result, bytes[r.Intn(len(bytes))])
+		result = append(result, bytes[rand.Intn(len(bytes))])
 	}
 	return string(result)
 }

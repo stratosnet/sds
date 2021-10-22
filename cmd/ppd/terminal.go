@@ -225,8 +225,12 @@ func terminal(cmd *cobra.Command, args []string) {
 			fmt.Println("input upload file path")
 			return false
 		}
-		pathStr := file.EscapePath(param)
-		event.RequestUploadFile(pathStr, "", nil)
+		isEncrypted := false
+		if len(param) > 1 && param[1] == "encrypt" {
+			isEncrypted = true
+		}
+		pathStr := file.EscapePath(param[0:1])
+		event.RequestUploadFile(pathStr, "", isEncrypted, nil)
 		return true
 	}
 

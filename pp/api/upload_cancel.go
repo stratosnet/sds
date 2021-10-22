@@ -27,10 +27,10 @@ func upCancel(w http.ResponseWriter, request *http.Request) {
 				State:  true,
 			}
 			list = append(list, l)
-			if val, ok := setting.UpLoadTaskIDMap.Load(l.TaskID); ok {
+			if val, ok := setting.UploadTaskIDMap.Load(l.TaskID); ok {
 				go event.UploadPause(val.(string), uuid.New().String(), w)
 			}
-			setting.UpLoadTaskIDMap.Delete(l.TaskID)
+			setting.UploadTaskIDMap.Delete(l.TaskID)
 			delete(setting.UpMap, l.TaskID)
 		}
 		result := make(map[string][]*pause, 0)

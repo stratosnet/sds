@@ -2,11 +2,15 @@ package task
 
 import (
 	"encoding/json"
-	"sync"
-
+	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/encryption"
+	"github.com/stratosnet/sds/utils/encryption/hdkey"
+	"math/rand"
+	"sync"
 )
 
 var urwmutex sync.RWMutex
@@ -43,49 +47,67 @@ type UpProgress struct {
 	HasUpload int64
 }
 
-// UpLoadProgressMap
-var UpLoadProgressMap = &sync.Map{}
+// UploadProgressMap
+var UploadProgressMap = &sync.Map{}
 
 // GetUploadSliceTask
-func GetUploadSliceTask(pp *protos.SliceNumAddr, fileHash, taskID string, isVideoStream bool) *UploadSliceTask {
+func GetUploadSliceTask(pp *protos.SliceNumAddr, fileHash, taskID string, isVideoStream, isEncrypted bool) *UploadSliceTask {
 	if isVideoStream {
 		return GetUploadSliceTaskStream(pp, fileHash, taskID)
 	} else {
-		return GetUploadSliceTaskFile(pp, fileHash, taskID)
+		return GetUploadSliceTaskFile(pp, fileHash, taskID, isEncrypted)
 	}
 }
 
-func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID string) *UploadSliceTask {
+func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID string, isEncrypted bool) *UploadSliceTask {
 	filePath := file.GetFilePath(fileHash)
 	utils.DebugLog("offsetStart =", pp.SliceOffset.SliceOffsetStart, "offsetEnd", pp.SliceOffset.SliceOffsetEnd)
 	utils.DebugLog("sliceNumber", pp.SliceNumber)
-	startOffsize := pp.SliceOffset.SliceOffsetStart
-	endOffsize := pp.SliceOffset.SliceOffsetEnd
+	startOffset := pp.SliceOffset.SliceOffsetStart
+	endOffset := pp.SliceOffset.SliceOffsetEnd
 	if file.GetFileInfo(filePath) == nil {
 		utils.ErrorLog("wrong file path")
 		return nil
 	}
-	if uint64(file.GetFileInfo(filePath).Size()) < endOffsize {
-		endOffsize = uint64(file.GetFileInfo(filePath).Size())
+
+	if uint64(file.GetFileInfo(filePath).Size()) < endOffset {
+		endOffset = uint64(file.GetFileInfo(filePath).Size())
 	}
 
 	offset := &protos.SliceOffset{
-		SliceOffsetStart: startOffsize,
-		SliceOffsetEnd:   endOffsize,
+		SliceOffsetStart: startOffset,
+		SliceOffsetEnd:   endOffset,
 	}
-	data := file.GetFileData(filePath, offset)
+	rawData := file.GetFileData(filePath, offset)
+
+	// Encrypt slice data if required
+	data := rawData
+	if isEncrypted {
+		var err error
+		data, err = encryptSliceData(rawData)
+		if err != nil {
+			utils.ErrorLog("Couldn't encrypt slice data", err)
+			return nil
+		}
+	}
+	dataSize := uint64(len(data))
+
 	sl := &protos.SliceOffsetInfo{
-		SliceHash:   utils.CalcSliceHash(data, fileHash),
-		SliceOffset: offset,
+		SliceHash: utils.CalcSliceHash(data, fileHash),
+		SliceOffset: &protos.SliceOffset{
+			SliceOffsetStart: 0,
+			SliceOffsetEnd:   dataSize,
+		},
 	}
+
 	tk := &UploadSliceTask{
 		TaskID:          taskID,
 		FileHash:        fileHash,
 		SliceNumAddr:    pp,
 		SliceOffsetInfo: sl,
 		FileCRC:         utils.CalcFileCRC32(filePath),
-		Data:            file.GetFileData(filePath, offset),
-		SliceTotalSize:  pp.SliceOffset.SliceOffsetEnd - pp.SliceOffset.SliceOffsetStart,
+		Data:            data,
+		SliceTotalSize:  dataSize,
 	}
 	return tk
 }
@@ -146,4 +168,30 @@ func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID string) 
 // SaveUploadFile
 func SaveUploadFile(target *protos.ReqUploadFileSlice) bool {
 	return file.SaveSliceData(target.Data, target.SliceInfo.SliceHash, target.SliceInfo.SliceOffset.SliceOffsetStart)
+}
+
+func encryptSliceData(rawData []byte) ([]byte, error) {
+	hdKeyNonce := rand.Uint32()
+	if hdKeyNonce > hdkey.HardenedKeyStart {
+		hdKeyNonce -= hdkey.HardenedKeyStart
+	}
+	aesNonce := rand.Uint64()
+
+	key, err := hdkey.MasterKeyForSliceEncryption(setting.WalletPrivateKey, hdKeyNonce)
+	if err != nil {
+		return nil, err
+	}
+
+	encryptedData, err := encryption.EncryptAES(key.PrivateKey(), rawData, aesNonce)
+	if err != nil {
+		return nil, err
+	}
+
+	encryptedSlice := &protos.EncryptedSlice{
+		HdkeyNonce: hdKeyNonce,
+		AesNonce:   aesNonce,
+		Data:       encryptedData,
+		RawSize:    uint64(len(rawData)),
+	}
+	return proto.Marshal(encryptedSlice)
 }

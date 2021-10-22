@@ -54,12 +54,13 @@ func CalcFileCRC32(filePath string) uint32 {
 
 // CalcFileHash
 // @notice keccak256(md5(file))
-func CalcFileHash(filePath string) string {
+func CalcFileHash(filePath, encryptionTag string) string {
 	if filePath == "" {
 		Log(errors.New("CalcFileHash: missing file path"))
 		return ""
 	}
-	return hex.EncodeToString(crypto.Keccak256(CalcFileMD5(filePath)))
+	data := append([]byte(encryptionTag), CalcFileMD5(filePath)...)
+	return hex.EncodeToString(crypto.Keccak256(data))
 }
 
 // CalcHash
