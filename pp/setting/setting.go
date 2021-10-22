@@ -69,7 +69,10 @@ var (
 	IsWindows      bool
 )
 
-const HD_PATH = "m/44'/606'/0'/0/0"
+const (
+	Version = "v0.3.0"
+	HD_PATH = "m/44'/606'/0'/0/0"
+)
 
 type SPBaseInfo struct {
 	P2PAddress     string `yaml:"P2PAddress"`
@@ -257,8 +260,8 @@ func SetConfig(key, value string) bool {
 
 func defaultConfig() *config {
 	return &config{
-		Version:                     2,
-		VersionShow:                 "v0.2.0",
+		Version:                     3,
+		VersionShow:                 Version,
 		DownloadPathMinLen:          0,
 		Port:                        ":18081",
 		NetworkAddress:              "127.0.0.1",
@@ -288,7 +291,7 @@ func defaultConfig() *config {
 		IsCheckFileTransferFinished: false,
 		AddressPrefix:               "st",
 		P2PKeyPrefix:                "stsdsp2p",
-		ChainId:                     "stratos-testnet-2",
+		ChainId:                     "stratos-testnet-3",
 		Token:                       "ustos",
 		StratosChainUrl:             "http://127.0.0.1:1317",
 		StreamingCache:              false,

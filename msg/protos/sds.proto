@@ -290,6 +290,7 @@ message ReqRegisterNewPP {
 
 message RspRegisterNewPP {
   Result result = 1;
+  bool   already_pp = 2;
 }
 
 message ReqActivatePP {

@@ -166,7 +166,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	putData(target.ShareRequest.ReqId, HTTPGetShareFile, &target)
 
 	for _, fileInfo := range target.FileInfo {
-		filePath := "spb://" + fileInfo.OwnerWalletAddress + "/" + fileInfo.FileHash
+		filePath := "sdm://" + fileInfo.OwnerWalletAddress + "/" + fileInfo.FileHash
 		peers.SendMessage(client.PPConn, types.ReqFileStorageInfoData(filePath, "", "", false, target.ShareRequest), header.ReqFileStorageInfo)
 	}
 }
