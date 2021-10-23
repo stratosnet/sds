@@ -312,10 +312,12 @@ message RspActivatePP {
 message ReqActivatedPP {
   string p2p_address = 1;
   string p2p_pubkey = 2;
+  string ozone_limit_changes = 3; // positive
 }
 
 message ReqActivatedSP {
   string p2p_address = 1;
+  string ozone_limit_changes = 2; // positive
 }
 
 message RspActivatedPP {
@@ -333,11 +335,39 @@ message RspDeactivatePP {
   bytes  tx = 3;
 }
 
+message ReqUnbondingPP {
+  string p2p_address = 1;
+  string ozone_limit_changes = 2; // negative
+  string unbonding_mature_time = 3;
+}
+
+message RspUnbondingPP {
+  Result result = 1;
+}
+
 message ReqDeactivatedPP {
   string p2p_address = 1;
 }
 
 message RspDeactivatedPP {
+  Result result = 1;
+}
+
+message ReqUnbondingSP {
+  string p2p_address = 1;
+  string ozone_limit_changes = 2; // negative
+  string unbonding_mature_time = 3;
+}
+
+message RspUnbondingSP {
+  Result result = 1;
+}
+
+message ReqDeactivatedSP {
+  string p2p_address = 1;
+}
+
+message RspDeactivatedSP {
   Result result = 1;
 }
 
