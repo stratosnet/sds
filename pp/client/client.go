@@ -64,7 +64,7 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 	}
 	c, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
-		utils.DebugLog(server, "connect failed")
+		utils.DebugLog(server, "connect failed", err)
 		return nil
 	}
 	utils.Log("connect success")

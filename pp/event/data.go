@@ -79,4 +79,3 @@ func reqPrepayData(amount, fee, gas int64) (*protos.ReqPrepay, error) {
 	}
 	return req, nil
 }
-

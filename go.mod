@@ -1,12 +1,15 @@
 module github.com/stratosnet/sds
 
-go 1.15
+go 1.16
 
 require (
 	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/alex023/clock v0.0.0-20191208111215-c265f1b2ab18
+	github.com/bgadrian/go-mnemonic v0.0.0-20170924142112-3188dc747a1b
+	github.com/bsipos/thist v1.0.0
 	github.com/btcsuite/btcd v0.20.1-beta
+	github.com/btcsuite/btcutil v1.0.2
 	github.com/cosmos/cosmos-sdk v0.39.2
 	github.com/cosmos/go-bip39 v1.0.0
 	github.com/go-ole/go-ole v1.2.5 // indirect
@@ -20,6 +23,7 @@ require (
 	github.com/multiformats/go-multibase v0.0.3
 	github.com/multiformats/go-multihash v0.0.15
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
+	github.com/oasisprotocol/ed25519 v0.0.0-20210505154701-76d8c688d86e
 	github.com/onsi/ginkgo v1.16.1 // indirect
 	github.com/onsi/gomega v1.11.0 // indirect
 	github.com/pborman/uuid v1.2.1

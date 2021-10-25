@@ -52,6 +52,8 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 					// report upload result to SP
 					peers.SendMessageToSPServer(types.ReqReportUploadSliceResultDataPP(&target), header.ReqReportUploadSliceResult)
 					utils.DebugLog("storage PP report to SP upload task finished: ，", target.SliceInfo.SliceHash)
+				} else {
+					utils.DebugLog("newly stored sliceHash is not equal to target sliceHash!")
 				}
 			}
 		}
@@ -161,7 +163,7 @@ func UploadSpeedOfProgress(ctx context.Context, conn core.WriteCloser) {
 	var target protos.UploadSpeedOfProgress
 	if types.UnmarshalData(ctx, &target) {
 		utils.DebugLog("~~~~@@@@@@@@@@@@@@@@@@@@@@@@@@!!!!!!!!!!!!!!!!!!!!!!", target.FileHash)
-		if prg, ok := task.UpLoadProgressMap.Load(target.FileHash); ok {
+		if prg, ok := task.UploadProgressMap.Load(target.FileHash); ok {
 			progress := prg.(*task.UpProgress)
 			progress.HasUpload += int64(target.SliceSize)
 			p := float32(progress.HasUpload) / float32(progress.Total) * 100
@@ -172,7 +174,7 @@ func UploadSpeedOfProgress(ctx context.Context, conn core.WriteCloser) {
 			if progress.HasUpload >= progress.Total {
 				utils.Log("fileHash：", target.FileHash)
 				utils.Log(fmt.Sprintf("uploaded：%.2f %% \n", p))
-				task.UpLoadProgressMap.Delete(target.FileHash)
+				task.UploadProgressMap.Delete(target.FileHash)
 				client.UpConnMap.Delete(target.FileHash)
 			}
 		} else {

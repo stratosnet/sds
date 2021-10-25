@@ -50,6 +50,8 @@ const (
 
 	ReqDeactivatePP  = "ReqDctvp" // request to deactivate a PP node
 	RspDeactivatePP  = "RspDctvp" // response to deactivate a PP node
+	ReqUnbondingPP   = "ReqUbdp"  // request to unbonding a PP node
+	RspUnbondingPP   = "RspUbdp"  // response to unbonding a PP node
 	ReqDeactivatedPP = "ReqDctdp" // request when a PP node was successfully deactivated
 	RspDeactivatedPP = "RspDctdp" // response when a PP node was successfully deactivated
 

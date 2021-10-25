@@ -29,6 +29,16 @@ func BytesToInt16(b []byte) int16 {
 	return x
 }
 
+// BytesToUInt64
+func BytesToUInt64(b []byte) uint64 {
+	bytesBuffer := bytes.NewBuffer(b)
+
+	var x uint64
+	binary.Read(bytesBuffer, binary.BigEndian, &x)
+
+	return x
+}
+
 // BytesToUInt32
 func BytesToUInt32(b []byte) uint32 {
 	bytesBuffer := bytes.NewBuffer(b)
@@ -51,6 +61,15 @@ func BytesToUint16(b []byte) uint16 {
 
 // Int16ToBytes
 func Int16ToBytes(n int16) []byte {
+	x := n
+
+	bytesBuffer := bytes.NewBuffer([]byte{})
+	binary.Write(bytesBuffer, binary.BigEndian, x)
+	return bytesBuffer.Bytes()
+}
+
+// Uint64ToBytes
+func Uint64ToBytes(n uint64) []byte {
 	x := n
 
 	bytesBuffer := bytes.NewBuffer([]byte{})

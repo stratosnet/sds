@@ -108,5 +108,3 @@ func RegisterEventHandle() {
 	core.Register(header.ReqFindDirectory, ReqFindDirectory)
 	core.Register(header.RspFindDirectory, RspFindDirectory)
 }
-
-

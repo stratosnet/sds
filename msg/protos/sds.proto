@@ -66,12 +66,13 @@ message RspUploadFile {
   repeated SliceNumAddr pp_list = 2; // slice number and pp address list
   string file_hash = 3;
   string task_id = 4; //
-  int64 total_slice = 5; //
+  int64  total_slice = 5; //
   Result result = 6; // accept upload or not
   string req_id = 7;//
   string owner_wallet_address = 8;
-  bool is_video_stream = 9;
+  bool   is_video_stream = 9;
   uint64 video_slice_duration = 10;
+  bool   is_encrypted = 11;
 }
 
 message ReqUploadFileSlice {
@@ -180,16 +181,17 @@ message RspFileStorageInfo {
   string p2p_address = 2;
   string wallet_address = 3;
   repeated DownloadSliceInfo slice_info = 4;
-  string     file_hash = 5;
-  string     file_name = 6;
+  string file_hash = 5;
+  string file_name = 6;
   Result result = 7;
   string req_id = 8;
   string save_path = 9;
   uint64 file_size = 10;
-  bool is_video_stream = 11;
+  bool   is_video_stream = 11;
   string rest_address = 12;
-  bytes sign = 13; //sp signature
+  bytes  sign = 13; //sp signature
   string sp_p2p_address = 14;
+  string encryption_tag = 15;
 }
 
 
@@ -201,6 +203,7 @@ message ReqDownloadSlice {
   string             task_id = 5;
   string             save_path = 6;
   string             req_id = 7;
+  bool               is_encrypted = 8;
 }
 
 message RspDownloadSlice {
@@ -211,11 +214,13 @@ message RspDownloadSlice {
   string p2p_address = 5;
   string wallet_address = 6;
   string task_id = 7;
-  uint64 slice_size = 8;
-  bool   needReport = 9; // used for passagePP whether the last slice
-  string save_path = 10;
-  Result result = 11;
-  string req_id = 12;
+  uint64 slice_size = 8; // is the encrypted slice size if the file is encrypted
+  uint64 raw_slice_size = 9;
+  bool   needReport = 10; // used for passagePP whether the last slice
+  string save_path = 11;
+  Result result = 12;
+  string req_id = 13;
+  bool   is_encrypted = 14;
 }
 
 message ReqDownloadSliceWrong {
@@ -290,6 +295,7 @@ message ReqRegisterNewPP {
 
 message RspRegisterNewPP {
   Result result = 1;
+  bool   already_pp = 2;
 }
 
 message ReqActivatePP {
@@ -306,10 +312,12 @@ message RspActivatePP {
 message ReqActivatedPP {
   string p2p_address = 1;
   string p2p_pubkey = 2;
+  string ozone_limit_changes = 3; // positive
 }
 
 message ReqActivatedSP {
   string p2p_address = 1;
+  string ozone_limit_changes = 2; // positive
 }
 
 message RspActivatedPP {
@@ -327,11 +335,39 @@ message RspDeactivatePP {
   bytes  tx = 3;
 }
 
+message ReqUnbondingPP {
+  string p2p_address = 1;
+  string ozone_limit_changes = 2; // negative
+  string unbonding_mature_time = 3;
+}
+
+message RspUnbondingPP {
+  Result result = 1;
+}
+
 message ReqDeactivatedPP {
   string p2p_address = 1;
 }
 
 message RspDeactivatedPP {
+  Result result = 1;
+}
+
+message ReqUnbondingSP {
+  string p2p_address = 1;
+  string ozone_limit_changes = 2; // negative
+  string unbonding_mature_time = 3;
+}
+
+message RspUnbondingSP {
+  Result result = 1;
+}
+
+message ReqDeactivatedSP {
+  string p2p_address = 1;
+}
+
+message RspDeactivatedSP {
   Result result = 1;
 }
 

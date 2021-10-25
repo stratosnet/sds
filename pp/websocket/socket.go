@@ -25,7 +25,7 @@ func SocketStart(conn net.Conn, upMap, downMap, m map[string]interface{}) error 
 		Time     int64   `json:"time"`
 	}
 
-	setting.UpLoadTaskIDMap.Range(func(k, v interface{}) bool {
+	setting.UploadTaskIDMap.Range(func(k, v interface{}) bool {
 		gress := &prog{
 			State: false,
 		}
@@ -65,7 +65,7 @@ func SocketStart(conn net.Conn, upMap, downMap, m map[string]interface{}) error 
 		}
 		hash := v.(string)
 		gress.TaskID = k.(string)
-		if val, ok := setting.DownProssMap.Load(hash); ok {
+		if val, ok := setting.DownloadProgressMap.Load(hash); ok {
 			gress.Progress = val.(float32)
 			if val.(float32) > 100 {
 				gress.Progress = 100

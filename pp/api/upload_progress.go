@@ -28,7 +28,7 @@ func upProgress(w http.ResponseWriter, request *http.Request) {
 				TaskID: f.(string),
 				State:  false,
 			}
-			if val, ok := setting.UpLoadTaskIDMap.Load(f.(string)); ok {
+			if val, ok := setting.UploadTaskIDMap.Load(f.(string)); ok {
 				if p, ok := event.ProgressMap.Load(val.(string)); ok {
 					pross := p.(float32)
 					if pross > 100 {

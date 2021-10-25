@@ -2,6 +2,8 @@ package types
 
 import (
 	"testing"
+
+	_ "github.com/stratosnet/sds/relay/stratoschain/prefix"
 )
 
 func TestAccountAddressBechConversion(t *testing.T) {
