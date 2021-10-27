@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"crypto/md5"
 	"encoding/hex"
 	"errors"
 	"github.com/ipfs/go-cid"
@@ -8,7 +9,6 @@ import (
 	mh "github.com/multiformats/go-multihash"
 	"hash/crc32"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/stratosnet/sds/utils/crypto"
@@ -19,6 +19,19 @@ func CalcCRC32(data []byte) uint32 {
 	iEEE := crc32.NewIEEE()
 	io.WriteString(iEEE, string(data))
 	return iEEE.Sum32()
+}
+
+// CalcFileMD5
+func CalcFileMD5(filePath string) []byte {
+	file, err := os.Open(filePath)
+	if err != nil {
+		Log(err.Error())
+		return nil
+	}
+	defer file.Close()
+	MD5 := md5.New()
+	io.Copy(MD5, file)
+	return MD5.Sum(nil)
 }
 
 // CalcFileCRC32
@@ -41,7 +54,7 @@ func CalcFileHash(filePath, encryptionTag string) string {
 		Log(errors.New("CalcFileHash: missing file path"))
 		return ""
 	}
-	data := append([]byte(encryptionTag), getFileData(filePath)...)
+	data := append([]byte(encryptionTag), CalcFileMD5(filePath)...)
 	return calcFileHash(data)
 }
 
@@ -67,14 +80,6 @@ func CalcSliceHash(data []byte, fileHash string) string {
 	sliceCid := cid.NewCidV1(cid.Raw, sliceHash)
 	encoder, _ := mbase.NewEncoder(mbase.Base32hex)
 	return sliceCid.Encode(encoder)
-}
-
-func getFileData(filePath string) []byte {
-	data, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return nil
-	}
-	return data
 }
 
 func calcFileHash(data []byte) string {

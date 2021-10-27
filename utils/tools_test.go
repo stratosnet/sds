@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/hd"
 	"github.com/cosmos/go-bip39"
 	"github.com/ipfs/go-cid"
@@ -8,6 +9,7 @@ import (
 	"github.com/stratosnet/sds/utils/crypto/math"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"testing"
+	"time"
 )
 
 func TestECCSignAndVerify(t *testing.T) {
@@ -88,4 +90,13 @@ func TestCid(t *testing.T) {
 	if sliceHash == CalcSliceHash(sliceData, fakeFileHash) {
 		t.Fatal("slice hash should be different when being generated with different file hash")
 	}
+}
+
+func TestCidLargeFile(t *testing.T) {
+	encryptionTag := GetRandomString(8)
+	start := time.Now()
+	filehash := CalcFileHash("/home/osboxes/Downloads/ideaIU-2021.2.2.tar.gz", encryptionTag)
+	elapsed := time.Since(start)
+	fmt.Println(filehash)
+	fmt.Println(elapsed)
 }

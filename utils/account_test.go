@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/bech32"
 )
