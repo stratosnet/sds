@@ -1,6 +1,6 @@
 version: 0
 versionshow: ""
-downloadpathminlen: 112
+downloadpathminlen: 88
 Port: :18082
 NetworkAddress: 127.0.0.1
 Debug: true

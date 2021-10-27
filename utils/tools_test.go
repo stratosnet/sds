@@ -1,12 +1,15 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/hd"
 	"github.com/cosmos/go-bip39"
+	"github.com/ipfs/go-cid"
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/math"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"testing"
+	"time"
 )
 
 func TestECCSignAndVerify(t *testing.T) {
@@ -47,4 +50,53 @@ func TestECCSignAndVerify(t *testing.T) {
 	if !ECCVerifyBytes(msg, sig2, pubKeyBytes) {
 		t.Fatal("couldn't ECCVerifyBytes sig from ECCSignBytes")
 	}
+}
+
+func TestCid(t *testing.T) {
+	fileData := []byte("file data")
+	sliceData := []byte("slice data")
+
+	fileHash := calcFileHash(fileData)
+	sliceHash := CalcSliceHash(sliceData, fileHash)
+	fileCid, _ := cid.Decode(fileHash)
+	sliceCid, _ := cid.Decode(sliceHash)
+	filePrefix := fileCid.Prefix()
+	slicePrefix := sliceCid.Prefix()
+
+	expectedPrefix := cid.Prefix{
+		Version:  1,
+		Codec:    85,
+		MhType:   27,
+		MhLength: 20,
+	}
+
+	if len(fileHash) != 40 {
+		t.Fatal("incorrect file hash length")
+	}
+
+	if len(sliceHash) != 40 {
+		t.Fatal("incorrect slice hash length")
+	}
+
+	if filePrefix != expectedPrefix {
+		t.Fatal("incorrect file cid prefix after decoding")
+	}
+
+	if slicePrefix != expectedPrefix {
+		t.Fatal("incorrect slice cid prefix after decoding")
+	}
+
+	fakeFileHash := "t05ahm87h28vdd04qu3pbv0op4jnjnkpete9eposh2l6r1hp8i0hbqictcc======"
+	if sliceHash == CalcSliceHash(sliceData, fakeFileHash) {
+		t.Fatal("slice hash should be different when being generated with different file hash")
+	}
+}
+
+func TestCidLargeFile(t *testing.T) {
+	encryptionTag := GetRandomString(8)
+	start := time.Now()
+	filehash := CalcFileHash("/home/osboxes/Downloads/ideaIU-2021.2.2.tar.gz", encryptionTag)
+	elapsed := time.Since(start)
+	fmt.Println(filehash)
+	fmt.Println(elapsed)
 }

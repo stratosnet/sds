@@ -2,12 +2,12 @@ package utils
 
 import (
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/types"
+	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"io/ioutil"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/tendermint/tendermint/libs/bech32"
 )
 

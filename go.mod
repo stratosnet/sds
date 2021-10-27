@@ -18,7 +18,10 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/websocket v1.4.2
+	github.com/ipfs/go-cid v0.1.0
 	github.com/mattn/go-sqlite3 v1.14.6
+	github.com/multiformats/go-multibase v0.0.3
+	github.com/multiformats/go-multihash v0.0.15
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/oasisprotocol/ed25519 v0.0.0-20210505154701-76d8c688d86e
 	github.com/onsi/ginkgo v1.16.1 // indirect
@@ -31,7 +34,7 @@ require (
 	github.com/stratosnet/stratos-chain v0.0.0-20210812183433-04850109b2fd
 	github.com/tendermint/tendermint v0.33.9
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
-	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
+	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 )
