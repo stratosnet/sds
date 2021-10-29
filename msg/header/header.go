@@ -48,6 +48,12 @@ const (
 	ReqActivatedSP = "ReqActds" // request when a SP node was successfully activated
 	RspActivatedPP = "RspActdp" // response when a PP node was successfully activated
 
+	ReqUpdateStakePP  = "ReqUpdtp"  // request to update stake for a PP node
+	RspUpdateStakePP  = "RspUpdtp"  // response to update stake for a PP node
+	ReqUpdatedStakePP = "ReqUpdtdp" // request when a PP node's stake was successfully updated
+	ReqUpdatedStakeSP = "ReqUpdtds" // request when a SP node's stake was successfully updated
+	RspUpdatedStakePP = "RspUpdtdp" // response when a PP node's stake  was successfully updated
+
 	ReqDeactivatePP  = "ReqDctvp" // request to deactivate a PP node
 	RspDeactivatePP  = "RspDctvp" // response to deactivate a PP node
 	ReqUnbondingPP   = "ReqUbdp"  // request to unbonding a PP node

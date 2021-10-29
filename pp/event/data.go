@@ -32,6 +32,33 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivatePP, error) {
 	return req, nil
 }
 
+func reqUpdateStakeData(stakeDelta, fee, gas int64, incrStake bool) (*protos.ReqUpdateStakePP, error) {
+	// Create and sign transaction to update stake for existing resource node
+	ownerAddr, err := types.BechToAddress(setting.WalletAddress)
+	if err != nil {
+		return nil, err
+	}
+	networkAddr, err := types.BechToAddress(setting.P2PAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	txMsg := stratoschain.BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr, setting.Config.Token, stakeDelta, incrStake)
+	signatureKeys := []stratoschain.SignatureKey{
+		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: stratoschain.SignatureSecp256k1},
+	}
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", "sync", txMsg, fee, gas, signatureKeys)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &protos.ReqUpdateStakePP{
+		Tx:         txBytes,
+		P2PAddress: setting.P2PAddress,
+	}
+	return req, nil
+}
+
 func reqDeactivateData(fee, gas int64) (*protos.ReqDeactivatePP, error) {
 	// Create and sign transaction to remove a resource node
 	nodeAddress := ed25519.PubKeyBytesToAddress(setting.P2PPublicKey)
