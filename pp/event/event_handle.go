@@ -14,6 +14,8 @@ func RegisterEventHandle() {
 	core.Register(header.ReqRegister, ReqRegister)
 	core.Register(header.RspActivatePP, RspActivate)
 	core.Register(header.RspActivatedPP, RspActivated)
+	core.Register(header.RspUpdateStakePP, RspUpdateStake)
+	core.Register(header.RspUpdatedStakePP, RspUpdatedStake)
 	core.Register(header.RspDeactivatePP, RspDeactivate)
 	core.Register(header.RspDeactivatedPP, RspDeactivated)
 	core.Register(header.RspPrepay, RspPrepay)

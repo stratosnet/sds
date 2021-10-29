@@ -52,8 +52,8 @@ func RspUpdateStake(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-// RspUpdated. Response when this PP node was successfully activated
-func RspUpdated(ctx context.Context, conn core.WriteCloser) {
+// RspUpdated. Response when this PP node's stake was successfully updated
+func RspUpdatedStake(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspUpdatedStakePP
 	success := types.UnmarshalData(ctx, &target)
 	if !success {

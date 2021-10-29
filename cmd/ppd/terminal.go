@@ -24,31 +24,32 @@ import (
 func terminal(cmd *cobra.Command, args []string) {
 
 	helpStr := "\n" +
-		"help                                       show all the commands\n" +
-		"wallets                                    acquire all wallet wallets' address\n" +
-		"newwallet ->password                       create new wallet, input password in prompt\n" +
-		"login <walletAddress> ->password           unlock and log in wallet, input password in prompt\n" +
-		"registerpeer                               register peer to index node\n" +
-		"rp                                         register peer to index node\n" +
-		"activate <amount> <fee> <gas>              send transaction to stchain to become an active PP node\n" +
-		"deactivate <fee> <gas>                     send transaction to stchain to stop being an active PP node\n" +
-		"startmining                                start mining\n" +
-		"prepay <amount> <fee> <gas>                prepay stos to get ozone, amount in ustos\n" +
-		"put <filepath>                             upload file, need to consume ozone\n" +
-		"putstream <filepath>                       upload video file for streaming, need to consume ozone (alpha version, encode format config impossible)\n" +
-		"list <filename>                            query uploaded file by self\n" +
-		"list                                       query all files\n" +
-		"delete <filehash>                          delete file\n" +
-		"get <sdm://account/filehash|filename>      download file, need to consume ozone\n" +
+		"help                                       			show all the commands\n" +
+		"wallets                                    			acquire all wallet wallets' address\n" +
+		"newwallet ->password                       			create new wallet, input password in prompt\n" +
+		"login <walletAddress> ->password           			unlock and log in wallet, input password in prompt\n" +
+		"registerpeer                               			register peer to index node\n" +
+		"rp                                         			register peer to index node\n" +
+		"activate <amount> <fee> <gas>              			send transaction to stchain to become an active PP node\n" +
+		"updateStake <stakeDelta> <fee> <gas> <isIncrStake>		send transaction to stchain to become an active PP node\n" +
+		"deactivate <fee> <gas>                     			send transaction to stchain to stop being an active PP node\n" +
+		"startmining                                			start mining\n" +
+		"prepay <amount> <fee> <gas>                			prepay stos to get ozone, amount in ustos\n" +
+		"put <filepath>                             			upload file, need to consume ozone\n" +
+		"putstream <filepath>                       			upload video file for streaming, need to consume ozone (alpha version, encode format config impossible)\n" +
+		"list <filename>                            			query uploaded file by self\n" +
+		"list                                       			query all files\n" +
+		"delete <filehash>                          			delete file\n" +
+		"get <sdm://account/filehash|filename>      			download file, need to consume ozone\n" +
 		"	e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe|test.mp4\n" +
-		"sharefile <filehash> <expiry> <private>    share an uploaded file\n" +
-		"allshare                                   list all shared files\n" +
-		"getsharefile <sharelink> <password>        download a shared file, need to consume ozone\n" +
-		"cancelshare <shareID>                      cancel a shared file\n" +
-		"ver                                        version\n" +
-		"monitor                                    show monitor\n" +
-		"stopmonitor                                stop monitor\n" +
-		"config  <key> <value>                      set config key value\n"
+		"sharefile <filehash> <expiry> <private>    			share an uploaded file\n" +
+		"allshare                                   			list all shared files\n" +
+		"getsharefile <sharelink> <password>        			download a shared file, need to consume ozone\n" +
+		"cancelshare <shareID>                      			cancel a shared file\n" +
+		"ver                                        			version\n" +
+		"monitor                                    			show monitor\n" +
+		"stopmonitor                                			stop monitor\n" +
+		"config  <key> <value>                      			set config key value\n"
 	fmt.Println(helpStr)
 
 	help := func(line string, param []string) bool {
@@ -151,6 +152,60 @@ func terminal(cmd *cobra.Command, args []string) {
 		}
 
 		return event.Activate(amount, fee, gas) == nil
+	}
+
+	updateStake := func(line string, param []string) bool {
+		stakeDelta := int64(1000000000)
+		fee := int64(10000)
+		gas := int64(1000000)
+		incrStake := true
+		if len(param) > 4 {
+			fmt.Println("Expecting at most 4 params. Input amount of stakeDelta, fee amount, gas amount and flag of incrStake(0 for desc, 1 for incr)")
+			return false
+		}
+
+		var err error
+		if len(param) > 0 {
+			stakeDelta, err = strconv.ParseInt(param[0], 10, 64)
+			if err != nil {
+				fmt.Println("Invalid amount param. Should be an integer")
+				return false
+			}
+		}
+		if len(param) > 1 {
+			fee, err = strconv.ParseInt(param[1], 10, 64)
+			if err != nil {
+				fmt.Println("Invalid fee param. Should be an integer")
+				return false
+			}
+		}
+		if len(param) > 2 {
+			gas, err = strconv.ParseInt(param[2], 10, 64)
+			if err != nil {
+				fmt.Println("Invalid gas param. Should be an integer")
+				return false
+			}
+		}
+
+		if len(param) > 3 {
+			incrStake, err = strconv.ParseBool(param[3])
+			if err != nil {
+				fmt.Println("Invalid flag for stake change. 0 for desc, 1 for incr")
+				return false
+			}
+		}
+
+		if setting.State != setting.PP_ACTIVE {
+			fmt.Println("PP node not activated yet")
+			return true
+		}
+
+		if !setting.IsPP {
+			fmt.Println("register as a PP node first")
+			return true
+		}
+
+		return event.UpdateStake(stakeDelta, fee, gas, incrStake) == nil
 	}
 
 	deactivate := func(line string, param []string) bool {
@@ -579,6 +634,7 @@ func terminal(cmd *cobra.Command, args []string) {
 	console.Mystdin.RegisterProcessFunc("rp", registerPP)
 	console.Mystdin.RegisterProcessFunc("registerpeer", registerPP)
 	console.Mystdin.RegisterProcessFunc("activate", activate)
+	console.Mystdin.RegisterProcessFunc("updateStake", updateStake)
 	console.Mystdin.RegisterProcessFunc("deactivate", deactivate)
 	console.Mystdin.RegisterProcessFunc("prepay", prepay)
 	console.Mystdin.RegisterProcessFunc("u", upload)
