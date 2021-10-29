@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	sdkTypes "github.com/cosmos/cosmos-sdk/types"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
@@ -109,23 +110,11 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 			OzoneLimitChanges: ozoneLimitChangeStr[0],
 		}
 
-		jsonData, err := json.Marshal(activatedMsg)
+		err = postToSP("/pp/activated", activatedMsg)
 		if err != nil {
-			utils.ErrorLog("Error when trying to marshal ReqActivatedPP to json", err)
+			utils.ErrorLog(err)
 			return
 		}
-
-		sdsApiUrl := "http://" + setting.Config.SDS.NetworkAddress + ":" + setting.Config.SDS.ApiPort
-		resp, err := http.Post(sdsApiUrl+"/pp/activated", "application/json", bytes.NewBuffer(jsonData))
-		if err != nil {
-			utils.ErrorLog("Error when calling /pp/activated endpoint in SP node", err)
-			return
-		}
-
-		var res map[string]interface{}
-	_:
-		json.NewDecoder(resp.Body).Decode(&res)
-		utils.Log("/pp/activated endpoint response from SP node", resp.StatusCode, res["Msg"])
 	}
 }
 
@@ -160,23 +149,11 @@ func (m *MultiClient) UnbondingResourceNodeMsgHandler() func(event coretypes.Res
 			UnbondingMatureTime: ubdMatureTimeStr,
 		}
 
-		jsonData, err := json.Marshal(ubdMsg)
+		err = postToSP("/pp/unbonding", ubdMsg)
 		if err != nil {
-			utils.ErrorLog("Error when trying to marshal ReqUnbondingPP to json", err)
+			utils.ErrorLog(err)
 			return
 		}
-
-		sdsApiUrl := "http://" + setting.Config.SDS.NetworkAddress + ":" + setting.Config.SDS.ApiPort
-		resp, err := http.Post(sdsApiUrl+"/pp/unbonding", "application/json", bytes.NewBuffer(jsonData))
-		if err != nil {
-			utils.ErrorLog("Error when calling /pp/unbonding endpoint in SP node", err)
-			return
-		}
-
-		var res map[string]interface{}
-	_:
-		json.NewDecoder(resp.Body).Decode(&res)
-		utils.Log("/pp/unbonding endpoint response from SP node", resp.StatusCode, res["Msg"])
 	}
 }
 
@@ -201,23 +178,11 @@ func (m *MultiClient) RemoveResourceNodeMsgHandler() func(event coretypes.Result
 
 		deactivatedMsg := &protos.ReqDeactivatedPP{P2PAddress: p2pAddressString}
 
-		jsonData, err := json.Marshal(deactivatedMsg)
+		err = postToSP("/pp/deactivated", deactivatedMsg)
 		if err != nil {
-			utils.ErrorLog("Error when trying to marshal ReqDeactivatedPP to json", err)
+			utils.ErrorLog(err)
 			return
 		}
-
-		sdsApiUrl := "http://" + setting.Config.SDS.NetworkAddress + ":" + setting.Config.SDS.ApiPort
-		resp, err := http.Post(sdsApiUrl+"/pp/deactivated", "application/json", bytes.NewBuffer(jsonData))
-		if err != nil {
-			utils.ErrorLog("Error when calling /pp/deactivated endpoint in SP node", err)
-			return
-		}
-
-		var res map[string]interface{}
-	_:
-		json.NewDecoder(resp.Body).Decode(&res)
-		utils.Log("/pp/deactivated endpoint response from SP node", resp.StatusCode, res["Msg"])
 	}
 }
 
@@ -279,23 +244,12 @@ func (m *MultiClient) IndexingNodeVoteMsgHandler() func(event coretypes.ResultEv
 		activatedMsg := &protos.ReqActivatedSP{
 			P2PAddress: p2pAddressString,
 		}
-		jsonData, err := json.Marshal(activatedMsg)
+
+		err = postToSP("/chain/activated", activatedMsg)
 		if err != nil {
-			utils.ErrorLog("Error when trying to marshal ReqActivatedSP to json", err)
+			utils.ErrorLog(err)
 			return
 		}
-
-		sdsApiUrl := "http://" + setting.Config.SDS.NetworkAddress + ":" + setting.Config.SDS.ApiPort
-		resp, err := http.Post(sdsApiUrl+"/chain/activated", "application/json", bytes.NewBuffer(jsonData))
-		if err != nil {
-			utils.ErrorLog("Error when calling /chain/activated endpoint in SP node", err)
-			return
-		}
-
-		var res map[string]interface{}
-	_:
-		json.NewDecoder(resp.Body).Decode(&res)
-		utils.Log("/chain/activated endpoint response from SP node", resp.StatusCode, res["Msg"])
 	}
 }
 
@@ -320,23 +274,11 @@ func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 			PurchasedUoz:  purchasedUozList[0],
 		}
 
-		jsonData, err := json.Marshal(prepaidMsg)
+		err := postToSP("/pp/prepaid", prepaidMsg)
 		if err != nil {
-			utils.ErrorLog("Error when trying to marshal ReqPrepaid to json", err)
+			utils.ErrorLog(err)
 			return
 		}
-
-		sdsApiUrl := "http://" + setting.Config.SDS.NetworkAddress + ":" + setting.Config.SDS.ApiPort
-		resp, err := http.Post(sdsApiUrl+"/pp/prepaid", "application/json", bytes.NewBuffer(jsonData))
-		if err != nil {
-			utils.ErrorLog("Error when calling /pp/prepaid endpoint in SP node", err)
-			return
-		}
-
-		var res map[string]interface{}
-	_:
-		json.NewDecoder(resp.Body).Decode(&res)
-		utils.Log("/pp/prepaid endpoint response from SP node", resp.StatusCode, res["Msg"])
 	}
 }
 
@@ -366,23 +308,11 @@ func (m *MultiClient) FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 			FileHash:        fileHashList[0],
 		}
 
-		jsonData, err := json.Marshal(uploadedMsg)
+		err := postToSP("/pp/uploaded", uploadedMsg)
 		if err != nil {
-			utils.ErrorLog("Error when trying to marshal Uploaded to json", err)
+			utils.ErrorLog(err)
 			return
 		}
-
-		sdsApiUrl := "http://" + setting.Config.SDS.NetworkAddress + ":" + setting.Config.SDS.ApiPort
-		resp, err := http.Post(sdsApiUrl+"/pp/uploaded", "application/json", bytes.NewBuffer(jsonData))
-		if err != nil {
-			utils.ErrorLog("Error when calling /pp/uploaded endpoint in SP node", err)
-			return
-		}
-
-		var res map[string]interface{}
-	_:
-		json.NewDecoder(resp.Body).Decode(&res)
-		utils.Log("/pp/uploaded endpoint response from SP node", resp.StatusCode, res["Msg"])
 	}
 }
 
@@ -391,4 +321,23 @@ func (m *MultiClient) VolumeReportHandler() func(event coretypes.ResultEvent) {
 		// TODO
 		utils.Log(fmt.Sprintf("%+v", result))
 	}
+}
+
+func postToSP(endpoint string, data interface{}) error {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return errors.New("Error when trying to marshal data to json: " + err.Error())
+	}
+
+	sdsApiUrl := "http://" + setting.Config.SDS.NetworkAddress + ":" + setting.Config.SDS.ApiPort
+	resp, err := http.Post(sdsApiUrl+endpoint, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return errors.New("Error when calling " + endpoint + " endpoint in SP node: " + err.Error())
+	}
+
+	var res map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&res)
+
+	utils.Log(endpoint+" endpoint response from SP node", resp.StatusCode, res["Msg"])
+	return nil
 }
