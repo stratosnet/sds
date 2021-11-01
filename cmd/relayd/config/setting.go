@@ -10,6 +10,7 @@ type connectionRetries struct {
 }
 
 type sds struct {
+	ApiPort           string            `yaml:"apiPort"`
 	ClientPort        string            `yaml:"clientPort"`
 	NetworkAddress    string            `yaml:"networkAddress"`
 	WebsocketPort     string            `yaml:"websocketPort"`
@@ -44,6 +45,5 @@ func LoadConfig(path string) error {
 		return err
 	}
 
-	//prefix.SetConfig(Config.BlockchainInfo.AddressPrefix)
 	return nil
 }

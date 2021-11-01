@@ -1,19 +1,20 @@
 package client
 
 import (
+	"bytes"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
 	sdkTypes "github.com/cosmos/cosmos-sdk/types"
-	"github.com/golang/protobuf/proto"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
-	"github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
+	"net/http"
 )
 
 func (m *MultiClient) SubscribeToStratosChainEvents() error {
@@ -75,8 +76,6 @@ func (m *MultiClient) SubscribeToStratosChainEvents() error {
 
 func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		conn := m.GetSdsClientConn()
-
 		networkAddressList := result.Events["create_resource_node.network_address"]
 		if len(networkAddressList) < 1 {
 			utils.ErrorLog("No network address was specified in the create_resource_node message from stratos-chain")
@@ -118,19 +117,10 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 			P2PPubkey:         hex.EncodeToString(p2pPubkey[:]),
 			OzoneLimitChanges: ozoneLimitChangeStr[0],
 		}
-		activatedMsgBytes, err := proto.Marshal(activatedMsg)
-		if err != nil {
-			utils.ErrorLog("Error when trying to marshal ReqActivatedPP proto", err)
-			return
-		}
-		msgToSend := &msg.RelayMsgBuf{
-			MSGData: activatedMsgBytes,
-			MSGHead: header.MakeMessageHeader(1, 1, uint32(len(activatedMsgBytes)), header.ReqActivatedPP),
-		}
 
-		err = conn.Write(msgToSend)
+		err = postToSP("/pp/activated", activatedMsg)
 		if err != nil {
-			utils.ErrorLog("Error when sending message to SDS", err)
+			utils.ErrorLog(err)
 			return
 		}
 	}
@@ -190,8 +180,6 @@ func (m *MultiClient) UpdateResourceNodeStakeMsgHandler() func(event coretypes.R
 
 func (m *MultiClient) UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		conn := m.GetSdsClientConn()
-
 		nodeAddressList := result.Events["unbonding_resource_node.resource_node"]
 		if len(nodeAddressList) < 1 {
 			fmt.Println("No node address was specified in the remove_resource_node message from stratos-chain")
@@ -220,19 +208,10 @@ func (m *MultiClient) UnbondingResourceNodeMsgHandler() func(event coretypes.Res
 			OzoneLimitChanges:   ozoneLimitChangeStr,
 			UnbondingMatureTime: ubdMatureTimeStr,
 		}
-		ubdMsgBytes, err := proto.Marshal(ubdMsg)
-		if err != nil {
-			fmt.Println("Error when trying to marshal ReqDeactivatedPP proto: " + err.Error())
-			return
-		}
-		msgToSend := &msg.RelayMsgBuf{
-			MSGData: ubdMsgBytes,
-			MSGHead: header.MakeMessageHeader(1, 1, uint32(len(ubdMsgBytes)), header.ReqUnbondingPP),
-		}
 
-		err = conn.Write(msgToSend)
+		err = postToSP("/pp/unbonding", ubdMsg)
 		if err != nil {
-			fmt.Println("Error when sending message to SDS: " + err.Error())
+			utils.ErrorLog(err)
 			return
 		}
 	}
@@ -240,8 +219,6 @@ func (m *MultiClient) UnbondingResourceNodeMsgHandler() func(event coretypes.Res
 
 func (m *MultiClient) RemoveResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		conn := m.GetSdsClientConn()
-
 		nodeAddressList := result.Events["remove_resource_node.resource_node"]
 		if len(nodeAddressList) < 1 {
 			utils.ErrorLog("No node address was specified in the remove_resource_node message from stratos-chain")
@@ -260,19 +237,10 @@ func (m *MultiClient) RemoveResourceNodeMsgHandler() func(event coretypes.Result
 		}
 
 		deactivatedMsg := &protos.ReqDeactivatedPP{P2PAddress: p2pAddressString}
-		deactivatedMsgBytes, err := proto.Marshal(deactivatedMsg)
-		if err != nil {
-			utils.ErrorLog("Error when trying to marshal ReqDeactivatedPP proto", err)
-			return
-		}
-		msgToSend := &msg.RelayMsgBuf{
-			MSGData: deactivatedMsgBytes,
-			MSGHead: header.MakeMessageHeader(1, 1, uint32(len(deactivatedMsgBytes)), header.ReqDeactivatedPP),
-		}
 
-		err = conn.Write(msgToSend)
+		err = postToSP("/pp/deactivated", deactivatedMsg)
 		if err != nil {
-			utils.ErrorLog("Error when sending message to SDS", err)
+			utils.ErrorLog(err)
 			return
 		}
 	}
@@ -359,8 +327,6 @@ func (m *MultiClient) CompleteUnbondingIndexingNodeMsgHandler() func(event coret
 
 func (m *MultiClient) IndexingNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		conn := m.GetSdsClientConn()
-
 		candidateNetworkAddressList := result.Events["indexing_node_reg_vote.candidate_network_address"]
 		if len(candidateNetworkAddressList) < 1 {
 			utils.ErrorLog("No candidate network address was specified in the indexing_node_reg_vote message from stratos-chain")
@@ -390,19 +356,10 @@ func (m *MultiClient) IndexingNodeVoteMsgHandler() func(event coretypes.ResultEv
 		activatedMsg := &protos.ReqActivatedSP{
 			P2PAddress: p2pAddressString,
 		}
-		activatedMsgBytes, err := proto.Marshal(activatedMsg)
-		if err != nil {
-			utils.ErrorLog("Error when trying to marshal ReqActivatedSP proto", err)
-			return
-		}
-		msgToSend := &msg.RelayMsgBuf{
-			MSGData: activatedMsgBytes,
-			MSGHead: header.MakeMessageHeader(1, 1, uint32(len(activatedMsgBytes)), header.ReqActivatedSP),
-		}
 
-		err = conn.Write(msgToSend)
+		err = postToSP("/chain/activated", activatedMsg)
 		if err != nil {
-			utils.ErrorLog("Error when sending message to SDS", err)
+			utils.ErrorLog(err)
 			return
 		}
 	}
@@ -411,7 +368,6 @@ func (m *MultiClient) IndexingNodeVoteMsgHandler() func(event coretypes.ResultEv
 func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		utils.Log(fmt.Sprintf("%+v", result))
-		conn := m.GetSdsClientConn()
 
 		reporterList := result.Events["Prepay.reporter"]
 		if len(reporterList) < 1 {
@@ -429,19 +385,10 @@ func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 			WalletAddress: reporterList[0],
 			PurchasedUoz:  purchasedUozList[0],
 		}
-		prepaidMsgBytes, err := proto.Marshal(prepaidMsg)
-		if err != nil {
-			utils.ErrorLog("Error when trying to marshal ReqPrepaid proto", err)
-			return
-		}
-		msgToSend := &msg.RelayMsgBuf{
-			MSGData: prepaidMsgBytes,
-			MSGHead: header.MakeMessageHeader(1, 1, uint32(len(prepaidMsgBytes)), header.ReqPrepaid),
-		}
 
-		err = conn.Write(msgToSend)
+		err := postToSP("/pp/prepaid", prepaidMsg)
 		if err != nil {
-			utils.ErrorLog("Error when sending message to SDS", err)
+			utils.ErrorLog(err)
 			return
 		}
 	}
@@ -449,8 +396,6 @@ func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 
 func (m *MultiClient) FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		conn := m.GetSdsClientConn()
-
 		reporterAddressList := result.Events["FileUploadTx.reporter"]
 		if len(reporterAddressList) < 1 {
 			utils.ErrorLog("No reporter address was specified in the FileUploadTx message from stratos-chain")
@@ -474,19 +419,10 @@ func (m *MultiClient) FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 			UploaderAddress: uploaderAddressList[0],
 			FileHash:        fileHashList[0],
 		}
-		uploadedMsgBytes, err := proto.Marshal(uploadedMsg)
-		if err != nil {
-			utils.ErrorLog("Error when trying to marshal Uploaded proto", err)
-			return
-		}
-		msgToSend := &msg.RelayMsgBuf{
-			MSGData: uploadedMsgBytes,
-			MSGHead: header.MakeMessageHeader(1, 1, uint32(len(uploadedMsgBytes)), header.Uploaded),
-		}
 
-		err = conn.Write(msgToSend)
+		err := postToSP("/pp/uploaded", uploadedMsg)
 		if err != nil {
-			utils.ErrorLog("Error when sending message to SDS", err)
+			utils.ErrorLog(err)
 			return
 		}
 	}
@@ -497,4 +433,23 @@ func (m *MultiClient) VolumeReportHandler() func(event coretypes.ResultEvent) {
 		// TODO
 		utils.Log(fmt.Sprintf("%+v", result))
 	}
+}
+
+func postToSP(endpoint string, data interface{}) error {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return errors.New("Error when trying to marshal data to json: " + err.Error())
+	}
+
+	sdsApiUrl := "http://" + setting.Config.SDS.NetworkAddress + ":" + setting.Config.SDS.ApiPort
+	resp, err := http.Post(sdsApiUrl+endpoint, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return errors.New("Error when calling " + endpoint + " endpoint in SP node: " + err.Error())
+	}
+
+	var res map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&res)
+
+	utils.Log(endpoint+" endpoint response from SP node", resp.StatusCode, res["Msg"])
+	return nil
 }

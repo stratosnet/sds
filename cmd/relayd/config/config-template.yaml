@@ -1,5 +1,6 @@
 sds:
   networkAddress: 127.0.0.1
+  apiPort: 8081
   clientPort: 8888
   websocketPort: 8889
   connectionRetries:
