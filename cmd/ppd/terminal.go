@@ -31,7 +31,7 @@ func terminal(cmd *cobra.Command, args []string) {
 		"registerpeer                               			register peer to index node\n" +
 		"rp                                         			register peer to index node\n" +
 		"activate <amount> <fee> <gas>              			send transaction to stchain to become an active PP node\n" +
-		"updateStake <stakeDelta> <fee> <gas> <isIncrStake>		send transaction to stchain to become an active PP node\n" +
+		"updateStake <stakeDelta> <fee> <gas> <isIncrStake>		send transaction to stchain to update active pp's stake\n" +
 		"deactivate <fee> <gas>                     			send transaction to stchain to stop being an active PP node\n" +
 		"startmining                                			start mining\n" +
 		"prepay <amount> <fee> <gas>                			prepay stos to get ozone, amount in ustos\n" +
@@ -155,44 +155,30 @@ func terminal(cmd *cobra.Command, args []string) {
 	}
 
 	updateStake := func(line string, param []string) bool {
-		stakeDelta := int64(1000000000)
-		fee := int64(10000)
-		gas := int64(1000000)
-		incrStake := true
-		if len(param) > 4 {
-			fmt.Println("Expecting at most 4 params. Input amount of stakeDelta, fee amount, gas amount and flag of incrStake(0 for desc, 1 for incr)")
+		if len(param) != 4 {
+			fmt.Println("Expecting 4 params. Input amount of stakeDelta, fee amount, gas amount and flag of incrStake(0 for desc, 1 for incr)")
 			return false
 		}
 
-		var err error
-		if len(param) > 0 {
-			stakeDelta, err = strconv.ParseInt(param[0], 10, 64)
-			if err != nil {
-				fmt.Println("Invalid amount param. Should be an integer")
-				return false
-			}
+		stakeDelta, err := strconv.ParseInt(param[0], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid amount param. Should be an integer")
+			return false
 		}
-		if len(param) > 1 {
-			fee, err = strconv.ParseInt(param[1], 10, 64)
-			if err != nil {
-				fmt.Println("Invalid fee param. Should be an integer")
-				return false
-			}
+		fee, err := strconv.ParseInt(param[1], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid fee param. Should be an integer")
+			return false
 		}
-		if len(param) > 2 {
-			gas, err = strconv.ParseInt(param[2], 10, 64)
-			if err != nil {
-				fmt.Println("Invalid gas param. Should be an integer")
-				return false
-			}
+		gas, err := strconv.ParseInt(param[2], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid gas param. Should be an integer")
+			return false
 		}
-
-		if len(param) > 3 {
-			incrStake, err = strconv.ParseBool(param[3])
-			if err != nil {
-				fmt.Println("Invalid flag for stake change. 0 for desc, 1 for incr")
-				return false
-			}
+		incrStake, err := strconv.ParseBool(param[3])
+		if err != nil {
+			fmt.Println("Invalid flag for stake change. 0 for desc, 1 for incr")
+			return false
 		}
 
 		if setting.State != setting.PP_ACTIVE {

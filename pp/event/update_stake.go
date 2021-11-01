@@ -21,7 +21,7 @@ func UpdateStake(stakeDelta, fee, gas int64, incrStake bool) error {
 		return err
 	}
 	utils.Log("Sending update stake message to SP! " + updateStakeReq.P2PAddress)
-	peers.SendMessageToSPServer(updateStakeReq, header.ReqActivatePP)
+	peers.SendMessageToSPServer(updateStakeReq, header.ReqUpdateStakePP)
 	return nil
 }
 
