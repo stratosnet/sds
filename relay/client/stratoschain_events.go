@@ -128,8 +128,6 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 
 func (m *MultiClient) UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		conn := m.GetSdsClientConn()
-
 		networkAddressList := result.Events["update_resource_node_stake.network_address"]
 		if len(networkAddressList) < 1 {
 			utils.ErrorLog("No network address was specified in the update_resource_node_stake message from stratos-chain")
@@ -160,19 +158,10 @@ func (m *MultiClient) UpdateResourceNodeStakeMsgHandler() func(event coretypes.R
 			OzoneLimitChanges: ozoneLimitChangeStr[0],
 			IncrStake:         incrStakeBoolList[0],
 		}
-		updatedStakeMsgBytes, err := proto.Marshal(updatedStakeMsg)
-		if err != nil {
-			utils.ErrorLog("Error when trying to marshal ReqUpdatedStakePP proto", err)
-			return
-		}
-		msgToSend := &msg.RelayMsgBuf{
-			MSGData: updatedStakeMsgBytes,
-			MSGHead: header.MakeMessageHeader(1, 1, uint32(len(updatedStakeMsgBytes)), header.ReqUpdatedStakePP),
-		}
 
-		err = conn.Write(msgToSend)
+		err = postToSP("/pp/updatedStake", updatedStakeMsg)
 		if err != nil {
-			utils.ErrorLog("Error when sending message to SDS", err)
+			utils.ErrorLog(err)
 			return
 		}
 	}
@@ -259,8 +248,6 @@ func (m *MultiClient) CreateIndexingNodeMsgHandler() func(event coretypes.Result
 
 func (m *MultiClient) UpdateIndexingNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		conn := m.GetSdsClientConn()
-
 		networkAddressList := result.Events["update_indexing_node_stake.network_address"]
 		if len(networkAddressList) < 1 {
 			utils.ErrorLog("No network address was specified in the update_indexing_node_stake message from stratos-chain")
@@ -291,19 +278,9 @@ func (m *MultiClient) UpdateIndexingNodeStakeMsgHandler() func(event coretypes.R
 			OzoneLimitChanges: ozoneLimitChangeStr[0],
 			IncrStake:         incrStakeBoolList[0],
 		}
-		updatedStakeMsgBytes, err := proto.Marshal(updatedStakeMsg)
+		err = postToSP("/chain/updatedStake", updatedStakeMsg)
 		if err != nil {
-			utils.ErrorLog("Error when trying to marshal ReqUpdatedStakeSP proto", err)
-			return
-		}
-		msgToSend := &msg.RelayMsgBuf{
-			MSGData: updatedStakeMsgBytes,
-			MSGHead: header.MakeMessageHeader(1, 1, uint32(len(updatedStakeMsgBytes)), header.ReqUpdatedStakeSP),
-		}
-
-		err = conn.Write(msgToSend)
-		if err != nil {
-			utils.ErrorLog("Error when sending message to SDS", err)
+			utils.ErrorLog(err)
 			return
 		}
 	}
