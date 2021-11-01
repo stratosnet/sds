@@ -111,35 +111,25 @@ func terminal(cmd *cobra.Command, args []string) {
 	}
 
 	activate := func(line string, param []string) bool {
-		amount := int64(1000000000)
-		fee := int64(10000)
-		gas := int64(1000000)
-		if len(param) > 3 {
-			fmt.Println("Expecting at most 3 params. Input amount of tokens, fee amount and gas amount")
+		if len(param) != 3 {
+			fmt.Println("Expecting 3 params. Input amount of tokens, fee amount and gas amount")
 			return false
 		}
 
-		var err error
-		if len(param) > 0 {
-			amount, err = strconv.ParseInt(param[0], 10, 64)
-			if err != nil {
-				fmt.Println("Invalid amount param. Should be an integer")
-				return false
-			}
+		amount, err := strconv.ParseInt(param[0], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid amount param. Should be an integer")
+			return false
 		}
-		if len(param) > 1 {
-			fee, err = strconv.ParseInt(param[1], 10, 64)
-			if err != nil {
-				fmt.Println("Invalid fee param. Should be an integer")
-				return false
-			}
+		fee, err := strconv.ParseInt(param[1], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid fee param. Should be an integer")
+			return false
 		}
-		if len(param) > 2 {
-			gas, err = strconv.ParseInt(param[2], 10, 64)
-			if err != nil {
-				fmt.Println("Invalid gas param. Should be an integer")
-				return false
-			}
+		gas, err := strconv.ParseInt(param[2], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid gas param. Should be an integer")
+			return false
 		}
 
 		if setting.State != setting.PP_INACTIVE {
@@ -195,27 +185,20 @@ func terminal(cmd *cobra.Command, args []string) {
 	}
 
 	deactivate := func(line string, param []string) bool {
-		fee := int64(10000)
-		gas := int64(1000000)
-		if len(param) > 2 {
-			fmt.Println("Expecting at most 2 params. Input fee amount and gas amount")
+		if len(param) != 2 {
+			fmt.Println("Expecting 2 params. Input fee amount and gas amount")
 			return false
 		}
 
-		var err error
-		if len(param) > 0 {
-			fee, err = strconv.ParseInt(param[0], 10, 64)
-			if err != nil {
-				fmt.Println("Invalid fee param. Should be an integer")
-				return false
-			}
+		fee, err := strconv.ParseInt(param[0], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid fee param. Should be an integer")
+			return false
 		}
-		if len(param) > 1 {
-			gas, err = strconv.ParseInt(param[1], 10, 64)
-			if err != nil {
-				fmt.Println("Invalid gas param. Should be an integer")
-				return false
-			}
+		gas, err := strconv.ParseInt(param[1], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid gas param. Should be an integer")
+			return false
 		}
 
 		if setting.State == setting.PP_INACTIVE {
@@ -227,35 +210,25 @@ func terminal(cmd *cobra.Command, args []string) {
 	}
 
 	prepay := func(line string, param []string) bool {
-		amount := int64(1000000000)
-		fee := int64(10000)
-		gas := int64(1000000)
-		if len(param) > 3 {
-			fmt.Println("Expecting at most 3 params. Input amount of tokens, fee amount and gas amount")
+		if len(param) != 3 {
+			fmt.Println("Expecting 3 params. Input amount of tokens, fee amount and gas amount")
 			return false
 		}
 
-		var err error
-		if len(param) > 0 {
-			amount, err = strconv.ParseInt(param[0], 10, 64)
-			if err != nil {
-				fmt.Println("Invalid amount param. Should be an integer")
-				return false
-			}
+		amount, err := strconv.ParseInt(param[0], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid amount param. Should be an integer")
+			return false
 		}
-		if len(param) > 1 {
-			fee, err = strconv.ParseInt(param[1], 10, 64)
-			if err != nil {
-				fmt.Println("Invalid fee param. Should be an integer")
-				return false
-			}
+		fee, err := strconv.ParseInt(param[1], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid fee param. Should be an integer")
+			return false
 		}
-		if len(param) > 2 {
-			gas, err = strconv.ParseInt(param[2], 10, 64)
-			if err != nil {
-				fmt.Println("Invalid gas param. Should be an integer")
-				return false
-			}
+		gas, err := strconv.ParseInt(param[2], 10, 64)
+		if err != nil {
+			fmt.Println("Invalid gas param. Should be an integer")
+			return false
 		}
 
 		return event.Prepay(amount, fee, gas) == nil
