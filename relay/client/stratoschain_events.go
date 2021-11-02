@@ -147,7 +147,7 @@ func (m *MultiClient) UpdateResourceNodeStakeMsgHandler() func(event coretypes.R
 
 		ozoneLimitChangeStr := result.Events["update_resource_node_stake.ozone_limit_changes"]
 
-		incrStakeBoolList := result.Events["update_resource_node_stake.incr_stake_bool"]
+		incrStakeBoolList := result.Events["update_resource_node_stake.incr_stake"]
 		if len(incrStakeBoolList) < 1 {
 			utils.ErrorLog("No incr stake status was specified in the update_resource_node_stake message from stratos-chain")
 			return
@@ -267,7 +267,7 @@ func (m *MultiClient) UpdateIndexingNodeStakeMsgHandler() func(event coretypes.R
 
 		ozoneLimitChangeStr := result.Events["update_indexing_node_stake.ozone_limit_changes"]
 
-		incrStakeBoolList := result.Events["update_indexing_node_stake.incr_stake_bool"]
+		incrStakeBoolList := result.Events["update_indexing_node_stake.incr_stake"]
 		if len(incrStakeBoolList) < 1 {
 			utils.ErrorLog("No incr stake status was specified in the update_indexing_node_stake message from stratos-chain")
 			return
