@@ -34,11 +34,8 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivatePP, error) {
 
 func reqUpdateStakeData(stakeDelta, fee, gas int64, incrStake bool) (*protos.ReqUpdateStakePP, error) {
 	// Create and sign transaction to update stake for existing resource node
-	ownerAddr, err := types.BechToAddress(setting.WalletAddress)
-	if err != nil {
-		return nil, err
-	}
-	networkAddr, err := types.BechToAddress(setting.P2PAddress)
+	networkAddr := ed25519.PubKeyBytesToAddress(setting.P2PPublicKey)
+	ownerAddr, err := crypto.PubKeyToAddress(setting.WalletPublicKey)
 	if err != nil {
 		return nil, err
 	}
