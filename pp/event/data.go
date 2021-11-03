@@ -26,8 +26,9 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivatePP, error) {
 	}
 
 	req := &protos.ReqActivatePP{
-		Tx:         txBytes,
-		P2PAddress: setting.P2PAddress,
+		Tx:            txBytes,
+		P2PAddress:    setting.P2PAddress,
+		AlreadyActive: false,
 	}
 	return req, nil
 }

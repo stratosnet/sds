@@ -10,8 +10,8 @@ import (
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
 
@@ -82,7 +82,7 @@ func uploadFile(w http.ResponseWriter, request *http.Request) {
 		}
 
 		if isFile {
-			f := types.RequestUploadFileData(path, sdPath, "", false, false, false)
+			f := requests.RequestUploadFileData(path, sdPath, "", false, false, false)
 			go peers.SendMessageToSPServer(f, header.ReqUploadFile)
 			taskID := uuid.New().String()
 			r := &uploadFileResult{
@@ -137,7 +137,7 @@ func uploadFile(w http.ResponseWriter, request *http.Request) {
 					lastPaths = sdPath + "/" + lastPaths
 				}
 
-				f := types.RequestUploadFileData(pathstring, lastPaths, "", false, false, false)
+				f := requests.RequestUploadFileData(pathstring, lastPaths, "", false, false, false)
 				utils.DebugLog("lastPaths>>>>", lastPaths)
 				utils.DebugLog("storagePath+relativePath", lastPaths, pathstring)
 				taskID := uuid.New().String()

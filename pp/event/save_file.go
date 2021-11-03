@@ -10,14 +10,14 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
 )
 
 // SaveOthersFile SaveOthersFile
 func SaveOthersFile(fileHash, ownerAddress, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessage(client.PPConn, types.ReqSaveFileData(fileHash, reqID, ownerAddress), header.ReqSaveFile)
+		peers.SendMessage(client.PPConn, requests.ReqSaveFileData(fileHash, reqID, ownerAddress), header.ReqSaveFile)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -32,7 +32,7 @@ func ReqSaveFile(ctx context.Context, conn core.WriteCloser) {
 // RspSaveFile RspSaveFile
 func RspSaveFile(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspSaveFile
-	if types.UnmarshalData(ctx, &target) {
+	if requests.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
@@ -49,7 +49,7 @@ func RspSaveFile(ctx context.Context, conn core.WriteCloser) {
 // SaveFolder SaveFolder
 func SaveFolder(folderHash, ownerAddress, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessage(client.PPConn, types.ReqSaveFolderData(folderHash, reqID, ownerAddress), header.ReqSaveFolder)
+		peers.SendMessage(client.PPConn, requests.ReqSaveFolderData(folderHash, reqID, ownerAddress), header.ReqSaveFolder)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -64,7 +64,7 @@ func ReqSaveFolder(ctx context.Context, conn core.WriteCloser) {
 // RspSaveFolder RspSaveFolder
 func RspSaveFolder(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspSaveFolder
-	if types.UnmarshalData(ctx, &target) {
+	if requests.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)

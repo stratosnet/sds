@@ -10,15 +10,15 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
 // Invite
 func Invite(code, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessage(client.PPConn, types.ReqInviteData(code, reqID), header.ReqInvite)
+		peers.SendMessage(client.PPConn, requests.ReqInviteData(code, reqID), header.ReqInvite)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -33,7 +33,7 @@ func ReqInvite(ctx context.Context, conn core.WriteCloser) {
 // RspInvite
 func RspInvite(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspInvite
-	if types.UnmarshalData(ctx, &target) {
+	if requests.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)
@@ -52,7 +52,7 @@ func RspInvite(ctx context.Context, conn core.WriteCloser) {
 // GetReward
 func GetReward(reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessage(client.PPConn, types.ReqGetRewardData(reqID), header.ReqGetReward)
+		peers.SendMessage(client.PPConn, requests.ReqGetRewardData(reqID), header.ReqGetReward)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -68,7 +68,7 @@ func ReqGetReward(ctx context.Context, conn core.WriteCloser) {
 func RspGetReward(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("RspGetReward>>>>>>>>>>>>>>>>>>>")
 	var target protos.RspGetReward
-	if types.UnmarshalData(ctx, &target) {
+	if requests.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)

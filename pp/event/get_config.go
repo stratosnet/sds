@@ -10,15 +10,15 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
 // GetMyConfig
 func GetMyConfig(p2pAddress, walletAddress, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessage(client.PPConn, types.ReqGetMyConfig(p2pAddress, walletAddress, reqID), header.ReqConfig)
+		peers.SendMessage(client.PPConn, requests.ReqGetMyConfig(p2pAddress, walletAddress, reqID), header.ReqConfig)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -35,7 +35,7 @@ func ReqGetMyConfig(ctx context.Context, conn core.WriteCloser) {
 func RspGetMyConfig(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspConfig")
 	var target protos.RspConfig
-	if types.UnmarshalData(ctx, &target) {
+	if requests.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				fmt.Println("action  successfully", target.Result.Msg)

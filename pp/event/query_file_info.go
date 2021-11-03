@@ -13,9 +13,9 @@ import (
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
 )
@@ -47,7 +47,7 @@ var isFind bool
 func FindDirectoryTree(reqID, pathHash string, w http.ResponseWriter, isF bool) {
 	if setting.CheckLogin() {
 		// request is the same as AlbumContent
-		peers.SendMessage(client.PPConn, types.ReqFindDirectoryTreeData(reqID, pathHash), header.ReqFindDirectoryTree)
+		peers.SendMessage(client.PPConn, requests.ReqFindDirectoryTreeData(reqID, pathHash), header.ReqFindDirectoryTree)
 		storeResponseWriter(reqID, w)
 		isFind = isF
 	} else {
@@ -64,7 +64,7 @@ func ReqFindDirectoryTree(ctx context.Context, conn core.WriteCloser) {
 func RspFindDirectoryTree(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("target>>context>>>>>>>>>>>>>>>>>>>")
 	var target protos.RspFindDirectoryTree
-	if types.UnmarshalData(ctx, &target) {
+	if requests.UnmarshalData(ctx, &target) {
 		if isFind {
 			putData(target.ReqId, HTTPDirectoryTree, &target)
 		}
@@ -88,7 +88,7 @@ func GetFileStorageInfo(path, savePath, reqID string, isImg bool, isVideoStream 
 	if setting.CheckLogin() {
 		if CheckDownloadPath(path) {
 			utils.DebugLog("path:", path)
-			peers.SendMessage(client.PPConn, types.ReqFileStorageInfoData(path, savePath, reqID, isVideoStream, nil), header.ReqFileStorageInfo)
+			peers.SendMessage(client.PPConn, requests.ReqFileStorageInfoData(path, savePath, reqID, isVideoStream, nil), header.ReqFileStorageInfo)
 			if isImg {
 				isImage = isImg
 				storeResponseWriter(reqID, w)
@@ -122,7 +122,7 @@ func ClearFileInfoAndDownloadTask(fileHash string, w http.ResponseWriter) {
 
 func ReqClearDownloadTask(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqClearDownloadTask
-	if types.UnmarshalData(ctx, &target) {
+	if requests.UnmarshalData(ctx, &target) {
 		task.DeleteDownloadTask(target.WalletAddress, target.WalletAddress)
 	}
 }
@@ -145,7 +145,7 @@ func GetVideoSlice(sliceInfo *protos.DownloadSliceInfo, fInfo *protos.RspFileSto
 			video, _ := ioutil.ReadFile(slicePath)
 			w.Write(video)
 		} else {
-			req := types.ReqDownloadSliceData(fInfo, sliceInfo)
+			req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
 			utils.Log("Send request for downloading slice: ", sliceInfo.SliceStorageInfo.SliceHash)
 			SendReqDownloadSlice(fInfo, req)
 			if err := storeResponseWriter(req.ReqId, w); err != nil {
@@ -162,7 +162,7 @@ func GetHlsInfo(fInfo *protos.RspFileStorageInfo) *file.HlsInfo {
 	sliceInfo := GetSliceInfoBySliceNumber(fInfo, uint64(1))
 	sliceHash := sliceInfo.SliceStorageInfo.SliceHash
 	if !file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceHash, fInfo.SavePath) {
-		req := types.ReqDownloadSliceData(fInfo, sliceInfo)
+		req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
 		SendReqDownloadSlice(fInfo, req)
 
 		start := time.Now().Unix()
@@ -203,7 +203,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	// PP check whether itself is the storage PP, if not transfer
 	utils.Log("get，RspFileStorageInfo")
 	var target protos.RspFileStorageInfo
-	if types.UnmarshalData(ctx, &target) {
+	if requests.UnmarshalData(ctx, &target) {
 
 		utils.DebugLog("file hash", target.FileHash)
 		// utils.Log("target", target.WalletAddress)
@@ -225,7 +225,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		} else {
 			// store the task and transfer
 			task.AddDownloadTask(&target)
-			peers.TransferSendMessageToClient(target.P2PAddress, types.RspFileStorageInfoData(&target))
+			peers.TransferSendMessageToClient(target.P2PAddress, requests.RspFileStorageInfoData(&target))
 		}
 	}
 }

@@ -14,14 +14,16 @@ import (
 	sdkrest "github.com/cosmos/cosmos-sdk/types/rest"
 	"github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	_ "github.com/stratosnet/sds/relay/stratoschain/prefix"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
 	"github.com/tendermint/tendermint/crypto"
+
+	"github.com/stratosnet/sds/pp/types"
+	_ "github.com/stratosnet/sds/relay/stratoschain/prefix"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/crypto/ed25519"
+	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 )
 
 var Url string
@@ -190,4 +192,46 @@ func BroadcastTxBytes(txBytes []byte) error {
 	}
 
 	return err
+}
+
+func QueryResourceNodeState(p2pAddress string) (int, error) {
+	if Url == "" {
+		return 0, errors.New("the stratos-chain URL is not set")
+	}
+
+	resp, err := http.Get(Url + "/register/resource-nodes?moniker=" + p2pAddress)
+	if err != nil {
+		return 0, err
+	}
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return 0, err
+	}
+
+	var wrappedResponse sdkrest.ResponseWithHeight
+	err = codec.Cdc.UnmarshalJSON(respBody, &wrappedResponse)
+	if err != nil {
+		return 0, err
+	}
+
+	var resourceNodes registertypes.ResourceNodes
+	err = authtypes.ModuleCdc.UnmarshalJSON(wrappedResponse.Result, &resourceNodes)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(resourceNodes) == 0 {
+		return types.PP_INACTIVE, nil
+	}
+	if resourceNodes[0].IsSuspended() {
+		return types.PP_SUSPENDED, nil
+	}
+	if resourceNodes[0].GetStatus() == sdktypes.Unbonding {
+		return types.PP_UNBONDING, nil
+	}
+	if resourceNodes[0].GetStatus() == sdktypes.Bonded && resourceNodes[0].GetMoniker() == p2pAddress {
+		return types.PP_ACTIVE, nil
+	}
+	return types.PP_INACTIVE, nil
 }
