@@ -169,7 +169,11 @@ cancelshare SHARE_ID
 Type `monitor` to show the resource utilization monitor, and `stopmonitor`to hide it.
 
 
-##
+# Documents
+
+We published all the documents [here](https://stratos.gitbook.io/st-docs/stratos-chain-english/stratos-sds/stratos-sds)
+
+
 # Contribution
 
 Thank you for considering to help out with the source code! We welcome contributions
