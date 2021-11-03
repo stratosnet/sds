@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"github.com/golang/protobuf/proto"
+
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/pp/client"
-	"github.com/stratosnet/sds/pp/types"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -22,7 +23,7 @@ func SendMessage(conn core.WriteCloser, pb proto.Message, cmd string) {
 		return
 	}
 	msg := &msg.RelayMsgBuf{
-		MSGHead: types.PPMsgHeader(data, cmd),
+		MSGHead: requests.PPMsgHeader(data, cmd),
 		MSGData: data,
 	}
 	switch conn.(type) {
@@ -85,5 +86,5 @@ func TransferSendMessageToClient(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
 // GetPPList P node get PPList
 func GetSPList() {
 	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetSPList)")
-	SendMessageToSPServer(types.ReqGetSPlistData(), header.ReqGetSPList)
+	SendMessageToSPServer(requests.ReqGetSPlistData(), header.ReqGetSPList)
 }

@@ -8,8 +8,8 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 
 	"github.com/alex023/clock"
@@ -19,7 +19,7 @@ import (
 func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get GetPPList RSP")
 	var target protos.RspGetPPList
-	if !types.UnmarshalData(ctx, &target) {
+	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
 	utils.DebugLog("get GetPPList RSP", target.PpList)

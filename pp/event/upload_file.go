@@ -14,9 +14,9 @@ import (
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
 )
@@ -36,7 +36,7 @@ func RequestUploadCoverImage(pathStr, reqID string, w http.ResponseWriter) {
 		}
 		return
 	}
-	p := types.RequestUploadFileData(tmpString, "", reqID, true, false, false)
+	p := requests.RequestUploadFileData(tmpString, "", reqID, true, false, false)
 	peers.SendMessageToSPServer(p, header.ReqUploadFile)
 	storeResponseWriter(reqID, w)
 }
@@ -54,7 +54,7 @@ func RequestUploadFile(path, reqID string, isEncrypted bool, _ http.ResponseWrit
 		return
 	}
 	if isFile {
-		p := types.RequestUploadFileData(path, "", reqID, false, false, isEncrypted)
+		p := requests.RequestUploadFileData(path, "", reqID, false, false, isEncrypted)
 		peers.SendMessageToSPServer(p, header.ReqUploadFile)
 		return
 	}
@@ -66,7 +66,7 @@ func RequestUploadFile(path, reqID string, isEncrypted bool, _ http.ResponseWrit
 		select {
 		case pathString := <-setting.UpChan:
 			utils.DebugLog("path string == ", pathString)
-			p := types.RequestUploadFileData(pathString, "", reqID, false, false, isEncrypted)
+			p := requests.RequestUploadFileData(pathString, "", reqID, false, false, isEncrypted)
 			peers.SendMessageToSPServer(p, header.ReqUploadFile)
 		default:
 			return
@@ -85,7 +85,7 @@ func RequestUploadStream(path, reqID string, _ http.ResponseWriter) {
 		return
 	}
 	if isFile {
-		p := types.RequestUploadFileData(path, "", reqID, false, true, false)
+		p := requests.RequestUploadFileData(path, "", reqID, false, true, false)
 		if p != nil {
 			peers.SendMessageToSPServer(p, header.ReqUploadFile)
 		}
@@ -100,7 +100,7 @@ func RequestUploadStream(path, reqID string, _ http.ResponseWriter) {
 func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 	utils.DebugLog("get RspUploadFile")
 	target := &protos.RspUploadFile{}
-	if !types.UnmarshalData(ctx, target) {
+	if !requests.UnmarshalData(ctx, target) {
 		utils.ErrorLog("unmarshal error")
 		return
 	}

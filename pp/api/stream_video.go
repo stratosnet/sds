@@ -10,18 +10,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/google/uuid"
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/bech32"
 
-	"github.com/stratosnet/sds/utils"
-
-	"github.com/google/uuid"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/pp/types"
+	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
 )
 
@@ -101,7 +101,7 @@ func streamVideo(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if setting.State != setting.PP_ACTIVE && setting.Config.StreamingCache {
+	if setting.State != types.PP_ACTIVE && setting.Config.StreamingCache {
 		utils.DebugLog("Send request to sp to retrieve the slice ", sliceHash)
 
 		fInfo := &protos.RspFileStorageInfo{

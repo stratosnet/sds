@@ -1,4 +1,4 @@
-package types
+package requests
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"

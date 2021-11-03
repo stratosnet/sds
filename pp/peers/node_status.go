@@ -2,18 +2,18 @@ package peers
 
 import (
 	"github.com/shirou/gopsutil/disk"
-	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/utils"
 
 	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/requests"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
 )
 
 // ReportNodeStatus
 func ReportNodeStatus() {
 	if setting.IsStartMining {
-		status := types.ReqNodeStatusData()
+		status := requests.ReqNodeStatusData()
 		go doReportNodeStatus(status)
 	}
 }
