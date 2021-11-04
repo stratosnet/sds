@@ -63,6 +63,25 @@ func BuildCreateIndexingNodeMsg(networkID, token, moniker string, pubKey []byte,
 	)
 }
 
+// Stratos-chain 'register' module
+func BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, token string, stakeDelta int64, incrStake bool) sdktypes.Msg {
+	return registertypes.NewMsgUpdateResourceNodeStake(
+		networkAddr[:],
+		ownerAddr[:],
+		sdktypes.NewInt64Coin(token, stakeDelta),
+		incrStake,
+	)
+}
+
+func BuildUpdateIndexingNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, token string, stakeDelta int64, incrStake bool) sdktypes.Msg {
+	return registertypes.NewMsgUpdateIndexingNodeStake(
+		networkAddr[:],
+		ownerAddr[:],
+		sdktypes.NewInt64Coin(token, stakeDelta),
+		incrStake,
+	)
+}
+
 func BuildRemoveResourceNodeMsg(nodeAddress, ownerAddress utiltypes.Address) sdktypes.Msg {
 	return registertypes.NewMsgRemoveResourceNode(
 		nodeAddress[:],
@@ -91,6 +110,7 @@ func BuildIndexingNodeRegistrationVoteMsg(candidateNetworkAddress, candidateOwne
 func BuildFileUploadMsg(fileHash, reporterAddress, uploaderAddress []byte) sdktypes.Msg {
 	return sdstypes.NewMsgUpload(
 		fileHash,
+		nil,
 		reporterAddress,
 		uploaderAddress,
 	)

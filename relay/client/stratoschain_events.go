@@ -22,6 +22,10 @@ func (m *MultiClient) SubscribeToStratosChainEvents() error {
 	if err != nil {
 		return err
 	}
+	err = m.SubscribeToStratosChain("message.action='update_resource_node_stake'", m.UpdateResourceNodeStakeMsgHandler())
+	if err != nil {
+		return err
+	}
 	err = m.SubscribeToStratosChain("message.action='unbonding_resource_node'", m.UnbondingResourceNodeMsgHandler())
 	if err != nil {
 		return err
@@ -35,6 +39,10 @@ func (m *MultiClient) SubscribeToStratosChainEvents() error {
 		return err
 	}
 	err = m.SubscribeToStratosChain("message.action='create_indexing_node'", m.CreateIndexingNodeMsgHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='update_indexing_node_stake'", m.UpdateIndexingNodeStakeMsgHandler())
 	if err != nil {
 		return err
 	}
@@ -118,6 +126,47 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 	}
 }
 
+func (m *MultiClient) UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
+		networkAddressList := result.Events["update_resource_node_stake.network_address"]
+		if len(networkAddressList) < 1 {
+			utils.ErrorLog("No network address was specified in the update_resource_node_stake message from stratos-chain")
+			return
+		}
+
+		p2pAddress, err := types.BechToAddress(networkAddressList[0])
+		if err != nil {
+			utils.ErrorLog("Error when trying to convert P2P address to bytes", err)
+			return
+		}
+		p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
+		if err != nil {
+			utils.ErrorLog("Error when trying to convert P2P address to bech32", err)
+			return
+		}
+
+		ozoneLimitChangeStr := result.Events["update_resource_node_stake.ozone_limit_changes"]
+
+		incrStakeBoolList := result.Events["update_resource_node_stake.incr_stake"]
+		if len(incrStakeBoolList) < 1 {
+			utils.ErrorLog("No incr stake status was specified in the update_resource_node_stake message from stratos-chain")
+			return
+		}
+
+		updatedStakeMsg := &protos.ReqUpdatedStakePP{
+			P2PAddress:        p2pAddressString,
+			OzoneLimitChanges: ozoneLimitChangeStr[0],
+			IncrStake:         incrStakeBoolList[0],
+		}
+
+		err = postToSP("/pp/updatedStake", updatedStakeMsg)
+		if err != nil {
+			utils.ErrorLog(err)
+			return
+		}
+	}
+}
+
 func (m *MultiClient) UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		nodeAddressList := result.Events["unbonding_resource_node.resource_node"]
@@ -194,6 +243,46 @@ func (m *MultiClient) CreateIndexingNodeMsgHandler() func(event coretypes.Result
 	return func(result coretypes.ResultEvent) {
 		// TODO
 		utils.Log(fmt.Sprintf("%+v", result))
+	}
+}
+
+func (m *MultiClient) UpdateIndexingNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
+		networkAddressList := result.Events["update_indexing_node_stake.network_address"]
+		if len(networkAddressList) < 1 {
+			utils.ErrorLog("No network address was specified in the update_indexing_node_stake message from stratos-chain")
+			return
+		}
+
+		p2pAddress, err := types.BechToAddress(networkAddressList[0])
+		if err != nil {
+			utils.ErrorLog("Error when trying to convert P2P address to bytes", err)
+			return
+		}
+		p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
+		if err != nil {
+			utils.ErrorLog("Error when trying to convert P2P address to bech32", err)
+			return
+		}
+
+		ozoneLimitChangeStr := result.Events["update_indexing_node_stake.ozone_limit_changes"]
+
+		incrStakeBoolList := result.Events["update_indexing_node_stake.incr_stake"]
+		if len(incrStakeBoolList) < 1 {
+			utils.ErrorLog("No incr stake status was specified in the update_indexing_node_stake message from stratos-chain")
+			return
+		}
+
+		updatedStakeMsg := &protos.ReqUpdatedStakeSP{
+			P2PAddress:        p2pAddressString,
+			OzoneLimitChanges: ozoneLimitChangeStr[0],
+			IncrStake:         incrStakeBoolList[0],
+		}
+		err = postToSP("/chain/updatedStake", updatedStakeMsg)
+		if err != nil {
+			utils.ErrorLog(err)
+			return
+		}
 	}
 }
 
