@@ -31,7 +31,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/shirou/gopsutil v3.20.12+incompatible
 	github.com/spf13/cobra v1.0.0
-	github.com/stratosnet/stratos-chain v0.0.0-20210812183433-04850109b2fd
+	github.com/stratosnet/stratos-chain v0.5.1-0.20211104180242-c04a2a018641
 	github.com/tendermint/tendermint v0.33.9
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf

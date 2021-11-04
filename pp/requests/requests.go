@@ -11,7 +11,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
 
 	"github.com/stratosnet/sds/framework/core"
@@ -372,6 +371,7 @@ func ReqRegisterNewPPData() *protos.ReqRegisterNewPP {
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		DiskSize:      sysInfo.DiskSize,
+		FreeDisk:      sysInfo.FreeDisk,
 		MemorySize:    sysInfo.MemorySize,
 		OsAndVer:      sysInfo.OSInfo,
 		CpuInfo:       sysInfo.CPUInfo,
@@ -571,14 +571,19 @@ func RspDownloadSliceWrong(target *protos.RspDownloadSliceWrong) *msg.RelayMsgBu
 	}
 }
 
-func RspGetHDInfoData(total, free uint64) *protos.RspGetHDInfo {
-
-	return &protos.RspGetHDInfo{
+func RspGetHDInfoData() *protos.RspGetHDInfo {
+	rsp := &protos.RspGetHDInfo{
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
-		DiskSize:      total,
-		DiskFree:      free,
 	}
+
+	diskStats, err := utils.GetDiskUsage()
+	if err == nil {
+		rsp.DiskSize = diskStats.Total
+		rsp.DiskFree = diskStats.Free
+	}
+
+	return rsp
 }
 
 func RspDeleteSliceData(sliceHash, msg string, result bool) *protos.RspDeleteSlice {
@@ -891,11 +896,17 @@ func ReqNodeStatusData() *protos.ReqReportNodeStatus {
 		MemUsed: int64(virtualUsedMem), MemTotal: int64(virtualTotalMem),
 		SwapMemUsed: int64(swapUsedMem), SwapMemTotal: int64(swapTotalMem),
 	}
-	// Disk root path
-	info, _ := disk.Usage("/")
-	diskUsedRoot := info.Used
-	diskTotalRoot := info.Total
-	diskStat := &protos.DiskStat{RootUsed: int64(diskUsedRoot), RootTotal: int64(diskTotalRoot)}
+
+	// Disk usage statistics
+	diskStat := &protos.DiskStat{}
+
+	info, err := utils.GetDiskUsage()
+	if err == nil {
+		diskStat.RootUsed = int64(info.Used)
+		diskStat.RootTotal = int64(info.Total)
+	} else {
+		utils.ErrorLog("Can't fetch disk usage statistics", err)
+	}
 
 	// TODO Bandwidth
 	bwStat := &protos.BandwidthStat{}

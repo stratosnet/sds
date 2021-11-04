@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/shirou/gopsutil/cpu"
@@ -13,6 +15,7 @@ import (
 // SysInfo
 type SysInfo struct {
 	DiskSize   uint64
+	FreeDisk   uint64
 	MemorySize uint64
 	OSInfo     string
 	CPUInfo    string
@@ -23,7 +26,6 @@ type SysInfo struct {
 func GetSysInfo() *SysInfo {
 	v, _ := mem.VirtualMemory()
 	c, _ := cpu.Info()
-	d, _ := disk.Usage("/")
 	n, _ := host.Info()
 	nv, _ := net.Interfaces()
 	cupInfo := ""
@@ -45,13 +47,36 @@ func GetSysInfo() *SysInfo {
 			macAddress = netstat.HardwareAddr
 		}
 	}
+
 	sys := &SysInfo{
-		DiskSize:   d.Total,
 		MemorySize: v.Total,
 		OSInfo:     n.Platform + " " + n.PlatformFamily + " " + n.PlatformVersion,
 		CPUInfo:    cupInfo,
 		MacAddress: macAddress,
 	}
-	DebugLog("sysInfo = ", sys)
+	defer DebugLog("sysInfo = ", sys)
+
+	diskStats, err := GetDiskUsage()
+	if err != nil {
+		ErrorLog("Can't fetch disk usage statistics", err)
+		return sys
+	}
+
+	sys.DiskSize = diskStats.Total
+	sys.FreeDisk = diskStats.Free
 	return sys
+}
+
+func GetDiskUsage() (*disk.UsageStat, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	volume := filepath.VolumeName(dir)
+	if volume == "" {
+		volume = "/"
+	}
+
+	return disk.Usage(volume)
 }
