@@ -76,20 +76,10 @@ func (m *MultiClient) SubscribeToStratosChainEvents() error {
 
 func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		networkAddressList := result.Events["create_resource_node.network_address"]
-		if len(networkAddressList) < 1 {
-			utils.ErrorLog("No network address was specified in the create_resource_node message from stratos-chain")
-			return
-		}
 
-		p2pAddress, err := types.BechToAddress(networkAddressList[0])
+		_, p2pAddressString, err := getP2pAddressFromEvent(result, "create_resource_node", "network_address")
 		if err != nil {
-			utils.ErrorLog("Error when trying to convert P2P address to bytes", err)
-			return
-		}
-		p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
-		if err != nil {
-			utils.ErrorLog("Error when trying to convert P2P address to bech32", err)
+			utils.ErrorLog(err.Error())
 			return
 		}
 
@@ -128,20 +118,10 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 
 func (m *MultiClient) UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		networkAddressList := result.Events["update_resource_node_stake.network_address"]
-		if len(networkAddressList) < 1 {
-			utils.ErrorLog("No network address was specified in the update_resource_node_stake message from stratos-chain")
-			return
-		}
 
-		p2pAddress, err := types.BechToAddress(networkAddressList[0])
+		_, p2pAddressString, err := getP2pAddressFromEvent(result, "update_resource_node_stake", "network_address")
 		if err != nil {
-			utils.ErrorLog("Error when trying to convert P2P address to bytes", err)
-			return
-		}
-		p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
-		if err != nil {
-			utils.ErrorLog("Error when trying to convert P2P address to bech32", err)
+			utils.ErrorLog(err.Error())
 			return
 		}
 
@@ -169,20 +149,9 @@ func (m *MultiClient) UpdateResourceNodeStakeMsgHandler() func(event coretypes.R
 
 func (m *MultiClient) UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		nodeAddressList := result.Events["unbonding_resource_node.resource_node"]
-		if len(nodeAddressList) < 1 {
-			fmt.Println("No node address was specified in the remove_resource_node message from stratos-chain")
-			return
-		}
-
-		p2pAddress, err := types.BechToAddress(nodeAddressList[0])
+		_, p2pAddressString, err := getP2pAddressFromEvent(result, "unbonding_resource_node", "resource_node")
 		if err != nil {
-			fmt.Println("Error when trying to convert P2P address to bytes: " + err.Error())
-			return
-		}
-		p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
-		if err != nil {
-			fmt.Println("Error when trying to convert P2P address to bech32: " + err.Error())
+			utils.ErrorLog(err.Error())
 			return
 		}
 
@@ -208,20 +177,9 @@ func (m *MultiClient) UnbondingResourceNodeMsgHandler() func(event coretypes.Res
 
 func (m *MultiClient) RemoveResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		nodeAddressList := result.Events["remove_resource_node.resource_node"]
-		if len(nodeAddressList) < 1 {
-			utils.ErrorLog("No node address was specified in the remove_resource_node message from stratos-chain")
-			return
-		}
-
-		p2pAddress, err := types.BechToAddress(nodeAddressList[0])
+		_, p2pAddressString, err := getP2pAddressFromEvent(result, "remove_resource_node", "resource_node")
 		if err != nil {
-			utils.ErrorLog("Error when trying to convert P2P address to bytes", err)
-			return
-		}
-		p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
-		if err != nil {
-			utils.ErrorLog("Error when trying to convert P2P address to bech32", err)
+			utils.ErrorLog(err.Error())
 			return
 		}
 
@@ -248,20 +206,9 @@ func (m *MultiClient) CreateIndexingNodeMsgHandler() func(event coretypes.Result
 
 func (m *MultiClient) UpdateIndexingNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		networkAddressList := result.Events["update_indexing_node_stake.network_address"]
-		if len(networkAddressList) < 1 {
-			utils.ErrorLog("No network address was specified in the update_indexing_node_stake message from stratos-chain")
-			return
-		}
-
-		p2pAddress, err := types.BechToAddress(networkAddressList[0])
+		_, p2pAddressString, err := getP2pAddressFromEvent(result, "update_indexing_node_stake", "network_address")
 		if err != nil {
-			utils.ErrorLog("Error when trying to convert P2P address to bytes", err)
-			return
-		}
-		p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
-		if err != nil {
-			utils.ErrorLog("Error when trying to convert P2P address to bech32", err)
+			utils.ErrorLog(err.Error())
 			return
 		}
 
@@ -304,19 +251,9 @@ func (m *MultiClient) CompleteUnbondingIndexingNodeMsgHandler() func(event coret
 
 func (m *MultiClient) IndexingNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		candidateNetworkAddressList := result.Events["indexing_node_reg_vote.candidate_network_address"]
-		if len(candidateNetworkAddressList) < 1 {
-			utils.ErrorLog("No candidate network address was specified in the indexing_node_reg_vote message from stratos-chain")
-			return
-		}
-		p2pAddress, err := types.BechToAddress(candidateNetworkAddressList[0])
+		_, p2pAddressString, err := getP2pAddressFromEvent(result, "indexing_node_reg_vote", "candidate_network_address")
 		if err != nil {
-			utils.ErrorLog("Error when trying to convert P2P address to bytes", err)
-			return
-		}
-		p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
-		if err != nil {
-			utils.ErrorLog("Error when trying to convert P2P address to bech32", err)
+			utils.ErrorLog(err.Error())
 			return
 		}
 
@@ -429,4 +366,21 @@ func postToSP(endpoint string, data interface{}) error {
 
 	utils.Log(endpoint+" endpoint response from SP node", resp.StatusCode, res["Msg"])
 	return nil
+}
+
+func getP2pAddressFromEvent(result coretypes.ResultEvent, eventName, attribName string) (types.Address, string, error) {
+	attribSlice := result.Events[eventName+"."+attribName]
+	if len(attribSlice) < 1 {
+		return types.Address{}, "", errors.New("no " + attribName + " was specified in " + eventName + " msg from st-chain")
+	}
+	p2pAddress, err := types.BechToAddress(attribSlice[0])
+	if err != nil {
+		return types.Address{}, "", errors.New("error when trying to convert P2P address to bytes")
+	}
+	p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
+	if err != nil {
+		return types.Address{}, "", errors.New("error when trying to convert P2P address to bech32")
+	}
+
+	return p2pAddress, p2pAddressString, nil
 }
