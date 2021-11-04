@@ -7,6 +7,7 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay/stratoschain"
@@ -28,7 +29,7 @@ func UpdateStake(stakeDelta, fee, gas int64, incrStake bool) error {
 // RspUpdateNodeStake. Response to asking the SP node to update stake this node
 func RspUpdateStake(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspUpdateStakePP
-	success := types.UnmarshalData(ctx, &target)
+	success := requests.UnmarshalData(ctx, &target)
 	if !success {
 		return
 	}
@@ -38,7 +39,7 @@ func RspUpdateStake(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	if target.UpdateState != setting.PP_ACTIVE {
+	if target.UpdateState != types.PP_ACTIVE {
 		utils.Log("Current node isn't active yet")
 		setting.State = byte(target.UpdateState)
 		return
@@ -55,12 +56,12 @@ func RspUpdateStake(ctx context.Context, conn core.WriteCloser) {
 // RspUpdated. Response when this PP node's stake was successfully updated
 func RspUpdatedStake(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspUpdatedStakePP
-	success := types.UnmarshalData(ctx, &target)
+	success := requests.UnmarshalData(ctx, &target)
 	if !success {
 		return
 	}
 	utils.Log("get RspUpdatedStakePP", target.Result.State, target.Result.Msg)
 
-	setting.State = setting.PP_ACTIVE
+	setting.State = types.PP_ACTIVE
 	utils.Log("This PP node is now active")
 }

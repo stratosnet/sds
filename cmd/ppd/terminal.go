@@ -173,7 +173,7 @@ func terminal(cmd *cobra.Command, args []string) {
 			return false
 		}
 
-		if setting.State != setting.PP_ACTIVE {
+		if setting.State != types.PP_ACTIVE {
 			fmt.Println("PP node not activated yet")
 			return true
 		}
