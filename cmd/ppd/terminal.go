@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/api"
 	"github.com/stratosnet/sds/pp/api/rest"
@@ -16,6 +17,7 @@ import (
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/pp/websocket"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
@@ -132,7 +134,7 @@ func terminal(cmd *cobra.Command, args []string) {
 			return false
 		}
 
-		if setting.State != setting.PP_INACTIVE {
+		if setting.State != types.PP_INACTIVE {
 			return true
 		}
 
@@ -201,7 +203,7 @@ func terminal(cmd *cobra.Command, args []string) {
 			return false
 		}
 
-		if setting.State == setting.PP_INACTIVE {
+		if setting.State == types.PP_INACTIVE {
 			fmt.Println("The node is already inactive")
 			return true
 		}

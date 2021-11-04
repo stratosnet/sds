@@ -7,6 +7,7 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay/stratoschain"
@@ -28,7 +29,7 @@ func Deactivate(fee, gas int64) error {
 // RspDeactivate. Response to asking the SP node to deactivate this PP node
 func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeactivatePP
-	success := types.UnmarshalData(ctx, &target)
+	success := requests.UnmarshalData(ctx, &target)
 	if !success {
 		return
 	}
@@ -40,7 +41,7 @@ func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 
 	setting.State = byte(target.ActivationState)
 
-	if target.ActivationState == setting.PP_INACTIVE {
+	if target.ActivationState == types.PP_INACTIVE {
 		utils.Log("Current node is already inactive")
 		return
 	}
@@ -55,6 +56,6 @@ func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 
 // RspDeactivated. Response when this PP node was successfully deactivated
 func RspDeactivated(ctx context.Context, conn core.WriteCloser) {
-	setting.State = setting.PP_INACTIVE
+	setting.State = types.PP_INACTIVE
 	utils.Log("This PP node is now inactive")
 }

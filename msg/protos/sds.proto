@@ -299,8 +299,9 @@ message RspRegisterNewPP {
 }
 
 message ReqActivatePP {
-  bytes tx = 1;
+  bytes  tx = 1;
   string p2p_address = 2;
+  bool   already_active = 3;
 }
 
 message RspActivatePP {

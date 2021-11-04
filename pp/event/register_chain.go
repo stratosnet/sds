@@ -8,8 +8,8 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -17,10 +17,10 @@ import (
 func ReqRegister(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("PP get ReqRegister")
 	var target protos.ReqRegister
-	if types.UnmarshalData(ctx, &target) {
+	if requests.UnmarshalData(ctx, &target) {
 		// store register P wallet address
 		peers.RegisterPeerMap.Store(target.Address.P2PAddress, core.NetIDFromContext(ctx))
-		peers.TransferSendMessageToSPServer(types.ReqRegisterDataTR(&target))
+		peers.TransferSendMessageToSPServer(requests.ReqRegisterDataTR(&target))
 
 		// IPProt := strings.Split(target.Address.NetworkAddress, ":")
 		// ip := ""
@@ -51,7 +51,7 @@ func ReqRegister(ctx context.Context, conn core.WriteCloser) {
 func RspRegister(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspRegister", conn)
 	var target protos.RspRegister
-	if !types.UnmarshalData(ctx, &target) {
+	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
 	utils.Log("target.RspRegister", target.P2PAddress)
@@ -88,7 +88,7 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 func RspMining(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspMining", conn)
 	var target protos.RspMining
-	if types.UnmarshalData(ctx, &target) {
+	if requests.UnmarshalData(ctx, &target) {
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
 			utils.Log("start mining")
 			if peers.GetPPServer() == nil {

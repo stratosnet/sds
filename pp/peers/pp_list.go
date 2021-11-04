@@ -1,15 +1,16 @@
 package peers
 
 import (
-	"github.com/stratosnet/sds/msg/protos"
 	"sync"
 	"time"
 
 	"github.com/alex023/clock"
+
 	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -37,7 +38,7 @@ func StartStatusReportToSP() {
 // GetPPList P node get PPList
 func GetPPList() {
 	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetPPList)")
-	SendMessageToSPServer(types.ReqGetPPlistData(), header.ReqGetPPList)
+	SendMessageToSPServer(requests.ReqGetPPlistData(), header.ReqGetPPList)
 }
 
 func SendRegisterRequestViaPP(pplist []*protos.PPBaseInfo) bool {

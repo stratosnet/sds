@@ -7,15 +7,9 @@ import (
 	"sync"
 
 	"github.com/stratosnet/sds/msg/protos"
+	ppTypes "github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/types"
-)
-
-const (
-	PP_INACTIVE  = iota
-	PP_ACTIVE    = 1
-	PP_UNBONDING = 2
-	PP_SUSPENDED = 3
 )
 
 // IsPP
@@ -25,7 +19,7 @@ var IsPP = false
 var IsLoginToSP = false
 
 // State
-var State byte = PP_INACTIVE
+var State byte = ppTypes.PP_INACTIVE
 
 // IsStartMining
 var IsStartMining = false

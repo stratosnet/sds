@@ -9,15 +9,15 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
 // FindMyFileList
 func FindMyFileList(fileName, dir, reqID, keyword string, fileType int, isUp bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessage(client.PPConn, types.FindMyFileListData(fileName, dir, reqID, keyword, protos.FileSortType(fileType), isUp), header.ReqFindMyFileList)
+		peers.SendMessage(client.PPConn, requests.FindMyFileListData(fileName, dir, reqID, keyword, protos.FileSortType(fileType), isUp), header.ReqFindMyFileList)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -34,7 +34,7 @@ func ReqFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspFindMyFileList")
 	var target protos.RspFindMyFileList
-	if !types.UnmarshalData(ctx, &target) {
+	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
 
