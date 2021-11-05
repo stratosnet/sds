@@ -284,13 +284,14 @@ message ReqRegisterNewPP {
   string  p2p_address = 1;
   string  wallet_address = 2;
   uint64  disk_size = 3;
-  uint64  memory_size = 4;
-  string  os_and_ver = 5;
-  string  cpu_info = 6;
-  string  mac_address = 7;
-  uint32  version = 8;
-  bytes  pub_key = 9;
-  bytes  sign = 10;
+  uint64  free_disk = 4;
+  uint64  memory_size = 5;
+  string  os_and_ver = 6;
+  string  cpu_info = 7;
+  string  mac_address = 8;
+  uint32  version = 9;
+  bytes   pub_key = 10;
+  bytes   sign = 11;
 }
 
 message RspRegisterNewPP {

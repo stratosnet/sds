@@ -26,7 +26,7 @@ func ReqGetHDInfo(ctx context.Context, conn core.WriteCloser) {
 	if requests.UnmarshalData(ctx, &target) {
 
 		if setting.P2PAddress == target.P2PAddress {
-			peers.SendMessageToSPServer(requests.RspGetHDInfoData(peers.GetDHInfo()), header.RspGetHDInfo)
+			peers.SendMessageToSPServer(requests.RspGetHDInfoData(), header.RspGetHDInfo)
 		} else {
 			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		}
@@ -40,18 +40,18 @@ func RspGetHDInfo(ctx context.Context, conn core.WriteCloser) {
 }
 
 func reportDHInfo() {
-	peers.SendMessageToSPServer(requests.RspGetHDInfoData(peers.GetDHInfo()), header.RspGetHDInfo)
+	peers.SendMessageToSPServer(requests.RspGetHDInfoData(), header.RspGetHDInfo)
 }
 
 func reportDHInfoToPP() {
-	peers.SendMessage(client.PPConn, requests.RspGetHDInfoData(peers.GetDHInfo()), header.RspGetHDInfo)
+	peers.SendMessage(client.PPConn, requests.RspGetHDInfoData(), header.RspGetHDInfo)
 }
 
 func startReportDHInfo() {
 	if job != nil {
 		job.Cancel()
 	}
-	peers.SendMessageToSPServer(requests.RspGetHDInfoData(peers.GetDHInfo()), header.RspGetHDInfo)
+	peers.SendMessageToSPServer(requests.RspGetHDInfoData(), header.RspGetHDInfo)
 	job, _ = myClock.AddJobRepeat(time.Second*setting.REPROTDHTIME, 0, reportDHInfo)
 }
 
