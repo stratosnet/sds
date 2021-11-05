@@ -283,9 +283,9 @@ func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		utils.Log(fmt.Sprintf("%+v", result))
 
-		reporterList := result.Events["Prepay.reporter"]
+		reporterList := result.Events["Prepay.sender"]
 		if len(reporterList) < 1 {
-			utils.ErrorLog("No reporter address was specified in the prepay message from stratos-chain")
+			utils.ErrorLog("No wallet address was specified in the prepay message from stratos-chain")
 			return
 		}
 
