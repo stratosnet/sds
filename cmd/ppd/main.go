@@ -32,7 +32,7 @@ func main() {
 func getRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "ppd",
-		Short: "meta(indexing) node",
+		Short: "resource node",
 	}
 
 	dir, err := os.Getwd()
