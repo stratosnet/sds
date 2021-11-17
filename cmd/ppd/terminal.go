@@ -77,9 +77,8 @@ func terminal(cmd *cobra.Command, args []string) {
 		}
 
 		mnemonic := console.MyGetPassword("input bip39 mnemonic (leave blank to generate a new one)", false)
-		passphrase := console.MyGetPassword("input bip39 passphrase (most users should leave this blank)", false)
 
-		serv.CreateWallet(password, param[0], mnemonic, passphrase, param[1])
+		serv.CreateWallet(password, param[0], mnemonic, "", param[1])
 		return true
 	}
 
