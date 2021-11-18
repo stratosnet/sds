@@ -48,7 +48,7 @@ func importWallet(w http.ResponseWriter, request *http.Request) {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to convert wallet address to bech32 string").ToBytes())
 		return
 	}
-	ks := utils.KeyStorePassphrase{dir, setting.Config.ScryptN, setting.Config.ScryptP}
+	ks := utils.KeyStorePassphrase{dir, utils.ScryptN, utils.ScryptP}
 	filename := dir + "/" + setting.WalletAddress + ".json"
 	err = ks.StoreKey(filename, key, password)
 	if err != nil {

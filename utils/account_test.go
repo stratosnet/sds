@@ -20,7 +20,7 @@ func TestCreateWallet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	addr, err := CreateWallet("keys", "", password, hrp, mnemonic, "passphrase", "44'/606'/0'/0/44", 4096, 6)
+	addr, err := CreateWallet("keys", "", password, hrp, mnemonic, "passphrase", "44'/606'/0'/0/44")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -53,7 +53,7 @@ func TestCreateP2PKey(t *testing.T) {
 	password := "aaa"
 	hrp := "stsdsp2p"
 
-	addr, err := CreateP2PKey("keys", "", password, hrp, 4096, 6)
+	addr, err := CreateP2PKey("keys", "", password, hrp)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

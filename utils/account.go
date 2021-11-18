@@ -27,6 +27,8 @@ import (
 
 const (
 	keyHeaderKDF = "scrypt"
+	ScryptN      = 4096
+	ScryptP      = 6
 	scryptR      = 8
 	scryptDKLen  = 32
 
@@ -69,20 +71,20 @@ type hdKeyBytes struct {
 }
 
 // CreateWallet creates a new stratos-chain wallet with the given nickname and password, and saves the key data into the dir folder
-func CreateWallet(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPath string, scryptN, scryptP int) (types.Address, error) {
+func CreateWallet(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPath string) (types.Address, error) {
 	privateKey, err := keys.SecpDeriveKey(mnemonic, bip39Passphrase, hdPath)
 	if err != nil {
 		return types.Address{}, err
 	}
 
-	return saveAccountKey(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPath, scryptN, scryptP, privateKey, true)
+	return saveAccountKey(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPath, ScryptN, ScryptP, privateKey, true)
 }
 
 // CreateP2PKey creates a P2P key to be used by one of the SDS nodes, and saves the key data into the dir folder
-func CreateP2PKey(dir, nickname, password, hrp string, scryptN, scryptP int) (types.Address, error) {
+func CreateP2PKey(dir, nickname, password, hrp string) (types.Address, error) {
 	privateKey := ed25519.NewKey()
 
-	return saveAccountKey(dir, nickname, password, hrp, "", "", "", scryptN, scryptP, privateKey, false)
+	return saveAccountKey(dir, nickname, password, hrp, "", "", "", ScryptN, ScryptP, privateKey, false)
 }
 
 func saveAccountKey(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPath string, scryptN, scryptP int, privateKey []byte, isWallet bool) (types.Address, error) {
@@ -132,14 +134,14 @@ func newKeyFromBytes(privateKey []byte, isWallet bool) *AccountKey {
 
 // EncryptKey encrypts a key using the specified scrypt parameters into a json
 // blob that can be decrypted later on.
-func EncryptKey(key *AccountKey, auth string, scryptN, scryptP int) ([]byte, error) {
+func EncryptKey(key *AccountKey, auth string) ([]byte, error) {
 	authArray := []byte(auth)
 
 	salt := make([]byte, 32)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 		panic("reading from crypto/rand failed: " + err.Error())
 	}
-	derivedKey, err := scrypt.Key(authArray, salt, scryptN, scryptR, scryptP, scryptDKLen)
+	derivedKey, err := scrypt.Key(authArray, salt, ScryptN, scryptR, ScryptP, scryptDKLen)
 	if err != nil {
 		return nil, err
 	}
@@ -166,9 +168,9 @@ func EncryptKey(key *AccountKey, auth string, scryptN, scryptP int) ([]byte, err
 	mac := crypto.Keccak256(derivedKey[16:32], cipherText)
 
 	scryptParamsJSON := make(map[string]interface{}, 5)
-	scryptParamsJSON["n"] = scryptN
+	scryptParamsJSON["n"] = ScryptN
 	scryptParamsJSON["r"] = scryptR
-	scryptParamsJSON["p"] = scryptP
+	scryptParamsJSON["p"] = ScryptP
 	scryptParamsJSON["dklen"] = scryptDKLen
 	scryptParamsJSON["salt"] = hex.EncodeToString(salt)
 
@@ -246,7 +248,7 @@ func aesCTRXOR(key, inText, iv []byte) ([]byte, error) {
 }
 
 func (ks KeyStorePassphrase) StoreKey(filename string, key *AccountKey, auth string) error {
-	keyjson, err := EncryptKey(key, auth, ks.ScryptN, ks.ScryptP)
+	keyjson, err := EncryptKey(key, auth)
 	if err != nil {
 		return err
 	}
@@ -384,7 +386,7 @@ type AccountKey struct {
 }
 
 // ChangePassword
-func ChangePassword(walletAddress, dir, auth string, scryptN, scryptP int, key *AccountKey) error {
+func ChangePassword(walletAddress, dir, auth string, key *AccountKey) error {
 	files, _ := ioutil.ReadDir(dir)
 	if len(files) == 0 {
 		ErrorLog("not exist")
@@ -394,7 +396,7 @@ func ChangePassword(walletAddress, dir, auth string, scryptN, scryptP int, key *
 		if info.Name() == walletAddress {
 			continue
 		}
-		keyStore := &KeyStorePassphrase{dir, scryptN, scryptP}
+		keyStore := &KeyStorePassphrase{dir, ScryptN, ScryptP}
 		filename := dir + "/" + walletAddress
 		err := keyStore.StoreKey(filename, key, auth)
 		return err

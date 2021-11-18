@@ -6,8 +6,6 @@ NetworkAddress: 127.0.0.1
 Debug: true
 PPListDir: ./peers
 AccountDir: ./accounts
-scryptN: 4096
-scryptP: 6
 DefPassword: ""
 DefSavePath: ""
 StorehousePath: ""

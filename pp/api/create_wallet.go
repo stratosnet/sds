@@ -68,7 +68,7 @@ func createWallet(w http.ResponseWriter, request *http.Request) {
 		return
 	}
 	walletAddress, err := utils.CreateWallet(setting.Config.AccountDir, name, password, setting.Config.AddressPrefix,
-		mnemonic, passphrase, hdPath, setting.Config.ScryptN, setting.Config.ScryptP)
+		mnemonic, passphrase, hdPath)
 	if err != nil {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to create wallet").ToBytes())
 		return
