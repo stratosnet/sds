@@ -355,8 +355,14 @@ func postToSP(endpoint string, data interface{}) error {
 		return errors.New("Error when trying to marshal data to json: " + err.Error())
 	}
 
-	sdsApiUrl := "http://" + setting.Config.SDS.NetworkAddress + ":" + setting.Config.SDS.ApiPort
-	resp, err := http.Post(sdsApiUrl+endpoint, "application/json", bytes.NewBuffer(jsonData))
+	url := utils.Url{
+		Scheme: "http",
+		Host:   setting.Config.SDS.NetworkAddress,
+		Port:   setting.Config.SDS.ApiPort,
+		Path:   endpoint,
+	}
+
+	resp, err := http.Post(url.String(true, true, true), "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return errors.New("Error when calling " + endpoint + " endpoint in SP node: " + err.Error())
 	}

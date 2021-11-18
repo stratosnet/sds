@@ -57,7 +57,11 @@ func FetchAccountInfo(address string) (uint64, uint64, error) {
 		return 0, 0, errors.New("the stratos-chain URL is not set")
 	}
 
-	resp, err := http.Get(Url + "/auth/accounts/" + address)
+	url, err := utils.ParseUrl(Url + "/auth/accounts/" + address)
+	if err != nil {
+		return 0, 0, err
+	}
+	resp, err := http.Get(url.String(true, true, true))
 	if err != nil {
 		return 0, 0, err
 	}
@@ -154,6 +158,11 @@ func BroadcastTx(tx authtypes.StdTx) (*http.Response, []byte, error) {
 		return nil, nil, errors.New("the stratos-chain URL is not set")
 	}
 
+	url, err := utils.ParseUrl(Url + "/txs")
+	if err != nil {
+		return nil, nil, err
+	}
+
 	body := rest.BroadcastReq{
 		Tx:   tx,
 		Mode: "sync",
@@ -164,7 +173,7 @@ func BroadcastTx(tx authtypes.StdTx) (*http.Response, []byte, error) {
 	}
 
 	bodyBytes := bytes.NewBuffer(jsonBytes)
-	resp, err := http.Post(Url+"/txs", "application/json", bodyBytes)
+	resp, err := http.Post(url.String(true, true, true), "application/json", bodyBytes)
 	if err != nil {
 		return resp, nil, err
 	}
@@ -178,8 +187,13 @@ func BroadcastTxBytes(txBytes []byte) error {
 		return errors.New("the stratos-chain URL is not set")
 	}
 
+	url, err := utils.ParseUrl(Url + "/txs")
+	if err != nil {
+		return err
+	}
+
 	bodyBytes := bytes.NewBuffer(txBytes)
-	resp, err := http.Post(Url+"/txs", "application/json", bodyBytes)
+	resp, err := http.Post(url.String(true, true, true), "application/json", bodyBytes)
 	if err != nil {
 		return err
 	}
@@ -199,7 +213,12 @@ func QueryResourceNodeState(p2pAddress string) (int, error) {
 		return 0, errors.New("the stratos-chain URL is not set")
 	}
 
-	resp, err := http.Get(Url + "/register/resource-nodes?moniker=" + p2pAddress)
+	url, err := utils.ParseUrl(Url + "/register/resource-nodes?moniker=" + p2pAddress)
+	if err != nil {
+		return 0, err
+	}
+
+	resp, err := http.Get(url.String(true, true, true))
 	if err != nil {
 		return 0, err
 	}
