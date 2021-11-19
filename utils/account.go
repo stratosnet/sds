@@ -27,8 +27,8 @@ import (
 
 const (
 	keyHeaderKDF = "scrypt"
-	ScryptN      = 4096
-	ScryptP      = 6
+	scryptN      = 4096
+	scryptP      = 6
 	scryptR      = 8
 	scryptDKLen  = 32
 
@@ -77,14 +77,14 @@ func CreateWallet(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPat
 		return types.Address{}, err
 	}
 
-	return saveAccountKey(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPath, ScryptN, ScryptP, privateKey, true)
+	return saveAccountKey(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPath, scryptN, scryptP, privateKey, true)
 }
 
 // CreateP2PKey creates a P2P key to be used by one of the SDS nodes, and saves the key data into the dir folder
 func CreateP2PKey(dir, nickname, password, hrp string) (types.Address, error) {
 	privateKey := ed25519.NewKey()
 
-	return saveAccountKey(dir, nickname, password, hrp, "", "", "", ScryptN, ScryptP, privateKey, false)
+	return saveAccountKey(dir, nickname, password, hrp, "", "", "", scryptN, scryptP, privateKey, false)
 }
 
 func saveAccountKey(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPath string, scryptN, scryptP int, privateKey []byte, isWallet bool) (types.Address, error) {
@@ -141,7 +141,7 @@ func EncryptKey(key *AccountKey, auth string) ([]byte, error) {
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 		panic("reading from crypto/rand failed: " + err.Error())
 	}
-	derivedKey, err := scrypt.Key(authArray, salt, ScryptN, scryptR, ScryptP, scryptDKLen)
+	derivedKey, err := scrypt.Key(authArray, salt, scryptN, scryptR, scryptP, scryptDKLen)
 	if err != nil {
 		return nil, err
 	}
@@ -168,9 +168,9 @@ func EncryptKey(key *AccountKey, auth string) ([]byte, error) {
 	mac := crypto.Keccak256(derivedKey[16:32], cipherText)
 
 	scryptParamsJSON := make(map[string]interface{}, 5)
-	scryptParamsJSON["n"] = ScryptN
+	scryptParamsJSON["n"] = scryptN
 	scryptParamsJSON["r"] = scryptR
-	scryptParamsJSON["p"] = ScryptP
+	scryptParamsJSON["p"] = scryptP
 	scryptParamsJSON["dklen"] = scryptDKLen
 	scryptParamsJSON["salt"] = hex.EncodeToString(salt)
 
@@ -245,6 +245,10 @@ func aesCTRXOR(key, inText, iv []byte) ([]byte, error) {
 	outText := make([]byte, len(inText))
 	stream.XORKeyStream(outText, inText)
 	return outText, err
+}
+
+func GetKeyStorePassphrase(keysDirPath string) KeyStorePassphrase {
+	return KeyStorePassphrase{keysDirPath, scryptN, scryptP}
 }
 
 func (ks KeyStorePassphrase) StoreKey(filename string, key *AccountKey, auth string) error {
@@ -396,7 +400,7 @@ func ChangePassword(walletAddress, dir, auth string, key *AccountKey) error {
 		if info.Name() == walletAddress {
 			continue
 		}
-		keyStore := &KeyStorePassphrase{dir, ScryptN, ScryptP}
+		keyStore := &KeyStorePassphrase{dir, scryptN, scryptP}
 		filename := dir + "/" + walletAddress
 		err := keyStore.StoreKey(filename, key, auth)
 		return err
