@@ -89,7 +89,7 @@ func SetupWalletKey() error {
 		}
 		//hrp, mnemonic, bip39Passphrase, hdPath
 		walletKeyAddress, err := utils.CreateWallet(setting.Config.AccountDir, nickname, password,
-			setting.Config.AddressPrefix, mnemonic, "mnemonic", hdPath, setting.Config.ScryptN, setting.Config.ScryptP)
+			setting.Config.AddressPrefix, mnemonic, "", hdPath)
 		if err != nil {
 			return errors.New("couldn't create WalletAddress: " + err.Error())
 		}

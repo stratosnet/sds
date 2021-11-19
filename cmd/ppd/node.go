@@ -102,7 +102,7 @@ func SetupP2PKey() error {
 		}
 
 		p2pKeyAddress, err := utils.CreateP2PKey(setting.Config.AccountDir, nickname, password,
-			setting.Config.P2PKeyPrefix, setting.Config.ScryptN, setting.Config.ScryptP)
+			setting.Config.P2PKeyPrefix)
 		if err != nil {
 			return errors.New("couldn't create WalletAddress: " + err.Error())
 		}

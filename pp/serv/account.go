@@ -24,7 +24,7 @@ func CreateWallet(password, name, mnemonic, passphrase, hdPath string) string {
 		mnemonic = newMnemonic
 	}
 	account, err := utils.CreateWallet(setting.Config.AccountDir, name, password, setting.Config.AddressPrefix,
-		mnemonic, passphrase, hdPath, setting.Config.ScryptN, setting.Config.ScryptP)
+		mnemonic, passphrase, hdPath)
 	if utils.CheckError(err) {
 		utils.ErrorLog("CreateWallet error", err)
 		return ""

@@ -89,8 +89,6 @@ type config struct {
 	Debug                       bool         `yaml:"Debug"`
 	PPListDir                   string       `yaml:"PPListDir"`
 	AccountDir                  string       `yaml:"AccountDir"`
-	ScryptN                     int          `yaml:"scryptN"`
-	ScryptP                     int          `yaml:"scryptP"`
 	DefPassword                 string       `yaml:"DefPassword"`
 	DefSavePath                 string       `yaml:"DefSavePath"`
 	StorehousePath              string       `yaml:"StorehousePath"`
@@ -268,8 +266,6 @@ func defaultConfig() *config {
 		Debug:                       false,
 		PPListDir:                   "./peers",
 		AccountDir:                  "./accounts",
-		ScryptN:                     4096,
-		ScryptP:                     6,
 		DefPassword:                 "",
 		DefSavePath:                 "",
 		StorehousePath:              "",
