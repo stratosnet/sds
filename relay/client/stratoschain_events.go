@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+
 	sdkTypes "github.com/cosmos/cosmos-sdk/types"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
 	"github.com/stratosnet/sds/msg/protos"
@@ -14,7 +16,6 @@ import (
 	"github.com/stratosnet/sds/utils/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
-	"net/http"
 )
 
 func (m *MultiClient) SubscribeToStratosChainEvents() error {
@@ -295,9 +296,16 @@ func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 			return
 		}
 
+		txHashList := result.Events["tx.hash"]
+		if len(txHashList) < 1 {
+			utils.ErrorLog("No txHash was specified in the prepay message from stratos-chain")
+			return
+		}
+
 		prepaidMsg := &protos.ReqPrepaid{
 			WalletAddress: reporterList[0],
 			PurchasedUoz:  purchasedUozList[0],
+			TxHash:        txHashList[0],
 		}
 
 		err := postToSP("/pp/prepaid", prepaidMsg)
