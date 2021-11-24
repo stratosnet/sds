@@ -364,6 +364,10 @@ message RspDeactivatePP {
   bytes  tx = 3;
 }
 
+message RspPPRegisteredToSP {
+  Result result = 1;
+}
+
 message ReqUnbondingPP {
   string p2p_address = 1;
   string ozone_limit_changes = 2; // negative
