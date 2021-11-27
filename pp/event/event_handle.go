@@ -91,6 +91,8 @@ func RegisterEventHandle() {
 
 	core.Register(header.ReqHeart, SendHeartBeat)
 	core.Register(header.RspHeart, RspHeartBeat)
+	core.Register(header.ReqPing, ReqPingSpList)
+	core.Register(header.RspPing, RspPingSpList)
 	core.Register(header.ReqDeleteFile, ReqDeleteFile)
 	core.Register(header.RspDeleteFile, RspDeleteFile)
 	core.Register(header.ReqConfig, ReqGetMyConfig)

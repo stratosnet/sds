@@ -2,8 +2,12 @@ package peers
 
 import (
 	"context"
+	"strconv"
+	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/setting"
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
@@ -87,4 +91,31 @@ func TransferSendMessageToClient(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
 func GetSPList() {
 	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetSPList)")
 	SendMessageToSPServer(requests.ReqGetSPlistData(), header.ReqGetSPList)
+}
+
+func SendPingMessageToSPServers() {
+	utils.DebugLogf("SendPingMessageToSPServers, num of SPs: %v", len(setting.Config.SPList))
+	if len(setting.Config.SPList) < 2 {
+		utils.ErrorLog("there are not enough SP nodes in the config file")
+		return
+	}
+	for i := 0; i < len(setting.Config.SPList); i++ {
+		selectedSP := setting.Config.SPList[i]
+		pingSingleSpServer(selectedSP.NetworkAddress, setting.IsPP)
+	}
+}
+
+func pingSingleSpServer(server string, heartbeat bool) {
+	utils.DebugLog("SendPingMessage(server, req, header.ReqSpResponseTime)")
+	spConn := client.NewClient(server, heartbeat)
+	if spConn != nil {
+		start := time.Now().UnixNano()
+		pb := &protos.ReqPing{
+			P2PAddressPp:     setting.P2PAddress,
+			NetworkAddressSp: server,
+			PingTime:         strconv.FormatInt(start, 10),
+		}
+		SendMessage(spConn, pb, header.ReqPing)
+		defer spConn.Close()
+	}
 }

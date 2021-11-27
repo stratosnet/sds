@@ -5368,6 +5368,148 @@ func (x *RspMakeDirectory) GetResult() *Result {
 	return nil
 }
 
+type ReqPing struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	P2PAddressPp     string `protobuf:"bytes,1,opt,name=p2p_address_pp,json=p2pAddressPp,proto3" json:"p2p_address_pp,omitempty"`
+	NetworkAddressSp string `protobuf:"bytes,2,opt,name=network_address_sp,json=networkAddressSp,proto3" json:"network_address_sp,omitempty"`
+	SpIndex          string `protobuf:"bytes,3,opt,name=sp_index,json=spIndex,proto3" json:"sp_index,omitempty"`
+	PingTime         string `protobuf:"bytes,4,opt,name=ping_time,json=pingTime,proto3" json:"ping_time,omitempty"`
+}
+
+func (x *ReqPing) Reset() {
+	*x = ReqPing{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_sds_proto_msgTypes[77]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ReqPing) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReqPing) ProtoMessage() {}
+
+func (x *ReqPing) ProtoReflect() protoreflect.Message {
+	mi := &file_sds_proto_msgTypes[77]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReqPing.ProtoReflect.Descriptor instead.
+func (*ReqPing) Descriptor() ([]byte, []int) {
+	return file_sds_proto_rawDescGZIP(), []int{77}
+}
+
+func (x *ReqPing) GetP2PAddressPp() string {
+	if x != nil {
+		return x.P2PAddressPp
+	}
+	return ""
+}
+
+func (x *ReqPing) GetNetworkAddressSp() string {
+	if x != nil {
+		return x.NetworkAddressSp
+	}
+	return ""
+}
+
+func (x *ReqPing) GetSpIndex() string {
+	if x != nil {
+		return x.SpIndex
+	}
+	return ""
+}
+
+func (x *ReqPing) GetPingTime() string {
+	if x != nil {
+		return x.PingTime
+	}
+	return ""
+}
+
+type RspPing struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	P2PAddressPp     string `protobuf:"bytes,1,opt,name=p2p_address_pp,json=p2pAddressPp,proto3" json:"p2p_address_pp,omitempty"`
+	NetworkAddressSp string `protobuf:"bytes,2,opt,name=network_address_sp,json=networkAddressSp,proto3" json:"network_address_sp,omitempty"`
+	SpIndex          string `protobuf:"bytes,3,opt,name=sp_index,json=spIndex,proto3" json:"sp_index,omitempty"`
+	PingTime         string `protobuf:"bytes,4,opt,name=ping_time,json=pingTime,proto3" json:"ping_time,omitempty"`
+}
+
+func (x *RspPing) Reset() {
+	*x = RspPing{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_sds_proto_msgTypes[78]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RspPing) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RspPing) ProtoMessage() {}
+
+func (x *RspPing) ProtoReflect() protoreflect.Message {
+	mi := &file_sds_proto_msgTypes[78]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RspPing.ProtoReflect.Descriptor instead.
+func (*RspPing) Descriptor() ([]byte, []int) {
+	return file_sds_proto_rawDescGZIP(), []int{78}
+}
+
+func (x *RspPing) GetP2PAddressPp() string {
+	if x != nil {
+		return x.P2PAddressPp
+	}
+	return ""
+}
+
+func (x *RspPing) GetNetworkAddressSp() string {
+	if x != nil {
+		return x.NetworkAddressSp
+	}
+	return ""
+}
+
+func (x *RspPing) GetSpIndex() string {
+	if x != nil {
+		return x.SpIndex
+	}
+	return ""
+}
+
+func (x *RspPing) GetPingTime() string {
+	if x != nil {
+		return x.PingTime
+	}
+	return ""
+}
+
 type ReqRemoveDirectory struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -5382,7 +5524,7 @@ type ReqRemoveDirectory struct {
 func (x *ReqRemoveDirectory) Reset() {
 	*x = ReqRemoveDirectory{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[77]
+		mi := &file_sds_proto_msgTypes[79]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5395,7 +5537,7 @@ func (x *ReqRemoveDirectory) String() string {
 func (*ReqRemoveDirectory) ProtoMessage() {}
 
 func (x *ReqRemoveDirectory) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[77]
+	mi := &file_sds_proto_msgTypes[79]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5408,7 +5550,7 @@ func (x *ReqRemoveDirectory) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqRemoveDirectory.ProtoReflect.Descriptor instead.
 func (*ReqRemoveDirectory) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{77}
+	return file_sds_proto_rawDescGZIP(), []int{79}
 }
 
 func (x *ReqRemoveDirectory) GetP2PAddress() string {
@@ -5453,7 +5595,7 @@ type RspRemoveDirectory struct {
 func (x *RspRemoveDirectory) Reset() {
 	*x = RspRemoveDirectory{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[78]
+		mi := &file_sds_proto_msgTypes[80]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5466,7 +5608,7 @@ func (x *RspRemoveDirectory) String() string {
 func (*RspRemoveDirectory) ProtoMessage() {}
 
 func (x *RspRemoveDirectory) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[78]
+	mi := &file_sds_proto_msgTypes[80]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5479,7 +5621,7 @@ func (x *RspRemoveDirectory) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspRemoveDirectory.ProtoReflect.Descriptor instead.
 func (*RspRemoveDirectory) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{78}
+	return file_sds_proto_rawDescGZIP(), []int{80}
 }
 
 func (x *RspRemoveDirectory) GetP2PAddress() string {
@@ -5526,7 +5668,7 @@ type ReqMoveFileDirectory struct {
 func (x *ReqMoveFileDirectory) Reset() {
 	*x = ReqMoveFileDirectory{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[79]
+		mi := &file_sds_proto_msgTypes[81]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5539,7 +5681,7 @@ func (x *ReqMoveFileDirectory) String() string {
 func (*ReqMoveFileDirectory) ProtoMessage() {}
 
 func (x *ReqMoveFileDirectory) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[79]
+	mi := &file_sds_proto_msgTypes[81]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5552,7 +5694,7 @@ func (x *ReqMoveFileDirectory) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqMoveFileDirectory.ProtoReflect.Descriptor instead.
 func (*ReqMoveFileDirectory) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{79}
+	return file_sds_proto_rawDescGZIP(), []int{81}
 }
 
 func (x *ReqMoveFileDirectory) GetP2PAddress() string {
@@ -5612,7 +5754,7 @@ type RspMoveFileDirectory struct {
 func (x *RspMoveFileDirectory) Reset() {
 	*x = RspMoveFileDirectory{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[80]
+		mi := &file_sds_proto_msgTypes[82]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5625,7 +5767,7 @@ func (x *RspMoveFileDirectory) String() string {
 func (*RspMoveFileDirectory) ProtoMessage() {}
 
 func (x *RspMoveFileDirectory) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[80]
+	mi := &file_sds_proto_msgTypes[82]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5638,7 +5780,7 @@ func (x *RspMoveFileDirectory) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspMoveFileDirectory.ProtoReflect.Descriptor instead.
 func (*RspMoveFileDirectory) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{80}
+	return file_sds_proto_rawDescGZIP(), []int{82}
 }
 
 func (x *RspMoveFileDirectory) GetP2PAddress() string {
@@ -5688,7 +5830,7 @@ type ReqBLSPublicKey struct {
 func (x *ReqBLSPublicKey) Reset() {
 	*x = ReqBLSPublicKey{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[81]
+		mi := &file_sds_proto_msgTypes[83]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5701,7 +5843,7 @@ func (x *ReqBLSPublicKey) String() string {
 func (*ReqBLSPublicKey) ProtoMessage() {}
 
 func (x *ReqBLSPublicKey) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[81]
+	mi := &file_sds_proto_msgTypes[83]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5714,7 +5856,7 @@ func (x *ReqBLSPublicKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqBLSPublicKey.ProtoReflect.Descriptor instead.
 func (*ReqBLSPublicKey) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{81}
+	return file_sds_proto_rawDescGZIP(), []int{83}
 }
 
 func (x *ReqBLSPublicKey) GetMsg() string {
@@ -5745,7 +5887,7 @@ type RspBPBLSPublicKey struct {
 func (x *RspBPBLSPublicKey) Reset() {
 	*x = RspBPBLSPublicKey{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[82]
+		mi := &file_sds_proto_msgTypes[84]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5758,7 +5900,7 @@ func (x *RspBPBLSPublicKey) String() string {
 func (*RspBPBLSPublicKey) ProtoMessage() {}
 
 func (x *RspBPBLSPublicKey) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[82]
+	mi := &file_sds_proto_msgTypes[84]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5771,7 +5913,7 @@ func (x *RspBPBLSPublicKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspBPBLSPublicKey.ProtoReflect.Descriptor instead.
 func (*RspBPBLSPublicKey) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{82}
+	return file_sds_proto_rawDescGZIP(), []int{84}
 }
 
 func (x *RspBPBLSPublicKey) GetBpInfo() *ReqRegister {
@@ -5807,7 +5949,7 @@ type ReqBalance struct {
 func (x *ReqBalance) Reset() {
 	*x = ReqBalance{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[83]
+		mi := &file_sds_proto_msgTypes[85]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5820,7 +5962,7 @@ func (x *ReqBalance) String() string {
 func (*ReqBalance) ProtoMessage() {}
 
 func (x *ReqBalance) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[83]
+	mi := &file_sds_proto_msgTypes[85]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5833,7 +5975,7 @@ func (x *ReqBalance) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqBalance.ProtoReflect.Descriptor instead.
 func (*ReqBalance) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{83}
+	return file_sds_proto_rawDescGZIP(), []int{85}
 }
 
 func (x *ReqBalance) GetWalletAddress() string {
@@ -5863,7 +6005,7 @@ type RspBalance struct {
 func (x *RspBalance) Reset() {
 	*x = RspBalance{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[84]
+		mi := &file_sds_proto_msgTypes[86]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5876,7 +6018,7 @@ func (x *RspBalance) String() string {
 func (*RspBalance) ProtoMessage() {}
 
 func (x *RspBalance) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[84]
+	mi := &file_sds_proto_msgTypes[86]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5889,7 +6031,7 @@ func (x *RspBalance) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspBalance.ProtoReflect.Descriptor instead.
 func (*RspBalance) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{84}
+	return file_sds_proto_rawDescGZIP(), []int{86}
 }
 
 func (x *RspBalance) GetBalance() float32 {
@@ -5926,7 +6068,7 @@ type ReqTransaction struct {
 func (x *ReqTransaction) Reset() {
 	*x = ReqTransaction{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[85]
+		mi := &file_sds_proto_msgTypes[87]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -5939,7 +6081,7 @@ func (x *ReqTransaction) String() string {
 func (*ReqTransaction) ProtoMessage() {}
 
 func (x *ReqTransaction) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[85]
+	mi := &file_sds_proto_msgTypes[87]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5952,7 +6094,7 @@ func (x *ReqTransaction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqTransaction.ProtoReflect.Descriptor instead.
 func (*ReqTransaction) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{85}
+	return file_sds_proto_rawDescGZIP(), []int{87}
 }
 
 func (x *ReqTransaction) GetTransactionHash() string {
@@ -5989,7 +6131,7 @@ type RspTransaction struct {
 func (x *RspTransaction) Reset() {
 	*x = RspTransaction{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[86]
+		mi := &file_sds_proto_msgTypes[88]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6002,7 +6144,7 @@ func (x *RspTransaction) String() string {
 func (*RspTransaction) ProtoMessage() {}
 
 func (x *RspTransaction) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[86]
+	mi := &file_sds_proto_msgTypes[88]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6015,7 +6157,7 @@ func (x *RspTransaction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspTransaction.ProtoReflect.Descriptor instead.
 func (*RspTransaction) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{86}
+	return file_sds_proto_rawDescGZIP(), []int{88}
 }
 
 func (x *RspTransaction) GetRest() string {
@@ -6051,7 +6193,7 @@ type ReqBlockInfo struct {
 func (x *ReqBlockInfo) Reset() {
 	*x = ReqBlockInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[87]
+		mi := &file_sds_proto_msgTypes[89]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6064,7 +6206,7 @@ func (x *ReqBlockInfo) String() string {
 func (*ReqBlockInfo) ProtoMessage() {}
 
 func (x *ReqBlockInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[87]
+	mi := &file_sds_proto_msgTypes[89]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6077,7 +6219,7 @@ func (x *ReqBlockInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqBlockInfo.ProtoReflect.Descriptor instead.
 func (*ReqBlockInfo) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{87}
+	return file_sds_proto_rawDescGZIP(), []int{89}
 }
 
 func (x *ReqBlockInfo) GetBlockHash() string {
@@ -6107,7 +6249,7 @@ type RspBlockInfo struct {
 func (x *RspBlockInfo) Reset() {
 	*x = RspBlockInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[88]
+		mi := &file_sds_proto_msgTypes[90]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6120,7 +6262,7 @@ func (x *RspBlockInfo) String() string {
 func (*RspBlockInfo) ProtoMessage() {}
 
 func (x *RspBlockInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[88]
+	mi := &file_sds_proto_msgTypes[90]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6133,7 +6275,7 @@ func (x *RspBlockInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspBlockInfo.ProtoReflect.Descriptor instead.
 func (*RspBlockInfo) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{88}
+	return file_sds_proto_rawDescGZIP(), []int{90}
 }
 
 func (x *RspBlockInfo) GetBlockInfo() []byte {
@@ -6169,7 +6311,7 @@ type ReqBlockCheck struct {
 func (x *ReqBlockCheck) Reset() {
 	*x = ReqBlockCheck{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[89]
+		mi := &file_sds_proto_msgTypes[91]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6182,7 +6324,7 @@ func (x *ReqBlockCheck) String() string {
 func (*ReqBlockCheck) ProtoMessage() {}
 
 func (x *ReqBlockCheck) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[89]
+	mi := &file_sds_proto_msgTypes[91]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6195,7 +6337,7 @@ func (x *ReqBlockCheck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqBlockCheck.ProtoReflect.Descriptor instead.
 func (*ReqBlockCheck) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{89}
+	return file_sds_proto_rawDescGZIP(), []int{91}
 }
 
 func (x *ReqBlockCheck) GetBlockHeight() int64 {
@@ -6225,7 +6367,7 @@ type RspBlockCheck struct {
 func (x *RspBlockCheck) Reset() {
 	*x = RspBlockCheck{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[90]
+		mi := &file_sds_proto_msgTypes[92]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6238,7 +6380,7 @@ func (x *RspBlockCheck) String() string {
 func (*RspBlockCheck) ProtoMessage() {}
 
 func (x *RspBlockCheck) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[90]
+	mi := &file_sds_proto_msgTypes[92]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6251,7 +6393,7 @@ func (x *RspBlockCheck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspBlockCheck.ProtoReflect.Descriptor instead.
 func (*RspBlockCheck) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{90}
+	return file_sds_proto_rawDescGZIP(), []int{92}
 }
 
 func (x *RspBlockCheck) GetBlockList() []*BlockCheckInfo {
@@ -6288,7 +6430,7 @@ type BlockCheckInfo struct {
 func (x *BlockCheckInfo) Reset() {
 	*x = BlockCheckInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[91]
+		mi := &file_sds_proto_msgTypes[93]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6301,7 +6443,7 @@ func (x *BlockCheckInfo) String() string {
 func (*BlockCheckInfo) ProtoMessage() {}
 
 func (x *BlockCheckInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[91]
+	mi := &file_sds_proto_msgTypes[93]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6314,7 +6456,7 @@ func (x *BlockCheckInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BlockCheckInfo.ProtoReflect.Descriptor instead.
 func (*BlockCheckInfo) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{91}
+	return file_sds_proto_rawDescGZIP(), []int{93}
 }
 
 func (x *BlockCheckInfo) GetBlockHeight() int64 {
@@ -6351,7 +6493,7 @@ type ReqDownloadTaskInfo struct {
 func (x *ReqDownloadTaskInfo) Reset() {
 	*x = ReqDownloadTaskInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[92]
+		mi := &file_sds_proto_msgTypes[94]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6364,7 +6506,7 @@ func (x *ReqDownloadTaskInfo) String() string {
 func (*ReqDownloadTaskInfo) ProtoMessage() {}
 
 func (x *ReqDownloadTaskInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[92]
+	mi := &file_sds_proto_msgTypes[94]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6377,7 +6519,7 @@ func (x *ReqDownloadTaskInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqDownloadTaskInfo.ProtoReflect.Descriptor instead.
 func (*ReqDownloadTaskInfo) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{92}
+	return file_sds_proto_rawDescGZIP(), []int{94}
 }
 
 func (x *ReqDownloadTaskInfo) GetTaskId() string {
@@ -6413,7 +6555,7 @@ type RspDownloadTaskInfo struct {
 func (x *RspDownloadTaskInfo) Reset() {
 	*x = RspDownloadTaskInfo{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[93]
+		mi := &file_sds_proto_msgTypes[95]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6426,7 +6568,7 @@ func (x *RspDownloadTaskInfo) String() string {
 func (*RspDownloadTaskInfo) ProtoMessage() {}
 
 func (x *RspDownloadTaskInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[93]
+	mi := &file_sds_proto_msgTypes[95]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6439,7 +6581,7 @@ func (x *RspDownloadTaskInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspDownloadTaskInfo.ProtoReflect.Descriptor instead.
 func (*RspDownloadTaskInfo) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{93}
+	return file_sds_proto_rawDescGZIP(), []int{95}
 }
 
 func (x *RspDownloadTaskInfo) GetTaskId() string {
@@ -6518,7 +6660,7 @@ type ReqClearDownloadTask struct {
 func (x *ReqClearDownloadTask) Reset() {
 	*x = ReqClearDownloadTask{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[94]
+		mi := &file_sds_proto_msgTypes[96]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6531,7 +6673,7 @@ func (x *ReqClearDownloadTask) String() string {
 func (*ReqClearDownloadTask) ProtoMessage() {}
 
 func (x *ReqClearDownloadTask) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[94]
+	mi := &file_sds_proto_msgTypes[96]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6544,7 +6686,7 @@ func (x *ReqClearDownloadTask) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqClearDownloadTask.ProtoReflect.Descriptor instead.
 func (*ReqClearDownloadTask) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{94}
+	return file_sds_proto_rawDescGZIP(), []int{96}
 }
 
 func (x *ReqClearDownloadTask) GetWalletAddress() string {
@@ -6581,7 +6723,7 @@ type ReqShareLink struct {
 func (x *ReqShareLink) Reset() {
 	*x = ReqShareLink{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[95]
+		mi := &file_sds_proto_msgTypes[97]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6594,7 +6736,7 @@ func (x *ReqShareLink) String() string {
 func (*ReqShareLink) ProtoMessage() {}
 
 func (x *ReqShareLink) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[95]
+	mi := &file_sds_proto_msgTypes[97]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6607,7 +6749,7 @@ func (x *ReqShareLink) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqShareLink.ProtoReflect.Descriptor instead.
 func (*ReqShareLink) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{95}
+	return file_sds_proto_rawDescGZIP(), []int{97}
 }
 
 func (x *ReqShareLink) GetP2PAddress() string {
@@ -6646,7 +6788,7 @@ type RspShareLink struct {
 func (x *RspShareLink) Reset() {
 	*x = RspShareLink{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[96]
+		mi := &file_sds_proto_msgTypes[98]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6659,7 +6801,7 @@ func (x *RspShareLink) String() string {
 func (*RspShareLink) ProtoMessage() {}
 
 func (x *RspShareLink) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[96]
+	mi := &file_sds_proto_msgTypes[98]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6672,7 +6814,7 @@ func (x *RspShareLink) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspShareLink.ProtoReflect.Descriptor instead.
 func (*RspShareLink) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{96}
+	return file_sds_proto_rawDescGZIP(), []int{98}
 }
 
 func (x *RspShareLink) GetShareInfo() []*ShareLinkInfo {
@@ -6727,7 +6869,7 @@ type ReqShareFile struct {
 func (x *ReqShareFile) Reset() {
 	*x = ReqShareFile{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[97]
+		mi := &file_sds_proto_msgTypes[99]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6740,7 +6882,7 @@ func (x *ReqShareFile) String() string {
 func (*ReqShareFile) ProtoMessage() {}
 
 func (x *ReqShareFile) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[97]
+	mi := &file_sds_proto_msgTypes[99]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6753,7 +6895,7 @@ func (x *ReqShareFile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqShareFile.ProtoReflect.Descriptor instead.
 func (*ReqShareFile) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{97}
+	return file_sds_proto_rawDescGZIP(), []int{99}
 }
 
 func (x *ReqShareFile) GetFileHash() string {
@@ -6822,7 +6964,7 @@ type RspShareFile struct {
 func (x *RspShareFile) Reset() {
 	*x = RspShareFile{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[98]
+		mi := &file_sds_proto_msgTypes[100]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6835,7 +6977,7 @@ func (x *RspShareFile) String() string {
 func (*RspShareFile) ProtoMessage() {}
 
 func (x *RspShareFile) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[98]
+	mi := &file_sds_proto_msgTypes[100]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6848,7 +6990,7 @@ func (x *RspShareFile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspShareFile.ProtoReflect.Descriptor instead.
 func (*RspShareFile) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{98}
+	return file_sds_proto_rawDescGZIP(), []int{100}
 }
 
 func (x *RspShareFile) GetShareLink() string {
@@ -6914,7 +7056,7 @@ type ReqDeleteShare struct {
 func (x *ReqDeleteShare) Reset() {
 	*x = ReqDeleteShare{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[99]
+		mi := &file_sds_proto_msgTypes[101]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6927,7 +7069,7 @@ func (x *ReqDeleteShare) String() string {
 func (*ReqDeleteShare) ProtoMessage() {}
 
 func (x *ReqDeleteShare) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[99]
+	mi := &file_sds_proto_msgTypes[101]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6940,7 +7082,7 @@ func (x *ReqDeleteShare) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqDeleteShare.ProtoReflect.Descriptor instead.
 func (*ReqDeleteShare) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{99}
+	return file_sds_proto_rawDescGZIP(), []int{101}
 }
 
 func (x *ReqDeleteShare) GetShareId() string {
@@ -6986,7 +7128,7 @@ type RspDeleteShare struct {
 func (x *RspDeleteShare) Reset() {
 	*x = RspDeleteShare{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[100]
+		mi := &file_sds_proto_msgTypes[102]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -6999,7 +7141,7 @@ func (x *RspDeleteShare) String() string {
 func (*RspDeleteShare) ProtoMessage() {}
 
 func (x *RspDeleteShare) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[100]
+	mi := &file_sds_proto_msgTypes[102]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7012,7 +7154,7 @@ func (x *RspDeleteShare) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspDeleteShare.ProtoReflect.Descriptor instead.
 func (*RspDeleteShare) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{100}
+	return file_sds_proto_rawDescGZIP(), []int{102}
 }
 
 func (x *RspDeleteShare) GetShareId() string {
@@ -7065,7 +7207,7 @@ type ReqGetShareFile struct {
 func (x *ReqGetShareFile) Reset() {
 	*x = ReqGetShareFile{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[101]
+		mi := &file_sds_proto_msgTypes[103]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7078,7 +7220,7 @@ func (x *ReqGetShareFile) String() string {
 func (*ReqGetShareFile) ProtoMessage() {}
 
 func (x *ReqGetShareFile) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[101]
+	mi := &file_sds_proto_msgTypes[103]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7091,7 +7233,7 @@ func (x *ReqGetShareFile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqGetShareFile.ProtoReflect.Descriptor instead.
 func (*ReqGetShareFile) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{101}
+	return file_sds_proto_rawDescGZIP(), []int{103}
 }
 
 func (x *ReqGetShareFile) GetKeyword() string {
@@ -7143,7 +7285,7 @@ type RspGetShareFile struct {
 func (x *RspGetShareFile) Reset() {
 	*x = RspGetShareFile{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[102]
+		mi := &file_sds_proto_msgTypes[104]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7156,7 +7298,7 @@ func (x *RspGetShareFile) String() string {
 func (*RspGetShareFile) ProtoMessage() {}
 
 func (x *RspGetShareFile) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[102]
+	mi := &file_sds_proto_msgTypes[104]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7169,7 +7311,7 @@ func (x *RspGetShareFile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspGetShareFile.ProtoReflect.Descriptor instead.
 func (*RspGetShareFile) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{102}
+	return file_sds_proto_rawDescGZIP(), []int{104}
 }
 
 func (x *RspGetShareFile) GetShareRequest() *ReqGetShareFile {
@@ -7216,7 +7358,7 @@ type ReqSaveFile struct {
 func (x *ReqSaveFile) Reset() {
 	*x = ReqSaveFile{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[103]
+		mi := &file_sds_proto_msgTypes[105]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7229,7 +7371,7 @@ func (x *ReqSaveFile) String() string {
 func (*ReqSaveFile) ProtoMessage() {}
 
 func (x *ReqSaveFile) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[103]
+	mi := &file_sds_proto_msgTypes[105]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7242,7 +7384,7 @@ func (x *ReqSaveFile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqSaveFile.ProtoReflect.Descriptor instead.
 func (*ReqSaveFile) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{103}
+	return file_sds_proto_rawDescGZIP(), []int{105}
 }
 
 func (x *ReqSaveFile) GetFileHash() string {
@@ -7296,7 +7438,7 @@ type RspSaveFile struct {
 func (x *RspSaveFile) Reset() {
 	*x = RspSaveFile{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[104]
+		mi := &file_sds_proto_msgTypes[106]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7309,7 +7451,7 @@ func (x *RspSaveFile) String() string {
 func (*RspSaveFile) ProtoMessage() {}
 
 func (x *RspSaveFile) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[104]
+	mi := &file_sds_proto_msgTypes[106]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7322,7 +7464,7 @@ func (x *RspSaveFile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspSaveFile.ProtoReflect.Descriptor instead.
 func (*RspSaveFile) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{104}
+	return file_sds_proto_rawDescGZIP(), []int{106}
 }
 
 func (x *RspSaveFile) GetFilePath() string {
@@ -7383,7 +7525,7 @@ type ReqSaveFolder struct {
 func (x *ReqSaveFolder) Reset() {
 	*x = ReqSaveFolder{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[105]
+		mi := &file_sds_proto_msgTypes[107]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7396,7 +7538,7 @@ func (x *ReqSaveFolder) String() string {
 func (*ReqSaveFolder) ProtoMessage() {}
 
 func (x *ReqSaveFolder) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[105]
+	mi := &file_sds_proto_msgTypes[107]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7409,7 +7551,7 @@ func (x *ReqSaveFolder) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqSaveFolder.ProtoReflect.Descriptor instead.
 func (*ReqSaveFolder) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{105}
+	return file_sds_proto_rawDescGZIP(), []int{107}
 }
 
 func (x *ReqSaveFolder) GetFolderHash() string {
@@ -7463,7 +7605,7 @@ type RspSaveFolder struct {
 func (x *RspSaveFolder) Reset() {
 	*x = RspSaveFolder{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[106]
+		mi := &file_sds_proto_msgTypes[108]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7476,7 +7618,7 @@ func (x *RspSaveFolder) String() string {
 func (*RspSaveFolder) ProtoMessage() {}
 
 func (x *RspSaveFolder) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[106]
+	mi := &file_sds_proto_msgTypes[108]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7489,7 +7631,7 @@ func (x *RspSaveFolder) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspSaveFolder.ProtoReflect.Descriptor instead.
 func (*RspSaveFolder) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{106}
+	return file_sds_proto_rawDescGZIP(), []int{108}
 }
 
 func (x *RspSaveFolder) GetFolderPath() string {
@@ -7554,7 +7696,7 @@ type ReqCreateAlbum struct {
 func (x *ReqCreateAlbum) Reset() {
 	*x = ReqCreateAlbum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[107]
+		mi := &file_sds_proto_msgTypes[109]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7567,7 +7709,7 @@ func (x *ReqCreateAlbum) String() string {
 func (*ReqCreateAlbum) ProtoMessage() {}
 
 func (x *ReqCreateAlbum) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[107]
+	mi := &file_sds_proto_msgTypes[109]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7580,7 +7722,7 @@ func (x *ReqCreateAlbum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqCreateAlbum.ProtoReflect.Descriptor instead.
 func (*ReqCreateAlbum) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{107}
+	return file_sds_proto_rawDescGZIP(), []int{109}
 }
 
 func (x *ReqCreateAlbum) GetP2PAddress() string {
@@ -7661,7 +7803,7 @@ type RspCreateAlbum struct {
 func (x *RspCreateAlbum) Reset() {
 	*x = RspCreateAlbum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[108]
+		mi := &file_sds_proto_msgTypes[110]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7674,7 +7816,7 @@ func (x *RspCreateAlbum) String() string {
 func (*RspCreateAlbum) ProtoMessage() {}
 
 func (x *RspCreateAlbum) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[108]
+	mi := &file_sds_proto_msgTypes[110]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7687,7 +7829,7 @@ func (x *RspCreateAlbum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspCreateAlbum.ProtoReflect.Descriptor instead.
 func (*RspCreateAlbum) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{108}
+	return file_sds_proto_rawDescGZIP(), []int{110}
 }
 
 func (x *RspCreateAlbum) GetAlbumId() string {
@@ -7744,7 +7886,7 @@ type ReqEditAlbum struct {
 func (x *ReqEditAlbum) Reset() {
 	*x = ReqEditAlbum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[109]
+		mi := &file_sds_proto_msgTypes[111]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7757,7 +7899,7 @@ func (x *ReqEditAlbum) String() string {
 func (*ReqEditAlbum) ProtoMessage() {}
 
 func (x *ReqEditAlbum) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[109]
+	mi := &file_sds_proto_msgTypes[111]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7770,7 +7912,7 @@ func (x *ReqEditAlbum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqEditAlbum.ProtoReflect.Descriptor instead.
 func (*ReqEditAlbum) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{109}
+	return file_sds_proto_rawDescGZIP(), []int{111}
 }
 
 func (x *ReqEditAlbum) GetP2PAddress() string {
@@ -7851,7 +7993,7 @@ type RspEditAlbum struct {
 func (x *RspEditAlbum) Reset() {
 	*x = RspEditAlbum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[110]
+		mi := &file_sds_proto_msgTypes[112]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7864,7 +8006,7 @@ func (x *RspEditAlbum) String() string {
 func (*RspEditAlbum) ProtoMessage() {}
 
 func (x *RspEditAlbum) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[110]
+	mi := &file_sds_proto_msgTypes[112]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7877,7 +8019,7 @@ func (x *RspEditAlbum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspEditAlbum.ProtoReflect.Descriptor instead.
 func (*RspEditAlbum) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{110}
+	return file_sds_proto_rawDescGZIP(), []int{112}
 }
 
 func (x *RspEditAlbum) GetP2PAddress() string {
@@ -7929,7 +8071,7 @@ type ReqAlbumContent struct {
 func (x *ReqAlbumContent) Reset() {
 	*x = ReqAlbumContent{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[111]
+		mi := &file_sds_proto_msgTypes[113]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7942,7 +8084,7 @@ func (x *ReqAlbumContent) String() string {
 func (*ReqAlbumContent) ProtoMessage() {}
 
 func (x *ReqAlbumContent) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[111]
+	mi := &file_sds_proto_msgTypes[113]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7955,7 +8097,7 @@ func (x *ReqAlbumContent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqAlbumContent.ProtoReflect.Descriptor instead.
 func (*ReqAlbumContent) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{111}
+	return file_sds_proto_rawDescGZIP(), []int{113}
 }
 
 func (x *ReqAlbumContent) GetP2PAddress() string {
@@ -8005,7 +8147,7 @@ type RspAlbumContent struct {
 func (x *RspAlbumContent) Reset() {
 	*x = RspAlbumContent{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[112]
+		mi := &file_sds_proto_msgTypes[114]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8018,7 +8160,7 @@ func (x *RspAlbumContent) String() string {
 func (*RspAlbumContent) ProtoMessage() {}
 
 func (x *RspAlbumContent) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[112]
+	mi := &file_sds_proto_msgTypes[114]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8031,7 +8173,7 @@ func (x *RspAlbumContent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspAlbumContent.ProtoReflect.Descriptor instead.
 func (*RspAlbumContent) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{112}
+	return file_sds_proto_rawDescGZIP(), []int{114}
 }
 
 func (x *RspAlbumContent) GetP2PAddress() string {
@@ -8115,7 +8257,7 @@ type ReqSearchAlbum struct {
 func (x *ReqSearchAlbum) Reset() {
 	*x = ReqSearchAlbum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[113]
+		mi := &file_sds_proto_msgTypes[115]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8128,7 +8270,7 @@ func (x *ReqSearchAlbum) String() string {
 func (*ReqSearchAlbum) ProtoMessage() {}
 
 func (x *ReqSearchAlbum) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[113]
+	mi := &file_sds_proto_msgTypes[115]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8141,7 +8283,7 @@ func (x *ReqSearchAlbum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqSearchAlbum.ProtoReflect.Descriptor instead.
 func (*ReqSearchAlbum) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{113}
+	return file_sds_proto_rawDescGZIP(), []int{115}
 }
 
 func (x *ReqSearchAlbum) GetAlbumType() AlbumType {
@@ -8217,7 +8359,7 @@ type RspSearchAlbum struct {
 func (x *RspSearchAlbum) Reset() {
 	*x = RspSearchAlbum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[114]
+		mi := &file_sds_proto_msgTypes[116]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8230,7 +8372,7 @@ func (x *RspSearchAlbum) String() string {
 func (*RspSearchAlbum) ProtoMessage() {}
 
 func (x *RspSearchAlbum) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[114]
+	mi := &file_sds_proto_msgTypes[116]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8243,7 +8385,7 @@ func (x *RspSearchAlbum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspSearchAlbum.ProtoReflect.Descriptor instead.
 func (*RspSearchAlbum) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{114}
+	return file_sds_proto_rawDescGZIP(), []int{116}
 }
 
 func (x *RspSearchAlbum) GetP2PAddress() string {
@@ -8312,7 +8454,7 @@ type ReqFindMyAlbum struct {
 func (x *ReqFindMyAlbum) Reset() {
 	*x = ReqFindMyAlbum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[115]
+		mi := &file_sds_proto_msgTypes[117]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8325,7 +8467,7 @@ func (x *ReqFindMyAlbum) String() string {
 func (*ReqFindMyAlbum) ProtoMessage() {}
 
 func (x *ReqFindMyAlbum) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[115]
+	mi := &file_sds_proto_msgTypes[117]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8338,7 +8480,7 @@ func (x *ReqFindMyAlbum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqFindMyAlbum.ProtoReflect.Descriptor instead.
 func (*ReqFindMyAlbum) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{115}
+	return file_sds_proto_rawDescGZIP(), []int{117}
 }
 
 func (x *ReqFindMyAlbum) GetP2PAddress() string {
@@ -8406,7 +8548,7 @@ type RspFindMyAlbum struct {
 func (x *RspFindMyAlbum) Reset() {
 	*x = RspFindMyAlbum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[116]
+		mi := &file_sds_proto_msgTypes[118]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8419,7 +8561,7 @@ func (x *RspFindMyAlbum) String() string {
 func (*RspFindMyAlbum) ProtoMessage() {}
 
 func (x *RspFindMyAlbum) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[116]
+	mi := &file_sds_proto_msgTypes[118]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8432,7 +8574,7 @@ func (x *RspFindMyAlbum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspFindMyAlbum.ProtoReflect.Descriptor instead.
 func (*RspFindMyAlbum) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{116}
+	return file_sds_proto_rawDescGZIP(), []int{118}
 }
 
 func (x *RspFindMyAlbum) GetP2PAddress() string {
@@ -8492,7 +8634,7 @@ type ReqCollectionAlbum struct {
 func (x *ReqCollectionAlbum) Reset() {
 	*x = ReqCollectionAlbum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[117]
+		mi := &file_sds_proto_msgTypes[119]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8505,7 +8647,7 @@ func (x *ReqCollectionAlbum) String() string {
 func (*ReqCollectionAlbum) ProtoMessage() {}
 
 func (x *ReqCollectionAlbum) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[117]
+	mi := &file_sds_proto_msgTypes[119]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8518,7 +8660,7 @@ func (x *ReqCollectionAlbum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqCollectionAlbum.ProtoReflect.Descriptor instead.
 func (*ReqCollectionAlbum) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{117}
+	return file_sds_proto_rawDescGZIP(), []int{119}
 }
 
 func (x *ReqCollectionAlbum) GetP2PAddress() string {
@@ -8572,7 +8714,7 @@ type RspCollectionAlbum struct {
 func (x *RspCollectionAlbum) Reset() {
 	*x = RspCollectionAlbum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[118]
+		mi := &file_sds_proto_msgTypes[120]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8585,7 +8727,7 @@ func (x *RspCollectionAlbum) String() string {
 func (*RspCollectionAlbum) ProtoMessage() {}
 
 func (x *RspCollectionAlbum) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[118]
+	mi := &file_sds_proto_msgTypes[120]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8598,7 +8740,7 @@ func (x *RspCollectionAlbum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspCollectionAlbum.ProtoReflect.Descriptor instead.
 func (*RspCollectionAlbum) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{118}
+	return file_sds_proto_rawDescGZIP(), []int{120}
 }
 
 func (x *RspCollectionAlbum) GetP2PAddress() string {
@@ -8656,7 +8798,7 @@ type ReqAbstractAlbum struct {
 func (x *ReqAbstractAlbum) Reset() {
 	*x = ReqAbstractAlbum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[119]
+		mi := &file_sds_proto_msgTypes[121]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8669,7 +8811,7 @@ func (x *ReqAbstractAlbum) String() string {
 func (*ReqAbstractAlbum) ProtoMessage() {}
 
 func (x *ReqAbstractAlbum) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[119]
+	mi := &file_sds_proto_msgTypes[121]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8682,7 +8824,7 @@ func (x *ReqAbstractAlbum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqAbstractAlbum.ProtoReflect.Descriptor instead.
 func (*ReqAbstractAlbum) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{119}
+	return file_sds_proto_rawDescGZIP(), []int{121}
 }
 
 func (x *ReqAbstractAlbum) GetP2PAddress() string {
@@ -8722,7 +8864,7 @@ type RspAbstractAlbum struct {
 func (x *RspAbstractAlbum) Reset() {
 	*x = RspAbstractAlbum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[120]
+		mi := &file_sds_proto_msgTypes[122]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8735,7 +8877,7 @@ func (x *RspAbstractAlbum) String() string {
 func (*RspAbstractAlbum) ProtoMessage() {}
 
 func (x *RspAbstractAlbum) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[120]
+	mi := &file_sds_proto_msgTypes[122]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8748,7 +8890,7 @@ func (x *RspAbstractAlbum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspAbstractAlbum.ProtoReflect.Descriptor instead.
 func (*RspAbstractAlbum) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{120}
+	return file_sds_proto_rawDescGZIP(), []int{122}
 }
 
 func (x *RspAbstractAlbum) GetP2PAddress() string {
@@ -8810,7 +8952,7 @@ type ReqMyCollectionAlbum struct {
 func (x *ReqMyCollectionAlbum) Reset() {
 	*x = ReqMyCollectionAlbum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[121]
+		mi := &file_sds_proto_msgTypes[123]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8823,7 +8965,7 @@ func (x *ReqMyCollectionAlbum) String() string {
 func (*ReqMyCollectionAlbum) ProtoMessage() {}
 
 func (x *ReqMyCollectionAlbum) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[121]
+	mi := &file_sds_proto_msgTypes[123]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8836,7 +8978,7 @@ func (x *ReqMyCollectionAlbum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqMyCollectionAlbum.ProtoReflect.Descriptor instead.
 func (*ReqMyCollectionAlbum) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{121}
+	return file_sds_proto_rawDescGZIP(), []int{123}
 }
 
 func (x *ReqMyCollectionAlbum) GetAlbumType() AlbumType {
@@ -8904,7 +9046,7 @@ type RspMyCollectionAlbum struct {
 func (x *RspMyCollectionAlbum) Reset() {
 	*x = RspMyCollectionAlbum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[122]
+		mi := &file_sds_proto_msgTypes[124]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8917,7 +9059,7 @@ func (x *RspMyCollectionAlbum) String() string {
 func (*RspMyCollectionAlbum) ProtoMessage() {}
 
 func (x *RspMyCollectionAlbum) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[122]
+	mi := &file_sds_proto_msgTypes[124]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8930,7 +9072,7 @@ func (x *RspMyCollectionAlbum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspMyCollectionAlbum.ProtoReflect.Descriptor instead.
 func (*RspMyCollectionAlbum) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{122}
+	return file_sds_proto_rawDescGZIP(), []int{124}
 }
 
 func (x *RspMyCollectionAlbum) GetP2PAddress() string {
@@ -8989,7 +9131,7 @@ type ReqDeleteAlbum struct {
 func (x *ReqDeleteAlbum) Reset() {
 	*x = ReqDeleteAlbum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[123]
+		mi := &file_sds_proto_msgTypes[125]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9002,7 +9144,7 @@ func (x *ReqDeleteAlbum) String() string {
 func (*ReqDeleteAlbum) ProtoMessage() {}
 
 func (x *ReqDeleteAlbum) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[123]
+	mi := &file_sds_proto_msgTypes[125]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9015,7 +9157,7 @@ func (x *ReqDeleteAlbum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqDeleteAlbum.ProtoReflect.Descriptor instead.
 func (*ReqDeleteAlbum) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{123}
+	return file_sds_proto_rawDescGZIP(), []int{125}
 }
 
 func (x *ReqDeleteAlbum) GetAlbumId() string {
@@ -9061,7 +9203,7 @@ type RspDeleteAlbum struct {
 func (x *RspDeleteAlbum) Reset() {
 	*x = RspDeleteAlbum{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[124]
+		mi := &file_sds_proto_msgTypes[126]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9074,7 +9216,7 @@ func (x *RspDeleteAlbum) String() string {
 func (*RspDeleteAlbum) ProtoMessage() {}
 
 func (x *RspDeleteAlbum) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[124]
+	mi := &file_sds_proto_msgTypes[126]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9087,7 +9229,7 @@ func (x *RspDeleteAlbum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspDeleteAlbum.ProtoReflect.Descriptor instead.
 func (*RspDeleteAlbum) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{124}
+	return file_sds_proto_rawDescGZIP(), []int{126}
 }
 
 func (x *RspDeleteAlbum) GetAlbumId() string {
@@ -9139,7 +9281,7 @@ type ReqConfig struct {
 func (x *ReqConfig) Reset() {
 	*x = ReqConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[125]
+		mi := &file_sds_proto_msgTypes[127]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9152,7 +9294,7 @@ func (x *ReqConfig) String() string {
 func (*ReqConfig) ProtoMessage() {}
 
 func (x *ReqConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[125]
+	mi := &file_sds_proto_msgTypes[127]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9165,7 +9307,7 @@ func (x *ReqConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqConfig.ProtoReflect.Descriptor instead.
 func (*ReqConfig) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{125}
+	return file_sds_proto_rawDescGZIP(), []int{127}
 }
 
 func (x *ReqConfig) GetP2PAddress() string {
@@ -9215,7 +9357,7 @@ type RspConfig struct {
 func (x *RspConfig) Reset() {
 	*x = RspConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[126]
+		mi := &file_sds_proto_msgTypes[128]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9228,7 +9370,7 @@ func (x *RspConfig) String() string {
 func (*RspConfig) ProtoMessage() {}
 
 func (x *RspConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[126]
+	mi := &file_sds_proto_msgTypes[128]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9241,7 +9383,7 @@ func (x *RspConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspConfig.ProtoReflect.Descriptor instead.
 func (*RspConfig) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{126}
+	return file_sds_proto_rawDescGZIP(), []int{128}
 }
 
 func (x *RspConfig) GetInvitationCode() string {
@@ -9321,7 +9463,7 @@ type ReqInvite struct {
 func (x *ReqInvite) Reset() {
 	*x = ReqInvite{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[127]
+		mi := &file_sds_proto_msgTypes[129]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9334,7 +9476,7 @@ func (x *ReqInvite) String() string {
 func (*ReqInvite) ProtoMessage() {}
 
 func (x *ReqInvite) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[127]
+	mi := &file_sds_proto_msgTypes[129]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9347,7 +9489,7 @@ func (x *ReqInvite) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqInvite.ProtoReflect.Descriptor instead.
 func (*ReqInvite) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{127}
+	return file_sds_proto_rawDescGZIP(), []int{129}
 }
 
 func (x *ReqInvite) GetP2PAddress() string {
@@ -9394,7 +9536,7 @@ type RspInvite struct {
 func (x *RspInvite) Reset() {
 	*x = RspInvite{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[128]
+		mi := &file_sds_proto_msgTypes[130]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9407,7 +9549,7 @@ func (x *RspInvite) String() string {
 func (*RspInvite) ProtoMessage() {}
 
 func (x *RspInvite) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[128]
+	mi := &file_sds_proto_msgTypes[130]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9420,7 +9562,7 @@ func (x *RspInvite) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspInvite.ProtoReflect.Descriptor instead.
 func (*RspInvite) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{128}
+	return file_sds_proto_rawDescGZIP(), []int{130}
 }
 
 func (x *RspInvite) GetResult() *Result {
@@ -9478,7 +9620,7 @@ type ReqGetReward struct {
 func (x *ReqGetReward) Reset() {
 	*x = ReqGetReward{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[129]
+		mi := &file_sds_proto_msgTypes[131]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9491,7 +9633,7 @@ func (x *ReqGetReward) String() string {
 func (*ReqGetReward) ProtoMessage() {}
 
 func (x *ReqGetReward) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[129]
+	mi := &file_sds_proto_msgTypes[131]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9504,7 +9646,7 @@ func (x *ReqGetReward) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqGetReward.ProtoReflect.Descriptor instead.
 func (*ReqGetReward) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{129}
+	return file_sds_proto_rawDescGZIP(), []int{131}
 }
 
 func (x *ReqGetReward) GetP2PAddress() string {
@@ -9543,7 +9685,7 @@ type RspGetReward struct {
 func (x *RspGetReward) Reset() {
 	*x = RspGetReward{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[130]
+		mi := &file_sds_proto_msgTypes[132]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9556,7 +9698,7 @@ func (x *RspGetReward) String() string {
 func (*RspGetReward) ProtoMessage() {}
 
 func (x *RspGetReward) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[130]
+	mi := &file_sds_proto_msgTypes[132]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9569,7 +9711,7 @@ func (x *RspGetReward) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspGetReward.ProtoReflect.Descriptor instead.
 func (*RspGetReward) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{130}
+	return file_sds_proto_rawDescGZIP(), []int{132}
 }
 
 func (x *RspGetReward) GetResult() *Result {
@@ -9620,7 +9762,7 @@ type ReqGetCapacity struct {
 func (x *ReqGetCapacity) Reset() {
 	*x = ReqGetCapacity{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[131]
+		mi := &file_sds_proto_msgTypes[133]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9633,7 +9775,7 @@ func (x *ReqGetCapacity) String() string {
 func (*ReqGetCapacity) ProtoMessage() {}
 
 func (x *ReqGetCapacity) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[131]
+	mi := &file_sds_proto_msgTypes[133]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9646,7 +9788,7 @@ func (x *ReqGetCapacity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqGetCapacity.ProtoReflect.Descriptor instead.
 func (*ReqGetCapacity) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{131}
+	return file_sds_proto_rawDescGZIP(), []int{133}
 }
 
 func (x *ReqGetCapacity) GetP2PAddress() string {
@@ -9686,7 +9828,7 @@ type RspGetCapacity struct {
 func (x *RspGetCapacity) Reset() {
 	*x = RspGetCapacity{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[132]
+		mi := &file_sds_proto_msgTypes[134]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9699,7 +9841,7 @@ func (x *RspGetCapacity) String() string {
 func (*RspGetCapacity) ProtoMessage() {}
 
 func (x *RspGetCapacity) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[132]
+	mi := &file_sds_proto_msgTypes[134]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9712,7 +9854,7 @@ func (x *RspGetCapacity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspGetCapacity.ProtoReflect.Descriptor instead.
 func (*RspGetCapacity) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{132}
+	return file_sds_proto_rawDescGZIP(), []int{134}
 }
 
 func (x *RspGetCapacity) GetResult() *Result {
@@ -9772,7 +9914,7 @@ type ReqFileSort struct {
 func (x *ReqFileSort) Reset() {
 	*x = ReqFileSort{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[133]
+		mi := &file_sds_proto_msgTypes[135]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9785,7 +9927,7 @@ func (x *ReqFileSort) String() string {
 func (*ReqFileSort) ProtoMessage() {}
 
 func (x *ReqFileSort) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[133]
+	mi := &file_sds_proto_msgTypes[135]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9798,7 +9940,7 @@ func (x *ReqFileSort) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqFileSort.ProtoReflect.Descriptor instead.
 func (*ReqFileSort) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{133}
+	return file_sds_proto_rawDescGZIP(), []int{135}
 }
 
 func (x *ReqFileSort) GetFiles() []*FileInfo {
@@ -9850,7 +9992,7 @@ type RspFileSort struct {
 func (x *RspFileSort) Reset() {
 	*x = RspFileSort{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[134]
+		mi := &file_sds_proto_msgTypes[136]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9863,7 +10005,7 @@ func (x *RspFileSort) String() string {
 func (*RspFileSort) ProtoMessage() {}
 
 func (x *RspFileSort) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[134]
+	mi := &file_sds_proto_msgTypes[136]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9876,7 +10018,7 @@ func (x *RspFileSort) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspFileSort.ProtoReflect.Descriptor instead.
 func (*RspFileSort) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{134}
+	return file_sds_proto_rawDescGZIP(), []int{136}
 }
 
 func (x *RspFileSort) GetReqId() string {
@@ -9920,7 +10062,7 @@ type ReqFindDirectory struct {
 func (x *ReqFindDirectory) Reset() {
 	*x = ReqFindDirectory{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[135]
+		mi := &file_sds_proto_msgTypes[137]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9933,7 +10075,7 @@ func (x *ReqFindDirectory) String() string {
 func (*ReqFindDirectory) ProtoMessage() {}
 
 func (x *ReqFindDirectory) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[135]
+	mi := &file_sds_proto_msgTypes[137]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9946,7 +10088,7 @@ func (x *ReqFindDirectory) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqFindDirectory.ProtoReflect.Descriptor instead.
 func (*ReqFindDirectory) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{135}
+	return file_sds_proto_rawDescGZIP(), []int{137}
 }
 
 func (x *ReqFindDirectory) GetP2PAddress() string {
@@ -9985,7 +10127,7 @@ type RspFindDirectory struct {
 func (x *RspFindDirectory) Reset() {
 	*x = RspFindDirectory{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[136]
+		mi := &file_sds_proto_msgTypes[138]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -9998,7 +10140,7 @@ func (x *RspFindDirectory) String() string {
 func (*RspFindDirectory) ProtoMessage() {}
 
 func (x *RspFindDirectory) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[136]
+	mi := &file_sds_proto_msgTypes[138]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10011,7 +10153,7 @@ func (x *RspFindDirectory) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspFindDirectory.ProtoReflect.Descriptor instead.
 func (*RspFindDirectory) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{136}
+	return file_sds_proto_rawDescGZIP(), []int{138}
 }
 
 func (x *RspFindDirectory) GetFileInfo() []*FileInfo {
@@ -10063,7 +10205,7 @@ type ReqCustomerAddVolume struct {
 func (x *ReqCustomerAddVolume) Reset() {
 	*x = ReqCustomerAddVolume{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[137]
+		mi := &file_sds_proto_msgTypes[139]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10076,7 +10218,7 @@ func (x *ReqCustomerAddVolume) String() string {
 func (*ReqCustomerAddVolume) ProtoMessage() {}
 
 func (x *ReqCustomerAddVolume) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[137]
+	mi := &file_sds_proto_msgTypes[139]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10089,7 +10231,7 @@ func (x *ReqCustomerAddVolume) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqCustomerAddVolume.ProtoReflect.Descriptor instead.
 func (*ReqCustomerAddVolume) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{137}
+	return file_sds_proto_rawDescGZIP(), []int{139}
 }
 
 func (x *ReqCustomerAddVolume) GetWalletAddress() string {
@@ -10133,7 +10275,7 @@ type RspCustomerAddVolume struct {
 func (x *RspCustomerAddVolume) Reset() {
 	*x = RspCustomerAddVolume{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[138]
+		mi := &file_sds_proto_msgTypes[140]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10146,7 +10288,7 @@ func (x *RspCustomerAddVolume) String() string {
 func (*RspCustomerAddVolume) ProtoMessage() {}
 
 func (x *RspCustomerAddVolume) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[138]
+	mi := &file_sds_proto_msgTypes[140]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10159,7 +10301,7 @@ func (x *RspCustomerAddVolume) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspCustomerAddVolume.ProtoReflect.Descriptor instead.
 func (*RspCustomerAddVolume) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{138}
+	return file_sds_proto_rawDescGZIP(), []int{140}
 }
 
 func (x *RspCustomerAddVolume) GetWalletAddress() string {
@@ -10197,7 +10339,7 @@ type ReqCustomerUseVolume struct {
 func (x *ReqCustomerUseVolume) Reset() {
 	*x = ReqCustomerUseVolume{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[139]
+		mi := &file_sds_proto_msgTypes[141]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10210,7 +10352,7 @@ func (x *ReqCustomerUseVolume) String() string {
 func (*ReqCustomerUseVolume) ProtoMessage() {}
 
 func (x *ReqCustomerUseVolume) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[139]
+	mi := &file_sds_proto_msgTypes[141]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10223,7 +10365,7 @@ func (x *ReqCustomerUseVolume) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqCustomerUseVolume.ProtoReflect.Descriptor instead.
 func (*ReqCustomerUseVolume) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{139}
+	return file_sds_proto_rawDescGZIP(), []int{141}
 }
 
 func (x *ReqCustomerUseVolume) GetWalletAddress() string {
@@ -10267,7 +10409,7 @@ type RspCustomerUseVolume struct {
 func (x *RspCustomerUseVolume) Reset() {
 	*x = RspCustomerUseVolume{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[140]
+		mi := &file_sds_proto_msgTypes[142]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10280,7 +10422,7 @@ func (x *RspCustomerUseVolume) String() string {
 func (*RspCustomerUseVolume) ProtoMessage() {}
 
 func (x *RspCustomerUseVolume) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[140]
+	mi := &file_sds_proto_msgTypes[142]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10293,7 +10435,7 @@ func (x *RspCustomerUseVolume) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspCustomerUseVolume.ProtoReflect.Descriptor instead.
 func (*RspCustomerUseVolume) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{140}
+	return file_sds_proto_rawDescGZIP(), []int{142}
 }
 
 func (x *RspCustomerUseVolume) GetWalletAddress() string {
@@ -10329,7 +10471,7 @@ type RelayMessage struct {
 func (x *RelayMessage) Reset() {
 	*x = RelayMessage{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[141]
+		mi := &file_sds_proto_msgTypes[143]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10342,7 +10484,7 @@ func (x *RelayMessage) String() string {
 func (*RelayMessage) ProtoMessage() {}
 
 func (x *RelayMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[141]
+	mi := &file_sds_proto_msgTypes[143]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10355,7 +10497,7 @@ func (x *RelayMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RelayMessage.ProtoReflect.Descriptor instead.
 func (*RelayMessage) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{141}
+	return file_sds_proto_rawDescGZIP(), []int{143}
 }
 
 func (x *RelayMessage) GetType() string {
@@ -10383,7 +10525,7 @@ type ReqTransferAggregateTraffic struct {
 func (x *ReqTransferAggregateTraffic) Reset() {
 	*x = ReqTransferAggregateTraffic{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[142]
+		mi := &file_sds_proto_msgTypes[144]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10396,7 +10538,7 @@ func (x *ReqTransferAggregateTraffic) String() string {
 func (*ReqTransferAggregateTraffic) ProtoMessage() {}
 
 func (x *ReqTransferAggregateTraffic) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[142]
+	mi := &file_sds_proto_msgTypes[144]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10409,7 +10551,7 @@ func (x *ReqTransferAggregateTraffic) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqTransferAggregateTraffic.ProtoReflect.Descriptor instead.
 func (*ReqTransferAggregateTraffic) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{142}
+	return file_sds_proto_rawDescGZIP(), []int{144}
 }
 
 func (x *ReqTransferAggregateTraffic) GetTime() int64 {
@@ -10437,7 +10579,7 @@ type ReqTransferRecordTraffic struct {
 func (x *ReqTransferRecordTraffic) Reset() {
 	*x = ReqTransferRecordTraffic{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[143]
+		mi := &file_sds_proto_msgTypes[145]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10450,7 +10592,7 @@ func (x *ReqTransferRecordTraffic) String() string {
 func (*ReqTransferRecordTraffic) ProtoMessage() {}
 
 func (x *ReqTransferRecordTraffic) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[143]
+	mi := &file_sds_proto_msgTypes[145]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10463,7 +10605,7 @@ func (x *ReqTransferRecordTraffic) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqTransferRecordTraffic.ProtoReflect.Descriptor instead.
 func (*ReqTransferRecordTraffic) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{143}
+	return file_sds_proto_rawDescGZIP(), []int{145}
 }
 
 func (x *ReqTransferRecordTraffic) GetProviderP2PAddress() string {
@@ -10537,7 +10679,7 @@ type ReqReportNodeStatus struct {
 func (x *ReqReportNodeStatus) Reset() {
 	*x = ReqReportNodeStatus{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[144]
+		mi := &file_sds_proto_msgTypes[146]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -10550,7 +10692,7 @@ func (x *ReqReportNodeStatus) String() string {
 func (*ReqReportNodeStatus) ProtoMessage() {}
 
 func (x *ReqReportNodeStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[144]
+	mi := &file_sds_proto_msgTypes[146]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10563,7 +10705,7 @@ func (x *ReqReportNodeStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqReportNodeStatus.ProtoReflect.Descriptor instead.
 func (*ReqReportNodeStatus) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{144}
+	return file_sds_proto_rawDescGZIP(), []int{146}
 }
 
 func (x *ReqReportNodeStatus) GetP2PAddress() string {
@@ -11347,7 +11489,26 @@ var file_sds_proto_rawDesc = []byte{
 	0x72, 0x65, 0x71, 0x5f, 0x69, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x72, 0x65,
 	0x71, 0x49, 0x64, 0x12, 0x26, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x18, 0x04, 0x20,
 	0x01, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x52, 0x65, 0x73,
-	0x75, 0x6c, 0x74, 0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x22, 0x91, 0x01, 0x0a, 0x12,
+	0x75, 0x6c, 0x74, 0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x22, 0x95, 0x01, 0x0a, 0x07,
+	0x52, 0x65, 0x71, 0x50, 0x69, 0x6e, 0x67, 0x12, 0x24, 0x0a, 0x0e, 0x70, 0x32, 0x70, 0x5f, 0x61,
+	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x5f, 0x70, 0x70, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x0c, 0x70, 0x32, 0x70, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x50, 0x70, 0x12, 0x2c, 0x0a,
+	0x12, 0x6e, 0x65, 0x74, 0x77, 0x6f, 0x72, 0x6b, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73,
+	0x5f, 0x73, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x10, 0x6e, 0x65, 0x74, 0x77, 0x6f,
+	0x72, 0x6b, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x70, 0x12, 0x19, 0x0a, 0x08, 0x73,
+	0x70, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x73,
+	0x70, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x1b, 0x0a, 0x09, 0x70, 0x69, 0x6e, 0x67, 0x5f, 0x74,
+	0x69, 0x6d, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x70, 0x69, 0x6e, 0x67, 0x54,
+	0x69, 0x6d, 0x65, 0x22, 0x95, 0x01, 0x0a, 0x07, 0x52, 0x73, 0x70, 0x50, 0x69, 0x6e, 0x67, 0x12,
+	0x24, 0x0a, 0x0e, 0x70, 0x32, 0x70, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x5f, 0x70,
+	0x70, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x70, 0x32, 0x70, 0x41, 0x64, 0x64, 0x72,
+	0x65, 0x73, 0x73, 0x50, 0x70, 0x12, 0x2c, 0x0a, 0x12, 0x6e, 0x65, 0x74, 0x77, 0x6f, 0x72, 0x6b,
+	0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x5f, 0x73, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x10, 0x6e, 0x65, 0x74, 0x77, 0x6f, 0x72, 0x6b, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73,
+	0x73, 0x53, 0x70, 0x12, 0x19, 0x0a, 0x08, 0x73, 0x70, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18,
+	0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x73, 0x70, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x1b,
+	0x0a, 0x09, 0x70, 0x69, 0x6e, 0x67, 0x5f, 0x74, 0x69, 0x6d, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x08, 0x70, 0x69, 0x6e, 0x67, 0x54, 0x69, 0x6d, 0x65, 0x22, 0x91, 0x01, 0x0a, 0x12,
 	0x52, 0x65, 0x71, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x44, 0x69, 0x72, 0x65, 0x63, 0x74, 0x6f,
 	0x72, 0x79, 0x12, 0x1f, 0x0a, 0x0b, 0x70, 0x32, 0x70, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73,
 	0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x70, 0x32, 0x70, 0x41, 0x64, 0x64, 0x72,
@@ -12112,7 +12273,7 @@ func file_sds_proto_rawDescGZIP() []byte {
 	return file_sds_proto_rawDescData
 }
 
-var file_sds_proto_msgTypes = make([]protoimpl.MessageInfo, 145)
+var file_sds_proto_msgTypes = make([]protoimpl.MessageInfo, 147)
 var file_sds_proto_goTypes = []interface{}{
 	(*ReqGetPPList)(nil),                // 0: protos.ReqGetPPList
 	(*RspGetPPList)(nil),                // 1: protos.RspGetPPList
@@ -12191,220 +12352,222 @@ var file_sds_proto_goTypes = []interface{}{
 	(*RspDeleteSlice)(nil),              // 74: protos.RspDeleteSlice
 	(*ReqMakeDirectory)(nil),            // 75: protos.ReqMakeDirectory
 	(*RspMakeDirectory)(nil),            // 76: protos.RspMakeDirectory
-	(*ReqRemoveDirectory)(nil),          // 77: protos.ReqRemoveDirectory
-	(*RspRemoveDirectory)(nil),          // 78: protos.RspRemoveDirectory
-	(*ReqMoveFileDirectory)(nil),        // 79: protos.ReqMoveFileDirectory
-	(*RspMoveFileDirectory)(nil),        // 80: protos.RspMoveFileDirectory
-	(*ReqBLSPublicKey)(nil),             // 81: protos.ReqBLSPublicKey
-	(*RspBPBLSPublicKey)(nil),           // 82: protos.RspBPBLSPublicKey
-	(*ReqBalance)(nil),                  // 83: protos.ReqBalance
-	(*RspBalance)(nil),                  // 84: protos.RspBalance
-	(*ReqTransaction)(nil),              // 85: protos.ReqTransaction
-	(*RspTransaction)(nil),              // 86: protos.RspTransaction
-	(*ReqBlockInfo)(nil),                // 87: protos.ReqBlockInfo
-	(*RspBlockInfo)(nil),                // 88: protos.RspBlockInfo
-	(*ReqBlockCheck)(nil),               // 89: protos.ReqBlockCheck
-	(*RspBlockCheck)(nil),               // 90: protos.RspBlockCheck
-	(*BlockCheckInfo)(nil),              // 91: protos.BlockCheckInfo
-	(*ReqDownloadTaskInfo)(nil),         // 92: protos.ReqDownloadTaskInfo
-	(*RspDownloadTaskInfo)(nil),         // 93: protos.RspDownloadTaskInfo
-	(*ReqClearDownloadTask)(nil),        // 94: protos.ReqClearDownloadTask
-	(*ReqShareLink)(nil),                // 95: protos.ReqShareLink
-	(*RspShareLink)(nil),                // 96: protos.RspShareLink
-	(*ReqShareFile)(nil),                // 97: protos.ReqShareFile
-	(*RspShareFile)(nil),                // 98: protos.RspShareFile
-	(*ReqDeleteShare)(nil),              // 99: protos.ReqDeleteShare
-	(*RspDeleteShare)(nil),              // 100: protos.RspDeleteShare
-	(*ReqGetShareFile)(nil),             // 101: protos.ReqGetShareFile
-	(*RspGetShareFile)(nil),             // 102: protos.RspGetShareFile
-	(*ReqSaveFile)(nil),                 // 103: protos.ReqSaveFile
-	(*RspSaveFile)(nil),                 // 104: protos.RspSaveFile
-	(*ReqSaveFolder)(nil),               // 105: protos.ReqSaveFolder
-	(*RspSaveFolder)(nil),               // 106: protos.RspSaveFolder
-	(*ReqCreateAlbum)(nil),              // 107: protos.ReqCreateAlbum
-	(*RspCreateAlbum)(nil),              // 108: protos.RspCreateAlbum
-	(*ReqEditAlbum)(nil),                // 109: protos.ReqEditAlbum
-	(*RspEditAlbum)(nil),                // 110: protos.RspEditAlbum
-	(*ReqAlbumContent)(nil),             // 111: protos.ReqAlbumContent
-	(*RspAlbumContent)(nil),             // 112: protos.RspAlbumContent
-	(*ReqSearchAlbum)(nil),              // 113: protos.ReqSearchAlbum
-	(*RspSearchAlbum)(nil),              // 114: protos.RspSearchAlbum
-	(*ReqFindMyAlbum)(nil),              // 115: protos.ReqFindMyAlbum
-	(*RspFindMyAlbum)(nil),              // 116: protos.RspFindMyAlbum
-	(*ReqCollectionAlbum)(nil),          // 117: protos.ReqCollectionAlbum
-	(*RspCollectionAlbum)(nil),          // 118: protos.RspCollectionAlbum
-	(*ReqAbstractAlbum)(nil),            // 119: protos.ReqAbstractAlbum
-	(*RspAbstractAlbum)(nil),            // 120: protos.RspAbstractAlbum
-	(*ReqMyCollectionAlbum)(nil),        // 121: protos.ReqMyCollectionAlbum
-	(*RspMyCollectionAlbum)(nil),        // 122: protos.RspMyCollectionAlbum
-	(*ReqDeleteAlbum)(nil),              // 123: protos.ReqDeleteAlbum
-	(*RspDeleteAlbum)(nil),              // 124: protos.RspDeleteAlbum
-	(*ReqConfig)(nil),                   // 125: protos.ReqConfig
-	(*RspConfig)(nil),                   // 126: protos.RspConfig
-	(*ReqInvite)(nil),                   // 127: protos.ReqInvite
-	(*RspInvite)(nil),                   // 128: protos.RspInvite
-	(*ReqGetReward)(nil),                // 129: protos.ReqGetReward
-	(*RspGetReward)(nil),                // 130: protos.RspGetReward
-	(*ReqGetCapacity)(nil),              // 131: protos.ReqGetCapacity
-	(*RspGetCapacity)(nil),              // 132: protos.RspGetCapacity
-	(*ReqFileSort)(nil),                 // 133: protos.ReqFileSort
-	(*RspFileSort)(nil),                 // 134: protos.RspFileSort
-	(*ReqFindDirectory)(nil),            // 135: protos.ReqFindDirectory
-	(*RspFindDirectory)(nil),            // 136: protos.RspFindDirectory
-	(*ReqCustomerAddVolume)(nil),        // 137: protos.ReqCustomerAddVolume
-	(*RspCustomerAddVolume)(nil),        // 138: protos.RspCustomerAddVolume
-	(*ReqCustomerUseVolume)(nil),        // 139: protos.ReqCustomerUseVolume
-	(*RspCustomerUseVolume)(nil),        // 140: protos.RspCustomerUseVolume
-	(*RelayMessage)(nil),                // 141: protos.RelayMessage
-	(*ReqTransferAggregateTraffic)(nil), // 142: protos.ReqTransferAggregateTraffic
-	(*ReqTransferRecordTraffic)(nil),    // 143: protos.ReqTransferRecordTraffic
-	(*ReqReportNodeStatus)(nil),         // 144: protos.ReqReportNodeStatus
-	(*PPBaseInfo)(nil),                  // 145: protos.PPBaseInfo
-	(*Result)(nil),                      // 146: protos.Result
-	(*SPBaseInfo)(nil),                  // 147: protos.SPBaseInfo
-	(*FileInfo)(nil),                    // 148: protos.FileInfo
-	(*SliceNumAddr)(nil),                // 149: protos.SliceNumAddr
-	(*SliceOffsetInfo)(nil),             // 150: protos.SliceOffsetInfo
-	(FileSortType)(0),                   // 151: protos.FileSortType
-	(*FileIndexes)(nil),                 // 152: protos.FileIndexes
-	(*DownloadSliceInfo)(nil),           // 153: protos.DownloadSliceInfo
-	(DownloadWrongType)(0),              // 154: protos.DownloadWrongType
-	(*SliceStorageInfo)(nil),            // 155: protos.SliceStorageInfo
-	(MsgType)(0),                        // 156: protos.MsgType
-	(*ShareLinkInfo)(nil),               // 157: protos.ShareLinkInfo
-	(AlbumType)(0),                      // 158: protos.AlbumType
-	(*AlbumInfo)(nil),                   // 159: protos.AlbumInfo
-	(AlbumSortType)(0),                  // 160: protos.AlbumSortType
-	(*AlbumNumber)(nil),                 // 161: protos.AlbumNumber
-	(*CpuStat)(nil),                     // 162: protos.CpuStat
-	(*MemoryStat)(nil),                  // 163: protos.MemoryStat
-	(*DiskStat)(nil),                    // 164: protos.DiskStat
-	(*BandwidthStat)(nil),               // 165: protos.BandwidthStat
+	(*ReqPing)(nil),                     // 77: protos.ReqPing
+	(*RspPing)(nil),                     // 78: protos.RspPing
+	(*ReqRemoveDirectory)(nil),          // 79: protos.ReqRemoveDirectory
+	(*RspRemoveDirectory)(nil),          // 80: protos.RspRemoveDirectory
+	(*ReqMoveFileDirectory)(nil),        // 81: protos.ReqMoveFileDirectory
+	(*RspMoveFileDirectory)(nil),        // 82: protos.RspMoveFileDirectory
+	(*ReqBLSPublicKey)(nil),             // 83: protos.ReqBLSPublicKey
+	(*RspBPBLSPublicKey)(nil),           // 84: protos.RspBPBLSPublicKey
+	(*ReqBalance)(nil),                  // 85: protos.ReqBalance
+	(*RspBalance)(nil),                  // 86: protos.RspBalance
+	(*ReqTransaction)(nil),              // 87: protos.ReqTransaction
+	(*RspTransaction)(nil),              // 88: protos.RspTransaction
+	(*ReqBlockInfo)(nil),                // 89: protos.ReqBlockInfo
+	(*RspBlockInfo)(nil),                // 90: protos.RspBlockInfo
+	(*ReqBlockCheck)(nil),               // 91: protos.ReqBlockCheck
+	(*RspBlockCheck)(nil),               // 92: protos.RspBlockCheck
+	(*BlockCheckInfo)(nil),              // 93: protos.BlockCheckInfo
+	(*ReqDownloadTaskInfo)(nil),         // 94: protos.ReqDownloadTaskInfo
+	(*RspDownloadTaskInfo)(nil),         // 95: protos.RspDownloadTaskInfo
+	(*ReqClearDownloadTask)(nil),        // 96: protos.ReqClearDownloadTask
+	(*ReqShareLink)(nil),                // 97: protos.ReqShareLink
+	(*RspShareLink)(nil),                // 98: protos.RspShareLink
+	(*ReqShareFile)(nil),                // 99: protos.ReqShareFile
+	(*RspShareFile)(nil),                // 100: protos.RspShareFile
+	(*ReqDeleteShare)(nil),              // 101: protos.ReqDeleteShare
+	(*RspDeleteShare)(nil),              // 102: protos.RspDeleteShare
+	(*ReqGetShareFile)(nil),             // 103: protos.ReqGetShareFile
+	(*RspGetShareFile)(nil),             // 104: protos.RspGetShareFile
+	(*ReqSaveFile)(nil),                 // 105: protos.ReqSaveFile
+	(*RspSaveFile)(nil),                 // 106: protos.RspSaveFile
+	(*ReqSaveFolder)(nil),               // 107: protos.ReqSaveFolder
+	(*RspSaveFolder)(nil),               // 108: protos.RspSaveFolder
+	(*ReqCreateAlbum)(nil),              // 109: protos.ReqCreateAlbum
+	(*RspCreateAlbum)(nil),              // 110: protos.RspCreateAlbum
+	(*ReqEditAlbum)(nil),                // 111: protos.ReqEditAlbum
+	(*RspEditAlbum)(nil),                // 112: protos.RspEditAlbum
+	(*ReqAlbumContent)(nil),             // 113: protos.ReqAlbumContent
+	(*RspAlbumContent)(nil),             // 114: protos.RspAlbumContent
+	(*ReqSearchAlbum)(nil),              // 115: protos.ReqSearchAlbum
+	(*RspSearchAlbum)(nil),              // 116: protos.RspSearchAlbum
+	(*ReqFindMyAlbum)(nil),              // 117: protos.ReqFindMyAlbum
+	(*RspFindMyAlbum)(nil),              // 118: protos.RspFindMyAlbum
+	(*ReqCollectionAlbum)(nil),          // 119: protos.ReqCollectionAlbum
+	(*RspCollectionAlbum)(nil),          // 120: protos.RspCollectionAlbum
+	(*ReqAbstractAlbum)(nil),            // 121: protos.ReqAbstractAlbum
+	(*RspAbstractAlbum)(nil),            // 122: protos.RspAbstractAlbum
+	(*ReqMyCollectionAlbum)(nil),        // 123: protos.ReqMyCollectionAlbum
+	(*RspMyCollectionAlbum)(nil),        // 124: protos.RspMyCollectionAlbum
+	(*ReqDeleteAlbum)(nil),              // 125: protos.ReqDeleteAlbum
+	(*RspDeleteAlbum)(nil),              // 126: protos.RspDeleteAlbum
+	(*ReqConfig)(nil),                   // 127: protos.ReqConfig
+	(*RspConfig)(nil),                   // 128: protos.RspConfig
+	(*ReqInvite)(nil),                   // 129: protos.ReqInvite
+	(*RspInvite)(nil),                   // 130: protos.RspInvite
+	(*ReqGetReward)(nil),                // 131: protos.ReqGetReward
+	(*RspGetReward)(nil),                // 132: protos.RspGetReward
+	(*ReqGetCapacity)(nil),              // 133: protos.ReqGetCapacity
+	(*RspGetCapacity)(nil),              // 134: protos.RspGetCapacity
+	(*ReqFileSort)(nil),                 // 135: protos.ReqFileSort
+	(*RspFileSort)(nil),                 // 136: protos.RspFileSort
+	(*ReqFindDirectory)(nil),            // 137: protos.ReqFindDirectory
+	(*RspFindDirectory)(nil),            // 138: protos.RspFindDirectory
+	(*ReqCustomerAddVolume)(nil),        // 139: protos.ReqCustomerAddVolume
+	(*RspCustomerAddVolume)(nil),        // 140: protos.RspCustomerAddVolume
+	(*ReqCustomerUseVolume)(nil),        // 141: protos.ReqCustomerUseVolume
+	(*RspCustomerUseVolume)(nil),        // 142: protos.RspCustomerUseVolume
+	(*RelayMessage)(nil),                // 143: protos.RelayMessage
+	(*ReqTransferAggregateTraffic)(nil), // 144: protos.ReqTransferAggregateTraffic
+	(*ReqTransferRecordTraffic)(nil),    // 145: protos.ReqTransferRecordTraffic
+	(*ReqReportNodeStatus)(nil),         // 146: protos.ReqReportNodeStatus
+	(*PPBaseInfo)(nil),                  // 147: protos.PPBaseInfo
+	(*Result)(nil),                      // 148: protos.Result
+	(*SPBaseInfo)(nil),                  // 149: protos.SPBaseInfo
+	(*FileInfo)(nil),                    // 150: protos.FileInfo
+	(*SliceNumAddr)(nil),                // 151: protos.SliceNumAddr
+	(*SliceOffsetInfo)(nil),             // 152: protos.SliceOffsetInfo
+	(FileSortType)(0),                   // 153: protos.FileSortType
+	(*FileIndexes)(nil),                 // 154: protos.FileIndexes
+	(*DownloadSliceInfo)(nil),           // 155: protos.DownloadSliceInfo
+	(DownloadWrongType)(0),              // 156: protos.DownloadWrongType
+	(*SliceStorageInfo)(nil),            // 157: protos.SliceStorageInfo
+	(MsgType)(0),                        // 158: protos.MsgType
+	(*ShareLinkInfo)(nil),               // 159: protos.ShareLinkInfo
+	(AlbumType)(0),                      // 160: protos.AlbumType
+	(*AlbumInfo)(nil),                   // 161: protos.AlbumInfo
+	(AlbumSortType)(0),                  // 162: protos.AlbumSortType
+	(*AlbumNumber)(nil),                 // 163: protos.AlbumNumber
+	(*CpuStat)(nil),                     // 164: protos.CpuStat
+	(*MemoryStat)(nil),                  // 165: protos.MemoryStat
+	(*DiskStat)(nil),                    // 166: protos.DiskStat
+	(*BandwidthStat)(nil),               // 167: protos.BandwidthStat
 }
 var file_sds_proto_depIdxs = []int32{
-	145, // 0: protos.ReqGetPPList.my_address:type_name -> protos.PPBaseInfo
-	145, // 1: protos.RspGetPPList.pp_list:type_name -> protos.PPBaseInfo
-	146, // 2: protos.RspGetPPList.result:type_name -> protos.Result
-	145, // 3: protos.ReqGetSPList.my_address:type_name -> protos.PPBaseInfo
-	147, // 4: protos.RspGetSPList.sp_list:type_name -> protos.SPBaseInfo
-	146, // 5: protos.RspGetSPList.result:type_name -> protos.Result
-	145, // 6: protos.ReqRegister.address:type_name -> protos.PPBaseInfo
-	145, // 7: protos.ReqRegister.my_address:type_name -> protos.PPBaseInfo
-	146, // 8: protos.RspRegister.result:type_name -> protos.Result
-	145, // 9: protos.ReqMining.address:type_name -> protos.PPBaseInfo
-	146, // 10: protos.RspMining.result:type_name -> protos.Result
-	148, // 11: protos.ReqUploadFile.file_info:type_name -> protos.FileInfo
-	145, // 12: protos.ReqUploadFile.my_address:type_name -> protos.PPBaseInfo
-	149, // 13: protos.RspUploadFile.pp_list:type_name -> protos.SliceNumAddr
-	146, // 14: protos.RspUploadFile.result:type_name -> protos.Result
-	149, // 15: protos.ReqUploadFileSlice.slice_num_addr:type_name -> protos.SliceNumAddr
-	150, // 16: protos.ReqUploadFileSlice.slice_info:type_name -> protos.SliceOffsetInfo
-	146, // 17: protos.RspUploadFileSlice.result:type_name -> protos.Result
-	149, // 18: protos.RspUploadFileSlice.slice_num_addr:type_name -> protos.SliceNumAddr
-	149, // 19: protos.ReportUploadSliceResult.slice_num_addr:type_name -> protos.SliceNumAddr
-	146, // 20: protos.RspReportUploadSliceResult.result:type_name -> protos.Result
-	149, // 21: protos.RspReportUploadSliceResult.slice_num_addr:type_name -> protos.SliceNumAddr
-	151, // 22: protos.ReqFindMyFileList.file_type:type_name -> protos.FileSortType
-	148, // 23: protos.RspFindMyFileList.file_info:type_name -> protos.FileInfo
-	146, // 24: protos.RspFindMyFileList.result:type_name -> protos.Result
-	148, // 25: protos.RspFindDirectoryTree.file_info:type_name -> protos.FileInfo
-	146, // 26: protos.RspFindDirectoryTree.result:type_name -> protos.Result
-	152, // 27: protos.ReqFileStorageInfo.file_indexes:type_name -> protos.FileIndexes
-	101, // 28: protos.ReqFileStorageInfo.share_request:type_name -> protos.ReqGetShareFile
-	153, // 29: protos.RspFileStorageInfo.slice_info:type_name -> protos.DownloadSliceInfo
-	146, // 30: protos.RspFileStorageInfo.result:type_name -> protos.Result
-	150, // 31: protos.ReqDownloadSlice.slice_info:type_name -> protos.SliceOffsetInfo
-	150, // 32: protos.RspDownloadSlice.slice_info:type_name -> protos.SliceOffsetInfo
-	146, // 33: protos.RspDownloadSlice.result:type_name -> protos.Result
-	154, // 34: protos.ReqDownloadSliceWrong.type:type_name -> protos.DownloadWrongType
-	153, // 35: protos.RspDownloadSliceWrong.new_slice_info:type_name -> protos.DownloadSliceInfo
-	146, // 36: protos.RspDownloadSliceWrong.result:type_name -> protos.Result
-	146, // 37: protos.RspDownloadSlicePause.result:type_name -> protos.Result
-	153, // 38: protos.ReqReportDownloadResult.slice_info:type_name -> protos.DownloadSliceInfo
-	146, // 39: protos.RspReportDownloadResult.result:type_name -> protos.Result
-	153, // 40: protos.RspReportDownloadResult.slice_info:type_name -> protos.DownloadSliceInfo
-	145, // 41: protos.ReqReportTaskBP.reporter:type_name -> protos.PPBaseInfo
-	146, // 42: protos.RspRegisterNewPP.result:type_name -> protos.Result
-	146, // 43: protos.RspActivatePP.result:type_name -> protos.Result
-	146, // 44: protos.RspActivatedPP.result:type_name -> protos.Result
-	146, // 45: protos.RspUpdateStakePP.result:type_name -> protos.Result
-	146, // 46: protos.RspUpdatedStakePP.result:type_name -> protos.Result
-	146, // 47: protos.RspDeactivatePP.result:type_name -> protos.Result
-	146, // 48: protos.RspPPRegisteredToSP.result:type_name -> protos.Result
-	146, // 49: protos.RspUnbondingPP.result:type_name -> protos.Result
-	146, // 50: protos.RspDeactivatedPP.result:type_name -> protos.Result
-	146, // 51: protos.RspUnbondingSP.result:type_name -> protos.Result
-	146, // 52: protos.RspDeactivatedSP.result:type_name -> protos.Result
-	146, // 53: protos.RspPrepay.result:type_name -> protos.Result
-	146, // 54: protos.RspPrepaid.result:type_name -> protos.Result
-	146, // 55: protos.RspDeleteFile.result:type_name -> protos.Result
-	155, // 56: protos.ReqTransferNotice.slice_storage_info:type_name -> protos.SliceStorageInfo
-	145, // 57: protos.ReqTransferNotice.storage_pp_info:type_name -> protos.PPBaseInfo
-	146, // 58: protos.RspTransferNotice.result:type_name -> protos.Result
-	145, // 59: protos.RspTransferNotice.storage_pp_info:type_name -> protos.PPBaseInfo
-	145, // 60: protos.ReqValidateTransferCer.new_pp:type_name -> protos.PPBaseInfo
-	145, // 61: protos.ReqValidateTransferCer.original_pp:type_name -> protos.PPBaseInfo
-	146, // 62: protos.RspValidateTransferCer.result:type_name -> protos.Result
-	146, // 63: protos.RspTransferDownload.result:type_name -> protos.Result
-	146, // 64: protos.RspTransferDownloadResult.result:type_name -> protos.Result
-	145, // 65: protos.ReqReportTransferResult.new_pp:type_name -> protos.PPBaseInfo
-	146, // 66: protos.ReqReportTransferResult.result:type_name -> protos.Result
-	146, // 67: protos.RspReportTransferResult.result:type_name -> protos.Result
-	156, // 68: protos.ReqSendChatMessages.type:type_name -> protos.MsgType
-	146, // 69: protos.RspSendChatMessages.result:type_name -> protos.Result
-	146, // 70: protos.RspDeleteSlice.result:type_name -> protos.Result
-	146, // 71: protos.RspMakeDirectory.result:type_name -> protos.Result
-	146, // 72: protos.RspRemoveDirectory.result:type_name -> protos.Result
-	146, // 73: protos.RspMoveFileDirectory.result:type_name -> protos.Result
+	147, // 0: protos.ReqGetPPList.my_address:type_name -> protos.PPBaseInfo
+	147, // 1: protos.RspGetPPList.pp_list:type_name -> protos.PPBaseInfo
+	148, // 2: protos.RspGetPPList.result:type_name -> protos.Result
+	147, // 3: protos.ReqGetSPList.my_address:type_name -> protos.PPBaseInfo
+	149, // 4: protos.RspGetSPList.sp_list:type_name -> protos.SPBaseInfo
+	148, // 5: protos.RspGetSPList.result:type_name -> protos.Result
+	147, // 6: protos.ReqRegister.address:type_name -> protos.PPBaseInfo
+	147, // 7: protos.ReqRegister.my_address:type_name -> protos.PPBaseInfo
+	148, // 8: protos.RspRegister.result:type_name -> protos.Result
+	147, // 9: protos.ReqMining.address:type_name -> protos.PPBaseInfo
+	148, // 10: protos.RspMining.result:type_name -> protos.Result
+	150, // 11: protos.ReqUploadFile.file_info:type_name -> protos.FileInfo
+	147, // 12: protos.ReqUploadFile.my_address:type_name -> protos.PPBaseInfo
+	151, // 13: protos.RspUploadFile.pp_list:type_name -> protos.SliceNumAddr
+	148, // 14: protos.RspUploadFile.result:type_name -> protos.Result
+	151, // 15: protos.ReqUploadFileSlice.slice_num_addr:type_name -> protos.SliceNumAddr
+	152, // 16: protos.ReqUploadFileSlice.slice_info:type_name -> protos.SliceOffsetInfo
+	148, // 17: protos.RspUploadFileSlice.result:type_name -> protos.Result
+	151, // 18: protos.RspUploadFileSlice.slice_num_addr:type_name -> protos.SliceNumAddr
+	151, // 19: protos.ReportUploadSliceResult.slice_num_addr:type_name -> protos.SliceNumAddr
+	148, // 20: protos.RspReportUploadSliceResult.result:type_name -> protos.Result
+	151, // 21: protos.RspReportUploadSliceResult.slice_num_addr:type_name -> protos.SliceNumAddr
+	153, // 22: protos.ReqFindMyFileList.file_type:type_name -> protos.FileSortType
+	150, // 23: protos.RspFindMyFileList.file_info:type_name -> protos.FileInfo
+	148, // 24: protos.RspFindMyFileList.result:type_name -> protos.Result
+	150, // 25: protos.RspFindDirectoryTree.file_info:type_name -> protos.FileInfo
+	148, // 26: protos.RspFindDirectoryTree.result:type_name -> protos.Result
+	154, // 27: protos.ReqFileStorageInfo.file_indexes:type_name -> protos.FileIndexes
+	103, // 28: protos.ReqFileStorageInfo.share_request:type_name -> protos.ReqGetShareFile
+	155, // 29: protos.RspFileStorageInfo.slice_info:type_name -> protos.DownloadSliceInfo
+	148, // 30: protos.RspFileStorageInfo.result:type_name -> protos.Result
+	152, // 31: protos.ReqDownloadSlice.slice_info:type_name -> protos.SliceOffsetInfo
+	152, // 32: protos.RspDownloadSlice.slice_info:type_name -> protos.SliceOffsetInfo
+	148, // 33: protos.RspDownloadSlice.result:type_name -> protos.Result
+	156, // 34: protos.ReqDownloadSliceWrong.type:type_name -> protos.DownloadWrongType
+	155, // 35: protos.RspDownloadSliceWrong.new_slice_info:type_name -> protos.DownloadSliceInfo
+	148, // 36: protos.RspDownloadSliceWrong.result:type_name -> protos.Result
+	148, // 37: protos.RspDownloadSlicePause.result:type_name -> protos.Result
+	155, // 38: protos.ReqReportDownloadResult.slice_info:type_name -> protos.DownloadSliceInfo
+	148, // 39: protos.RspReportDownloadResult.result:type_name -> protos.Result
+	155, // 40: protos.RspReportDownloadResult.slice_info:type_name -> protos.DownloadSliceInfo
+	147, // 41: protos.ReqReportTaskBP.reporter:type_name -> protos.PPBaseInfo
+	148, // 42: protos.RspRegisterNewPP.result:type_name -> protos.Result
+	148, // 43: protos.RspActivatePP.result:type_name -> protos.Result
+	148, // 44: protos.RspActivatedPP.result:type_name -> protos.Result
+	148, // 45: protos.RspUpdateStakePP.result:type_name -> protos.Result
+	148, // 46: protos.RspUpdatedStakePP.result:type_name -> protos.Result
+	148, // 47: protos.RspDeactivatePP.result:type_name -> protos.Result
+	148, // 48: protos.RspPPRegisteredToSP.result:type_name -> protos.Result
+	148, // 49: protos.RspUnbondingPP.result:type_name -> protos.Result
+	148, // 50: protos.RspDeactivatedPP.result:type_name -> protos.Result
+	148, // 51: protos.RspUnbondingSP.result:type_name -> protos.Result
+	148, // 52: protos.RspDeactivatedSP.result:type_name -> protos.Result
+	148, // 53: protos.RspPrepay.result:type_name -> protos.Result
+	148, // 54: protos.RspPrepaid.result:type_name -> protos.Result
+	148, // 55: protos.RspDeleteFile.result:type_name -> protos.Result
+	157, // 56: protos.ReqTransferNotice.slice_storage_info:type_name -> protos.SliceStorageInfo
+	147, // 57: protos.ReqTransferNotice.storage_pp_info:type_name -> protos.PPBaseInfo
+	148, // 58: protos.RspTransferNotice.result:type_name -> protos.Result
+	147, // 59: protos.RspTransferNotice.storage_pp_info:type_name -> protos.PPBaseInfo
+	147, // 60: protos.ReqValidateTransferCer.new_pp:type_name -> protos.PPBaseInfo
+	147, // 61: protos.ReqValidateTransferCer.original_pp:type_name -> protos.PPBaseInfo
+	148, // 62: protos.RspValidateTransferCer.result:type_name -> protos.Result
+	148, // 63: protos.RspTransferDownload.result:type_name -> protos.Result
+	148, // 64: protos.RspTransferDownloadResult.result:type_name -> protos.Result
+	147, // 65: protos.ReqReportTransferResult.new_pp:type_name -> protos.PPBaseInfo
+	148, // 66: protos.ReqReportTransferResult.result:type_name -> protos.Result
+	148, // 67: protos.RspReportTransferResult.result:type_name -> protos.Result
+	158, // 68: protos.ReqSendChatMessages.type:type_name -> protos.MsgType
+	148, // 69: protos.RspSendChatMessages.result:type_name -> protos.Result
+	148, // 70: protos.RspDeleteSlice.result:type_name -> protos.Result
+	148, // 71: protos.RspMakeDirectory.result:type_name -> protos.Result
+	148, // 72: protos.RspRemoveDirectory.result:type_name -> protos.Result
+	148, // 73: protos.RspMoveFileDirectory.result:type_name -> protos.Result
 	4,   // 74: protos.RspBPBLSPublicKey.bp_info:type_name -> protos.ReqRegister
-	91,  // 75: protos.RspBlockCheck.block_list:type_name -> protos.BlockCheckInfo
-	146, // 76: protos.RspDownloadTaskInfo.result:type_name -> protos.Result
-	157, // 77: protos.RspShareLink.share_info:type_name -> protos.ShareLinkInfo
-	146, // 78: protos.RspShareLink.result:type_name -> protos.Result
-	146, // 79: protos.RspShareFile.result:type_name -> protos.Result
-	146, // 80: protos.RspDeleteShare.result:type_name -> protos.Result
-	101, // 81: protos.RspGetShareFile.share_request:type_name -> protos.ReqGetShareFile
-	146, // 82: protos.RspGetShareFile.result:type_name -> protos.Result
-	148, // 83: protos.RspGetShareFile.file_info:type_name -> protos.FileInfo
-	146, // 84: protos.RspSaveFile.result:type_name -> protos.Result
-	146, // 85: protos.RspSaveFolder.result:type_name -> protos.Result
-	148, // 86: protos.ReqCreateAlbum.file_info:type_name -> protos.FileInfo
-	158, // 87: protos.ReqCreateAlbum.album_type:type_name -> protos.AlbumType
-	146, // 88: protos.RspCreateAlbum.result:type_name -> protos.Result
-	148, // 89: protos.ReqEditAlbum.change_files:type_name -> protos.FileInfo
-	146, // 90: protos.RspEditAlbum.result:type_name -> protos.Result
-	159, // 91: protos.RspAlbumContent.album_info:type_name -> protos.AlbumInfo
-	148, // 92: protos.RspAlbumContent.file_info:type_name -> protos.FileInfo
-	146, // 93: protos.RspAlbumContent.result:type_name -> protos.Result
-	158, // 94: protos.ReqSearchAlbum.album_type:type_name -> protos.AlbumType
-	160, // 95: protos.ReqSearchAlbum.AlbumSortType:type_name -> protos.AlbumSortType
-	159, // 96: protos.RspSearchAlbum.album_info:type_name -> protos.AlbumInfo
-	146, // 97: protos.RspSearchAlbum.result:type_name -> protos.Result
-	158, // 98: protos.ReqFindMyAlbum.album_type:type_name -> protos.AlbumType
-	159, // 99: protos.RspFindMyAlbum.album_info:type_name -> protos.AlbumInfo
-	146, // 100: protos.RspFindMyAlbum.result:type_name -> protos.Result
-	146, // 101: protos.RspCollectionAlbum.result:type_name -> protos.Result
-	161, // 102: protos.RspAbstractAlbum.my_album:type_name -> protos.AlbumNumber
-	161, // 103: protos.RspAbstractAlbum.collection_album:type_name -> protos.AlbumNumber
-	146, // 104: protos.RspAbstractAlbum.result:type_name -> protos.Result
-	158, // 105: protos.ReqMyCollectionAlbum.album_type:type_name -> protos.AlbumType
-	159, // 106: protos.RspMyCollectionAlbum.album_info:type_name -> protos.AlbumInfo
-	146, // 107: protos.RspMyCollectionAlbum.result:type_name -> protos.Result
-	146, // 108: protos.RspDeleteAlbum.result:type_name -> protos.Result
-	146, // 109: protos.RspConfig.result:type_name -> protos.Result
-	146, // 110: protos.RspInvite.result:type_name -> protos.Result
-	146, // 111: protos.RspGetReward.result:type_name -> protos.Result
-	146, // 112: protos.RspGetCapacity.result:type_name -> protos.Result
-	148, // 113: protos.ReqFileSort.files:type_name -> protos.FileInfo
-	146, // 114: protos.RspFileSort.result:type_name -> protos.Result
-	148, // 115: protos.RspFindDirectory.file_info:type_name -> protos.FileInfo
-	146, // 116: protos.RspFindDirectory.result:type_name -> protos.Result
-	146, // 117: protos.RspCustomerAddVolume.result:type_name -> protos.Result
-	146, // 118: protos.RspCustomerUseVolume.result:type_name -> protos.Result
-	162, // 119: protos.ReqReportNodeStatus.cpu:type_name -> protos.CpuStat
-	163, // 120: protos.ReqReportNodeStatus.memory:type_name -> protos.MemoryStat
-	164, // 121: protos.ReqReportNodeStatus.disk:type_name -> protos.DiskStat
-	165, // 122: protos.ReqReportNodeStatus.bandwidth:type_name -> protos.BandwidthStat
+	93,  // 75: protos.RspBlockCheck.block_list:type_name -> protos.BlockCheckInfo
+	148, // 76: protos.RspDownloadTaskInfo.result:type_name -> protos.Result
+	159, // 77: protos.RspShareLink.share_info:type_name -> protos.ShareLinkInfo
+	148, // 78: protos.RspShareLink.result:type_name -> protos.Result
+	148, // 79: protos.RspShareFile.result:type_name -> protos.Result
+	148, // 80: protos.RspDeleteShare.result:type_name -> protos.Result
+	103, // 81: protos.RspGetShareFile.share_request:type_name -> protos.ReqGetShareFile
+	148, // 82: protos.RspGetShareFile.result:type_name -> protos.Result
+	150, // 83: protos.RspGetShareFile.file_info:type_name -> protos.FileInfo
+	148, // 84: protos.RspSaveFile.result:type_name -> protos.Result
+	148, // 85: protos.RspSaveFolder.result:type_name -> protos.Result
+	150, // 86: protos.ReqCreateAlbum.file_info:type_name -> protos.FileInfo
+	160, // 87: protos.ReqCreateAlbum.album_type:type_name -> protos.AlbumType
+	148, // 88: protos.RspCreateAlbum.result:type_name -> protos.Result
+	150, // 89: protos.ReqEditAlbum.change_files:type_name -> protos.FileInfo
+	148, // 90: protos.RspEditAlbum.result:type_name -> protos.Result
+	161, // 91: protos.RspAlbumContent.album_info:type_name -> protos.AlbumInfo
+	150, // 92: protos.RspAlbumContent.file_info:type_name -> protos.FileInfo
+	148, // 93: protos.RspAlbumContent.result:type_name -> protos.Result
+	160, // 94: protos.ReqSearchAlbum.album_type:type_name -> protos.AlbumType
+	162, // 95: protos.ReqSearchAlbum.AlbumSortType:type_name -> protos.AlbumSortType
+	161, // 96: protos.RspSearchAlbum.album_info:type_name -> protos.AlbumInfo
+	148, // 97: protos.RspSearchAlbum.result:type_name -> protos.Result
+	160, // 98: protos.ReqFindMyAlbum.album_type:type_name -> protos.AlbumType
+	161, // 99: protos.RspFindMyAlbum.album_info:type_name -> protos.AlbumInfo
+	148, // 100: protos.RspFindMyAlbum.result:type_name -> protos.Result
+	148, // 101: protos.RspCollectionAlbum.result:type_name -> protos.Result
+	163, // 102: protos.RspAbstractAlbum.my_album:type_name -> protos.AlbumNumber
+	163, // 103: protos.RspAbstractAlbum.collection_album:type_name -> protos.AlbumNumber
+	148, // 104: protos.RspAbstractAlbum.result:type_name -> protos.Result
+	160, // 105: protos.ReqMyCollectionAlbum.album_type:type_name -> protos.AlbumType
+	161, // 106: protos.RspMyCollectionAlbum.album_info:type_name -> protos.AlbumInfo
+	148, // 107: protos.RspMyCollectionAlbum.result:type_name -> protos.Result
+	148, // 108: protos.RspDeleteAlbum.result:type_name -> protos.Result
+	148, // 109: protos.RspConfig.result:type_name -> protos.Result
+	148, // 110: protos.RspInvite.result:type_name -> protos.Result
+	148, // 111: protos.RspGetReward.result:type_name -> protos.Result
+	148, // 112: protos.RspGetCapacity.result:type_name -> protos.Result
+	150, // 113: protos.ReqFileSort.files:type_name -> protos.FileInfo
+	148, // 114: protos.RspFileSort.result:type_name -> protos.Result
+	150, // 115: protos.RspFindDirectory.file_info:type_name -> protos.FileInfo
+	148, // 116: protos.RspFindDirectory.result:type_name -> protos.Result
+	148, // 117: protos.RspCustomerAddVolume.result:type_name -> protos.Result
+	148, // 118: protos.RspCustomerUseVolume.result:type_name -> protos.Result
+	164, // 119: protos.ReqReportNodeStatus.cpu:type_name -> protos.CpuStat
+	165, // 120: protos.ReqReportNodeStatus.memory:type_name -> protos.MemoryStat
+	166, // 121: protos.ReqReportNodeStatus.disk:type_name -> protos.DiskStat
+	167, // 122: protos.ReqReportNodeStatus.bandwidth:type_name -> protos.BandwidthStat
 	123, // [123:123] is the sub-list for method output_type
 	123, // [123:123] is the sub-list for method input_type
 	123, // [123:123] is the sub-list for extension type_name
@@ -13344,7 +13507,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[77].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqRemoveDirectory); i {
+			switch v := v.(*ReqPing); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13356,7 +13519,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[78].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspRemoveDirectory); i {
+			switch v := v.(*RspPing); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13368,7 +13531,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[79].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqMoveFileDirectory); i {
+			switch v := v.(*ReqRemoveDirectory); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13380,7 +13543,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[80].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspMoveFileDirectory); i {
+			switch v := v.(*RspRemoveDirectory); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13392,7 +13555,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[81].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqBLSPublicKey); i {
+			switch v := v.(*ReqMoveFileDirectory); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13404,7 +13567,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[82].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspBPBLSPublicKey); i {
+			switch v := v.(*RspMoveFileDirectory); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13416,7 +13579,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[83].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqBalance); i {
+			switch v := v.(*ReqBLSPublicKey); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13428,7 +13591,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[84].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspBalance); i {
+			switch v := v.(*RspBPBLSPublicKey); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13440,7 +13603,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[85].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqTransaction); i {
+			switch v := v.(*ReqBalance); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13452,7 +13615,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[86].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspTransaction); i {
+			switch v := v.(*RspBalance); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13464,7 +13627,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[87].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqBlockInfo); i {
+			switch v := v.(*ReqTransaction); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13476,7 +13639,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[88].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspBlockInfo); i {
+			switch v := v.(*RspTransaction); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13488,7 +13651,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[89].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqBlockCheck); i {
+			switch v := v.(*ReqBlockInfo); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13500,7 +13663,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[90].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspBlockCheck); i {
+			switch v := v.(*RspBlockInfo); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13512,7 +13675,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[91].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*BlockCheckInfo); i {
+			switch v := v.(*ReqBlockCheck); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13524,7 +13687,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[92].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqDownloadTaskInfo); i {
+			switch v := v.(*RspBlockCheck); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13536,7 +13699,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[93].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspDownloadTaskInfo); i {
+			switch v := v.(*BlockCheckInfo); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13548,7 +13711,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[94].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqClearDownloadTask); i {
+			switch v := v.(*ReqDownloadTaskInfo); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13560,7 +13723,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[95].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqShareLink); i {
+			switch v := v.(*RspDownloadTaskInfo); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13572,7 +13735,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[96].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspShareLink); i {
+			switch v := v.(*ReqClearDownloadTask); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13584,7 +13747,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[97].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqShareFile); i {
+			switch v := v.(*ReqShareLink); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13596,7 +13759,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[98].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspShareFile); i {
+			switch v := v.(*RspShareLink); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13608,7 +13771,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[99].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqDeleteShare); i {
+			switch v := v.(*ReqShareFile); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13620,7 +13783,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[100].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspDeleteShare); i {
+			switch v := v.(*RspShareFile); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13632,7 +13795,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[101].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqGetShareFile); i {
+			switch v := v.(*ReqDeleteShare); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13644,7 +13807,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[102].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspGetShareFile); i {
+			switch v := v.(*RspDeleteShare); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13656,7 +13819,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[103].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqSaveFile); i {
+			switch v := v.(*ReqGetShareFile); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13668,7 +13831,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[104].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspSaveFile); i {
+			switch v := v.(*RspGetShareFile); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13680,7 +13843,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[105].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqSaveFolder); i {
+			switch v := v.(*ReqSaveFile); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13692,7 +13855,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[106].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspSaveFolder); i {
+			switch v := v.(*RspSaveFile); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13704,7 +13867,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[107].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqCreateAlbum); i {
+			switch v := v.(*ReqSaveFolder); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13716,7 +13879,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[108].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspCreateAlbum); i {
+			switch v := v.(*RspSaveFolder); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13728,7 +13891,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[109].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqEditAlbum); i {
+			switch v := v.(*ReqCreateAlbum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13740,7 +13903,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[110].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspEditAlbum); i {
+			switch v := v.(*RspCreateAlbum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13752,7 +13915,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[111].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqAlbumContent); i {
+			switch v := v.(*ReqEditAlbum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13764,7 +13927,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[112].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspAlbumContent); i {
+			switch v := v.(*RspEditAlbum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13776,7 +13939,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[113].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqSearchAlbum); i {
+			switch v := v.(*ReqAlbumContent); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13788,7 +13951,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[114].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspSearchAlbum); i {
+			switch v := v.(*RspAlbumContent); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13800,7 +13963,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[115].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqFindMyAlbum); i {
+			switch v := v.(*ReqSearchAlbum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13812,7 +13975,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[116].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspFindMyAlbum); i {
+			switch v := v.(*RspSearchAlbum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13824,7 +13987,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[117].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqCollectionAlbum); i {
+			switch v := v.(*ReqFindMyAlbum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13836,7 +13999,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[118].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspCollectionAlbum); i {
+			switch v := v.(*RspFindMyAlbum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13848,7 +14011,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[119].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqAbstractAlbum); i {
+			switch v := v.(*ReqCollectionAlbum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13860,7 +14023,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[120].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspAbstractAlbum); i {
+			switch v := v.(*RspCollectionAlbum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13872,7 +14035,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[121].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqMyCollectionAlbum); i {
+			switch v := v.(*ReqAbstractAlbum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13884,7 +14047,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[122].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspMyCollectionAlbum); i {
+			switch v := v.(*RspAbstractAlbum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13896,7 +14059,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[123].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqDeleteAlbum); i {
+			switch v := v.(*ReqMyCollectionAlbum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13908,7 +14071,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[124].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspDeleteAlbum); i {
+			switch v := v.(*RspMyCollectionAlbum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13920,7 +14083,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[125].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqConfig); i {
+			switch v := v.(*ReqDeleteAlbum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13932,7 +14095,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[126].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspConfig); i {
+			switch v := v.(*RspDeleteAlbum); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13944,7 +14107,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[127].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqInvite); i {
+			switch v := v.(*ReqConfig); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13956,7 +14119,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[128].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspInvite); i {
+			switch v := v.(*RspConfig); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13968,7 +14131,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[129].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqGetReward); i {
+			switch v := v.(*ReqInvite); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13980,7 +14143,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[130].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspGetReward); i {
+			switch v := v.(*RspInvite); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -13992,7 +14155,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[131].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqGetCapacity); i {
+			switch v := v.(*ReqGetReward); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14004,7 +14167,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[132].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspGetCapacity); i {
+			switch v := v.(*RspGetReward); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14016,7 +14179,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[133].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqFileSort); i {
+			switch v := v.(*ReqGetCapacity); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14028,7 +14191,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[134].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspFileSort); i {
+			switch v := v.(*RspGetCapacity); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14040,7 +14203,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[135].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqFindDirectory); i {
+			switch v := v.(*ReqFileSort); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14052,7 +14215,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[136].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspFindDirectory); i {
+			switch v := v.(*RspFileSort); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14064,7 +14227,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[137].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqCustomerAddVolume); i {
+			switch v := v.(*ReqFindDirectory); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14076,7 +14239,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[138].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspCustomerAddVolume); i {
+			switch v := v.(*RspFindDirectory); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14088,7 +14251,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[139].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqCustomerUseVolume); i {
+			switch v := v.(*ReqCustomerAddVolume); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14100,7 +14263,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[140].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspCustomerUseVolume); i {
+			switch v := v.(*RspCustomerAddVolume); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14112,7 +14275,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[141].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RelayMessage); i {
+			switch v := v.(*ReqCustomerUseVolume); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14124,7 +14287,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[142].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqTransferAggregateTraffic); i {
+			switch v := v.(*RspCustomerUseVolume); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14136,7 +14299,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[143].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqTransferRecordTraffic); i {
+			switch v := v.(*RelayMessage); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -14148,6 +14311,30 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[144].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ReqTransferAggregateTraffic); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_sds_proto_msgTypes[145].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ReqTransferRecordTraffic); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_sds_proto_msgTypes[146].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ReqReportNodeStatus); i {
 			case 0:
 				return &v.state
@@ -14166,7 +14353,7 @@ func file_sds_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_sds_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   145,
+			NumMessages:   147,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

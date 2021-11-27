@@ -9,4 +9,6 @@ const (
 	ClientSendHeartTime = 60              // in seconds
 	MsgHeaderLen        = 16              // in bytes
 	MessageBeatLen      = 4 * 1024 * 1024 // in bytes
+	PingSpList          = 300             // in seconds
+	PingSpListTimeout   = 10              // in seconds
 )

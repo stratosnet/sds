@@ -188,6 +188,10 @@ const (
 	ReqHeart = "ReqHeart"
 	RspHeart = "RspHeart"
 
+	// test sp response time
+	ReqPing = "ReqPing"
+	RspPing = "RspPing"
+
 	// report node status
 	ReqReportNodeStatus = "ReqRNS"
 	RspReportNodeStatus = "RspRNS"
