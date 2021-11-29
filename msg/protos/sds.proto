@@ -414,6 +414,7 @@ message RspPrepay {
 message ReqPrepaid {
   string wallet_address = 1;
   string purchased_uoz = 2;
+  string tx_hash = 3;
 }
 
 message RspPrepaid {
