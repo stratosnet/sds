@@ -93,8 +93,8 @@ func GetSPList() {
 	SendMessageToSPServer(requests.ReqGetSPlistData(), header.ReqGetSPList)
 }
 
-func SendPingMessageToSPServers() {
-	utils.DebugLogf("SendPingMessageToSPServers, num of SPs: %v", len(setting.Config.SPList))
+func SendPingMessageToSPList() {
+	utils.DebugLogf("SendPingMessageToSPList, num of SPs: %v", len(setting.Config.SPList))
 	if len(setting.Config.SPList) < 2 {
 		utils.ErrorLog("there are not enough SP nodes in the config file")
 		return

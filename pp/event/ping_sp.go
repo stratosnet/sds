@@ -21,7 +21,7 @@ type OptimalSp struct {
 }
 
 type PingRspSummary struct {
-	optSp *OptimalSp
+	optSp OptimalSp
 	mtx   sync.Mutex
 }
 
@@ -31,8 +31,8 @@ var (
 
 func ReqPingSpList(ctx context.Context, conn core.WriteCloser) {
 	// clear optSp before ping sp list
-	summary.optSp = &OptimalSp{}
-	go peers.SendPingMessageToSPServers()
+	summary.optSp = OptimalSp{}
+	go peers.SendPingMessageToSPList()
 	myClock = clock.NewClock()
 	myClock.AddJobRepeat(time.Second*utils.PingSpListTimeout, 1, connectAndRegisterToOptSp)
 }
@@ -45,10 +45,11 @@ func RspPingSpList(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 	utils.DebugLogf("received response of PingMsg from SP %v", response)
-	updateOptimalSp(rspTime, response, summary.optSp)
+	go updateOptimalSp(rspTime, response, &summary.optSp)
 }
 
 func updateOptimalSp(rspTime int64, rsp *protos.RspPing, optSp *OptimalSp) {
+	summary.mtx.Lock()
 	if rsp.P2PAddressPp != setting.Config.P2PAddress || len(rsp.P2PAddressPp) == 0 {
 		// invalid response containing unknown PP p2pAddr
 		return
@@ -67,6 +68,7 @@ func updateOptimalSp(rspTime int64, rsp *protos.RspPing, optSp *OptimalSp) {
 		optSp.NetworkAddr = rsp.NetworkAddressSp
 		optSp.SpResponseTimeCost = timeCost
 	}
+	summary.mtx.Unlock()
 }
 
 func connectAndRegisterToOptSp() {
