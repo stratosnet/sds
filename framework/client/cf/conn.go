@@ -228,13 +228,13 @@ func (cc *ClientConn) Start() {
 		go looper(cc, cc.wg)
 	}
 	var (
-		myClock      = clock.NewClock()
-		handler      = core.GetHandlerFunc(header.ReqHeart)
-		spRspHandler = core.GetHandlerFunc(header.ReqPing)
+		myClock               = clock.NewClock()
+		handler               = core.GetHandlerFunc(header.ReqHeart)
+		spLatencyCheckHandler = core.GetHandlerFunc(header.ReqSpLatencyCheck)
 
-		spRspJobFunc = func() {
-			if spRspHandler != nil {
-				cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, spRspHandler}
+		spLatencyCheckJobFunc = func() {
+			if spLatencyCheckHandler != nil {
+				cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, spLatencyCheckHandler}
 			}
 		}
 
@@ -253,7 +253,7 @@ func (cc *ClientConn) Start() {
 	if !cc.opts.heartClose {
 		cc.job, _ = myClock.AddJobRepeat(time.Second*utils.ClientSendHeartTime, 0, jobFunc)
 	}
-	myClock.AddJobRepeat(time.Second*utils.PingSpList, 0, spRspJobFunc)
+	myClock.AddJobRepeat(time.Second*utils.LatencyCheckSpListInterval, 0, spLatencyCheckJobFunc)
 	myClock.AddJobRepeat(time.Second*1, 0, logFunc)
 }
 

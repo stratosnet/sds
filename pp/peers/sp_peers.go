@@ -93,29 +93,30 @@ func GetSPList() {
 	SendMessageToSPServer(requests.ReqGetSPlistData(), header.ReqGetSPList)
 }
 
-func SendPingMessageToSPList() {
-	utils.DebugLogf("SendPingMessageToSPList, num of SPs: %v", len(setting.Config.SPList))
+func SendLatencyCheckMessageToSPList() {
+	utils.DebugLogf("[SP_LATENCY_CHECK] SendHeartbeatToSPList, num of SPs: %v", len(setting.Config.SPList))
 	if len(setting.Config.SPList) < 2 {
 		utils.ErrorLog("there are not enough SP nodes in the config file")
 		return
 	}
 	for i := 0; i < len(setting.Config.SPList); i++ {
 		selectedSP := setting.Config.SPList[i]
-		pingSingleSpServer(selectedSP.NetworkAddress, setting.IsPP)
+		checkSingleSpLatency(selectedSP.NetworkAddress, setting.IsPP)
 	}
 }
 
-func pingSingleSpServer(server string, heartbeat bool) {
-	utils.DebugLog("SendPingMessage(server, req, header.ReqSpResponseTime)")
+func checkSingleSpLatency(server string, heartbeat bool) {
+	utils.DebugLog("[SP_LATENCY_CHECK] SendHeartbeat(server, req, header.ReqHeartbeat)")
 	spConn := client.NewClient(server, heartbeat)
 	if spConn != nil {
 		start := time.Now().UnixNano()
-		pb := &protos.ReqPing{
+		pb := &protos.ReqHeartbeat{
+			HbType:           protos.HeartbeatType_LATENCY_CHECK,
 			P2PAddressPp:     setting.P2PAddress,
 			NetworkAddressSp: server,
 			PingTime:         strconv.FormatInt(start, 10),
 		}
-		SendMessage(spConn, pb, header.ReqPing)
+		SendMessage(spConn, pb, header.ReqHeart)
 		defer spConn.Close()
 	}
 }

@@ -187,10 +187,8 @@ const (
 	// heartbeat
 	ReqHeart = "ReqHeart"
 	RspHeart = "RspHeart"
-
-	// test sp response time
-	ReqPing = "ReqPing"
-	RspPing = "RspPing"
+	// test sp latency
+	ReqSpLatencyCheck = "ReqSpLatencyCheck"
 
 	// report node status
 	ReqReportNodeStatus = "ReqRNS"

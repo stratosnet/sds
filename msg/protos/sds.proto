@@ -560,18 +560,20 @@ message RspMakeDirectory {
   Result result = 4;
 }
 
-message ReqPing {
-  string p2p_address_pp = 1;
-  string network_address_sp = 2;
-  string sp_index = 3;
-  string ping_time = 4;
+message ReqHeartbeat {
+  HeartbeatType hb_type = 1;
+  string p2p_address_pp = 2;
+  string network_address_sp = 3;
+  string sp_index = 4;
+  string ping_time = 5;
 }
 
-message RspPing {
-  string p2p_address_pp = 1;
-  string network_address_sp = 2;
-  string sp_index = 3;
-  string ping_time = 4;
+message RspHeartbeat {
+  HeartbeatType hb_type = 1;
+  string p2p_address_pp = 2;
+  string network_address_sp = 3;
+  string sp_index = 4;
+  string ping_time = 5;
 }
 
 message ReqRemoveDirectory {
