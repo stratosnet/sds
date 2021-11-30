@@ -48,8 +48,8 @@ enum MsgType {
 }
 
 enum HeartbeatType {
-    LATENCY_CHECK = 0;
-    REGULAR_HEARTBEAT = 1;
+    REGULAR_HEARTBEAT = 0;
+    LATENCY_CHECK = 1;
 }
 
 message PPBaseInfo {
