@@ -18,6 +18,8 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
+var bufferedSpConns = make([]*cf.ClientConn, 0)
+
 // SendMessage
 func SendMessage(conn core.WriteCloser, pb proto.Message, cmd string) {
 	data, err := proto.Marshal(pb)
@@ -108,6 +110,7 @@ func SendLatencyCheckMessageToSPList() {
 func checkSingleSpLatency(server string, heartbeat bool) {
 	utils.DebugLog("[SP_LATENCY_CHECK] SendHeartbeat(server, req, header.ReqHeartbeat)")
 	spConn := client.NewClient(server, heartbeat)
+	//defer spConn.Close()
 	if spConn != nil {
 		start := time.Now().UnixNano()
 		pb := &protos.ReqHeartbeat{
@@ -117,6 +120,14 @@ func checkSingleSpLatency(server string, heartbeat bool) {
 			PingTime:         strconv.FormatInt(start, 10),
 		}
 		SendMessage(spConn, pb, header.ReqHeart)
-		defer spConn.Close()
+		bufferedSpConns = append(bufferedSpConns, spConn)
 	}
+}
+
+func GetBufferedSpConns() []*cf.ClientConn {
+	return bufferedSpConns
+}
+
+func ClearBufferedSpConns() {
+	bufferedSpConns = make([]*cf.ClientConn, 0)
 }
