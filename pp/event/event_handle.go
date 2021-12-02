@@ -90,7 +90,8 @@ func RegisterEventHandle() {
 	core.Register(header.RspSaveFile, RspSaveFile)
 
 	core.Register(header.ReqHeart, SendHeartBeat)
-	core.Register(header.RspHeart, RspHeartBeat)
+	core.Register(header.ReqSpLatencyCheck, ReqHBLatencyCheckSpList)
+	core.Register(header.RspHeart, RspHBLatencyCheckSpList)
 	core.Register(header.ReqDeleteFile, ReqDeleteFile)
 	core.Register(header.RspDeleteFile, RspDeleteFile)
 	core.Register(header.ReqConfig, ReqGetMyConfig)

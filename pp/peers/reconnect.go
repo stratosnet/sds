@@ -67,3 +67,16 @@ func ConnectToSP() (newConnection bool, err error) {
 
 	return false, errors.New("couldn't connect to any SP node")
 }
+
+// ConnectToOptSP connect if there is a detected optimal SP node.
+func ConnectAndRegisterToOptSP(spNetworkAddr string) error {
+	// connect to optimal SP node
+	newSpConn := client.NewClient(spNetworkAddr, setting.IsPP)
+	if newSpConn != nil {
+		// replace ongoing client.SPConn
+		client.SPConn = newSpConn
+		// register to new client.SPConn
+		RegisterChain(true)
+	}
+	return errors.New("couldn't connect to optimal SP node")
+}

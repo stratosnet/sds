@@ -54,12 +54,13 @@ const (
 	ReqUpdatedStakeSP = "ReqUpdtds" // request when a SP node's stake was successfully updated
 	RspUpdatedStakePP = "RspUpdtdp" // response when a PP node's stake  was successfully updated
 
-	ReqDeactivatePP  = "ReqDctvp" // request to deactivate a PP node
-	RspDeactivatePP  = "RspDctvp" // response to deactivate a PP node
-	ReqUnbondingPP   = "ReqUbdp"  // request to unbonding a PP node
-	RspUnbondingPP   = "RspUbdp"  // response to unbonding a PP node
-	ReqDeactivatedPP = "ReqDctdp" // request when a PP node was successfully deactivated
-	RspDeactivatedPP = "RspDctdp" // response when a PP node was successfully deactivated
+	ReqDeactivatePP     = "ReqDctvp"  // request to deactivate a PP node
+	RspDeactivatePP     = "RspDctvp"  // response to deactivate a PP node
+	ReqUnbondingPP      = "ReqUbdp"   // request to unbonding a PP node
+	RspUnbondingPP      = "RspUbdp"   // response to unbonding a PP node
+	ReqDeactivatedPP    = "ReqDctdp"  // request when a PP node was successfully deactivated
+	RspDeactivatedPP    = "RspDctdp"  // response when a PP node was successfully deactivated
+	RspPPRegisteredToSP = "RspPRegds" // response when a PP node was successfully registered to SP
 
 	ReqPrepay  = "ReqPrpay" // request for a PP node sending a prepay transaction
 	RspPrepay  = "RspPrpay" // response for a PP node sending a prepay transaction
@@ -186,6 +187,8 @@ const (
 	// heartbeat
 	ReqHeart = "ReqHeart"
 	RspHeart = "RspHeart"
+	// test sp latency
+	ReqSpLatencyCheck = "ReqSpLatencyCheck"
 
 	// report node status
 	ReqReportNodeStatus = "ReqRNS"

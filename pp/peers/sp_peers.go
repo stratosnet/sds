@@ -2,8 +2,12 @@ package peers
 
 import (
 	"context"
+	"strconv"
+	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/setting"
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
@@ -13,6 +17,8 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/utils"
 )
+
+var bufferedSpConns = make([]*cf.ClientConn, 0)
 
 // SendMessage
 func SendMessage(conn core.WriteCloser, pb proto.Message, cmd string) {
@@ -87,4 +93,41 @@ func TransferSendMessageToClient(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
 func GetSPList() {
 	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetSPList)")
 	SendMessageToSPServer(requests.ReqGetSPlistData(), header.ReqGetSPList)
+}
+
+func SendLatencyCheckMessageToSPList() {
+	utils.DebugLogf("[SP_LATENCY_CHECK] SendHeartbeatToSPList, num of SPs: %v", len(setting.Config.SPList))
+	if len(setting.Config.SPList) < 2 {
+		utils.ErrorLog("there are not enough SP nodes in the config file")
+		return
+	}
+	for i := 0; i < len(setting.Config.SPList); i++ {
+		selectedSP := setting.Config.SPList[i]
+		checkSingleSpLatency(selectedSP.NetworkAddress, setting.IsPP)
+	}
+}
+
+func checkSingleSpLatency(server string, heartbeat bool) {
+	utils.DebugLog("[SP_LATENCY_CHECK] SendHeartbeat(server, req, header.ReqHeartbeat)")
+	spConn := client.NewClient(server, heartbeat)
+	//defer spConn.Close()
+	if spConn != nil {
+		start := time.Now().UnixNano()
+		pb := &protos.ReqHeartbeat{
+			HbType:           protos.HeartbeatType_LATENCY_CHECK,
+			P2PAddressPp:     setting.P2PAddress,
+			NetworkAddressSp: server,
+			PingTime:         strconv.FormatInt(start, 10),
+		}
+		SendMessage(spConn, pb, header.ReqHeart)
+		bufferedSpConns = append(bufferedSpConns, spConn)
+	}
+}
+
+func GetBufferedSpConns() []*cf.ClientConn {
+	return bufferedSpConns
+}
+
+func ClearBufferedSpConns() {
+	bufferedSpConns = make([]*cf.ClientConn, 0)
 }

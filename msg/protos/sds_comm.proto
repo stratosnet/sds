@@ -47,6 +47,10 @@ enum MsgType {
     DEFAULT = 0;
 }
 
+enum HeartbeatType {
+    REGULAR_HEARTBEAT = 0;
+    LATENCY_CHECK = 1;
+}
 
 message PPBaseInfo {
      string p2p_address = 1;
@@ -178,6 +182,3 @@ message BandwidthStat {
     int64 used = 1;
     int64 total = 2;
 }
-
-
-
