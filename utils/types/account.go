@@ -3,10 +3,12 @@ package types
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"strings"
+
 	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/stratosnet/sds/utils/crypto/sha3"
 	"github.com/tendermint/tendermint/libs/bech32"
-	"math/big"
 )
 
 // Lengths of hashes and addresses in bytes.
@@ -15,6 +17,9 @@ const (
 	HashLength = 32
 	// AddressLength
 	AddressLength = 20
+
+	DefaultAddressPrefix = "st"
+	DefaultP2PKeyPrefix  = "stsdsp2p"
 )
 
 // Address
@@ -145,6 +150,25 @@ func (a Address) ToBech(hrp string) (string, error) {
 func BechToAddress(str string) (Address, error) {
 	addr, err := types.AccAddressFromBech32(str)
 	return BytesToAddress(addr), err
+}
+
+func P2pAddressFromBech(str string) (Address, error) {
+	if len(strings.TrimSpace(str)) == 0 {
+		return Address{}, nil
+	}
+	bz, err := types.GetFromBech32(str, DefaultP2PKeyPrefix)
+	if err != nil {
+		return Address{}, err
+	}
+	err = types.VerifyAddressFormat(bz)
+	if err != nil {
+		return Address{}, err
+	}
+	return BytesToAddress(bz), nil
+}
+
+func P2pAddressToBech(p2pAddr Address) (string, error) {
+	return p2pAddr.ToBech(DefaultP2PKeyPrefix)
 }
 
 // Bytes2Hex returns the hexadecimal encoding of d.
