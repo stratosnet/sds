@@ -1,7 +1,7 @@
 version: 0
 versionshow: ""
 downloadpathminlen: 88
-Port: :18082
+Port: :9082
 NetworkAddress: 127.0.0.1
 Debug: true
 PPListDir: ./peers
