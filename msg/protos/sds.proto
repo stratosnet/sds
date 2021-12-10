@@ -126,6 +126,7 @@ message Uploaded {
   string reporter_address = 1;
   string uploader_address = 2;
   string file_hash = 3;
+  string tx_hash = 4;
 }
 
 
@@ -315,11 +316,13 @@ message ReqActivatedPP {
   string p2p_address = 1;
   string p2p_pubkey = 2;
   string ozone_limit_changes = 3; // positive
+  string tx_hash = 4;
 }
 
 message ReqActivatedSP {
   string p2p_address = 1;
   string ozone_limit_changes = 2; // positive
+  string tx_hash = 3;
 }
 
 message RspActivatedPP {
@@ -341,12 +344,14 @@ message ReqUpdatedStakePP {
   string p2p_address = 1;
   string ozone_limit_changes = 2;
   string incr_stake = 3; // true/false
+  string tx_hash = 4;
 }
 
 message ReqUpdatedStakeSP {
   string p2p_address = 1;
   string ozone_limit_changes = 2;
   string incr_stake = 3; // true/false
+  string tx_hash = 4;
 }
 
 message RspUpdatedStakePP {
@@ -372,6 +377,7 @@ message ReqUnbondingPP {
   string p2p_address = 1;
   string ozone_limit_changes = 2; // negative
   string unbonding_mature_time = 3;
+  string tx_hash = 4;
 }
 
 message RspUnbondingPP {
@@ -380,6 +386,7 @@ message RspUnbondingPP {
 
 message ReqDeactivatedPP {
   string p2p_address = 1;
+  string tx_hash = 2;
 }
 
 message RspDeactivatedPP {
