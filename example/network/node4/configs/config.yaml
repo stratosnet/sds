@@ -1,7 +1,7 @@
 version: 0
 versionshow: ""
 downloadpathminlen: 88
-Port: :9082
+Port: :9084
 NetworkAddress: 127.0.0.1
 Debug: true
 PPListDir: ./peers
@@ -10,9 +10,9 @@ DefPassword: ""
 DefSavePath: ""
 StorehousePath: ""
 DownloadPath: ""
-P2PAddress: stsdsp2p1faej5w4q6hgnt0ft598dlm408g4p747ymg5jq6
+P2PAddress: stsdsp2p1ttpyyh9p7udalhwcz7sh5f5zfzuhpm0hlxct6l
 P2PPassword: aaa
-WalletAddress: st1ppcc7hmgwnr6e67ad4tcxxyskqpahuc2y4w7yq
+WalletAddress: st1pztt40kk7mr3jsfcpymz43fz44fc0nc5wtkeq7
 WalletPassword: aaa
 AutoRun: true
 Internal: false
@@ -25,11 +25,12 @@ IsLimitUploadSpeed: false
 LimitUploadSpeed: 100
 IsCheckFileOperation: false
 IsCheckFileTransferFinished: false
+P2PKeyPrefix: stsdsp2p
 ChainId: test-chain
 Token: ustos
 StratosChainUrl: http://127.0.0.1:1317
 StreamingCache: false
-RestPort: "18092"
+RestPort: "18094"
 InternalPort: ""
 SPList:
 - P2PAddress: stsdsp2p162xm62m75cjv2529p7yydkxmqfwhknslen0wgt
@@ -44,3 +45,7 @@ SPList:
 - P2PAddress: stsdsp2p15mwn0qa7faym4rsaxtufrhq4ul42pe2k2v66vg
   P2PPublicKey: stsdsp2p1zcjduepq3zzgzzttfu4jrqldyqnkyjm44p9kvyrfv8tdpmgpmz54djqfxfsqwdt3up
   NetworkAddress: 0.0.0.0:38888
+
+
+
+

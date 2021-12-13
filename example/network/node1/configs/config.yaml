@@ -39,3 +39,9 @@ SPList:
 - P2PAddress: stsdsp2p1p0x879w88a2dlcymm4pl05aezf5tn0wue4mcah
   P2PPublicKey: stsdsp2p1zcjduepqppgzl9x2lr9hdu8vq9p6jx8y66xfsz4rkr6zhlumawz4ump6dp4qudcg27
   NetworkAddress: 0.0.0.0:18888
+- P2PAddress: stsdsp2p1gee76xmy3d5ttgmnjx5enmexz4y3wu8w0q0rrf
+  P2PPublicKey: stsdsp2p1zcjduepqvs62467hf02ahpja3ps8n9r4d2mm0c45s5pudkxqjhdnaxryqu8sprg297
+  NetworkAddress: 0.0.0.0:28888
+- P2PAddress: stsdsp2p15mwn0qa7faym4rsaxtufrhq4ul42pe2k2v66vg
+  P2PPublicKey: stsdsp2p1zcjduepq3zzgzzttfu4jrqldyqnkyjm44p9kvyrfv8tdpmgpmz54djqfxfsqwdt3up
+  NetworkAddress: 0.0.0.0:38888
