@@ -103,10 +103,17 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 
 		ozoneLimitChangeStr := result.Events["create_resource_node.ozone_limit_changes"]
 
+		txHashList := result.Events["tx.hash"]
+		if len(txHashList) < 1 {
+			utils.ErrorLog("No txHash was specified in the create_resource_node message from stratos-chain")
+			return
+		}
+
 		activatedMsg := &protos.ReqActivatedPP{
 			P2PAddress:        p2pAddressString,
 			P2PPubkey:         hex.EncodeToString(p2pPubkey[:]),
 			OzoneLimitChanges: ozoneLimitChangeStr[0],
+			TxHash:            txHashList[0],
 		}
 
 		err = postToSP("/pp/activated", activatedMsg)
@@ -134,10 +141,17 @@ func (m *MultiClient) UpdateResourceNodeStakeMsgHandler() func(event coretypes.R
 			return
 		}
 
+		txHashList := result.Events["tx.hash"]
+		if len(txHashList) < 1 {
+			utils.ErrorLog("No txHash was specified in the update_resource_node_stake message from stratos-chain")
+			return
+		}
+
 		updatedStakeMsg := &protos.ReqUpdatedStakePP{
 			P2PAddress:        p2pAddressString,
 			OzoneLimitChanges: ozoneLimitChangeStr[0],
 			IncrStake:         incrStakeBoolList[0],
+			TxHash:            txHashList[0],
 		}
 
 		err = postToSP("/pp/updatedStake", updatedStakeMsg)
@@ -162,10 +176,18 @@ func (m *MultiClient) UnbondingResourceNodeMsgHandler() func(event coretypes.Res
 		// get mature time
 		ubdMatureTime := result.Events["unbonding_resource_node.unbonding_mature_time"]
 		ubdMatureTimeStr := ubdMatureTime[0]
+
+		txHashList := result.Events["tx.hash"]
+		if len(txHashList) < 1 {
+			utils.ErrorLog("No txHash was specified in the unbonding_resource_node message from stratos-chain")
+			return
+		}
+
 		ubdMsg := &protos.ReqUnbondingPP{
 			P2PAddress:          p2pAddressString,
 			OzoneLimitChanges:   ozoneLimitChangeStr,
 			UnbondingMatureTime: ubdMatureTimeStr,
+			TxHash:              txHashList[0],
 		}
 
 		err = postToSP("/pp/unbonding", ubdMsg)
@@ -184,7 +206,15 @@ func (m *MultiClient) RemoveResourceNodeMsgHandler() func(event coretypes.Result
 			return
 		}
 
-		deactivatedMsg := &protos.ReqDeactivatedPP{P2PAddress: p2pAddressString}
+		deactivatedMsg := &protos.ReqDeactivatedPP{
+			P2PAddress: p2pAddressString,
+		}
+
+		txHashList := result.Events["tx.hash"]
+		if len(txHashList) < 1 {
+			utils.ErrorLog("No txHash was specified in the remove_resource_node message from stratos-chain")
+			return
+		}
 
 		err = postToSP("/pp/deactivated", deactivatedMsg)
 		if err != nil {
@@ -221,10 +251,17 @@ func (m *MultiClient) UpdateIndexingNodeStakeMsgHandler() func(event coretypes.R
 			return
 		}
 
+		txHashList := result.Events["tx.hash"]
+		if len(txHashList) < 1 {
+			utils.ErrorLog("No txHash was specified in the update_indexing_node_stake message from stratos-chain")
+			return
+		}
+
 		updatedStakeMsg := &protos.ReqUpdatedStakeSP{
 			P2PAddress:        p2pAddressString,
 			OzoneLimitChanges: ozoneLimitChangeStr[0],
 			IncrStake:         incrStakeBoolList[0],
+			TxHash:            txHashList[0],
 		}
 		err = postToSP("/chain/updatedStake", updatedStakeMsg)
 		if err != nil {
@@ -268,8 +305,15 @@ func (m *MultiClient) IndexingNodeVoteMsgHandler() func(event coretypes.ResultEv
 			return
 		}
 
+		txHashList := result.Events["tx.hash"]
+		if len(txHashList) < 1 {
+			utils.ErrorLog("No txHash was specified in the indexing_node_reg_vote message from stratos-chain")
+			return
+		}
+
 		activatedMsg := &protos.ReqActivatedSP{
 			P2PAddress: p2pAddressString,
+			TxHash:     txHashList[0],
 		}
 
 		err = postToSP("/chain/activated", activatedMsg)
@@ -336,10 +380,17 @@ func (m *MultiClient) FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 			return
 		}
 
+		txHashList := result.Events["tx.hash"]
+		if len(txHashList) < 1 {
+			utils.ErrorLog("No txHash was specified in the FileUploadTx message from stratos-chain")
+			return
+		}
+
 		uploadedMsg := &protos.Uploaded{
 			ReporterAddress: reporterAddressList[0],
 			UploaderAddress: uploaderAddressList[0],
 			FileHash:        fileHashList[0],
+			TxHash:          txHashList[0],
 		}
 
 		err := postToSP("/pp/uploaded", uploadedMsg)

@@ -11,6 +11,7 @@ import (
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/types"
 )
 
 // REPROTDHTIME 1 hour
@@ -285,8 +286,8 @@ func defaultConfig() *config {
 		LimitUploadSpeed:            0,
 		IsCheckFileOperation:        false,
 		IsCheckFileTransferFinished: false,
-		AddressPrefix:               "st",
-		P2PKeyPrefix:                "stsdsp2p",
+		AddressPrefix:               types.DefaultAddressPrefix,
+		P2PKeyPrefix:                types.DefaultP2PKeyPrefix,
 		ChainId:                     "stratos-testnet-3",
 		Token:                       "ustos",
 		StratosChainUrl:             "http://127.0.0.1:1317",
