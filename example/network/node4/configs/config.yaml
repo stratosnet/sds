@@ -1,5 +1,5 @@
-version: 0
-versionshow: ""
+version: 3
+versionshow: v0.3.0
 downloadpathminlen: 88
 Port: :9084
 NetworkAddress: 127.0.0.1
