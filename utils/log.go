@@ -31,6 +31,7 @@ type Logger struct {
 }
 
 var MyLogger *Logger
+var TrafficLogger *Logger
 
 func newLogger(logFilepath string, enableStd, enableFile bool) *Logger {
 	if err := os.MkdirAll(filepath.Dir(logFilepath), os.ModePerm); err != nil {
@@ -63,6 +64,17 @@ func NewLogger(filepath string, enableStd, enableFile bool) *Logger {
 func NewDefaultLogger(filepath string, enableStd, enableFile bool) *Logger {
 	MyLogger = newLogger(filepath, enableStd, enableFile)
 	return MyLogger
+}
+
+func NewTrafficLogger(filePath string, enableStd, enableFile bool) *Logger {
+	TrafficLogger = newLogger(filePath, enableStd, enableFile)
+	return TrafficLogger
+}
+
+//Log calls default logger and output info log
+func DumpTraffic(v ...interface{}) {
+	//GetLogger().Log(Info, v...)
+	TrafficLogger.logDepth(Info, 3, v...)
 }
 
 func init() {
