@@ -1115,19 +1115,10 @@ message RelayMessage {
   bytes data = 2;
 }
 
-message ReqTransferAggregateTraffic {
-  int64 time = 1;
-}
-
-message ReqTransferRecordTraffic {
-  string provider_p2p_address = 1;
-  string provider_wallet_address = 2;
-  string consumer_wallet_address = 3;
-  string task_id = 4;
-  int64  task_type = 5;
-  uint64 volume = 6;
-  int64  delivery_time = 7;
-  int64  response_time = 8;
+message ReqTransferBLSSignature {
+  string epoch = 1;
+  bytes  pub_key = 2;
+  bytes  signature = 3;
 }
 
 message ReqReportNodeStatus {

@@ -12,26 +12,29 @@ import (
 )
 
 // Stratos-chain 'pot' module
-func BuildVolumeReportMsg(traffic []*core.Traffic, reporterAddress, reporterOwnerAddress []byte, epoch uint64, reportReference string) (sdktypes.Msg, error) {
+func BuildVolumeReportMsg(traffic []*core.Traffic, reporterAddress, reporterOwnerAddress []byte, epoch uint64,
+	reportReference string, blsTxData, blsSignature []byte, blsPubKeys [][]byte) (sdktypes.Msg, error) {
 	aggregatedVolume := make(map[string]uint64)
 	for _, trafficReccord := range traffic {
 		aggregatedVolume[trafficReccord.P2PAddress] += trafficReccord.Volume
 	}
 
-	var nodesVolume []pottypes.SingleNodeVolume
+	var nodesVolume []pottypes.SingleWalletVolume
 	for p2pAddressString, volume := range aggregatedVolume {
 		_, p2pAddressBytes, err := bech32.DecodeAndConvert(p2pAddressString)
 		if err != nil {
 			return nil, err
 		}
 		p2pAddress := sdktypes.AccAddress(p2pAddressBytes[:])
-		nodesVolume = append(nodesVolume, pottypes.SingleNodeVolume{
-			NodeAddress: p2pAddress,
-			Volume:      sdktypes.NewIntFromUint64(volume),
+		nodesVolume = append(nodesVolume, pottypes.SingleWalletVolume{
+			WalletAddress: p2pAddress,
+			Volume:        sdktypes.NewIntFromUint64(volume),
 		})
 	}
 
-	return pottypes.NewMsgVolumeReport(nodesVolume, reporterAddress, sdktypes.NewIntFromUint64(epoch), reportReference, reporterOwnerAddress), nil
+	blsSignatureInfo := pottypes.NewBLSSignatureInfo(blsPubKeys, blsSignature, blsTxData)
+
+	return pottypes.NewMsgVolumeReport(nodesVolume, reporterAddress, sdktypes.NewIntFromUint64(epoch), reportReference, reporterOwnerAddress, blsSignatureInfo), nil
 }
 
 // Stratos-chain 'register' module
@@ -107,7 +110,7 @@ func BuildIndexingNodeRegistrationVoteMsg(candidateNetworkAddress, candidateOwne
 }
 
 // Stratos-chain 'sds' module
-func BuildFileUploadMsg(fileHash, reporterAddress, uploaderAddress []byte) sdktypes.Msg {
+func BuildFileUploadMsg(fileHash string, reporterAddress, uploaderAddress []byte) sdktypes.Msg {
 	return sdstypes.NewMsgUpload(
 		fileHash,
 		nil,

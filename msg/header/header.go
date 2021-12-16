@@ -201,8 +201,7 @@ const (
 	ReqCUseVolume = "ReqCUV"
 	RspCUseVolume = "RspCUV"
 
-	ReqTransferAggregateTraffic = "ReqTrAgT"
-	ReqTransferRecordTraffic    = "ReqTrRcT"
+	ReqTransferBLSSignature = "ReqTrBLS"
 )
 
 // DecodeHeader
