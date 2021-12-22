@@ -1,29 +1,26 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"net"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
-
-	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/api"
-	"github.com/stratosnet/sds/pp/api/rest"
-	"github.com/stratosnet/sds/pp/event"
-	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/pp/websocket"
+	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
 )
 
-func terminal(cmd *cobra.Command, args []string) {
+func terminal(cmd *cobra.Command, args []string, execCmd string) {
+
+	c, err := rpc.Dial(setting.DefaultIPCEndpoint())
+
+	if err != nil {
+		utils.ErrorLog(err)
+		return
+	}
+	defer c.Close()
 
 	helpStr := "\n" +
 		"help                                       			show all the commands\n" +
@@ -52,7 +49,6 @@ func terminal(cmd *cobra.Command, args []string) {
 		"monitor                                    			show monitor\n" +
 		"stopmonitor                                			stop monitor\n" +
 		"config  <key> <value>                      			set config key value\n"
-	fmt.Println(helpStr)
 
 	help := func(line string, param []string) bool {
 		fmt.Println(helpStr)
@@ -60,8 +56,7 @@ func terminal(cmd *cobra.Command, args []string) {
 	}
 
 	wallets := func(line string, param []string) bool {
-		serv.Wallets()
-		return true
+		return callRpc(c, "wallets", param)
 	}
 
 	newWallet := func(line string, param []string) bool {
@@ -79,7 +74,7 @@ func terminal(cmd *cobra.Command, args []string) {
 		mnemonic := console.MyGetPassword("input bip39 mnemonic (leave blank to generate a new one)", false)
 
 		serv.CreateWallet(password, param[0], mnemonic, "", param[1])
-		return true
+		return callRpc(c, "newWallet", []string{password, param[0], mnemonic, "", param[1]})
 	}
 
 	login := func(line string, param []string) bool {
@@ -96,560 +91,264 @@ func terminal(cmd *cobra.Command, args []string) {
 			fmt.Println("empty password")
 			return false
 		}
-		serv.Login(param[0], password)
-
-		return false
+		return callRpc(c, "login", []string{param[0], password})
 	}
 
 	start := func(line string, param []string) bool {
-		peers.StartMining()
-		return true
+		return callRpc(c, "start", param)
 	}
 
 	registerPP := func(line string, param []string) bool {
-		event.RegisterNewPP()
-		return true
+		return callRpc(c, "registerPP", param)
 	}
 
 	activate := func(line string, param []string) bool {
-		if len(param) != 3 {
-			fmt.Println("Expecting 3 params. Input amount of tokens, fee amount and gas amount")
-			return false
-		}
-
-		amount, err := strconv.ParseInt(param[0], 10, 64)
-		if err != nil {
-			fmt.Println("Invalid amount param. Should be an integer")
-			return false
-		}
-		fee, err := strconv.ParseInt(param[1], 10, 64)
-		if err != nil {
-			fmt.Println("Invalid fee param. Should be an integer")
-			return false
-		}
-		gas, err := strconv.ParseInt(param[2], 10, 64)
-		if err != nil {
-			fmt.Println("Invalid gas param. Should be an integer")
-			return false
-		}
-
-		if setting.State != types.PP_INACTIVE {
-			return true
-		}
-
-		if !setting.IsPP {
-			fmt.Println("register as a PP node first")
-			return true
-		}
-
-		return event.Activate(amount, fee, gas) == nil
+		return callRpc(c, "activate", param)
 	}
 
 	updateStake := func(line string, param []string) bool {
-		if len(param) != 4 {
-			fmt.Println("Expecting 4 params. Input amount of stakeDelta, fee amount, gas amount and flag of incrStake(0 for desc, 1 for incr)")
-			return false
-		}
-
-		stakeDelta, err := strconv.ParseInt(param[0], 10, 64)
-		if err != nil {
-			fmt.Println("Invalid amount param. Should be an integer")
-			return false
-		}
-		fee, err := strconv.ParseInt(param[1], 10, 64)
-		if err != nil {
-			fmt.Println("Invalid fee param. Should be an integer")
-			return false
-		}
-		gas, err := strconv.ParseInt(param[2], 10, 64)
-		if err != nil {
-			fmt.Println("Invalid gas param. Should be an integer")
-			return false
-		}
-		incrStake, err := strconv.ParseBool(param[3])
-		if err != nil {
-			fmt.Println("Invalid flag for stake change. 0 for desc, 1 for incr")
-			return false
-		}
-
-		if setting.State != types.PP_ACTIVE {
-			fmt.Println("PP node not activated yet")
-			return true
-		}
-
-		if !setting.IsPP {
-			fmt.Println("register as a PP node first")
-			return true
-		}
-
-		return event.UpdateStake(stakeDelta, fee, gas, incrStake) == nil
+		return callRpc(c, "updateStake", param)
 	}
 
 	deactivate := func(line string, param []string) bool {
-		if len(param) != 2 {
-			fmt.Println("Expecting 2 params. Input fee amount and gas amount")
-			return false
-		}
-
-		fee, err := strconv.ParseInt(param[0], 10, 64)
-		if err != nil {
-			fmt.Println("Invalid fee param. Should be an integer")
-			return false
-		}
-		gas, err := strconv.ParseInt(param[1], 10, 64)
-		if err != nil {
-			fmt.Println("Invalid gas param. Should be an integer")
-			return false
-		}
-
-		if setting.State == types.PP_INACTIVE {
-			fmt.Println("The node is already inactive")
-			return true
-		}
-
-		return event.Deactivate(fee, gas) == nil
+		return callRpc(c, "deactivate", param)
 	}
 
 	prepay := func(line string, param []string) bool {
-		if len(param) != 3 {
-			fmt.Println("Expecting 3 params. Input amount of tokens, fee amount and gas amount")
-			return false
-		}
-
-		amount, err := strconv.ParseInt(param[0], 10, 64)
-		if err != nil {
-			fmt.Println("Invalid amount param. Should be an integer")
-			return false
-		}
-		fee, err := strconv.ParseInt(param[1], 10, 64)
-		if err != nil {
-			fmt.Println("Invalid fee param. Should be an integer")
-			return false
-		}
-		gas, err := strconv.ParseInt(param[2], 10, 64)
-		if err != nil {
-			fmt.Println("Invalid gas param. Should be an integer")
-			return false
-		}
-
-		return event.Prepay(amount, fee, gas) == nil
+		return callRpc(c, "prepay", param)
 	}
 
 	upload := func(line string, param []string) bool {
-		if len(param) == 0 {
-			fmt.Println("input upload file path")
-			return false
-		}
-		isEncrypted := false
-		if len(param) > 1 && param[1] == "encrypt" {
-			isEncrypted = true
-		}
-		pathStr := file.EscapePath(param[0:1])
-		event.RequestUploadFile(pathStr, "", isEncrypted, nil)
-		return true
+		return callRpc(c, "upload", param)
 	}
 
 	uploadStream := func(line string, param []string) bool {
-		if len(param) == 0 {
-			fmt.Println("input upload file path")
-			return false
-		}
-		pathStr := file.EscapePath(param)
-		event.RequestUploadStream(pathStr, "", nil)
-		return true
+		return callRpc(c, "uploadStream", param)
 	}
 
 	list := func(line string, param []string) bool {
-		if len(param) == 0 {
-			event.FindMyFileList("", event.NowDir, "", "", 0, true, nil)
-
-		} else {
-			event.FindMyFileList(param[0], event.NowDir, "", "", 0, true, nil)
-		}
-		return true
+		return callRpc(c, "list", param)
 	}
 
 	download := func(line string, param []string) bool {
-		if len(param) == 0 {
-			fmt.Println("input download path, e.g: sdm://account_address/file_hash|filename(optional)")
-			return false
-		}
-		event.GetFileStorageInfo(param[0], "", "", false, false, nil)
-		return true
+		return callRpc(c, "download", param)
 	}
 
 	deleteFn := func(line string, param []string) bool {
-		if len(param) == 0 {
-			fmt.Println("input file hash")
-			return false
-		}
-		if len(param[0]) != setting.FILEHASHLEN {
-			fmt.Println("input correct file hash")
-		}
-		event.DeleteFile(param[0], "", nil)
-		return true
+		return callRpc(c, "deleteFn", param)
 	}
 
 	ver := func(line string, param []string) bool {
-		fmt.Println("version:", setting.Config.VersionShow)
-		return true
+		return callRpc(c, "ver", param)
 	}
 
 	monitor := func(line string, param []string) bool {
-		serv.ShowMonitor()
-		return true
+		return callRpc(c, "monitor", param)
 	}
 
 	stopmonitor := func(line string, param []string) bool {
-		serv.StopMonitor()
-		return true
+		return callRpc(c, "stopMonitor", param)
 	}
 
 	config := func(line string, param []string) bool {
-		if len(param) < 2 {
-			fmt.Println("input parameter name and value, 'name value' with space separator ")
-			return false
-		}
-		setting.SetConfig(param[0], param[1])
-
-		return true
+		return callRpc(c, "config", param)
 	}
 
 	mkdir := func(line string, param []string) bool {
-		if len(param) == 0 {
-			fmt.Println("input directory name")
-			return false
-		}
-		event.MakeDirectory(param[0], "", nil)
-		return true
+		return callRpc(c, "mkdir", param)
 	}
 
 	rmdir := func(line string, param []string) bool {
-		if len(param) == 0 {
-			fmt.Println("input directory name")
-			return false
-		}
-		event.RemoveDirectory(param[0], "", nil)
-		return true
+		return callRpc(c, "rmdir", param)
 	}
 
 	mvdir := func(line string, param []string) bool {
-		if len(param) < 1 {
-			fmt.Println("input file hash and target directory path")
-			return false
-		}
-		if len(param) == 1 { // root path
-			event.MoveFileDirectory(param[0], event.NowDir, "", "", nil)
-			return true
-		}
-		if event.NowDir == "" {
-			event.MoveFileDirectory(param[0], "", param[1], "", nil)
-		} else {
-			event.MoveFileDirectory(param[0], event.NowDir, param[1], "", nil)
-		}
-		return true
+		return callRpc(c, "mvdir", param)
 	}
 
 	cd := func(line string, param []string) bool {
-		if len(param) < 1 {
-			return false
-		}
-		event.Goto(param[0])
-		return true
+		return callRpc(c, "cd", param)
 	}
 
 	savefile := func(line string, param []string) bool {
-		if len(param) < 2 {
-			fmt.Println("input file hash and wallet address")
-			return false
-		}
-		event.SaveOthersFile(param[0], param[1], "", nil)
-		return true
+		return callRpc(c, "saveFile", param)
 	}
 
 	sharepath := func(line string, param []string) bool {
-		if len(param) < 3 {
-			fmt.Println("input directory hash, expire time(0 for non-expire), is private (0:public,1:private)")
-			return false
-		}
-		time, timeErr := strconv.Atoi(param[1])
-		if timeErr != nil {
-			fmt.Println("input expire time(0 means non-expire)")
-			return false
-		}
-		private, err := strconv.Atoi(param[2])
-		if err != nil {
-			fmt.Println("input is_private (0:public,1:private)")
-			return false
-		}
-		isPrivate := false
-		if private == 1 {
-			isPrivate = true
-		}
-		// if len(str1) == setting.FILEHASHLEN { //
-		// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
-		// } else {
-		event.GetReqShareFile("", "", param[0], int64(time), isPrivate, nil)
-		// }
-		return true
+		return callRpc(c, "sharePath", param)
 	}
 
 	sharefile := func(line string, param []string) bool {
-		if len(param) < 3 {
-			fmt.Println("input file hash or directory path, expire time(0 for non-expire), is private (0:public,1:private)")
-			return false
-		}
-		time, timeErr := strconv.Atoi(param[1])
-		if timeErr != nil {
-			fmt.Println("input expire time(0 for non-expire)")
-			return false
-		}
-		private, err := strconv.Atoi(param[2])
-		if err != nil {
-			fmt.Println("input is private (0:public,1:private)")
-			return false
-		}
-		isPrivate := false
-		if private == 1 {
-			isPrivate = true
-		}
-		event.GetReqShareFile("", param[0], "", int64(time), isPrivate, nil)
-		// if len(str1) == setting.FILEHASHLEN { //
-		// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
-		// } else {
-		// }
-		return true
+		return callRpc(c, "shareFile", param)
 	}
 
 	allshare := func(line string, param []string) bool {
-		event.GetAllShareLink("", nil)
-		return true
+		return callRpc(c, "allShare", param)
 	}
 
 	cancelshare := func(line string, param []string) bool {
-		if len(param) < 1 {
-			fmt.Println("input share id")
-			return false
-		}
-		event.DeleteShare(param[0], "", nil)
-		return true
+		return callRpc(c, "cancelShare", param)
 	}
 
 	getsharefile := func(line string, param []string) bool {
-		if len(param) < 1 {
-			fmt.Println("input share link and retrieval secret key(if any)")
-			return false
-		}
-		if len(param) < 2 {
-			event.GetShareFile(param[0], "", "", nil)
-		} else {
-			event.GetShareFile(param[0], param[1], "", nil)
-		}
-
-		return true
+		return callRpc(c, "getShareFile", param)
 	}
 
 	pauseget := func(line string, param []string) bool {
-		if len(param) < 1 {
-			fmt.Println("input file hash of the pause")
-			return false
-		}
-		event.DownloadSlicePause(param[0], "", nil)
-		return true
+		return callRpc(c, "pauseGet", param)
 	}
 
 	pauseput := func(line string, param []string) bool {
-		if len(param) < 1 {
-			fmt.Println("input file hash of the pause")
-			return false
-		}
-		event.UploadPause(param[0], "", nil)
-		return true
+		return callRpc(c, "pausePut", param)
 	}
 
 	cancelget := func(line string, param []string) bool {
-		if len(param) < 1 {
-			fmt.Println("input file hash of the cancel")
-			return false
-		}
-		event.DownloadSliceCancel(param[0], "", nil)
-		return true
+		return callRpc(c, "cancelGet", param)
 	}
 
 	createalbum := func(line string, param []string) bool {
-		if len(param) < 5 {
-			fmt.Println("input album name, album abstract, album cover hash, album type(0:movie,1:music,2:other), file hash(if multiple file, separate by comma)")
-			return false
-		}
-		files := make([]*protos.FileInfo, 0)
-		strs := strings.Split(param[4], ",")
-		for i, val := range strs {
-			t := &protos.FileInfo{
-				FileHash: val,
-				SortId:   uint64(i),
-			}
-			files = append(files, t)
-		}
-		event.CreateAlbum(param[0], param[1], param[2], param[3], "", files, false, nil)
-		return true
+		return callRpc(c, "createAlbum", param)
 	}
 
 	albumlist := func(line string, param []string) bool {
-		event.FindMyAlbum("", 0, 0, "", "", nil)
-		return true
+		return callRpc(c, "albumList", param)
 	}
 
 	albumedit := func(line string, param []string) bool {
-		// if len(param) < 3 {
-		// 	fmt.Println("input album id, action(0:add,1:delete,2:update), file hash(if multiple file, separated by comma)")
-		// 	return false
-		// }
-		// if param[1] == "2" { // edit
-		// 	event.EditAlbum(param[0], param[1], param[2], param[3], param[4], "", nil, nil)
-		// } else { // add
-		// 	strs := strings.Split(param[2], ",")
-		// 	event.EditAlbum(param[0], param[1], "", "", "", "", strs, nil)
-		// }
-		return true
+		return callRpc(c, "albumEdit", param)
 	}
 
 	albumcontent := func(line string, param []string) bool {
-		if len(param) < 1 {
-			fmt.Println("input album id")
-			return false
-		}
-		event.AlbumContent(param[0], "", nil)
-		return true
+		return callRpc(c, "albumContent", param)
 	}
 
 	albumsearch := func(line string, param []string) bool {
-
-		if len(param) < 3 {
-			fmt.Println("input keyword, album type(0:movie,1:music,2:other), sort type(0:newest, 1:hottest)")
-			return false
-		}
-		event.SearchAlbum(param[0], param[1], param[2], "", 0, 0, nil)
-		return true
+		return callRpc(c, "albumSearch", param)
 	}
 
 	invite := func(line string, param []string) bool {
-		if len(param) < 1 {
-			fmt.Println("input invite code")
-			return false
-		}
-		event.Invite(param[0], "", nil)
-		return true
+		return callRpc(c, "invite", param)
 	}
 
 	reward := func(line string, param []string) bool {
-		event.GetReward("", nil)
-		return true
+		return callRpc(c, "reward", param)
 	}
 
-	if setting.Config.AutoRun {
-		AutoStart(setting.Config.WalletAddress, setting.Config.WalletPassword)
+	//TODO move to node?
+	//if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
+	//	serv.Login(setting.Config.WalletAddress, setting.Config.WalletPassword)
+	//	// setting.ShowMonitor()
+	//	go func() {
+	//		netListen, err := net.Listen("tcp4", ":1203")
+	//		if err != nil {
+	//			utils.ErrorLog("p err", err)
+	//		}
+	//		// overChan := make(chan bool, 0)
+	//		for {
+	//			utils.DebugLog("!!!!!!!!!!!!!!!!!!")
+	//			conn, err := netListen.Accept()
+	//			if err != nil {
+	//				utils.ErrorLog("Accept err", err)
+	//			}
+	//			utils.DebugLog(">>>>>>>>>>>>>>>>")
+	//			go websocket.SocketRead(conn)
+	//			go func() {
+	//				for {
+	//					writeErr := websocket.SocketStart(conn, setting.UpMap, setting.DownMap, setting.ResultMap)
+	//					if writeErr != nil {
+	//						return
+	//					}
+	//					time.Sleep(666 * time.Millisecond)
+	//				}
+	//			}()
+	//		}
+	//	}()
+	//}
+
+	console.Mystdin.RegisterProcessFunc("help", help, true)
+	console.Mystdin.RegisterProcessFunc("h", help, true)
+	console.Mystdin.RegisterProcessFunc("wallets", wallets, false)
+	console.Mystdin.RegisterProcessFunc("newwallet", newWallet, false)
+	console.Mystdin.RegisterProcessFunc("login", login, false)
+	console.Mystdin.RegisterProcessFunc("startmining", start, true)
+	console.Mystdin.RegisterProcessFunc("rp", registerPP, true)
+	console.Mystdin.RegisterProcessFunc("registerpeer", registerPP, true)
+	console.Mystdin.RegisterProcessFunc("activate", activate, true)
+	console.Mystdin.RegisterProcessFunc("updateStake", updateStake, false)
+	console.Mystdin.RegisterProcessFunc("deactivate", deactivate, true)
+	console.Mystdin.RegisterProcessFunc("prepay", prepay, true)
+	console.Mystdin.RegisterProcessFunc("u", upload, true)
+	console.Mystdin.RegisterProcessFunc("put", upload, true)
+	console.Mystdin.RegisterProcessFunc("putstream", uploadStream, true)
+	console.Mystdin.RegisterProcessFunc("d", download, true)
+	console.Mystdin.RegisterProcessFunc("get", download, true)
+	console.Mystdin.RegisterProcessFunc("list", list, false)
+	console.Mystdin.RegisterProcessFunc("ls", list, false)
+	console.Mystdin.RegisterProcessFunc("delete", deleteFn, true)
+	console.Mystdin.RegisterProcessFunc("rm", deleteFn, true)
+	console.Mystdin.RegisterProcessFunc("ver", ver, false)
+	console.Mystdin.RegisterProcessFunc("monitor", monitor, true)
+	console.Mystdin.RegisterProcessFunc("stopmonitor", stopmonitor, true)
+
+	console.Mystdin.RegisterProcessFunc("config", config, true)
+	console.Mystdin.RegisterProcessFunc("mkdir", mkdir, true)
+	console.Mystdin.RegisterProcessFunc("rmdir", rmdir, true)
+	console.Mystdin.RegisterProcessFunc("mvdir", mvdir, true)
+	console.Mystdin.RegisterProcessFunc("savefile", savefile, true)
+	console.Mystdin.RegisterProcessFunc("cd", cd, true)
+	console.Mystdin.RegisterProcessFunc("sharefile", sharefile, true)
+	console.Mystdin.RegisterProcessFunc("sharepath", sharepath, true)
+	console.Mystdin.RegisterProcessFunc("allshare", allshare, false)
+	console.Mystdin.RegisterProcessFunc("cancelshare", cancelshare, true)
+	console.Mystdin.RegisterProcessFunc("getsharefile", getsharefile, true)
+
+	console.Mystdin.RegisterProcessFunc("createalbum", createalbum, false)
+	console.Mystdin.RegisterProcessFunc("albumlist", albumlist, false)
+	console.Mystdin.RegisterProcessFunc("albumedit", albumedit, false)
+	console.Mystdin.RegisterProcessFunc("albumcontent", albumcontent, false)
+	console.Mystdin.RegisterProcessFunc("albumsearch", albumsearch, false)
+
+	console.Mystdin.RegisterProcessFunc("pauseget", pauseget, true)
+	console.Mystdin.RegisterProcessFunc("pauseput", pauseput, true)
+	console.Mystdin.RegisterProcessFunc("cancelget", cancelget, true)
+
+	console.Mystdin.RegisterProcessFunc("invite", invite, false)
+	console.Mystdin.RegisterProcessFunc("reward", reward, false)
+
+	if execCmd != "" {
+		console.Mystdin.RunLine(execCmd, true)
+		return
 	}
 
-	if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
-		go api.StartHTTPServ()
-		serv.Login(setting.Config.WalletAddress, setting.Config.WalletPassword)
-		// setting.ShowMonitor()
-		go func() {
-			netListen, err := net.Listen("tcp4", ":1203")
-			if err != nil {
-				utils.ErrorLog("p err", err)
-			}
-			// overChan := make(chan bool, 0)
-			for {
-				utils.DebugLog("!!!!!!!!!!!!!!!!!!")
-				conn, err := netListen.Accept()
-				if err != nil {
-					utils.ErrorLog("Accept err", err)
-				}
-				utils.DebugLog(">>>>>>>>>>>>>>>>")
-				go websocket.SocketRead(conn)
-				go func() {
-					for {
-						writeErr := websocket.SocketStart(conn, setting.UpMap, setting.DownMap, setting.ResultMap)
-						if writeErr != nil {
-							return
-						}
-						time.Sleep(666 * time.Millisecond)
-					}
-				}()
-			}
-		}()
+	nc := make(chan serv.LogMsg)
+	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription")
+	if err != nil {
+		utils.ErrorLog("can't subscribe:", err)
+		return
 	}
+	var cleanResult interface{}
+	defer sub.Unsubscribe()
+	defer c.Call(&cleanResult, "sdslog_cleanUp")
 
-	if setting.Config.RestPort != "" {
-		go rest.StartHTTPServ()
-	}
+	go printLogNotification(nc)
 
-	console.Mystdin.RegisterProcessFunc("help", help)
-	console.Mystdin.RegisterProcessFunc("h", help)
-	console.Mystdin.RegisterProcessFunc("wallets", wallets)
-	console.Mystdin.RegisterProcessFunc("newwallet", newWallet)
-	console.Mystdin.RegisterProcessFunc("login", login)
-	console.Mystdin.RegisterProcessFunc("startmining", start)
-	console.Mystdin.RegisterProcessFunc("rp", registerPP)
-	console.Mystdin.RegisterProcessFunc("registerpeer", registerPP)
-	console.Mystdin.RegisterProcessFunc("activate", activate)
-	console.Mystdin.RegisterProcessFunc("updateStake", updateStake)
-	console.Mystdin.RegisterProcessFunc("deactivate", deactivate)
-	console.Mystdin.RegisterProcessFunc("prepay", prepay)
-	console.Mystdin.RegisterProcessFunc("u", upload)
-	console.Mystdin.RegisterProcessFunc("put", upload)
-	console.Mystdin.RegisterProcessFunc("putstream", uploadStream)
-	console.Mystdin.RegisterProcessFunc("d", download)
-	console.Mystdin.RegisterProcessFunc("get", download)
-	console.Mystdin.RegisterProcessFunc("list", list)
-	console.Mystdin.RegisterProcessFunc("ls", list)
-	console.Mystdin.RegisterProcessFunc("delete", deleteFn)
-	console.Mystdin.RegisterProcessFunc("rm", deleteFn)
-	console.Mystdin.RegisterProcessFunc("ver", ver)
-	console.Mystdin.RegisterProcessFunc("monitor", monitor)
-	console.Mystdin.RegisterProcessFunc("stopmonitor", stopmonitor)
-
-	console.Mystdin.RegisterProcessFunc("config", config)
-	console.Mystdin.RegisterProcessFunc("mkdir", mkdir)
-	console.Mystdin.RegisterProcessFunc("rmdir", rmdir)
-	console.Mystdin.RegisterProcessFunc("mvdir", mvdir)
-	console.Mystdin.RegisterProcessFunc("savefile", savefile)
-	console.Mystdin.RegisterProcessFunc("cd", cd)
-	console.Mystdin.RegisterProcessFunc("sharefile", sharefile)
-	console.Mystdin.RegisterProcessFunc("sharepath", sharepath)
-	console.Mystdin.RegisterProcessFunc("allshare", allshare)
-	console.Mystdin.RegisterProcessFunc("cancelshare", cancelshare)
-	console.Mystdin.RegisterProcessFunc("getsharefile", getsharefile)
-
-	console.Mystdin.RegisterProcessFunc("createalbum", createalbum)
-	console.Mystdin.RegisterProcessFunc("albumlist", albumlist)
-	console.Mystdin.RegisterProcessFunc("albumedit", albumedit)
-	console.Mystdin.RegisterProcessFunc("albumcontent", albumcontent)
-	console.Mystdin.RegisterProcessFunc("albumsearch", albumsearch)
-
-	console.Mystdin.RegisterProcessFunc("pauseget", pauseget)
-	console.Mystdin.RegisterProcessFunc("pauseput", pauseput)
-	console.Mystdin.RegisterProcessFunc("cancelget", cancelget)
-
-	console.Mystdin.RegisterProcessFunc("invite", invite)
-	console.Mystdin.RegisterProcessFunc("reward", reward)
-
+	fmt.Println(helpStr)
 	console.Mystdin.Run()
 }
 
-func terminalPreRunE(cmd *cobra.Command, args []string) error {
-	err := nodePreRunE(cmd, args)
-	peers.GetNetworkAddress()
-	return err
+func callRpc(c *rpc.Client, line string, param []string) bool {
+	var result serv.CmdResult
+	err := c.Call(&result, "sds_"+line, param)
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	fmt.Println(result.Msg)
+	return true
 }
 
-// AutoStart
-func AutoStart(account, password string) {
-	if account == "" || password == "" {
-		fmt.Println("add account and password in config")
-		return
+func printLogNotification(nc <-chan serv.LogMsg) {
+	for n := range nc {
+		fmt.Print(n.Msg)
 	}
-	setting.IsAuto = true
-	serv.Login(account, password)
 }
