@@ -56,10 +56,6 @@ func nodePreRunE(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func terminalPreRunE(cmd *cobra.Command, args []string) error {
-	return loadConfig(cmd)
-}
-
 // SetupP2PKey Loads the existing P2P key for this node, or creates a new one if none is available.
 func SetupP2PKey() error {
 	if setting.Config.P2PAddress == "" {
@@ -110,39 +106,5 @@ func SetupP2PKey() error {
 	setting.P2PAddress = setting.Config.P2PAddress
 	setting.P2PPrivateKey = p2pKey.PrivateKey
 	setting.P2PPublicKey = ed25519.PrivKeyBytesToPubKeyBytes(setting.P2PPrivateKey)
-	return nil
-}
-
-func loadConfig(cmd *cobra.Command) error {
-	homePath, err := cmd.Flags().GetString(HOME)
-	if err != nil {
-		utils.ErrorLog("failed to get 'home' path for the node")
-		return err
-	}
-	configPath, err := cmd.Flags().GetString(CONFIG)
-	if err != nil {
-		utils.ErrorLog("failed to get config path for the node")
-		return err
-	}
-
-	if _, err := os.Stat(configPath); err != nil {
-		configPath = filepath.Join(homePath, configPath)
-		if _, err := os.Stat(configPath); err != nil {
-			return errors.Wrap(err, "not able to load config file, generate one with `ppd config`")
-		}
-	}
-
-	setting.SetIPCEndpoint(homePath)
-
-	err = setting.LoadConfig(configPath)
-	if err != nil {
-		return errors.Wrap(err, "failed to load config file")
-	}
-
-	if setting.Config.Debug {
-		utils.MyLogger.SetLogLevel(utils.Debug)
-	} else {
-		utils.MyLogger.SetLogLevel(utils.Info)
-	}
 	return nil
 }

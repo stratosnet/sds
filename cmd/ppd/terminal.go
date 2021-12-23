@@ -343,6 +343,10 @@ func terminal(cmd *cobra.Command, args []string) {
 	run(cmd, args, false)
 }
 
+func terminalPreRunE(cmd *cobra.Command, args []string) error {
+	return loadConfig(cmd)
+}
+
 func callRpc(c *rpc.Client, line string, param []string) bool {
 	var result serv.CmdResult
 	err := c.Call(&result, "sds_"+line, param)
