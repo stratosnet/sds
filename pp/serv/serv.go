@@ -13,5 +13,4 @@ func Start() {
 		return
 	}
 	peers.StartPP(event.RegisterEventHandle)
-	StartDumpTrafficLog()
 }

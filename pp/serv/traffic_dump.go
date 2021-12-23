@@ -57,8 +57,8 @@ func NewHdInfo(hdTotal float64, hdFree float64, hdUsed float64, hdUsedPercent fl
 }
 
 type TrafficInfo struct {
-	TrafficInbound  float64 `json:"traffic_inbound"`
-	TrafficOutbound float64 `json:"traffic_outbound"`
+	TrafficInbound  float64 `json:"traffic_inbound"`  // KB
+	TrafficOutbound float64 `json:"traffic_outbound"` // KB
 }
 
 func NewTrafficInfo(trafficInbound float64, trafficOutbound float64) TrafficInfo {

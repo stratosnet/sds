@@ -1,11 +1,11 @@
 package serv
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/alex023/clock"
-	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
@@ -91,18 +91,18 @@ func dumpTrafficLog() {
 		clientOutbound += client.SPConn.GetOutboundAndReset()
 	}
 
-	trafficInbound := float64(clientInbound+serverInbound) / 1024 / 1024    // MB
-	trafficOutbound := float64(clientOutbound+serverOutbound) / 1024 / 1024 // MB
+	trafficInbound := float64(clientInbound+serverInbound) / 1024    // KB
+	trafficOutbound := float64(clientOutbound+serverOutbound) / 1024 // KB
 	trafficInfo := NewTrafficInfo(trafficInbound, trafficOutbound)
 
 	trafficDumpInfo := NewTrafficDumpInfo(memInfo, cpuInfo, hdInfo, trafficInfo)
-	bDumpInfo, err := codec.Cdc.MarshalJSON(trafficDumpInfo)
+	bDumpInfo, err := json.Marshal(trafficDumpInfo)
 	if err != nil {
 		utils.Log(err)
 		return
 	}
 
-	utils.DumpTraffic(bDumpInfo)
+	utils.DumpTraffic(string(bDumpInfo))
 }
 
 func StopDumpTrafficLog() {
