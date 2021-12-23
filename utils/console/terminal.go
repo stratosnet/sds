@@ -100,7 +100,17 @@ func (c *Terminal) Run() {
 	for c.Isrun {
 		if name, err := c.Prompt(">"); err == nil {
 			//log.Print("Got: ", name)
-			if exit := c.RunLine(name, false); exit {
+			cmdstring := strings.Split(name, " ")
+			var param []string
+			// if len(cmdstring) == 2 {
+			// 	param = strings.Split(cmdstring[1], " ")
+			// 	utils.DebugLog("param", param)
+			// }
+			param = cmdstring[1:]
+			// utils.DebugLog("cmdstring", cmdstring)
+			strkey := strings.ToLower(cmdstring[0])
+			// utils.DebugLog("cmdstring", strkey, c.mapFunc)
+			if exit := c.RunCmd(strkey, param, false); exit {
 				return
 			}
 
@@ -117,20 +127,10 @@ func (c *Terminal) Run() {
 
 }
 
-func (c *Terminal) RunLine(line string, isExec bool) bool {
-	cmdstring := strings.Split(line, " ")
-	var param []string
-	// if len(cmdstring) == 2 {
-	// 	param = strings.Split(cmdstring[1], " ")
-	// 	utils.DebugLog("param", param)
-	// }
-	param = cmdstring[1:]
-	// utils.DebugLog("cmdstring", cmdstring)
-	strkey := strings.ToLower(cmdstring[0])
-	// utils.DebugLog("cmdstring", strkey, c.mapFunc)
+func (c *Terminal) RunCmd(strkey string, param []string, isExec bool) bool {
 	if pCmd, ok := c.mapFunc[strkey]; ok {
 		if isExec && !pCmd.allowExec {
-			fmt.Println("The command is not supported with --exec flag. Please run it in interaction mode")
+			fmt.Println("The command is not supported with 'exec'. Please run it in interaction mode")
 		} else {
 			pCmd.pFunc(strkey, param[:])
 		}
@@ -139,7 +139,7 @@ func (c *Terminal) RunLine(line string, isExec bool) bool {
 			return true
 		}
 	}
-	return isExec
+	return false
 }
 
 // PromptPassword

@@ -132,6 +132,8 @@ func loadConfig(cmd *cobra.Command) error {
 		}
 	}
 
+	setting.SetIPCEndpoint(homePath)
+
 	err = setting.LoadConfig(configPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to load config file")

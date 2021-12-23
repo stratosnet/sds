@@ -12,9 +12,8 @@ import (
 	"github.com/stratosnet/sds/utils/console"
 )
 
-func terminal(cmd *cobra.Command, args []string, execCmd string) {
-
-	c, err := rpc.Dial(setting.DefaultIPCEndpoint())
+func run(cmd *cobra.Command, args []string, isExec bool) {
+	c, err := rpc.Dial(setting.IpcEndpoint)
 
 	if err != nil {
 		utils.ErrorLog(err)
@@ -234,7 +233,7 @@ func terminal(cmd *cobra.Command, args []string, execCmd string) {
 		return callRpc(c, "reward", param)
 	}
 
-	//TODO move to node?
+	//TODO move to pp api later
 	//if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
 	//	serv.Login(setting.Config.WalletAddress, setting.Config.WalletPassword)
 	//	// setting.ShowMonitor()
@@ -315,8 +314,10 @@ func terminal(cmd *cobra.Command, args []string, execCmd string) {
 	console.Mystdin.RegisterProcessFunc("invite", invite, false)
 	console.Mystdin.RegisterProcessFunc("reward", reward, false)
 
-	if execCmd != "" {
-		console.Mystdin.RunLine(execCmd, true)
+	if isExec {
+		if len(args) > 0 {
+			console.Mystdin.RunCmd(args[0], args[1:], true)
+		}
 		return
 	}
 
@@ -326,14 +327,20 @@ func terminal(cmd *cobra.Command, args []string, execCmd string) {
 		utils.ErrorLog("can't subscribe:", err)
 		return
 	}
-	var cleanResult interface{}
-	defer sub.Unsubscribe()
-	defer c.Call(&cleanResult, "sdslog_cleanUp")
+	defer destroySub(c, sub)
 
 	go printLogNotification(nc)
 
 	fmt.Println(helpStr)
 	console.Mystdin.Run()
+}
+
+func execute(cmd *cobra.Command, args []string) {
+	run(cmd, args, true)
+}
+
+func terminal(cmd *cobra.Command, args []string) {
+	run(cmd, args, false)
 }
 
 func callRpc(c *rpc.Client, line string, param []string) bool {
@@ -351,4 +358,10 @@ func printLogNotification(nc <-chan serv.LogMsg) {
 	for n := range nc {
 		fmt.Print(n.Msg)
 	}
+}
+
+func destroySub(c *rpc.Client, sub *rpc.ClientSubscription) {
+	var cleanResult interface{}
+	sub.Unsubscribe()
+	c.Call(&cleanResult, "sdslog_cleanUp")
 }

@@ -13,11 +13,7 @@ func main() {
 
 	rootCmd := getRootCmd()
 	nodeCmd := getNodeCmd()
-
-	var execCmd string
-	terminalCmd := getTerminalCmd(&execCmd)
-	terminalCmd.Flags().StringVarP(&execCmd, "exec", "e", "", "execute cmd and terminate")
-
+	terminalCmd := getTerminalCmd()
 	configCmd := getGenConfigCmd()
 	verCmd := getVersionCmd()
 
@@ -60,16 +56,21 @@ func getNodeCmd() *cobra.Command {
 	return nodeCmd
 }
 
-func getTerminalCmd(execCmd *string) *cobra.Command {
+func getTerminalCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "terminal",
 		Short:   "open terminal attached to node demon",
 		PreRunE: terminalPreRunE,
-		Run: func(cmd *cobra.Command, args []string) {
-			terminal(cmd, args, *execCmd)
-		},
+		Run:     terminal,
 	}
 
+	execCmd := &cobra.Command{
+		Use:     "exec",
+		Short:   "execute the command to node demon",
+		PreRunE: terminalPreRunE,
+		Run:     execute,
+	}
+	cmd.AddCommand(execCmd)
 	return cmd
 }
 

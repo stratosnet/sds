@@ -42,11 +42,12 @@ func startIPC() error {
 		},
 	}
 
-	ipc := newIPCServer(setting.DefaultIPCEndpoint())
+	ipc := newIPCServer(setting.IpcEndpoint)
 	if err := ipc.start(rpcAPIs); err != nil {
 		return err
 	}
 
+	//TODO bring this back later once we have a proper quit mechanism
 	//defer ipc.stop()
 
 	return nil

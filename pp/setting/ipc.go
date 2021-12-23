@@ -8,9 +8,15 @@ import (
 	"strings"
 )
 
+var IpcEndpoint string
+
+func SetIPCEndpoint(homePath string) {
+	IpcEndpoint = DefaultIPCEndpoint(homePath)
+}
+
 // DefaultIPCEndpoint returns the IPC path used by default.
-func DefaultIPCEndpoint() string {
-	return IPCEndpoint(DefaultDataDir(), "sds_"+Config.P2PAddress+".ipc")
+func DefaultIPCEndpoint(homePath string) string {
+	return IPCEndpoint(DefaultDataDir(homePath), "sds.ipc")
 }
 
 // IPCEndpoint resolves an IPC endpoint based on a configured value, taking into
@@ -36,9 +42,12 @@ func IPCEndpoint(dataDir string, ipcPath string) string {
 
 // DefaultDataDir is the default data directory to use for the databases and other
 // persistence requirements.
-func DefaultDataDir() string {
+func DefaultDataDir(homePath string) string {
 	// Try to place the data folder in the user's home dir
-	home := homeDir()
+	home := homePath
+	if homePath == "" {
+		home = homeDir()
+	}
 	if home != "" {
 		switch runtime.GOOS {
 		case "darwin":
