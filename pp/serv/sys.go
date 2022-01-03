@@ -23,10 +23,6 @@ var dumpClock = clock.NewClock()
 var dumpJob clock.Job
 
 func StartDumpTrafficLog() {
-	//trafficLogInfo = core.InitTrafficLogInfo()
-	logger := utils.NewTrafficLogger("./tmp/logs/stdout.log", false, true)
-	logger.SetLogLevel(utils.Info)
-
 	logJobInterval := setting.Config.TrafficLogInterval
 	dumpJob, _ = dumpClock.AddJobRepeat(time.Second*time.Duration(logJobInterval), 0, dumpTrafficLog)
 }
@@ -38,9 +34,9 @@ func dumpTrafficLog() {
 	d, _ := disk.Usage("/")
 
 	//Memory
-	memTotal := float64(v.Total) / 1024 / 1024    // MB
-	memFree := float64(v.Available) / 1024 / 1024 // MB
-	memUsed := float64(v.Used) / 1024 / 1024      // MB
+	memTotal := v.Total
+	memFree := v.Available
+	memUsed := v.Used
 	memUsedPercent := v.UsedPercent
 	memInfo := NewMemInfo(memTotal, memFree, memUsed, memUsedPercent)
 
@@ -58,10 +54,10 @@ func dumpTrafficLog() {
 	cpuInfo := NewCpuInfo(cpuInfos, cpuUsedPercent)
 
 	//HD
-	hdTotal := float64(d.Total) / 1024 / 1024 / 1024    // GB
-	hdFree := float64(d.Free) / 1024 / 1024 / 1024      // GB
-	hdUsed := float64(d.Used) / 1024 / 1024 / 1024      // GB
-	hdUsedPercent := d.UsedPercent / 1024 / 1024 / 1024 // GB
+	hdTotal := d.Total
+	hdFree := d.Free
+	hdUsed := d.Used
+	hdUsedPercent := d.UsedPercent
 	hdInfo := NewHdInfo(hdTotal, hdFree, hdUsed, hdUsedPercent)
 
 	//Traffic
@@ -91,8 +87,8 @@ func dumpTrafficLog() {
 		clientOutbound += client.SPConn.GetOutboundAndReset()
 	}
 
-	trafficInbound := float64(clientInbound+serverInbound) / 1024    // KB
-	trafficOutbound := float64(clientOutbound+serverOutbound) / 1024 // KB
+	trafficInbound := uint64(clientInbound + serverInbound)
+	trafficOutbound := uint64(clientOutbound + serverOutbound)
 	trafficInfo := NewTrafficInfo(trafficInbound, trafficOutbound)
 
 	trafficDumpInfo := NewTrafficDumpInfo(memInfo, cpuInfo, hdInfo, trafficInfo)

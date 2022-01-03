@@ -1,13 +1,13 @@
 package serv
 
 type MemInfo struct {
-	MemTotal       float64 `json:"mem_total"`
-	MemFree        float64 `json:"mem_free"`
-	MemUsed        float64 `json:"mem_used"`
+	MemTotal       uint64  `json:"mem_total"`
+	MemFree        uint64  `json:"mem_free"`
+	MemUsed        uint64  `json:"mem_used"`
 	MemUsedPercent float64 `json:"mem_used_percent"`
 }
 
-func NewMemInfo(memTotal float64, memFree float64, memUsed float64, memUsedPercent float64) MemInfo {
+func NewMemInfo(memTotal uint64, memFree uint64, memUsed uint64, memUsedPercent float64) MemInfo {
 	return MemInfo{
 		MemTotal:       memTotal,
 		MemFree:        memFree,
@@ -41,13 +41,13 @@ func NewCpuInfo(cpuInfos []SingleCpuInfo, cpuUsedPercent float64) CpuInfo {
 }
 
 type HdInfo struct {
-	HdTotal       float64 `json:"hd_total"`
-	HdFree        float64 `json:"hd_free"`
-	HdUsed        float64 `json:"hd_used"`
+	HdTotal       uint64  `json:"hd_total"`
+	HdFree        uint64  `json:"hd_free"`
+	HdUsed        uint64  `json:"hd_used"`
 	HdUsedPercent float64 `json:"hd_used_percent"`
 }
 
-func NewHdInfo(hdTotal float64, hdFree float64, hdUsed float64, hdUsedPercent float64) HdInfo {
+func NewHdInfo(hdTotal uint64, hdFree uint64, hdUsed uint64, hdUsedPercent float64) HdInfo {
 	return HdInfo{
 		HdTotal:       hdTotal,
 		HdFree:        hdFree,
@@ -57,11 +57,11 @@ func NewHdInfo(hdTotal float64, hdFree float64, hdUsed float64, hdUsedPercent fl
 }
 
 type TrafficInfo struct {
-	TrafficInbound  float64 `json:"traffic_inbound"`  // KB
-	TrafficOutbound float64 `json:"traffic_outbound"` // KB
+	TrafficInbound  uint64 `json:"traffic_inbound"`
+	TrafficOutbound uint64 `json:"traffic_outbound"`
 }
 
-func NewTrafficInfo(trafficInbound float64, trafficOutbound float64) TrafficInfo {
+func NewTrafficInfo(trafficInbound uint64, trafficOutbound uint64) TrafficInfo {
 	return TrafficInfo{
 		TrafficInbound:  trafficInbound,
 		TrafficOutbound: trafficOutbound,
