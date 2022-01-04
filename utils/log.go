@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -25,8 +26,10 @@ var level2String = make(map[LogLevel]string)
 type Logger struct {
 	stdLogger  *log.Logger
 	fileLogger *log.Logger
+	rpcLogger  *log.Logger
 	enablestd  bool
 	enablefile bool
+	enablerpc  bool
 	loglevel   LogLevel
 }
 
@@ -99,6 +102,16 @@ func (l *Logger) SetEnablefile(b bool) {
 	l.enablefile = b
 }
 
+func (l *Logger) SetRpcLogger(rpc io.Writer) {
+	l.rpcLogger = log.New(rpc, "\r\n", log.Ldate|log.Ltime|log.Lshortfile)
+	l.enablerpc = true
+}
+
+func (l *Logger) ClearRpcLogger() {
+	l.rpcLogger = nil
+	l.enablerpc = false
+}
+
 func (l *Logger) Log(level LogLevel, v ...interface{}) {
 	if level < l.loglevel {
 		return
@@ -113,6 +126,11 @@ func (l *Logger) Log(level LogLevel, v ...interface{}) {
 		l.fileLogger.SetPrefix(l.getLevelString(level))
 		//l.fileLogger.Println(v...)
 		l.fileLogger.Output(2, fmt.Sprintln(v...))
+	}
+
+	if l.enablerpc {
+		l.rpcLogger.SetPrefix(l.getLevelString(level))
+		l.rpcLogger.Output(2, fmt.Sprintln(v...))
 	}
 }
 
@@ -131,6 +149,11 @@ func (l *Logger) logDepth(level LogLevel, calldepth int, v ...interface{}) {
 		l.fileLogger.Output(calldepth, fmt.Sprintln(v...))
 		//l.fileLogger.Println(v...)
 	}
+
+	if l.enablerpc {
+		l.rpcLogger.SetPrefix(l.getLevelString(level))
+		l.rpcLogger.Output(calldepth, fmt.Sprintln(v...))
+	}
 }
 
 func (l *Logger) ErrorLog(v ...interface{}) {
@@ -148,6 +171,10 @@ func Log(v ...interface{}) {
 func ErrorLog(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
 	MyLogger.logDepth(Error, 3, v...)
+}
+
+func WarnLog(v ...interface{}) {
+	MyLogger.logDepth(Warn, 3, v...)
 }
 
 //ErrorLogf call default logger and output error log

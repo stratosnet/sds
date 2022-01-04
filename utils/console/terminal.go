@@ -25,11 +25,15 @@ var Mystdin = NewTerminal()
 //line command
 //param parameters
 type ProcessFunc func(line string, param []string) bool
+type ProcessCmd struct {
+	pFunc     ProcessFunc
+	allowExec bool
+}
 
 //Terminal
 type Terminal struct {
 	*liner.State
-	mapFunc    map[string]ProcessFunc
+	mapFunc    map[string]ProcessCmd
 	cmdarray   [100]string
 	supported  bool
 	normalMode liner.ModeApplier
@@ -38,9 +42,9 @@ type Terminal struct {
 }
 
 //RegisterProcessFunc
-func (c *Terminal) RegisterProcessFunc(key string, f ProcessFunc) {
+func (c *Terminal) RegisterProcessFunc(key string, f ProcessFunc, allowExec bool) {
 	strKey := strings.ToLower(key)
-	c.mapFunc[strKey] = f
+	c.mapFunc[strKey] = ProcessCmd{pFunc: f, allowExec: allowExec}
 	cmdNames[cmdPos] = strKey
 	cmdPos++
 
@@ -52,7 +56,7 @@ func NewTerminal() *Terminal {
 
 	normalMode, _ := liner.TerminalMode()
 	p.State = liner.NewLiner()
-	p.mapFunc = make(map[string]ProcessFunc)
+	p.mapFunc = make(map[string]ProcessCmd)
 
 	rawMode, err := liner.TerminalMode()
 	if err != nil || !liner.TerminalSupported() {
@@ -106,12 +110,8 @@ func (c *Terminal) Run() {
 			// utils.DebugLog("cmdstring", cmdstring)
 			strkey := strings.ToLower(cmdstring[0])
 			// utils.DebugLog("cmdstring", strkey, c.mapFunc)
-			if pfunc, ok := c.mapFunc[strkey]; ok {
-				pfunc(strkey, param[:])
-			} else {
-				if strkey == "exit" {
-					return
-				}
+			if exit := c.RunCmd(strkey, param, false); exit {
+				return
 			}
 
 			c.AppendHistory(name)
@@ -125,6 +125,21 @@ func (c *Terminal) Run() {
 
 	}
 
+}
+
+func (c *Terminal) RunCmd(strkey string, param []string, isExec bool) bool {
+	if pCmd, ok := c.mapFunc[strkey]; ok {
+		if isExec && !pCmd.allowExec {
+			fmt.Println("The command is not supported with 'exec'. Please run it in interaction mode")
+		} else {
+			pCmd.pFunc(strkey, param[:])
+		}
+	} else {
+		if strkey == "exit" {
+			return true
+		}
+	}
+	return false
 }
 
 // PromptPassword
