@@ -23,7 +23,6 @@ func Start() {
 	}
 
 	peers.StartPP(event.RegisterEventHandle)
-
 }
 
 func startIPC() error {

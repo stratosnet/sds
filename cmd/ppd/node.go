@@ -43,6 +43,10 @@ func nodePreRunE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	trafficLogger := utils.NewTrafficLogger("./tmp/logs/traffic_dump.log", false, true)
+	trafficLogger.SetLogLevel(utils.Info)
+
+	serv.StartDumpTrafficLog()
 	err = SetupP2PKey()
 	if err != nil {
 		return errors.Wrap(err, "Couldn't setup PP node")
