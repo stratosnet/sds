@@ -132,7 +132,7 @@ func BuildAndSignTx(token, chainId, memo string, msg sdktypes.Msg, fee, gas int6
 func BuildTxBytes(token, chainId, memo, mode string, msg sdktypes.Msg, fee, gas int64, signatureKeys []SignatureKey) ([]byte, error) {
 	// Fetch account info from stratos-chain for each signature
 	for i, signatureKey := range signatureKeys {
-		if signatureKey.Address == "" {
+		if len(signatureKey.Address) == 0 {
 			utils.ErrorLog("Wallet address is empty, failed to build Tx bytes.")
 		}
 		accountNum, sequence, err := FetchAccountInfo(signatureKey.Address)
