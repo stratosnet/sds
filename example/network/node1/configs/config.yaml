@@ -32,6 +32,7 @@ StratosChainUrl: http://127.0.0.1:1317
 StreamingCache: false
 RestPort: "18091"
 InternalPort: "9608"
+TrafficLogInterval: 10
 SPList:
 - P2PAddress: stsdsp2p162xm62m75cjv2529p7yydkxmqfwhknslen0wgt
   P2PPublicKey: stsdsp2p1zcjduepqnqrgs5cmwnhm2gg77xx3yghks80kgk72d65g37864ps7ualc6fsq20ssh4

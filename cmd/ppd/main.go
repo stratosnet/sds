@@ -64,6 +64,13 @@ func getTerminalCmd() *cobra.Command {
 		Run:     terminal,
 	}
 
+	execCmd := &cobra.Command{
+		Use:     "exec",
+		Short:   "execute the command to node demon",
+		PreRunE: terminalPreRunE,
+		Run:     execute,
+	}
+	cmd.AddCommand(execCmd)
 	return cmd
 }
 

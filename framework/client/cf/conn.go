@@ -3,20 +3,21 @@ package cf
 // client connect management, readloop writeloop handleloop
 
 import (
+	"context"
 	"errors"
+	"io"
+	"net"
+	"reflect"
+	"sync"
+	"time"
+	"unsafe"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/utils/cmem"
-	"reflect"
-	"unsafe"
 
-	"context"
 	"github.com/stratosnet/sds/utils"
-	"io"
-	"net"
-	"sync"
-	"time"
 
 	"github.com/alex023/clock"
 )
@@ -79,6 +80,10 @@ type ClientConn struct {
 	secondWriteAtomA *utils.AtomicInt64
 	secondWriteFlowB int64
 	secondWriteAtomB *utils.AtomicInt64
+	inbound          int64              // for traffic log
+	inboundAtomic    *utils.AtomicInt64 // for traffic log
+	outbound         int64              // for traffic log
+	outboundAtomic   *utils.AtomicInt64 // for traffic log
 	is_active        bool
 }
 
@@ -144,6 +149,8 @@ func newClientConnWithOptions(netid int64, c net.Conn, opts options) *ClientConn
 		secondReadAtomB:  utils.CreateAtomicInt64(0),
 		secondWriteAtomA: utils.CreateAtomicInt64(0),
 		secondWriteAtomB: utils.CreateAtomicInt64(0),
+		inboundAtomic:    utils.CreateAtomicInt64(0),
+		outboundAtomic:   utils.CreateAtomicInt64(0),
 		is_active:        false,
 	}
 	cc.ctx, cc.cancel = context.WithCancel(context.Background())
@@ -244,6 +251,8 @@ func (cc *ClientConn) Start() {
 			}
 		}
 		logFunc = func() {
+			cc.inbound = cc.inboundAtomic.AddAndGetNew(cc.secondReadFlowA)
+			cc.outbound = cc.outboundAtomic.AddAndGetNew(cc.secondWriteFlowA)
 			cc.secondReadFlowB = cc.secondReadAtomB.GetNewAndSetAtomic(cc.secondReadFlowA)
 			cc.secondWriteFlowB = cc.secondWriteAtomB.GetNewAndSetAtomic(cc.secondWriteFlowA)
 			cc.secondReadFlowA = cc.secondReadAtomA.GetNewAndSetAtomic(0)
@@ -518,7 +527,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 						MSGData: msgBuf[0:msgH.Len],
 					}
 					handler := core.GetHandlerFunc(utils.ByteToString(msgH.Cmd))
-					Mylog(cc.opts.logOpen, "read handler:", handler, utils.ByteToString(msgH.Cmd))
+					//Mylog(cc.opts.logOpen, "read handler:", handler, utils.ByteToString(msgH.Cmd))
 					if handler == nil {
 						if onMessage != nil {
 							Mylog(cc.opts.logOpen, "client message", message, " call onMessage()\n")
@@ -731,4 +740,16 @@ func (cc *ClientConn) GetSecondReadFlow() int64 {
 // GetSecondWriteFlow
 func (cc *ClientConn) GetSecondWriteFlow() int64 {
 	return cc.secondWriteFlowB
+}
+
+func (cc *ClientConn) GetInboundAndReset() int64 {
+	ret := cc.inbound
+	cc.inbound = cc.inboundAtomic.GetNewAndSetAtomic(0)
+	return ret
+}
+
+func (cc *ClientConn) GetOutboundAndReset() int64 {
+	ret := cc.outbound
+	cc.outbound = cc.outboundAtomic.GetNewAndSetAtomic(0)
+	return ret
 }

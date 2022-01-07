@@ -38,35 +38,15 @@ func nodePP(cmd *cobra.Command, args []string) error {
 }
 
 func nodePreRunE(cmd *cobra.Command, args []string) error {
-	homePath, err := cmd.Flags().GetString(HOME)
+	err := loadConfig(cmd)
 	if err != nil {
-		utils.ErrorLog("failed to get 'home' path for the node")
-		return err
-	}
-	configPath, err := cmd.Flags().GetString(CONFIG)
-	if err != nil {
-		utils.ErrorLog("failed to get config path for the node")
 		return err
 	}
 
-	if _, err := os.Stat(configPath); err != nil {
-		configPath = filepath.Join(homePath, configPath)
-		if _, err := os.Stat(configPath); err != nil {
-			return errors.Wrap(err, "not able to load config file, generate one with `ppd config`")
-		}
-	}
+	trafficLogger := utils.NewTrafficLogger("./tmp/logs/traffic_dump.log", false, true)
+	trafficLogger.SetLogLevel(utils.Info)
 
-	err = setting.LoadConfig(configPath)
-	if err != nil {
-		return errors.Wrap(err, "failed to load config file")
-	}
-
-	if setting.Config.Debug {
-		utils.MyLogger.SetLogLevel(utils.Debug)
-	} else {
-		utils.MyLogger.SetLogLevel(utils.Info)
-	}
-
+	serv.StartDumpTrafficLog()
 	err = SetupP2PKey()
 	if err != nil {
 		return errors.Wrap(err, "Couldn't setup PP node")

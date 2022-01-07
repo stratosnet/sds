@@ -47,6 +47,40 @@ func genConfig(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func loadConfig(cmd *cobra.Command) error {
+	homePath, err := cmd.Flags().GetString(HOME)
+	if err != nil {
+		utils.ErrorLog("failed to get 'home' path for the node")
+		return err
+	}
+	configPath, err := cmd.Flags().GetString(CONFIG)
+	if err != nil {
+		utils.ErrorLog("failed to get config path for the node")
+		return err
+	}
+
+	if _, err := os.Stat(configPath); err != nil {
+		configPath = filepath.Join(homePath, configPath)
+		if _, err := os.Stat(configPath); err != nil {
+			return errors.Wrap(err, "not able to load config file, generate one with `ppd config`")
+		}
+	}
+
+	setting.SetIPCEndpoint(homePath)
+
+	err = setting.LoadConfig(configPath)
+	if err != nil {
+		return errors.Wrap(err, "failed to load config file")
+	}
+
+	if setting.Config.Debug {
+		utils.MyLogger.SetLogLevel(utils.Debug)
+	} else {
+		utils.MyLogger.SetLogLevel(utils.Info)
+	}
+	return nil
+}
+
 func SetupWalletKey() error {
 	if setting.Config.WalletAddress == "" {
 		fmt.Println("No wallet key specified in config. Attempting to create one...")

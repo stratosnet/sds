@@ -12,6 +12,7 @@ require (
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/cosmos/cosmos-sdk v0.39.2
 	github.com/cosmos/go-bip39 v1.0.0
+	github.com/deckarep/golang-set v1.7.1
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
@@ -19,6 +20,7 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/ipfs/go-cid v0.1.0
+	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.6
 	github.com/multiformats/go-multibase v0.0.3
 	github.com/multiformats/go-multihash v0.0.15
@@ -29,12 +31,17 @@ require (
 	github.com/pborman/uuid v1.2.1
 	github.com/peterh/liner v1.2.1
 	github.com/pkg/errors v0.9.1
-	github.com/shirou/gopsutil v3.20.12+incompatible
+	github.com/rs/cors v1.7.0
+	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.0.0
 	github.com/stratosnet/stratos-chain v0.5.1-0.20211104180242-c04a2a018641
 	github.com/tendermint/tendermint v0.33.9
+	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf
+	golang.org/x/text v0.3.6 // indirect
 	google.golang.org/protobuf v1.27.1
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
 	gopkg.in/yaml.v2 v2.4.0
 )

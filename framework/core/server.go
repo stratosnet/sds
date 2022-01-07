@@ -2,12 +2,12 @@ package core
 
 import (
 	"context"
-	"github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/utils"
 	"net"
-
 	"sync"
 	"time"
+
+	"github.com/stratosnet/sds/msg"
+	"github.com/stratosnet/sds/utils"
 
 	"github.com/alex023/clock"
 )
@@ -52,20 +52,24 @@ type Server struct {
 	interv           time.Duration
 	goroutine        int64
 	goAtom           *utils.AtomicInt64
-	allFlow          int64
+	allFlow          int64 //including read flow & write flow
 	allAtom          *utils.AtomicInt64
-	readFlow         int64
+	readFlow         int64 //not used for now
 	readAtom         *utils.AtomicInt64
-	writeFlow        int64
+	writeFlow        int64 //not used for now
 	writeAtom        *utils.AtomicInt64
-	secondReadFlowA  int64
+	secondReadFlowA  int64 // will be reset to 0 every second by logFunc() job
 	secondReadAtomA  *utils.AtomicInt64
-	secondWriteFlowA int64
+	secondWriteFlowA int64 // will be reset to 0 every second by logFunc() job
 	secondWriteAtomA *utils.AtomicInt64
-	secondReadFlowB  int64
+	secondReadFlowB  int64 //for monitor use, will be refreshed to the value of secondReadFlowA before secondReadFlowA is reset to 0 every second by logFunc() job
 	secondReadAtomB  *utils.AtomicInt64
-	secondWriteFlowB int64
+	secondWriteFlowB int64 //for monitor use, will be refreshed to the value of secondWriteFlowA before secondWriteFlowA is reset to 0 every second by logFunc() job
 	secondWriteAtomB *utils.AtomicInt64
+	inbound          int64              // for traffic log
+	inboundAtomic    *utils.AtomicInt64 // for traffic log
+	outbound         int64              // for traffic log
+	outboundAtomic   *utils.AtomicInt64 // for traffic log
 }
 
 // Mylog
@@ -98,6 +102,8 @@ func CreateServer(opt ...ServerOption) *Server {
 		secondWriteAtomA: utils.CreateAtomicInt64(0),
 		secondReadAtomB:  utils.CreateAtomicInt64(0),
 		secondWriteAtomB: utils.CreateAtomicInt64(0),
+		inboundAtomic:    utils.CreateAtomicInt64(0),
+		outboundAtomic:   utils.CreateAtomicInt64(0),
 	}
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 	return s
@@ -139,12 +145,15 @@ func (s *Server) Start(l net.Listener) error {
 		logFunc = func() {
 			// utils.Log("connsSize:", s.ConnsSize(), "routine num:", s.goroutine, "allread:", fmt.Sprintf("%.4f", float64(s.readFlow)/1024/1024), "MB", "allwrite:", fmt.Sprintf("%.4f", float64(s.writeFlow)/1024/1024), "MB", "all:", fmt.Sprintf("%.4f", float64(s.allFlow)/1024/1024), "MB",
 			// "read/s:", fmt.Sprintf("%.4f", float64(s.secondReadFlow)/1024/1024), "MB", "write/s:", fmt.Sprintf("%.4f", float64(s.secondWriteFlow)/1024/1024), "MB")
+			s.inbound = s.inboundAtomic.AddAndGetNew(s.secondReadFlowA)
+			s.outbound = s.outboundAtomic.AddAndGetNew(s.secondWriteFlowA)
 			s.secondReadFlowB = s.secondReadAtomB.GetNewAndSetAtomic(s.secondReadFlowA)
 			s.secondWriteFlowB = s.secondWriteAtomB.GetAndSetAtomic(s.secondWriteFlowA)
 			s.secondReadFlowA = s.secondReadAtomA.GetNewAndSetAtomic(0)
 			s.secondWriteFlowA = s.secondWriteAtomA.GetNewAndSetAtomic(0)
 		}
 	)
+	//Assign the value of secondRead/WriteFlowA to secondRead/WriteFlowB for monitor use, then reset secondRead/WriteFlowA to 0
 	myClock.AddJobRepeat(time.Second*1, 0, logFunc)
 	// var tempDelay time.Duration
 	for {
@@ -327,12 +336,12 @@ func (s *Server) Broadcast(msg *msg.RelayMsgBuf) {
 	})
 }
 
-// GetWriteFlow
+// unused
 func (s *Server) GetWriteFlow() int64 {
 	return s.writeFlow
 }
 
-// GetReadFlow
+// unused
 func (s *Server) GetReadFlow() int64 {
 	return s.readFlow
 }
@@ -345,4 +354,16 @@ func (s *Server) GetSecondReadFlow() int64 {
 // GetSecondWriteFlow
 func (s *Server) GetSecondWriteFlow() int64 {
 	return s.secondWriteFlowB
+}
+
+func (s *Server) GetInboundAndReset() int64 {
+	ret := s.inbound
+	s.inbound = s.inboundAtomic.GetNewAndSetAtomic(0)
+	return ret
+}
+
+func (s *Server) GetOutboundAndReset() int64 {
+	ret := s.outbound
+	s.outbound = s.outboundAtomic.GetNewAndSetAtomic(0)
+	return ret
 }
