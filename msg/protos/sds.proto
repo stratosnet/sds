@@ -550,7 +550,8 @@ message ReqDeleteSlice {
 message RspDeleteSlice {
   string p2p_address = 1;
   string slice_hash = 2;
-  Result result = 3;
+  string file_hash = 3;
+  Result result = 4;
 }
 
 // 

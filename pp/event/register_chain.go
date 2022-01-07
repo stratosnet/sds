@@ -63,13 +63,13 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 
 	utils.Log("get RspRegister ", target.Result.State, target.Result.Msg)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
-		setting.P2PAddress = ""
-		setting.WalletAddress = ""
-		utils.Log("login failed", target.Result.Msg)
+		//setting.P2PAddress = ""
+		//setting.WalletAddress = ""
+		utils.Log("Register failed", target.Result.Msg)
 		return
 	}
 
-	utils.Log("login successful", target.Result.Msg)
+	utils.Log("Register successful", target.Result.Msg)
 	setting.IsLoad = true
 	utils.DebugLog("@@@@@@@@@@@@@@@@@@@@@@@@@@@@", conn.(*cf.ClientConn).GetName())
 	setting.IsPP = target.IsPP

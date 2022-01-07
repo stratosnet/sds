@@ -117,6 +117,7 @@ type config struct {
 	StreamingCache              bool         `yaml:"StreamingCache"`
 	RestPort                    string       `yaml:"RestPort"`
 	InternalPort                string       `yaml:"InternalPort"`
+	TrafficLogInterval          uint64       `yaml:"TrafficLogInterval"`
 	SPList                      []SPBaseInfo `yaml:"SPList"`
 }
 
