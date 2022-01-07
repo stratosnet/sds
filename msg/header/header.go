@@ -202,6 +202,7 @@ const (
 	RspCUseVolume = "RspCUV"
 
 	ReqTransferBLSSignature = "ReqTrBLS"
+	RspTransferBLSSignature = "RspTrBLS"
 )
 
 // DecodeHeader
