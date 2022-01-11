@@ -107,6 +107,8 @@ func SendHeartBeat(ctx context.Context, conn core.WriteCloser) {
 			PingTime:     strconv.FormatInt(start, 10),
 		}
 		peers.SendMessage(client.SPConn, pb, header.ReqHeart)
+		utils.DebugLog("regular heartbeat sent")
+		return
 	}
 	utils.DebugLog("SP not yet connected, skip heartbeat")
 }

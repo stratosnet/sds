@@ -107,10 +107,10 @@ func BuildIndexingNodeRegistrationVoteMsg(candidateNetworkAddress, candidateOwne
 }
 
 // Stratos-chain 'sds' module
-func BuildFileUploadMsg(fileHash, reporterAddress, uploaderAddress []byte) sdktypes.Msg {
+func BuildFileUploadMsg(fileHash string, from, reporterAddress, uploaderAddress []byte) sdktypes.Msg {
 	return sdstypes.NewMsgUpload(
 		fileHash,
-		nil,
+		from,
 		reporterAddress,
 		uploaderAddress,
 	)

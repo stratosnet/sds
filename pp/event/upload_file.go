@@ -36,7 +36,7 @@ func RequestUploadCoverImage(pathStr, reqID string, w http.ResponseWriter) {
 		}
 		return
 	}
-	p := requests.RequestUploadFileData(tmpString, "", reqID, true, false, false)
+	p := requests.RequestUploadFileData(tmpString, "", reqID, setting.WalletAddress, true, false, false)
 	peers.SendMessageToSPServer(p, header.ReqUploadFile)
 	storeResponseWriter(reqID, w)
 }
@@ -54,7 +54,7 @@ func RequestUploadFile(path, reqID string, isEncrypted bool, _ http.ResponseWrit
 		return
 	}
 	if isFile {
-		p := requests.RequestUploadFileData(path, "", reqID, false, false, isEncrypted)
+		p := requests.RequestUploadFileData(path, "", reqID, setting.WalletAddress, false, false, isEncrypted)
 		peers.SendMessageToSPServer(p, header.ReqUploadFile)
 		return
 	}
@@ -66,7 +66,7 @@ func RequestUploadFile(path, reqID string, isEncrypted bool, _ http.ResponseWrit
 		select {
 		case pathString := <-setting.UpChan:
 			utils.DebugLog("path string == ", pathString)
-			p := requests.RequestUploadFileData(pathString, "", reqID, false, false, isEncrypted)
+			p := requests.RequestUploadFileData(pathString, "", reqID, setting.WalletAddress, false, false, isEncrypted)
 			peers.SendMessageToSPServer(p, header.ReqUploadFile)
 		default:
 			return
@@ -85,7 +85,7 @@ func RequestUploadStream(path, reqID string, _ http.ResponseWriter) {
 		return
 	}
 	if isFile {
-		p := requests.RequestUploadFileData(path, "", reqID, false, true, false)
+		p := requests.RequestUploadFileData(path, "", reqID, setting.WalletAddress, false, true, false)
 		if p != nil {
 			peers.SendMessageToSPServer(p, header.ReqUploadFile)
 		}
