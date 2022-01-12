@@ -33,19 +33,15 @@ StreamingCache: false
 RestPort: "18093"
 InternalPort: ""
 SPList:
-- P2PAddress: stsdsp2p162xm62m75cjv2529p7yydkxmqfwhknslen0wgt
-  P2PPublicKey: stsdsp2p1zcjduepqnqrgs5cmwnhm2gg77xx3yghks80kgk72d65g37864ps7ualc6fsq20ssh4
+- P2PAddress: stsdsp2p1cw8qhgsxddak8hh8gs7veqmy5ku8f8za57guzj
+  P2PPublicKey: stsdsp2p1zcjduepqjmfc8j7ve0jg3jwq9wkefpa34fg9hhrp7nu6rkf6hff7ml769f6q240avl
   NetworkAddress: 0.0.0.0:8888
-- P2PAddress: stsdsp2p1p0x879w88a2dlcymm4pl05aezf5tn0wue4mcah
-  P2PPublicKey: stsdsp2p1zcjduepqppgzl9x2lr9hdu8vq9p6jx8y66xfsz4rkr6zhlumawz4ump6dp4qudcg27
+- P2PAddress: stsdsp2p14c3em44vlh276cujnr2ez802uyjyeqrr7zj4ys
+  P2PPublicKey: stsdsp2p1zcjduepqzgqd566qdnj4kna050jz505vamjhglxcpdepqctkregdt6snxm6s3dcgzj
   NetworkAddress: 0.0.0.0:18888
-- P2PAddress: stsdsp2p1gee76xmy3d5ttgmnjx5enmexz4y3wu8w0q0rrf
-  P2PPublicKey: stsdsp2p1zcjduepqvs62467hf02ahpja3ps8n9r4d2mm0c45s5pudkxqjhdnaxryqu8sprg297
+- P2PAddress: stsdsp2p15sya4n40da64z6n6hvk0p9f7sx72hqpjud54ar
+  P2PPublicKey: stsdsp2p1zcjduepqpfr08evmk73dtf7ud69pwdznl4xdfghx6k6dyugwpk2jhqq890yq6c29ze
   NetworkAddress: 0.0.0.0:28888
-- P2PAddress: stsdsp2p15mwn0qa7faym4rsaxtufrhq4ul42pe2k2v66vg
-  P2PPublicKey: stsdsp2p1zcjduepq3zzgzzttfu4jrqldyqnkyjm44p9kvyrfv8tdpmgpmz54djqfxfsqwdt3up
+- P2PAddress: stsdsp2p13yakj2xgzzdfcw7kd5gtfcfv2k6sn5egmj64pu
+  P2PPublicKey: stsdsp2p1zcjduepqhhplcrnkn9597gnh87y9zshe0kfs87fvmtrjpyq4heqjcz0dhlts5m0t3a
   NetworkAddress: 0.0.0.0:38888
-
-
-
-

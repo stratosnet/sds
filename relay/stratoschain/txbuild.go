@@ -18,16 +18,16 @@ func BuildVolumeReportMsg(traffic []*core.Traffic, reporterAddress, reporterOwne
 		aggregatedVolume[trafficReccord.P2PAddress] += trafficReccord.Volume
 	}
 
-	var nodesVolume []pottypes.SingleNodeVolume
-	for p2pAddressString, volume := range aggregatedVolume {
-		_, p2pAddressBytes, err := bech32.DecodeAndConvert(p2pAddressString)
+	var nodesVolume []pottypes.SingleWalletVolume
+	for walletAddressString, volume := range aggregatedVolume {
+		_, walletAddressBytes, err := bech32.DecodeAndConvert(walletAddressString)
 		if err != nil {
 			return nil, err
 		}
-		p2pAddress := sdktypes.AccAddress(p2pAddressBytes[:])
-		nodesVolume = append(nodesVolume, pottypes.SingleNodeVolume{
-			NodeAddress: p2pAddress,
-			Volume:      sdktypes.NewIntFromUint64(volume),
+		walletAddress := sdktypes.AccAddress(walletAddressBytes[:])
+		nodesVolume = append(nodesVolume, pottypes.SingleWalletVolume{
+			WalletAddress: walletAddress,
+			Volume:        sdktypes.NewIntFromUint64(volume),
 		})
 	}
 
@@ -107,10 +107,10 @@ func BuildIndexingNodeRegistrationVoteMsg(candidateNetworkAddress, candidateOwne
 }
 
 // Stratos-chain 'sds' module
-func BuildFileUploadMsg(fileHash, reporterAddress, uploaderAddress []byte) sdktypes.Msg {
+func BuildFileUploadMsg(fileHash string, from, reporterAddress, uploaderAddress []byte) sdktypes.Msg {
 	return sdstypes.NewMsgUpload(
 		fileHash,
-		nil,
+		from,
 		reporterAddress,
 		uploaderAddress,
 	)
