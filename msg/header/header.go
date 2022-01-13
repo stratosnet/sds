@@ -147,8 +147,8 @@ const (
 	ReqReportNodeStatus = "ReqRNS"
 	RspReportNodeStatus = "RspRNS"
 
-	ReqTransferAggregateTraffic = "ReqTrAgT"
-	ReqTransferRecordTraffic    = "ReqTrRcT"
+	ReqTransferBLSSignature = "ReqTrBLS"
+	RspTransferBLSSignature = "RspTrBLS"
 )
 
 // DecodeHeader

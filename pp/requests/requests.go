@@ -89,8 +89,8 @@ func ReqGetSPlistData() *protos.ReqGetSPList {
 	}
 }
 
-// RequestUploadFileData RequestUploadFileData
-func RequestUploadFileData(paths, storagePath, reqID string, isCover, isVideoStream, isEncrypted bool) *protos.ReqUploadFile {
+// RequestUploadFileData RequestUploadFileData, ownerWalletAddress can be either pp node's walletAddr or file owner's walletAddr
+func RequestUploadFileData(paths, storagePath, reqID, ownerWalletAddress string, isCover, isVideoStream, isEncrypted bool) *protos.ReqUploadFile {
 	info := file.GetFileInfo(paths)
 	if info == nil {
 		utils.ErrorLog("wrong filePath")
@@ -109,11 +109,12 @@ func RequestUploadFileData(paths, storagePath, reqID string, isCover, isVideoStr
 
 	req := &protos.ReqUploadFile{
 		FileInfo: &protos.FileInfo{
-			FileSize:      uint64(info.Size()),
-			FileName:      fileName,
-			FileHash:      fileHash,
-			StoragePath:   storagePath,
-			EncryptionTag: encryptionTag,
+			FileSize:           uint64(info.Size()),
+			FileName:           fileName,
+			FileHash:           fileHash,
+			StoragePath:        storagePath,
+			EncryptionTag:      encryptionTag,
+			OwnerWalletAddress: ownerWalletAddress,
 		},
 		MyAddress: &protos.PPBaseInfo{
 			P2PAddress:     setting.P2PAddress,

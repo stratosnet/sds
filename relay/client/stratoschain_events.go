@@ -362,19 +362,19 @@ func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 
 func (m *MultiClient) FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		reporterAddressList := result.Events["FileUploadTx.reporter"]
+		reporterAddressList := result.Events["FileUpload.reporter"]
 		if len(reporterAddressList) < 1 {
 			utils.ErrorLog("No reporter address was specified in the FileUploadTx message from stratos-chain")
 			return
 		}
 
-		uploaderAddressList := result.Events["FileUploadTx.uploader"]
+		uploaderAddressList := result.Events["FileUpload.uploader"]
 		if len(uploaderAddressList) < 1 {
 			utils.ErrorLog("No uploader address was specified in the FileUploadTx message from stratos-chain")
 			return
 		}
 
-		fileHashList := result.Events["FileUploadTx.file_hash"]
+		fileHashList := result.Events["FileUpload.file_hash"]
 		if len(fileHashList) < 1 {
 			utils.ErrorLog("No file hash was specified in the FileUploadTx message from stratos-chain")
 			return
@@ -401,10 +401,24 @@ func (m *MultiClient) FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 	}
 }
 
+type VolumeReportedReq struct {
+	Epoch string `json:"epoch"`
+}
+
 func (m *MultiClient) VolumeReportHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		// TODO
-		utils.Log(fmt.Sprintf("%+v", result))
+		epochList := result.Events["volume_report.epoch"]
+		if len(epochList) < 1 {
+			utils.ErrorLog("No epoch was specified in the volume_report message from stratos-chain")
+			return
+		}
+
+		volumeReportedMsg := VolumeReportedReq{Epoch: epochList[0]}
+		err := postToSP("/volume/reported", volumeReportedMsg)
+		if err != nil {
+			utils.ErrorLog(err)
+			return
+		}
 	}
 }
 
