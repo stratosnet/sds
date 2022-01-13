@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"strings"
-
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
@@ -50,42 +49,21 @@ func StartHTTPServ() {
 	httpServ.MyRoute("/getShareLink", getAllShareLink)
 	httpServ.MyRoute("/downloadFile", downloadFile)
 	httpServ.MyRoute("/uploadFile", uploadFile)
-	httpServ.MyRoute("/mkdir", mkdir)
 	httpServ.MyRoute("/deleteFile", deleteFile)
 	httpServ.MyRoute("/setConfig", setConfig)
 	httpServ.MyRoute("/getKeyStore", getKeyStore)
 	httpServ.MyRoute("/shareFile", shareFile)
-	httpServ.MyRoute("/saveFile", saveFile)
-	httpServ.MyRoute("/getConfig", getConfig)
-	httpServ.MyRoute("/moveFileDirectory", moveFileDirectory)
 	httpServ.MyRoute("/downPause", downPause)
 	httpServ.MyRoute("/deleteShare", deleteShare)
-	httpServ.MyRoute("/createAlbum", createAlbum)
-	httpServ.MyRoute("/findMyAlbum", findMyAlbum)
-	httpServ.MyRoute("/editAlbum", editAlbum)
-	httpServ.MyRoute("/albumContent", albumContent)
-	httpServ.MyRoute("/searchAlbum", searchAlbum)
 	httpServ.MyRoute("/getShareFile", getShareFile)
 	httpServ.MyRoute("/downloadCancel", downloadCancel)
 	httpServ.MyRoute("/upPause", upPause)
 	httpServ.MyRoute("/upCancel", upCancel)
 	httpServ.MyRoute("/upProgress", upProgress)
 	httpServ.MyRoute("/downProgress", downProgress)
-	httpServ.MyRoute("/invite", invite)
-	httpServ.MyRoute("/getReward", getReward)
-	httpServ.MyRoute("/collectionAlbum", collectionAlbum)
-	httpServ.MyRoute("/myCollectionAlbum", myCollectionAlbum)
-	httpServ.MyRoute("/abstractAlbum", abstractAlbum)
-	httpServ.MyRoute("/downImg", downImg)
-	httpServ.MyRoute("/deleteAlbum", deleteAlbum)
 	httpServ.MyRoute("/closeHTTP", closeHTTP)
-	httpServ.MyRoute("/saveFolder", saveFolder)
-	httpServ.MyRoute("/getCapacity", getCapacity)
 	httpServ.MyRoute("/legal", legal)
-	httpServ.MyRoute("/uploadCoverImage", uploadCoverImage)
 	httpServ.MyRoute("/changeName", changeName)
-	httpServ.MyRoute("/fileSort", fileSort)
-	httpServ.MyRoute("/directory", directory)
 	httpServ.MyRoute("/streamVideoStorageInfo/", streamVideoStorageInfo)
 	httpServ.MyRoute("/streamVideo/", streamVideo)
 	httpServ.MyRoute("/clearStreamTask/", clearStreamTask)

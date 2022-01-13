@@ -494,24 +494,6 @@ func FindMyFileListData(fileName, dir, reqID, keyword string, fileType protos.Fi
 	}
 }
 
-func FindDirectoryData(reqID string) *protos.ReqFindDirectory {
-	return &protos.ReqFindDirectory{
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		ReqId:         reqID,
-	}
-}
-
-func FileSortData(files []*protos.FileInfo, reqID, albumID string) *protos.ReqFileSort {
-	return &protos.ReqFileSort{
-		Files:         files,
-		ReqId:         reqID,
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		AlbumId:       albumID,
-	}
-}
-
 func RspTransferDownloadResultData(transferCer string) *protos.RspTransferDownloadResult {
 	return &protos.RspTransferDownloadResult{
 		TransferCer: transferCer,
@@ -601,24 +583,6 @@ func RspDeleteSliceData(sliceHash, msg string, result bool) *protos.RspDeleteSli
 	}
 }
 
-func ReqMakeDirectoryData(path, reqID string) *protos.ReqMakeDirectory {
-	return &protos.ReqMakeDirectory{
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		Directory:     path,
-		ReqId:         reqID,
-	}
-}
-
-func ReqRemoveDirectoryData(path, reqID string) *protos.ReqRemoveDirectory {
-	return &protos.ReqRemoveDirectory{
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		Directory:     path,
-		ReqId:         reqID,
-	}
-}
-
 func ReqShareLinkData(reqID string) *protos.ReqShareLink {
 	return &protos.ReqShareLink{
 		P2PAddress:    setting.P2PAddress,
@@ -645,48 +609,6 @@ func ReqDeleteShareData(reqID, shareID string) *protos.ReqDeleteShare {
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ShareId:       shareID,
-	}
-}
-
-func ReqSaveFileData(fileHash, reqID, ownerAddress string) *protos.ReqSaveFile {
-	return &protos.ReqSaveFile{
-		FileHash:               fileHash,
-		FileOwnerWalletAddress: ownerAddress,
-		P2PAddress:             setting.P2PAddress,
-		WalletAddress:          setting.WalletAddress,
-		ReqId:                  reqID,
-	}
-
-}
-
-func ReqSaveFolderData(folderHash, reqID, ownerAddress string) *protos.ReqSaveFolder {
-	return &protos.ReqSaveFolder{
-		FolderHash:               folderHash,
-		FolderOwnerWalletAddress: ownerAddress,
-		P2PAddress:               setting.P2PAddress,
-		WalletAddress:            setting.WalletAddress,
-		ReqId:                    reqID,
-	}
-
-}
-
-func ReqMoveFileDirectoryData(fileHash, originalDir, targetDir, reqID string) *protos.ReqMoveFileDirectory {
-	return &protos.ReqMoveFileDirectory{
-		FileHash:          fileHash,
-		P2PAddress:        setting.P2PAddress,
-		WalletAddress:     setting.WalletAddress,
-		ReqId:             reqID,
-		DirectoryTarget:   targetDir,
-		DirectoryOriginal: originalDir,
-	}
-}
-
-func ReqGetMyConfig(p2pAddress, walletAddress, reqID string) *protos.ReqConfig {
-	return &protos.ReqConfig{
-		P2PAddress:     p2pAddress,
-		WalletAddress:  walletAddress,
-		ReqId:          reqID,
-		NetworkAddress: setting.NetworkAddress,
 	}
 }
 
@@ -719,20 +641,6 @@ func RspDownloadSlicePauseData(target *protos.ReqDownloadSlicePause) *msg.RelayM
 	}
 }
 
-func ReqCreateAlbumData(albumName, albumBlurb, albumCoverHash, reqID string, albumType protos.AlbumType, files []*protos.FileInfo, isPrivate bool) *protos.ReqCreateAlbum {
-	return &protos.ReqCreateAlbum{
-		P2PAddress:     setting.P2PAddress,
-		WalletAddress:  setting.WalletAddress,
-		ReqId:          reqID,
-		AlbumName:      albumName,
-		AlbumBlurb:     albumBlurb,
-		AlbumCoverHash: albumCoverHash,
-		AlbumType:      albumType,
-		FileInfo:       files,
-		IsPrivate:      isPrivate,
-	}
-}
-
 func ReqGetShareFileData(keyword, sharePassword, reqID string) *protos.ReqGetShareFile {
 	return &protos.ReqGetShareFile{
 		Keyword:       keyword,
@@ -741,109 +649,6 @@ func ReqGetShareFileData(keyword, sharePassword, reqID string) *protos.ReqGetSha
 		ReqId:         reqID,
 		SharePassword: sharePassword,
 	}
-}
-
-func ReqFindMyAlbumData(albumType protos.AlbumType, reqID string, page, number uint64, keyword string) *protos.ReqFindMyAlbum {
-	return &protos.ReqFindMyAlbum{
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		ReqId:         reqID,
-		AlbumType:     albumType,
-		Page:          page,
-		Number:        number,
-		Keyword:       keyword,
-	}
-}
-
-func ReqEditAlbumData(albumID, albumCoverHash, albumName, albumBlurb, reqID string, changeFiles []*protos.FileInfo, isPrivate bool) *protos.ReqEditAlbum {
-	return &protos.ReqEditAlbum{
-		P2PAddress:     setting.P2PAddress,
-		WalletAddress:  setting.WalletAddress,
-		ReqId:          reqID,
-		AlbumId:        albumID,
-		AlbumCoverHash: albumCoverHash,
-		AlbumName:      albumName,
-		AlbumBlurb:     albumBlurb,
-		ChangeFiles:    changeFiles,
-		IsPrivate:      isPrivate,
-	}
-}
-
-func ReqAlbumContentData(albumID, reqID string) *protos.ReqAlbumContent {
-	return &protos.ReqAlbumContent{
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		ReqId:         reqID,
-		AlbumId:       albumID,
-	}
-}
-
-func ReqCollectionAlbumData(albumID, reqID string, isCollection bool) *protos.ReqCollectionAlbum {
-	return &protos.ReqCollectionAlbum{
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		ReqId:         reqID,
-		AlbumId:       albumID,
-		IsCollection:  isCollection,
-	}
-}
-
-func ReqDeleteAlbumData(albumID, reqID string) *protos.ReqDeleteAlbum {
-	return &protos.ReqDeleteAlbum{
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		ReqId:         reqID,
-		AlbumId:       albumID,
-	}
-}
-func ReqSearchAlbumData(keyword, reqID string, aType protos.AlbumType, sType protos.AlbumSortType, page, number uint64) *protos.ReqSearchAlbum {
-	return &protos.ReqSearchAlbum{
-		AlbumType:     aType,
-		Keyword:       keyword,
-		AlbumSortType: sType,
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		ReqId:         reqID,
-		Page:          page,
-		Number:        number,
-	}
-}
-
-func ReqInviteData(code, reqID string) *protos.ReqInvite {
-	return &protos.ReqInvite{
-		P2PAddress:     setting.P2PAddress,
-		WalletAddress:  setting.WalletAddress,
-		ReqId:          reqID,
-		InvitationCode: code,
-	}
-}
-func ReqGetRewardData(reqID string) *protos.ReqGetReward {
-	return &protos.ReqGetReward{
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		ReqId:         reqID,
-	}
-}
-
-func ReqAbstractAlbumData(reqID string) *protos.ReqAbstractAlbum {
-	return &protos.ReqAbstractAlbum{
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		ReqId:         reqID,
-	}
-}
-
-func ReqMyCollectionAlbumData(aType protos.AlbumType, reqID string, page, number uint64, keyword string) *protos.ReqMyCollectionAlbum {
-	return &protos.ReqMyCollectionAlbum{
-		AlbumType:     aType,
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		ReqId:         reqID,
-		Page:          page,
-		Number:        number,
-		Keyword:       keyword,
-	}
-
 }
 
 func ReqFindDirectoryTreeData(reqID, pathHash string) *protos.ReqFindDirectoryTree {
@@ -860,14 +665,6 @@ func UploadSpeedOfProgressData(fileHash string, size uint64) *protos.UploadSpeed
 	return &protos.UploadSpeedOfProgress{
 		FileHash:  fileHash,
 		SliceSize: size,
-	}
-}
-
-func ReqGetCapacityData(reqID string) *protos.ReqGetCapacity {
-	return &protos.ReqGetCapacity{
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		ReqId:         reqID,
 	}
 }
 

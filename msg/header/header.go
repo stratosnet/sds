@@ -83,9 +83,6 @@ const (
 	ReqFindMyFileList = "ReqFFL"
 	RspFindMyFileList = "RspFFL"
 
-	ReqFindDirectory = "ReqFDr"
-	RspFindDirectory = "RspFDr"
-
 	ReqDeleteFile = "ReqDF"
 	RspDeleteFile = "RspDF"
 
@@ -94,13 +91,6 @@ const (
 
 	ReqDeleteSlice = "ReqDLS"
 	RspDeleteSlice = "RspDLS"
-
-	ReqMakeDirectory     = "ReqMDR"
-	RspMakeDirectory     = "RspMDR"
-	ReqRemoveDirectory   = "ReqRD"
-	RspRemoveDirectory   = "RsqRD"
-	ReqMoveFileDirectory = "ReqMFD"
-	RspMoveFileDirectory = "RspMFD"
 
 	//  download
 	ReqFileStorageInfo      = "ReqQDLF"
@@ -147,43 +137,6 @@ const (
 	ReqGetShareFile = "ReqGSF"
 	RspGetShareFile = "RspGSF"
 
-	ReqSaveFile   = "ReqTSF"
-	RspSaveFile   = "RspTSF"
-	ReqSaveFolder = "ReqTSFD"
-	RspSaveFolder = "RspTSFD"
-
-	ReqCreateAlbum       = "ReqCA"
-	RspCreateAlbum       = "RspCA"
-	ReqEditAlbum         = "ReqEDA"
-	RspEditAlbum         = "RspEDA"
-	ReqAlbumContent      = "ReqACT"
-	RspAlbumContent      = "RspACT"
-	ReqSearchAlbum       = "ReqSCA"
-	RspSearchAlbum       = "RspSCA"
-	ReqFindMyAlbum       = "ReqFMA"
-	RspFindMyAlbum       = "RspFMA"
-	ReqCollectionAlbum   = "ReqCLA" // request to collect album
-	RspCollectionAlbum   = "RspCLA"
-	ReqAbstractAlbum     = "ReqAA"
-	RspAbstractAlbum     = "RspAA"
-	ReqMyCollectionAlbum = "ReqMCA"
-	RspMyCollectionAlbum = "RspMCA"
-	ReqDeleteAlbum       = "ReqDA"
-	RspDeleteAlbum       = "RspDA"
-	ReqGetCapacity       = "ReqGC"
-	RspGetCapacity       = "RspGC"
-
-	ReqFileSort = "ReqFS"
-	RspFileSort = "RspFS"
-
-	ReqConfig = "ReqCon"
-	RspConfig = "RspCon"
-
-	ReqInvite    = "ReqInv"
-	RspInvite    = "RspInv"
-	ReqGetReward = "ReqGR"
-	RspGetReward = "RspGR"
-
 	// heartbeat
 	ReqHeart = "ReqHeart"
 	RspHeart = "RspHeart"
@@ -193,13 +146,6 @@ const (
 	// report node status
 	ReqReportNodeStatus = "ReqRNS"
 	RspReportNodeStatus = "RspRNS"
-
-	// customer volume
-	ReqCAddVolume = "ReqCAV"
-	RspCAddVolume = "RspCAV"
-
-	ReqCUseVolume = "ReqCUV"
-	RspCUseVolume = "RspCUV"
 
 	ReqTransferAggregateTraffic = "ReqTrAgT"
 	ReqTransferRecordTraffic    = "ReqTrRcT"

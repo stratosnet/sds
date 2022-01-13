@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
@@ -125,10 +124,6 @@ func uploadFile(w http.ResponseWriter, request *http.Request) {
 				sPath := strings.Replace(pathstring, dir, "", -1)
 				lastPaths := filepath.Dir(sPath)
 				utils.DebugLog("lastPaths ==>>>>>>>>>>> ", lastPaths)
-				if isFile, _ = file.IsFile(pathstring); !isFile {
-					event.MakeDirectory(sPath, uuid.New().String(), w)
-					continue
-				}
 
 				var lps []string
 				lps = strings.FieldsFunc(lastPaths, func(r rune) bool { return r == '/' })

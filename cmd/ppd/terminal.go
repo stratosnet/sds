@@ -153,26 +153,6 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		return callRpc(c, "config", param)
 	}
 
-	mkdir := func(line string, param []string) bool {
-		return callRpc(c, "mkdir", param)
-	}
-
-	rmdir := func(line string, param []string) bool {
-		return callRpc(c, "rmdir", param)
-	}
-
-	mvdir := func(line string, param []string) bool {
-		return callRpc(c, "mvdir", param)
-	}
-
-	cd := func(line string, param []string) bool {
-		return callRpc(c, "cd", param)
-	}
-
-	savefile := func(line string, param []string) bool {
-		return callRpc(c, "saveFile", param)
-	}
-
 	sharepath := func(line string, param []string) bool {
 		return callRpc(c, "sharePath", param)
 	}
@@ -203,34 +183,6 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 
 	cancelget := func(line string, param []string) bool {
 		return callRpc(c, "cancelGet", param)
-	}
-
-	createalbum := func(line string, param []string) bool {
-		return callRpc(c, "createAlbum", param)
-	}
-
-	albumlist := func(line string, param []string) bool {
-		return callRpc(c, "albumList", param)
-	}
-
-	albumedit := func(line string, param []string) bool {
-		return callRpc(c, "albumEdit", param)
-	}
-
-	albumcontent := func(line string, param []string) bool {
-		return callRpc(c, "albumContent", param)
-	}
-
-	albumsearch := func(line string, param []string) bool {
-		return callRpc(c, "albumSearch", param)
-	}
-
-	invite := func(line string, param []string) bool {
-		return callRpc(c, "invite", param)
-	}
-
-	reward := func(line string, param []string) bool {
-		return callRpc(c, "reward", param)
 	}
 
 	//TODO move to pp api later
@@ -290,29 +242,15 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("stopmonitor", stopmonitor, true)
 
 	console.Mystdin.RegisterProcessFunc("config", config, true)
-	console.Mystdin.RegisterProcessFunc("mkdir", mkdir, true)
-	console.Mystdin.RegisterProcessFunc("rmdir", rmdir, true)
-	console.Mystdin.RegisterProcessFunc("mvdir", mvdir, true)
-	console.Mystdin.RegisterProcessFunc("savefile", savefile, true)
-	console.Mystdin.RegisterProcessFunc("cd", cd, true)
 	console.Mystdin.RegisterProcessFunc("sharefile", sharefile, true)
 	console.Mystdin.RegisterProcessFunc("sharepath", sharepath, true)
 	console.Mystdin.RegisterProcessFunc("allshare", allshare, false)
 	console.Mystdin.RegisterProcessFunc("cancelshare", cancelshare, true)
 	console.Mystdin.RegisterProcessFunc("getsharefile", getsharefile, true)
 
-	console.Mystdin.RegisterProcessFunc("createalbum", createalbum, false)
-	console.Mystdin.RegisterProcessFunc("albumlist", albumlist, false)
-	console.Mystdin.RegisterProcessFunc("albumedit", albumedit, false)
-	console.Mystdin.RegisterProcessFunc("albumcontent", albumcontent, false)
-	console.Mystdin.RegisterProcessFunc("albumsearch", albumsearch, false)
-
 	console.Mystdin.RegisterProcessFunc("pauseget", pauseget, true)
 	console.Mystdin.RegisterProcessFunc("pauseput", pauseput, true)
 	console.Mystdin.RegisterProcessFunc("cancelget", cancelget, true)
-
-	console.Mystdin.RegisterProcessFunc("invite", invite, false)
-	console.Mystdin.RegisterProcessFunc("reward", reward, false)
 
 	if isExec {
 		if len(args) > 0 {
