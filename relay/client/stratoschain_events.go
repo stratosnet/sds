@@ -401,10 +401,24 @@ func (m *MultiClient) FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 	}
 }
 
+type VolumeReportedReq struct {
+	Epoch string `json:"epoch"`
+}
+
 func (m *MultiClient) VolumeReportHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		// TODO
-		utils.Log(fmt.Sprintf("%+v", result))
+		epochList := result.Events["volume_report.epoch"]
+		if len(epochList) < 1 {
+			utils.ErrorLog("No epoch was specified in the volume_report message from stratos-chain")
+			return
+		}
+
+		volumeReportedMsg := VolumeReportedReq{Epoch: epochList[0]}
+		err := postToSP("/volume/reported", volumeReportedMsg)
+		if err != nil {
+			utils.ErrorLog(err)
+			return
+		}
 	}
 }
 

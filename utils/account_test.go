@@ -2,14 +2,24 @@ package utils
 
 import (
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/types"
-	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"io/ioutil"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
+	"github.com/stratosnet/sds/utils/crypto/secp256k1"
+	"github.com/tendermint/go-amino"
+	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
+	cryptoamino "github.com/tendermint/tendermint/crypto/encoding/amino"
 	"github.com/tendermint/tendermint/libs/bech32"
+	"github.com/tendermint/tendermint/privval"
 )
+
+var cdc = amino.NewCodec()
+
+func init() {
+	cryptoamino.RegisterAmino(cdc)
+}
 
 func TestCreateWallet(t *testing.T) {
 	t.SkipNow() // Comment this line out to run the method and create a wallet
@@ -89,6 +99,58 @@ func TestDecryptP2PKeyJson(t *testing.T) {
 	}
 
 	pubKey := ed25519.PrivKeyBytesToPubKey(key.PrivateKey)
+	bechPub, err := bech32.ConvertAndEncode(hrp, pubKey.Bytes())
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	bechAddr, err := bech32.ConvertAndEncode(hrp, pubKey.Address().Bytes())
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	fmt.Printf("Address: %v  PublicKey: %v", bechAddr, bechPub)
+}
+
+func TestDecryptWalletJson(t *testing.T) {
+	t.SkipNow() // Comment this line out to run the method and decrypt a wallet JSON file
+	hrp := "st"
+	key, err := DecryptKey([]byte("put the content of the wallet JSON file here"), "aaa")
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	tmPrivKey := secp256k1.PrivKeyBytesToTendermint(key.PrivateKey)
+	tmPubKey := tmPrivKey.PubKey()
+
+	bechPub, err := bech32.ConvertAndEncode(hrp+"pub", tmPubKey.Bytes())
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	bechAddr, err := bech32.ConvertAndEncode(hrp, tmPubKey.Address().Bytes())
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	fmt.Printf("Address: %v  PublicKey: %v  HdPath: %v", bechAddr, bechPub, key.HdPath)
+}
+
+func TestDecryptPrivValidatorKeyJson(t *testing.T) {
+	t.SkipNow() // Comment this line out to run the method and decrypt a priv_validator_key JSON file (SP node validator key)
+	hrp := "stsdsp2p"
+	p2pKey := privval.FilePVKey{}
+	err := cdc.UnmarshalJSON([]byte("put the content of the priv_validator_key.json file here"), &p2pKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	p2pKeyTm, success := p2pKey.PrivKey.(tmed25519.PrivKeyEd25519)
+	if !success {
+		t.Fatal("couldn't convert validator private key to tendermint ed25519")
+	}
+	pubKey := p2pKeyTm.PubKey()
+
 	bechPub, err := bech32.ConvertAndEncode(hrp, pubKey.Bytes())
 	if err != nil {
 		t.Fatal(err.Error())
