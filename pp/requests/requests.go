@@ -652,16 +652,6 @@ func ReqGetShareFileData(keyword, sharePassword, reqID string) *protos.ReqGetSha
 	}
 }
 
-func ReqFindDirectoryTreeData(reqID, pathHash string) *protos.ReqFindDirectoryTree {
-	return &protos.ReqFindDirectoryTree{
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		ReqId:         reqID,
-		PathHash:      pathHash,
-	}
-
-}
-
 func UploadSpeedOfProgressData(fileHash string, size uint64) *protos.UploadSpeedOfProgress {
 	return &protos.UploadSpeedOfProgress{
 		FileHash:  fileHash,
