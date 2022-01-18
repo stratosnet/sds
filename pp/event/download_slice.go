@@ -234,7 +234,7 @@ func receivedSlice(target *protos.RspDownloadSlice, fInfo *protos.RspFileStorage
 
 // ReportDownloadResult  P-SP OR PP-SP
 func SendReportDownloadResult(target *protos.RspDownloadSlice, isPP bool) {
-	utils.DebugLog("ReportDownloadResult report result target.FileHash = ", target.FileHash)
+	utils.DebugLog("ReportDownloadResult report result target.fileHash = ", target.FileHash)
 	peers.SendMessageToSPServer(requests.ReqReportDownloadResultData(target, isPP), header.ReqReportDownloadResult)
 	select {
 	//TODO: Change BP to SP
