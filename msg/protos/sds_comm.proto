@@ -22,20 +22,6 @@ enum DownloadWrongType {
     OVERTIME = 1;
 }
 
-
-enum AlbumType {
-    ALL = 0;
-    VIDEO = 1;
-    MUSIC = 2;
-    OTHER = 3;
-}
-
-
-enum AlbumSortType {
-    LATEST = 0;
-    VISITS = 1;  // most visit
-}
-
 enum FileSortType {
     DEF  = 0;  // default
     TIME = 1;  // time
@@ -141,24 +127,6 @@ message ShareLinkInfo{
     bool is_private = 9;
     string share_link_password = 10;
     string owner_wallet_address = 11;
-}
-
-message AlbumInfo {
-    string album_id = 1; // id
-    string album_name = 2; // name
-    string album_blurb = 3; // abstract
-    int64 album_visit = 4; //
-    int64 album_time = 5; // creation time
-    string album_cover_link = 6; //
-    bool is_private = 7; //
-    AlbumType album_type = 8;
-}
-
-message AlbumNumber {
-    int64 all = 1;
-    int64 video = 2;
-    int64 music = 3;
-    int64 other = 4;
 }
 
 message CpuStat {

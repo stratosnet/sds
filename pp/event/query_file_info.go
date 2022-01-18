@@ -55,34 +55,6 @@ func FindDirectoryTree(reqID, pathHash string, w http.ResponseWriter, isF bool) 
 	}
 }
 
-// ReqFindDirectoryTree
-func ReqFindDirectoryTree(ctx context.Context, conn core.WriteCloser) {
-	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
-}
-
-// RspFindDirectoryTree
-func RspFindDirectoryTree(ctx context.Context, conn core.WriteCloser) {
-	utils.DebugLog("target>>context>>>>>>>>>>>>>>>>>>>")
-	var target protos.RspFindDirectoryTree
-	if requests.UnmarshalData(ctx, &target) {
-		if isFind {
-			putData(target.ReqId, HTTPDirectoryTree, &target)
-		}
-		if target.P2PAddress == setting.P2PAddress {
-			if target.Result.State == protos.ResultState_RES_SUCCESS {
-				utils.DebugLog("target>>>>>>>>>>>>>>>>>>>>>", target)
-				ts := DirectoryTreeMap[target.ReqId]
-				ts.Reqs = append(ts.Reqs, &target)
-				utils.DebugLog("Reqs>>>>>>>>>>>>>>>>>>>>>", len(ts.Reqs))
-			} else {
-				utils.Log("action failed", target.Result.Msg)
-			}
-		} else {
-			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
-		}
-	}
-}
-
 // GetFileStorageInfo p to pp
 func GetFileStorageInfo(path, savePath, reqID string, isImg bool, isVideoStream bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {

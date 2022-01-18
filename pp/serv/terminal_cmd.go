@@ -4,9 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 
-	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
@@ -196,10 +194,10 @@ func (api *terminalCmd) UploadStream(param []string) (CmdResult, error) {
 
 func (api *terminalCmd) List(param []string) (CmdResult, error) {
 	if len(param) == 0 {
-		event.FindMyFileList("", event.NowDir, "", "", 0, true, nil)
+		event.FindMyFileList("", "", "", "", 0, true, nil)
 
 	} else {
-		event.FindMyFileList(param[0], event.NowDir, "", "", 0, true, nil)
+		event.FindMyFileList(param[0], "", "", "", 0, true, nil)
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
 }
@@ -244,54 +242,6 @@ func (api *terminalCmd) Config(param []string) (CmdResult, error) {
 	}
 	setting.SetConfig(param[0], param[1])
 
-	return CmdResult{Msg: DefaultMsg}, nil
-}
-
-func (api *terminalCmd) Mkdir(param []string) (CmdResult, error) {
-	if len(param) == 0 {
-		return CmdResult{Msg: ""}, errors.New("input directory name")
-	}
-	event.MakeDirectory(param[0], "", nil)
-	return CmdResult{Msg: DefaultMsg}, nil
-}
-
-func (api *terminalCmd) Rmdir(param []string) (CmdResult, error) {
-	if len(param) == 0 {
-		return CmdResult{Msg: ""}, errors.New("input directory name")
-	}
-	event.RemoveDirectory(param[0], "", nil)
-	return CmdResult{Msg: DefaultMsg}, nil
-}
-
-func (api *terminalCmd) Mvdir(param []string) (CmdResult, error) {
-	if len(param) < 1 {
-		return CmdResult{Msg: ""}, errors.New("input file hash and target directory path")
-	}
-	if len(param) == 1 { // root path
-		event.MoveFileDirectory(param[0], event.NowDir, "", "", nil)
-		return CmdResult{Msg: DefaultMsg}, nil
-	}
-	if event.NowDir == "" {
-		event.MoveFileDirectory(param[0], "", param[1], "", nil)
-	} else {
-		event.MoveFileDirectory(param[0], event.NowDir, param[1], "", nil)
-	}
-	return CmdResult{Msg: DefaultMsg}, nil
-}
-
-func (api *terminalCmd) Cd(param []string) (CmdResult, error) {
-	if len(param) < 1 {
-		return CmdResult{Msg: ""}, errors.New("invalid param")
-	}
-	event.Goto(param[0])
-	return CmdResult{Msg: ""}, nil
-}
-
-func (api *terminalCmd) SaveFile(param []string) (CmdResult, error) {
-	if len(param) < 2 {
-		return CmdResult{Msg: ""}, errors.New("input file hash and wallet address")
-	}
-	event.SaveOthersFile(param[0], param[1], "", nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -391,72 +341,5 @@ func (api *terminalCmd) CancelGet(param []string) (CmdResult, error) {
 		return CmdResult{Msg: ""}, errors.New("input file hash of the cancel")
 	}
 	event.DownloadSliceCancel(param[0], "", nil)
-	return CmdResult{Msg: DefaultMsg}, nil
-}
-
-func (api *terminalCmd) CreateAlbum(param []string) (CmdResult, error) {
-	if len(param) < 5 {
-		return CmdResult{Msg: ""}, errors.New("input album name, album abstract, album cover hash, " +
-			"album type(0:movie,1:music,2:other), file hash(if multiple file, separate by comma)")
-	}
-	files := make([]*protos.FileInfo, 0)
-	strs := strings.Split(param[4], ",")
-	for i, val := range strs {
-		t := &protos.FileInfo{
-			FileHash: val,
-			SortId:   uint64(i),
-		}
-		files = append(files, t)
-	}
-	event.CreateAlbum(param[0], param[1], param[2], param[3], "", files, false, nil)
-	return CmdResult{Msg: DefaultMsg}, nil
-}
-
-func (api *terminalCmd) AlbumList(param []string) (CmdResult, error) {
-	event.FindMyAlbum("", 0, 0, "", "", nil)
-	return CmdResult{Msg: DefaultMsg}, nil
-}
-
-func (api *terminalCmd) AlbumEdit(param []string) (CmdResult, error) {
-	// if len(param) < 3 {
-	// 	fmt.Println("input album id, action(0:add,1:delete,2:update), file hash(if multiple file, separated by comma)")
-	// 	return false
-	// }
-	// if param[1] == "2" { // edit
-	// 	event.EditAlbum(param[0], param[1], param[2], param[3], param[4], "", nil, nil)
-	// } else { // add
-	// 	strs := strings.Split(param[2], ",")
-	// 	event.EditAlbum(param[0], param[1], "", "", "", "", strs, nil)
-	// }
-	return CmdResult{Msg: DefaultMsg}, nil
-}
-
-func (api *terminalCmd) AlbumContent(param []string) (CmdResult, error) {
-	if len(param) < 1 {
-		fmt.Println("input album id")
-		return CmdResult{Msg: ""}, errors.New("input album id")
-	}
-	event.AlbumContent(param[0], "", nil)
-	return CmdResult{Msg: DefaultMsg}, nil
-}
-
-func (api *terminalCmd) AlbumSearch(param []string) (CmdResult, error) {
-	if len(param) < 3 {
-		return CmdResult{Msg: ""}, errors.New("input keyword, album type(0:movie,1:music,2:other), sort type(0:newest, 1:hottest)")
-	}
-	event.SearchAlbum(param[0], param[1], param[2], "", 0, 0, nil)
-	return CmdResult{Msg: DefaultMsg}, nil
-}
-
-func (api *terminalCmd) invite(param []string) (CmdResult, error) {
-	if len(param) < 1 {
-		return CmdResult{Msg: ""}, errors.New("input invite code")
-	}
-	event.Invite(param[0], "", nil)
-	return CmdResult{Msg: DefaultMsg}, nil
-}
-
-func (api *terminalCmd) Reward(param []string) (CmdResult, error) {
-	event.GetReward("", nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }

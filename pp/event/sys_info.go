@@ -2,8 +2,6 @@ package event
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/alex023/clock"
@@ -56,33 +54,33 @@ func startReportDHInfo() {
 }
 
 // GetCapacity GetCapacity
-func GetCapacity(reqID string, w http.ResponseWriter) {
-	if setting.CheckLogin() {
-		peers.SendMessage(client.PPConn, requests.ReqGetCapacityData(reqID), header.ReqGetCapacity)
-		storeResponseWriter(reqID, w)
-	} else {
-		notLogin(w)
-	}
-}
+//func GetCapacity(reqID string, w http.ResponseWriter) {
+//	if setting.CheckLogin() {
+//		peers.SendMessage(client.PPConn, requests.ReqGetCapacityData(reqID), header.ReqGetCapacity)
+//		storeResponseWriter(reqID, w)
+//	} else {
+//		notLogin(w)
+//	}
+//}
 
 // ReqGetCapacity
-func ReqGetCapacity(ctx context.Context, conn core.WriteCloser) {
-	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
-}
+//func ReqGetCapacity(ctx context.Context, conn core.WriteCloser) {
+//	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
+//}
 
 // RspGetCapacity
-func RspGetCapacity(ctx context.Context, conn core.WriteCloser) {
-	var target protos.RspGetCapacity
-	if requests.UnmarshalData(ctx, &target) {
-		if target.P2PAddress == setting.P2PAddress {
-			if target.Result.State == protos.ResultState_RES_SUCCESS {
-				fmt.Println("action  successfully", target.Result.Msg)
-			} else {
-				fmt.Println("action  failed", target.Result.Msg)
-			}
-			putData(target.ReqId, HTTPGetCapacity, &target)
-		} else {
-			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
-		}
-	}
-}
+//func RspGetCapacity(ctx context.Context, conn core.WriteCloser) {
+//	var target protos.RspGetCapacity
+//	if requests.UnmarshalData(ctx, &target) {
+//		if target.P2PAddress == setting.P2PAddress {
+//			if target.Result.State == protos.ResultState_RES_SUCCESS {
+//				fmt.Println("action  successfully", target.Result.Msg)
+//			} else {
+//				fmt.Println("action  failed", target.Result.Msg)
+//			}
+//			putData(target.ReqId, HTTPGetCapacity, &target)
+//		} else {
+//			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+//		}
+//	}
+//}
