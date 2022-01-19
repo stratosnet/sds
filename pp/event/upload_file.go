@@ -187,7 +187,7 @@ func up(ING *task.UpFileIng, target *protos.RspUploadFile) {
 			}
 			pp := ING.Slices[0]
 			utils.DebugLog("start upload!!!!!", pp.SliceNumber)
-			uploadTask := task.GetUploadSliceTask(pp, ING.FileHash, ING.TaskID, target.IsVideoStream, target.IsEncrypted)
+			uploadTask := task.GetUploadSliceTask(pp, ING.FileHash, ING.TaskID, target.SpP2PAddress, target.IsVideoStream, target.IsEncrypted)
 			if uploadTask == nil {
 				continue
 			}
@@ -219,7 +219,7 @@ func sendUploadFileSlice(target *protos.RspUploadFile) {
 			if _, ok := client.UpConnMap.Load(target.FileHash); !ok {
 				return
 			}
-			uploadTask := task.GetUploadSliceTask(pp, target.FileHash, target.TaskId, target.IsVideoStream, target.IsEncrypted)
+			uploadTask := task.GetUploadSliceTask(pp, target.FileHash, target.TaskId, target.SpP2PAddress, target.IsVideoStream, target.IsEncrypted)
 			if uploadTask != nil {
 				UploadFileSlice(uploadTask)
 			}

@@ -124,6 +124,7 @@ func UploadFileSlice(tk *task.UploadSliceTask) {
 						SliceOffsetEnd:   uint64(dataEnd),
 					},
 				},
+				SpP2pAddress: tk.SpP2pAddress,
 			}
 			utils.DebugLog("*****************", newTask.SliceTotalSize)
 			if dataEnd < (tkDataLen + 1) {

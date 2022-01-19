@@ -266,5 +266,6 @@ func sendReportStreamResult(body *StreamReqBody, sliceHash string, isPP bool) {
 		WalletAddress: body.WalletAddress,
 		P2PAddress:    body.P2PAddress,
 		TaskId:        body.SliceInfo.TaskId,
+		SpP2PAddress:  body.SpP2pAddress,
 	}, isPP)
 }

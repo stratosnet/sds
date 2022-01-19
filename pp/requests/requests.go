@@ -173,6 +173,7 @@ func RspDownloadSliceData(target *protos.ReqDownloadSlice) *protos.RspDownloadSl
 		SavePath:      target.SavePath,
 		ReqId:         target.ReqId,
 		IsEncrypted:   target.IsEncrypted,
+		SpP2PAddress:  target.SpP2PAddress,
 	}
 }
 
@@ -200,6 +201,7 @@ func RspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 		NeedReport:    last,
 		SavePath:      rsp.SavePath,
 		ReqId:         rsp.ReqId,
+		SpP2PAddress:  rsp.SpP2PAddress,
 		IsEncrypted:   rsp.IsEncrypted,
 	}
 
@@ -231,6 +233,7 @@ func ReqUploadFileSliceData(task *task.UploadSliceTask) *protos.ReqUploadFileSli
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		SliceSize:     task.SliceTotalSize,
+		SpP2PAddress:  task.SpP2pAddress,
 	}
 }
 
@@ -248,6 +251,7 @@ func ReqReportUploadSliceResultData(target *protos.RspUploadFileSlice) *protos.R
 		Sign:          setting.GetSign(setting.P2PAddress + target.FileHash),
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
+		SpP2PAddress:  target.SpP2PAddress,
 	}
 }
 func ReqReportUploadSliceResultDataPP(target *protos.ReqUploadFileSlice) *protos.ReportUploadSliceResult {
@@ -263,6 +267,7 @@ func ReqReportUploadSliceResultDataPP(target *protos.ReqUploadFileSlice) *protos
 		Sign:          setting.GetSign(setting.P2PAddress + target.FileHash),
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
+		SpP2PAddress:  target.SpP2PAddress,
 	}
 }
 
@@ -278,6 +283,7 @@ func RspUploadFileSliceData(target *protos.ReqUploadFileSlice) *protos.RspUpload
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
+		SpP2PAddress: target.SpP2PAddress,
 	}
 }
 
@@ -293,6 +299,7 @@ func ReqReportDownloadResultData(target *protos.RspDownloadSlice, isPP bool) *pr
 		FileHash:                target.FileHash,
 		Sign:                    setting.GetSign(setting.P2PAddress + target.FileHash),
 		TaskId:                  target.TaskId,
+		SpP2PAddress:            target.SpP2PAddress,
 	}
 	if isPP {
 		utils.Log("PP ReportDownloadResult ")
@@ -333,9 +340,10 @@ func ReqDownloadSliceData(target *protos.RspFileStorageInfo, rsp *protos.Downloa
 			SliceHash:   rsp.SliceStorageInfo.SliceHash,
 			SliceOffset: rsp.SliceOffset,
 		},
-		SavePath:    target.SavePath,
-		ReqId:       uuid.New().String(),
-		IsEncrypted: target.EncryptionTag != "",
+		SavePath:     target.SavePath,
+		ReqId:        uuid.New().String(),
+		IsEncrypted:  target.EncryptionTag != "",
+		SpP2PAddress: target.SpP2PAddress,
 	}
 }
 
@@ -392,6 +400,7 @@ func ReqValidateTransferCerData(target *protos.ReqTransferNotice) *protos.ReqVal
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
+		SpP2PAddress: target.SpP2PAddress,
 	}
 }
 
@@ -407,6 +416,7 @@ func ReqTransferNoticeData(target *protos.ReqTransferNotice) *msg.RelayMsgBuf {
 
 		SliceStorageInfo: target.SliceStorageInfo,
 		DeleteOrigin:     target.DeleteOrigin,
+		SpP2PAddress:     target.SpP2PAddress,
 	}
 	data, err := proto.Marshal(sendTager)
 	if err != nil {
@@ -418,14 +428,15 @@ func ReqTransferNoticeData(target *protos.ReqTransferNotice) *msg.RelayMsgBuf {
 	}
 }
 
-func RspTransferNoticeData(agree bool, cer string) *protos.RspTransferNotice {
+func RspTransferNoticeData(agree bool, cer, spP2pAddress string) *protos.RspTransferNotice {
 	rsp := &protos.RspTransferNotice{
 		StoragePpInfo: &protos.PPBaseInfo{
 			P2PAddress:     setting.P2PAddress,
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
 		},
-		TransferCer: cer,
+		TransferCer:  cer,
+		SpP2PAddress: spP2pAddress,
 	}
 	if agree {
 		rsp.Result = &protos.Result{
@@ -439,9 +450,10 @@ func RspTransferNoticeData(agree bool, cer string) *protos.RspTransferNotice {
 	return rsp
 }
 
-func ReqTransferDownloadData(transferCer string) *protos.ReqTransferDownload {
+func ReqTransferDownloadData(transferCer, spP2pAddress string) *protos.ReqTransferDownload {
 	return &protos.ReqTransferDownload{
-		TransferCer: transferCer,
+		TransferCer:  transferCer,
+		SpP2PAddress: spP2pAddress,
 	}
 }
 
@@ -504,12 +516,13 @@ func RspTransferDownloadResultData(transferCer string) *protos.RspTransferDownlo
 	}
 }
 
-func RspTransferDownload(data []byte, transferCer string, offset, sliceSize uint64) *protos.RspTransferDownload {
+func RspTransferDownload(data []byte, transferCer, spP2pAddress string, offset, sliceSize uint64) *protos.RspTransferDownload {
 	return &protos.RspTransferDownload{
-		Data:        data,
-		TransferCer: transferCer,
-		Offset:      offset,
-		SliceSize:   sliceSize,
+		Data:         data,
+		TransferCer:  transferCer,
+		Offset:       offset,
+		SliceSize:    sliceSize,
+		SpP2PAddress: spP2pAddress,
 	}
 }
 
