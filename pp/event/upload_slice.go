@@ -72,7 +72,7 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 		} else {
 			// target is self, report to SP if success
-			utils.DebugLog("P get resp upload slice success sliceNumber", target.SliceNumAddr.SliceNumber, "target.FileHash", target.FileHash)
+			utils.DebugLog("P get resp upload slice success sliceNumber", target.SliceNumAddr.SliceNumber, "target.fileHash", target.FileHash)
 			utils.DebugLog("target size =", target.SliceSize)
 			utils.DebugLog("******************************************")
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
@@ -82,7 +82,7 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 				utils.DebugLog("RspUploadFileSlice ErrorLog")
 				utils.ErrorLog(target.Result.Msg)
 			}
-			utils.DebugLog("uploadKeep(target.FileHash, target.TaskId)")
+			utils.DebugLog("uploadKeep(target.fileHash, target.TaskId)")
 			uploadKeep(target.FileHash, target.TaskId)
 
 		}

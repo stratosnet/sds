@@ -1,13 +1,14 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
-	"net/http"
 )
 
 func downProgress(w http.ResponseWriter, request *http.Request) {

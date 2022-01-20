@@ -105,8 +105,6 @@ const (
 	RspDownloadSliceWrong   = "RspDSW"
 	ReqDownloadSlicePause   = "ReqDSP"
 	RspDownloadSlicePause   = "RspDSP"
-	ReqFindDirectoryTree    = "ReqFDT"
-	RspFindDirectoryTree    = "RspFDT"
 	ReqClearDownloadTask    = "ReqCDT"
 
 	// register new pp

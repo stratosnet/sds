@@ -20,51 +20,12 @@ import (
 	"github.com/stratosnet/sds/utils/httpserv"
 )
 
-var isImage bool
-
-// DirectoryTreeMap DirectoryTreeMap
-var DirectoryTreeMap = make(map[string]*Ts)
-
-// Ts Ts
-type Ts struct {
-	Reqs  []*protos.RspFindDirectoryTree
-	Count int
-}
-
-// Tree Tree
-// type Tree struct {
-// 	Dir  string
-// 	Hash string
-// }
-
-// DirectoryTree
-// var DirectoryTree = make(map[string]*Tree, 10)
-
-// whether is found from query
-var isFind bool
-
-// FindDirectoryTree
-func FindDirectoryTree(reqID, pathHash string, w http.ResponseWriter, isF bool) {
-	if setting.CheckLogin() {
-		// request is the same as AlbumContent
-		peers.SendMessage(client.PPConn, requests.ReqFindDirectoryTreeData(reqID, pathHash), header.ReqFindDirectoryTree)
-		storeResponseWriter(reqID, w)
-		isFind = isF
-	} else {
-		notLogin(w)
-	}
-}
-
 // GetFileStorageInfo p to pp
-func GetFileStorageInfo(path, savePath, reqID string, isImg bool, isVideoStream bool, w http.ResponseWriter) {
+func GetFileStorageInfo(path, savePath, reqID string, isVideoStream bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		if CheckDownloadPath(path) {
 			utils.DebugLog("path:", path)
 			peers.SendMessage(client.PPConn, requests.ReqFileStorageInfoData(path, savePath, reqID, isVideoStream, nil), header.ReqFileStorageInfo)
-			if isImg {
-				isImage = isImg
-				storeResponseWriter(reqID, w)
-			}
 		} else {
 			utils.ErrorLog("please input correct download link, eg: sdm://address/fileHash|filename(optional)")
 			if w != nil {
@@ -190,9 +151,6 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 				utils.DebugLog("DownloadFileSlice(&target)", target)
 			} else {
 				utils.Log("failed to download，", target.Result.Msg)
-			}
-			if isImage {
-				putData(target.ReqId, HTTPDownloadFile, &target)
 			}
 		} else {
 			// store the task and transfer
