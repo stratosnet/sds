@@ -154,22 +154,6 @@ message RspFindMyFileList {
   Result result = 5;
 }
 
-message ReqFindDirectoryTree {
-  string p2p_address = 1;
-  string wallet_address = 2;
-  string path_hash = 3;
-  string req_id = 4; //
-}
-
-message RspFindDirectoryTree {
-  string p2p_address = 1;
-  string wallet_address = 2;
-  string directory = 3;
-  repeated FileInfo file_info = 4;
-  string req_id = 5;
-  Result result = 6;
-}
-
 //get file and download -----------------------------------
 
 
@@ -640,13 +624,11 @@ message RspBlockCheck {
   string id = 3;
 }
 
-
 message BlockCheckInfo {
   int64 block_height = 1;
   string block_hash = 2;
   string id = 3;
 }
-
 
 //
 message ReqDownloadTaskInfo {
@@ -695,7 +677,6 @@ message ReqShareFile {
   string wallet_address = 6;
   string path_hash = 7;// share whole directory if this field is non-empty
 }
-
 
 message RspShareFile {
   string share_link = 1;

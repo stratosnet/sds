@@ -54,7 +54,7 @@ func streamVideoStorageInfo(w http.ResponseWriter, req *http.Request) {
 
 	var fInfo *protos.RspFileStorageInfo
 	task.DownloadFileMap.Delete(fileHash)
-	event.GetFileStorageInfo("sdm://"+setting.WalletAddress+"/"+fileHash, setting.VIDEOPATH, uuid.New().String(), false, true, w)
+	event.GetFileStorageInfo("sdm://"+setting.WalletAddress+"/"+fileHash, setting.VIDEOPATH, uuid.New().String(), true, w)
 	start := time.Now().Unix()
 	for {
 		if f, ok := task.DownloadFileMap.Load(fileHash); ok {
@@ -205,7 +205,7 @@ func verifyStreamReqBody(req *http.Request, sliceHash string) (*StreamReqBody, e
 	}
 
 	if len(reqBody.FileHash) != 40 {
-		return nil, errors.New("incorrect file hash")
+		return nil, errors.New("incorrect file fileHash")
 	}
 
 	if len(reqBody.WalletAddress) != 41 {

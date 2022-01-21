@@ -1,17 +1,18 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
-	"net/http"
 
 	"github.com/google/uuid"
 )
 
-// case body.Directory == "" AND body.FileName == "": query all files under root
-// case body.Directory != "" AND body.FileName == "": query all files under the directory specified
-// case body.Directory == "" AND body.FileName != "": query the file specified under root
-// case body.Directory != "" AND body.FileName != "": query the file specified under the directory specified
+// case body.Directory == "" AND body.fileHash == "": query all files under root
+// case body.Directory != "" AND body.fileHash == "": query all files under the directory specified
+// case body.Directory == "" AND body.fileHash != "": query the file specified under root
+// case body.Directory != "" AND body.fileHash != "": query the file specified under the directory specified
 
 func getAllFile(w http.ResponseWriter, request *http.Request) {
 	data, err := HTTPRequest(request, w, true)

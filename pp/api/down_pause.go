@@ -1,10 +1,11 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils/httpserv"
-	"net/http"
 
 	"github.com/google/uuid"
 )
