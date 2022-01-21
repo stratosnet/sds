@@ -37,12 +37,12 @@ func ReqTransferNotice(ctx context.Context, conn core.WriteCloser) {
 		if task.CheckTransfer(&target) {
 			// store this task
 			task.TransferTaskMap[target.TransferCer] = &target
-			rspTransferNotice(true, target.TransferCer)
+			rspTransferNotice(true, target.TransferCer, target.SpP2PAddress)
 			// if accept task, send request transfer notice to original PP
 			peers.TransferSendMessageToPPServ(target.StoragePpInfo.NetworkAddress, requests.ReqTransferNoticeData(&target))
 			utils.DebugLog("rspTransferNotice sendTransferToPP ")
 		} else {
-			rspTransferNotice(false, target.TransferCer)
+			rspTransferNotice(false, target.TransferCer, target.SpP2PAddress)
 		}
 		return
 	}
@@ -57,8 +57,8 @@ func ReqTransferNotice(ctx context.Context, conn core.WriteCloser) {
 }
 
 // rspTransferNotice
-func rspTransferNotice(agree bool, cer string) {
-	peers.SendMessageToSPServer(requests.RspTransferNoticeData(agree, cer), header.RspTransferNotice)
+func rspTransferNotice(agree bool, cer, spP2pAddress string) {
+	peers.SendMessageToSPServer(requests.RspTransferNoticeData(agree, cer, spP2pAddress), header.RspTransferNotice)
 }
 
 // RspValidateTransferCer  SP-PP OR PP-PP
@@ -106,7 +106,7 @@ func RspValidateTransferCer(ctx context.Context, conn core.WriteCloser) {
 	if tTask.FromSp {
 		utils.DebugLog("if transfer cert from SP, then self is the transfer target ")
 
-		peers.SendMessage(conn, requests.ReqTransferDownloadData(target.TransferCer), header.ReqTransferDownload)
+		peers.SendMessage(conn, requests.ReqTransferDownloadData(target.TransferCer, target.SpP2PAddress), header.ReqTransferDownload)
 	} else {
 		// certificate validation success, resp to new PP to start download
 		utils.DebugLog("cert validation success, resp to new PP to start download")
@@ -115,7 +115,7 @@ func RspValidateTransferCer(ctx context.Context, conn core.WriteCloser) {
 }
 
 // ReqReportTransferResult
-func ReqReportTransferResult(transferCer string, result bool, originDeleted bool) {
+func ReqReportTransferResult(transferCer, spP2pAddress string, result bool, originDeleted bool) {
 	tTask, ok := task.TransferTaskMap[transferCer]
 	if !ok {
 		return
@@ -123,6 +123,7 @@ func ReqReportTransferResult(transferCer string, result bool, originDeleted bool
 	req := &protos.ReqReportTransferResult{
 		TransferCer:   transferCer,
 		OriginDeleted: originDeleted,
+		SpP2PAddress:  spP2pAddress,
 	}
 	if result {
 		req.Result = &protos.Result{
@@ -183,10 +184,10 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	dataEnd := setting.MAXDATA
 	for {
 		if dataEnd >= (sliceDataLen + 1) {
-			peers.SendMessage(conn, requests.RspTransferDownload(sliceData[dataStart:], target.TransferCer, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
+			peers.SendMessage(conn, requests.RspTransferDownload(sliceData[dataStart:], target.TransferCer, target.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 			return
 		}
-		peers.SendMessage(conn, requests.RspTransferDownload(sliceData[dataStart:dataEnd], target.TransferCer, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
+		peers.SendMessage(conn, requests.RspTransferDownload(sliceData[dataStart:dataEnd], target.TransferCer, target.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 		dataStart += setting.MAXDATA
 		dataEnd += setting.MAXDATA
 	}
@@ -200,7 +201,7 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	if task.SaveTransferData(&target) {
-		ReqReportTransferResult(target.TransferCer, true, false)
+		ReqReportTransferResult(target.TransferCer, target.SpP2PAddress, true, false)
 		peers.SendMessage(conn, requests.RspTransferDownloadResultData(target.TransferCer), header.RspTransferDownloadResult)
 	}
 }
@@ -215,7 +216,7 @@ func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
 
 	isSuccessful := target.Result.State == protos.ResultState_RES_SUCCESS
 	if !isSuccessful {
-		ReqReportTransferResult(target.TransferCer, isSuccessful, false)
+		ReqReportTransferResult(target.TransferCer, target.SpP2PAddress, isSuccessful, false)
 		return
 	}
 
@@ -229,5 +230,5 @@ func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
 			utils.ErrorLog("Fail to delete original slice ", err)
 		}
 	}
-	ReqReportTransferResult(target.TransferCer, isSuccessful, deleteOrigin)
+	ReqReportTransferResult(target.TransferCer, target.SpP2PAddress, isSuccessful, deleteOrigin)
 }

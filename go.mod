@@ -35,6 +35,7 @@ require (
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.0.0
 	github.com/stratosnet/stratos-chain v0.5.1-0.20211216025522-a1931d329bb7
+	github.com/tendermint/go-amino v0.15.1
 	github.com/tendermint/tendermint v0.33.9
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
