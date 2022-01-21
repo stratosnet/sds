@@ -458,6 +458,33 @@ message RspTransferNotice {
   string sp_p2p_address = 4;
 }
 
+// the message that is sent to the pp which will pull the
+// slice from another pp which stores the file slice
+message ReqFileSliceBackupNotice {
+  string task_id = 1;
+  string file_hash = 2;
+  SliceStorageInfo slice_storage_info = 3;
+  string slice_number = 4;
+  PPBaseInfo pp_info = 5; // p2p which stores the file slice
+  string sp_p2p_address = 6;
+  bytes  sign = 7; //signature is signed on 'file_hash#slice_hash#receiver_p2p_address#sender_p2p_address'
+  bytes  pubkey = 8;
+}
+
+// the message that is sent back to sp from both the slice sender pp
+// and the slice receiver pp
+message ReportBackupSliceResult {
+  string     task_id = 1; //
+  string     file_hash = 2; //
+  string     slice_hash = 3; //
+  bool       backup_success = 4;
+  bool       is_receiver = 5; //
+  uint64     slice_number = 6;
+  uint64     slice_size = 7; //
+  string     p2p_address = 8;
+  string     wallet_address = 9;
+  string     sp_p2p_address = 10;
+}
 
 //  storagePP-SP
 message ReqValidateTransferCer {

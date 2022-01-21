@@ -246,7 +246,7 @@ func SendReportDownloadResult(target *protos.RspDownloadSlice, isPP bool) {
 	}
 
 	task.CleanDownloadTask(target.FileHash, target.SliceInfo.SliceHash, target.P2PAddress, target.WalletAddress)
-	// downloadPassageway.Delete(target.WalletAddress + target.SliceInfo.SliceHash)
+	// downloadPassageway.Delete(target.WalletAddress + target.SliceStorageInfo.SliceHash)
 }
 
 // ReportDownloadResult  P-SP OR PP-SP

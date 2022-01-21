@@ -5,18 +5,24 @@ import (
 	"github.com/stratosnet/sds/pp/file"
 )
 
+type TransferTask struct {
+	FromSp           bool
+	PpInfo           *protos.PPBaseInfo
+	SliceStorageInfo *protos.SliceStorageInfo
+}
+
 // TransferTaskMap
-var TransferTaskMap = make(map[string]*protos.ReqTransferNotice)
+var TransferTaskMap = make(map[string]TransferTask)
 
 // CheckTransfer check whether can transfer
 // todo:
-func CheckTransfer(target *protos.ReqTransferNotice) bool {
+func CheckTransfer(target *protos.ReqFileSliceBackupNotice) bool {
 	return true
 }
 
 // GetTransferSliceData
-func GetTransferSliceData(transferCer string) []byte {
-	if tTask, ok := TransferTaskMap[transferCer]; ok {
+func GetTransferSliceData(taskId string) []byte {
+	if tTask, ok := TransferTaskMap[taskId]; ok {
 		data := file.GetSliceData(tTask.SliceStorageInfo.SliceHash)
 		return data
 	}

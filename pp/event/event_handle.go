@@ -33,6 +33,7 @@ func RegisterEventHandle() {
 	core.Register(header.RspReportDownloadResult, RspReportDownloadResult)
 	core.Register(header.RspRegisterNewPP, RspRegisterNewPP)
 	core.Register(header.ReqTransferNotice, ReqTransferNotice)
+
 	core.Register(header.RspValidateTransferCer, RspValidateTransferCer)
 	core.Register(header.ReqTransferDownload, ReqTransferDownload)
 	core.Register(header.RspTransferDownload, RspTransferDownload)

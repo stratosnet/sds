@@ -450,10 +450,11 @@ func RspTransferNoticeData(agree bool, cer, spP2pAddress string) *protos.RspTran
 	return rsp
 }
 
-func ReqTransferDownloadData(transferCer, spP2pAddress string) *protos.ReqTransferDownload {
+func ReqTransferDownloadData(notice *protos.ReqFileSliceBackupNotice) *protos.ReqTransferDownload {
+	// TODO:
 	return &protos.ReqTransferDownload{
-		TransferCer:  transferCer,
-		SpP2PAddress: spP2pAddress,
+		TransferCer:  "",
+		SpP2PAddress: "",
 	}
 }
 

@@ -175,6 +175,16 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
+
+	// TODO: add to ReqTransferDownload the data missing below
+	// TODO: remove protos messages not needed anymore (esp. things related to cer)
+	peers.RegisterPeerMap.Store(target.StoragePpInfo.P2PAddress, core.NetIDFromContext(ctx))
+	task.TransferTaskMap[target.TaskId] = task.TransferTask{
+		FromSp:           false,
+		PpInfo:           nil,
+		SliceStorageInfo: nil,
+	}
+
 	sliceData := task.GetTransferSliceData(target.TransferCer)
 	sliceDataLen := len(sliceData)
 	utils.DebugLog("————————————————————————————————————")
