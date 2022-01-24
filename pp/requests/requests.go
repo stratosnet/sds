@@ -391,70 +391,24 @@ func ReqRegisterNewPPData() *protos.ReqRegisterNewPP {
 	}
 }
 
-func ReqValidateTransferCerData(target *protos.ReqTransferNotice) *protos.ReqValidateTransferCer {
-	return &protos.ReqValidateTransferCer{
-		TransferCer: target.TransferCer,
-		NewPp:       target.StoragePpInfo,
-		OriginalPp: &protos.PPBaseInfo{
-			P2PAddress:     setting.P2PAddress,
-			WalletAddress:  setting.WalletAddress,
-			NetworkAddress: setting.NetworkAddress,
-		},
-		SpP2PAddress: target.SpP2PAddress,
+func ReqTransferDownloadData(notice *protos.ReqFileSliceBackupNotice, newPpP2pAddress string) *msg.RelayMsgBuf {
+	protoMsg := &protos.ReqTransferDownload{
+		TaskId:           notice.TaskId,
+		NewPp:            &protos.PPBaseInfo{P2PAddress: newPpP2pAddress},
+		OriginalPp:       notice.PpInfo,
+		SliceStorageInfo: notice.SliceStorageInfo,
+		SpP2PAddress:     notice.SpP2PAddress,
+		FileHash:         notice.FileHash,
+		SliceNum:         notice.SliceNumber,
+		DeleteOrigin:     notice.DeleteOrigin,
 	}
-}
-
-func ReqTransferNoticeData(target *protos.ReqTransferNotice) *msg.RelayMsgBuf {
-	sendTager := &protos.ReqTransferNotice{
-		FromSp:      false,
-		TransferCer: target.TransferCer,
-		StoragePpInfo: &protos.PPBaseInfo{
-			P2PAddress:     setting.P2PAddress,
-			WalletAddress:  setting.WalletAddress,
-			NetworkAddress: setting.NetworkAddress,
-		},
-
-		SliceStorageInfo: target.SliceStorageInfo,
-		DeleteOrigin:     target.DeleteOrigin,
-		SpP2PAddress:     target.SpP2PAddress,
-	}
-	data, err := proto.Marshal(sendTager)
+	data, err := proto.Marshal(protoMsg)
 	if err != nil {
 		utils.ErrorLog(err)
 	}
 	return &msg.RelayMsgBuf{
-		MSGHead: PPMsgHeader(data, header.ReqTransferNotice),
+		MSGHead: PPMsgHeader(data, header.ReqTransferDownload),
 		MSGData: data,
-	}
-}
-
-func RspTransferNoticeData(agree bool, cer, spP2pAddress string) *protos.RspTransferNotice {
-	rsp := &protos.RspTransferNotice{
-		StoragePpInfo: &protos.PPBaseInfo{
-			P2PAddress:     setting.P2PAddress,
-			WalletAddress:  setting.WalletAddress,
-			NetworkAddress: setting.NetworkAddress,
-		},
-		TransferCer:  cer,
-		SpP2PAddress: spP2pAddress,
-	}
-	if agree {
-		rsp.Result = &protos.Result{
-			State: protos.ResultState_RES_SUCCESS,
-		}
-	} else {
-		rsp.Result = &protos.Result{
-			State: protos.ResultState_RES_FAIL,
-		}
-	}
-	return rsp
-}
-
-func ReqTransferDownloadData(notice *protos.ReqFileSliceBackupNotice) *protos.ReqTransferDownload {
-	// TODO:
-	return &protos.ReqTransferDownload{
-		TransferCer:  "",
-		SpP2PAddress: "",
 	}
 }
 
@@ -508,19 +462,19 @@ func FindMyFileListData(fileName, dir, reqID, keyword string, fileType protos.Fi
 	}
 }
 
-func RspTransferDownloadResultData(transferCer string) *protos.RspTransferDownloadResult {
+func RspTransferDownloadResultData(taskId string) *protos.RspTransferDownloadResult {
 	return &protos.RspTransferDownloadResult{
-		TransferCer: transferCer,
+		TaskId: taskId,
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
 	}
 }
 
-func RspTransferDownload(data []byte, transferCer, spP2pAddress string, offset, sliceSize uint64) *protos.RspTransferDownload {
+func RspTransferDownload(data []byte, taskId, spP2pAddress string, offset, sliceSize uint64) *protos.RspTransferDownload {
 	return &protos.RspTransferDownload{
 		Data:         data,
-		TransferCer:  transferCer,
+		TaskId:       taskId,
 		Offset:       offset,
 		SliceSize:    sliceSize,
 		SpP2PAddress: spP2pAddress,

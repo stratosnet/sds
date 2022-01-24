@@ -440,7 +440,8 @@ message RspDeleteFile {
 }
 
 
-// file transfer
+// file transfer commented out for backup logic redesign QB-897
+/*
 // SP notify new PP to get file from storing PP，slice info are included
 // new pp transfer to old pp, slice infos are not included,
 message ReqTransferNotice {
@@ -458,34 +459,6 @@ message RspTransferNotice {
   string sp_p2p_address = 4;
 }
 
-// the message that is sent to the pp which will pull the
-// slice from another pp which stores the file slice
-message ReqFileSliceBackupNotice {
-  string task_id = 1;
-  string file_hash = 2;
-  SliceStorageInfo slice_storage_info = 3;
-  string slice_number = 4;
-  PPBaseInfo pp_info = 5; // p2p which stores the file slice
-  string sp_p2p_address = 6;
-  bytes  sign = 7; //signature is signed on 'file_hash#slice_hash#receiver_p2p_address#sender_p2p_address'
-  bytes  pubkey = 8;
-}
-
-// the message that is sent back to sp from both the slice sender pp
-// and the slice receiver pp
-message ReportBackupSliceResult {
-  string     task_id = 1; //
-  string     file_hash = 2; //
-  string     slice_hash = 3; //
-  bool       backup_success = 4;
-  bool       is_receiver = 5; //
-  uint64     slice_number = 6;
-  uint64     slice_size = 7; //
-  string     p2p_address = 8;
-  string     wallet_address = 9;
-  string     sp_p2p_address = 10;
-}
-
 //  storagePP-SP
 message ReqValidateTransferCer {
   string transfer_cer = 1;
@@ -501,31 +474,6 @@ message RspValidateTransferCer {
   string sp_p2p_address = 4;
 }
 
-
-message ReqTransferDownload {
-  string transfer_cer = 1;
-  string sp_p2p_address = 2;
-}
-
-
-message RspTransferDownload {
-  string transfer_cer = 1;
-  bytes  data = 2;
-  uint64 offset = 3;
-  uint64 slice_size = 4;
-  Result result = 5;
-  string sp_p2p_address = 6;
-}
-
-
-message RspTransferDownloadResult {
-  string transfer_cer = 1;
-  Result result = 2;
-  string sp_p2p_address = 3;
-}
-
-
-
 message ReqReportTransferResult {
   string transfer_cer = 1;
   PPBaseInfo new_pp = 2;
@@ -534,12 +482,71 @@ message ReqReportTransferResult {
   bool origin_deleted = 5;
   string sp_p2p_address = 6;
 }
-
 message RspReportTransferResult {
   Result result = 1;
   string transfer_cer = 2;
   string new_pp_p2p_address = 3;
 }
+*/
+
+// the message that is sent to the pp which will pull the
+// slice from another pp which stores the file slice
+message ReqFileSliceBackupNotice {
+  string           task_id = 1;
+  string           file_hash = 2;
+  SliceStorageInfo slice_storage_info = 3;
+  uint64           slice_number = 4;
+  PPBaseInfo       pp_info = 5; // p2p which stores the file slice
+  string           sp_p2p_address = 6;
+  bool             delete_origin = 7;
+  bytes            sign = 8; //signature is signed on 'file_hash#slice_hash#receiver_p2p_address#sender_p2p_address'
+  bytes            pubkey = 9;
+}
+
+// the message that is sent back to sp from both the slice sender pp
+// and the slice receiver pp
+message ReqReportBackupSliceResult {
+  string     task_id = 1; //
+  string     file_hash = 2; //
+  string     slice_hash = 3; //
+  bool       backup_success = 4;
+  bool       is_receiver = 5; //
+  bool       origin_deleted = 6;
+  uint64     slice_number = 7;
+  uint64     slice_size = 8; //
+  PPBaseInfo pp_info = 9;
+  string     sp_p2p_address = 10;
+}
+message RspReportBackupSliceResult {
+  string task_id = 1;
+  Result result = 2;
+}
+
+message ReqTransferDownload {
+  string           task_id = 1;
+  PPBaseInfo       new_pp = 2;
+  PPBaseInfo       original_pp = 3;
+  SliceStorageInfo slice_storage_info = 4;
+  string           sp_p2p_address = 5;
+  string           file_hash = 6;
+  uint64           slice_num = 7;
+  bool             delete_origin = 8;
+}
+message RspTransferDownload {
+  string task_id = 1;
+  bytes  data = 2;
+  uint64 offset = 3;
+  uint64 slice_size = 4;
+  Result result = 5;
+  string sp_p2p_address = 6;
+}
+
+message RspTransferDownloadResult {
+  string task_id = 1;
+  Result result = 2;
+  string sp_p2p_address = 3;
+}
+
 
 // sp - pp get storage info
 message ReqGetHDInfo {

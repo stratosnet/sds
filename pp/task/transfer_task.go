@@ -7,8 +7,11 @@ import (
 
 type TransferTask struct {
 	FromSp           bool
+	DeleteOrigin     bool
 	PpInfo           *protos.PPBaseInfo
 	SliceStorageInfo *protos.SliceStorageInfo
+	FileHash         string
+	SliceNum         uint64
 }
 
 // TransferTaskMap
@@ -31,7 +34,7 @@ func GetTransferSliceData(taskId string) []byte {
 
 // SaveTransferData
 func SaveTransferData(target *protos.RspTransferDownload) bool {
-	if tTask, ok := TransferTaskMap[target.TransferCer]; ok {
+	if tTask, ok := TransferTaskMap[target.TaskId]; ok {
 		save := file.SaveSliceData(target.Data, tTask.SliceStorageInfo.SliceHash, target.Offset)
 		if save {
 			if target.SliceSize == uint64(file.GetSliceSize(tTask.SliceStorageInfo.SliceHash)) {
