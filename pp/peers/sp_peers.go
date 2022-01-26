@@ -103,13 +103,19 @@ func SendLatencyCheckMessageToSPList() {
 	}
 	for i := 0; i < len(setting.Config.SPList); i++ {
 		selectedSP := setting.Config.SPList[i]
-		checkSingleSpLatency(selectedSP.NetworkAddress, setting.IsPP)
+		checkSingleSpLatency(selectedSP.NetworkAddress, false)
 	}
 }
 
 func checkSingleSpLatency(server string, heartbeat bool) {
-	utils.DebugLog("[SP_LATENCY_CHECK] SendHeartbeat(server, req, header.ReqHeartbeat)")
-	spConn := client.NewClient(server, heartbeat)
+	utils.DebugLog("[SP_LATENCY_CHECK] SendHeartbeat(", server, ", req, header.ReqHeartbeat)")
+	var spConn *cf.ClientConn
+	if client.SPConn.GetName() != server {
+		spConn = client.NewClient(server, heartbeat)
+	} else {
+		utils.DebugLog("Checking latency for working SP ", server)
+		spConn = client.SPConn
+	}
 	//defer spConn.Close()
 	if spConn != nil {
 		start := time.Now().UnixNano()
@@ -120,7 +126,9 @@ func checkSingleSpLatency(server string, heartbeat bool) {
 			PingTime:         strconv.FormatInt(start, 10),
 		}
 		SendMessage(spConn, pb, header.ReqHeart)
-		bufferedSpConns = append(bufferedSpConns, spConn)
+		if client.SPConn.GetName() != server {
+			bufferedSpConns = append(bufferedSpConns, spConn)
+		}
 	}
 }
 
