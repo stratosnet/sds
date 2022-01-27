@@ -111,17 +111,22 @@ const (
 	ReqRegisterNewPP = "ReqRgNPP"
 	RspRegisterNewPP = "RspRgNPP"
 
-	// transfer
+	/* transfer commented out for backup logic redesign QB-897
 	ReqTransferNotice         = "ReqTrNot"
 	RspTransferNotice         = "RspTrNot"
 	ReqValidateTransferCer    = "ReqVTCer" // request to validate transfer certificate PP->SP
 	RspValidateTransferCer    = "RspVTCer" // response to validate transfer certificate SP->PP
-	ReqTransferDownload       = "ReqTdl"
-	RspTransferDownload       = "RspTdl"
-	RspTransferDownloadResult = "RspTdlR"
-
 	ReqReportTransferResult = "ReqTrRep"
 	RspReportTransferResult = "RspTrRep"
+	*/
+
+	// backup
+	ReqFileSliceBackupNotice   = "ReqFBNot"
+	ReqTransferDownload        = "ReqTdl"
+	RspTransferDownload        = "RspTdl"
+	RspTransferDownloadResult  = "RspTdlR"
+	ReqReportBackupSliceResult = "ReqRBSR"
+	RspReportBackupSliceResult = "RspRBSR"
 
 	//TODO change to report to SP
 	ReqReportTaskBP = "ReqRTBP" // report to BP

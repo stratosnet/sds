@@ -6,7 +6,6 @@ import (
 )
 
 func testRun(t *testing.T) {
-
 	f := func(line string, param []string) bool {
 		fmt.Println(param)
 		return true
@@ -16,8 +15,7 @@ func testRun(t *testing.T) {
 		fmt.Println(param)
 		return true
 	}
-	Mystdin.RegisterProcessFunc("test", f)
-	Mystdin.RegisterProcessFunc("test2", f2)
+	Mystdin.RegisterProcessFunc("test", f, true)
+	Mystdin.RegisterProcessFunc("test2", f2, true)
 	Mystdin.Run()
-
 }
