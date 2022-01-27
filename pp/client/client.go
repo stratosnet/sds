@@ -96,7 +96,7 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 		}
 		if SPConn != nil {
 			if SPConn.GetName() == c.(*cf.ClientConn).GetName() {
-				utils.DebugLog("lost SP conn")
+				utils.DebugLog("lost SP conn, name: ", SPConn.GetName(), " netId is ", SPConn.GetNetID())
 				SPConn = nil
 				select {
 				case OfflineChan <- &Offline{

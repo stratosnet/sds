@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/alex023/clock"
+	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -32,12 +33,16 @@ var (
 )
 
 func ReqHBLatencyCheckSpList(ctx context.Context, conn core.WriteCloser) {
+	if conn.(*cf.ClientConn).GetName() != client.SPConn.GetName() {
+		//utils.DebugLogf("====== not sending latency check %v ======", conn.(*cf.ClientConn).GetName())
+		return
+	}
+	//utils.DebugLogf("====== sending latency check %v ======", conn.(*cf.ClientConn).GetName())
 	peers.ClearBufferedSpConns()
 	// clear optSp before ping sp list
 	summary.optSp = OptimalSp{}
 	go peers.SendLatencyCheckMessageToSPList()
 	myClockLatency := clock.NewClock()
-	utils.DebugLog("add connectAndRegisterToOptSp job, actionMax = 1")
 	myClockLatency.AddJobRepeat(time.Second*utils.LatencyCheckSpListTimeout, 1, connectAndRegisterToOptSp)
 }
 

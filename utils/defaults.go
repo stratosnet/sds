@@ -10,5 +10,5 @@ const (
 	MsgHeaderLen               = 16              // in bytes
 	MessageBeatLen             = 4 * 1024 * 1024 // in bytes
 	LatencyCheckSpListInterval = 1800            // in seconds
-	LatencyCheckSpListTimeout  = 10              // in seconds
+	LatencyCheckSpListTimeout  = 3               // in seconds
 )

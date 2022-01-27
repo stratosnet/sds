@@ -71,7 +71,7 @@ type ClientConn struct {
 	pending          []int64
 	ctx              context.Context
 	cancel           context.CancelFunc
-	job              clock.Job
+	jobs             []clock.Job
 	secondReadFlowA  int64
 	secondReadFlowB  int64
 	secondReadAtomA  *utils.AtomicInt64
@@ -260,10 +260,13 @@ func (cc *ClientConn) Start() {
 		}
 	)
 	if !cc.opts.heartClose {
-		cc.job, _ = myClock.AddJobRepeat(time.Second*utils.ClientSendHeartTime, 0, jobFunc)
+		hbJob, _ := myClock.AddJobRepeat(time.Second*utils.ClientSendHeartTime, 0, jobFunc)
+		cc.jobs = append(cc.jobs, hbJob)
 	}
-	myClock.AddJobRepeat(time.Second*utils.LatencyCheckSpListInterval, 0, spLatencyCheckJobFunc)
-	myClock.AddJobRepeat(time.Second*1, 0, logFunc)
+	latencyJob, _ := myClock.AddJobRepeat(time.Second*utils.LatencyCheckSpListInterval, 0, spLatencyCheckJobFunc)
+	cc.jobs = append(cc.jobs, latencyJob)
+	logJob, _ := myClock.AddJobRepeat(time.Second*1, 0, logFunc)
+	cc.jobs = append(cc.jobs, logJob)
 }
 
 // ClientClose Actively closes the client connection
@@ -296,8 +299,11 @@ func (cc *ClientConn) ClientClose() {
 		// close all channels.
 		close(cc.sendCh)
 		close(cc.handlerCh)
-		if cc.job != nil {
-			cc.job.Cancel()
+		if len(cc.jobs) > 0 {
+			utils.DebugLogf("cancel %v jobs, %v", len(cc.jobs), cc.GetName())
+			for _, job := range cc.jobs {
+				job.Cancel()
+			}
 		}
 	})
 }
@@ -328,8 +334,11 @@ func (cc *ClientConn) Close() {
 		// close all channels.
 		close(cc.sendCh)
 		close(cc.handlerCh)
-		if cc.job != nil {
-			cc.job.Cancel()
+		if len(cc.jobs) > 0 {
+			utils.DebugLogf("cancel %v jobs, %v", len(cc.jobs), cc.GetName())
+			for _, job := range cc.jobs {
+				job.Cancel()
+			}
 		}
 		if cc.opts.reconnect {
 			cc.reconnect()

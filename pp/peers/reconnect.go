@@ -13,8 +13,8 @@ import (
 )
 
 type OptimalSp struct {
-	optSpNetworkAddr string
-	mtx              sync.Mutex
+	networkAddr string
+	mtx         sync.Mutex
 }
 
 var (
@@ -91,14 +91,13 @@ func ConfirmOptSP(spNetworkAddr string) {
 		utils.DebugLog("optimal SP already in connection, won't change SP")
 		return
 	}
-	utils.DebugLog("closing current sp ", client.SPConn.GetName())
 	setOptSP(spNetworkAddr)
 	client.SPConn.Close()
 }
 
 func GetOptSPAndClear() (string, error) {
-	if len(optSp.optSpNetworkAddr) > 0 {
-		optSpNetworkAddr := optSp.optSpNetworkAddr
+	if len(optSp.networkAddr) > 0 {
+		optSpNetworkAddr := optSp.networkAddr
 		optSp = &OptimalSp{}
 		return optSpNetworkAddr, nil
 	}
@@ -106,5 +105,5 @@ func GetOptSPAndClear() (string, error) {
 }
 
 func setOptSP(spNetworkAddr string) {
-	optSp.optSpNetworkAddr = spNetworkAddr
+	optSp.networkAddr = spNetworkAddr
 }
