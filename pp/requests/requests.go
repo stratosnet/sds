@@ -462,12 +462,13 @@ func FindMyFileListData(fileName, dir, reqID, keyword string, fileType protos.Fi
 	}
 }
 
-func RspTransferDownloadResultData(taskId string) *protos.RspTransferDownloadResult {
+func RspTransferDownloadResultData(taskId, spP2pAddress string) *protos.RspTransferDownloadResult {
 	return &protos.RspTransferDownloadResult{
 		TaskId: taskId,
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
+		SpP2PAddress: spP2pAddress,
 	}
 }
 

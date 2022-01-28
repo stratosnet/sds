@@ -248,7 +248,7 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	}
 	if task.SaveTransferData(&target) {
 		SendReportBackupSliceResult(target.TaskId, target.SpP2PAddress, true, false)
-		peers.SendMessage(conn, requests.RspTransferDownloadResultData(target.TaskId), header.RspTransferDownloadResult)
+		peers.SendMessage(conn, requests.RspTransferDownloadResultData(target.TaskId, target.SpP2PAddress), header.RspTransferDownloadResult)
 	}
 }
 
