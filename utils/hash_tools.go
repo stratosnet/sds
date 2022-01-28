@@ -1,15 +1,18 @@
 package utils
 
 import (
+	"bytes"
 	"crypto/md5"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
-	"github.com/ipfs/go-cid"
-	mbase "github.com/multiformats/go-multibase"
-	mh "github.com/multiformats/go-multihash"
 	"hash/crc32"
 	"io"
 	"os"
+
+	"github.com/ipfs/go-cid"
+	mbase "github.com/multiformats/go-multibase"
+	mh "github.com/multiformats/go-multihash"
 
 	"github.com/stratosnet/sds/utils/crypto"
 )
@@ -64,9 +67,11 @@ func CalcHash(data []byte) string {
 }
 
 // CalcHash
-func CalcSliceHash(data []byte, fileHash string) string {
+func CalcSliceHash(data []byte, fileHash string, sliceNumber uint64) string {
 	fileCid, _ := cid.Decode(fileHash)
 	fileKeccak256 := fileCid.Hash()
+	sliceNumBytes := uint64ToBytes(sliceNumber)
+	data = append(sliceNumBytes, data...)
 	sliceKeccak256, _ := mh.Sum(data, mh.KECCAK_256, 20)
 	if len(fileKeccak256) != len(sliceKeccak256) {
 		Log(errors.New("length of fileKeccak256 and sliceKeccak256 doesn't match"))
@@ -80,6 +85,12 @@ func CalcSliceHash(data []byte, fileHash string) string {
 	sliceCid := cid.NewCidV1(cid.Raw, sliceHash)
 	encoder, _ := mbase.NewEncoder(mbase.Base32hex)
 	return sliceCid.Encode(encoder)
+}
+
+func uint64ToBytes(n uint64) []byte {
+	byteBuf := bytes.NewBuffer([]byte{})
+	binary.Write(byteBuf, binary.BigEndian, n)
+	return byteBuf.Bytes()
 }
 
 func calcFileHash(data []byte) string {

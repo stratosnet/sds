@@ -2,14 +2,15 @@ package utils
 
 import (
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/cosmos/cosmos-sdk/crypto/keys/hd"
 	"github.com/cosmos/go-bip39"
 	"github.com/ipfs/go-cid"
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/math"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
-	"testing"
-	"time"
 )
 
 func TestECCSignAndVerify(t *testing.T) {
@@ -55,9 +56,10 @@ func TestECCSignAndVerify(t *testing.T) {
 func TestCid(t *testing.T) {
 	fileData := []byte("file data")
 	sliceData := []byte("slice data")
+	sliceNumber := uint64(1)
 
 	fileHash := calcFileHash(fileData)
-	sliceHash := CalcSliceHash(sliceData, fileHash)
+	sliceHash := CalcSliceHash(sliceData, fileHash, sliceNumber)
 	fileCid, _ := cid.Decode(fileHash)
 	sliceCid, _ := cid.Decode(sliceHash)
 	filePrefix := fileCid.Prefix()
@@ -87,7 +89,7 @@ func TestCid(t *testing.T) {
 	}
 
 	fakeFileHash := "t05ahm87h28vdd04qu3pbv0op4jnjnkpete9eposh2l6r1hp8i0hbqictcc======"
-	if sliceHash == CalcSliceHash(sliceData, fakeFileHash) {
+	if sliceHash == CalcSliceHash(sliceData, fakeFileHash, sliceNumber) {
 		t.Fatal("slice hash should be different when being generated with different file hash")
 	}
 }

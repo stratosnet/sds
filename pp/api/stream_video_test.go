@@ -3,12 +3,13 @@ package api
 import (
 	ed25519crypto "crypto/ed25519"
 	"encoding/hex"
+	"testing"
+
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/bech32"
-	"testing"
 )
 
 func TestVerifySignature(t *testing.T) {
@@ -53,7 +54,7 @@ func setup(t *testing.T) (*StreamReqBody, string, []byte) {
 		SpP2pAddress: spP2pAddrString,
 		Sign:         nil,
 	}
-	sliceHash := utils.CalcSliceHash(data, reqBody.FileHash)
+	sliceHash := utils.CalcSliceHash(data, reqBody.FileHash, reqBody.SliceInfo.SliceNumber)
 
 	toSign := []byte(reqBody.P2PAddress + reqBody.FileHash)
 	signature := ed25519crypto.Sign(spP2pPrivateKey, toSign)
