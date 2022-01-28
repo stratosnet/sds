@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/alex023/clock"
+	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -32,6 +33,11 @@ var (
 )
 
 func ReqHBLatencyCheckSpList(ctx context.Context, conn core.WriteCloser) {
+	if conn.(*cf.ClientConn).GetName() != client.SPConn.GetName() {
+		//utils.DebugLogf("====== not sending latency check %v ======", conn.(*cf.ClientConn).GetName())
+		return
+	}
+	//utils.DebugLogf("====== sending latency check %v ======", conn.(*cf.ClientConn).GetName())
 	peers.ClearBufferedSpConns()
 	// clear optSp before ping sp list
 	summary.optSp = OptimalSp{}
@@ -85,6 +91,11 @@ func connectAndRegisterToOptSp() {
 	spConnsToClose := peers.GetBufferedSpConns()
 	utils.DebugLogf("closing %v spConns", len(spConnsToClose))
 	for _, spConn := range spConnsToClose {
+		if spConn.GetName() == client.SPConn.GetName() {
+			utils.DebugLogf("spConn %v in connection, not closing it", spConn.GetName())
+			continue
+		}
+		utils.DebugLogf("closing spConn %v", spConn.GetName())
 		spConn.Close()
 	}
 	// clear optSp before ping sp list
@@ -93,7 +104,7 @@ func connectAndRegisterToOptSp() {
 		summary.mtx.Unlock()
 		return
 	}
-	peers.ConnectAndRegisterToOptSP(summary.optSp.NetworkAddr)
+	peers.ConfirmOptSP(summary.optSp.NetworkAddr)
 	summary.mtx.Unlock()
 }
 
@@ -107,10 +118,10 @@ func SendHeartBeat(ctx context.Context, conn core.WriteCloser) {
 			PingTime:     strconv.FormatInt(start, 10),
 		}
 		peers.SendMessage(client.SPConn, pb, header.ReqHeart)
-		utils.DebugLog("regular heartbeat sent")
+		utils.DebugLogf("regular heartbeat sent to SP(%v)", client.SPConn.GetName())
 		return
 	}
-	utils.DebugLog("SP not yet connected, skip heartbeat")
+	utils.DebugLogf("SP(%v) not yet connected, skip heartbeat", client.SPConn.GetName())
 }
 
 // RspHeartBeat - regular heartbeat getting no rsp from sp

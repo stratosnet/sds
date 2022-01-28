@@ -2,6 +2,7 @@ package peers
 
 import (
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/alex023/clock"
@@ -9,6 +10,15 @@ import (
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
+)
+
+type OptimalSp struct {
+	networkAddr string
+	mtx         sync.Mutex
+}
+
+var (
+	optSp = &OptimalSp{}
 )
 
 func ListenOffline() {
@@ -50,11 +60,17 @@ func ConnectToSP() (newConnection bool, err error) {
 	if client.SPConn != nil {
 		return false, nil
 	}
-
 	if len(setting.Config.SPList) == 0 {
 		return false, errors.New("there are no SP nodes in the config file")
 	}
 
+	if optSpNetworkAddr, err := GetOptSPAndClear(); err == nil {
+		utils.DebugLog("reconnect to detected optimal SP ", optSpNetworkAddr)
+		client.SPConn = client.NewClient(optSpNetworkAddr, setting.IsPP)
+		if client.SPConn != nil {
+			return true, nil
+		}
+	}
 	// Select a random SP node to connect to
 	spListOrder := rand.Perm(len(setting.Config.SPList))
 	for _, index := range spListOrder {
@@ -69,14 +85,25 @@ func ConnectToSP() (newConnection bool, err error) {
 }
 
 // ConnectToOptSP connect if there is a detected optimal SP node.
-func ConnectAndRegisterToOptSP(spNetworkAddr string) error {
-	// connect to optimal SP node
-	newSpConn := client.NewClient(spNetworkAddr, setting.IsPP)
-	if newSpConn != nil {
-		// replace ongoing client.SPConn
-		client.SPConn = newSpConn
-		// register to new client.SPConn
-		RegisterChain(true)
+func ConfirmOptSP(spNetworkAddr string) {
+	utils.DebugLog("current sp ", client.SPConn.GetName(), " to be altered to new optimal SP ", spNetworkAddr)
+	if client.SPConn.GetName() == spNetworkAddr {
+		utils.DebugLog("optimal SP already in connection, won't change SP")
+		return
 	}
-	return errors.New("couldn't connect to optimal SP node")
+	setOptSP(spNetworkAddr)
+	client.SPConn.Close()
+}
+
+func GetOptSPAndClear() (string, error) {
+	if len(optSp.networkAddr) > 0 {
+		optSpNetworkAddr := optSp.networkAddr
+		optSp = &OptimalSp{}
+		return optSpNetworkAddr, nil
+	}
+	return "", errors.New("optimal SP not detected")
+}
+
+func setOptSP(spNetworkAddr string) {
+	optSp.networkAddr = spNetworkAddr
 }
