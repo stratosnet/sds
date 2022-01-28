@@ -69,7 +69,7 @@ func TestCid(t *testing.T) {
 		}
 
 		fileHash := calcFileHash(fileData[:])
-		sliceHash := CalcSliceHash(sliceData[:], fileHash)
+		sliceHash := CalcSliceHash(sliceData[:], fileHash, uint64(i))
 
 		if !VerifyHash(fileHash) {
 			t.Fatal("generated file hash is invalid")
@@ -80,7 +80,7 @@ func TestCid(t *testing.T) {
 		}
 
 		fakeFileHash := "t05ahm87h28vdd04qu3pbv0op4jnjnkpete9eposh2l6r1hp8i0hbqictcc======"
-		if sliceHash == CalcSliceHash(sliceData[:], fakeFileHash) {
+		if sliceHash == CalcSliceHash(sliceData[:], fakeFileHash, uint64(i)) {
 			t.Fatal("slice hash should be different when being generated with different file hash")
 		}
 

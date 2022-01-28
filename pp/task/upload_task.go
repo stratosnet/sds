@@ -94,7 +94,7 @@ func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddr
 	dataSize := uint64(len(data))
 
 	sl := &protos.SliceOffsetInfo{
-		SliceHash: utils.CalcSliceHash(data, fileHash),
+		SliceHash: utils.CalcSliceHash(data, fileHash, pp.SliceNumber),
 		SliceOffset: &protos.SliceOffset{
 			SliceOffsetStart: 0,
 			SliceOffsetEnd:   dataSize,
@@ -146,7 +146,7 @@ func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAd
 		SliceOffsetEnd:   sliceTotalSize,
 	}
 	sl := &protos.SliceOffsetInfo{
-		SliceHash:   utils.CalcSliceHash(data, fileHash),
+		SliceHash:   utils.CalcSliceHash(data, fileHash, pp.SliceNumber),
 		SliceOffset: offset,
 	}
 	SliceNumAddr := &protos.SliceNumAddr{
