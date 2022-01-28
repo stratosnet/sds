@@ -2,12 +2,12 @@ package utils
 
 import (
 	"fmt"
+	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/hd"
 	"github.com/cosmos/go-bip39"
-	"github.com/ipfs/go-cid"
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/math"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
@@ -54,43 +54,39 @@ func TestECCSignAndVerify(t *testing.T) {
 }
 
 func TestCid(t *testing.T) {
-	fileData := []byte("file data")
-	sliceData := []byte("slice data")
-	sliceNumber := uint64(1)
+	MyLogger.SetLogLevel(Error)
+	for i := 0; i < 100; i++ {
+		var fileData [256]byte
+		_, err := rand.Read(fileData[:])
+		if err != nil {
+			t.Fatal("cannot generate random data", err)
+		}
 
-	fileHash := calcFileHash(fileData)
-	sliceHash := CalcSliceHash(sliceData, fileHash, sliceNumber)
-	fileCid, _ := cid.Decode(fileHash)
-	sliceCid, _ := cid.Decode(sliceHash)
-	filePrefix := fileCid.Prefix()
-	slicePrefix := sliceCid.Prefix()
+		var sliceData [256]byte
+		_, err = rand.Read(sliceData[:])
+		if err != nil {
+			t.Fatal("cannot generate random data", err)
+		}
 
-	expectedPrefix := cid.Prefix{
-		Version:  1,
-		Codec:    85,
-		MhType:   27,
-		MhLength: 20,
-	}
+		fileHash := calcFileHash(fileData[:])
+		sliceHash := CalcSliceHash(sliceData[:], fileHash, uint64(i))
 
-	if len(fileHash) != 40 {
-		t.Fatal("incorrect file hash length")
-	}
+		if !VerifyHash(fileHash) {
+			t.Fatal("generated file hash is invalid")
+		}
 
-	if len(sliceHash) != 40 {
-		t.Fatal("incorrect slice hash length")
-	}
+		if !VerifyHash(sliceHash) {
+			t.Fatal("generated slice hash is invalid")
+		}
 
-	if filePrefix != expectedPrefix {
-		t.Fatal("incorrect file cid prefix after decoding")
-	}
+		fakeFileHash := "t05ahm87h28vdd04qu3pbv0op4jnjnkpete9eposh2l6r1hp8i0hbqictcc======"
+		if sliceHash == CalcSliceHash(sliceData[:], fakeFileHash, uint64(i)) {
+			t.Fatal("slice hash should be different when being generated with different file hash")
+		}
 
-	if slicePrefix != expectedPrefix {
-		t.Fatal("incorrect slice cid prefix after decoding")
-	}
-
-	fakeFileHash := "t05ahm87h28vdd04qu3pbv0op4jnjnkpete9eposh2l6r1hp8i0hbqictcc======"
-	if sliceHash == CalcSliceHash(sliceData, fakeFileHash, sliceNumber) {
-		t.Fatal("slice hash should be different when being generated with different file hash")
+		if VerifyHash(fakeFileHash) {
+			t.Fatal("Fake file hash should have failed verification")
+		}
 	}
 }
 
@@ -101,4 +97,8 @@ func TestCidLargeFile(t *testing.T) {
 	elapsed := time.Since(start)
 	fmt.Println(filehash)
 	fmt.Println(elapsed)
+
+	if !VerifyHash(filehash) {
+		t.Fatal("generated file hash is invalid")
+	}
 }

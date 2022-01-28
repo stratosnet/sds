@@ -2,6 +2,7 @@ package setting
 
 import (
 	ed25519crypto "crypto/ed25519"
+	"encoding/hex"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -25,9 +26,6 @@ const MAXDATA = 1024 * 1024 * 3
 
 // HTTPTIMEOUT  HTTPTIMEOUT second
 const HTTPTIMEOUT = 20
-
-// FILEHASHLEN
-const FILEHASHLEN = 64
 
 // IMAGEPATH
 var IMAGEPATH = "./images/"
@@ -173,7 +171,7 @@ func CheckLogin() bool {
 // GetSign
 func GetSign(str string) []byte {
 	sign := ed25519crypto.Sign(P2PPrivateKey, []byte(str))
-	utils.DebugLog("GetSign == ", sign)
+	utils.DebugLog("GetSign == ", hex.EncodeToString(sign))
 	return sign
 }
 

@@ -17,6 +17,15 @@ import (
 	"github.com/stratosnet/sds/utils/crypto"
 )
 
+const hashLen = 20
+
+var hashCidPrefix = cid.Prefix{
+	Version:  1,
+	Codec:    85,
+	MhType:   27,
+	MhLength: 20,
+}
+
 // CalcCRC32
 func CalcCRC32(data []byte) uint32 {
 	iEEE := crc32.NewIEEE()
@@ -72,7 +81,7 @@ func CalcSliceHash(data []byte, fileHash string, sliceNumber uint64) string {
 	fileKeccak256 := fileCid.Hash()
 	sliceNumBytes := uint64ToBytes(sliceNumber)
 	data = append(sliceNumBytes, data...)
-	sliceKeccak256, _ := mh.Sum(data, mh.KECCAK_256, 20)
+	sliceKeccak256, _ := mh.Sum(data, mh.KECCAK_256, hashLen)
 	if len(fileKeccak256) != len(sliceKeccak256) {
 		Log(errors.New("length of fileKeccak256 and sliceKeccak256 doesn't match"))
 		return ""
@@ -81,7 +90,7 @@ func CalcSliceHash(data []byte, fileHash string, sliceNumber uint64) string {
 	for i := 0; i < len(fileKeccak256); i++ {
 		sliceHash[i] = fileKeccak256[i] ^ sliceKeccak256[i]
 	}
-	sliceHash, _ = mh.Sum(sliceHash, mh.KECCAK_256, 20)
+	sliceHash, _ = mh.Sum(sliceHash, mh.KECCAK_256, hashLen)
 	sliceCid := cid.NewCidV1(cid.Raw, sliceHash)
 	encoder, _ := mbase.NewEncoder(mbase.Base32hex)
 	return sliceCid.Encode(encoder)
@@ -94,8 +103,18 @@ func uint64ToBytes(n uint64) []byte {
 }
 
 func calcFileHash(data []byte) string {
-	fileHash, _ := mh.Sum(data, mh.KECCAK_256, 20)
+	fileHash, _ := mh.Sum(data, mh.KECCAK_256, hashLen)
 	fileCid := cid.NewCidV1(cid.Raw, fileHash)
 	encoder, _ := mbase.NewEncoder(mbase.Base32hex)
 	return fileCid.Encode(encoder)
+}
+
+func VerifyHash(hash string) bool {
+	fileCid, err := cid.Decode(hash)
+	if err != nil {
+		return false
+	}
+
+	prefix := fileCid.Prefix()
+	return prefix == hashCidPrefix
 }
