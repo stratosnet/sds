@@ -82,12 +82,10 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 				utils.DebugLog("RspUploadFileSlice ErrorLog")
 				utils.ErrorLog(target.Result.Msg)
 			}
-			utils.DebugLog("uploadKeep(target.fileHash, target.TaskId)")
 			uploadKeep(target.FileHash, target.TaskId)
-
 		}
 	} else {
-		utils.DebugLog("unmarshalData(ctx, &target)errrrrrrrrrrr ")
+		utils.ErrorLog("unmarshalData(ctx, &target) error")
 	}
 }
 
@@ -163,7 +161,6 @@ func UploadSpeedOfProgress(ctx context.Context, conn core.WriteCloser) {
 
 	var target protos.UploadSpeedOfProgress
 	if requests.UnmarshalData(ctx, &target) {
-		utils.DebugLog("~~~~@@@@@@@@@@@@@@@@@@@@@@@@@@!!!!!!!!!!!!!!!!!!!!!!", target.FileHash)
 		if prg, ok := task.UploadProgressMap.Load(target.FileHash); ok {
 			progress := prg.(*task.UpProgress)
 			progress.HasUpload += int64(target.SliceSize)
