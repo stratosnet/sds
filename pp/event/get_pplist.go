@@ -17,9 +17,9 @@ import (
 
 // RspGetPPList
 func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
-	utils.DebugLog("get GetPPList RSP")
 	var target protos.RspGetPPList
 	if !requests.UnmarshalData(ctx, &target) {
+		utils.ErrorLog("Couldn't unmarshal protobuf to protos.RspGetPPList")
 		return
 	}
 	utils.DebugLog("get GetPPList RSP", target.PpList)
