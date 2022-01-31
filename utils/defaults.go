@@ -9,6 +9,6 @@ const (
 	ClientSendHeartTime        = 60              // in seconds
 	MsgHeaderLen               = 16              // in bytes
 	MessageBeatLen             = 4 * 1024 * 1024 // in bytes
-	LatencyCheckSpListInterval = 1800            // in seconds
+	LatencyCheckSpListInterval = 180             // in seconds
 	LatencyCheckSpListTimeout  = 3               // in seconds
 )

@@ -110,18 +110,27 @@ func connectAndRegisterToOptSp() {
 
 // SendHeartBeat
 func SendHeartBeat(ctx context.Context, conn core.WriteCloser) {
-	if client.SPConn != nil {
-		start := time.Now().UnixNano()
-		pb := &protos.ReqHeartbeat{
-			HbType:       protos.HeartbeatType_REGULAR_HEARTBEAT,
-			P2PAddressPp: setting.P2PAddress,
-			PingTime:     strconv.FormatInt(start, 10),
-		}
-		peers.SendMessage(client.SPConn, pb, header.ReqHeart)
-		utils.DebugLogf("regular heartbeat sent to SP(%v)", client.SPConn.GetName())
+	switch conn.(type) {
+	case *core.ServerConn:
+		utils.DebugLog("not sending regular heartbeat as this is a server conn, ", conn.(*core.ServerConn).GetName())
 		return
+	case *cf.ClientConn:
+		utils.DebugLog("sending regular heartbeat, ", conn.(*cf.ClientConn).GetName())
 	}
-	utils.DebugLogf("SP(%v) not yet connected, skip heartbeat", client.SPConn.GetName())
+
+	isHbToSp := false
+	if client.SPConn.GetName() == conn.(*cf.ClientConn).GetName() {
+		isHbToSp = true
+	}
+
+	start := time.Now().UnixNano()
+	pb := &protos.ReqHeartbeat{
+		HbType:       protos.HeartbeatType_REGULAR_HEARTBEAT,
+		P2PAddressPp: setting.P2PAddress,
+		PingTime:     strconv.FormatInt(start, 10),
+	}
+	peers.SendMessage(conn.(*cf.ClientConn), pb, header.ReqHeart)
+	utils.DebugLogf("regular heartbeat sent to remoteNode(%v), isHbToSp = %v", conn.(*cf.ClientConn).GetName(), isHbToSp)
 }
 
 // RspHeartBeat - regular heartbeat getting no rsp from sp
