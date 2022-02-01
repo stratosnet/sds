@@ -71,7 +71,7 @@ var (
 )
 
 const (
-	Version = "v0.3.0"
+	Version = "v0.4.0"
 	HD_PATH = "m/44'/606'/0'/0/0"
 )
 
@@ -263,15 +263,13 @@ func defaultConfig() *config {
 		Version:                     3,
 		VersionShow:                 Version,
 		DownloadPathMinLen:          0,
-		Port:                        ":18081",
+		Port:                        "18081",
 		NetworkAddress:              "127.0.0.1",
 		Debug:                       false,
 		PPListDir:                   "./peers",
 		AccountDir:                  "./accounts",
-		DefPassword:                 "",
-		DefSavePath:                 "",
-		StorehousePath:              "",
-		DownloadPath:                "",
+		StorehousePath:              "./storage",
+		DownloadPath:                "./download",
 		P2PAddress:                  "",
 		P2PPassword:                 "",
 		WalletAddress:               "",
