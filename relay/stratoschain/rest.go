@@ -246,14 +246,22 @@ func QueryResourceNodeState(p2pAddress string) (int, error) {
 	if len(resourceNodes) == 0 {
 		return types.PP_INACTIVE, nil
 	}
-	if resourceNodes[0].IsSuspended() {
-		return types.PP_SUSPENDED, nil
+
+	for _, resourceNode := range resourceNodes {
+		if resourceNode.GetMoniker() != p2pAddress {
+			continue
+		}
+
+		if resourceNode.IsSuspended() {
+			return types.PP_SUSPENDED, nil
+		}
+		if resourceNode.GetStatus() == sdktypes.Unbonding {
+			return types.PP_UNBONDING, nil
+		}
+		if resourceNode.GetStatus() == sdktypes.Bonded {
+			return types.PP_ACTIVE, nil
+		}
 	}
-	if resourceNodes[0].GetStatus() == sdktypes.Unbonding {
-		return types.PP_UNBONDING, nil
-	}
-	if resourceNodes[0].GetStatus() == sdktypes.Bonded && resourceNodes[0].GetMoniker() == p2pAddress {
-		return types.PP_ACTIVE, nil
-	}
+
 	return types.PP_INACTIVE, nil
 }
