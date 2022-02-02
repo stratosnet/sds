@@ -27,7 +27,7 @@ func SetPPServer(pp *PPServer) {
 
 // StartListenServer
 func StartListenServer(port string) {
-	netListen, err := net.Listen("tcp4", port)
+	netListen, err := net.Listen("tcp4", ":"+port)
 	if err != nil {
 		utils.ErrorLog("StartListenServer", err)
 	}

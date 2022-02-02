@@ -11,10 +11,10 @@ import (
 func GetNetworkAddress() {
 
 	if setting.Config.Internal {
-		setting.NetworkAddress = getInternal() + setting.Config.Port
+		setting.NetworkAddress = getInternal() + ":" + setting.Config.Port
 		setting.RestAddress = getInternal() + ":" + setting.Config.RestPort
 	} else {
-		setting.NetworkAddress = getExternal() + setting.Config.Port
+		setting.NetworkAddress = getExternal() + ":" + setting.Config.Port
 		setting.RestAddress = getExternal() + ":" + setting.Config.RestPort
 	}
 	// utils.Log("setting.NetworkAddress", setting.NetworkAddress)
