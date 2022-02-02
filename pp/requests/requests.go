@@ -3,6 +3,7 @@ package requests
 import (
 	"context"
 	"crypto/ed25519"
+	"encoding/hex"
 	"math"
 	"path"
 	"reflect"
@@ -139,12 +140,11 @@ func RequestUploadFileData(paths, storagePath, reqID, ownerWalletAddress string,
 		req.FileInfo.Duration = duration
 	}
 	p2pFileHash := []byte(p2pFileString)
-	utils.DebugLogf("setting.WalletAddress + fileHash : %v", p2pFileHash)
+	utils.DebugLogf("setting.WalletAddress + fileHash : %v", hex.EncodeToString(p2pFileHash))
 
-	if ed25519.Verify(setting.P2PPublicKey, p2pFileHash, req.Sign) {
-		utils.DebugLog("ECC verification ok")
-	} else {
-		utils.DebugLog("ECC verification failed")
+	if !ed25519.Verify(setting.P2PPublicKey, p2pFileHash, req.Sign) {
+		utils.ErrorLog("ed25519 verification failed")
+		return nil
 	}
 
 	// info
@@ -462,12 +462,13 @@ func FindMyFileListData(fileName, dir, reqID, keyword string, fileType protos.Fi
 	}
 }
 
-func RspTransferDownloadResultData(taskId string) *protos.RspTransferDownloadResult {
+func RspTransferDownloadResultData(taskId, spP2pAddress string) *protos.RspTransferDownloadResult {
 	return &protos.RspTransferDownloadResult{
 		TaskId: taskId,
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
+		SpP2PAddress: spP2pAddress,
 	}
 }
 
@@ -692,8 +693,6 @@ func UnmarshalData(ctx context.Context, target interface{}) bool {
 	}
 	if _, ok := reflect.TypeOf(target).Elem().FieldByName("Data"); !ok {
 		utils.DebugLog("target = ", target)
-	} else {
-		utils.DebugLog("analyse target")
 	}
 	return true
 }

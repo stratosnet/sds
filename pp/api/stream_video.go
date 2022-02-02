@@ -232,7 +232,7 @@ func verifyStreamReqBody(req *http.Request, sliceHash string) (*StreamReqBody, e
 }
 
 func verifySignature(reqBody *StreamReqBody, sliceHash string, data []byte) bool {
-	if sliceHash != utils.CalcSliceHash(data, reqBody.FileHash) {
+	if sliceHash != utils.CalcSliceHash(data, reqBody.FileHash, reqBody.SliceInfo.SliceNumber) {
 		return false
 	}
 	if val, ok := setting.SPMap.Load(reqBody.SpP2pAddress); ok {

@@ -63,8 +63,7 @@ func GetUploadSliceTask(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddress 
 
 func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string, isEncrypted bool) *UploadSliceTask {
 	filePath := file.GetFilePath(fileHash)
-	utils.DebugLog("offsetStart =", pp.SliceOffset.SliceOffsetStart, "offsetEnd", pp.SliceOffset.SliceOffsetEnd)
-	utils.DebugLog("sliceNumber", pp.SliceNumber)
+	utils.DebugLogf("sliceNumber %v  offsetStart = %v  offsetEnd = %v", pp.SliceNumber, pp.SliceOffset.SliceOffsetStart, pp.SliceOffset.SliceOffsetEnd)
 	startOffset := pp.SliceOffset.SliceOffsetStart
 	endOffset := pp.SliceOffset.SliceOffsetEnd
 	if file.GetFileInfo(filePath) == nil {
@@ -95,7 +94,7 @@ func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddr
 	dataSize := uint64(len(data))
 
 	sl := &protos.SliceOffsetInfo{
-		SliceHash: utils.CalcSliceHash(data, fileHash),
+		SliceHash: utils.CalcSliceHash(data, fileHash, pp.SliceNumber),
 		SliceOffset: &protos.SliceOffset{
 			SliceOffsetStart: 0,
 			SliceOffsetEnd:   dataSize,
@@ -147,7 +146,7 @@ func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAd
 		SliceOffsetEnd:   sliceTotalSize,
 	}
 	sl := &protos.SliceOffsetInfo{
-		SliceHash:   utils.CalcSliceHash(data, fileHash),
+		SliceHash:   utils.CalcSliceHash(data, fileHash, pp.SliceNumber),
 		SliceOffset: offset,
 	}
 	SliceNumAddr := &protos.SliceNumAddr{

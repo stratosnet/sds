@@ -2,6 +2,7 @@ package setting
 
 import (
 	ed25519crypto "crypto/ed25519"
+	"encoding/hex"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -25,9 +26,6 @@ const MAXDATA = 1024 * 1024 * 3
 
 // HTTPTIMEOUT  HTTPTIMEOUT second
 const HTTPTIMEOUT = 20
-
-// FILEHASHLEN
-const FILEHASHLEN = 64
 
 // IMAGEPATH
 var IMAGEPATH = "./images/"
@@ -71,7 +69,7 @@ var (
 )
 
 const (
-	Version = "v0.3.0"
+	Version = "v0.4.0"
 	HD_PATH = "m/44'/606'/0'/0/0"
 )
 
@@ -173,7 +171,7 @@ func CheckLogin() bool {
 // GetSign
 func GetSign(str string) []byte {
 	sign := ed25519crypto.Sign(P2PPrivateKey, []byte(str))
-	utils.DebugLog("GetSign == ", sign)
+	utils.DebugLog("GetSign == ", hex.EncodeToString(sign))
 	return sign
 }
 
@@ -263,15 +261,13 @@ func defaultConfig() *config {
 		Version:                     3,
 		VersionShow:                 Version,
 		DownloadPathMinLen:          0,
-		Port:                        ":18081",
+		Port:                        "18081",
 		NetworkAddress:              "127.0.0.1",
 		Debug:                       false,
 		PPListDir:                   "./peers",
 		AccountDir:                  "./accounts",
-		DefPassword:                 "",
-		DefSavePath:                 "",
-		StorehousePath:              "",
-		DownloadPath:                "",
+		StorehousePath:              "./storage",
+		DownloadPath:                "./download",
 		P2PAddress:                  "",
 		P2PPassword:                 "",
 		WalletAddress:               "",

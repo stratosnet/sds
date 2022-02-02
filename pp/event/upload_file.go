@@ -4,7 +4,6 @@ package event
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/stratosnet/sds/framework/client/cf"
@@ -50,7 +49,7 @@ func RequestUploadFile(path, reqID string, isEncrypted bool, _ http.ResponseWrit
 
 	isFile, err := file.IsFile(path)
 	if err != nil {
-		fmt.Println(err)
+		utils.ErrorLog(err)
 		return
 	}
 	if isFile {
@@ -81,7 +80,7 @@ func RequestUploadStream(path, reqID string, _ http.ResponseWriter) {
 	}
 	isFile, err := file.IsFile(path)
 	if err != nil {
-		fmt.Println(err)
+		utils.ErrorLog(err)
 		return
 	}
 	if isFile {
@@ -91,7 +90,7 @@ func RequestUploadStream(path, reqID string, _ http.ResponseWriter) {
 		}
 		return
 	} else {
-		fmt.Println("could not find the file by the provided path.")
+		utils.ErrorLog("the provided path indicates a directory, not a file")
 		return
 	}
 }
@@ -116,7 +115,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		go startUploadTask(target)
 
 	} else {
-		fmt.Println("file upload successfully！  target.PpList", target.FileHash)
+		utils.Log("file upload successful！  fileHash", target.FileHash)
 		var p float32 = 100
 		ProgressMap.Store(target.FileHash, p)
 		task.UploadProgressMap.Delete(target.FileHash)
@@ -234,7 +233,7 @@ func sendUploadFileSlice(target *protos.RspUploadFile) {
 }
 
 func uploadKeep(fileHash, taskID string) {
-	utils.DebugLog("uploadKeep", fileHash, taskID)
+	utils.DebugLogf("uploadKeep  fileHash = %v  taskID = %v", fileHash, taskID)
 	if ing, ok := task.UpIngMap.Load(fileHash); ok {
 		ING := ing.(*task.UpFileIng)
 		ING.UpChan <- true

@@ -1,6 +1,8 @@
 package setting
 
-import "fmt"
+import (
+	"github.com/stratosnet/sds/utils"
+)
 
 // ShowProgress
 func ShowProgress(p float32) {
@@ -13,5 +15,5 @@ func ShowProgress(p float32) {
 	for i := 0; i < m; i++ {
 		str += "-"
 	}
-	fmt.Println(str)
+	utils.Log(str)
 }

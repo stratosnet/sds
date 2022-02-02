@@ -274,13 +274,13 @@ func (m *MultiClient) UpdateIndexingNodeStakeMsgHandler() func(event coretypes.R
 func (m *MultiClient) UnbondingIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
-		fmt.Printf("%+v\n", result)
+		utils.Logf("%+v\n", result)
 	}
 }
 func (m *MultiClient) RemoveIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
-		utils.Log(fmt.Sprintf("%+v", result))
+		utils.Logf("%+v", result)
 	}
 }
 func (m *MultiClient) CompleteUnbondingIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {

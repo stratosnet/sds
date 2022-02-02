@@ -17,7 +17,7 @@ import (
 // Activate Inactive PP node becomes active
 func Activate(amount, fee, gas int64) error {
 	// Query blockchain to know if this node is already a resource node
-	ppState, err := stratoschain.QueryResourceNodeState(setting.P2PAddress)
+	ppState, err := stratoschain.QueryResourceNodeState(setting.GetNetworkID().String())
 	if err != nil {
 		utils.ErrorLog("Couldn't query node status from the blockchain", err)
 		return err
@@ -28,7 +28,7 @@ func Activate(amount, fee, gas int64) error {
 	case types.PP_ACTIVE:
 		utils.Log("This node is already active on the blockchain. Waiting for SP node to confirm...")
 		activateReq = &protos.ReqActivatePP{
-			P2PAddress:    setting.P2PAddress,
+			PpInfo:        setting.GetPPInfo(),
 			AlreadyActive: true,
 		}
 	default:
@@ -39,7 +39,7 @@ func Activate(amount, fee, gas int64) error {
 		}
 	}
 
-	utils.Log("Sending activate message to SP! " + activateReq.P2PAddress)
+	utils.Log("Sending activate message to SP! " + activateReq.PpInfo.P2PAddress)
 	peers.SendMessageToSPServer(activateReq, header.ReqActivatePP)
 	return nil
 }

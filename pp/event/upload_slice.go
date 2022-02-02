@@ -47,7 +47,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 			if file.GetSliceSize(target.SliceInfo.SliceHash) == int64(target.SliceSize) {
 				utils.DebugLog("the slice upload finished", target.SliceInfo.SliceHash)
 				// respond to PP in case the size is correct but actually not success
-				if utils.CalcSliceHash(file.GetSliceData(target.SliceInfo.SliceHash), target.FileHash) == target.SliceInfo.SliceHash {
+				if utils.CalcSliceHash(file.GetSliceData(target.SliceInfo.SliceHash), target.FileHash, target.SliceNumAddr.SliceNumber) == target.SliceInfo.SliceHash {
 					peers.SendMessage(conn, requests.RspUploadFileSliceData(&target), header.RspUploadFileSlice)
 					// report upload result to SP
 					peers.SendMessageToSPServer(requests.ReqReportUploadSliceResultDataPP(&target), header.ReqReportUploadSliceResult)
@@ -82,12 +82,10 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 				utils.DebugLog("RspUploadFileSlice ErrorLog")
 				utils.ErrorLog(target.Result.Msg)
 			}
-			utils.DebugLog("uploadKeep(target.fileHash, target.TaskId)")
 			uploadKeep(target.FileHash, target.TaskId)
-
 		}
 	} else {
-		utils.DebugLog("unmarshalData(ctx, &target)errrrrrrrrrrr ")
+		utils.ErrorLog("unmarshalData(ctx, &target) error")
 	}
 }
 
@@ -163,13 +161,12 @@ func UploadSpeedOfProgress(ctx context.Context, conn core.WriteCloser) {
 
 	var target protos.UploadSpeedOfProgress
 	if requests.UnmarshalData(ctx, &target) {
-		utils.DebugLog("~~~~@@@@@@@@@@@@@@@@@@@@@@@@@@!!!!!!!!!!!!!!!!!!!!!!", target.FileHash)
 		if prg, ok := task.UploadProgressMap.Load(target.FileHash); ok {
 			progress := prg.(*task.UpProgress)
 			progress.HasUpload += int64(target.SliceSize)
 			p := float32(progress.HasUpload) / float32(progress.Total) * 100
-			fmt.Println("fileHash：", target.FileHash)
-			fmt.Printf("uploaded：%.2f %% \n", p)
+			utils.Log("fileHash：", target.FileHash)
+			utils.Logf("uploaded：%.2f %% ", p)
 			setting.ShowProgress(p)
 			ProgressMap.Store(target.FileHash, p)
 			if progress.HasUpload >= progress.Total {

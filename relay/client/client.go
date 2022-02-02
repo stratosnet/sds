@@ -265,7 +265,7 @@ func (m *MultiClient) SubscribeToStratosChain(query string, handler func(coretyp
 		return err
 	}
 
-	out, err := client.Subscribe(context.Background(), "", query)
+	out, err := client.Subscribe(context.Background(), "", query, 20)
 	if err != nil {
 		return errors.New("failed to subscribe to query in stratos-chain: " + err.Error())
 	}

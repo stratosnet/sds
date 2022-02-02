@@ -10,6 +10,7 @@ import (
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
+	"github.com/stratosnet/sds/utils"
 )
 
 const (
@@ -215,7 +216,7 @@ func (api *terminalCmd) DeleteFn(param []string) (CmdResult, error) {
 		fmt.Println("input file hash")
 		return CmdResult{}, errors.New("input file hash")
 	}
-	if len(param[0]) != setting.FILEHASHLEN {
+	if !utils.VerifyHash(param[0]) {
 		return CmdResult{}, errors.New("input correct file hash")
 	}
 	event.DeleteFile(param[0], "", nil)
