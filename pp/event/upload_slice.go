@@ -165,8 +165,8 @@ func UploadSpeedOfProgress(ctx context.Context, conn core.WriteCloser) {
 			progress := prg.(*task.UpProgress)
 			progress.HasUpload += int64(target.SliceSize)
 			p := float32(progress.HasUpload) / float32(progress.Total) * 100
-			fmt.Println("fileHash：", target.FileHash)
-			fmt.Printf("uploaded：%.2f %% \n", p)
+			utils.Log("fileHash：", target.FileHash)
+			utils.Logf("uploaded：%.2f %% ", p)
 			setting.ShowProgress(p)
 			ProgressMap.Store(target.FileHash, p)
 			if progress.HasUpload >= progress.Total {

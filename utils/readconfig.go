@@ -12,7 +12,7 @@ func GetYamlConfig(path string) map[interface{}]interface{} {
 	data, err := ioutil.ReadFile(path)
 	m := make(map[interface{}]interface{})
 	if err != nil {
-		fmt.Println(err)
+		MyLogger.ErrorLog(err)
 	}
 	err = yaml.Unmarshal([]byte(data), &m)
 	return m
@@ -25,7 +25,7 @@ func GetElement(key string, themap map[interface{}]interface{}) string {
 		return fmt.Sprint(value)
 	}
 
-	fmt.Println("can't find the config file")
+	MyLogger.ErrorLog("can't find the config file")
 	return ""
 }
 
@@ -46,7 +46,7 @@ func LoadYamlConfig(s interface{}, path string) error {
 func WriteConfig(data interface{}, filePath string) error {
 	yamlData, err := yaml.Marshal(&data)
 	if err != nil {
-		fmt.Printf("Error while Marshaling. %v", err)
+		MyLogger.ErrorLog("Error while Marshaling.", err)
 	}
 	return ioutil.WriteFile(filePath, yamlData, 0644)
 }
