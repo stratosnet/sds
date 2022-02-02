@@ -149,3 +149,12 @@ func GetNetworkID() types.NetworkID {
 		NetworkAddress: NetworkAddress,
 	}
 }
+
+func GetPPInfo() *protos.PPBaseInfo {
+	return &protos.PPBaseInfo{
+		P2PAddress:     P2PAddress,
+		WalletAddress:  WalletAddress,
+		NetworkAddress: NetworkAddress,
+		RestAddress:    RestAddress,
+	}
+}

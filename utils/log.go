@@ -179,6 +179,11 @@ func Log(v ...interface{}) {
 	MyLogger.logDepth(Info, 3, v...)
 }
 
+func Logf(template string, v ...interface{}) {
+	//GetLogger().Log(Info, v...)
+	MyLogger.logDepth(Info, 3, fmt.Sprintf(template, v...))
+}
+
 //ErrorLog call default logger and output error log
 func ErrorLog(v ...interface{}) {
 	//GetLogger().Log(Info, v...)

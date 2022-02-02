@@ -282,7 +282,7 @@ func DownloadFileSlice(target *protos.RspFileStorageInfo) {
 			}
 		}
 	} else {
-		fmt.Println("file exist already!")
+		utils.ErrorLog("file exists already!")
 	}
 }
 

@@ -41,9 +41,9 @@ func downProgress(w http.ResponseWriter, request *http.Request) {
 				k.savePath = m["savePath"].(string)
 			}
 			// _, num := task.CheckDownloadOver(k.fileHash)
-			// fmt.Printf("downloaded：%.2f %% filehash:%s \n", (num * 100), k.fileHash)
+			// utils.Logf("downloaded：%.2f %% filehash:%s \n", (num * 100), k.fileHash)
 			// if num > 1 {
-			// 	fmt.Println(">>>>>>>>>>>>>>>>>>>>>iuhihioioihk")
+			// 	utils.Log(">>>>>>>>>>>>>>>>>>>>>iuhihioioihk")
 			// 	num = 1
 			// }
 			p := &prog{

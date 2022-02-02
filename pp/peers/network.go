@@ -1,7 +1,6 @@
 package peers
 
 import (
-	"fmt"
 	"net"
 
 	"github.com/stratosnet/sds/pp/setting"
@@ -30,14 +29,14 @@ func getExternal() string {
 func getInternal() string {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		fmt.Println(err)
+		utils.ErrorLog(err)
 		return ""
 	}
 	for _, address := range addrs {
 
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {
-				//fmt.Println(ipnet.IP.String())
+				//utils.Log(ipnet.IP.String())
 				return ipnet.IP.String()
 			}
 		}

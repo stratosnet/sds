@@ -2,7 +2,6 @@ package event
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/stratosnet/sds/framework/client/cf"
@@ -38,9 +37,9 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 	if requests.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
-				fmt.Println("delete success ", target.Result.Msg)
+				utils.Log("delete success ", target.Result.Msg)
 			} else {
-				fmt.Println("delete failed ", target.Result.Msg)
+				utils.Log("delete failed ", target.Result.Msg)
 			}
 			putData(target.ReqId, HTTPDeleteFile, &target)
 		} else {

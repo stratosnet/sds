@@ -211,12 +211,12 @@ func BroadcastTxBytes(txBytes []byte) error {
 	return err
 }
 
-func QueryResourceNodeState(p2pAddress string) (int, error) {
+func QueryResourceNodeState(networkId string) (int, error) {
 	if Url == "" {
 		return 0, errors.New("the stratos-chain URL is not set")
 	}
 
-	url, err := utils.ParseUrl(Url + "/register/resource-nodes?moniker=" + p2pAddress)
+	url, err := utils.ParseUrl(Url + "/register/resource-nodes?network=" + networkId)
 	if err != nil {
 		return 0, err
 	}
@@ -252,7 +252,7 @@ func QueryResourceNodeState(p2pAddress string) (int, error) {
 	if resourceNodes[0].GetStatus() == sdktypes.Unbonding {
 		return types.PP_UNBONDING, nil
 	}
-	if resourceNodes[0].GetStatus() == sdktypes.Bonded && resourceNodes[0].GetMoniker() == p2pAddress {
+	if resourceNodes[0].GetStatus() == sdktypes.Bonded && resourceNodes[0].GetNetworkID() == networkId {
 		return types.PP_ACTIVE, nil
 	}
 	return types.PP_INACTIVE, nil

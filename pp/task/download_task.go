@@ -1,13 +1,13 @@
 package task
 
 import (
-	"fmt"
-	"github.com/golang/protobuf/proto"
 	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/golang/protobuf/proto"
 
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -156,9 +156,7 @@ func checkAgain(fileHash string) {
 		if CheckFileOver(fileHash, filePath) {
 			DownloadFileMap.Delete(fileHash)
 			DownloadSpeedOfProgress.Delete(fileHash)
-			fmt.Println("————————————————————————————————————————————————————")
-			fmt.Println("download finished")
-			fmt.Println("————————————————————————————————————————————————————")
+			utils.Log("————————————————————————————————————download finished————————————————————————————————————")
 			DoneDownload(fileHash, fName, fInfo.SavePath)
 		} else {
 			if reCount > 0 {
@@ -304,7 +302,7 @@ func DownloadProgress(fileHash string, size uint64) {
 		sp := s.(*DownloadSP)
 		sp.DownloadedSize += int64(size)
 		p := float32(sp.DownloadedSize) / float32(sp.TotalSize) * 100
-		fmt.Printf("downloaded：%.2f %% \n", p)
+		utils.Logf("downloaded：%.2f %% \n", p)
 		setting.DownloadProgressMap.Store(fileHash, p)
 		setting.ShowProgress(p)
 		if sp.DownloadedSize >= sp.TotalSize {

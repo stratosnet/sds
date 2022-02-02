@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/stratosnet/sds/pp/serv"
@@ -37,7 +36,7 @@ func importWallet(w http.ResponseWriter, request *http.Request) {
 	key, err := utils.DecryptKey([]byte(keystore), password)
 
 	if utils.CheckError(err) {
-		fmt.Println("getPublicKey DecryptKey", err)
+		utils.ErrorLog("getPublicKey DecryptKey", err)
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "wrong password").ToBytes())
 		return
 	}

@@ -4,7 +4,6 @@ package event
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/stratosnet/sds/framework/client/cf"
@@ -116,7 +115,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		go startUploadTask(target)
 
 	} else {
-		fmt.Println("file upload successful！  fileHash", target.FileHash)
+		utils.Log("file upload successful！  fileHash", target.FileHash)
 		var p float32 = 100
 		ProgressMap.Store(target.FileHash, p)
 		task.UploadProgressMap.Delete(target.FileHash)

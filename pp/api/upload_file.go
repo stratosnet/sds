@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -67,7 +66,7 @@ func uploadFile(w http.ResponseWriter, request *http.Request) {
 		isFile, err = file.IsFile(path)
 
 		if err != nil {
-			fmt.Println(err)
+			utils.ErrorLog(err)
 			r := &uploadFileResult{
 				FilePath: path,
 				State:    false,
