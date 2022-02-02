@@ -274,7 +274,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				sc.belong.secondReadFlowA = sc.belong.secondReadAtomA.AddAndGetNew(int64(n))
 				sc.belong.allFlow = sc.belong.allAtom.AddAndGetNew(int64(n))
 				if err != nil {
-					utils.ErrorLog("server header err", err)
+					utils.DebugLog("server header err", err)
 					return
 				}
 				header.NewDecodeHeader(buffer, &msgH)
@@ -317,7 +317,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					sc.belong.secondReadFlowA = sc.belong.secondReadAtomA.AddAndGetNew(int64(n))
 					sc.belong.allFlow = sc.belong.allAtom.AddAndGetNew(int64(n))
 					if err != nil {
-						utils.ErrorLog("server body err", err)
+						utils.DebugLog("server body err", err)
 						return
 					}
 				}
@@ -401,7 +401,7 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 						sc.belong.secondWriteFlowA = sc.belong.secondWriteAtomA.AddAndGetNew(int64(n))
 						sc.belong.allFlow = sc.belong.allAtom.AddAndGetNew(int64(n))
 						if err != nil {
-							utils.ErrorLog("server write err", err)
+							utils.DebugLog("server write err", err)
 							return
 						}
 
@@ -452,12 +452,12 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 					sc.belong.secondWriteFlowA = sc.belong.secondWriteAtomA.AddAndGetNew(int64(n))
 					sc.belong.allFlow = sc.belong.allAtom.AddAndGetNew(int64(n))
 					if err != nil {
-						utils.ErrorLog("server write err", err)
+						utils.DebugLog("server write err", err)
 						return
 					}
 
 					if err != nil {
-						utils.ErrorLog("error writing data", err, "\n")
+						utils.DebugLog("error writing data", err, "\n")
 						return
 					} else {
 						// Mylog(s.opts.logOpen,"i", i)

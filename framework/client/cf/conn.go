@@ -493,7 +493,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				n, err := io.ReadFull(spbConn, buffer)
 				cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
 				if err != nil {
-					utils.ErrorLog("client heart err", err)
+					utils.DebugLog("client heart err", err)
 					return
 				}
 				header.NewDecodeHeader(buffer, &msgH)
@@ -518,7 +518,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					n, err = io.ReadFull(spbConn, msgBuf[i:i+onereadlen])
 					cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
 					if err != nil {
-						utils.ErrorLog("client body err", err)
+						utils.DebugLog("client body err", err)
 						return
 					}
 					if cmd == header.RspDownloadSlice {
@@ -602,7 +602,7 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 		// 					// Mylog(cc.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
 		// 					// Mylog(cc.opts.logOpen,"i+onereadlen:", i+onereadlen)
 		// 					if err != nil {
-		// 						utils.ErrorLog("client body err", err)
+		// 						utils.DebugLog("client body err", err)
 		// 						return
 		// 					}
 		// 				}
@@ -654,7 +654,7 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					// Mylog(cc.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
 					// Mylog(cc.opts.logOpen,"i+onereadlen:", i+onereadlen)
 					if err != nil {
-						utils.ErrorLog("client body err", err)
+						utils.DebugLog("client body err", err)
 						return
 					}
 					if cmd == header.ReqUploadFileSlice {
