@@ -24,6 +24,8 @@ example/network/account
 example/network/[a-zA-Z0-9]
 example/network/tmp
 example/network/*/
+example/network/*/storage
+example/network/*/download
 !example/network/*/accounts
 !example/network/*/configs
 tmp
