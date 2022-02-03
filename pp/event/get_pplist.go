@@ -11,8 +11,6 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
-
-	"github.com/alex023/clock"
 )
 
 // RspGetPPList
@@ -25,28 +23,21 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get GetPPList RSP", target.PpList)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.Log("failed to get any peers, reloading")
-		reloadPPlist()
+		peers.ScheduleReloadPPlist(3 * time.Second)
 		return
 	}
 	setting.SavePPList(&target)
-	if len(setting.PPList) == 0 {
+	if len(setting.GetLocalPPList()) == 0 {
 		// no PP exist, register to SP
 		if !setting.IsLoginToSP {
 			peers.RegisterChain(true)
 			setting.IsLoginToSP = true
 		}
-		reloadPPlist()
+		peers.ScheduleReloadPPlist(3 * time.Second)
 		return
 	}
 
-	if success := peers.SendRegisterRequestViaPP(setting.PPList); !success {
-		reloadPPlist()
+	if success := peers.SendRegisterRequestViaPP(setting.GetLocalPPList()); !success {
+		peers.ScheduleReloadPPlist(3 * time.Second)
 	}
-}
-
-func reloadPPlist() {
-	utils.DebugLog("failed to get PPlist. retry after 3 second")
-	clock := clock.NewClock()
-	clock.AddJobRepeat(time.Second*3, 1, peers.GetPPList)
-	// defer job.Cancel()
 }

@@ -88,8 +88,6 @@ type config struct {
 	Debug                       bool         `yaml:"Debug"`
 	PPListDir                   string       `yaml:"PPListDir"`
 	AccountDir                  string       `yaml:"AccountDir"`
-	DefPassword                 string       `yaml:"DefPassword"`
-	DefSavePath                 string       `yaml:"DefSavePath"`
 	StorehousePath              string       `yaml:"StorehousePath"`
 	DownloadPath                string       `yaml:"DownloadPath"`
 	P2PAddress                  string       `yaml:"P2PAddress"`

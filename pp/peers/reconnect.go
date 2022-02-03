@@ -5,7 +5,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/alex023/clock"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/setting"
@@ -51,7 +50,7 @@ func reloadConnectSP() {
 
 	if err != nil {
 		utils.Log("couldn't connect to SP node. Retrying in 3 seconds...")
-		clock.NewClock().AddJobRepeat(time.Second*3, 1, reloadConnectSP)
+		ppPeerClock.AddJobWithInterval(time.Second*3, reloadConnectSP)
 	}
 }
 

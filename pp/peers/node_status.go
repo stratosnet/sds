@@ -19,4 +19,5 @@ func ReportNodeStatus() {
 func doReportNodeStatus(status *protos.ReqReportNodeStatus) {
 	utils.DebugLog("Sending RNS message to SP! " + status.String())
 	SendMessageToSPServer(status, header.ReqReportNodeStatus)
+	GetPPList()
 }

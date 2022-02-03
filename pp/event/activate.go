@@ -6,6 +6,7 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
@@ -39,7 +40,7 @@ func Activate(amount, fee, gas int64) error {
 		}
 	}
 
-	utils.Log("Sending activate message to SP! " + activateReq.PpInfo.P2PAddress)
+	utils.Log("Sending activate message to SP: " + client.SPConn.GetName() + ", from: " + activateReq.PpInfo.P2PAddress)
 	peers.SendMessageToSPServer(activateReq, header.ReqActivatePP)
 	return nil
 }
