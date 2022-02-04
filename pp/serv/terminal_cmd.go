@@ -109,8 +109,8 @@ func (api *terminalCmd) UpdateStake(param []string) (CmdResult, error) {
 	}
 
 	if setting.State != types.PP_ACTIVE {
-		fmt.Println("PP node not activated yet")
-		return CmdResult{Msg: "PP node not activated yet"}, nil
+		//	//fmt.Println("PP node not activated yet")
+		//	return CmdResult{Msg: "PP node not activated yet"}, nil
 	}
 
 	if !setting.IsPP {
