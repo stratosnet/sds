@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"sync"
 
@@ -211,9 +212,9 @@ func CheckFileExisting(fileHash, fileName, savePath, encryptionTag string) bool 
 	utils.DebugLog("CheckFileExisting: file Hash", fileHash)
 	filePath := ""
 	if savePath == "" {
-		filePath = setting.Config.DownloadPath + fileName
+		filePath = filepath.Join(setting.Config.DownloadPath, fileName)
 	} else {
-		filePath = setting.Config.DownloadPath + savePath + "/" + fileName
+		filePath = filepath.Join(setting.Config.DownloadPath, savePath, fileName)
 	}
 	// if setting.IsWindows {
 	// 	filePath = filepath.FromSlash(filePath)
@@ -272,7 +273,7 @@ func DeleteSlice(sliceHash string) error {
 
 // DeleteDirectory DeleteDirectory
 func DeleteDirectory(fileHash string) {
-	err := os.RemoveAll(setting.Config.DownloadPath + fileHash)
+	err := os.RemoveAll(filepath.Join(setting.Config.DownloadPath, fileHash))
 	if err != nil {
 		utils.DebugLog("DeleteDirectory err", err)
 	}
@@ -283,9 +284,9 @@ func DeleteDirectory(fileHash string) {
 func CheckFilePathEx(fileHash, fileName, savePath string) bool {
 	filePath := ""
 	if savePath == "" {
-		filePath = setting.Config.DownloadPath + fileName
+		filePath = filepath.Join(setting.Config.DownloadPath, fileName)
 	} else {
-		filePath = setting.Config.DownloadPath + savePath + "/" + fileName
+		filePath = filepath.Join(setting.Config.DownloadPath, savePath, fileName)
 	}
 	utils.DebugLog("filePath", filePath)
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0777)

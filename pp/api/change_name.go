@@ -2,13 +2,15 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/httpserv"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
+
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/httpserv"
 )
 
 func changeName(w http.ResponseWriter, request *http.Request) {
@@ -28,7 +30,7 @@ func changeName(w http.ResponseWriter, request *http.Request) {
 		name = data["name"].(string)
 	}
 	js := make(map[string]interface{}, 0)
-	path := setting.Config.AccountDir + "/" + walletAddress
+	path := filepath.Join(setting.Config.AccountDir, walletAddress)
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_APPEND, 0777)
 	if err != nil {
 		utils.ErrorLog("open err", err)

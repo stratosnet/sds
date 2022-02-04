@@ -2,12 +2,14 @@ package file
 
 import (
 	"fmt"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
 )
 
 //var osType = runtime.GOOS
@@ -48,7 +50,7 @@ func GetDownloadCsvPath(fileHash, fileName, savePath string) string {
 
 // GetDownloadPath get download path
 func GetDownloadPath(fileName string) string {
-	filePath := setting.Config.DownloadPath + fileName
+	filePath := filepath.Join(setting.Config.DownloadPath, fileName)
 	// if setting.IsWindows {
 	// 	filePath = filepath.FromSlash(filePath)
 	// }
@@ -68,7 +70,7 @@ func GetDownloadPath(fileName string) string {
 func getSlicePath(hash string) string {
 	s1 := string([]rune(hash)[:1])
 	s2 := string([]rune(hash)[1:2])
-	path := setting.Config.StorehousePath + s1 + "/" + s2
+	path := filepath.Join(setting.Config.StorehousePath, s1, s2)
 	exist, err := PathExists(path)
 	if err != nil {
 		utils.ErrorLog(err)
@@ -80,7 +82,7 @@ func getSlicePath(hash string) string {
 			return ""
 		}
 	}
-	return path + "/" + hash
+	return filepath.Join(path, hash)
 }
 
 // pathExists
