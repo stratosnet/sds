@@ -68,8 +68,12 @@ func GetDownloadPath(fileName string) string {
 	return filePath
 }
 func getSlicePath(hash string) string {
-	s1 := string([]rune(hash)[:1])
-	s2 := string([]rune(hash)[1:2])
+	if len(hash) < 10 {
+		utils.ErrorLog("this hash is too short")
+		return ""
+	}
+	s1 := string([]rune(hash)[:8])
+	s2 := string([]rune(hash)[8:10])
 	path := filepath.Join(setting.Config.StorehousePath, s1, s2)
 	exist, err := PathExists(path)
 	if err != nil {
