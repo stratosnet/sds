@@ -71,13 +71,14 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 
 	utils.Log("Register successful", target.Result.Msg)
 	setting.IsLoad = true
+	setting.IsLoginToSP = true
 	utils.DebugLog("@@@@@@@@@@@@@@@@@@@@@@@@@@@@", conn.(*cf.ClientConn).GetName())
 	setting.IsPP = target.IsPP
 	if !setting.IsPP {
 		reportDHInfoToPP()
 	}
 	if setting.IsAuto {
-		if setting.IsPP {
+		if setting.IsPP && !setting.IsStartMining {
 			peers.StartMining()
 		}
 	}

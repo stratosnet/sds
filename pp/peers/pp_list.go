@@ -38,7 +38,7 @@ func GetPPList() {
 	SendMessageToSPServer(requests.ReqGetPPlistData(), header.ReqGetPPList)
 }
 
-func SendRegisterRequestViaPP(pplist []*protos.PPBaseInfo) bool {
+func SendRegisterRequestViaPP(pplist map[string]*protos.PPBaseInfo) bool {
 	for _, ppInfo := range pplist {
 		if ppInfo.NetworkAddress == setting.NetworkAddress {
 			setting.DeletePPList(ppInfo.NetworkAddress)
@@ -46,7 +46,9 @@ func SendRegisterRequestViaPP(pplist []*protos.PPBaseInfo) bool {
 		}
 		client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
 		if client.PPConn != nil {
-			RegisterChain(false)
+			if client.SPConn == nil {
+				RegisterChain(false)
+			}
 			return true
 		}
 		utils.DebugLog("failed to conn PP，delete:", ppInfo)

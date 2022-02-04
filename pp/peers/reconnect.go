@@ -27,6 +27,7 @@ func ListenOffline() {
 			if offline.IsSp {
 				if setting.IsPP {
 					utils.DebugLog("SP is offline")
+					setting.IsStartMining = false
 					reloadConnectSP()
 					GetSPList()
 				}

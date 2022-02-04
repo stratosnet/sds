@@ -7,6 +7,7 @@ import (
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
@@ -31,13 +32,15 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 		// no PP exist, register to SP
 		if !setting.IsLoginToSP {
 			peers.RegisterChain(true)
-			setting.IsLoginToSP = true
 		}
 		peers.ScheduleReloadPPlist(3 * time.Second)
 		return
 	}
-
-	if success := peers.SendRegisterRequestViaPP(setting.GetLocalPPList()); !success {
-		peers.ScheduleReloadPPlist(3 * time.Second)
+	// if gateway pp is nil, go connect one from ppList
+	if client.PPConn == nil {
+		if success := peers.SendRegisterRequestViaPP(setting.GetLocalPPList()); !success {
+			peers.ScheduleReloadPPlist(3 * time.Second)
+		}
 	}
+
 }
