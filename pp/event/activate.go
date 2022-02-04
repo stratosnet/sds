@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
@@ -39,8 +40,13 @@ func Activate(amount, fee, gas int64) error {
 			return err
 		}
 	}
-
-	utils.Log("Sending activate message to SP: " + client.SPConn.GetName() + ", from: " + activateReq.PpInfo.P2PAddress)
+	var logstring string
+	if client.SPConn != nil {
+		logstring = fmt.Sprintf("Sending activate message to SP: %s, from: %s", client.SPConn.GetName(), activateReq.PpInfo.P2PAddress)
+	} else {
+		logstring = fmt.Sprintf("Sending activate message to SP: %s, from: %s", "[no connected sp]", activateReq.PpInfo.P2PAddress)
+	}
+	utils.Log(logstring)
 	peers.SendMessageToSPServer(activateReq, header.ReqActivatePP)
 	return nil
 }

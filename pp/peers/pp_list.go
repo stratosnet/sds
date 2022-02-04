@@ -59,6 +59,6 @@ func SendRegisterRequestViaPP(pplist []*protos.PPBaseInfo) bool {
 var RegisterPeerMap = &sync.Map{} // make(map[string]int64)
 
 func ScheduleReloadPPlist(future time.Duration) {
-	utils.DebugLog("failed to get PPlist. retry after 3 second")
+	utils.DebugLog("scheduled to get pp-list after: ", future.Seconds(), "second")
 	ppPeerClock.AddJobWithInterval(future, GetPPList)
 }
