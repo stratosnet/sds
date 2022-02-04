@@ -4,8 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/alex023/clock"
-
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -31,11 +29,10 @@ func StartStatusReportToSP() {
 	// trigger first report at time-0 immediately
 	ReportNodeStatus()
 	// trigger consecutive reports with interval
-	clock := clock.NewClock()
-	clock.AddJobRepeat(time.Second*setting.NodeReportIntervalSec, 0, ReportNodeStatus)
+	ppPeerClock.AddJobRepeat(time.Second*setting.NodeReportIntervalSec, 0, ReportNodeStatus)
 }
 
-// GetPPList P node get PPList
+// GetPPList P node get ppList from sp
 func GetPPList() {
 	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetPPList)")
 	SendMessageToSPServer(requests.ReqGetPPlistData(), header.ReqGetPPList)
@@ -60,3 +57,8 @@ func SendRegisterRequestViaPP(pplist []*protos.PPBaseInfo) bool {
 
 // RegisterPeerMap
 var RegisterPeerMap = &sync.Map{} // make(map[string]int64)
+
+func ScheduleReloadPPlist(future time.Duration) {
+	utils.DebugLog("scheduled to get pp-list after: ", future.Seconds(), "second")
+	ppPeerClock.AddJobWithInterval(future, GetPPList)
+}

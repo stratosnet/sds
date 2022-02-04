@@ -10,8 +10,6 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
-
-	"github.com/alex023/clock"
 )
 
 // RspGetPPList
@@ -24,7 +22,7 @@ func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get GetSPList RSP", target.SpList)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.Log("failed to get any indexing nodes, reloading")
-		reloadSPlist()
+		peers.ScheduleReloadSPlist(time.Second * 3)
 		return
 	}
 
@@ -58,10 +56,4 @@ func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
 			utils.ErrorLog("Couldn't write config with updated SP list to yaml file", err)
 		}
 	}
-}
-
-func reloadSPlist() {
-	utils.DebugLog("failed to get SPlist. retry after 3 second")
-	newClock := clock.NewClock()
-	newClock.AddJobRepeat(time.Second*3, 1, peers.GetSPList)
 }

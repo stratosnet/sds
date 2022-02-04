@@ -54,15 +54,15 @@ var P2PPrivateKey []byte
 // SPMap
 var SPMap = &sync.Map{}
 
-// PPList
-var PPList []*protos.PPBaseInfo
+// ppList
+var ppList []*protos.PPBaseInfo
 
 var rwmutex sync.RWMutex
 
 // GetLocalPPList
 func GetLocalPPList() []*protos.PPBaseInfo {
-	if len(PPList) > 0 {
-		return PPList
+	if len(ppList) > 0 {
+		return ppList
 	}
 
 	csvFile, err := os.OpenFile(filepath.Join(Config.PPListDir, "pp-list"), os.O_CREATE|os.O_RDWR, 0777)
@@ -84,24 +84,24 @@ func GetLocalPPList() []*protos.PPBaseInfo {
 					NetworkAddress: networkID.NetworkAddress,
 					P2PAddress:     networkID.P2pAddress,
 				}
-				PPList = append(PPList, &pp)
+				ppList = append(ppList, &pp)
 			} else {
 				utils.ErrorLog("invalid networkID in local PP list: " + item[0])
 			}
 		}
 	} else {
-		utils.Log("PPList == nil")
+		utils.Log("ppList == nil")
 		return nil
 	}
-	utils.Log("PPList == ", PPList)
-	return PPList
+	utils.Log("ppList == ", ppList)
+	return ppList
 }
 
 // SavePPList
 func SavePPList(target *protos.RspGetPPList) {
 	for _, info := range target.PpList {
 		if info.NetworkAddress != NetworkAddress {
-			PPList = append(PPList, info)
+			ppList = append(ppList, info)
 		}
 	}
 	savePPListLocal()
@@ -120,8 +120,8 @@ func savePPListLocal() {
 	}
 	defer csvFile.Close()
 	writer := csv.NewWriter(csvFile)
-	utils.DebugLog("PPList len", len(PPList))
-	for _, post := range PPList {
+	utils.DebugLog("ppList len", len(ppList))
+	for _, post := range ppList {
 		line := []string{types.NetworkID{P2pAddress: post.P2PAddress, NetworkAddress: post.NetworkAddress}.String()}
 		err = writer.Write(line)
 		if err != nil {
@@ -134,9 +134,9 @@ func savePPListLocal() {
 // DeletePPList
 func DeletePPList(networkAddress string) {
 	utils.DebugLog("delete PP: ", networkAddress)
-	for i, pp := range PPList {
+	for i, pp := range ppList {
 		if pp.NetworkAddress == networkAddress {
-			PPList = append(PPList[:i], PPList[i+1:]...)
+			ppList = append(ppList[:i], ppList[i+1:]...)
 			savePPListLocal()
 			return
 		}
