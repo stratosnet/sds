@@ -141,6 +141,6 @@ func ClearBufferedSpConns() {
 }
 
 func ScheduleReloadSPlist(future time.Duration) {
-	utils.DebugLog("failed to get SPlist. retry after 3 second")
+	utils.DebugLog("scheduled to get sp-list after: ", future.Seconds(), "second")
 	ppPeerClock.AddJobWithInterval(future, GetSPList)
 }
