@@ -3,6 +3,7 @@ package peers
 import (
 	"net"
 
+	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/utils"
 )
@@ -15,6 +16,7 @@ type PPServer struct {
 }
 
 var ppServ *PPServer
+var ppPeerClock = clock.NewClock()
 
 // GetPPServer
 func GetPPServer() *PPServer {

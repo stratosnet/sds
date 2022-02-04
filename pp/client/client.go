@@ -1,12 +1,13 @@
 package client
 
 import (
+	"net"
+	"sync"
+
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/utils"
-	"net"
-	"sync"
 )
 
 // Offline Offline
@@ -83,7 +84,7 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 
 		if PPConn != nil {
 			if PPConn == c.(*cf.ClientConn) {
-				utils.DebugLog("lost registered PP conn, delete and change to new PP")
+				utils.DebugLog("lost gateway PP conn, delete and change to new PP")
 				select {
 				case OfflineChan <- &Offline{
 					IsSp:           false,

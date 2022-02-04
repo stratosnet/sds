@@ -89,7 +89,7 @@ func TransferSendMessageToClient(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
 	}
 }
 
-// GetPPList P node get PPList
+// GetPPList P node get ppList
 func GetSPList() {
 	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetSPList)")
 	SendMessageToSPServer(requests.ReqGetSPlistData(), header.ReqGetSPList)
@@ -138,4 +138,9 @@ func GetBufferedSpConns() []*cf.ClientConn {
 
 func ClearBufferedSpConns() {
 	bufferedSpConns = make([]*cf.ClientConn, 0)
+}
+
+func ScheduleReloadSPlist(future time.Duration) {
+	utils.DebugLog("scheduled to get sp-list after: ", future.Seconds(), "second")
+	ppPeerClock.AddJobWithInterval(future, GetSPList)
 }
