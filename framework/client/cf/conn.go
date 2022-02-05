@@ -56,6 +56,7 @@ type ClientOption func(*options)
 
 // ClientConn
 type ClientConn struct {
+	// TODO to add p2p key usage (handshake)
 	addr      string
 	opts      options
 	netid     int64
