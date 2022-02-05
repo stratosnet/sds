@@ -55,12 +55,12 @@ var P2PPrivateKey []byte
 var SPMap = &sync.Map{}
 
 // ppList
-var ppList []*protos.PPBaseInfo
+var ppList = make(map[string]*protos.PPBaseInfo)
 
 var rwmutex sync.RWMutex
 
 // GetLocalPPList
-func GetLocalPPList() []*protos.PPBaseInfo {
+func GetLocalPPList() map[string]*protos.PPBaseInfo {
 	if len(ppList) > 0 {
 		return ppList
 	}
@@ -84,7 +84,7 @@ func GetLocalPPList() []*protos.PPBaseInfo {
 					NetworkAddress: networkID.NetworkAddress,
 					P2PAddress:     networkID.P2pAddress,
 				}
-				ppList = append(ppList, &pp)
+				ppList[pp.NetworkAddress] = &pp
 			} else {
 				utils.ErrorLog("invalid networkID in local PP list: " + item[0])
 			}
@@ -100,8 +100,9 @@ func GetLocalPPList() []*protos.PPBaseInfo {
 // SavePPList
 func SavePPList(target *protos.RspGetPPList) {
 	for _, info := range target.PpList {
-		if info.NetworkAddress != NetworkAddress {
-			ppList = append(ppList, info)
+		if info.NetworkAddress != NetworkAddress && ppList[info.NetworkAddress] == nil {
+			utils.DebugLog("add ", info.NetworkAddress, " to ppList")
+			ppList[info.NetworkAddress] = info
 		}
 	}
 	savePPListLocal()
@@ -134,13 +135,8 @@ func savePPListLocal() {
 // DeletePPList
 func DeletePPList(networkAddress string) {
 	utils.DebugLog("delete PP: ", networkAddress)
-	for i, pp := range ppList {
-		if pp.NetworkAddress == networkAddress {
-			ppList = append(ppList[:i], ppList[i+1:]...)
-			savePPListLocal()
-			return
-		}
-	}
+	delete(ppList, networkAddress)
+	savePPListLocal()
 }
 
 func GetNetworkID() types.NetworkID {
