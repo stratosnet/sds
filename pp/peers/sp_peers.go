@@ -40,6 +40,14 @@ func SendMessage(conn core.WriteCloser, pb proto.Message, cmd string) {
 	}
 }
 
+func SendMessageDirectToSPOrViaPP(pb proto.Message, cmd string) {
+	if client.SPConn != nil {
+		SendMessage(client.SPConn, pb, cmd)
+	} else {
+		SendMessage(client.PPConn, pb, cmd)
+	}
+}
+
 // SendMessageToSPServer SendMessageToSPServer
 func SendMessageToSPServer(pb proto.Message, cmd string) {
 	_, err := ConnectToSP()
@@ -61,6 +69,15 @@ func TransferSendMessageToPPServ(addr string, msgBuf *msg.RelayMsgBuf) {
 		utils.DebugLog("new conn, connect and transfer")
 		client.NewClient(addr, false).Write(msgBuf)
 	}
+}
+
+func TransferSendMessageToPPServByP2pAddress(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
+	ppInfo := setting.GetPPByP2pAddress(p2pAddress)
+	if ppInfo == nil {
+		utils.ErrorLogf("PP %v missing from local ppList. Cannot transfer message due to missing network address")
+		return
+	}
+	TransferSendMessageToPPServ(ppInfo.NetworkAddress, msgBuf)
 }
 
 // transferSendMessageToSPServer

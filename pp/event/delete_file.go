@@ -8,7 +8,6 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
@@ -19,7 +18,7 @@ import (
 // DeleteFile
 func DeleteFile(fileHash, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessage(client.PPConn, requests.ReqDeleteFileData(fileHash, reqID), header.ReqDeleteFile)
+		peers.SendMessageDirectToSPOrViaPP(requests.ReqDeleteFileData(fileHash, reqID), header.ReqDeleteFile)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -43,7 +42,7 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPDeleteFile, &target)
 		} else {
-			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }

@@ -25,7 +25,7 @@ func GetFileStorageInfo(path, savePath, reqID string, isVideoStream bool, w http
 	if setting.CheckLogin() {
 		if CheckDownloadPath(path) {
 			utils.DebugLog("path:", path)
-			peers.SendMessage(client.PPConn, requests.ReqFileStorageInfoData(path, savePath, reqID, isVideoStream, nil), header.ReqFileStorageInfo)
+			peers.SendMessageDirectToSPOrViaPP(requests.ReqFileStorageInfoData(path, savePath, reqID, isVideoStream, nil), header.ReqFileStorageInfo)
 		} else {
 			utils.ErrorLog("please input correct download link, eg: sdm://address/fileHash|filename(optional)")
 			if w != nil {
@@ -155,7 +155,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		} else {
 			// store the task and transfer
 			task.AddDownloadTask(&target)
-			peers.TransferSendMessageToClient(target.P2PAddress, requests.RspFileStorageInfoData(&target))
+			peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, requests.RspFileStorageInfoData(&target))
 		}
 	}
 }
