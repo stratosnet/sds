@@ -38,7 +38,7 @@ func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	if target.P2PAddress != setting.P2PAddress {
-		peers.TransferSendMessageToPPServ(target.P2PAddress, core.MessageFromContext(ctx))
+		peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
 		return
 	}
 

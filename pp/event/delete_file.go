@@ -42,7 +42,7 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPDeleteFile, &target)
 		} else {
-			peers.TransferSendMessageToPPServ(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }

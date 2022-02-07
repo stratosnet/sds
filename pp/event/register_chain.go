@@ -57,7 +57,7 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("target.RspRegister", target.P2PAddress)
 	if target.P2PAddress != setting.P2PAddress {
 		utils.Log("transfer RspRegister to: ", target.P2PAddress)
-		peers.TransferSendMessageToPPServ(target.P2PAddress, core.MessageFromContext(ctx))
+		peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
 		return
 	}
 

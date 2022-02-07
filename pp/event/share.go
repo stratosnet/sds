@@ -72,7 +72,7 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPShareLink, &target)
 		} else {
-			peers.TransferSendMessageToPPServ(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -97,7 +97,7 @@ func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPShareFile, &target)
 		} else {
-			peers.TransferSendMessageToPPServ(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -120,7 +120,7 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPDeleteShare, &target)
 		} else {
-			peers.TransferSendMessageToPPServ(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 
@@ -152,7 +152,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	}
 
 	if target.ShareRequest.P2PAddress != setting.P2PAddress {
-		peers.TransferSendMessageToPPServ(target.ShareRequest.P2PAddress, core.MessageFromContext(ctx))
+		peers.TransferSendMessageToPPServByP2pAddress(target.ShareRequest.P2PAddress, core.MessageFromContext(ctx))
 		return
 	}
 

@@ -33,7 +33,7 @@ func ListenOffline() {
 				}
 			} else {
 				utils.Log("PP is offline")
-				setting.DeletePPList(offline.NetworkAddress)
+				setting.DeletePPListByNetworkAddress(offline.NetworkAddress)
 				InitPPList()
 			}
 		}

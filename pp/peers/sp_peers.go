@@ -71,6 +71,15 @@ func TransferSendMessageToPPServ(addr string, msgBuf *msg.RelayMsgBuf) {
 	}
 }
 
+func TransferSendMessageToPPServByP2pAddress(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
+	ppInfo := setting.GetPPByP2pAddress(p2pAddress)
+	if ppInfo == nil {
+		utils.ErrorLogf("PP %v missing from local ppList. Cannot transfer message due to missing network address")
+		return
+	}
+	TransferSendMessageToPPServ(ppInfo.NetworkAddress, msgBuf)
+}
+
 // transferSendMessageToSPServer
 func TransferSendMessageToSPServer(msg *msg.RelayMsgBuf) {
 	_, err := ConnectToSP()

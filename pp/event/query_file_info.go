@@ -155,7 +155,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		} else {
 			// store the task and transfer
 			task.AddDownloadTask(&target)
-			peers.TransferSendMessageToPPServ(target.P2PAddress, requests.RspFileStorageInfoData(&target))
+			peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, requests.RspFileStorageInfoData(&target))
 		}
 	}
 }

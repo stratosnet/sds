@@ -26,7 +26,7 @@ func ReqGetHDInfo(ctx context.Context, conn core.WriteCloser) {
 		if setting.P2PAddress == target.P2PAddress {
 			peers.SendMessageToSPServer(requests.RspGetHDInfoData(), header.RspGetHDInfo)
 		} else {
-			peers.TransferSendMessageToPPServ(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
