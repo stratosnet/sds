@@ -7,7 +7,6 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
@@ -17,7 +16,7 @@ import (
 // GetAllShareLink GetShareLink
 func GetAllShareLink(reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessage(client.PPConn, requests.ReqShareLinkData(reqID), header.ReqShareLink)
+		peers.SendMessageDirectToSPOrViaPP(requests.ReqShareLinkData(reqID), header.ReqShareLink)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -27,7 +26,7 @@ func GetAllShareLink(reqID string, w http.ResponseWriter) {
 // GetReqShareFile GetReqShareFile
 func GetReqShareFile(reqID, fileHash, pathHash string, shareTime int64, isPrivate bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessage(client.PPConn, requests.ReqShareFileData(reqID, fileHash, pathHash, isPrivate, shareTime), header.ReqShareFile)
+		peers.SendMessageDirectToSPOrViaPP(requests.ReqShareFileData(reqID, fileHash, pathHash, isPrivate, shareTime), header.ReqShareFile)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -37,7 +36,7 @@ func GetReqShareFile(reqID, fileHash, pathHash string, shareTime int64, isPrivat
 // DeleteShare DeleteShare
 func DeleteShare(shareID, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessage(client.PPConn, requests.ReqDeleteShareData(reqID, shareID), header.ReqDeleteShare)
+		peers.SendMessageDirectToSPOrViaPP(requests.ReqDeleteShareData(reqID, shareID), header.ReqDeleteShare)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -73,7 +72,7 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPShareLink, &target)
 		} else {
-			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToPPServ(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -98,7 +97,7 @@ func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPShareFile, &target)
 		} else {
-			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToPPServ(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -121,7 +120,7 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(target.ReqId, HTTPDeleteShare, &target)
 		} else {
-			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToPPServ(target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 
@@ -131,7 +130,7 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 func GetShareFile(keyword, sharePassword, reqID string, w http.ResponseWriter) {
 	utils.DebugLog("GetShareFile for file ", keyword)
 	if setting.CheckLogin() {
-		peers.SendMessage(client.PPConn, requests.ReqGetShareFileData(keyword, sharePassword, reqID), header.ReqGetShareFile)
+		peers.SendMessageDirectToSPOrViaPP(requests.ReqGetShareFileData(keyword, sharePassword, reqID), header.ReqGetShareFile)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -153,7 +152,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	}
 
 	if target.ShareRequest.P2PAddress != setting.P2PAddress {
-		peers.TransferSendMessageToClient(target.ShareRequest.P2PAddress, core.MessageFromContext(ctx))
+		peers.TransferSendMessageToPPServ(target.ShareRequest.P2PAddress, core.MessageFromContext(ctx))
 		return
 	}
 
@@ -167,6 +166,6 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 
 	for _, fileInfo := range target.FileInfo {
 		filePath := "sdm://" + fileInfo.OwnerWalletAddress + "/" + fileInfo.FileHash
-		peers.SendMessage(client.PPConn, requests.ReqFileStorageInfoData(filePath, "", "", false, target.ShareRequest), header.ReqFileStorageInfo)
+		peers.SendMessageDirectToSPOrViaPP(requests.ReqFileStorageInfoData(filePath, "", "", false, target.ShareRequest), header.ReqFileStorageInfo)
 	}
 }

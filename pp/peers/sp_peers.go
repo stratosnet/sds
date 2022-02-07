@@ -40,6 +40,14 @@ func SendMessage(conn core.WriteCloser, pb proto.Message, cmd string) {
 	}
 }
 
+func SendMessageDirectToSPOrViaPP(pb proto.Message, cmd string) {
+	if client.SPConn != nil {
+		SendMessage(client.SPConn, pb, cmd)
+	} else {
+		SendMessage(client.PPConn, pb, cmd)
+	}
+}
+
 // SendMessageToSPServer SendMessageToSPServer
 func SendMessageToSPServer(pb proto.Message, cmd string) {
 	_, err := ConnectToSP()

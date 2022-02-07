@@ -121,7 +121,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 						conn := c.(*core.ServerConn)
 						conn.Write(core.MessageFromContext(ctx))
 					} else {
-						peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+						peers.TransferSendMessageToPPServ(target.P2PAddress, core.MessageFromContext(ctx))
 					}
 					if target.NeedReport {
 						utils.DebugLog("arget.NeedReportarget.NeedReportarget.NeedReportarget.NeedReport")
@@ -374,7 +374,7 @@ func ReqDownloadSlicePause(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("ReqDownloadSlicePause&*************************************** ")
 	var target protos.ReqDownloadSlicePause
 	if requests.UnmarshalData(ctx, &target) {
-		peers.TransferSendMessageToClient(target.P2PAddress, requests.RspDownloadSlicePauseData(&target))
+		peers.TransferSendMessageToPPServ(target.P2PAddress, requests.RspDownloadSlicePauseData(&target))
 		//
 		if dlTask, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress); ok {
 			downloadTask := dlTask.(*task.DownloadTask)
