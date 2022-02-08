@@ -26,14 +26,13 @@ func ListenOffline() {
 		case offline := <-client.OfflineChan:
 			if offline.IsSp {
 				if setting.IsPP {
-					utils.DebugLog("SP is offline")
+					utils.DebugLogf("SP %v is offline", offline.NetworkAddress)
 					setting.IsStartMining = false
 					reloadConnectSP()
 					GetSPList()
 				}
 			} else {
-				utils.Log("PP is offline")
-				setting.DeletePPListByNetworkAddress(offline.NetworkAddress)
+				utils.DebugLogf("PP %v is offline", offline.NetworkAddress)
 				InitPPList()
 			}
 		}
