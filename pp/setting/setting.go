@@ -12,7 +12,6 @@ import (
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/types"
 )
 
 // REPROTDHTIME 1 hour
@@ -80,41 +79,37 @@ type SPBaseInfo struct {
 }
 
 type config struct {
-	Version                     uint32
-	VersionShow                 string
-	DownloadPathMinLen          int
-	Port                        string       `yaml:"Port"`
-	NetworkAddress              string       `yaml:"NetworkAddress"`
-	Debug                       bool         `yaml:"Debug"`
-	PPListDir                   string       `yaml:"PPListDir"`
-	AccountDir                  string       `yaml:"AccountDir"`
-	StorehousePath              string       `yaml:"StorehousePath"`
-	DownloadPath                string       `yaml:"DownloadPath"`
-	P2PAddress                  string       `yaml:"P2PAddress"`
-	P2PPassword                 string       `yaml:"P2PPassword"`
-	WalletAddress               string       `yaml:"WalletAddress"`
-	WalletPassword              string       `yaml:"WalletPassword"`
-	AutoRun                     bool         `yaml:"AutoRun"`  // is auto login
-	Internal                    bool         `yaml:"Internal"` // is internal net
-	IsWallet                    bool         `yaml:"IsWallet"` // is wallet
-	BPURL                       string       `yaml:"BPURL"`    // bphttp
-	IsCheckDefaultPath          bool         `yaml:"IsCheckDefaultPath"`
-	IsLimitDownloadSpeed        bool         `yaml:"IsLimitDownloadSpeed"`
-	LimitDownloadSpeed          uint64       `yaml:"LimitDownloadSpeed"`
-	IsLimitUploadSpeed          bool         `yaml:"IsLimitUploadSpeed"`
-	LimitUploadSpeed            uint64       `yaml:"LimitUploadSpeed"`
-	IsCheckFileOperation        bool         `yaml:"IsCheckFileOperation"`
-	IsCheckFileTransferFinished bool         `yaml:"IsCheckFileTransferFinished"`
-	AddressPrefix               string       `yaml:"AddressPrefix"`
-	P2PKeyPrefix                string       `yaml:"P2PKeyPrefix"`
-	ChainId                     string       `yaml:"ChainId"`
-	Token                       string       `yaml:"Token"`
-	StratosChainUrl             string       `yaml:"StratosChainUrl"`
-	StreamingCache              bool         `yaml:"StreamingCache"`
-	RestPort                    string       `yaml:"RestPort"`
-	InternalPort                string       `yaml:"InternalPort"`
-	TrafficLogInterval          uint64       `yaml:"TrafficLogInterval"`
-	SPList                      []SPBaseInfo `yaml:"SPList"`
+	Version              uint32
+	VersionShow          string
+	DownloadPathMinLen   int
+	Port                 string       `yaml:"Port"`
+	NetworkAddress       string       `yaml:"NetworkAddress"`
+	Debug                bool         `yaml:"Debug"`
+	PPListDir            string       `yaml:"PPListDir"`
+	AccountDir           string       `yaml:"AccountDir"`
+	StorehousePath       string       `yaml:"StorehousePath"`
+	DownloadPath         string       `yaml:"DownloadPath"`
+	P2PAddress           string       `yaml:"P2PAddress"`
+	P2PPassword          string       `yaml:"P2PPassword"`
+	WalletAddress        string       `yaml:"WalletAddress"`
+	WalletPassword       string       `yaml:"WalletPassword"`
+	AutoRun              bool         `yaml:"AutoRun"`  // is auto login
+	Internal             bool         `yaml:"Internal"` // is internal net
+	IsWallet             bool         `yaml:"IsWallet"` // is wallet
+	BPURL                string       `yaml:"BPURL"`    // bphttp
+	IsCheckDefaultPath   bool         `yaml:"IsCheckDefaultPath"`
+	IsLimitDownloadSpeed bool         `yaml:"IsLimitDownloadSpeed"`
+	LimitDownloadSpeed   uint64       `yaml:"LimitDownloadSpeed"`
+	IsLimitUploadSpeed   bool         `yaml:"IsLimitUploadSpeed"`
+	LimitUploadSpeed     uint64       `yaml:"LimitUploadSpeed"`
+	ChainId              string       `yaml:"ChainId"`
+	Token                string       `yaml:"Token"`
+	StratosChainUrl      string       `yaml:"StratosChainUrl"`
+	StreamingCache       bool         `yaml:"StreamingCache"`
+	RestPort             string       `yaml:"RestPort"`
+	InternalPort         string       `yaml:"InternalPort"`
+	TrafficLogInterval   uint64       `yaml:"TrafficLogInterval"`
+	SPList               []SPBaseInfo `yaml:"SPList"`
 }
 
 var ostype = runtime.GOOS
@@ -256,40 +251,36 @@ func SetConfig(key, value string) bool {
 
 func defaultConfig() *config {
 	return &config{
-		Version:                     3,
-		VersionShow:                 Version,
-		DownloadPathMinLen:          0,
-		Port:                        "18081",
-		NetworkAddress:              "127.0.0.1",
-		Debug:                       false,
-		PPListDir:                   "./peers",
-		AccountDir:                  "./accounts",
-		StorehousePath:              "./storage",
-		DownloadPath:                "./download",
-		P2PAddress:                  "",
-		P2PPassword:                 "",
-		WalletAddress:               "",
-		WalletPassword:              "",
-		AutoRun:                     true,
-		Internal:                    false,
-		IsWallet:                    true,
-		BPURL:                       "",
-		IsCheckDefaultPath:          false,
-		IsLimitDownloadSpeed:        false,
-		LimitDownloadSpeed:          0,
-		IsLimitUploadSpeed:          false,
-		LimitUploadSpeed:            0,
-		IsCheckFileOperation:        false,
-		IsCheckFileTransferFinished: false,
-		AddressPrefix:               types.DefaultAddressPrefix,
-		P2PKeyPrefix:                types.DefaultP2PKeyPrefix,
-		ChainId:                     "stratos-testnet-3",
-		Token:                       "ustos",
-		StratosChainUrl:             "http://127.0.0.1:1317",
-		StreamingCache:              false,
-		RestPort:                    "",
-		InternalPort:                "",
-		SPList:                      []SPBaseInfo{{NetworkAddress: "127.0.0.1:8888"}},
+		Version:              3,
+		VersionShow:          Version,
+		DownloadPathMinLen:   0,
+		Port:                 "18081",
+		NetworkAddress:       "127.0.0.1",
+		Debug:                false,
+		PPListDir:            "./peers",
+		AccountDir:           "./accounts",
+		StorehousePath:       "./storage",
+		DownloadPath:         "./download",
+		P2PAddress:           "",
+		P2PPassword:          "",
+		WalletAddress:        "",
+		WalletPassword:       "",
+		AutoRun:              true,
+		Internal:             false,
+		IsWallet:             true,
+		BPURL:                "",
+		IsCheckDefaultPath:   false,
+		IsLimitDownloadSpeed: false,
+		LimitDownloadSpeed:   0,
+		IsLimitUploadSpeed:   false,
+		LimitUploadSpeed:     0,
+		ChainId:              "stratos-testnet-3",
+		Token:                "ustos",
+		StratosChainUrl:      "http://127.0.0.1:1317",
+		StreamingCache:       false,
+		RestPort:             "",
+		InternalPort:         "",
+		SPList:               []SPBaseInfo{{NetworkAddress: "127.0.0.1:8888"}},
 	}
 }
 

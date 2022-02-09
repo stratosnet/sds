@@ -21,9 +21,6 @@ IsLimitDownloadSpeed: false
 LimitDownloadSpeed: 100
 IsLimitUploadSpeed: false
 LimitUploadSpeed: 100
-IsCheckFileOperation: false
-IsCheckFileTransferFinished: false
-P2PKeyPrefix: stsdsp2p
 ChainId: test-chain
 Token: ustos
 StratosChainUrl: http://127.0.0.1:1317

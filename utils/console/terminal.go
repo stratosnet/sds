@@ -163,18 +163,18 @@ func MyGetPassword(prompt string, confirmation bool) string {
 	if prompt != "" {
 		fmt.Println(prompt)
 	}
-	password, err := Mystdin.PromptPassword("Passphrase: ")
+	password, err := Mystdin.PromptPassword("password: ")
 	if err != nil {
 		cmd.Fatalf("Failed to read passphrase: %v", err)
 	}
 	if confirmation {
-		confirm, err := Mystdin.PromptPassword("Repeat passphrase: ")
+		confirm, err := Mystdin.PromptPassword("Repeat password: ")
 		if err != nil {
 			cmd.Fatalf("Failed to read passphrase confirmation: %v", err)
 		}
 		if password != confirm {
 			password = ""
-			cmd.Fatalf("Passphrases do not match")
+			cmd.Fatalf("password do not match")
 		}
 	}
 
