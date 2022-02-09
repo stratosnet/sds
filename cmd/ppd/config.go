@@ -11,6 +11,12 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
+	"github.com/stratosnet/sds/utils/types"
+)
+
+const (
+	createP2pKeyFlag = "create-p2p-key"
+	createWalletFlag = "create-wallet"
 )
 
 func genConfig(cmd *cobra.Command, args []string) error {
@@ -24,6 +30,7 @@ func genConfig(cmd *cobra.Command, args []string) error {
 	}
 	err = setting.LoadConfig(path)
 	if err != nil {
+		fmt.Println("generating default config file")
 		err = setting.GenDefaultConfig(path)
 		if err != nil {
 			return errors.Wrap(err, "failed to generate config file at given path")
@@ -33,16 +40,23 @@ func genConfig(cmd *cobra.Command, args []string) error {
 
 	setting.LoadConfig(path)
 
-	err = SetupP2PKey()
-	if err != nil {
-		err := errors.Wrap(err, "Couldn't setup PP node")
-		utils.ErrorLog(err)
-		return err
+	createP2pKey, err := cmd.Flags().GetBool(createP2pKeyFlag)
+	if err == nil && createP2pKey {
+		err = SetupP2PKey()
+		if err != nil {
+			err := errors.Wrap(err, "Couldn't setup PP node")
+			utils.ErrorLog(err)
+			return err
+		}
 	}
 
-	err = SetupWalletKey()
-	if err != nil {
-		utils.ErrorLog(err)
+	createWallet, err := cmd.Flags().GetBool(createWalletFlag)
+	if err == nil && createWallet {
+		err = SetupWalletKey()
+		if err != nil {
+			utils.ErrorLog(err)
+			return err
+		}
 	}
 	return nil
 }
@@ -101,7 +115,7 @@ func SetupWalletKey() error {
 			return errors.New("invalid. The two passwords don't match")
 		}
 
-		mnemonic := console.MyGetPassword("input bip39 mnemonic (leave blank to generate a new one)", false)
+		mnemonic, err := console.Stdin.PromptPassword("input bip39 mnemonic (leave blank to generate a new one)")
 		if mnemonic == "" {
 			newMnemonic, err := utils.NewMnemonic()
 			if err != nil {
@@ -114,7 +128,7 @@ func SetupWalletKey() error {
 				"======================================================================= \n")
 		}
 
-		hdPath, err := console.Stdin.PromptInput("input hd-path for the account, default: m/44'/606'/0'/0/0 ")
+		hdPath, err := console.Stdin.PromptInput("input hd-path for the account, default: \"m/44'/606'/0'/0/0\" : ")
 		if err != nil {
 			return errors.New("couldn't read the hd-path")
 		}
@@ -123,18 +137,18 @@ func SetupWalletKey() error {
 		}
 		//hrp, mnemonic, bip39Passphrase, hdPath
 		walletKeyAddress, err := utils.CreateWallet(setting.Config.AccountDir, nickname, password,
-			setting.Config.AddressPrefix, mnemonic, "", hdPath)
+			types.DefaultAddressPrefix, mnemonic, "", hdPath)
 		if err != nil {
 			return errors.New("couldn't create WalletAddress: " + err.Error())
 		}
 
-		walletKeyAddressString, err := walletKeyAddress.ToBech(setting.Config.AddressPrefix)
+		walletKeyAddressString, err := walletKeyAddress.ToBech(types.DefaultAddressPrefix)
 		if err != nil {
 			return errors.New("couldn't convert P2P key address to bech string: " + err.Error())
 		}
 		setting.SetConfig("WalletAddress", walletKeyAddressString)
 
-		save, err := console.Stdin.PromptInput("save wallet password to config file: Y(es)/N(o)")
+		save, err := console.Stdin.PromptInput("save wallet password to config file: Y(es)/N(o): ")
 		if err != nil {
 			return errors.New("couldn't read the input, not saving by default")
 		}

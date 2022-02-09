@@ -24,7 +24,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	helpStr := "\n" +
 		"help                                       			show all the commands\n" +
 		"wallets                                    			acquire all wallet wallets' address\n" +
-		"newwallet ->password                       			create new wallet, input password in prompt\n" +
+		"newwallet <walletName> ->password                      create new wallet, input password in prompt\n" +
 		"login <walletAddress> ->password           			unlock and log in wallet, input password in prompt\n" +
 		"registerpeer                               			register peer to index node\n" +
 		"rp                                         			register peer to index node\n" +
@@ -59,8 +59,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	}
 
 	newWallet := func(line string, param []string) bool {
-		if len(param) < 2 {
-			fmt.Println("Not enough arguments. Please provide the new wallet name and hdPath")
+		if len(param) < 1 {
+			fmt.Println("Not enough arguments. Please provide the new wallet name")
 			return false
 		}
 
@@ -70,10 +70,12 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 			return false
 		}
 
-		mnemonic := console.MyGetPassword("input bip39 mnemonic (leave blank to generate a new one)", false)
-
-		serv.CreateWallet(password, param[0], mnemonic, "", param[1])
-		return callRpc(c, "newWallet", []string{password, param[0], mnemonic, "", param[1]})
+		mnemonic, err := console.Stdin.PromptPassword("input bip39 mnemonic (leave blank to generate a new one)")
+		if err != nil {
+			fmt.Println("failed to get input mnemonic words")
+			return false
+		}
+		return callRpc(c, "newWallet", []string{password, param[0], mnemonic, setting.HD_PATH})
 	}
 
 	login := func(line string, param []string) bool {

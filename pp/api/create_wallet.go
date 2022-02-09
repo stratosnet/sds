@@ -10,6 +10,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
+	"github.com/stratosnet/sds/utils/types"
 )
 
 // createWallet POST, params：(password，againpassword，name, mnemonic, passphrase, hdpath)
@@ -24,7 +25,6 @@ func createWallet(w http.ResponseWriter, request *http.Request) {
 	exp1 := regexp.MustCompile(`^[A-Za-z0-9]{8,16}$`)
 	name := "Wallet" + strconv.Itoa(len(files))
 	mnemonic := ""
-	passphrase := ""
 	hdPath := ""
 	if data["password"] != nil {
 		password = data["password"].(string)
@@ -47,12 +47,12 @@ func createWallet(w http.ResponseWriter, request *http.Request) {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "mnemonic is required").ToBytes())
 		return
 	}
-	if data["passphrase"] != nil {
-		passphrase = data["passphrase"].(string)
-	} else {
-		w.Write(httpserv.NewJson(nil, setting.FAILCode, "bip39 passphrase is required").ToBytes())
-		return
-	}
+	//if data["passphrase"] != nil {
+	//	passphrase = data["passphrase"].(string)
+	//} else {
+	//	w.Write(httpserv.NewJson(nil, setting.FAILCode, "bip39 passphrase is required").ToBytes())
+	//	return
+	//}
 	if data["hdpath"] != nil {
 		hdPath = data["hdpath"].(string)
 	} else {
@@ -67,13 +67,13 @@ func createWallet(w http.ResponseWriter, request *http.Request) {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "password doesn't match").ToBytes())
 		return
 	}
-	walletAddress, err := utils.CreateWallet(setting.Config.AccountDir, name, password, setting.Config.AddressPrefix,
-		mnemonic, passphrase, hdPath)
+	walletAddress, err := utils.CreateWallet(setting.Config.AccountDir, name, password, types.DefaultAddressPrefix,
+		mnemonic, "", hdPath)
 	if err != nil {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to create wallet").ToBytes())
 		return
 	}
-	walletAddressString, err := walletAddress.ToBech(setting.Config.AddressPrefix)
+	walletAddressString, err := walletAddress.ToBech(types.DefaultAddressPrefix)
 	if err != nil {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to convert wallet address to bech32 string").ToBytes())
 		return

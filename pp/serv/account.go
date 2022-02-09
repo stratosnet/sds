@@ -10,10 +10,11 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
+	"github.com/stratosnet/sds/utils/types"
 )
 
 // CreateWallet
-func CreateWallet(password, name, mnemonic, passphrase, hdPath string) string {
+func CreateWallet(password, name, mnemonic, hdPath string) string {
 	if mnemonic == "" {
 		newMnemonic, err := utils.NewMnemonic()
 		if err != nil {
@@ -22,13 +23,13 @@ func CreateWallet(password, name, mnemonic, passphrase, hdPath string) string {
 		}
 		mnemonic = newMnemonic
 	}
-	account, err := utils.CreateWallet(setting.Config.AccountDir, name, password, setting.Config.AddressPrefix,
-		mnemonic, passphrase, hdPath)
+	account, err := utils.CreateWallet(setting.Config.AccountDir, name, password, types.DefaultAddressPrefix,
+		mnemonic, "", hdPath)
 	if utils.CheckError(err) {
 		utils.ErrorLog("CreateWallet error", err)
 		return ""
 	}
-	setting.WalletAddress, err = account.ToBech(setting.Config.AddressPrefix)
+	setting.WalletAddress, err = account.ToBech(types.DefaultAddressPrefix)
 	if utils.CheckError(err) {
 		utils.ErrorLog("CreateWallet error", err)
 		return ""
@@ -38,9 +39,6 @@ func CreateWallet(password, name, mnemonic, passphrase, hdPath string) string {
 	}
 	getPublicKey(filepath.Join(setting.Config.AccountDir, setting.WalletAddress+".json"), password)
 	utils.Log("Create account success ,", setting.WalletAddress)
-	if setting.NetworkAddress != "" {
-		peers.InitPeer(event.RegisterEventHandle)
-	}
 	return setting.WalletAddress
 }
 
@@ -98,7 +96,7 @@ func Wallets() {
 	var wallets []string
 	for _, file := range files {
 		fileName := file.Name()
-		if fileName[len(fileName)-5:] == ".json" && fileName[:len(setting.Config.P2PKeyPrefix)] != setting.Config.P2PKeyPrefix {
+		if fileName[len(fileName)-5:] == ".json" && fileName[:len(types.DefaultP2PKeyPrefix)] != types.DefaultP2PKeyPrefix {
 			wallets = append(wallets, fileName[:len(fileName)-5])
 		}
 	}
