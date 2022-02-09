@@ -31,8 +31,8 @@ func InitPeer(registerFn func()) {
 	go ListenOffline()
 }
 
-// RegisterChain
-func RegisterChain(toSP bool) {
+// RegisterToSP
+func RegisterToSP(toSP bool) {
 	if toSP {
 		SendMessageToSPServer(requests.ReqRegisterData(), header.ReqRegister)
 		utils.Log("SendMessage(conn, req, header.ReqRegister) to SP")

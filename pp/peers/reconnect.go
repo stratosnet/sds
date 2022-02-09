@@ -42,7 +42,7 @@ func ListenOffline() {
 func reloadConnectSP() {
 	newConnection, err := ConnectToSP()
 	if newConnection {
-		RegisterChain(true)
+		RegisterToSP(true)
 		if setting.IsStartMining {
 			StartMining()
 		}
