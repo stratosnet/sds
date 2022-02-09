@@ -6,10 +6,11 @@ import (
 )
 
 type Url struct {
-	Scheme string
-	Host   string
-	Port   string
-	Path   string
+	Scheme   string
+	Host     string
+	Port     string
+	Path     string
+	RawQuery string
 }
 
 func ParseUrl(url string) (*Url, error) {
@@ -26,9 +27,10 @@ func ParseUrl(url string) (*Url, error) {
 	}
 
 	parsedUrl := &Url{
-		Scheme: parsedNetUrl.Scheme,
-		Host:   parsedNetUrl.Host,
-		Path:   parsedNetUrl.Path,
+		Scheme:   parsedNetUrl.Scheme,
+		Host:     parsedNetUrl.Host,
+		Path:     parsedNetUrl.Path,
+		RawQuery: parsedNetUrl.RawQuery,
 	}
 
 	if missingScheme {
@@ -61,7 +63,7 @@ func ParseUrl(url string) (*Url, error) {
 	return parsedUrl, nil
 }
 
-func (url *Url) String(withScheme, withPort, withPath bool) string {
+func (url *Url) String(withScheme, withPort, withPath, withRawQuery bool) string {
 	urlString := ""
 	if withScheme && url.Scheme != "" {
 		urlString = url.Scheme + "://"
@@ -79,6 +81,14 @@ func (url *Url) String(withScheme, withPort, withPath bool) string {
 			separator = ""
 		}
 		urlString = urlString + separator + url.Path
+	}
+
+	if withRawQuery && url.RawQuery != "" {
+		separator := "?"
+		if url.RawQuery[0] == '?' {
+			separator = ""
+		}
+		urlString = urlString + separator + url.RawQuery
 	}
 
 	return urlString

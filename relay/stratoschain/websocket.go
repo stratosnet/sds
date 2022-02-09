@@ -13,7 +13,7 @@ func DialWebsocket(addr string) (*tmhttp.HTTP, error) {
 		return nil, err
 	}
 
-	client, err := tmhttp.New(url.String(true, true, false), "/websocket")
+	client, err := tmhttp.New(url.String(true, true, false, false), "/websocket")
 	if err != nil {
 		return nil, errors.New("failed to create stratos-chain Client: " + err.Error())
 	}

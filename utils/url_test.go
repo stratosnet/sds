@@ -57,7 +57,7 @@ func verifyUrl(t *testing.T, url *Url, err error) {
 }
 
 func verifyUrlString(t *testing.T, url *Url, scheme, port, path bool, expected string) {
-	urlString := url.String(scheme, port, path)
+	urlString := url.String(scheme, port, path, false)
 	if urlString != expected {
 		t.Fatalf("Wrong URL string. Expected [%v] got [%v]", expected, urlString)
 	}
