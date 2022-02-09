@@ -435,7 +435,7 @@ func postToSP(endpoint string, data interface{}) error {
 		Path:   endpoint,
 	}
 
-	resp, err := http.Post(url.String(true, true, true), "application/json", bytes.NewBuffer(jsonData))
+	resp, err := http.Post(url.String(true, true, true, false), "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return errors.New("Error when calling " + endpoint + " endpoint in SP node: " + err.Error())
 	}

@@ -61,7 +61,7 @@ func FetchAccountInfo(address string) (uint64, uint64, error) {
 	if err != nil {
 		return 0, 0, err
 	}
-	resp, err := http.Get(url.String(true, true, true))
+	resp, err := http.Get(url.String(true, true, true, false))
 	if err != nil {
 		return 0, 0, err
 	}
@@ -176,7 +176,7 @@ func BroadcastTx(tx authtypes.StdTx) (*http.Response, []byte, error) {
 	}
 
 	bodyBytes := bytes.NewBuffer(jsonBytes)
-	resp, err := http.Post(url.String(true, true, true), "application/json", bodyBytes)
+	resp, err := http.Post(url.String(true, true, true, false), "application/json", bodyBytes)
 	if err != nil {
 		return resp, nil, err
 	}
@@ -196,7 +196,7 @@ func BroadcastTxBytes(txBytes []byte) error {
 	}
 
 	bodyBytes := bytes.NewBuffer(txBytes)
-	resp, err := http.Post(url.String(true, true, true), "application/json", bodyBytes)
+	resp, err := http.Post(url.String(true, true, true, false), "application/json", bodyBytes)
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func QueryResourceNodeState(networkId string) (int, error) {
 		return 0, err
 	}
 
-	resp, err := http.Get(url.String(true, true, true))
+	resp, err := http.Get(url.String(true, true, true, true))
 	if err != nil {
 		return 0, err
 	}
