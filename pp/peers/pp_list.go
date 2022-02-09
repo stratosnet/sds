@@ -47,7 +47,7 @@ func SendRegisterRequestViaPP(pplist []*protos.PPBaseInfo) bool {
 		client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
 		if client.PPConn != nil {
 			if client.SPConn == nil {
-				RegisterChain(false)
+				RegisterToSP(false)
 			}
 			return true
 		}

@@ -103,7 +103,7 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 				return
 			}
 			if newConnection {
-				peers.RegisterChain(true)
+				peers.RegisterToSP(true)
 			}
 
 			utils.DebugLog("Start reporting node status to SP")

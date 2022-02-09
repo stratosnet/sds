@@ -31,7 +31,7 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 	if len(setting.GetLocalPPList()) == 0 {
 		// no PP exist, register to SP
 		if !setting.IsLoginToSP {
-			peers.RegisterChain(true)
+			peers.RegisterToSP(true)
 		}
 		peers.ScheduleReloadPPlist(3 * time.Second)
 		return
