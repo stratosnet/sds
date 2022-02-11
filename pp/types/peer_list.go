@@ -124,7 +124,7 @@ func (peerList *PeerList) savePPListToFile() error {
 	peerList.ppMapByNetworkAddress.Range(func(k, v interface{}) bool {
 		pp, ok := v.(*PeerInfo)
 		if !ok {
-			utils.ErrorLogf("Invalid PP with network address %v in local PP map)", k)
+			utils.ErrorLogf("Invalid PP with network address %v in local PP list)", k)
 			return true
 		}
 
@@ -357,5 +357,26 @@ func (peerList *PeerList) PPDisconnected(p2pAddress, networkAddress string) {
 		if err != nil {
 			utils.ErrorLog("Error when saving PP list to file", err)
 		}
+	}
+}
+
+func (peerList *PeerList) PPDisconnectedNetId(netId int64) {
+	found := false
+	peerList.ppMapByNetworkAddress.Range(func(k, v interface{}) bool {
+		pp, ok := v.(*PeerInfo)
+		if !ok {
+			utils.ErrorLogf("Invalid PP with network address %v in local PP list)", k)
+			return true
+		}
+		if pp.Status == PEER_CONNECTED && pp.NetId == netId {
+			peerList.PPDisconnected(pp.P2pAddress, pp.NetworkAddress)
+			found = true
+			return false
+		}
+		return true
+	})
+
+	if !found {
+		utils.DebugLogf("PP with netId %v is offline, but it was not found in the local PP list", netId)
 	}
 }
