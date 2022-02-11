@@ -5,7 +5,6 @@ import (
 
 	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -53,8 +52,11 @@ func NewServer() *PPServer {
 		utils.Log("on error")
 	})
 	onCloseOption := core.OnCloseOption(func(conn core.WriteCloser) {
-		networkAddress := conn.(*core.ServerConn).GetLocalAddr()
-		setting.Peers.PPDisconnected("", networkAddress)
+		networkAddress := conn.(*core.ServerConn).GetRemoteAddr()
+		netID := conn.(*core.ServerConn).GetNetID()
+		// TODO: Server conn cannot set PP state as disconnected in PP list, because remoteAddr is not the real network address associated with this PP
+		//setting.Peers.PPDisconnected("", networkAddress)
+		utils.DebugLogf("connection to PP %v (netID %v) was closed", networkAddress, netID)
 	})
 	bufferSize := core.BufferSizeOption(10000)
 	return &PPServer{
