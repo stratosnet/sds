@@ -52,7 +52,7 @@ func createAccounts(cmd *cobra.Command, args []string) error {
 
 	password, _ := cmd.Flags().GetString(passwordFlag)
 	if len(password) <= 0 {
-		newPassword, err := console.Stdin.PromptPassword("Enter password: ")
+		newPassword, err := console.Stdin.PromptPassword("Enter wallet password: ")
 		if err != nil {
 			return errors.New("couldn't read password from input: " + err.Error())
 		}
