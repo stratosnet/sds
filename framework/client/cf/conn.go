@@ -208,6 +208,18 @@ func (cc *ClientConn) GetPort() string {
 	return port
 }
 
+func (cc *ClientConn) GetLocalAddr() string {
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
+	return cc.spbConn.LocalAddr().String()
+}
+
+func (cc *ClientConn) GetRemoteAddr() string {
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
+	return cc.spbConn.RemoteAddr().String()
+}
+
 // SetContextValue
 func (cc *ClientConn) SetContextValue(k, v interface{}) {
 	cc.mu.Lock()
@@ -224,7 +236,7 @@ func (cc *ClientConn) ContextValue(k interface{}) interface{} {
 
 // Start client start readLoop, writeLoop, handleLoop
 func (cc *ClientConn) Start() {
-	Mylog(cc.opts.logOpen, "conn start", cc.spbConn.LocalAddr(), "->", cc.spbConn.RemoteAddr(), "\n")
+	Mylog(cc.opts.logOpen, "client conn start", cc.spbConn.LocalAddr(), "->", cc.spbConn.RemoteAddr(), "\n")
 	onConnect := cc.opts.onConnect
 	if onConnect != nil {
 		onConnect(cc)

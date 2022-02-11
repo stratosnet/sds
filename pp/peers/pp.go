@@ -53,13 +53,11 @@ func NewServer() *PPServer {
 		utils.Log("on error")
 	})
 	onCloseOption := core.OnCloseOption(func(conn core.WriteCloser) {
-		networkAddress := conn.(*core.ServerConn).GetName()
-		netID := conn.(*core.ServerConn).GetNetID()
+		networkAddress := conn.(*core.ServerConn).GetLocalAddr()
 		setting.Peers.PPDisconnected("", networkAddress)
-		utils.DebugLogf("connection to PP %v (netID %v) was closed", networkAddress, netID)
 	})
 	bufferSize := core.BufferSizeOption(10000)
 	return &PPServer{
-		core.CreateServer(onConnectOption, onErrorOption, onCloseOption, bufferSize),
+		core.CreateServer(onConnectOption, onErrorOption, onCloseOption, bufferSize, core.LogOpenOption(true)),
 	}
 }

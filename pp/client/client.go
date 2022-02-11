@@ -88,7 +88,7 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 				select {
 				case OfflineChan <- &Offline{
 					IsSp:           false,
-					NetworkAddress: PPConn.GetName(),
+					NetworkAddress: PPConn.GetRemoteAddr(),
 				}:
 				default:
 					break
