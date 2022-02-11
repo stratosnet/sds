@@ -8,6 +8,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
@@ -72,7 +73,7 @@ func TransferSendMessageToPPServ(addr string, msgBuf *msg.RelayMsgBuf) {
 }
 
 func TransferSendMessageToPPServByP2pAddress(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
-	ppInfo := setting.GetPPByP2pAddress(p2pAddress)
+	ppInfo := setting.Peers.GetPPByP2pAddress(p2pAddress)
 	if ppInfo == nil {
 		utils.ErrorLogf("PP %v missing from local ppList. Cannot transfer message due to missing network address", p2pAddress)
 		return
@@ -98,9 +99,10 @@ func ReqTransferSendSP(ctx context.Context, conn core.WriteCloser) {
 
 // transferSendMessageToClient
 func TransferSendMessageToClient(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
-	if netid, ok := RegisterPeerMap.Load(p2pAddress); ok {
-		utils.Log("transfer to netid = ", netid)
-		GetPPServer().Unicast(netid.(int64), msgBuf)
+	pp := setting.Peers.GetPPByP2pAddress(p2pAddress)
+	if pp != nil && pp.Status == types.PEER_CONNECTED {
+		utils.Log("transfer to netid = ", pp.NetId)
+		GetPPServer().Unicast(pp.NetId, msgBuf)
 	} else {
 		utils.DebugLog("waller ===== ", p2pAddress)
 	}

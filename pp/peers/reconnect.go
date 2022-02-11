@@ -32,7 +32,7 @@ func ListenOffline() {
 					GetSPList()
 				}
 			} else {
-				utils.DebugLogf("PP %v is offline", offline.NetworkAddress)
+				setting.Peers.PPDisconnected("", offline.NetworkAddress)
 				InitPPList()
 			}
 		}

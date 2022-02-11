@@ -1,6 +1,8 @@
 package peers
 
 import (
+	"path/filepath"
+
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/requests"
@@ -11,6 +13,7 @@ import (
 // StartPP
 func StartPP(registerFn func()) {
 	GetNetworkAddress()
+	setting.Peers.Init(setting.NetworkAddress, filepath.Join(setting.Config.PPListDir, "pp-list"))
 	//todo: register func call shouldn't be in peers package
 	registerFn()
 	GetSPList()

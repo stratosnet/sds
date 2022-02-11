@@ -5,6 +5,7 @@ import (
 
 	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -52,25 +53,13 @@ func NewServer() *PPServer {
 		utils.Log("on error")
 	})
 	onCloseOption := core.OnCloseOption(func(conn core.WriteCloser) {
-		net := conn.(*core.ServerConn).GetName()
+		networkAddress := conn.(*core.ServerConn).GetName()
 		netID := conn.(*core.ServerConn).GetNetID()
-		removePeer(netID)
-		utils.DebugLog(net, netID, "offline")
+		setting.Peers.PPDisconnected("", networkAddress)
+		utils.DebugLogf("connection to PP %v (netID %v) was closed", networkAddress, netID)
 	})
 	bufferSize := core.BufferSizeOption(10000)
 	return &PPServer{
 		core.CreateServer(onConnectOption, onErrorOption, onCloseOption, bufferSize),
 	}
-}
-
-func removePeer(netID int64) {
-
-	f := func(k, v interface{}) bool {
-		if v == netID {
-			RegisterPeerMap.Delete(k)
-			return false
-		}
-		return true
-	}
-	RegisterPeerMap.Range(f)
 }
