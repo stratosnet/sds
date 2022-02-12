@@ -19,15 +19,18 @@ const (
 	savePassFlag = "save-pass"
 	nicknameFlag = "nickname"
 
-	p2pPassFlag = "p2p-pass"
+	p2pPassFlag   = "p2p-pass"
+	newP2pKeyFlag = "new-p2p-key"
 )
 
 func createAccounts(cmd *cobra.Command, args []string) error {
 	p2ppass, _ := cmd.Flags().GetString(p2pPassFlag)
 
+	newP2pKey, _ := cmd.Flags().GetBool(newP2pKeyFlag)
 	p2pkeyfiles := findp2pKeyFiles()
 
-	if len(p2pkeyfiles) < 1 {
+	if len(p2pkeyfiles) < 1 || newP2pKey {
+		fmt.Println("generating new p2p key")
 		p2pKeyAddress, err := utils.CreateP2PKey(setting.Config.AccountDir, "p2pkey", p2ppass,
 			types.DefaultP2PKeyPrefix)
 		if err != nil {
@@ -49,7 +52,7 @@ func createAccounts(cmd *cobra.Command, args []string) error {
 
 	password, _ := cmd.Flags().GetString(passwordFlag)
 	if len(password) <= 0 {
-		newPassword, err := console.Stdin.PromptPassword("Enter password: ")
+		newPassword, err := console.Stdin.PromptPassword("Enter wallet password: ")
 		if err != nil {
 			return errors.New("couldn't read password from input: " + err.Error())
 		}
