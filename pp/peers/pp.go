@@ -52,25 +52,11 @@ func NewServer() *PPServer {
 		utils.Log("on error")
 	})
 	onCloseOption := core.OnCloseOption(func(conn core.WriteCloser) {
-		net := conn.(*core.ServerConn).GetName()
 		netID := conn.(*core.ServerConn).GetNetID()
-		removePeer(netID)
-		utils.DebugLog(net, netID, "offline")
+		Peers.PPDisconnectedNetId(netID)
 	})
 	bufferSize := core.BufferSizeOption(10000)
 	return &PPServer{
-		core.CreateServer(onConnectOption, onErrorOption, onCloseOption, bufferSize),
+		core.CreateServer(onConnectOption, onErrorOption, onCloseOption, bufferSize, core.LogOpenOption(true)),
 	}
-}
-
-func removePeer(netID int64) {
-
-	f := func(k, v interface{}) bool {
-		if v == netID {
-			RegisterPeerMap.Delete(k)
-			return false
-		}
-		return true
-	}
-	RegisterPeerMap.Range(f)
 }

@@ -30,11 +30,13 @@ func ReqRegisterData() *protos.ReqRegister {
 			P2PAddress:     setting.P2PAddress,
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
+			RestAddress:    setting.RestAddress,
 		},
 		MyAddress: &protos.PPBaseInfo{
 			P2PAddress:     setting.P2PAddress,
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
+			RestAddress:    setting.RestAddress,
 		},
 		PublicKey: setting.P2PPublicKey,
 	}
@@ -46,6 +48,7 @@ func ReqRegisterDataTR(target *protos.ReqRegister) *msg.RelayMsgBuf {
 		P2PAddress:     setting.P2PAddress,
 		WalletAddress:  setting.WalletAddress,
 		NetworkAddress: setting.NetworkAddress,
+		RestAddress:    setting.RestAddress,
 	}
 	data, err := proto.Marshal(req)
 	if err != nil {
@@ -76,6 +79,7 @@ func ReqGetPPlistData() *protos.ReqGetPPList {
 			P2PAddress:     setting.P2PAddress,
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
+			RestAddress:    setting.RestAddress,
 		},
 	}
 }
@@ -86,6 +90,7 @@ func ReqGetSPlistData() *protos.ReqGetSPList {
 			P2PAddress:     setting.P2PAddress,
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
+			RestAddress:    setting.RestAddress,
 		},
 	}
 }
@@ -121,6 +126,7 @@ func RequestUploadFileData(paths, storagePath, reqID, ownerWalletAddress string,
 			P2PAddress:     setting.P2PAddress,
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
+			RestAddress:    setting.RestAddress,
 		},
 		Sign:          setting.GetSign(p2pFileString),
 		IsCover:       isCover,
@@ -395,6 +401,7 @@ func ReqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
 			P2PAddress:     setting.P2PAddress,
 			WalletAddress:  setting.WalletAddress,
 			NetworkAddress: setting.NetworkAddress,
+			RestAddress:    setting.RestAddress,
 		},
 	}
 	data, err := proto.Marshal(sendTager)
@@ -630,9 +637,9 @@ func PPMsgHeader(data []byte, head string) header.MessageHead {
 
 func UnmarshalData(ctx context.Context, target interface{}) bool {
 	msgBuf := core.MessageFromContext(ctx)
-	utils.DebugLog("msgBuf len = ", len(msgBuf.MSGData))
+	utils.DebugLogf("Received message type = %v msgBuf len = %v", reflect.TypeOf(target), len(msgBuf.MSGData))
 	if err := proto.Unmarshal(msgBuf.MSGData, target.(proto.Message)); err != nil {
-		utils.ErrorLog("protobuf Unmarshal error,target =", reflect.TypeOf(target))
+		utils.ErrorLog("protobuf Unmarshal error", err)
 		return false
 	}
 	if _, ok := reflect.TypeOf(target).Elem().FieldByName("Data"); !ok {

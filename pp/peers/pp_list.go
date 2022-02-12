@@ -1,20 +1,22 @@
 package peers
 
 import (
-	"sync"
 	"time"
 
 	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
+// Peers is a list of the know PP node peers
+var Peers types.PeerList
+
 // InitPPList
 func InitPPList() {
-	pplist := setting.GetLocalPPList()
+	pplist := Peers.GetPPList()
 	if len(pplist) == 0 {
 		GetPPList()
 	} else {
@@ -38,10 +40,10 @@ func GetPPList() {
 	SendMessageToSPServer(requests.ReqGetPPlistData(), header.ReqGetPPList)
 }
 
-func SendRegisterRequestViaPP(pplist []*protos.PPBaseInfo) bool {
+func SendRegisterRequestViaPP(pplist []*types.PeerInfo) bool {
 	for _, ppInfo := range pplist {
 		if ppInfo.NetworkAddress == setting.NetworkAddress {
-			setting.DeletePPListByNetworkAddress(ppInfo.NetworkAddress)
+			Peers.DeletePPByNetworkAddress(ppInfo.NetworkAddress)
 			continue
 		}
 		client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
@@ -52,13 +54,10 @@ func SendRegisterRequestViaPP(pplist []*protos.PPBaseInfo) bool {
 			return true
 		}
 		utils.DebugLog("failed to conn PP，delete:", ppInfo)
-		setting.DeletePPListByNetworkAddress(ppInfo.NetworkAddress)
+		Peers.DeletePPByNetworkAddress(ppInfo.NetworkAddress)
 	}
 	return false
 }
-
-// RegisterPeerMap
-var RegisterPeerMap = &sync.Map{} // make(map[string]int64)
 
 func ScheduleReloadPPlist(future time.Duration) {
 	utils.DebugLog("scheduled to get pp-list after: ", future.Seconds(), "second")

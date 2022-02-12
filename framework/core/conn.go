@@ -3,16 +3,17 @@ package core
 // server readloop writeloop handleloop
 import (
 	"context"
-	message "github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/cmem"
 	"io"
 	"net"
 	"reflect"
 	"sync"
 	"time"
 	"unsafe"
+
+	message "github.com/stratosnet/sds/msg"
+	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/cmem"
 )
 
 // MsgHandler
@@ -110,9 +111,21 @@ func (sc *ServerConn) GetPort() string {
 	return port
 }
 
+func (sc *ServerConn) GetLocalAddr() string {
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+	return sc.spbConn.LocalAddr().String()
+}
+
+func (sc *ServerConn) GetRemoteAddr() string {
+	sc.mu.Lock()
+	defer sc.mu.Unlock()
+	return sc.spbConn.RemoteAddr().String()
+}
+
 // Start
 func (sc *ServerConn) Start() {
-	Mylog(sc.belong.opts.logOpen, "conn start", sc.spbConn.LocalAddr(), "->", sc.spbConn.RemoteAddr(), "\n")
+	Mylog(sc.belong.opts.logOpen, "server conn start", sc.spbConn.LocalAddr(), "->", sc.spbConn.RemoteAddr(), "\n")
 	onConnect := sc.belong.opts.onConnect
 	if onConnect != nil {
 		onConnect(sc)

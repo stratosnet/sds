@@ -10,16 +10,22 @@ import (
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
 // ReqRegister if get this, must be PP
 func ReqRegister(ctx context.Context, conn core.WriteCloser) {
-	utils.Log("PP get ReqRegister")
 	var target protos.ReqRegister
 	if requests.UnmarshalData(ctx, &target) {
-		// store register P wallet address
-		peers.RegisterPeerMap.Store(target.Address.P2PAddress, core.NetIDFromContext(ctx))
+		peers.Peers.UpdatePP(&types.PeerInfo{
+			NetworkAddress: target.Address.NetworkAddress,
+			P2pAddress:     target.Address.P2PAddress,
+			RestAddress:    target.Address.RestAddress,
+			WalletAddress:  target.Address.WalletAddress,
+			NetId:          core.NetIDFromContext(ctx),
+			Status:         types.PEER_CONNECTED,
+		})
 		peers.TransferSendMessageToSPServer(requests.ReqRegisterDataTR(&target))
 
 		// IPProt := strings.Split(target.Address.NetworkAddress, ":")

@@ -13,6 +13,7 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -212,7 +213,14 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	peers.RegisterPeerMap.Store(target.NewPp.P2PAddress, core.NetIDFromContext(ctx))
+	peers.Peers.UpdatePP(&types.PeerInfo{
+		NetworkAddress: target.NewPp.NetworkAddress,
+		P2pAddress:     target.NewPp.P2PAddress,
+		RestAddress:    target.NewPp.RestAddress,
+		WalletAddress:  target.NewPp.WalletAddress,
+		NetId:          core.NetIDFromContext(ctx),
+		Status:         types.PEER_CONNECTED,
+	})
 	task.TransferTaskMap[target.TaskId] = task.TransferTask{
 		FromSp:           false,
 		DeleteOrigin:     target.DeleteOrigin,
