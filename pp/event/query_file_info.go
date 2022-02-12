@@ -25,7 +25,7 @@ func GetFileStorageInfo(path, savePath, reqID string, isVideoStream bool, w http
 	if setting.CheckLogin() {
 		if CheckDownloadPath(path) {
 			utils.DebugLog("path:", path)
-			peers.SendMessage(client.PPConn, requests.ReqFileStorageInfoData(path, savePath, reqID, isVideoStream, nil), header.ReqFileStorageInfo)
+			peers.SendMessageDirectToSPOrViaPP(requests.ReqFileStorageInfoData(path, savePath, reqID, isVideoStream, nil), header.ReqFileStorageInfo)
 		} else {
 			utils.ErrorLog("please input correct download link, eg: sdm://address/fileHash|filename(optional)")
 			if w != nil {
@@ -80,7 +80,7 @@ func GetVideoSlice(sliceInfo *protos.DownloadSliceInfo, fInfo *protos.RspFileSto
 		} else {
 			req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
 			utils.Log("Send request for downloading slice: ", sliceInfo.SliceStorageInfo.SliceHash)
-			SendReqDownloadSlice(fInfo, req)
+			SendReqDownloadSlice(fInfo.FileHash, sliceInfo, req)
 			if err := storeResponseWriter(req.ReqId, w); err != nil {
 				w.WriteHeader(setting.FAILCode)
 				w.Write(httpserv.NewErrorJson(setting.FAILCode, "Get video segment time out").ToBytes())
@@ -96,7 +96,7 @@ func GetHlsInfo(fInfo *protos.RspFileStorageInfo) *file.HlsInfo {
 	sliceHash := sliceInfo.SliceStorageInfo.SliceHash
 	if !file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceHash, fInfo.SavePath) {
 		req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
-		SendReqDownloadSlice(fInfo, req)
+		SendReqDownloadSlice(fInfo.FileHash, sliceInfo, req)
 
 		start := time.Now().Unix()
 		for {
@@ -137,25 +137,19 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get，RspFileStorageInfo")
 	var target protos.RspFileStorageInfo
 	if requests.UnmarshalData(ctx, &target) {
-
 		utils.DebugLog("file hash", target.FileHash)
-		// utils.Log("target", target.WalletAddress)
-		if target.P2PAddress == setting.P2PAddress {
-			if target.Result.State == protos.ResultState_RES_SUCCESS {
-				utils.Log("download starts: ")
-				task.DownloadFileMap.Store(target.FileHash, &target)
-				if target.IsVideoStream {
-					return
-				}
-				DownloadFileSlice(&target)
-				utils.DebugLog("DownloadFileSlice(&target)", target)
-			} else {
-				utils.Log("failed to download，", target.Result.Msg)
-			}
-		} else {
-			// store the task and transfer
+		if target.Result.State == protos.ResultState_RES_SUCCESS {
+			utils.Log("download starts: ")
+			task.CleanDownloadFileAndConnMap(target.FileHash)
+			task.DownloadFileMap.Store(target.FileHash, &target)
 			task.AddDownloadTask(&target)
-			peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, requests.RspFileStorageInfoData(&target))
+			if target.IsVideoStream {
+				return
+			}
+			DownloadFileSlice(&target)
+			utils.DebugLog("DownloadFileSlice(&target)", target)
+		} else {
+			utils.Log("failed to download，", target.Result.Msg)
 		}
 	}
 }

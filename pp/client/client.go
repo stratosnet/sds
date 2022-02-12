@@ -34,28 +34,6 @@ var DownloadConnMap = &sync.Map{}
 // ConnMap PP connection map
 var ConnMap = make(map[string]*cf.ClientConn)
 
-// PDownloadPassageway download passageway  p to passagePP
-var PDownloadPassageway = &sync.Map{}
-
-// DownloadPassageway download passageway passagePP to storage pp
-var DownloadPassageway = &sync.Map{}
-
-// PdownloadPassagewayCheck PdownloadPassagewayCheck
-func PdownloadPassagewayCheck(c *cf.ClientConn) {
-	PDownloadPassageway.Range(func(key, value interface{}) bool {
-		if value.(*cf.ClientConn) == c {
-			PDownloadPassageway.Delete(key)
-		}
-		return true
-	})
-	DownloadPassageway.Range(func(key, value interface{}) bool {
-		if value.(*cf.ClientConn) == c {
-			DownloadPassageway.Delete(key)
-		}
-		return true
-	})
-}
-
 // NewClient
 func NewClient(server string, heartbeat bool) *cf.ClientConn {
 
@@ -79,8 +57,6 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 	onClose := cf.OnCloseOption(func(c core.WriteCloser) {
 		utils.Log("on close", c.(*cf.ClientConn).GetName())
 		delete(ConnMap, c.(*cf.ClientConn).GetName())
-
-		PdownloadPassagewayCheck(c.(*cf.ClientConn))
 
 		if PPConn != nil {
 			if PPConn == c.(*cf.ClientConn) {

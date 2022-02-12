@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
@@ -76,17 +75,17 @@ func AddDownloadTask(target *protos.RspFileStorageInfo) {
 }
 
 // CleanDownloadTask
-func CleanDownloadTask(fileHash, sliceHash, p2pAddress, walletAddress string) {
+func CleanDownloadTask(fileHash, sliceHash, walletAddress string) {
 	if dlTask, ok := DownloadTaskMap.Load(fileHash + walletAddress); ok {
 
 		downloadTask := dlTask.(*DownloadTask)
 		delete(downloadTask.SliceInfo, sliceHash)
-		if len(downloadTask.SliceInfo) == 0 {
-			DownloadTaskMap.Delete(fileHash + walletAddress)
-			utils.DebugLog("PP reported, clean all slice task")
-			client.DownloadConnMap.Delete(p2pAddress + fileHash)
+		utils.DebugLog("PP reported, clean slice task")
+		if len(downloadTask.SliceInfo) > 0 {
+			return
 		}
-		utils.DebugLog("PP reported, clean slice taks")
+		utils.DebugLog("PP reported, clean all slice task")
+		DownloadTaskMap.Delete(fileHash + walletAddress)
 	}
 }
 
@@ -94,20 +93,21 @@ func DeleteDownloadTask(fileHash, walletAddress string) {
 	DownloadFileMap.Delete(fileHash + walletAddress)
 }
 
-// PCleanDownloadTask p
-func PCleanDownloadTask(fileHash string) {
+// CleanDownloadFileAndConnMap
+func CleanDownloadFileAndConnMap(fileHash string) {
 	DownloadSpeedOfProgress.Delete(fileHash)
 	if f, ok := DownloadFileMap.Load(fileHash); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
 		for _, slice := range fInfo.SliceInfo {
 			DownloadSliceProgress.Delete(slice.SliceStorageInfo.SliceHash)
+			client.DownloadConnMap.Delete(slice.StoragePpInfo.P2PAddress + fileHash)
 		}
 	}
 	DownloadFileMap.Delete(fileHash)
 }
 
-// PCancelDownloadTask p
-func PCancelDownloadTask(fileHash string) {
+// CancelDownloadTask
+func CancelDownloadTask(fileHash string) {
 	file.DeleteDirectory(fileHash)
 }
 
@@ -254,6 +254,7 @@ func CheckFileOver(fileHash, filePath string) bool {
 		}
 		utils.DebugLog("info", info.Size())
 		utils.DebugLog("sp.RawSize", sp.RawSize)
+		// TODO calculate fileHash to check if download is finished
 		if info.Size() == sp.RawSize {
 			utils.DebugLog("ok!")
 			return true
@@ -278,8 +279,7 @@ func CheckDownloadOver(fileHash string) (bool, float32) {
 				filePath := file.GetDownloadTmpPath(fileHash, fName, fInfo.SavePath)
 				if CheckFileOver(fileHash, filePath) {
 					DoneDownload(fileHash, fName, fInfo.SavePath)
-					DownloadFileMap.Delete(fileHash)
-					DownloadSpeedOfProgress.Delete(fileHash)
+					CleanDownloadFileAndConnMap(fileHash)
 					return true, 1.0
 				}
 				reCount = 5

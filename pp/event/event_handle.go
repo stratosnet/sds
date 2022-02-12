@@ -49,8 +49,6 @@ func RegisterEventHandle() {
 	core.Register(header.RspGetHDInfo, RspGetHDInfo)
 	core.Register(header.ReqDeleteSlice, ReqDeleteSlice)
 	core.Register(header.RspDeleteSlice, RspDeleteSlice)
-	core.Register(header.ReqDownloadSlicePause, ReqDownloadSlicePause)
-	core.Register(header.RspDownloadSlicePause, RspDownloadSlicePause)
 	core.Register(header.UploadSpeedOfProgress, UploadSpeedOfProgress)
 
 	core.Register(header.ReqShareLink, ReqShareLink)

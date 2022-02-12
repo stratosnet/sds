@@ -103,8 +103,6 @@ const (
 	RspDownloadTaskInfo     = "RspDLTI"
 	ReqDownloadSliceWrong   = "ReqDSW"
 	RspDownloadSliceWrong   = "RspDSW"
-	ReqDownloadSlicePause   = "ReqDSP"
-	RspDownloadSlicePause   = "RspDSP"
 	ReqClearDownloadTask    = "ReqCDT"
 
 	// register new pp

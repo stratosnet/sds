@@ -3,8 +3,6 @@ package api
 import (
 	"net/http"
 
-	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
@@ -65,11 +63,12 @@ func downProgress(w http.ResponseWriter, request *http.Request) {
 					p.Rate = 0
 					p.State = true
 				}
-				if c, ok := client.PDownloadPassageway.Load(ts.(string)); ok {
-					conn := c.(*cf.ClientConn)
-					re := conn.GetSecondReadFlow()
-					p.Rate = re
-				}
+				// TODO replace client.PDownloadPassageway with client.DownloadConnMap and aggregate speed of all connections that are involved in the task
+				//if c, ok := client.PDownloadPassageway.Load(ts.(string)); ok {
+				//	conn := c.(*cf.ClientConn)
+				//	re := conn.GetSecondReadFlow()
+				//	p.Rate = re
+				//}
 			}
 			ma[k.taskID] = p
 		}
