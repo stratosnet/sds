@@ -2,6 +2,7 @@ package peers
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"time"
 
@@ -21,12 +22,12 @@ import (
 var bufferedSpConns = make([]*cf.ClientConn, 0)
 
 // SendMessage
-func SendMessage(conn core.WriteCloser, pb proto.Message, cmd string) {
+func SendMessage(conn core.WriteCloser, pb proto.Message, cmd string) error {
 	data, err := proto.Marshal(pb)
 
 	if err != nil {
 		utils.ErrorLog("error decoding")
-		return
+		return errors.New("error decoding")
 	}
 	msg := &msg.RelayMsgBuf{
 		MSGHead: requests.PPMsgHeader(data, cmd),
@@ -34,9 +35,11 @@ func SendMessage(conn core.WriteCloser, pb proto.Message, cmd string) {
 	}
 	switch conn.(type) {
 	case *core.ServerConn:
-		conn.(*core.ServerConn).Write(msg)
+		return conn.(*core.ServerConn).Write(msg)
 	case *cf.ClientConn:
-		conn.(*cf.ClientConn).Write(msg)
+		return conn.(*cf.ClientConn).Write(msg)
+	default:
+		return errors.New("unknown connection type")
 	}
 }
 

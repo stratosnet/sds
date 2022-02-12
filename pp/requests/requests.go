@@ -347,33 +347,6 @@ func ReqDownloadSliceData(target *protos.RspFileStorageInfo, rsp *protos.Downloa
 	}
 }
 
-func RspFileStorageInfoData(target *protos.RspFileStorageInfo) *msg.RelayMsgBuf {
-
-	utils.DebugLog("download detail，", target)
-	sendTarget := target
-	sliceInfoArr := []*protos.DownloadSliceInfo{}
-	for _, info := range sendTarget.SliceInfo {
-		newInfo := protos.DownloadSliceInfo{
-			SliceStorageInfo: info.SliceStorageInfo,
-			SliceNumber:      info.SliceNumber,
-			VisitResult:      info.VisitResult,
-			TaskId:           info.TaskId,
-			SliceOffset:      info.SliceOffset,
-		}
-		sliceInfoArr = append(sliceInfoArr, &newInfo)
-	}
-	sendTarget.SliceInfo = sliceInfoArr
-	sendTarget.RestAddress = setting.RestAddress
-	sendData, err := proto.Marshal(sendTarget)
-	if err != nil {
-		utils.ErrorLog(err)
-	}
-	return &msg.RelayMsgBuf{
-		MSGData: sendData,
-		MSGHead: PPMsgHeader(sendData, header.RspFileStorageInfo),
-	}
-}
-
 func ReqRegisterNewPPData() *protos.ReqRegisterNewPP {
 	sysInfo := utils.GetSysInfo()
 	return &protos.ReqRegisterNewPP{
@@ -579,35 +552,6 @@ func ReqDeleteShareData(reqID, shareID string) *protos.ReqDeleteShare {
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ShareId:       shareID,
-	}
-}
-
-func ReqDownloadSlicePause(fileHash, reqID string) *protos.ReqDownloadSlicePause {
-	return &protos.ReqDownloadSlicePause{
-		FileHash:      fileHash,
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		ReqId:         reqID,
-	}
-}
-
-func RspDownloadSlicePauseData(target *protos.ReqDownloadSlicePause) *msg.RelayMsgBuf {
-	sendTager := &protos.RspDownloadSlicePause{
-		P2PAddress:    target.P2PAddress,
-		WalletAddress: target.WalletAddress,
-		FileHash:      target.FileHash,
-		ReqId:         target.ReqId,
-		Result: &protos.Result{
-			State: protos.ResultState_RES_SUCCESS,
-		},
-	}
-	data, err := proto.Marshal(sendTager)
-	if err != nil {
-		utils.ErrorLog(err)
-	}
-	return &msg.RelayMsgBuf{
-		MSGHead: PPMsgHeader(data, header.RspDownloadSlicePause),
-		MSGData: data,
 	}
 }
 
