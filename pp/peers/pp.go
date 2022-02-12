@@ -5,7 +5,6 @@ import (
 
 	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -54,7 +53,7 @@ func NewServer() *PPServer {
 	})
 	onCloseOption := core.OnCloseOption(func(conn core.WriteCloser) {
 		netID := conn.(*core.ServerConn).GetNetID()
-		setting.Peers.PPDisconnectedNetId(netID)
+		Peers.PPDisconnectedNetId(netID)
 	})
 	bufferSize := core.BufferSizeOption(10000)
 	return &PPServer{

@@ -18,7 +18,7 @@ import (
 func ReqRegister(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqRegister
 	if requests.UnmarshalData(ctx, &target) {
-		setting.Peers.UpdatePP(&types.PeerInfo{
+		peers.Peers.UpdatePP(&types.PeerInfo{
 			NetworkAddress: target.Address.NetworkAddress,
 			P2pAddress:     target.Address.P2PAddress,
 			RestAddress:    target.Address.RestAddress,

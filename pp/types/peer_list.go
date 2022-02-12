@@ -2,7 +2,6 @@ package types
 
 import (
 	"encoding/csv"
-	"fmt"
 	"os"
 	"strconv"
 	"sync"
@@ -33,7 +32,7 @@ type PeerInfo struct {
 }
 
 func (peerInfo *PeerInfo) String() string {
-	return fmt.Sprintf("{%v(%v)}", peerInfo.P2pAddress, peerInfo.NetworkAddress)
+	return types.NetworkID{P2pAddress: peerInfo.P2pAddress, NetworkAddress: peerInfo.NetworkAddress}.String()
 }
 
 type PeerList struct {
@@ -53,6 +52,7 @@ func (peerList *PeerList) Init(localNetworkAddress, ppListPath string) {
 }
 
 func (peerList *PeerList) loadPPListFromFile() error {
+	// TODO: Update this after we switch to JSON
 	csvFile, err := os.OpenFile(peerList.ppListPath, os.O_CREATE|os.O_RDWR, 0777)
 	defer csvFile.Close()
 	if err != nil {
@@ -109,6 +109,7 @@ func (peerList *PeerList) savePPListToFile() error {
 	peerList.rwmutex.Lock()
 	defer peerList.rwmutex.Unlock()
 
+	// TODO: Switch to JSON or some other format instead of CSV, to make it easier to later provide the PP list to the front-end
 	err := os.Truncate(peerList.ppListPath, 0)
 	if err != nil {
 		return err
@@ -198,7 +199,6 @@ func (peerList *PeerList) SavePPList(target *protos.RspGetPPList) error {
 		}
 
 		if existingPP == nil {
-			utils.DebugLogf("adding %v (%v) to local ppList", info.P2PAddress, info.NetworkAddress)
 			pp := &PeerInfo{
 				NetworkAddress:     info.NetworkAddress,
 				P2pAddress:         info.P2PAddress,
@@ -209,6 +209,7 @@ func (peerList *PeerList) SavePPList(target *protos.RspGetPPList) error {
 				NetId:              0,
 				Status:             PEER_NOT_CONNECTED,
 			}
+			utils.DebugLogf("adding %v to local ppList", pp)
 			if info.P2PAddress != "" {
 				peerList.ppMapByP2pAddress.Store(info.P2PAddress, pp)
 			}
@@ -271,7 +272,7 @@ func (peerList *PeerList) DeletePPByNetworkAddress(networkAddress string) {
 		return
 	}
 
-	utils.DebugLogf("deleting %v (%v) from local ppList", pp.P2pAddress, networkAddress)
+	utils.DebugLogf("deleting %v from local ppList", pp)
 	peerList.ppMapByNetworkAddress.Delete(networkAddress)
 	peerList.ppMapByP2pAddress.Delete(pp.P2pAddress)
 
@@ -351,7 +352,7 @@ func (peerList *PeerList) PPDisconnected(p2pAddress, networkAddress string) {
 	} else {
 		pp.Status = PEER_NOT_CONNECTED
 		pp.LastConnectionTime = time.Now().Unix()
-		utils.DebugLogf("PP %v (%v) is offline", pp.P2pAddress, pp.NetworkAddress)
+		utils.DebugLogf("PP %v is offline", pp)
 
 		err := peerList.savePPListToFile()
 		if err != nil {

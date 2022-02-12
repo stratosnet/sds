@@ -213,7 +213,7 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	setting.Peers.UpdatePP(&types.PeerInfo{
+	peers.Peers.UpdatePP(&types.PeerInfo{
 		NetworkAddress: target.NewPp.NetworkAddress,
 		P2pAddress:     target.NewPp.P2PAddress,
 		RestAddress:    target.NewPp.RestAddress,

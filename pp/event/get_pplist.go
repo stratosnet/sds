@@ -27,12 +27,12 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	err := setting.Peers.SavePPList(&target)
+	err := peers.Peers.SavePPList(&target)
 	if err != nil {
 		utils.ErrorLog("Error when saving PP List", err)
 	}
 
-	if len(setting.Peers.GetPPList()) == 0 {
+	if len(peers.Peers.GetPPList()) == 0 {
 		// no PP exist, register to SP
 		if !setting.IsLoginToSP {
 			peers.RegisterToSP(true)
@@ -43,7 +43,7 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 
 	// if gateway pp is nil, go connect one from ppList
 	if client.PPConn == nil {
-		if success := peers.SendRegisterRequestViaPP(setting.Peers.GetPPList()); !success {
+		if success := peers.SendRegisterRequestViaPP(peers.Peers.GetPPList()); !success {
 			peers.ScheduleReloadPPlist(3 * time.Second)
 		}
 	}

@@ -11,9 +11,12 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
+// Peers is a list of the know PP node peers
+var Peers types.PeerList
+
 // InitPPList
 func InitPPList() {
-	pplist := setting.Peers.GetPPList()
+	pplist := Peers.GetPPList()
 	if len(pplist) == 0 {
 		GetPPList()
 	} else {
@@ -40,7 +43,7 @@ func GetPPList() {
 func SendRegisterRequestViaPP(pplist []*types.PeerInfo) bool {
 	for _, ppInfo := range pplist {
 		if ppInfo.NetworkAddress == setting.NetworkAddress {
-			setting.Peers.DeletePPByNetworkAddress(ppInfo.NetworkAddress)
+			Peers.DeletePPByNetworkAddress(ppInfo.NetworkAddress)
 			continue
 		}
 		client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
@@ -51,7 +54,7 @@ func SendRegisterRequestViaPP(pplist []*types.PeerInfo) bool {
 			return true
 		}
 		utils.DebugLog("failed to conn PP，delete:", ppInfo)
-		setting.Peers.DeletePPByNetworkAddress(ppInfo.NetworkAddress)
+		Peers.DeletePPByNetworkAddress(ppInfo.NetworkAddress)
 	}
 	return false
 }

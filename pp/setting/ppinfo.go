@@ -37,9 +37,6 @@ var P2PPrivateKey []byte
 
 var SPMap = &sync.Map{}
 
-// Peers is a list of the know PP node peers
-var Peers ppTypes.PeerList
-
 func GetNetworkID() types.NetworkID {
 	return types.NetworkID{
 		P2pAddress:     P2PAddress,
