@@ -354,7 +354,7 @@ func ReqDownloadSliceData(target *protos.RspFileStorageInfo, rsp *protos.Downloa
 }
 
 func ReqRegisterNewPPData() *protos.ReqRegisterNewPP {
-	sysInfo := utils.GetSysInfo()
+	sysInfo := utils.GetSysInfo(setting.Config.StorehousePath)
 	return &protos.ReqRegisterNewPP{
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
@@ -509,7 +509,7 @@ func RspGetHDInfoData() *protos.RspGetHDInfo {
 		WalletAddress: setting.WalletAddress,
 	}
 
-	diskStats, err := utils.GetDiskUsage()
+	diskStats, err := utils.GetDiskUsage(setting.Config.StorehousePath)
 	if err == nil {
 		rsp.DiskSize = diskStats.Total
 		rsp.DiskFree = diskStats.Free
@@ -608,7 +608,7 @@ func ReqNodeStatusData() *protos.ReqReportNodeStatus {
 	// Disk usage statistics
 	diskStat := &protos.DiskStat{}
 
-	info, err := utils.GetDiskUsage()
+	info, err := utils.GetDiskUsage(setting.Config.StorehousePath)
 	if err == nil {
 		diskStat.RootUsed = int64(info.Used)
 		diskStat.RootTotal = int64(info.Total)

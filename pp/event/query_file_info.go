@@ -18,6 +18,7 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
+	"github.com/stratosnet/sds/utils/types"
 )
 
 // GetFileStorageInfo p to pp
@@ -161,7 +162,7 @@ func CheckDownloadPath(path string) bool {
 		utils.DebugLog("invalid path length")
 		return false
 	}
-	if path[:6] != "sdm://" {
+	if path[:6] != types.DATA_MASH_PREFIX {
 		return false
 	}
 	if path[47:48] != "/" {

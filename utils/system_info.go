@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"os"
 	"path/filepath"
 	"strconv"
 
@@ -23,7 +22,7 @@ type SysInfo struct {
 }
 
 // GetSysInfo
-func GetSysInfo() *SysInfo {
+func GetSysInfo(diskPath string) *SysInfo {
 	v, _ := mem.VirtualMemory()
 	c, _ := cpu.Info()
 	n, _ := host.Info()
@@ -56,7 +55,7 @@ func GetSysInfo() *SysInfo {
 	}
 	defer DebugLog("sysInfo = ", sys)
 
-	diskStats, err := GetDiskUsage()
+	diskStats, err := GetDiskUsage(diskPath)
 	if err != nil {
 		ErrorLog("Can't fetch disk usage statistics", err)
 		return sys
@@ -67,16 +66,9 @@ func GetSysInfo() *SysInfo {
 	return sys
 }
 
-func GetDiskUsage() (*disk.UsageStat, error) {
-	dir, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
+func GetDiskUsage(path string) (*disk.UsageStat, error) {
 
-	volume := filepath.VolumeName(dir)
-	if volume == "" {
-		volume = "/"
-	}
+	volume := filepath.Dir(path)
 
 	return disk.Usage(volume)
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils/httpserv"
+	"github.com/stratosnet/sds/utils/types"
 
 	"github.com/google/uuid"
 )
@@ -33,7 +34,10 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 		FileHash:           data["fileHash"].(string),
 		OwnerWalletAddress: data["ownerWalletAddress"].(string),
 	}
-	path := "sdm://" + p.OwnerWalletAddress + "/" + p.FileHash
+	path := types.DataMashId{
+		Owner: p.OwnerWalletAddress,
+		Hash:  p.FileHash,
+	}.String()
 	downTaskID := uuid.New().String()
 
 	event.GetFileStorageInfo(path, "", downTaskID, false, w)

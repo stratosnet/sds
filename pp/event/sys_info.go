@@ -50,7 +50,7 @@ func startReportDHInfo() {
 		job.Cancel()
 	}
 	peers.SendMessageToSPServer(requests.RspGetHDInfoData(), header.RspGetHDInfo)
-	job, _ = myClock.AddJobRepeat(time.Second*setting.REPROTDHTIME, 0, reportDHInfo)
+	job, _ = myClock.AddJobRepeat(time.Second*setting.REPORTDHTIME, 0, reportDHInfo)
 }
 
 // GetCapacity GetCapacity

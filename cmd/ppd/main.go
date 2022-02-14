@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/pp/setting"
@@ -31,8 +32,9 @@ func main() {
 
 func getRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "ppd",
-		Short: "resource node",
+		Use:               "ppd",
+		Short:             "resource node",
+		PersistentPreRunE: rootPreRunE,
 	}
 
 	dir, err := os.Getwd()
@@ -114,4 +116,19 @@ func getVersionCmd() *cobra.Command {
 		},
 	}
 	return cmd
+}
+
+func rootPreRunE(cmd *cobra.Command, args []string) error {
+	homePath, err := cmd.Flags().GetString(HOME)
+	if err != nil {
+		utils.ErrorLog("failed to get 'home' path for the node")
+		return err
+	}
+	homePath, err = utils.Absolute(homePath)
+	if err != nil {
+		return err
+	}
+	setting.SetupRoot(homePath)
+	utils.NewDefaultLogger(filepath.Join(setting.GetRootPath(), "./tmp/logs/stdout.log"), true, true)
+	return nil
 }
