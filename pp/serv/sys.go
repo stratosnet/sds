@@ -30,7 +30,7 @@ func dumpTrafficLog() {
 	v, _ := mem.VirtualMemory()
 	c, _ := cpu.Info()
 	cc, _ := cpu.Percent(time.Second, false)
-	d, _ := disk.Usage("/")
+	d, _ := disk.Usage(setting.Config.StorehousePath)
 
 	//Memory
 	memTotal := v.Total
@@ -116,7 +116,7 @@ func monitor() {
 	v, _ := mem.VirtualMemory()
 	c, _ := cpu.Info()
 	cc, _ := cpu.Percent(time.Second, false)
-	d, _ := disk.Usage("/")
+	d, _ := disk.Usage(setting.Config.StorehousePath)
 	// n, _ := host.Info()
 	// nv, _ := net.IOCounters(true)
 	// boottime, _ := host.BootTime()

@@ -11,6 +11,7 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/types"
 )
 
 // GetAllShareLink GetShareLink
@@ -165,7 +166,10 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	putData(target.ShareRequest.ReqId, HTTPGetShareFile, &target)
 
 	for _, fileInfo := range target.FileInfo {
-		filePath := "sdm://" + fileInfo.OwnerWalletAddress + "/" + fileInfo.FileHash
+		filePath := types.DataMashId{
+			Owner: fileInfo.OwnerWalletAddress,
+			Hash:  fileInfo.FileHash,
+		}.String()
 		peers.SendMessageDirectToSPOrViaPP(requests.ReqFileStorageInfoData(filePath, "", "", false, target.ShareRequest), header.ReqFileStorageInfo)
 	}
 }

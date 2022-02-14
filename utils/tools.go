@@ -8,6 +8,7 @@ import (
 	"errors"
 	"hash/crc32"
 	"math/big"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -255,4 +256,11 @@ func IntToString(i int) string {
 // StringToInt
 func StringToInt(s string) (int, error) {
 	return strconv.Atoi(s)
+}
+
+func Absolute(path string) (string, error) {
+	if !filepath.IsAbs(path) {
+		return filepath.Abs(path)
+	}
+	return path, nil
 }

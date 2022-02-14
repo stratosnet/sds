@@ -1,7 +1,7 @@
 package utils
 
 const (
-	MaxConnections             = 1000
+	MaxConnections             = 100000
 	DefTaskPoolCount           = 200
 	TaskSize                   = 1024
 	ReadTimeOut                = 180             // in seconds

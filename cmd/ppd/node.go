@@ -44,7 +44,7 @@ func nodePreRunE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	trafficLogger := utils.NewTrafficLogger("./tmp/logs/traffic_dump.log", false, true)
+	trafficLogger := utils.NewTrafficLogger(filepath.Join(setting.GetRootPath(), "./tmp/logs/traffic_dump.log"), false, true)
 	trafficLogger.SetLogLevel(utils.Info)
 
 	serv.StartDumpTrafficLog()

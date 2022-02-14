@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -14,62 +15,60 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// REPROTDHTIME 1 hour
-const REPROTDHTIME = 60 * 60
-
-// Interval of node stat report
-const NodeReportIntervalSec = 300 // in seconds
-
-// MAXDATA max slice size
-const MAXDATA = 1024 * 1024 * 3
-
-// HTTPTIMEOUT  HTTPTIMEOUT second
-const HTTPTIMEOUT = 20
-
-// IMAGEPATH
-var IMAGEPATH = "./images/"
-
-// ImageMap download image hash map
-var ImageMap = &sync.Map{}
-
-var VIDEOPATH = "./videos"
-
-// DownloadProgressMap download progress map
-var DownloadProgressMap = &sync.Map{}
-
-// Config
-var Config *config
-
-// ConfigPath
-var ConfigPath string
-
-// IsLoad
-var IsLoad bool
-
-// UploadTaskIDMap
-var UploadTaskIDMap = &sync.Map{}
-
-// DownloadTaskIDMap
-var DownloadTaskIDMap = &sync.Map{}
-
-// socket map
-var (
-	UpMap     = make(map[string]interface{}, 0)
-	DownMap   = make(map[string]interface{}, 0)
-	ResultMap = make(map[string]interface{}, 0)
-)
-
-//  http code
-var (
-	FAILCode       = 500
-	SUCCESSCode    = 0
-	ShareErrorCode = 1002
-	IsWindows      bool
-)
-
 const (
 	Version = "v0.4.0"
 	HD_PATH = "m/44'/606'/0'/0/0"
+
+	// REPORTDHTIME 1 hour
+	REPORTDHTIME = 60 * 60
+	// NodeReportIntervalSec Interval of node stat report
+	NodeReportIntervalSec = 300 // in seconds
+	// MAXDATA max slice size
+	MAXDATA = 1024 * 1024 * 3
+	// HTTPTIMEOUT  HTTPTIMEOUT second
+	HTTPTIMEOUT = 20
+	// IMAGEPATH
+	IMAGEPATH = "./images/"
+	VIDEOPATH = "./videos"
+)
+
+var (
+	// Config
+	Config *config
+	// ConfigPath
+	ConfigPath string
+	rootPath   string
+
+	// ImageMap download image hash map
+	ImageMap = &sync.Map{}
+
+	// DownloadProgressMap download progress map
+	DownloadProgressMap = &sync.Map{}
+
+	// IsLoad
+	IsLoad bool
+
+	// UploadTaskIDMap
+	UploadTaskIDMap = &sync.Map{}
+
+	// DownloadTaskIDMap
+	DownloadTaskIDMap = &sync.Map{}
+
+	// socket map
+	UpMap     = make(map[string]interface{}, 0)
+	DownMap   = make(map[string]interface{}, 0)
+	ResultMap = make(map[string]interface{}, 0)
+
+	//  http code
+	FAILCode       = 500
+	SUCCESSCode    = 0
+	ShareErrorCode = 1002
+
+	ostype    = runtime.GOOS
+	IsWindows bool
+
+	// UpChan
+	UpChan = make(chan string, 100)
 )
 
 type SPBaseInfo struct {
@@ -96,8 +95,6 @@ type config struct {
 	AutoRun              bool         `yaml:"AutoRun"`  // is auto login
 	Internal             bool         `yaml:"Internal"` // is internal net
 	IsWallet             bool         `yaml:"IsWallet"` // is wallet
-	BPURL                string       `yaml:"BPURL"`    // bphttp
-	IsCheckDefaultPath   bool         `yaml:"IsCheckDefaultPath"`
 	IsLimitDownloadSpeed bool         `yaml:"IsLimitDownloadSpeed"`
 	LimitDownloadSpeed   uint64       `yaml:"LimitDownloadSpeed"`
 	IsLimitUploadSpeed   bool         `yaml:"IsLimitUploadSpeed"`
@@ -112,7 +109,13 @@ type config struct {
 	SPList               []SPBaseInfo `yaml:"SPList"`
 }
 
-var ostype = runtime.GOOS
+func SetupRoot(root string) {
+	rootPath = root
+}
+
+func GetRootPath() string {
+	return rootPath
+}
 
 // LoadConfig
 func LoadConfig(configPath string) error {
@@ -129,12 +132,18 @@ func LoadConfig(configPath string) error {
 
 	Config.DownloadPathMinLen = 88
 
+	err = formalizePath(Config)
+	if err != nil {
+		return err
+	}
+
 	if ostype == "windows" {
 		IsWindows = true
 		// imagePath = filepath.FromSlash(imagePath)
 	} else {
 		IsWindows = false
 	}
+
 	cf.SetLimitDownloadSpeed(Config.LimitDownloadSpeed, Config.IsLimitDownloadSpeed)
 	cf.SetLimitUploadSpeed(Config.LimitUploadSpeed, Config.IsLimitUploadSpeed)
 
@@ -167,9 +176,6 @@ func GetSign(str string) []byte {
 	utils.DebugLog("GetSign == ", hex.EncodeToString(sign))
 	return sign
 }
-
-// UpChan
-var UpChan = make(chan string, 100)
 
 // SetConfig SetConfig
 func SetConfig(key, value string) bool {
@@ -268,8 +274,6 @@ func defaultConfig() *config {
 		AutoRun:              true,
 		Internal:             false,
 		IsWallet:             true,
-		BPURL:                "",
-		IsCheckDefaultPath:   false,
 		IsLimitDownloadSpeed: false,
 		LimitDownloadSpeed:   0,
 		IsLimitUploadSpeed:   false,
@@ -288,4 +292,47 @@ func GenDefaultConfig(filePath string) error {
 	cfg := defaultConfig()
 
 	return utils.WriteConfig(cfg, filePath)
+}
+
+func formalizePath(config2 *config) (err error) {
+	//if the configuration are using default path, try to load the root path specified from flag
+	if Config.AccountDir == "./accounts" {
+		Config.AccountDir = filepath.Join(rootPath, Config.AccountDir)
+	}
+	if Config.PPListDir == "./peers" {
+		Config.PPListDir = filepath.Join(rootPath, Config.PPListDir)
+	}
+	if Config.StorehousePath == "./storage" {
+		Config.StorehousePath = filepath.Join(rootPath, Config.StorehousePath)
+	}
+	if Config.DownloadPath == "./download" {
+		Config.DownloadPath = filepath.Join(rootPath, Config.DownloadPath)
+	}
+
+	// make the path absolute if the configured path is not the default value, won't consider the home flag
+	if !filepath.IsAbs(Config.AccountDir) {
+		Config.AccountDir, err = filepath.Abs(Config.AccountDir)
+		if err != nil {
+			return err
+		}
+	}
+	if !filepath.IsAbs(Config.StorehousePath) {
+		Config.StorehousePath, err = filepath.Abs(Config.StorehousePath)
+		if err != nil {
+			return err
+		}
+	}
+	if !filepath.IsAbs(Config.DownloadPath) {
+		Config.DownloadPath, err = filepath.Abs(Config.DownloadPath)
+		if err != nil {
+			return err
+		}
+	}
+	if !filepath.IsAbs(Config.PPListDir) {
+		Config.PPListDir, err = filepath.Abs(Config.PPListDir)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

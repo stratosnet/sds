@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"path/filepath"
 
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
@@ -49,29 +50,29 @@ func importWallet(w http.ResponseWriter, request *http.Request) {
 		return
 	}
 	ks := utils.GetKeyStorePassphrase(dir)
-	filename := dir + "/" + setting.WalletAddress + ".json"
+	filename := filepath.Join(dir, setting.WalletAddress+".json")
 	err = ks.StoreKey(filename, key, password)
 	if err != nil {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to import wallet").ToBytes())
 		return
 	}
-	utils.DebugLog("BPURL", setting.Config.BPURL)
-	js, err := httprequest("GET", setting.Config.BPURL+"/account/balance?address="+setting.WalletAddress, nil)
-	if err != nil {
-
-		utils.ErrorLog("failed to get balance")
-	}
-	utils.DebugLog("BPURL end", setting.Config.BPURL)
-	var balance float64
-	if js.Data["balance"] != nil {
-		balance = js.Data["balance"].(float64)
-	}
+	//utils.DebugLog("BPURL", setting.Config.BPURL)
+	//js, err := httprequest("GET", setting.Config.BPURL+"/account/balance?address="+setting.WalletAddress, nil)
+	//if err != nil {
+	//
+	//	utils.ErrorLog("failed to get balance")
+	//}
+	//utils.DebugLog("BPURL end", setting.Config.BPURL)
+	//var balance float64
+	//if js.Data["balance"] != nil {
+	//	balance = js.Data["balance"].(float64)
+	//}
 	data1 := walletInfo{
 		WalletInfo: walletList{
 			WalletName:    key.Name,
 			WalletAddress: setting.WalletAddress,
-			Balance:       balance,
-			State:         true,
+			//Balance:       balance,
+			State: true,
 		},
 	}
 	w.Write(httpserv.NewJson(data1, setting.SUCCESSCode, "successfully import wallet").ToBytes())

@@ -25,6 +25,14 @@ func genConfig(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get the configuration file path")
 	}
+	if path == defaultConfigPath {
+		home, err := cmd.Flags().GetString(HOME)
+		if err != nil {
+			return err
+		}
+		path = filepath.Join(home, path)
+	}
+
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(filepath.Dir(path), 0700)
 	}
@@ -67,10 +75,24 @@ func loadConfig(cmd *cobra.Command) error {
 		utils.ErrorLog("failed to get 'home' path for the node")
 		return err
 	}
+	homePath, err = utils.Absolute(homePath)
+	if err != nil {
+		return err
+	}
+	setting.SetupRoot(homePath)
+
 	configPath, err := cmd.Flags().GetString(CONFIG)
 	if err != nil {
 		utils.ErrorLog("failed to get config path for the node")
 		return err
+	}
+	if configPath == defaultConfigPath {
+		configPath = filepath.Join(homePath, configPath)
+	} else {
+		configPath, err = utils.Absolute(configPath)
+		if err != nil {
+			return err
+		}
 	}
 
 	if _, err := os.Stat(configPath); err != nil {

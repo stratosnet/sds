@@ -2,14 +2,14 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/httpserv"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"sort"
-	"strings"
+
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/httpserv"
 )
 
 // getWalletList GET
@@ -25,19 +25,19 @@ func getWalletList(w http.ResponseWriter, request *http.Request) {
 	for _, info := range files {
 		fileArr = append(fileArr, info.Name())
 	}
-	req := make(map[string][]string, 0)
-	req["addresses"] = fileArr
-	reqByte, _ := json.Marshal(req)
-	js, err := httprequest("POST", setting.Config.BPURL+"/account/balance/batch", strings.NewReader(string(reqByte)))
-	if err != nil {
-		utils.ErrorLog("err", err)
-		// w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to get balance").ToBytes())
-		// return
-	}
-	utils.DebugLog("BPURL", js)
-	if js.Data["list"] != nil {
-		balanceArr = js.Data["list"].([]interface{})
-	}
+	//req := make(map[string][]string, 0)
+	//req["addresses"] = fileArr
+	//reqByte, _ := json.Marshal(req)
+	//js, err := httprequest("POST", setting.Config.BPURL+"/account/balance/batch", strings.NewReader(string(reqByte)))
+	//if err != nil {
+	//	utils.ErrorLog("err", err)
+	//	// w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to get balance").ToBytes())
+	//	// return
+	//}
+	//utils.DebugLog("BPURL", js)
+	//if js.Data["list"] != nil {
+	//	balanceArr = js.Data["list"].([]interface{})
+	//}
 	data := make(map[string]interface{})
 	for _, info := range files {
 		// utils.DebugLog("BPURL", setting.Config.BPURL, info.ModTime().Unix())
