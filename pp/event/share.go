@@ -11,7 +11,7 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/sds/utils/datamesh"
 )
 
 // GetAllShareLink GetShareLink
@@ -166,7 +166,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	putData(target.ShareRequest.ReqId, HTTPGetShareFile, &target)
 
 	for _, fileInfo := range target.FileInfo {
-		filePath := types.DataMashId{
+		filePath := datamesh.DataMashId{
 			Owner: fileInfo.OwnerWalletAddress,
 			Hash:  fileInfo.FileHash,
 		}.String()

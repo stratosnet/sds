@@ -3,12 +3,11 @@ package api
 import (
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils/datamesh"
 	"github.com/stratosnet/sds/utils/httpserv"
-	"github.com/stratosnet/sds/utils/types"
-
-	"github.com/google/uuid"
 )
 
 type downFile struct {
@@ -34,7 +33,7 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 		FileHash:           data["fileHash"].(string),
 		OwnerWalletAddress: data["ownerWalletAddress"].(string),
 	}
-	path := types.DataMashId{
+	path := datamesh.DataMashId{
 		Owner: p.OwnerWalletAddress,
 		Hash:  p.FileHash,
 	}.String()
