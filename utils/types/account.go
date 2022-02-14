@@ -148,7 +148,14 @@ func (a Address) ToBech(hrp string) (string, error) {
 }
 
 func BechToAddress(str string) (Address, error) {
-	addr, err := types.AccAddressFromBech32(str)
+	addr, err := types.GetFromBech32(str, DefaultAddressPrefix)
+	if err != nil {
+		return Address{}, err
+	}
+	err = types.VerifyAddressFormat(addr)
+	if err != nil {
+		return Address{}, err
+	}
 	return BytesToAddress(addr), err
 }
 

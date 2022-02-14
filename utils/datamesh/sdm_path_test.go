@@ -1,4 +1,4 @@
-package types
+package datamesh
 
 import (
 	"reflect"
@@ -16,11 +16,14 @@ func TestDataMashIdFromString(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{name: "1", args: args{"sdm://abasdfa/asdfasdf"}, want: &DataMashId{
-			Owner: "abasdfa",
-			Hash:  "asdfasdf",
+		{name: "1", args: args{"sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/v05ahm52iirbq55177uii2bmbsmmcemnjtm740s8"}, want: &DataMashId{
+			Owner: "st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg",
+			Hash:  "v05ahm52iirbq55177uii2bmbsmmcemnjtm740s8",
 		}, wantErr: false},
-		{name: "2", args: args{"sdm://abasdfa//asdfasdf"}, want: nil, wantErr: true},
+		{name: "2", args: args{"sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg//v05ahm52iirbq55177uii2bmbsmmcemnjtm740s8"}, want: nil, wantErr: true},
+		{name: "3", args: args{"sdm://st1jn9skjsnxv26mekd8eu8a8aquh30m4mwgahg/v05ahm52iirbq55177uii2bmbsmmcemnjtm740s8"}, want: nil, wantErr: true},
+		{name: "4", args: args{"sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/v05ahm52iirbq55177u2bmbsmmcemnjtm740s8"}, want: nil, wantErr: true},
+		{name: "5", args: args{"sdm://st1jn9skjsnxv26mekd8eu8a8aq3h34v0m4mwgahg/v05ahm52iirbq55177uii2bmbsmmcemnjtm740s8"}, want: nil, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -48,9 +51,9 @@ func TestDataMashId_String(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 		{name: "1", fields: fields{
-			Owner: "aqwerqwerq",
-			Hash:  "sfdgsdfasidfj",
-		}, want: "sdm://aqwerqwerq/sfdgsdfasidfj"},
+			Owner: "st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg",
+			Hash:  "v05ahm52iirbq55177uii2bmbsmmcemnjtm740s8",
+		}, want: "sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/v05ahm52iirbq55177uii2bmbsmmcemnjtm740s8"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
