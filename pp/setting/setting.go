@@ -284,6 +284,7 @@ func defaultConfig() *config {
 		StreamingCache:       false,
 		RestPort:             "",
 		InternalPort:         "",
+		TrafficLogInterval:   10,
 		SPList:               []SPBaseInfo{{NetworkAddress: "127.0.0.1:8888"}},
 	}
 }

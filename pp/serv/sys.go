@@ -6,7 +6,6 @@ import (
 
 	"github.com/alex023/clock"
 	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/pp/client"
@@ -30,7 +29,7 @@ func dumpTrafficLog() {
 	v, _ := mem.VirtualMemory()
 	c, _ := cpu.Info()
 	cc, _ := cpu.Percent(time.Second, false)
-	d, _ := disk.Usage(setting.Config.StorehousePath)
+	d, _ := utils.GetDiskUsage(setting.Config.StorehousePath)
 
 	//Memory
 	memTotal := v.Total
@@ -108,7 +107,7 @@ func StopDumpTrafficLog() {
 
 // ShowMonitor
 func ShowMonitor() {
-	job, _ = myClock.AddJobRepeat(time.Second*2, 0, monitor)
+	job, _ = myClock.AddJobRepeat(time.Second*time.Duration(setting.Config.TrafficLogInterval), 0, monitor)
 }
 
 //
@@ -116,7 +115,7 @@ func monitor() {
 	v, _ := mem.VirtualMemory()
 	c, _ := cpu.Info()
 	cc, _ := cpu.Percent(time.Second, false)
-	d, _ := disk.Usage(setting.Config.StorehousePath)
+	d, _ := utils.GetDiskUsage(setting.Config.StorehousePath)
 	// n, _ := host.Info()
 	// nv, _ := net.IOCounters(true)
 	// boottime, _ := host.BootTime()
@@ -139,7 +138,7 @@ func monitor() {
 	utils.Logf("        CPU Used    : %f%% ", cc[0])
 	// utils.Logf("        Network     : %v bytes / %v bytes", nv[0].BytesRxecv, nv[0].BytesSent)
 	// utils.Logf("        SystemBoot:%v", btime)
-	utils.Logf("        HD          : %v GB  Free: %v GB Usage:%f%%", d.Total/1024/1024/1024, d.Free/1024/1024/1024, d.UsedPercent)
+	utils.Logf("        HD          : %v GB  Free: %v GB Usage:%f%% Path:%s", d.Total/1024/1024/1024, d.Free/1024/1024/1024, d.UsedPercent, d.Path)
 	// utils.Logf("        OS        : %v(%v)   %v  ", n.Platform, n.PlatformFamily, n.PlatformVersion)
 	// utils.Logf("        Hostname  : %v  ", n.Hostname)
 	r := int64(0)

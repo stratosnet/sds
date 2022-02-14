@@ -68,10 +68,7 @@ func GetSysInfo(diskPath string) *SysInfo {
 
 func GetDiskUsage(path string) (*disk.UsageStat, error) {
 
-	volume := filepath.VolumeName(path)
-	if volume == "" {
-		volume = "/"
-	}
+	volume := filepath.Dir(path)
 
 	return disk.Usage(volume)
 }
