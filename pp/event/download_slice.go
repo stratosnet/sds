@@ -224,7 +224,7 @@ func SendReqDownloadSlice(fileHash string, sliceInfo *protos.DownloadSliceInfo, 
 	utils.DebugLog("req = ", req)
 
 	networkAddress := sliceInfo.StoragePpInfo.NetworkAddress
-	key := sliceInfo.StoragePpInfo.P2PAddress + fileHash
+	key := fileHash + sliceInfo.StoragePpInfo.P2PAddress
 
 	if c, ok := client.DownloadConnMap.Load(key); ok {
 		conn := c.(*cf.ClientConn)

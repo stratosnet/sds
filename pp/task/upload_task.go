@@ -3,10 +3,12 @@ package task
 import (
 	"encoding/json"
 	"math/rand"
+	"strings"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
@@ -51,6 +53,15 @@ type UpProgress struct {
 
 // UploadProgressMap
 var UploadProgressMap = &sync.Map{}
+
+func CleanUpConnMap(fileHash string) {
+	client.UpConnMap.Range(func(k, v interface{}) bool {
+		if strings.HasPrefix(k.(string), fileHash) {
+			client.UpConnMap.Delete(k.(string))
+		}
+		return true
+	})
+}
 
 // GetUploadSliceTask
 func GetUploadSliceTask(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string, isVideoStream, isEncrypted bool) *UploadSliceTask {

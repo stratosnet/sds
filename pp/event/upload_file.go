@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
@@ -139,12 +140,8 @@ func startUploadTask(target *protos.RspUploadFile) {
 		TaskID:   target.TaskId,
 		UpChan:   make(chan bool, task.MAXSLICE),
 	}
+	task.CleanUpConnMap(target.FileHash)
 	task.UpIngMap.Store(target.FileHash, taskING)
-	if client.PPConn != nil {
-		conn := client.NewClient(client.PPConn.GetName(), setting.IsPP)
-		client.UpConnMap.Store(target.FileHash, conn)
-		utils.DebugLog("task.UpConnMap.Store(target.fileHash, conn)", target.FileHash)
-	}
 	var streamTotalSize int64
 	var hlsInfo file.HlsInfo
 	if target.IsVideoStream {
@@ -191,9 +188,6 @@ func up(ING *task.UpFileIng, target *protos.RspUploadFile) {
 				continue
 			}
 
-			if _, ok := client.UpConnMap.Load(target.FileHash); !ok {
-				return
-			}
 			UploadFileSlice(uploadTask)
 			ING.Slices = append(ING.Slices[:0], ING.Slices[0+1:]...)
 		}
@@ -215,9 +209,6 @@ func sendUploadFileSlice(target *protos.RspUploadFile) {
 
 	} else {
 		for _, pp := range ING.Slices {
-			if _, ok := client.UpConnMap.Load(target.FileHash); !ok {
-				return
-			}
 			uploadTask := task.GetUploadSliceTask(pp, target.FileHash, target.TaskId, target.SpP2PAddress, target.IsVideoStream, target.IsEncrypted)
 			if uploadTask != nil {
 				UploadFileSlice(uploadTask)
@@ -242,12 +233,15 @@ func uploadKeep(fileHash, taskID string) {
 
 // UploadPause
 func UploadPause(fileHash, reqID string, w http.ResponseWriter) {
-	if c, ok := client.UpConnMap.Load(fileHash); ok {
-		conn := c.(*cf.ClientConn)
-		conn.ClientClose()
-		utils.DebugLog("UploadPause", conn)
-	}
-	client.UpConnMap.Delete(fileHash)
+	client.UpConnMap.Range(func(k, v interface{}) bool {
+		if strings.HasPrefix(k.(string), fileHash) {
+			conn := v.(*cf.ClientConn)
+			conn.ClientClose()
+			utils.DebugLog("UploadPause", conn)
+		}
+		return true
+	})
+	task.CleanUpConnMap(fileHash)
 	task.UpIngMap.Delete(fileHash)
 	task.UploadProgressMap.Delete(fileHash)
 }

@@ -100,7 +100,7 @@ func CleanDownloadFileAndConnMap(fileHash string) {
 		fInfo := f.(*protos.RspFileStorageInfo)
 		for _, slice := range fInfo.SliceInfo {
 			DownloadSliceProgress.Delete(slice.SliceStorageInfo.SliceHash)
-			client.DownloadConnMap.Delete(slice.StoragePpInfo.P2PAddress + fileHash)
+			client.DownloadConnMap.Delete(fileHash + slice.StoragePpInfo.P2PAddress)
 		}
 	}
 	DownloadFileMap.Delete(fileHash)
