@@ -3,14 +3,16 @@ package websocket
 import (
 	"encoding/json"
 	"errors"
+	"net"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
-	"net"
-	"sync"
-	"time"
 )
 
 var mu = sync.Mutex{}
@@ -41,21 +43,19 @@ func SocketStart(conn net.Conn, upMap, downMap, m map[string]interface{}) error 
 		}
 		// utils.DebugLog("gress.Progress", gress.Progress)
 		// utils.DebugLog("f>>>>>>>>>>>>>>>>>>>>", hash)
-		if up, ok := client.UpConnMap.Load(hash); ok {
-			vconn := up.(*cf.ClientConn)
-			w := vconn.GetSecondWriteFlow()
-			gress.Rate = w
-			gress.Time = time.Now().Unix()
-			mu.Lock()
-			upMap[gress.TaskID] = gress
-			mu.Unlock()
-		} else {
-			gress.Rate = 0
-			gress.Time = time.Now().Unix()
-			mu.Lock()
-			upMap[gress.TaskID] = gress
-			mu.Unlock()
-		}
+		gress.Rate = 0
+		client.UpConnMap.Range(func(k, v interface{}) bool {
+			if strings.HasPrefix(k.(string), hash) {
+				vconn := v.(*cf.ClientConn)
+				w := vconn.GetSecondWriteFlow()
+				gress.Rate += w
+			}
+			return true
+		})
+		gress.Time = time.Now().Unix()
+		mu.Lock()
+		upMap[gress.TaskID] = gress
+		mu.Unlock()
 		return true
 	})
 
@@ -77,12 +77,16 @@ func SocketStart(conn net.Conn, upMap, downMap, m map[string]interface{}) error 
 		// 	gress.Rate = 0
 		// 	gress.State = true
 		// }
-		if c, ok := client.PDownloadPassageway.Load(hash); ok {
-			conn := c.(*cf.ClientConn)
-			re := conn.GetSecondReadFlow()
-			gress.Rate = re
-			gress.Time = time.Now().Unix()
-		}
+		gress.Rate = 0
+		client.DownloadConnMap.Range(func(k, v interface{}) bool {
+			if strings.HasPrefix(k.(string), hash) {
+				vconn := v.(*cf.ClientConn)
+				re := vconn.GetSecondReadFlow()
+				gress.Rate += re
+			}
+			return true
+		})
+		gress.Time = time.Now().Unix()
 		mu.Lock()
 		downMap[gress.TaskID] = gress
 		mu.Unlock()
