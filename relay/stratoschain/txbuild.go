@@ -2,7 +2,6 @@ package stratoschain
 
 import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
@@ -11,12 +10,17 @@ import (
 	"github.com/tendermint/tendermint/libs/bech32"
 )
 
+type Traffic struct {
+	Volume        uint64
+	WalletAddress string
+}
+
 // Stratos-chain 'pot' module
-func BuildVolumeReportMsg(traffic []*core.Traffic, reporterAddress, reporterOwnerAddress []byte, epoch uint64,
+func BuildVolumeReportMsg(traffic []*Traffic, reporterAddress, reporterOwnerAddress []byte, epoch uint64,
 	reportReference string, blsTxData, blsSignature []byte, blsPubKeys [][]byte) (sdktypes.Msg, error) {
 	aggregatedVolume := make(map[string]uint64)
-	for _, trafficReccord := range traffic {
-		aggregatedVolume[trafficReccord.P2PAddress] += trafficReccord.Volume
+	for _, trafficRecord := range traffic {
+		aggregatedVolume[trafficRecord.WalletAddress] += trafficRecord.Volume
 	}
 
 	var nodesVolume []pottypes.SingleWalletVolume
