@@ -23,9 +23,22 @@ func CheckTransfer(target *protos.ReqFileSliceBackupNotice) bool {
 	return true
 }
 
+func AddTransferTask(taskId, sliceHash string, tTask TransferTask) {
+	TransferTaskMap[taskId+sliceHash] = tTask
+}
+
+func GetTransferTask(taskId, sliceHash string) (tTask TransferTask, ok bool) {
+	tTask, ok = TransferTaskMap[taskId+sliceHash]
+	return
+}
+
+func CleanTransferTask(taskId, sliceHash string) {
+	delete(TransferTaskMap, taskId+sliceHash)
+}
+
 // GetTransferSliceData
-func GetTransferSliceData(taskId string) []byte {
-	if tTask, ok := TransferTaskMap[taskId]; ok {
+func GetTransferSliceData(taskId, sliceHash string) []byte {
+	if tTask, ok := GetTransferTask(taskId, sliceHash); ok {
 		data := file.GetSliceData(tTask.SliceStorageInfo.SliceHash)
 		return data
 	}
@@ -34,7 +47,7 @@ func GetTransferSliceData(taskId string) []byte {
 
 // SaveTransferData
 func SaveTransferData(target *protos.RspTransferDownload) bool {
-	if tTask, ok := TransferTaskMap[target.TaskId]; ok {
+	if tTask, ok := GetTransferTask(target.TaskId, target.SliceHash); ok {
 		save := file.SaveSliceData(target.Data, tTask.SliceStorageInfo.SliceHash, target.Offset)
 		if save {
 			if target.SliceSize == uint64(file.GetSliceSize(tTask.SliceStorageInfo.SliceHash)) {

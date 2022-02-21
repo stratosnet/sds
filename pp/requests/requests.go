@@ -442,23 +442,25 @@ func FindMyFileListData(fileName, dir, reqID, keyword string, fileType protos.Fi
 	}
 }
 
-func RspTransferDownloadResultData(taskId, spP2pAddress string) *protos.RspTransferDownloadResult {
+func RspTransferDownloadResultData(taskId, sliceHash, spP2pAddress string) *protos.RspTransferDownloadResult {
 	return &protos.RspTransferDownloadResult{
 		TaskId: taskId,
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
 		SpP2PAddress: spP2pAddress,
+		SliceHash:    sliceHash,
 	}
 }
 
-func RspTransferDownload(data []byte, taskId, spP2pAddress string, offset, sliceSize uint64) *protos.RspTransferDownload {
+func RspTransferDownload(data []byte, taskId, sliceHash, spP2pAddress string, offset, sliceSize uint64) *protos.RspTransferDownload {
 	return &protos.RspTransferDownload{
 		Data:         data,
 		TaskId:       taskId,
 		Offset:       offset,
 		SliceSize:    sliceSize,
 		SpP2PAddress: spP2pAddress,
+		SliceHash:    sliceHash,
 	}
 }
 
