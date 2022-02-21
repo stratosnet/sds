@@ -138,6 +138,7 @@ func (c *Terminal) RunCmd(strkey string, param []string, isExec bool) bool {
 		if strkey == "exit" {
 			return true
 		}
+		fmt.Println("The command is not found: ", strkey)
 	}
 	return false
 }
