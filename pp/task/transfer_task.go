@@ -1,6 +1,8 @@
 package task
 
 import (
+	"sync"
+
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/file"
 )
@@ -14,8 +16,10 @@ type TransferTask struct {
 	SliceNum         uint64
 }
 
-// TransferTaskMap
-var TransferTaskMap = make(map[string]TransferTask)
+var rwmutex sync.RWMutex
+
+// transferTaskMap
+var transferTaskMap = make(map[string]TransferTask)
 
 // CheckTransfer check whether can transfer
 // todo:
@@ -24,16 +28,22 @@ func CheckTransfer(target *protos.ReqFileSliceBackupNotice) bool {
 }
 
 func AddTransferTask(taskId, sliceHash string, tTask TransferTask) {
-	TransferTaskMap[taskId+sliceHash] = tTask
+	rwmutex.Lock()
+	transferTaskMap[taskId+sliceHash] = tTask
+	rwmutex.Unlock()
 }
 
 func GetTransferTask(taskId, sliceHash string) (tTask TransferTask, ok bool) {
-	tTask, ok = TransferTaskMap[taskId+sliceHash]
+	rwmutex.Lock()
+	tTask, ok = transferTaskMap[taskId+sliceHash]
+	rwmutex.Unlock()
 	return
 }
 
 func CleanTransferTask(taskId, sliceHash string) {
-	delete(TransferTaskMap, taskId+sliceHash)
+	rwmutex.Lock()
+	delete(transferTaskMap, taskId+sliceHash)
+	rwmutex.Unlock()
 }
 
 // GetTransferSliceData
