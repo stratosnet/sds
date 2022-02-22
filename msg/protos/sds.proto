@@ -520,6 +520,7 @@ message ReqReportBackupSliceResult {
 message RspReportBackupSliceResult {
   string task_id = 1;
   Result result = 2;
+  string slice_hash = 3;
 }
 
 message ReqTransferDownload {
@@ -539,12 +540,14 @@ message RspTransferDownload {
   uint64 slice_size = 4;
   Result result = 5;
   string sp_p2p_address = 6;
+  string slice_hash = 7;
 }
 
 message RspTransferDownloadResult {
   string task_id = 1;
   Result result = 2;
   string sp_p2p_address = 3;
+  string slice_hash = 4;
 }
 
 

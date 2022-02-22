@@ -40,6 +40,7 @@ type UpFileIng struct {
 	TaskID   string
 	FileHash string
 	UpChan   chan bool
+	FileCRC  uint32
 }
 
 // UpIngMap UpIng
@@ -64,15 +65,15 @@ func CleanUpConnMap(fileHash string) {
 }
 
 // GetUploadSliceTask
-func GetUploadSliceTask(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string, isVideoStream, isEncrypted bool) *UploadSliceTask {
+func GetUploadSliceTask(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string, isVideoStream, isEncrypted bool, fileCRC uint32) *UploadSliceTask {
 	if isVideoStream {
-		return GetUploadSliceTaskStream(pp, fileHash, taskID, spP2pAddress)
+		return GetUploadSliceTaskStream(pp, fileHash, taskID, spP2pAddress, fileCRC)
 	} else {
-		return GetUploadSliceTaskFile(pp, fileHash, taskID, spP2pAddress, isEncrypted)
+		return GetUploadSliceTaskFile(pp, fileHash, taskID, spP2pAddress, isEncrypted, fileCRC)
 	}
 }
 
-func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string, isEncrypted bool) *UploadSliceTask {
+func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string, isEncrypted bool, fileCRC uint32) *UploadSliceTask {
 	filePath := file.GetFilePath(fileHash)
 	utils.DebugLogf("sliceNumber %v  offsetStart = %v  offsetEnd = %v", pp.SliceNumber, pp.SliceOffset.SliceOffsetStart, pp.SliceOffset.SliceOffsetEnd)
 	startOffset := pp.SliceOffset.SliceOffsetStart
@@ -117,7 +118,7 @@ func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddr
 		FileHash:        fileHash,
 		SliceNumAddr:    pp,
 		SliceOffsetInfo: sl,
-		FileCRC:         utils.CalcFileCRC32(filePath),
+		FileCRC:         fileCRC,
 		Data:            data,
 		SliceTotalSize:  dataSize,
 		SpP2pAddress:    spP2pAddress,
@@ -125,7 +126,7 @@ func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddr
 	return tk
 }
 
-func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string) *UploadSliceTask {
+func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string, fileCRC uint32) *UploadSliceTask {
 	videoFolder := file.GetVideoTmpFolder(fileHash)
 	videoSliceInfo := file.HlsInfoMap[fileHash]
 	var data []byte
@@ -171,7 +172,7 @@ func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAd
 		FileHash:        fileHash,
 		SliceNumAddr:    SliceNumAddr,
 		SliceOffsetInfo: sl,
-		FileCRC:         utils.CalcFileCRC32(file.GetFilePath(fileHash)),
+		FileCRC:         fileCRC,
 		Data:            data,
 		SliceTotalSize:  sliceTotalSize,
 		SpP2pAddress:    spP2pAddress,

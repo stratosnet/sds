@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	Version = "v0.4.0"
+	Version = "v0.5.0"
 	HD_PATH = "m/44'/606'/0'/0/0"
 
 	// REPORTDHTIME 1 hour
@@ -260,7 +260,7 @@ func SetConfig(key, value string) bool {
 
 func defaultConfig() *config {
 	return &config{
-		Version:              3,
+		Version:              5,
 		VersionShow:          Version,
 		DownloadPathMinLen:   0,
 		Port:                 "18081",
@@ -281,7 +281,7 @@ func defaultConfig() *config {
 		LimitDownloadSpeed:   0,
 		IsLimitUploadSpeed:   false,
 		LimitUploadSpeed:     0,
-		ChainId:              "stratos-testnet-3",
+		ChainId:              "tropos-1",
 		Token:                "ustos",
 		StratosChainUrl:      "http://127.0.0.1:1317",
 		StreamingCache:       false,

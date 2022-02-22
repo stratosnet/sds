@@ -193,7 +193,7 @@ func ReqFileSliceBackupNotice(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	task.TransferTaskMap[target.TaskId] = task.TransferTask{
+	tTask := task.TransferTask{
 		FromSp:           true,
 		DeleteOrigin:     target.DeleteOrigin,
 		PpInfo:           target.PpInfo,
@@ -201,6 +201,7 @@ func ReqFileSliceBackupNotice(ctx context.Context, conn core.WriteCloser) {
 		FileHash:         target.FileHash,
 		SliceNum:         target.SliceNumber,
 	}
+	task.AddTransferTask(target.TaskId, target.SliceStorageInfo.SliceHash, tTask)
 
 	peers.TransferSendMessageToPPServ(target.PpInfo.NetworkAddress, requests.ReqTransferDownloadData(&target, setting.P2PAddress))
 }
@@ -221,7 +222,7 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		NetId:          core.NetIDFromContext(ctx),
 		Status:         types.PEER_CONNECTED,
 	})
-	task.TransferTaskMap[target.TaskId] = task.TransferTask{
+	tTask := task.TransferTask{
 		FromSp:           false,
 		DeleteOrigin:     target.DeleteOrigin,
 		PpInfo:           target.OriginalPp,
@@ -229,8 +230,10 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		FileHash:         target.FileHash,
 		SliceNum:         target.SliceNum,
 	}
+	task.AddTransferTask(target.TaskId, target.SliceStorageInfo.SliceHash, tTask)
 
-	sliceData := task.GetTransferSliceData(target.TaskId)
+	sliceHash := target.SliceStorageInfo.SliceHash
+	sliceData := task.GetTransferSliceData(target.TaskId, target.SliceStorageInfo.SliceHash)
 	sliceDataLen := len(sliceData)
 	utils.DebugLogf("sliceDataLen = %v  TaskId = %v", sliceDataLen, target.TaskId)
 
@@ -238,10 +241,12 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	dataEnd := setting.MAXDATA
 	for {
 		if dataEnd >= (sliceDataLen + 1) {
-			peers.SendMessage(conn, requests.RspTransferDownload(sliceData[dataStart:], target.TaskId, target.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
+			peers.SendMessage(conn, requests.RspTransferDownload(sliceData[dataStart:], target.TaskId, sliceHash,
+				target.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 			return
 		}
-		peers.SendMessage(conn, requests.RspTransferDownload(sliceData[dataStart:dataEnd], target.TaskId, target.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
+		peers.SendMessage(conn, requests.RspTransferDownload(sliceData[dataStart:dataEnd], target.TaskId, sliceHash,
+			target.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 		dataStart += setting.MAXDATA
 		dataEnd += setting.MAXDATA
 	}
@@ -255,8 +260,8 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	if task.SaveTransferData(&target) {
-		SendReportBackupSliceResult(target.TaskId, target.SpP2PAddress, true, false)
-		peers.SendMessage(conn, requests.RspTransferDownloadResultData(target.TaskId, target.SpP2PAddress), header.RspTransferDownloadResult)
+		SendReportBackupSliceResult(target.TaskId, target.SliceHash, target.SpP2PAddress, true, false)
+		peers.SendMessage(conn, requests.RspTransferDownloadResultData(target.TaskId, target.SliceHash, target.SpP2PAddress), header.RspTransferDownloadResult)
 	}
 }
 
@@ -270,12 +275,12 @@ func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
 
 	isSuccessful := target.Result.State == protos.ResultState_RES_SUCCESS
 	if !isSuccessful {
-		SendReportBackupSliceResult(target.TaskId, target.SpP2PAddress, isSuccessful, false)
+		SendReportBackupSliceResult(target.TaskId, target.SliceHash, target.SpP2PAddress, isSuccessful, false)
 		return
 	}
 
 	deleteOrigin := false
-	if tTask, ok := task.TransferTaskMap[target.TaskId]; ok && tTask.DeleteOrigin {
+	if tTask, ok := task.GetTransferTask(target.TaskId, target.SliceHash); ok && tTask.DeleteOrigin {
 		if err := file.DeleteSlice(tTask.SliceStorageInfo.SliceHash); err == nil {
 			utils.Log("Delete original slice successfully")
 			deleteOrigin = true
@@ -283,11 +288,11 @@ func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
 			utils.ErrorLog("Fail to delete original slice ", err)
 		}
 	}
-	SendReportBackupSliceResult(target.TaskId, target.SpP2PAddress, isSuccessful, deleteOrigin)
+	SendReportBackupSliceResult(target.TaskId, target.SliceHash, target.SpP2PAddress, isSuccessful, deleteOrigin)
 }
 
-func SendReportBackupSliceResult(taskId, spP2pAddress string, result bool, originDeleted bool) {
-	tTask, ok := task.TransferTaskMap[taskId]
+func SendReportBackupSliceResult(taskId, sliceHash, spP2pAddress string, result bool, originDeleted bool) {
+	tTask, ok := task.GetTransferTask(taskId, sliceHash)
 	if !ok {
 		return
 	}
@@ -316,7 +321,7 @@ func RspReportBackupSliceResult(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	// remove task
-	delete(task.TransferTaskMap, target.TaskId)
+	task.CleanTransferTask(target.TaskId, target.SliceHash)
 	if target.Result.State == protos.ResultState_RES_SUCCESS {
 		utils.DebugLog("transfer successful!", target.TaskId)
 	} else {
