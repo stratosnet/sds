@@ -1,13 +1,15 @@
 package api
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
-	"net/http"
 )
 
 func upProgress(w http.ResponseWriter, request *http.Request) {
@@ -28,7 +30,7 @@ func upProgress(w http.ResponseWriter, request *http.Request) {
 				TaskID: f.(string),
 				State:  false,
 			}
-			if val, ok := setting.UpLoadTaskIDMap.Load(f.(string)); ok {
+			if val, ok := setting.UploadTaskIDMap.Load(f.(string)); ok {
 				if p, ok := event.ProgressMap.Load(val.(string)); ok {
 					pross := p.(float32)
 					if pross > 100 {
@@ -39,17 +41,16 @@ func upProgress(w http.ResponseWriter, request *http.Request) {
 				}
 				utils.DebugLog("gress.Progress", gress.Progress)
 				utils.DebugLog("f>>>>>>>>>>>>>>>>>>>>", val.(string))
-				if up, ok := client.UpConnMap.Load(val.(string)); ok {
-					vconn := up.(*cf.ClientConn)
-					w := vconn.GetSecondWriteFlow()
-					gress.Rate = w
-
-					ma[f.(string)] = gress
-				} else {
-					utils.DebugLog("no link》》》》》》》》》》》》》》》》》》》》》")
-					gress.Rate = 0
-					ma[f.(string)] = gress
-				}
+				gress.Rate = 0
+				client.UpConnMap.Range(func(k, v interface{}) bool {
+					if strings.HasPrefix(k.(string), val.(string)) {
+						vconn := v.(*cf.ClientConn)
+						w := vconn.GetSecondWriteFlow()
+						gress.Rate += w
+					}
+					return true
+				})
+				ma[f.(string)] = gress
 			}
 
 		}

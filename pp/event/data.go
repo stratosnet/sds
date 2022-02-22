@@ -26,6 +26,31 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivatePP, error) {
 	}
 
 	req := &protos.ReqActivatePP{
+		Tx:            txBytes,
+		PpInfo:        setting.GetPPInfo(),
+		AlreadyActive: false,
+	}
+	return req, nil
+}
+
+func reqUpdateStakeData(stakeDelta, fee, gas int64, incrStake bool) (*protos.ReqUpdateStakePP, error) {
+	// Create and sign transaction to update stake for existing resource node
+	networkAddr := ed25519.PubKeyBytesToAddress(setting.P2PPublicKey)
+	ownerAddr, err := crypto.PubKeyToAddress(setting.WalletPublicKey)
+	if err != nil {
+		return nil, err
+	}
+
+	txMsg := stratoschain.BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr, setting.Config.Token, stakeDelta, incrStake)
+	signatureKeys := []stratoschain.SignatureKey{
+		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: stratoschain.SignatureSecp256k1},
+	}
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", "sync", txMsg, fee, gas, signatureKeys)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &protos.ReqUpdateStakePP{
 		Tx:         txBytes,
 		P2PAddress: setting.P2PAddress,
 	}
@@ -79,4 +104,3 @@ func reqPrepayData(amount, fee, gas int64) (*protos.ReqPrepay, error) {
 	}
 	return req, nil
 }
-

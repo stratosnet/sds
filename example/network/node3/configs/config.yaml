@@ -1,0 +1,41 @@
+version: 3
+versionshow: v0.4.0
+downloadpathminlen: 88
+Port: 9083
+NetworkAddress: 127.0.0.1
+Debug: true
+PPListDir: ./peers
+AccountDir: ./accounts
+StorehousePath: ./storage
+DownloadPath: ./download
+P2PAddress: stsdsp2p1xg2jzku8gptq6sjpjd9zus8qec7a39phkvs84z
+P2PPassword: aaa
+WalletAddress: st142ndkgqu2earnvp28ur09dg62sd39xqwyux46a
+WalletPassword: aaa
+AutoRun: true
+Internal: false
+IsWallet: true
+IsLimitDownloadSpeed: false
+LimitDownloadSpeed: 100
+IsLimitUploadSpeed: false
+LimitUploadSpeed: 100
+ChainId: test-chain
+Token: ustos
+StratosChainUrl: http://127.0.0.1:1317
+StreamingCache: false
+RestPort: "18093"
+InternalPort: ""
+TrafficLogInterval: 10
+SPList:
+- P2PAddress: stsdsp2p1cw8qhgsxddak8hh8gs7veqmy5ku8f8za57guzj
+  P2PPublicKey: stsdsp2p1zcjduepqjmfc8j7ve0jg3jwq9wkefpa34fg9hhrp7nu6rkf6hff7ml769f6q240avl
+  NetworkAddress: 0.0.0.0:8888
+- P2PAddress: stsdsp2p14c3em44vlh276cujnr2ez802uyjyeqrr7zj4ys
+  P2PPublicKey: stsdsp2p1zcjduepqzgqd566qdnj4kna050jz505vamjhglxcpdepqctkregdt6snxm6s3dcgzj
+  NetworkAddress: 0.0.0.0:18888
+- P2PAddress: stsdsp2p15sya4n40da64z6n6hvk0p9f7sx72hqpjud54ar
+  P2PPublicKey: stsdsp2p1zcjduepqpfr08evmk73dtf7ud69pwdznl4xdfghx6k6dyugwpk2jhqq890yq6c29ze
+  NetworkAddress: 0.0.0.0:28888
+- P2PAddress: stsdsp2p13yakj2xgzzdfcw7kd5gtfcfv2k6sn5egmj64pu
+  P2PPublicKey: stsdsp2p1zcjduepqhhplcrnkn9597gnh87y9zshe0kfs87fvmtrjpyq4heqjcz0dhlts5m0t3a
+  NetworkAddress: 0.0.0.0:38888

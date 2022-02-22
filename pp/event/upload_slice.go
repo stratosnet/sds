@@ -13,9 +13,9 @@ import (
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 
 	"github.com/golang/protobuf/proto"
@@ -28,31 +28,27 @@ var ProgressMap = &sync.Map{}
 func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	//check whether self is the target, if not, transfer
 	var target protos.ReqUploadFileSlice
-	if types.UnmarshalData(ctx, &target) {
-		// passway PP respond to P about progress
-		peers.SendMessage(conn, types.UploadSpeedOfProgressData(target.FileHash, uint64(len(target.Data))), header.UploadSpeedOfProgress)
-		if target.SliceNumAddr.PpInfo.NetworkAddress != setting.NetworkAddress {
-			utils.DebugLog("transfer to", target.SliceNumAddr.PpInfo.NetworkAddress)
-			peers.TransferSendMessageToPPServ(target.SliceNumAddr.PpInfo.NetworkAddress, core.MessageFromContext(ctx))
-		} else {
-			if !task.SaveUploadFile(&target) {
-				// save failed, not handing yet
-				utils.ErrorLog("SaveUploadFile failed")
-				return
-			}
-			utils.DebugLog("________________________________________________________________________")
-			utils.DebugLog("sHash", target.SliceInfo.SliceHash)
-			utils.DebugLog("nowsize", file.GetSliceSize(target.SliceInfo.SliceHash))
-			utils.DebugLog("target.SliceTotalSize", target.SliceSize)
-			if file.GetSliceSize(target.SliceInfo.SliceHash) == int64(target.SliceSize) {
-				utils.DebugLog("the slice upload finished", target.SliceInfo.SliceHash)
-				// respond to PP in case the size is correct but actually not success
-				if utils.CalcSliceHash(file.GetSliceData(target.SliceInfo.SliceHash), target.FileHash) == target.SliceInfo.SliceHash {
-					peers.SendMessage(conn, types.RspUploadFileSliceData(&target), header.RspUploadFileSlice)
-					// report upload result to SP
-					peers.SendMessageToSPServer(types.ReqReportUploadSliceResultDataPP(&target), header.ReqReportUploadSliceResult)
-					utils.DebugLog("storage PP report to SP upload task finished: ，", target.SliceInfo.SliceHash)
-				}
+	if requests.UnmarshalData(ctx, &target) {
+		peers.SendMessage(conn, requests.UploadSpeedOfProgressData(target.FileHash, uint64(len(target.Data))), header.UploadSpeedOfProgress)
+		if !task.SaveUploadFile(&target) {
+			// save failed, not handing yet
+			utils.ErrorLog("SaveUploadFile failed")
+			return
+		}
+		utils.DebugLog("________________________________________________________________________")
+		utils.DebugLog("sHash", target.SliceInfo.SliceHash)
+		utils.DebugLog("nowsize", file.GetSliceSize(target.SliceInfo.SliceHash))
+		utils.DebugLog("target.SliceTotalSize", target.SliceSize)
+		if file.GetSliceSize(target.SliceInfo.SliceHash) == int64(target.SliceSize) {
+			utils.DebugLog("the slice upload finished", target.SliceInfo.SliceHash)
+			// respond to PP in case the size is correct but actually not success
+			if utils.CalcSliceHash(file.GetSliceData(target.SliceInfo.SliceHash), target.FileHash, target.SliceNumAddr.SliceNumber) == target.SliceInfo.SliceHash {
+				peers.SendMessage(conn, requests.RspUploadFileSliceData(&target), header.RspUploadFileSlice)
+				// report upload result to SP
+				peers.SendMessageToSPServer(requests.ReqReportUploadSliceResultDataPP(&target), header.ReqReportUploadSliceResult)
+				utils.DebugLog("storage PP report to SP upload task finished: ，", target.SliceInfo.SliceHash)
+			} else {
+				utils.DebugLog("newly stored sliceHash is not equal to target sliceHash!")
 			}
 		}
 	}
@@ -63,29 +59,20 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	//check whether self is the target, if not, transfer
 	utils.DebugLog("get RspUploadFileSlice")
 	var target protos.RspUploadFileSlice
-	if types.UnmarshalData(ctx, &target) {
-		if target.P2PAddress != setting.P2PAddress {
-
-			utils.DebugLog("PP get resp upload slice success, transfer to WalletAddress = ", target.P2PAddress, "sliceNumber= ", target.SliceNumAddr.SliceNumber)
-			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+	if requests.UnmarshalData(ctx, &target) {
+		utils.DebugLog("P get resp upload slice success sliceNumber", target.SliceNumAddr.SliceNumber, "target.fileHash", target.FileHash)
+		utils.DebugLog("target size =", target.SliceSize)
+		utils.DebugLog("******************************************")
+		if target.Result.State == protos.ResultState_RES_SUCCESS {
+			utils.DebugLog("reqReportUploadSliceResultData RspUploadFileSlice")
+			peers.SendMessageToSPServer(requests.ReqReportUploadSliceResultData(&target), header.ReqReportUploadSliceResult)
 		} else {
-			// target is self, report to SP if success
-			utils.DebugLog("P get resp upload slice success sliceNumber", target.SliceNumAddr.SliceNumber, "target.FileHash", target.FileHash)
-			utils.DebugLog("target size =", target.SliceSize)
-			utils.DebugLog("******************************************")
-			if target.Result.State == protos.ResultState_RES_SUCCESS {
-				utils.DebugLog("reqReportUploadSliceResultData RspUploadFileSlice")
-				peers.SendMessageToSPServer(types.ReqReportUploadSliceResultData(&target), header.ReqReportUploadSliceResult)
-			} else {
-				utils.DebugLog("RspUploadFileSlice ErrorLog")
-				utils.ErrorLog(target.Result.Msg)
-			}
-			utils.DebugLog("uploadKeep(target.FileHash, target.TaskId)")
-			uploadKeep(target.FileHash, target.TaskId)
-
+			utils.DebugLog("RspUploadFileSlice ErrorLog")
+			utils.ErrorLog(target.Result.Msg)
 		}
+		uploadKeep(target.FileHash, target.TaskId)
 	} else {
-		utils.DebugLog("unmarshalData(ctx, &target)errrrrrrrrrrr ")
+		utils.ErrorLog("unmarshalData(ctx, &target) error")
 	}
 }
 
@@ -93,7 +80,7 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 func RspReportUploadSliceResult(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspReportUploadSliceResult")
 	var target protos.RspReportUploadSliceResult
-	if types.UnmarshalData(ctx, &target) {
+	if requests.UnmarshalData(ctx, &target) {
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
 			utils.DebugLog("ResultState_RES_SUCCESS, sliceNumber，storageAddress，walletAddress", target.SliceNumAddr.SliceNumber, target.SliceNumAddr.PpInfo.NetworkAddress, target.SliceNumAddr.PpInfo.P2PAddress)
 		} else {
@@ -105,6 +92,9 @@ func RspReportUploadSliceResult(ctx context.Context, conn core.WriteCloser) {
 // UploadFileSlice
 func UploadFileSlice(tk *task.UploadSliceTask) {
 	tkDataLen := len(tk.Data)
+	fileHash := tk.FileHash
+	storageP2pAddress := tk.SliceNumAddr.PpInfo.P2PAddress
+	storageNetworkAddress := tk.SliceNumAddr.PpInfo.NetworkAddress
 	if tkDataLen > setting.MAXDATA {
 		dataStart := 0
 		dataEnd := setting.MAXDATA
@@ -122,36 +112,56 @@ func UploadFileSlice(tk *task.UploadSliceTask) {
 						SliceOffsetEnd:   uint64(dataEnd),
 					},
 				},
+				SpP2pAddress: tk.SpP2pAddress,
 			}
 			utils.DebugLog("*****************", newTask.SliceTotalSize)
 			if dataEnd < (tkDataLen + 1) {
 				newTask.Data = tk.Data[dataStart:dataEnd]
 				utils.DebugLog("dataStart = ", dataStart)
 				utils.DebugLog("dataEnd = ", dataEnd)
-				sendSlice(types.ReqUploadFileSliceData(newTask), newTask.FileHash)
+				sendSlice(requests.ReqUploadFileSliceData(newTask), fileHash, storageP2pAddress, storageNetworkAddress)
 				dataStart += setting.MAXDATA
 				dataEnd += setting.MAXDATA
 			} else {
 				utils.DebugLog("dataStart = ", dataStart)
 				newTask.Data = tk.Data[dataStart:]
-				sendSlice(types.ReqUploadFileSliceData(newTask), newTask.FileHash)
+				sendSlice(requests.ReqUploadFileSliceData(newTask), fileHash, storageP2pAddress, storageNetworkAddress)
 				return
 			}
 		}
 	} else {
 		tk.SliceOffsetInfo.SliceOffset.SliceOffsetStart = 0
-		sendSlice(types.ReqUploadFileSliceData(tk), tk.FileHash)
+		sendSlice(requests.ReqUploadFileSliceData(tk), fileHash, storageP2pAddress, storageNetworkAddress)
 	}
 }
 
-func sendSlice(pb proto.Message, fileHash string) {
-	utils.DebugLog("sendSlice(pb proto.Message, fileHash string)", fileHash)
-	if c, ok := client.UpConnMap.Load(fileHash); ok {
+func sendSlice(pb proto.Message, fileHash, p2pAddress, networkAddress string) {
+	utils.DebugLog("sendSlice(pb proto.Message, fileHash, p2pAddress, networkAddress string)",
+		fileHash, p2pAddress, networkAddress)
+
+	key := fileHash + p2pAddress
+
+	if c, ok := client.UpConnMap.Load(key); ok {
 		conn := c.(*cf.ClientConn)
-		peers.SendMessage(conn, pb, header.ReqUploadFileSlice)
-		utils.DebugLog("SendMessage(conn, pb, header.ReqUploadFileSlice)", conn)
+		err := peers.SendMessage(conn, pb, header.ReqUploadFileSlice)
+		if err == nil {
+			utils.DebugLog("SendMessage(conn, pb, header.ReqUploadFileSlice) ", conn)
+			return
+		}
+	}
+
+	conn := client.NewClient(networkAddress, false)
+	if conn == nil {
+		utils.ErrorLog("Fail to create connection with " + networkAddress)
+		return
+	}
+
+	err := peers.SendMessage(conn, pb, header.ReqUploadFileSlice)
+	if err == nil {
+		utils.DebugLog("SendMessage(conn, pb, header.ReqUploadFileSlice) ", conn)
+		client.UpConnMap.Store(key, conn)
 	} else {
-		utils.DebugLog("paused!!")
+		utils.ErrorLog("Fail to send upload slice request to" + networkAddress)
 	}
 }
 
@@ -159,21 +169,20 @@ func sendSlice(pb proto.Message, fileHash string) {
 func UploadSpeedOfProgress(ctx context.Context, conn core.WriteCloser) {
 
 	var target protos.UploadSpeedOfProgress
-	if types.UnmarshalData(ctx, &target) {
-		utils.DebugLog("~~~~@@@@@@@@@@@@@@@@@@@@@@@@@@!!!!!!!!!!!!!!!!!!!!!!", target.FileHash)
-		if prg, ok := task.UpLoadProgressMap.Load(target.FileHash); ok {
+	if requests.UnmarshalData(ctx, &target) {
+		if prg, ok := task.UploadProgressMap.Load(target.FileHash); ok {
 			progress := prg.(*task.UpProgress)
 			progress.HasUpload += int64(target.SliceSize)
 			p := float32(progress.HasUpload) / float32(progress.Total) * 100
-			fmt.Println("fileHash：", target.FileHash)
-			fmt.Printf("uploaded：%.2f %% \n", p)
+			utils.Log("fileHash：", target.FileHash)
+			utils.Logf("uploaded：%.2f %% ", p)
 			setting.ShowProgress(p)
 			ProgressMap.Store(target.FileHash, p)
 			if progress.HasUpload >= progress.Total {
 				utils.Log("fileHash：", target.FileHash)
 				utils.Log(fmt.Sprintf("uploaded：%.2f %% \n", p))
-				task.UpLoadProgressMap.Delete(target.FileHash)
-				client.UpConnMap.Delete(target.FileHash)
+				task.UploadProgressMap.Delete(target.FileHash)
+				task.CleanUpConnMap(target.FileHash)
 			}
 		} else {
 			utils.DebugLog("paused!!")

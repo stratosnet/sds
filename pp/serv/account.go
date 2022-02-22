@@ -2,7 +2,6 @@ package serv
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 
@@ -11,10 +10,11 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
+	"github.com/stratosnet/sds/utils/types"
 )
 
 // CreateWallet
-func CreateWallet(password, name, mnemonic, passphrase, hdPath string) string {
+func CreateWallet(password, name, mnemonic, hdPath string) string {
 	if mnemonic == "" {
 		newMnemonic, err := utils.NewMnemonic()
 		if err != nil {
@@ -23,13 +23,13 @@ func CreateWallet(password, name, mnemonic, passphrase, hdPath string) string {
 		}
 		mnemonic = newMnemonic
 	}
-	account, err := utils.CreateWallet(setting.Config.AccountDir, name, password, setting.Config.AddressPrefix,
-		mnemonic, passphrase, hdPath, setting.Config.ScryptN, setting.Config.ScryptP)
+	account, err := utils.CreateWallet(setting.Config.AccountDir, name, password, types.DefaultAddressPrefix,
+		mnemonic, "", hdPath)
 	if utils.CheckError(err) {
 		utils.ErrorLog("CreateWallet error", err)
 		return ""
 	}
-	setting.WalletAddress, err = account.ToBech(setting.Config.AddressPrefix)
+	setting.WalletAddress, err = account.ToBech(types.DefaultAddressPrefix)
 	if utils.CheckError(err) {
 		utils.ErrorLog("CreateWallet error", err)
 		return ""
@@ -39,9 +39,6 @@ func CreateWallet(password, name, mnemonic, passphrase, hdPath string) string {
 	}
 	getPublicKey(filepath.Join(setting.Config.AccountDir, setting.WalletAddress+".json"), password)
 	utils.Log("Create account success ,", setting.WalletAddress)
-	if setting.NetworkAddress != "" {
-		peers.InitPeer(event.RegisterEventHandle)
-	}
 	return setting.WalletAddress
 }
 
@@ -77,19 +74,19 @@ func GetWalletAddress() error {
 func getPublicKey(filePath, password string) bool {
 	keyjson, err := ioutil.ReadFile(filePath)
 	if utils.CheckError(err) {
-		fmt.Println("getPublicKey ioutil.ReadFile", err)
+		utils.ErrorLog("getPublicKey ioutil.ReadFile", err)
 		return false
 	}
 	key, err := utils.DecryptKey(keyjson, password)
 
 	if utils.CheckError(err) {
-		fmt.Println("getPublicKey DecryptKey", err)
+		utils.ErrorLog("getPublicKey DecryptKey", err)
 		return false
 	}
 	setting.WalletPrivateKey = key.PrivateKey
 	setting.WalletPublicKey = secp256k1.PrivKeyToPubKey(key.PrivateKey)
 	utils.DebugLog("publicKey", setting.WalletPublicKey)
-	fmt.Println("unlock wallet successfully ", setting.WalletAddress)
+	utils.Log("unlock wallet successfully ", setting.WalletAddress)
 	return true
 }
 
@@ -99,16 +96,16 @@ func Wallets() {
 	var wallets []string
 	for _, file := range files {
 		fileName := file.Name()
-		if fileName[len(fileName)-5:] == ".json" && fileName[:len(setting.Config.P2PKeyPrefix)] != setting.Config.P2PKeyPrefix {
+		if fileName[len(fileName)-5:] == ".json" && fileName[:len(types.DefaultP2PKeyPrefix)] != types.DefaultP2PKeyPrefix {
 			wallets = append(wallets, fileName[:len(fileName)-5])
 		}
 	}
 
 	if len(wallets) == 0 {
-		fmt.Println("no wallet exists yet")
+		utils.Log("no wallet exists yet")
 	} else {
 		for _, wallet := range wallets {
-			fmt.Println(wallet)
+			utils.Log(wallet)
 		}
 	}
 }
@@ -118,17 +115,17 @@ func Login(walletAddress, password string) error {
 	utils.DebugLog("walletAddress = ", walletAddress)
 	// utils.DebugLog("password = ", password)
 	if walletAddress == "" {
-		fmt.Println("please input wallet address")
+		utils.ErrorLog("please input wallet address")
 		return errors.New("please input wallet address")
 	}
 	if password == "" {
-		fmt.Println("please input password")
+		utils.ErrorLog("please input password")
 		return errors.New("please input password")
 	}
 
 	files, _ := ioutil.ReadDir(setting.Config.AccountDir)
 	if len(files) == 0 {
-		fmt.Println("wrong account or password")
+		utils.ErrorLog("wrong account or password")
 		return errors.New("wrong account or password")
 	}
 	fileName := walletAddress + ".json"
@@ -142,9 +139,9 @@ func Login(walletAddress, password string) error {
 			peers.InitPeer(event.RegisterEventHandle)
 			return nil
 		}
-		fmt.Println("wrong password")
+		utils.ErrorLog("wrong password")
 		return errors.New("wrong password")
 	}
-	fmt.Println("wrong walletAddress or password")
+	utils.ErrorLog("wrong walletAddress or password")
 	return errors.New("wrong walletAddress or password")
 }

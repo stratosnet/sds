@@ -3,25 +3,26 @@ package event
 // Author j
 import (
 	"context"
+	"crypto/ed25519"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
+/* Commented out for backup logic redesign QB-897
 // ReqTransferNotice  SP- original PP  OR  new PP - old PP
 func ReqTransferNotice(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get ReqTransferNotice")
 	var target protos.ReqTransferNotice
-	if !types.UnmarshalData(ctx, &target) {
+	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
 
@@ -36,19 +37,19 @@ func ReqTransferNotice(ctx context.Context, conn core.WriteCloser) {
 		if task.CheckTransfer(&target) {
 			// store this task
 			task.TransferTaskMap[target.TransferCer] = &target
-			rspTransferNotice(true, target.TransferCer)
+			rspTransferNotice(true, target.TransferCer, target.SpP2PAddress)
 			// if accept task, send request transfer notice to original PP
-			peers.TransferSendMessageToPPServ(target.StoragePpInfo.NetworkAddress, types.ReqTransferNoticeData(&target))
+			peers.TransferSendMessageToPPServ(target.StoragePpInfo.NetworkAddress, requests.ReqTransferNoticeData(&target))
 			utils.DebugLog("rspTransferNotice sendTransferToPP ")
 		} else {
-			rspTransferNotice(false, target.TransferCer)
+			rspTransferNotice(false, target.TransferCer, target.SpP2PAddress)
 		}
 		return
 	}
 	// if msg from PP, then self is the original storage PP, transfer file to new storage PP
 	utils.DebugLog("if msg from PP, then self is the original storage PP, transfer file to new storage PP")
 	// check task with SP first
-	peers.SendMessageToSPServer(types.ReqValidateTransferCerData(&target), header.ReqValidateTransferCer)
+	peers.SendMessageToSPServer(requests.ReqValidateTransferCerData(&target), header.ReqValidateTransferCer)
 	// store the task
 	task.TransferTaskMap[target.TransferCer] = &target
 	// store transfer target register peer wallet address
@@ -56,15 +57,15 @@ func ReqTransferNotice(ctx context.Context, conn core.WriteCloser) {
 }
 
 // rspTransferNotice
-func rspTransferNotice(agree bool, cer string) {
-	peers.SendMessageToSPServer(types.RspTransferNoticeData(agree, cer), header.RspTransferNotice)
+func rspTransferNotice(agree bool, cer, spP2pAddress string) {
+	peers.SendMessageToSPServer(requests.RspTransferNoticeData(agree, cer, spP2pAddress), header.RspTransferNotice)
 }
 
 // RspValidateTransferCer  SP-PP OR PP-PP
 func RspValidateTransferCer(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspValidateTransferCer")
 	var target protos.RspValidateTransferCer
-	if !types.UnmarshalData(ctx, &target) {
+	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
@@ -86,7 +87,7 @@ func RspValidateTransferCer(ctx context.Context, conn core.WriteCloser) {
 			return
 		}
 		msgBuf := msg.RelayMsgBuf{
-			MSGHead: types.PPMsgHeader(data, header.RspValidateTransferCer),
+			MSGHead: requests.PPMsgHeader(data, header.RspValidateTransferCer),
 			MSGData: data,
 		}
 		peers.TransferSendMessageToClient(tTask.StoragePpInfo.P2PAddress, &msgBuf)
@@ -105,7 +106,7 @@ func RspValidateTransferCer(ctx context.Context, conn core.WriteCloser) {
 	if tTask.FromSp {
 		utils.DebugLog("if transfer cert from SP, then self is the transfer target ")
 
-		peers.SendMessage(conn, types.ReqTransferDownloadData(target.TransferCer), header.ReqTransferDownload)
+		peers.SendMessage(conn, requests.ReqTransferDownloadData(target.TransferCer, target.SpP2PAddress), header.ReqTransferDownload)
 	} else {
 		// certificate validation success, resp to new PP to start download
 		utils.DebugLog("cert validation success, resp to new PP to start download")
@@ -114,7 +115,7 @@ func RspValidateTransferCer(ctx context.Context, conn core.WriteCloser) {
 }
 
 // ReqReportTransferResult
-func ReqReportTransferResult(transferCer string, result bool, originDeleted bool) {
+func ReqReportTransferResult(transferCer, spP2pAddress string, result bool, originDeleted bool) {
 	tTask, ok := task.TransferTaskMap[transferCer]
 	if !ok {
 		return
@@ -122,6 +123,7 @@ func ReqReportTransferResult(transferCer string, result bool, originDeleted bool
 	req := &protos.ReqReportTransferResult{
 		TransferCer:   transferCer,
 		OriginDeleted: originDeleted,
+		SpP2PAddress:  spP2pAddress,
 	}
 	if result {
 		req.Result = &protos.Result{
@@ -146,14 +148,13 @@ func ReqReportTransferResult(transferCer string, result bool, originDeleted bool
 	peers.SendMessageToSPServer(req, header.ReqReportTransferResult)
 
 	//todo: whether clean task after get report resp or not.  if not get report, whether add timeout mechanism
-
 }
 
 // RspReportTransferResult
 func RspReportTransferResult(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspReportTransferResult")
 	var target protos.RspReportTransferResult
-	if !types.UnmarshalData(ctx, &target) {
+	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
 	// remove task
@@ -165,27 +166,87 @@ func RspReportTransferResult(ctx context.Context, conn core.WriteCloser) {
 	}
 
 }
+*/
+
+// ReqFileSliceBackupNotice An SP node wants this PP node to fetch the specified slice from the PP node who stores it
+func ReqFileSliceBackupNotice(ctx context.Context, conn core.WriteCloser) {
+	utils.DebugLog("get ReqFileSliceBackupNotice")
+	var target protos.ReqFileSliceBackupNotice
+	if !requests.UnmarshalData(ctx, &target) {
+		return
+	}
+	utils.DebugLog("target = ", target)
+
+	if target.PpInfo.P2PAddress == setting.P2PAddress {
+		utils.DebugLog("Ignoring slice backup notice because this node already owns the file")
+		return
+	}
+
+	signMessage := target.FileHash + "#" + target.SliceStorageInfo.SliceHash + "#" + target.SpP2PAddress
+	if !ed25519.Verify(target.Pubkey, []byte(signMessage), target.Sign) {
+		utils.ErrorLog("Invalid slice backup notice signature")
+		return
+	}
+
+	if !task.CheckTransfer(&target) {
+		utils.DebugLog("CheckTransfer failed")
+		return
+	}
+
+	tTask := task.TransferTask{
+		FromSp:           true,
+		DeleteOrigin:     target.DeleteOrigin,
+		PpInfo:           target.PpInfo,
+		SliceStorageInfo: target.SliceStorageInfo,
+		FileHash:         target.FileHash,
+		SliceNum:         target.SliceNumber,
+	}
+	task.AddTransferTask(target.TaskId, target.SliceStorageInfo.SliceHash, tTask)
+
+	peers.TransferSendMessageToPPServ(target.PpInfo.NetworkAddress, requests.ReqTransferDownloadData(&target, setting.P2PAddress))
+}
 
 // ReqTransferDownload
 func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get ReqTransferDownload")
 	var target protos.ReqTransferDownload
-	if !types.UnmarshalData(ctx, &target) {
+	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-	sliceData := task.GetTransferSliceData(target.TransferCer)
+
+	peers.Peers.UpdatePP(&types.PeerInfo{
+		NetworkAddress: target.NewPp.NetworkAddress,
+		P2pAddress:     target.NewPp.P2PAddress,
+		RestAddress:    target.NewPp.RestAddress,
+		WalletAddress:  target.NewPp.WalletAddress,
+		NetId:          core.NetIDFromContext(ctx),
+		Status:         types.PEER_CONNECTED,
+	})
+	tTask := task.TransferTask{
+		FromSp:           false,
+		DeleteOrigin:     target.DeleteOrigin,
+		PpInfo:           target.OriginalPp,
+		SliceStorageInfo: target.SliceStorageInfo,
+		FileHash:         target.FileHash,
+		SliceNum:         target.SliceNum,
+	}
+	task.AddTransferTask(target.TaskId, target.SliceStorageInfo.SliceHash, tTask)
+
+	sliceHash := target.SliceStorageInfo.SliceHash
+	sliceData := task.GetTransferSliceData(target.TaskId, target.SliceStorageInfo.SliceHash)
 	sliceDataLen := len(sliceData)
-	utils.DebugLog("————————————————————————————————————")
-	utils.DebugLog("sliceDataLen == ", sliceDataLen)
-	utils.DebugLog("TransferCer == ", target.TransferCer)
+	utils.DebugLogf("sliceDataLen = %v  TaskId = %v", sliceDataLen, target.TaskId)
+
 	dataStart := 0
 	dataEnd := setting.MAXDATA
 	for {
 		if dataEnd >= (sliceDataLen + 1) {
-			peers.SendMessage(conn, types.RspTransferDownload(sliceData[dataStart:], target.TransferCer, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
+			peers.SendMessage(conn, requests.RspTransferDownload(sliceData[dataStart:], target.TaskId, sliceHash,
+				target.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 			return
 		}
-		peers.SendMessage(conn, types.RspTransferDownload(sliceData[dataStart:dataEnd], target.TransferCer, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
+		peers.SendMessage(conn, requests.RspTransferDownload(sliceData[dataStart:dataEnd], target.TaskId, sliceHash,
+			target.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 		dataStart += setting.MAXDATA
 		dataEnd += setting.MAXDATA
 	}
@@ -195,12 +256,12 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspTransferDownload")
 	var target protos.RspTransferDownload
-	if !types.UnmarshalData(ctx, &target) {
+	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
 	if task.SaveTransferData(&target) {
-		ReqReportTransferResult(target.TransferCer, true, false)
-		peers.SendMessage(conn, types.RspTransferDownloadResultData(target.TransferCer), header.RspTransferDownloadResult)
+		SendReportBackupSliceResult(target.TaskId, target.SliceHash, target.SpP2PAddress, true, false)
+		peers.SendMessage(conn, requests.RspTransferDownloadResultData(target.TaskId, target.SliceHash, target.SpP2PAddress), header.RspTransferDownloadResult)
 	}
 }
 
@@ -208,19 +269,18 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspTransferDownloadResult")
 	var target protos.RspTransferDownloadResult
-	if !types.UnmarshalData(ctx, &target) {
+	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
 
 	isSuccessful := target.Result.State == protos.ResultState_RES_SUCCESS
 	if !isSuccessful {
-		ReqReportTransferResult(target.TransferCer, isSuccessful, false)
+		SendReportBackupSliceResult(target.TaskId, target.SliceHash, target.SpP2PAddress, isSuccessful, false)
 		return
 	}
 
 	deleteOrigin := false
-	if tTask, ok := task.TransferTaskMap[target.TransferCer]; ok && tTask.DeleteOrigin {
-		//if msg from PP, then self is the original storage PP, delete original file if required
+	if tTask, ok := task.GetTransferTask(target.TaskId, target.SliceHash); ok && tTask.DeleteOrigin {
 		if err := file.DeleteSlice(tTask.SliceStorageInfo.SliceHash); err == nil {
 			utils.Log("Delete original slice successfully")
 			deleteOrigin = true
@@ -228,5 +288,44 @@ func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
 			utils.ErrorLog("Fail to delete original slice ", err)
 		}
 	}
-	ReqReportTransferResult(target.TransferCer, isSuccessful, deleteOrigin)
+	SendReportBackupSliceResult(target.TaskId, target.SliceHash, target.SpP2PAddress, isSuccessful, deleteOrigin)
+}
+
+func SendReportBackupSliceResult(taskId, sliceHash, spP2pAddress string, result bool, originDeleted bool) {
+	tTask, ok := task.GetTransferTask(taskId, sliceHash)
+	if !ok {
+		return
+	}
+	req := &protos.ReqReportBackupSliceResult{
+		TaskId:        taskId,
+		FileHash:      tTask.FileHash,
+		SliceHash:     tTask.SliceStorageInfo.SliceHash,
+		BackupSuccess: result,
+		IsReceiver:    tTask.FromSp,
+		OriginDeleted: originDeleted,
+		SliceNumber:   tTask.SliceNum,
+		SliceSize:     tTask.SliceStorageInfo.SliceSize,
+		PpInfo:        &protos.PPBaseInfo{P2PAddress: setting.P2PAddress, WalletAddress: setting.WalletAddress},
+		SpP2PAddress:  spP2pAddress,
+	}
+
+	peers.SendMessageToSPServer(req, header.ReqReportBackupSliceResult)
+}
+
+// RspReportBackupSliceResult
+func RspReportBackupSliceResult(ctx context.Context, conn core.WriteCloser) {
+	utils.Log("get RspReportBackupSliceResult")
+	var target protos.RspReportBackupSliceResult
+	if !requests.UnmarshalData(ctx, &target) {
+		return
+	}
+
+	// remove task
+	task.CleanTransferTask(target.TaskId, target.SliceHash)
+	if target.Result.State == protos.ResultState_RES_SUCCESS {
+		utils.DebugLog("transfer successful!", target.TaskId)
+	} else {
+		utils.DebugLog("transfer failed!", target.TaskId)
+	}
+
 }

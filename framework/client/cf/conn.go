@@ -3,20 +3,21 @@ package cf
 // client connect management, readloop writeloop handleloop
 
 import (
+	"context"
 	"errors"
+	"io"
+	"net"
+	"reflect"
+	"sync"
+	"time"
+	"unsafe"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/utils/cmem"
-	"reflect"
-	"unsafe"
 
-	"context"
 	"github.com/stratosnet/sds/utils"
-	"io"
-	"net"
-	"sync"
-	"time"
 
 	"github.com/alex023/clock"
 )
@@ -55,6 +56,7 @@ type ClientOption func(*options)
 
 // ClientConn
 type ClientConn struct {
+	// TODO to add p2p key usage (handshake)
 	addr      string
 	opts      options
 	netid     int64
@@ -70,7 +72,7 @@ type ClientConn struct {
 	pending          []int64
 	ctx              context.Context
 	cancel           context.CancelFunc
-	job              clock.Job
+	jobs             []clock.Job
 	secondReadFlowA  int64
 	secondReadFlowB  int64
 	secondReadAtomA  *utils.AtomicInt64
@@ -79,6 +81,10 @@ type ClientConn struct {
 	secondWriteAtomA *utils.AtomicInt64
 	secondWriteFlowB int64
 	secondWriteAtomB *utils.AtomicInt64
+	inbound          int64              // for traffic log
+	inboundAtomic    *utils.AtomicInt64 // for traffic log
+	outbound         int64              // for traffic log
+	outboundAtomic   *utils.AtomicInt64 // for traffic log
 	is_active        bool
 }
 
@@ -144,6 +150,8 @@ func newClientConnWithOptions(netid int64, c net.Conn, opts options) *ClientConn
 		secondReadAtomB:  utils.CreateAtomicInt64(0),
 		secondWriteAtomA: utils.CreateAtomicInt64(0),
 		secondWriteAtomB: utils.CreateAtomicInt64(0),
+		inboundAtomic:    utils.CreateAtomicInt64(0),
+		outboundAtomic:   utils.CreateAtomicInt64(0),
 		is_active:        false,
 	}
 	cc.ctx, cc.cancel = context.WithCancel(context.Background())
@@ -200,6 +208,18 @@ func (cc *ClientConn) GetPort() string {
 	return port
 }
 
+func (cc *ClientConn) GetLocalAddr() string {
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
+	return cc.spbConn.LocalAddr().String()
+}
+
+func (cc *ClientConn) GetRemoteAddr() string {
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
+	return cc.spbConn.RemoteAddr().String()
+}
+
 // SetContextValue
 func (cc *ClientConn) SetContextValue(k, v interface{}) {
 	cc.mu.Lock()
@@ -216,7 +236,7 @@ func (cc *ClientConn) ContextValue(k interface{}) interface{} {
 
 // Start client start readLoop, writeLoop, handleLoop
 func (cc *ClientConn) Start() {
-	Mylog(cc.opts.logOpen, "conn start", cc.spbConn.LocalAddr(), "->", cc.spbConn.RemoteAddr(), "\n")
+	Mylog(cc.opts.logOpen, "client conn start", cc.spbConn.LocalAddr(), "->", cc.spbConn.RemoteAddr(), "\n")
 	onConnect := cc.opts.onConnect
 	if onConnect != nil {
 		onConnect(cc)
@@ -228,14 +248,24 @@ func (cc *ClientConn) Start() {
 		go looper(cc, cc.wg)
 	}
 	var (
-		myClock = clock.NewClock()
-		handler = core.GetHandlerFunc(header.ReqHeart)
+		myClock               = clock.NewClock()
+		handler               = core.GetHandlerFunc(header.ReqHeart)
+		spLatencyCheckHandler = core.GetHandlerFunc(header.ReqSpLatencyCheck)
+
+		spLatencyCheckJobFunc = func() {
+			if spLatencyCheckHandler != nil {
+				cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, spLatencyCheckHandler}
+			}
+		}
+
 		jobFunc = func() {
 			if handler != nil {
 				cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
 			}
 		}
 		logFunc = func() {
+			cc.inbound = cc.inboundAtomic.AddAndGetNew(cc.secondReadFlowA)
+			cc.outbound = cc.outboundAtomic.AddAndGetNew(cc.secondWriteFlowA)
 			cc.secondReadFlowB = cc.secondReadAtomB.GetNewAndSetAtomic(cc.secondReadFlowA)
 			cc.secondWriteFlowB = cc.secondWriteAtomB.GetNewAndSetAtomic(cc.secondWriteFlowA)
 			cc.secondReadFlowA = cc.secondReadAtomA.GetNewAndSetAtomic(0)
@@ -243,9 +273,13 @@ func (cc *ClientConn) Start() {
 		}
 	)
 	if !cc.opts.heartClose {
-		cc.job, _ = myClock.AddJobRepeat(time.Second*utils.ClientSendHeartTime, 0, jobFunc)
+		hbJob, _ := myClock.AddJobRepeat(time.Second*utils.ClientSendHeartTime, 0, jobFunc)
+		cc.jobs = append(cc.jobs, hbJob)
 	}
-	myClock.AddJobRepeat(time.Second*1, 0, logFunc)
+	latencyJob, _ := myClock.AddJobRepeat(time.Second*utils.LatencyCheckSpListInterval, 0, spLatencyCheckJobFunc)
+	cc.jobs = append(cc.jobs, latencyJob)
+	logJob, _ := myClock.AddJobRepeat(time.Second*1, 0, logFunc)
+	cc.jobs = append(cc.jobs, logJob)
 }
 
 // ClientClose Actively closes the client connection
@@ -278,8 +312,11 @@ func (cc *ClientConn) ClientClose() {
 		// close all channels.
 		close(cc.sendCh)
 		close(cc.handlerCh)
-		if cc.job != nil {
-			cc.job.Cancel()
+		if len(cc.jobs) > 0 {
+			utils.DebugLogf("cancel %v jobs, %v", len(cc.jobs), cc.GetName())
+			for _, job := range cc.jobs {
+				job.Cancel()
+			}
 		}
 	})
 }
@@ -310,8 +347,11 @@ func (cc *ClientConn) Close() {
 		// close all channels.
 		close(cc.sendCh)
 		close(cc.handlerCh)
-		if cc.job != nil {
-			cc.job.Cancel()
+		if len(cc.jobs) > 0 {
+			utils.DebugLogf("cancel %v jobs, %v", len(cc.jobs), cc.GetName())
+			for _, job := range cc.jobs {
+				job.Cancel()
+			}
 		}
 		if cc.opts.reconnect {
 			cc.reconnect()
@@ -509,7 +549,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 						MSGData: msgBuf[0:msgH.Len],
 					}
 					handler := core.GetHandlerFunc(utils.ByteToString(msgH.Cmd))
-					Mylog(cc.opts.logOpen, "read handler:", handler, utils.ByteToString(msgH.Cmd))
+					//Mylog(cc.opts.logOpen, "read handler:", handler, utils.ByteToString(msgH.Cmd))
 					if handler == nil {
 						if onMessage != nil {
 							Mylog(cc.opts.logOpen, "client message", message, " call onMessage()\n")
@@ -722,4 +762,16 @@ func (cc *ClientConn) GetSecondReadFlow() int64 {
 // GetSecondWriteFlow
 func (cc *ClientConn) GetSecondWriteFlow() int64 {
 	return cc.secondWriteFlowB
+}
+
+func (cc *ClientConn) GetInboundAndReset() int64 {
+	ret := cc.inbound
+	cc.inbound = cc.inboundAtomic.GetNewAndSetAtomic(0)
+	return ret
+}
+
+func (cc *ClientConn) GetOutboundAndReset() int64 {
+	ret := cc.outbound
+	cc.outbound = cc.outboundAtomic.GetNewAndSetAtomic(0)
+	return ret
 }

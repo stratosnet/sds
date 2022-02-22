@@ -2,7 +2,6 @@ package stratoschain
 
 import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
@@ -11,27 +10,35 @@ import (
 	"github.com/tendermint/tendermint/libs/bech32"
 )
 
+type Traffic struct {
+	Volume        uint64
+	WalletAddress string
+}
+
 // Stratos-chain 'pot' module
-func BuildVolumeReportMsg(traffic []*core.Traffic, reporterAddress, reporterOwnerAddress []byte, epoch uint64, reportReference string) (sdktypes.Msg, error) {
+func BuildVolumeReportMsg(traffic []*Traffic, reporterAddress, reporterOwnerAddress []byte, epoch uint64,
+	reportReference string, blsTxData, blsSignature []byte, blsPubKeys [][]byte) (sdktypes.Msg, error) {
 	aggregatedVolume := make(map[string]uint64)
-	for _, trafficReccord := range traffic {
-		aggregatedVolume[trafficReccord.P2PAddress] += trafficReccord.Volume
+	for _, trafficRecord := range traffic {
+		aggregatedVolume[trafficRecord.WalletAddress] += trafficRecord.Volume
 	}
 
-	var nodesVolume []pottypes.SingleNodeVolume
-	for p2pAddressString, volume := range aggregatedVolume {
-		_, p2pAddressBytes, err := bech32.DecodeAndConvert(p2pAddressString)
+	var nodesVolume []pottypes.SingleWalletVolume
+	for walletAddressString, volume := range aggregatedVolume {
+		_, walletAddressBytes, err := bech32.DecodeAndConvert(walletAddressString)
 		if err != nil {
 			return nil, err
 		}
-		p2pAddress := sdktypes.AccAddress(p2pAddressBytes[:])
-		nodesVolume = append(nodesVolume, pottypes.SingleNodeVolume{
-			NodeAddress: p2pAddress,
-			Volume:      sdktypes.NewIntFromUint64(volume),
+		walletAddress := sdktypes.AccAddress(walletAddressBytes[:])
+		nodesVolume = append(nodesVolume, pottypes.SingleWalletVolume{
+			WalletAddress: walletAddress,
+			Volume:        sdktypes.NewIntFromUint64(volume),
 		})
 	}
 
-	return pottypes.NewMsgVolumeReport(nodesVolume, reporterAddress, sdktypes.NewIntFromUint64(epoch), reportReference, reporterOwnerAddress), nil
+	blsSignatureInfo := pottypes.NewBLSSignatureInfo(blsPubKeys, blsSignature, blsTxData)
+
+	return pottypes.NewMsgVolumeReport(nodesVolume, reporterAddress, sdktypes.NewIntFromUint64(epoch), reportReference, reporterOwnerAddress, blsSignatureInfo), nil
 }
 
 // Stratos-chain 'register' module
@@ -63,6 +70,25 @@ func BuildCreateIndexingNodeMsg(networkID, token, moniker string, pubKey []byte,
 	)
 }
 
+// Stratos-chain 'register' module
+func BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, token string, stakeDelta int64, incrStake bool) sdktypes.Msg {
+	return registertypes.NewMsgUpdateResourceNodeStake(
+		networkAddr[:],
+		ownerAddr[:],
+		sdktypes.NewInt64Coin(token, stakeDelta),
+		incrStake,
+	)
+}
+
+func BuildUpdateIndexingNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, token string, stakeDelta int64, incrStake bool) sdktypes.Msg {
+	return registertypes.NewMsgUpdateIndexingNodeStake(
+		networkAddr[:],
+		ownerAddr[:],
+		sdktypes.NewInt64Coin(token, stakeDelta),
+		incrStake,
+	)
+}
+
 func BuildRemoveResourceNodeMsg(nodeAddress, ownerAddress utiltypes.Address) sdktypes.Msg {
 	return registertypes.NewMsgRemoveResourceNode(
 		nodeAddress[:],
@@ -88,9 +114,10 @@ func BuildIndexingNodeRegistrationVoteMsg(candidateNetworkAddress, candidateOwne
 }
 
 // Stratos-chain 'sds' module
-func BuildFileUploadMsg(fileHash, reporterAddress, uploaderAddress []byte) sdktypes.Msg {
+func BuildFileUploadMsg(fileHash string, from, reporterAddress, uploaderAddress []byte) sdktypes.Msg {
 	return sdstypes.NewMsgUpload(
 		fileHash,
+		from,
 		reporterAddress,
 		uploaderAddress,
 	)

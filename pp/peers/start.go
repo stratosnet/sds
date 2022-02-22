@@ -1,19 +1,23 @@
 package peers
 
 import (
+	"path/filepath"
+
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
 // StartPP
 func StartPP(registerFn func()) {
 	GetNetworkAddress()
+	Peers.Init(setting.NetworkAddress, filepath.Join(setting.Config.PPListDir, "pp-list"))
 	//todo: register func call shouldn't be in peers package
 	registerFn()
 	GetSPList()
+	//go SendLatencyCheckMessageToSPList()
 	InitPPList()
 	ListenOffline()
 	StartStatusReportToSP()
@@ -25,20 +29,20 @@ func InitPeer(registerFn func()) {
 	//todo: register func call shouldn't be in peers package
 	registerFn()
 	GetSPList()
+	//go SendLatencyCheckMessageToSPList()
 	InitPPList()
 	go ListenOffline()
 }
 
-// RegisterChain
-func RegisterChain(toSP bool) {
+// RegisterToSP
+func RegisterToSP(toSP bool) {
 	if toSP {
-		SendMessageToSPServer(types.ReqRegisterData(), header.ReqRegister)
+		SendMessageToSPServer(requests.ReqRegisterData(), header.ReqRegister)
 		utils.Log("SendMessage(conn, req, header.ReqRegister) to SP")
 	} else {
-		SendMessage(client.PPConn, types.ReqRegisterData(), header.ReqRegister)
+		SendMessage(client.PPConn, requests.ReqRegisterData(), header.ReqRegister)
 		utils.Log("SendMessage(conn, req, header.ReqRegister) to PP")
 	}
-
 }
 
 // StartMining
@@ -46,7 +50,7 @@ func StartMining() {
 	if setting.CheckLogin() {
 		if setting.IsPP {
 			utils.DebugLog("Sending ReqMining message to SP")
-			SendMessageToSPServer(types.ReqMiningData(), header.ReqMining)
+			SendMessageToSPServer(requests.ReqMiningData(), header.ReqMining)
 		} else {
 			utils.Log("register as miner first")
 		}

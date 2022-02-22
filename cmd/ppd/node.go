@@ -14,6 +14,7 @@ import (
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
+	"github.com/stratosnet/sds/utils/types"
 )
 
 const (
@@ -38,35 +39,15 @@ func nodePP(cmd *cobra.Command, args []string) error {
 }
 
 func nodePreRunE(cmd *cobra.Command, args []string) error {
-	homePath, err := cmd.Flags().GetString(HOME)
+	err := loadConfig(cmd)
 	if err != nil {
-		utils.ErrorLog("failed to get 'home' path for the node")
-		return err
-	}
-	configPath, err := cmd.Flags().GetString(CONFIG)
-	if err != nil {
-		utils.ErrorLog("failed to get config path for the node")
 		return err
 	}
 
-	if _, err := os.Stat(configPath); err != nil {
-		configPath = filepath.Join(homePath, configPath)
-		if _, err := os.Stat(configPath); err != nil {
-			return errors.Wrap(err, "not able to load config file, generate one with `ppd config`")
-		}
-	}
+	trafficLogger := utils.NewTrafficLogger(filepath.Join(setting.GetRootPath(), "./tmp/logs/traffic_dump.log"), false, true)
+	trafficLogger.SetLogLevel(utils.Info)
 
-	err = setting.LoadConfig(configPath)
-	if err != nil {
-		return errors.Wrap(err, "failed to load config file")
-	}
-
-	if setting.Config.Debug {
-		utils.MyLogger.SetLogLevel(utils.Debug)
-	} else {
-		utils.MyLogger.SetLogLevel(utils.Info)
-	}
-
+	serv.StartDumpTrafficLog()
 	err = SetupP2PKey()
 	if err != nil {
 		return errors.Wrap(err, "Couldn't setup PP node")
@@ -102,12 +83,12 @@ func SetupP2PKey() error {
 		}
 
 		p2pKeyAddress, err := utils.CreateP2PKey(setting.Config.AccountDir, nickname, password,
-			setting.Config.P2PKeyPrefix, setting.Config.ScryptN, setting.Config.ScryptP)
+			types.DefaultP2PKeyPrefix)
 		if err != nil {
-			return errors.New("couldn't create WalletAddress: " + err.Error())
+			return errors.New("couldn't create p2p key: " + err.Error())
 		}
 
-		p2pKeyAddressString, err := p2pKeyAddress.ToBech(setting.Config.P2PKeyPrefix)
+		p2pKeyAddressString, err := p2pKeyAddress.ToBech(types.DefaultP2PKeyPrefix)
 		if err != nil {
 			return errors.New("couldn't convert P2P key address to bech string: " + err.Error())
 		}

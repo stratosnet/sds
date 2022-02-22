@@ -1,14 +1,13 @@
 package api
 
 import (
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/httpserv"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
-	"strings"
+
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/httpserv"
 )
 
 func getKeyStore(w http.ResponseWriter, request *http.Request) {
@@ -16,19 +15,8 @@ func getKeyStore(w http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		return
 	}
-	path, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		utils.ErrorLog(err)
-	}
-	walletPath := strings.Split(setting.Config.AccountDir, "./")
-	utils.DebugLog("wa", walletPath[1])
-	if setting.IsWindows {
-		winPath := walletPath[1]
-		winPath = strings.Replace(winPath, "/", "\\", -1)
-		path = path + "\\" + winPath
-	} else {
-		path = path + "/" + walletPath[1]
-	}
+
+	path := setting.Config.AccountDir
 	if data["walletAddress"] != nil {
 		walletAddress := data["walletAddress"].(string)
 		f, err := os.Open(setting.Config.AccountDir + "/" + walletAddress)

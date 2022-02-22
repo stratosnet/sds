@@ -1,13 +1,12 @@
 package api
 
 import (
-	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/pp/client"
+	"net/http"
+
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
-	"net/http"
 )
 
 func downProgress(w http.ResponseWriter, request *http.Request) {
@@ -40,9 +39,9 @@ func downProgress(w http.ResponseWriter, request *http.Request) {
 				k.savePath = m["savePath"].(string)
 			}
 			// _, num := task.CheckDownloadOver(k.fileHash)
-			// fmt.Printf("downloaded：%.2f %% filehash:%s \n", (num * 100), k.fileHash)
+			// utils.Logf("downloaded：%.2f %% filehash:%s \n", (num * 100), k.fileHash)
 			// if num > 1 {
-			// 	fmt.Println(">>>>>>>>>>>>>>>>>>>>>iuhihioioihk")
+			// 	utils.Log(">>>>>>>>>>>>>>>>>>>>>iuhihioioihk")
 			// 	num = 1
 			// }
 			p := &prog{
@@ -52,7 +51,7 @@ func downProgress(w http.ResponseWriter, request *http.Request) {
 				State:    true,
 			}
 			if ts, ok := setting.DownloadTaskIDMap.Load(p.TaskID); ok {
-				if val, ok := setting.DownProssMap.Load(ts.(string)); ok {
+				if val, ok := setting.DownloadProgressMap.Load(ts.(string)); ok {
 					p.Progress = val.(float32)
 					if val.(float32) > 100 {
 						p.Progress = 100
@@ -64,11 +63,12 @@ func downProgress(w http.ResponseWriter, request *http.Request) {
 					p.Rate = 0
 					p.State = true
 				}
-				if c, ok := client.PDownloadPassageway.Load(ts.(string)); ok {
-					conn := c.(*cf.ClientConn)
-					re := conn.GetSecondReadFlow()
-					p.Rate = re
-				}
+				// TODO replace client.PDownloadPassageway with client.DownloadConnMap and aggregate speed of all connections that are involved in the task
+				//if c, ok := client.PDownloadPassageway.Load(ts.(string)); ok {
+				//	conn := c.(*cf.ClientConn)
+				//	re := conn.GetSecondReadFlow()
+				//	p.Rate = re
+				//}
 			}
 			ma[k.taskID] = p
 		}

@@ -2,11 +2,14 @@ package event
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay/stratoschain"
@@ -15,12 +18,35 @@ import (
 
 // Activate Inactive PP node becomes active
 func Activate(amount, fee, gas int64) error {
-	activateReq, err := reqActivateData(amount, fee, gas)
+	// Query blockchain to know if this node is already a resource node
+	ppState, err := stratoschain.QueryResourceNodeState(setting.GetNetworkID().String())
 	if err != nil {
-		utils.ErrorLog("Couldn't build PP activate request: " + err.Error())
+		utils.ErrorLog("Couldn't query node status from the blockchain", err)
 		return err
 	}
-	utils.Log("Sending activate message to SP! " + activateReq.P2PAddress)
+
+	var activateReq *protos.ReqActivatePP
+	switch ppState {
+	case types.PP_ACTIVE:
+		utils.Log("This node is already active on the blockchain. Waiting for SP node to confirm...")
+		activateReq = &protos.ReqActivatePP{
+			PpInfo:        setting.GetPPInfo(),
+			AlreadyActive: true,
+		}
+	default:
+		activateReq, err = reqActivateData(amount, fee, gas)
+		if err != nil {
+			utils.ErrorLog("Couldn't build PP activate request", err)
+			return err
+		}
+	}
+	var logstring string
+	if client.SPConn != nil {
+		logstring = fmt.Sprintf("Sending activate message to SP: %s, from: %s", client.SPConn.GetName(), activateReq.PpInfo.P2PAddress)
+	} else {
+		logstring = fmt.Sprintf("Sending activate message to SP: %s, from: %s", "[no connected sp]", activateReq.PpInfo.P2PAddress)
+	}
+	utils.Log(logstring)
 	peers.SendMessageToSPServer(activateReq, header.ReqActivatePP)
 	return nil
 }
@@ -28,7 +54,7 @@ func Activate(amount, fee, gas int64) error {
 // RspActivate. Response to asking the SP node to activate this PP node
 func RspActivate(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspActivatePP
-	success := types.UnmarshalData(ctx, &target)
+	success := requests.UnmarshalData(ctx, &target)
 	if !success {
 		return
 	}
@@ -38,7 +64,7 @@ func RspActivate(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	if target.ActivationState != setting.PP_INACTIVE {
+	if target.ActivationState != types.PP_INACTIVE {
 		utils.Log("Current node is already active")
 		setting.State = byte(target.ActivationState)
 		return
@@ -55,12 +81,12 @@ func RspActivate(ctx context.Context, conn core.WriteCloser) {
 // RspActivated. Response when this PP node was successfully activated
 func RspActivated(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspActivatePP
-	success := types.UnmarshalData(ctx, &target)
+	success := requests.UnmarshalData(ctx, &target)
 	if !success {
 		return
 	}
 	utils.Log("get RspActivatedPP", target.Result.State, target.Result.Msg)
 
-	setting.State = setting.PP_ACTIVE
+	setting.State = types.PP_ACTIVE
 	utils.Log("This PP node is now active")
 }

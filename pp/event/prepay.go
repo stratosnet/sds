@@ -7,7 +7,7 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/peers"
-	"github.com/stratosnet/sds/pp/types"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
 )
@@ -27,7 +27,7 @@ func Prepay(amount, fee, gas int64) error {
 // RspPrepay. Response to asking the SP node to send a prepay transaction
 func RspPrepay(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspPrepay
-	success := types.UnmarshalData(ctx, &target)
+	success := requests.UnmarshalData(ctx, &target)
 	if !success {
 		return
 	}

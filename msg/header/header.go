@@ -48,10 +48,19 @@ const (
 	ReqActivatedSP = "ReqActds" // request when a SP node was successfully activated
 	RspActivatedPP = "RspActdp" // response when a PP node was successfully activated
 
-	ReqDeactivatePP  = "ReqDctvp" // request to deactivate a PP node
-	RspDeactivatePP  = "RspDctvp" // response to deactivate a PP node
-	ReqDeactivatedPP = "ReqDctdp" // request when a PP node was successfully deactivated
-	RspDeactivatedPP = "RspDctdp" // response when a PP node was successfully deactivated
+	ReqUpdateStakePP  = "ReqUpdtp"  // request to update stake for a PP node
+	RspUpdateStakePP  = "RspUpdtp"  // response to update stake for a PP node
+	ReqUpdatedStakePP = "ReqUpdtdp" // request when a PP node's stake was successfully updated
+	ReqUpdatedStakeSP = "ReqUpdtds" // request when a SP node's stake was successfully updated
+	RspUpdatedStakePP = "RspUpdtdp" // response when a PP node's stake  was successfully updated
+
+	ReqDeactivatePP     = "ReqDctvp"  // request to deactivate a PP node
+	RspDeactivatePP     = "RspDctvp"  // response to deactivate a PP node
+	ReqUnbondingPP      = "ReqUbdp"   // request to unbonding a PP node
+	RspUnbondingPP      = "RspUbdp"   // response to unbonding a PP node
+	ReqDeactivatedPP    = "ReqDctdp"  // request when a PP node was successfully deactivated
+	RspDeactivatedPP    = "RspDctdp"  // response when a PP node was successfully deactivated
+	RspPPRegisteredToSP = "RspPRegds" // response when a PP node was successfully registered to SP
 
 	ReqPrepay  = "ReqPrpay" // request for a PP node sending a prepay transaction
 	RspPrepay  = "RspPrpay" // response for a PP node sending a prepay transaction
@@ -74,9 +83,6 @@ const (
 	ReqFindMyFileList = "ReqFFL"
 	RspFindMyFileList = "RspFFL"
 
-	ReqFindDirectory = "ReqFDr"
-	RspFindDirectory = "RspFDr"
-
 	ReqDeleteFile = "ReqDF"
 	RspDeleteFile = "RspDF"
 
@@ -85,13 +91,6 @@ const (
 
 	ReqDeleteSlice = "ReqDLS"
 	RspDeleteSlice = "RspDLS"
-
-	ReqMakeDirectory     = "ReqMDR"
-	RspMakeDirectory     = "RspMDR"
-	ReqRemoveDirectory   = "ReqRD"
-	RspRemoveDirectory   = "RsqRD"
-	ReqMoveFileDirectory = "ReqMFD"
-	RspMoveFileDirectory = "RspMFD"
 
 	//  download
 	ReqFileStorageInfo      = "ReqQDLF"
@@ -104,27 +103,28 @@ const (
 	RspDownloadTaskInfo     = "RspDLTI"
 	ReqDownloadSliceWrong   = "ReqDSW"
 	RspDownloadSliceWrong   = "RspDSW"
-	ReqDownloadSlicePause   = "ReqDSP"
-	RspDownloadSlicePause   = "RspDSP"
-	ReqFindDirectoryTree    = "ReqFDT"
-	RspFindDirectoryTree    = "RspFDT"
 	ReqClearDownloadTask    = "ReqCDT"
 
 	// register new pp
 	ReqRegisterNewPP = "ReqRgNPP"
 	RspRegisterNewPP = "RspRgNPP"
 
-	// transfer
+	/* transfer commented out for backup logic redesign QB-897
 	ReqTransferNotice         = "ReqTrNot"
 	RspTransferNotice         = "RspTrNot"
 	ReqValidateTransferCer    = "ReqVTCer" // request to validate transfer certificate PP->SP
 	RspValidateTransferCer    = "RspVTCer" // response to validate transfer certificate SP->PP
-	ReqTransferDownload       = "ReqTdl"
-	RspTransferDownload       = "RspTdl"
-	RspTransferDownloadResult = "RspTdlR"
-
 	ReqReportTransferResult = "ReqTrRep"
 	RspReportTransferResult = "RspTrRep"
+	*/
+
+	// backup
+	ReqFileSliceBackupNotice   = "ReqFBNot"
+	ReqTransferDownload        = "ReqTdl"
+	RspTransferDownload        = "RspTdl"
+	RspTransferDownloadResult  = "RspTdlR"
+	ReqReportBackupSliceResult = "ReqRBSR"
+	RspReportBackupSliceResult = "RspRBSR"
 
 	//TODO change to report to SP
 	ReqReportTaskBP = "ReqRTBP" // report to BP
@@ -138,60 +138,18 @@ const (
 	ReqGetShareFile = "ReqGSF"
 	RspGetShareFile = "RspGSF"
 
-	ReqSaveFile   = "ReqTSF"
-	RspSaveFile   = "RspTSF"
-	ReqSaveFolder = "ReqTSFD"
-	RspSaveFolder = "RspTSFD"
-
-	ReqCreateAlbum       = "ReqCA"
-	RspCreateAlbum       = "RspCA"
-	ReqEditAlbum         = "ReqEDA"
-	RspEditAlbum         = "RspEDA"
-	ReqAlbumContent      = "ReqACT"
-	RspAlbumContent      = "RspACT"
-	ReqSearchAlbum       = "ReqSCA"
-	RspSearchAlbum       = "RspSCA"
-	ReqFindMyAlbum       = "ReqFMA"
-	RspFindMyAlbum       = "RspFMA"
-	ReqCollectionAlbum   = "ReqCLA" // request to collect album
-	RspCollectionAlbum   = "RspCLA"
-	ReqAbstractAlbum     = "ReqAA"
-	RspAbstractAlbum     = "RspAA"
-	ReqMyCollectionAlbum = "ReqMCA"
-	RspMyCollectionAlbum = "RspMCA"
-	ReqDeleteAlbum       = "ReqDA"
-	RspDeleteAlbum       = "RspDA"
-	ReqGetCapacity       = "ReqGC"
-	RspGetCapacity       = "RspGC"
-
-	ReqFileSort = "ReqFS"
-	RspFileSort = "RspFS"
-
-	ReqConfig = "ReqCon"
-	RspConfig = "RspCon"
-
-	ReqInvite    = "ReqInv"
-	RspInvite    = "RspInv"
-	ReqGetReward = "ReqGR"
-	RspGetReward = "RspGR"
-
 	// heartbeat
 	ReqHeart = "ReqHeart"
 	RspHeart = "RspHeart"
+	// test sp latency
+	ReqSpLatencyCheck = "ReqSpLatencyCheck"
 
 	// report node status
 	ReqReportNodeStatus = "ReqRNS"
 	RspReportNodeStatus = "RspRNS"
 
-	// customer volume
-	ReqCAddVolume = "ReqCAV"
-	RspCAddVolume = "RspCAV"
-
-	ReqCUseVolume = "ReqCUV"
-	RspCUseVolume = "RspCUV"
-
-	ReqTransferAggregateTraffic = "ReqTrAgT"
-	ReqTransferRecordTraffic    = "ReqTrRcT"
+	ReqTransferBLSSignature = "ReqTrBLS"
+	RspTransferBLSSignature = "RspTrBLS"
 )
 
 // DecodeHeader

@@ -14,13 +14,16 @@ import (
 	sdkrest "github.com/cosmos/cosmos-sdk/types/rest"
 	"github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
 	"github.com/tendermint/tendermint/crypto"
+
+	"github.com/stratosnet/sds/pp/types"
+	_ "github.com/stratosnet/sds/relay/stratoschain/prefix"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/crypto/ed25519"
+	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 )
 
 var Url string
@@ -54,7 +57,11 @@ func FetchAccountInfo(address string) (uint64, uint64, error) {
 		return 0, 0, errors.New("the stratos-chain URL is not set")
 	}
 
-	resp, err := http.Get(Url + "/auth/accounts/" + address)
+	url, err := utils.ParseUrl(Url + "/auth/accounts/" + address)
+	if err != nil {
+		return 0, 0, err
+	}
+	resp, err := http.Get(url.String(true, true, true, false))
 	if err != nil {
 		return 0, 0, err
 	}
@@ -125,6 +132,9 @@ func BuildAndSignTx(token, chainId, memo string, msg sdktypes.Msg, fee, gas int6
 func BuildTxBytes(token, chainId, memo, mode string, msg sdktypes.Msg, fee, gas int64, signatureKeys []SignatureKey) ([]byte, error) {
 	// Fetch account info from stratos-chain for each signature
 	for i, signatureKey := range signatureKeys {
+		if len(signatureKey.Address) == 0 {
+			utils.ErrorLog("Wallet address is empty, failed to build Tx bytes.")
+		}
 		accountNum, sequence, err := FetchAccountInfo(signatureKey.Address)
 		if err != nil {
 			return nil, err
@@ -151,6 +161,11 @@ func BroadcastTx(tx authtypes.StdTx) (*http.Response, []byte, error) {
 		return nil, nil, errors.New("the stratos-chain URL is not set")
 	}
 
+	url, err := utils.ParseUrl(Url + "/txs")
+	if err != nil {
+		return nil, nil, err
+	}
+
 	body := rest.BroadcastReq{
 		Tx:   tx,
 		Mode: "sync",
@@ -161,7 +176,7 @@ func BroadcastTx(tx authtypes.StdTx) (*http.Response, []byte, error) {
 	}
 
 	bodyBytes := bytes.NewBuffer(jsonBytes)
-	resp, err := http.Post(Url+"/txs", "application/json", bodyBytes)
+	resp, err := http.Post(url.String(true, true, true, false), "application/json", bodyBytes)
 	if err != nil {
 		return resp, nil, err
 	}
@@ -175,8 +190,13 @@ func BroadcastTxBytes(txBytes []byte) error {
 		return errors.New("the stratos-chain URL is not set")
 	}
 
+	url, err := utils.ParseUrl(Url + "/txs")
+	if err != nil {
+		return err
+	}
+
 	bodyBytes := bytes.NewBuffer(txBytes)
-	resp, err := http.Post(Url+"/txs", "application/json", bodyBytes)
+	resp, err := http.Post(url.String(true, true, true, false), "application/json", bodyBytes)
 	if err != nil {
 		return err
 	}
@@ -189,4 +209,51 @@ func BroadcastTxBytes(txBytes []byte) error {
 	}
 
 	return err
+}
+
+func QueryResourceNodeState(networkId string) (int, error) {
+	if Url == "" {
+		return 0, errors.New("the stratos-chain URL is not set")
+	}
+
+	url, err := utils.ParseUrl(Url + "/register/resource-nodes?network=" + networkId)
+	if err != nil {
+		return 0, err
+	}
+
+	resp, err := http.Get(url.String(true, true, true, true))
+	if err != nil {
+		return 0, err
+	}
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return 0, err
+	}
+
+	var wrappedResponse sdkrest.ResponseWithHeight
+	err = codec.Cdc.UnmarshalJSON(respBody, &wrappedResponse)
+	if err != nil {
+		return 0, err
+	}
+
+	var resourceNodes registertypes.ResourceNodes
+	err = authtypes.ModuleCdc.UnmarshalJSON(wrappedResponse.Result, &resourceNodes)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(resourceNodes) == 0 {
+		return types.PP_INACTIVE, nil
+	}
+	if resourceNodes[0].IsSuspended() {
+		return types.PP_SUSPENDED, nil
+	}
+	if resourceNodes[0].GetStatus() == sdktypes.Unbonding {
+		return types.PP_UNBONDING, nil
+	}
+	if resourceNodes[0].GetStatus() == sdktypes.Bonded && resourceNodes[0].GetNetworkID() == networkId {
+		return types.PP_ACTIVE, nil
+	}
+	return types.PP_INACTIVE, nil
 }

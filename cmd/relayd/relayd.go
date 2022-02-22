@@ -1,20 +1,30 @@
 package main
 
 import (
+	"fmt"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"syscall"
+
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
 	"github.com/stratosnet/sds/relay/client"
 	"github.com/stratosnet/sds/utils"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 func main() {
+	dir, err := os.Getwd()
+	if err != nil {
+		fmt.Println("error load the wording directory", err)
+		return
+	}
+	_ = utils.NewDefaultLogger(filepath.Join(dir, "./tmp/logs/stdout.log"), true, true)
 	if len(os.Args) < 2 {
 		utils.Log("Not enough arguments. Please specify the config file to use")
 		return
 	}
-	err := setting.LoadConfig(os.Args[1])
+
+	err = setting.LoadConfig(os.Args[1])
 	if err != nil {
 		utils.ErrorLog("Error loading the config file", err)
 		return

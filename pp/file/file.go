@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"sync"
 
@@ -35,13 +36,13 @@ func GetFileInfo(filePath string) os.FileInfo {
 
 // GetFileSuffix
 func GetFileSuffix(fileName string) string {
-	fileSuffix := path.Ext(fileName) //获取文件后缀
+	fileSuffix := path.Ext(fileName)
 	return fileSuffix
 }
 
 // GetFileHash
-func GetFileHash(filePath string) string {
-	filehash := utils.CalcFileHash(filePath)
+func GetFileHash(filePath, encryptionTag string) string {
+	filehash := utils.CalcFileHash(filePath, encryptionTag)
 	utils.DebugLog("filehash", filehash)
 	fileMap[filehash] = filePath
 	return filehash
@@ -155,9 +156,9 @@ func SaveFileData(data []byte, offset int64, sliceHash, fileName, fileHash, save
 // SaveDownloadProgress
 func SaveDownloadProgress(sliceHash, fileName, fileHash, savePath string) {
 	wmutex.Lock()
-	defer wmutex.Unlock()
 	csvFile, err := os.OpenFile(GetDownloadCsvPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
 	defer csvFile.Close()
+	defer wmutex.Unlock()
 	if err != nil {
 		utils.ErrorLog("error open downloaded file records")
 	}
@@ -207,13 +208,13 @@ func RecordDownloadCSV(target *protos.RspFileStorageInfo) {
 }
 
 // CheckFileExisting
-func CheckFileExisting(fileHash, fileName, savePath string) bool {
+func CheckFileExisting(fileHash, fileName, savePath, encryptionTag string) bool {
 	utils.DebugLog("CheckFileExisting: file Hash", fileHash)
 	filePath := ""
 	if savePath == "" {
-		filePath = setting.Config.DownloadPath + fileName
+		filePath = filepath.Join(setting.Config.DownloadPath, fileName)
 	} else {
-		filePath = setting.Config.DownloadPath + savePath + "/" + fileName
+		filePath = filepath.Join(setting.Config.DownloadPath, savePath, fileName)
 	}
 	// if setting.IsWindows {
 	// 	filePath = filepath.FromSlash(filePath)
@@ -226,7 +227,7 @@ func CheckFileExisting(fileHash, fileName, savePath string) bool {
 		return false
 	}
 
-	hash := utils.CalcFileHash(filePath)
+	hash := utils.CalcFileHash(filePath, encryptionTag)
 	utils.DebugLog("hash", hash)
 	if hash == fileHash {
 		utils.DebugLog("file hash matched")
@@ -272,7 +273,7 @@ func DeleteSlice(sliceHash string) error {
 
 // DeleteDirectory DeleteDirectory
 func DeleteDirectory(fileHash string) {
-	err := os.RemoveAll(setting.Config.DownloadPath + fileHash)
+	err := os.RemoveAll(filepath.Join(setting.Config.DownloadPath, fileHash))
 	if err != nil {
 		utils.DebugLog("DeleteDirectory err", err)
 	}
@@ -283,9 +284,9 @@ func DeleteDirectory(fileHash string) {
 func CheckFilePathEx(fileHash, fileName, savePath string) bool {
 	filePath := ""
 	if savePath == "" {
-		filePath = setting.Config.DownloadPath + fileName
+		filePath = filepath.Join(setting.Config.DownloadPath, fileName)
 	} else {
-		filePath = setting.Config.DownloadPath + savePath + "/" + fileName
+		filePath = filepath.Join(setting.Config.DownloadPath, savePath, fileName)
 	}
 	utils.DebugLog("filePath", filePath)
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0777)

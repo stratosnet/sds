@@ -61,7 +61,7 @@ func VideoToHls(fileHash string) bool {
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
 		m := scanner.Text()
-		fmt.Println(m)
+		utils.Log(m)
 	}
 	transformCmd.Wait()
 	return true

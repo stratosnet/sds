@@ -1,24 +1,22 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"path/filepath"
 	"strings"
 
 	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
 
 	"github.com/google/uuid"
 )
 
-type upLoadFileResult struct {
+type uploadFileResult struct {
 	FilePath           string `json:"filePath"`
 	State              bool   `json:"state"`
 	TaskID             string `json:"taskID"`
@@ -29,7 +27,7 @@ type upLoadFileResult struct {
 	ImageWalletAddress string `json:"imageWalletAddress"`
 }
 
-func upLoadFile(w http.ResponseWriter, request *http.Request) {
+func uploadFile(w http.ResponseWriter, request *http.Request) {
 
 	// check differently for sp
 	if !setting.CheckLogin() {
@@ -50,8 +48,8 @@ func upLoadFile(w http.ResponseWriter, request *http.Request) {
 	}
 
 	fileArr := data["tasks"].([]interface{})
-	result := make(map[string][]*upLoadFileResult, 0)
-	resultArr := make([]*upLoadFileResult, 0)
+	result := make(map[string][]*uploadFileResult, 0)
+	resultArr := make([]*uploadFileResult, 0)
 
 	for _, p := range fileArr {
 		pathMap := p.(map[string]interface{})
@@ -68,8 +66,8 @@ func upLoadFile(w http.ResponseWriter, request *http.Request) {
 		isFile, err = file.IsFile(path)
 
 		if err != nil {
-			fmt.Println(err)
-			r := &upLoadFileResult{
+			utils.ErrorLog(err)
+			r := &uploadFileResult{
 				FilePath: path,
 				State:    false,
 				TaskID:   "",
@@ -82,10 +80,10 @@ func upLoadFile(w http.ResponseWriter, request *http.Request) {
 		}
 
 		if isFile {
-			f := types.RequestUploadFileData(path, sdPath, "", false, false)
+			f := requests.RequestUploadFileData(path, sdPath, "", setting.WalletAddress, false, false, false)
 			go peers.SendMessageToSPServer(f, header.ReqUploadFile)
 			taskID := uuid.New().String()
-			r := &upLoadFileResult{
+			r := &uploadFileResult{
 				FailInfo: "",
 				FilePath: path,
 				State:    true,
@@ -93,14 +91,14 @@ func upLoadFile(w http.ResponseWriter, request *http.Request) {
 				FileName: f.FileInfo.FileName,
 				FileSize: f.FileInfo.FileSize,
 			}
-			setting.UpLoadTaskIDMap.Range(func(k, v interface{}) bool {
+			setting.UploadTaskIDMap.Range(func(k, v interface{}) bool {
 				if v.(string) == f.FileInfo.FileHash {
 					r.TaskID = k.(string)
 					return false
 				}
 				return true
 			})
-			setting.UpLoadTaskIDMap.Store(r.TaskID, f.FileInfo.FileHash)
+			setting.UploadTaskIDMap.Store(r.TaskID, f.FileInfo.FileHash)
 			utils.DebugLogf("Upload task ID >> %v", r.TaskID)
 			resultArr = append(resultArr, r)
 			continue
@@ -125,10 +123,6 @@ func upLoadFile(w http.ResponseWriter, request *http.Request) {
 				sPath := strings.Replace(pathstring, dir, "", -1)
 				lastPaths := filepath.Dir(sPath)
 				utils.DebugLog("lastPaths ==>>>>>>>>>>> ", lastPaths)
-				if isFile, _ = file.IsFile(pathstring); !isFile {
-					event.MakeDirectory(sPath, uuid.New().String(), w)
-					continue
-				}
 
 				var lps []string
 				lps = strings.FieldsFunc(lastPaths, func(r rune) bool { return r == '/' })
@@ -137,11 +131,11 @@ func upLoadFile(w http.ResponseWriter, request *http.Request) {
 					lastPaths = sdPath + "/" + lastPaths
 				}
 
-				f := types.RequestUploadFileData(pathstring, lastPaths, "", false, false)
+				f := requests.RequestUploadFileData(pathstring, lastPaths, "", setting.WalletAddress, false, false, false)
 				utils.DebugLog("lastPaths>>>>", lastPaths)
 				utils.DebugLog("storagePath+relativePath", lastPaths, pathstring)
 				taskID := uuid.New().String()
-				r := &upLoadFileResult{
+				r := &uploadFileResult{
 					FailInfo: "",
 					FilePath: path,
 					State:    true,
@@ -149,17 +143,17 @@ func upLoadFile(w http.ResponseWriter, request *http.Request) {
 					FileName: f.FileInfo.FileName,
 					FileSize: f.FileInfo.FileSize,
 				}
-				setting.UpLoadTaskIDMap.Range(func(k, v interface{}) bool {
+				setting.UploadTaskIDMap.Range(func(k, v interface{}) bool {
 					if v.(string) == f.FileInfo.FileHash {
 						r.TaskID = k.(string)
 						return false
 					}
 					return true
 				})
-				setting.UpLoadTaskIDMap.Store(r.TaskID, f.FileInfo.FileHash)
+				setting.UploadTaskIDMap.Store(r.TaskID, f.FileInfo.FileHash)
 				resultArr = append(resultArr, r)
 				go peers.SendMessageToSPServer(f, header.ReqUploadFile)
-				utils.DebugLog("resust>>>>>>>>>>>>>>", resultArr)
+				utils.DebugLog("result>>>>>>>>>>>>>>", resultArr)
 
 			default:
 				result["list"] = resultArr

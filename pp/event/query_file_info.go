@@ -13,86 +13,20 @@ import (
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/datamesh"
 	"github.com/stratosnet/sds/utils/httpserv"
 )
 
-var isImage bool
-
-// DirectoryTreeMap DirectoryTreeMap
-var DirectoryTreeMap = make(map[string]*Ts)
-
-// Ts Ts
-type Ts struct {
-	Reqs  []*protos.RspFindDirectoryTree
-	Count int
-}
-
-// Tree Tree
-// type Tree struct {
-// 	Dir  string
-// 	Hash string
-// }
-
-// DirectoryTree
-// var DirectoryTree = make(map[string]*Tree, 10)
-
-// whether is found from query
-var isFind bool
-
-// FindDirectoryTree
-func FindDirectoryTree(reqID, pathHash string, w http.ResponseWriter, isF bool) {
-	if setting.CheckLogin() {
-		// request is the same as AlbumContent
-		peers.SendMessage(client.PPConn, types.ReqFindDirectoryTreeData(reqID, pathHash), header.ReqFindDirectoryTree)
-		storeResponseWriter(reqID, w)
-		isFind = isF
-	} else {
-		notLogin(w)
-	}
-}
-
-// ReqFindDirectoryTree
-func ReqFindDirectoryTree(ctx context.Context, conn core.WriteCloser) {
-	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
-}
-
-// RspFindDirectoryTree
-func RspFindDirectoryTree(ctx context.Context, conn core.WriteCloser) {
-	utils.DebugLog("target>>context>>>>>>>>>>>>>>>>>>>")
-	var target protos.RspFindDirectoryTree
-	if types.UnmarshalData(ctx, &target) {
-		if isFind {
-			putData(target.ReqId, HTTPDirectoryTree, &target)
-		}
-		if target.P2PAddress == setting.P2PAddress {
-			if target.Result.State == protos.ResultState_RES_SUCCESS {
-				utils.DebugLog("target>>>>>>>>>>>>>>>>>>>>>", target)
-				ts := DirectoryTreeMap[target.ReqId]
-				ts.Reqs = append(ts.Reqs, &target)
-				utils.DebugLog("Reqs>>>>>>>>>>>>>>>>>>>>>", len(ts.Reqs))
-			} else {
-				utils.Log("action failed", target.Result.Msg)
-			}
-		} else {
-			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
-		}
-	}
-}
-
 // GetFileStorageInfo p to pp
-func GetFileStorageInfo(path, savePath, reqID string, isImg bool, isVideoStream bool, w http.ResponseWriter) {
+func GetFileStorageInfo(path, savePath, reqID string, isVideoStream bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		if CheckDownloadPath(path) {
 			utils.DebugLog("path:", path)
-			peers.SendMessage(client.PPConn, types.ReqFileStorageInfoData(path, savePath, reqID, isVideoStream, nil), header.ReqFileStorageInfo)
-			if isImg {
-				isImage = isImg
-				storeResponseWriter(reqID, w)
-			}
+			peers.SendMessageDirectToSPOrViaPP(requests.ReqFileStorageInfoData(path, savePath, reqID, isVideoStream, nil), header.ReqFileStorageInfo)
 		} else {
 			utils.ErrorLog("please input correct download link, eg: sdm://address/fileHash|filename(optional)")
 			if w != nil {
@@ -122,7 +56,7 @@ func ClearFileInfoAndDownloadTask(fileHash string, w http.ResponseWriter) {
 
 func ReqClearDownloadTask(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqClearDownloadTask
-	if types.UnmarshalData(ctx, &target) {
+	if requests.UnmarshalData(ctx, &target) {
 		task.DeleteDownloadTask(target.WalletAddress, target.WalletAddress)
 	}
 }
@@ -145,9 +79,9 @@ func GetVideoSlice(sliceInfo *protos.DownloadSliceInfo, fInfo *protos.RspFileSto
 			video, _ := ioutil.ReadFile(slicePath)
 			w.Write(video)
 		} else {
-			req := types.ReqDownloadSliceData(fInfo, sliceInfo)
+			req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
 			utils.Log("Send request for downloading slice: ", sliceInfo.SliceStorageInfo.SliceHash)
-			SendReqDownloadSlice(fInfo, req)
+			SendReqDownloadSlice(fInfo.FileHash, sliceInfo, req)
 			if err := storeResponseWriter(req.ReqId, w); err != nil {
 				w.WriteHeader(setting.FAILCode)
 				w.Write(httpserv.NewErrorJson(setting.FAILCode, "Get video segment time out").ToBytes())
@@ -162,8 +96,8 @@ func GetHlsInfo(fInfo *protos.RspFileStorageInfo) *file.HlsInfo {
 	sliceInfo := GetSliceInfoBySliceNumber(fInfo, uint64(1))
 	sliceHash := sliceInfo.SliceStorageInfo.SliceHash
 	if !file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceHash, fInfo.SavePath) {
-		req := types.ReqDownloadSliceData(fInfo, sliceInfo)
-		SendReqDownloadSlice(fInfo, req)
+		req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
+		SendReqDownloadSlice(fInfo.FileHash, sliceInfo, req)
 
 		start := time.Now().Unix()
 		for {
@@ -203,29 +137,20 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	// PP check whether itself is the storage PP, if not transfer
 	utils.Log("get，RspFileStorageInfo")
 	var target protos.RspFileStorageInfo
-	if types.UnmarshalData(ctx, &target) {
-
+	if requests.UnmarshalData(ctx, &target) {
 		utils.DebugLog("file hash", target.FileHash)
-		// utils.Log("target", target.WalletAddress)
-		if target.P2PAddress == setting.P2PAddress {
-			if target.Result.State == protos.ResultState_RES_SUCCESS {
-				utils.Log("download starts: ")
-				task.DownloadFileMap.Store(target.FileHash, &target)
-				if target.IsVideoStream {
-					return
-				}
-				DownloadFileSlice(&target)
-				utils.DebugLog("DownloadFileSlice(&target)", target)
-			} else {
-				utils.Log("failed to download，", target.Result.Msg)
-			}
-			if isImage {
-				putData(target.ReqId, HTTPDownloadFile, &target)
-			}
-		} else {
-			// store the task and transfer
+		if target.Result.State == protos.ResultState_RES_SUCCESS {
+			utils.Log("download starts: ")
+			task.CleanDownloadFileAndConnMap(target.FileHash)
+			task.DownloadFileMap.Store(target.FileHash, &target)
 			task.AddDownloadTask(&target)
-			peers.TransferSendMessageToClient(target.P2PAddress, types.RspFileStorageInfoData(&target))
+			if target.IsVideoStream {
+				return
+			}
+			DownloadFileSlice(&target)
+			utils.DebugLog("DownloadFileSlice(&target)", target)
+		} else {
+			utils.Log("failed to download，", target.Result.Msg)
 		}
 	}
 }
@@ -237,7 +162,7 @@ func CheckDownloadPath(path string) bool {
 		utils.DebugLog("invalid path length")
 		return false
 	}
-	if path[:6] != "sdm://" {
+	if path[:6] != datamesh.DATA_MASH_PREFIX {
 		return false
 	}
 	if path[47:48] != "/" {

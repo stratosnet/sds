@@ -10,18 +10,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/google/uuid"
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/bech32"
 
-	"github.com/stratosnet/sds/utils"
-
-	"github.com/google/uuid"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/pp/types"
+	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
 )
 
@@ -54,7 +54,7 @@ func streamVideoStorageInfo(w http.ResponseWriter, req *http.Request) {
 
 	var fInfo *protos.RspFileStorageInfo
 	task.DownloadFileMap.Delete(fileHash)
-	event.GetFileStorageInfo("sdm://"+setting.WalletAddress+"/"+fileHash, setting.VIDEOPATH, uuid.New().String(), false, true, w)
+	event.GetFileStorageInfo("sdm://"+setting.WalletAddress+"/"+fileHash, setting.VIDEOPATH, uuid.New().String(), true, w)
 	start := time.Now().Unix()
 	for {
 		if f, ok := task.DownloadFileMap.Load(fileHash); ok {
@@ -101,7 +101,7 @@ func streamVideo(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if setting.State != setting.PP_ACTIVE && setting.Config.StreamingCache {
+	if setting.State != types.PP_ACTIVE && setting.Config.StreamingCache {
 		utils.DebugLog("Send request to sp to retrieve the slice ", sliceHash)
 
 		fInfo := &protos.RspFileStorageInfo{
@@ -204,8 +204,8 @@ func verifyStreamReqBody(req *http.Request, sliceHash string) (*StreamReqBody, e
 		return nil, err
 	}
 
-	if len(reqBody.FileHash) != 64 {
-		return nil, errors.New("incorrect file hash")
+	if len(reqBody.FileHash) != 40 {
+		return nil, errors.New("incorrect file fileHash")
 	}
 
 	if len(reqBody.WalletAddress) != 41 {
@@ -232,7 +232,7 @@ func verifyStreamReqBody(req *http.Request, sliceHash string) (*StreamReqBody, e
 }
 
 func verifySignature(reqBody *StreamReqBody, sliceHash string, data []byte) bool {
-	if sliceHash != utils.CalcSliceHash(data, reqBody.FileHash) {
+	if sliceHash != utils.CalcSliceHash(data, reqBody.FileHash, reqBody.SliceInfo.SliceNumber) {
 		return false
 	}
 	if val, ok := setting.SPMap.Load(reqBody.SpP2pAddress); ok {
@@ -266,5 +266,6 @@ func sendReportStreamResult(body *StreamReqBody, sliceHash string, isPP bool) {
 		WalletAddress: body.WalletAddress,
 		P2PAddress:    body.P2PAddress,
 		TaskId:        body.SliceInfo.TaskId,
+		SpP2PAddress:  body.SpP2pAddress,
 	}, isPP)
 }

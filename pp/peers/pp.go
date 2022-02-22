@@ -3,6 +3,7 @@ package peers
 import (
 	"net"
 
+	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/utils"
 )
@@ -15,6 +16,7 @@ type PPServer struct {
 }
 
 var ppServ *PPServer
+var ppPeerClock = clock.NewClock()
 
 // GetPPServer
 func GetPPServer() *PPServer {
@@ -27,7 +29,7 @@ func SetPPServer(pp *PPServer) {
 
 // StartListenServer
 func StartListenServer(port string) {
-	netListen, err := net.Listen("tcp4", port)
+	netListen, err := net.Listen("tcp4", ":"+port)
 	if err != nil {
 		utils.ErrorLog("StartListenServer", err)
 	}
@@ -50,25 +52,11 @@ func NewServer() *PPServer {
 		utils.Log("on error")
 	})
 	onCloseOption := core.OnCloseOption(func(conn core.WriteCloser) {
-		net := conn.(*core.ServerConn).GetName()
 		netID := conn.(*core.ServerConn).GetNetID()
-		removePeer(netID)
-		utils.DebugLog(net, netID, "offline")
+		Peers.PPDisconnectedNetId(netID)
 	})
 	bufferSize := core.BufferSizeOption(10000)
 	return &PPServer{
-		core.CreateServer(onConnectOption, onErrorOption, onCloseOption, bufferSize),
+		core.CreateServer(onConnectOption, onErrorOption, onCloseOption, bufferSize, core.LogOpenOption(true)),
 	}
-}
-
-func removePeer(netID int64) {
-
-	f := func(k, v interface{}) bool {
-		if v == netID {
-			RegisterPeerMap.Delete(k)
-			return false
-		}
-		return true
-	}
-	RegisterPeerMap.Range(f)
 }

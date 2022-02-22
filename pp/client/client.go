@@ -1,12 +1,13 @@
 package client
 
 import (
+	"net"
+	"sync"
+
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/utils"
-	"net"
-	"sync"
 )
 
 // Offline Offline
@@ -33,28 +34,6 @@ var DownloadConnMap = &sync.Map{}
 // ConnMap PP connection map
 var ConnMap = make(map[string]*cf.ClientConn)
 
-// PDownloadPassageway download passageway  p to passagePP
-var PDownloadPassageway = &sync.Map{}
-
-// DownloadPassageway download passageway passagePP to storage pp
-var DownloadPassageway = &sync.Map{}
-
-// PdownloadPassagewayCheck PdownloadPassagewayCheck
-func PdownloadPassagewayCheck(c *cf.ClientConn) {
-	PDownloadPassageway.Range(func(key, value interface{}) bool {
-		if value.(*cf.ClientConn) == c {
-			PDownloadPassageway.Delete(key)
-		}
-		return true
-	})
-	DownloadPassageway.Range(func(key, value interface{}) bool {
-		if value.(*cf.ClientConn) == c {
-			DownloadPassageway.Delete(key)
-		}
-		return true
-	})
-}
-
 // NewClient
 func NewClient(server string, heartbeat bool) *cf.ClientConn {
 
@@ -64,7 +43,7 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 	}
 	c, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
-		utils.DebugLog(server, "connect failed")
+		utils.DebugLog(server, "connect failed", err)
 		return nil
 	}
 	utils.Log("connect success")
@@ -79,15 +58,13 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 		utils.Log("on close", c.(*cf.ClientConn).GetName())
 		delete(ConnMap, c.(*cf.ClientConn).GetName())
 
-		PdownloadPassagewayCheck(c.(*cf.ClientConn))
-
 		if PPConn != nil {
 			if PPConn == c.(*cf.ClientConn) {
-				utils.DebugLog("lost registered PP conn, delete and change to new PP")
+				utils.DebugLog("lost gateway PP conn, delete and change to new PP")
 				select {
 				case OfflineChan <- &Offline{
 					IsSp:           false,
-					NetworkAddress: PPConn.GetName(),
+					NetworkAddress: PPConn.GetRemoteAddr(),
 				}:
 				default:
 					break
@@ -96,7 +73,7 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 		}
 		if SPConn != nil {
 			if SPConn.GetName() == c.(*cf.ClientConn).GetName() {
-				utils.DebugLog("lost SP conn")
+				utils.DebugLog("lost SP conn, name: ", SPConn.GetName(), " netId is ", SPConn.GetNetID())
 				SPConn = nil
 				select {
 				case OfflineChan <- &Offline{

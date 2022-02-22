@@ -22,20 +22,6 @@ enum DownloadWrongType {
     OVERTIME = 1;
 }
 
-
-enum AlbumType {
-    ALL = 0;
-    VIDEO = 1;
-    MUSIC = 2;
-    OTHER = 3;
-}
-
-
-enum AlbumSortType {
-    LATEST = 0;
-    VISITS = 1;  // most visit
-}
-
 enum FileSortType {
     DEF  = 0;  // default
     TIME = 1;  // time
@@ -47,6 +33,10 @@ enum MsgType {
     DEFAULT = 0;
 }
 
+enum HeartbeatType {
+    REGULAR_HEARTBEAT = 0;
+    LATENCY_CHECK = 1;
+}
 
 message PPBaseInfo {
      string p2p_address = 1;
@@ -73,6 +63,7 @@ message FileInfo {
      string share_link = 9;
      uint64 sort_id = 10;
      uint64 duration = 11;
+     string encryption_tag = 12;
 }
 
 // slice number and pp address
@@ -86,6 +77,7 @@ message SliceNumAddr {
 message SliceOffsetInfo {
      string slice_hash = 1;
      SliceOffset slice_offset = 2;
+     SliceOffset encrypted_slice_offset = 3;
 }
 message SliceOffset {
      uint64 slice_offset_start = 1;
@@ -116,6 +108,13 @@ message SliceStorageInfo {
      string slice_hash = 2; //
 }
 
+message EncryptedSlice {
+    uint32 hdkey_nonce = 1;
+    uint64 aes_nonce = 2;
+    bytes  data = 3;
+    uint64 raw_size = 4;
+}
+
 message ShareLinkInfo{
     string name     = 1;
     string file_hash     = 2;
@@ -128,24 +127,6 @@ message ShareLinkInfo{
     bool is_private = 9;
     string share_link_password = 10;
     string owner_wallet_address = 11;
-}
-
-message AlbumInfo {
-    string album_id = 1; // id
-    string album_name = 2; // name
-    string album_blurb = 3; // abstract
-    int64 album_visit = 4; //
-    int64 album_time = 5; // creation time
-    string album_cover_link = 6; //
-    bool is_private = 7; //
-    AlbumType album_type = 8;
-}
-
-message AlbumNumber {
-    int64 all = 1;
-    int64 video = 2;
-    int64 music = 3;
-    int64 other = 4;
 }
 
 message CpuStat {
@@ -169,6 +150,3 @@ message BandwidthStat {
     int64 used = 1;
     int64 total = 2;
 }
-
-
-
