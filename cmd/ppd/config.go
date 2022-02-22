@@ -114,6 +114,11 @@ func loadConfig(cmd *cobra.Command) error {
 	} else {
 		utils.MyLogger.SetLogLevel(utils.Info)
 	}
+
+	if setting.Config.VersionShow != setting.Version {
+		utils.ErrorLogf("config version and code version not match, config: [%s], code: [%s]", setting.Config.VersionShow, setting.Version)
+	}
+
 	return nil
 }
 
