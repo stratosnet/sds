@@ -11,5 +11,5 @@ const (
 	MessageBeatLen             = 4 * 1024 * 1024 // in bytes
 	LatencyCheckSpListInterval = 1800            // in seconds
 	LatencyCheckSpListTimeout  = 3               // in seconds
-	StatusReportPunishInterval = 10000           // num of heights' interval
+	StatusReportPunishInterval = 10000
 )

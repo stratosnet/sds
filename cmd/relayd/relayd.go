@@ -32,6 +32,7 @@ func main() {
 
 	multiClient := client.NewClient()
 	defer multiClient.Stop()
+	defer os.Exit(1)
 
 	err = multiClient.Start()
 	if err != nil {
