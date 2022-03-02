@@ -17,8 +17,9 @@ func StartPP(registerFn func()) {
 	//todo: register func call shouldn't be in peers package
 	registerFn()
 	GetSPList()
+	GetPPStatusFromSP()
 	//go SendLatencyCheckMessageToSPList()
-	InitPPList()
+	//InitPPList() // moved to rsp of GetPPStatusFromSP()
 	ListenOffline()
 	StartStatusReportToSP()
 }
@@ -29,8 +30,9 @@ func InitPeer(registerFn func()) {
 	//todo: register func call shouldn't be in peers package
 	registerFn()
 	GetSPList()
+	GetPPStatusFromSP()
 	//go SendLatencyCheckMessageToSPList()
-	InitPPList()
+	//InitPPList() // moved to rsp of GetPPStatusFromSP()
 	go ListenOffline()
 }
 

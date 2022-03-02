@@ -20,9 +20,12 @@ func InitPPList() {
 	if len(pplist) == 0 {
 		GetPPList()
 	} else {
-		success := ConnectToGatewayPP(pplist)
-		if !success || setting.State != types.PP_ACTIVE {
+		if success := ConnectToGatewayPP(pplist); !success {
 			GetPPList()
+			return
+		}
+		if setting.IsAuto && setting.State == types.PP_ACTIVE && !setting.IsLoginToSP {
+			RegisterToSP(true)
 		}
 	}
 }

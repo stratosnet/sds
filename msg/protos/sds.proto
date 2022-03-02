@@ -19,7 +19,16 @@ message ReqGetPPList {
 message RspGetPPList{
   repeated PPBaseInfo pp_list = 1;
   Result result = 2;
-  uint32 ActivationState = 3;
+}
+
+message ReqGetPPStatus {
+  PPBaseInfo my_address = 1;
+
+}
+
+message RspGetPPStatus{
+  uint32 ActivationState = 1;
+  Result result = 2;
 }
 
 message ReqGetSPList {
@@ -565,7 +574,7 @@ message RspGetHDInfo {
   string wallet_address = 4;
 }
 
-// sp 
+// sp
 message ReqDeleteSlice {
   string p2p_address = 1;
   string slice_hash = 2; //

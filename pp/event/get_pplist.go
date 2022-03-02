@@ -28,8 +28,6 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	setting.State = byte(target.ActivationState)
-
 	err := peers.Peers.SavePPList(&target)
 	if err != nil {
 		utils.ErrorLog("Error when saving PP List", err)
