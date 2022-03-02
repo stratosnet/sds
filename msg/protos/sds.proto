@@ -19,6 +19,7 @@ message ReqGetPPList {
 message RspGetPPList{
   repeated PPBaseInfo pp_list = 1;
   Result result = 2;
+  uint32 ActivationState = 3;
 }
 
 message ReqGetSPList {

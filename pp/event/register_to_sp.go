@@ -88,7 +88,6 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 			peers.StartMining()
 		}
 	}
-
 }
 
 // RspMining RspMining

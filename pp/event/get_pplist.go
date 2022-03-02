@@ -11,6 +11,7 @@ import (
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -26,6 +27,8 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 		peers.ScheduleReloadPPlist(3 * time.Second)
 		return
 	}
+
+	setting.State = byte(target.ActivationState)
 
 	err := peers.Peers.SavePPList(&target)
 	if err != nil {
@@ -43,8 +46,12 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 
 	// if gateway pp is nil, go connect one from ppList
 	if client.PPConn == nil {
-		if success := peers.SendRegisterRequestViaPP(peers.Peers.GetPPList()); !success {
+		if success := peers.ConnectToGatewayPP(peers.Peers.GetPPList()); !success {
 			peers.ScheduleReloadPPlist(3 * time.Second)
 		}
+	}
+
+	if setting.IsAuto && setting.State == types.PP_ACTIVE && !setting.IsLoginToSP {
+		peers.RegisterToSP(true)
 	}
 }

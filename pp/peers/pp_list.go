@@ -20,7 +20,8 @@ func InitPPList() {
 	if len(pplist) == 0 {
 		GetPPList()
 	} else {
-		if success := SendRegisterRequestViaPP(pplist); !success {
+		success := ConnectToGatewayPP(pplist)
+		if !success || setting.State != types.PP_ACTIVE {
 			GetPPList()
 		}
 	}
@@ -40,7 +41,7 @@ func GetPPList() {
 	SendMessageToSPServer(requests.ReqGetPPlistData(), header.ReqGetPPList)
 }
 
-func SendRegisterRequestViaPP(pplist []*types.PeerInfo) bool {
+func ConnectToGatewayPP(pplist []*types.PeerInfo) bool {
 	for _, ppInfo := range pplist {
 		if ppInfo.NetworkAddress == setting.NetworkAddress {
 			Peers.DeletePPByNetworkAddress(ppInfo.NetworkAddress)
@@ -48,9 +49,6 @@ func SendRegisterRequestViaPP(pplist []*types.PeerInfo) bool {
 		}
 		client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
 		if client.PPConn != nil {
-			if client.SPConn == nil {
-				RegisterToSP(false)
-			}
 			return true
 		}
 		utils.DebugLog("failed to conn PP，delete:", ppInfo)
