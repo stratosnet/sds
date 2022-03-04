@@ -83,12 +83,9 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 	if !setting.IsPP {
 		reportDHInfoToPP()
 	}
-	if setting.IsAuto {
-		if setting.IsPP && !setting.IsStartMining {
-			peers.StartMining()
-		}
+	if setting.IsPP && !setting.IsStartMining {
+		peers.StartMining()
 	}
-
 }
 
 // RspMining RspMining
