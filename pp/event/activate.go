@@ -3,7 +3,6 @@ package event
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
@@ -94,6 +93,5 @@ func RspActivated(ctx context.Context, conn core.WriteCloser) {
 	// if autorun = true, bond pp to sp
 	if setting.IsAuto && !setting.IsLoginToSP {
 		peers.RegisterToSP(true)
-		peers.ScheduleReloadPPlist(3 * time.Second)
 	}
 }

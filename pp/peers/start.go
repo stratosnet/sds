@@ -50,7 +50,10 @@ func RegisterToSP(toSP bool) {
 // StartMining
 func StartMining() {
 	if setting.CheckLogin() {
-		if setting.IsPP {
+		if setting.IsPP && !setting.IsLoginToSP {
+			utils.DebugLog("Bond to SP and start mining")
+			SendMessageToSPServer(requests.ReqRegisterData(), header.ReqRegister)
+		} else if setting.IsPP {
 			utils.DebugLog("Sending ReqMining message to SP")
 			SendMessageToSPServer(requests.ReqMiningData(), header.ReqMining)
 		} else {

@@ -9,6 +9,7 @@ import (
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
+	ppTypes "github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -27,5 +28,8 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	setting.State = byte(target.ActivationState)
+	if setting.State == ppTypes.PP_ACTIVE {
+		setting.IsPP = true
+	}
 	peers.InitPPList()
 }
