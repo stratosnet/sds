@@ -37,8 +37,8 @@ func GetMessageHeader(tag int16, varsion uint16, length uint32, cmd string, data
 const (
 	ReqGetPPList   = "ReqGPPL" // request to get pp list
 	RspGetPPList   = "RspGPPL" // response to get pp list
-	ReqGetSPList   = "ReqGSPL" // request to get pp list
-	RspGetSPList   = "RspGSPL" // response to get pp list
+	ReqGetSPList   = "ReqGSPL" // request to get sp list
+	RspGetSPList   = "RspGSPL" // response to get sp list
 	ReqGetPPStatus = "ReqGPPS" // request to get pp status
 	RspGetPPStatus = "RspGPPS" // response to get pp status
 	ReqRegister    = "ReqReg"  // request to register

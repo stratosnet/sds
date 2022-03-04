@@ -53,7 +53,7 @@ func StartMining() {
 		if setting.IsPP && !setting.IsLoginToSP {
 			utils.DebugLog("Bond to SP and start mining")
 			SendMessageToSPServer(requests.ReqRegisterData(), header.ReqRegister)
-		} else if setting.IsPP {
+		} else if setting.IsPP && !setting.IsStartMining {
 			utils.DebugLog("Sending ReqMining message to SP")
 			SendMessageToSPServer(requests.ReqMiningData(), header.ReqMining)
 		} else {
