@@ -21,16 +21,6 @@ message RspGetPPList{
   Result result = 2;
 }
 
-message ReqGetPPStatus {
-  PPBaseInfo my_address = 1;
-
-}
-
-message RspGetPPStatus{
-  uint32 ActivationState = 1;
-  Result result = 2;
-}
-
 message ReqGetSPList {
   PPBaseInfo my_address = 1;
 }
@@ -784,4 +774,14 @@ message ReqReportNodeStatus {
   MemoryStat    memory = 3;
   DiskStat      disk = 4;
   BandwidthStat bandwidth = 5;
+}
+
+message ReqGetPPStatus {
+  PPBaseInfo my_address = 1;
+
+}
+
+message RspGetPPStatus{
+  uint32 ActivationState = 1;
+  Result result = 2;
 }

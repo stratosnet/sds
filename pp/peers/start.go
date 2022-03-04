@@ -26,6 +26,7 @@ func StartPP(registerFn func()) {
 
 // InitPeer
 func InitPeer(registerFn func()) {
+	// TODO: To make sure this InitPeer method is correctly called and work as expected
 	utils.DebugLog("InitPeer InitPeerInitPeer InitPeerInitPeer InitPeer")
 	//todo: register func call shouldn't be in peers package
 	registerFn()
