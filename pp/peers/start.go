@@ -17,20 +17,23 @@ func StartPP(registerFn func()) {
 	//todo: register func call shouldn't be in peers package
 	registerFn()
 	GetSPList()
+	GetPPStatusFromSP()
 	//go SendLatencyCheckMessageToSPList()
-	InitPPList()
+	//InitPPList() // moved to rsp of GetPPStatusFromSP()
 	ListenOffline()
 	StartStatusReportToSP()
 }
 
 // InitPeer
 func InitPeer(registerFn func()) {
+	// TODO: To make sure this InitPeer method is correctly called and work as expected
 	utils.DebugLog("InitPeer InitPeerInitPeer InitPeerInitPeer InitPeer")
 	//todo: register func call shouldn't be in peers package
 	registerFn()
 	GetSPList()
+	GetPPStatusFromSP()
 	//go SendLatencyCheckMessageToSPList()
-	InitPPList()
+	//InitPPList() // moved to rsp of GetPPStatusFromSP()
 	go ListenOffline()
 }
 
@@ -48,9 +51,14 @@ func RegisterToSP(toSP bool) {
 // StartMining
 func StartMining() {
 	if setting.CheckLogin() {
-		if setting.IsPP {
+		if setting.IsPP && !setting.IsLoginToSP {
+			utils.DebugLog("Bond to SP and start mining")
+			SendMessageToSPServer(requests.ReqRegisterData(), header.ReqRegister)
+		} else if setting.IsPP && !setting.IsStartMining {
 			utils.DebugLog("Sending ReqMining message to SP")
 			SendMessageToSPServer(requests.ReqMiningData(), header.ReqMining)
+		} else if setting.IsStartMining {
+			utils.Log("mining already started")
 		} else {
 			utils.Log("register as miner first")
 		}

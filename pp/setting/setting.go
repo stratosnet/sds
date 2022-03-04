@@ -149,9 +149,11 @@ func LoadConfig(configPath string) error {
 
 	cf.SetLimitDownloadSpeed(Config.LimitDownloadSpeed, Config.IsLimitDownloadSpeed)
 	cf.SetLimitUploadSpeed(Config.LimitUploadSpeed, Config.IsLimitUploadSpeed)
-
+	IsAuto = Config.AutoRun
+	utils.DebugLogf("AutoRun flag: %v", IsAuto)
 	// todo: we shouldn't call stratoschain package to setup a global variable
 	stratoschain.Url = Config.StratosChainUrl
+
 	// Initialize SPMap
 	for _, sp := range Config.SPList {
 		key := sp.P2PAddress
