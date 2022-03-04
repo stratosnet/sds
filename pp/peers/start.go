@@ -57,6 +57,8 @@ func StartMining() {
 		} else if setting.IsPP && !setting.IsStartMining {
 			utils.DebugLog("Sending ReqMining message to SP")
 			SendMessageToSPServer(requests.ReqMiningData(), header.ReqMining)
+		} else if setting.IsStartMining {
+			utils.Log("mining already started")
 		} else {
 			utils.Log("register as miner first")
 		}
