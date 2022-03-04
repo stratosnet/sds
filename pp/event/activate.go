@@ -89,4 +89,9 @@ func RspActivated(ctx context.Context, conn core.WriteCloser) {
 
 	setting.State = types.PP_ACTIVE
 	utils.Log("This PP node is now active")
+
+	// if autorun = true, bond pp to sp
+	if setting.IsAuto && !setting.IsLoginToSP {
+		peers.RegisterToSP(true)
+	}
 }
