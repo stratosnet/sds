@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	Version = "v0.5.0"
+	Version = "v0.5.1"
 	HD_PATH = "m/44'/606'/0'/0/0"
 
 	// REPORTDHTIME 1 hour
