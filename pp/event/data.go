@@ -20,7 +20,7 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivatePP, error) {
 	signatureKeys := []stratoschain.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: stratoschain.SignatureSecp256k1},
 	}
-	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", "sync", txMsg, fee, gas, signatureKeys)
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", "block", txMsg, fee, gas, signatureKeys)
 	if err != nil {
 		return nil, err
 	}

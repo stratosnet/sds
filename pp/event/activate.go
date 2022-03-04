@@ -22,7 +22,7 @@ func Activate(amount, fee, gas int64) error {
 	ppState, err := stratoschain.QueryResourceNodeState(setting.GetNetworkID().String())
 	if err != nil {
 		utils.ErrorLog("Couldn't query node status from the blockchain", err)
-		return err
+		//return err
 	}
 
 	var activateReq *protos.ReqActivatePP
