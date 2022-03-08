@@ -1,6 +1,8 @@
 package stratoschain
 
 import (
+	"math/big"
+
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	utiltypes "github.com/stratosnet/sds/utils/types"
@@ -39,6 +41,26 @@ func BuildVolumeReportMsg(traffic []*Traffic, reporterAddress, reporterOwnerAddr
 	blsSignatureInfo := pottypes.NewBLSSignatureInfo(blsPubKeys, blsSignature, blsTxData)
 
 	return pottypes.NewMsgVolumeReport(nodesVolume, reporterAddress, sdktypes.NewIntFromUint64(epoch), reportReference, reporterOwnerAddress, blsSignatureInfo), nil
+}
+
+func BuildSlashingResourceNodeMsg(spP2pAddress, spWalletAddress []utiltypes.Address, ppP2pAddress, ppWalletAddress utiltypes.Address, slashingAmount *big.Int, suspend bool) sdktypes.Msg {
+	var spP2pAddressSdk []sdktypes.AccAddress
+	for _, p2pAddress := range spP2pAddress {
+		spP2pAddressSdk = append(spP2pAddressSdk, p2pAddress[:])
+	}
+	var spWalletAddressSdk []sdktypes.AccAddress
+	for _, walletAddress := range spWalletAddress {
+		spWalletAddressSdk = append(spWalletAddressSdk, walletAddress[:])
+	}
+
+	return pottypes.NewMsgSlashingResourceNode(
+		spP2pAddressSdk,
+		spWalletAddressSdk,
+		ppP2pAddress[:],
+		ppWalletAddress[:],
+		sdktypes.NewIntFromBigInt(slashingAmount),
+		suspend,
+	)
 }
 
 // Stratos-chain 'register' module
