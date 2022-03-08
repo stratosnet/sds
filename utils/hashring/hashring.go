@@ -187,7 +187,7 @@ func (r *HashRing) RandomGetNodes(num int) []*Node {
 		if ok {
 			ids = append(ids, id)
 		}
-		return false
+		return true
 	})
 
 	indexes := utils.GenerateRandomNumber(0, len(ids), num)

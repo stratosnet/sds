@@ -189,7 +189,7 @@ func (r *WeightedHashRing) RandomGetNodes(num int) []*WeightedNode {
 		if ok {
 			ids = append(ids, id)
 		}
-		return false
+		return true
 	})
 
 	indexes := utils.GenerateRandomNumber(0, len(ids), num)
