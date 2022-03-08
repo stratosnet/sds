@@ -144,15 +144,15 @@ func (r *HashRing) Node(ID string) *Node {
 }
 
 func (r *HashRing) IsOnline(ID string) bool {
-	nodeStatus, ok := r.NodeStatus.Load(ID)
-	return ok && nodeStatus.(bool)
+	online, ok := r.NodeStatus.Load(ID)
+	return ok && online.(bool)
 }
 
 func (r *HashRing) SetOffline(ID string) {
 	r.Lock()
 	defer r.Unlock()
 
-	if nodeStatus, ok := r.NodeStatus.Load(ID); ok && nodeStatus.(bool) {
+	if online, ok := r.NodeStatus.Load(ID); ok && online.(bool) {
 		r.NodeStatus.Store(ID, false)
 		r.NodeOkCount--
 	}
@@ -162,7 +162,7 @@ func (r *HashRing) SetOnline(ID string) {
 	r.Lock()
 	defer r.Unlock()
 
-	if nodeStatus, ok := r.NodeStatus.Load(ID); ok && !nodeStatus.(bool) {
+	if online, ok := r.NodeStatus.Load(ID); ok && !online.(bool) {
 		r.NodeOkCount++
 		r.NodeStatus.Store(ID, true)
 	}
@@ -248,8 +248,8 @@ func (r *HashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string) (uint32,
 // GetNodeUpDownNodes get upstream of downstream of node
 // @params
 func (r *HashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
-	nodeStatus, ok := r.NodeStatus.Load(NodeID)
-	if NodeID == "" || !ok || !nodeStatus.(bool) || r.NodeCount <= 0 {
+	online, ok := r.NodeStatus.Load(NodeID)
+	if NodeID == "" || !ok || !online.(bool) || r.NodeCount <= 0 {
 		return "", ""
 	}
 
@@ -293,16 +293,16 @@ func (r *HashRing) GetNodeByIndex(keyIndex uint32) (uint32, string) {
 
 	r.VRing.Ascend(&VNode{Index: keyIndex}, func(item rbtree.Item) bool {
 		vNode = item.(*VNode)
-		if nodeStatus, ok := r.NodeStatus.Load(vNode.NodeID); ok && !nodeStatus.(bool) {
+		if online, ok := r.NodeStatus.Load(vNode.NodeID); ok && !online.(bool) {
 			return true
 		}
 		return false
 	})
 
-	if nodeStatus, ok := r.NodeStatus.Load(vNode.NodeID); ok && !nodeStatus.(bool) {
+	if online, ok := r.NodeStatus.Load(vNode.NodeID); ok && !online.(bool) {
 		r.VRing.Ascend(minVNodeOfRing, func(item rbtree.Item) bool {
 			vNode = item.(*VNode)
-			if nodeStatus, ok := r.NodeStatus.Load(vNode.NodeID); ok && !nodeStatus.(bool) {
+			if online, ok := r.NodeStatus.Load(vNode.NodeID); ok && !online.(bool) {
 				return true
 			}
 			return false

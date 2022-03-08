@@ -146,15 +146,15 @@ func (r *WeightedHashRing) Node(ID string) *WeightedNode {
 }
 
 func (r *WeightedHashRing) IsOnline(ID string) bool {
-	nodeStatus, ok := r.NodeStatus.Load(ID)
-	return ok && nodeStatus.(bool)
+	online, ok := r.NodeStatus.Load(ID)
+	return ok && online.(bool)
 }
 
 func (r *WeightedHashRing) SetOffline(ID string) {
 	r.Lock()
 	defer r.Unlock()
 
-	if nodeStatus, ok := r.NodeStatus.Load(ID); ok && nodeStatus.(bool) {
+	if online, ok := r.NodeStatus.Load(ID); ok && online.(bool) {
 		r.NodeStatus.Store(ID, false)
 		r.NodeOkCount--
 	}
@@ -164,7 +164,7 @@ func (r *WeightedHashRing) SetOnline(ID string) {
 	r.Lock()
 	defer r.Unlock()
 
-	if nodeStatus, ok := r.NodeStatus.Load(ID); ok && !nodeStatus.(bool) {
+	if online, ok := r.NodeStatus.Load(ID); ok && !online.(bool) {
 		r.NodeOkCount++
 		r.NodeStatus.Store(ID, true)
 	}
@@ -251,8 +251,8 @@ func (r *WeightedHashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string) 
 // GetNodeUpDownNodes get upstream of downstream of node
 // @params
 func (r *WeightedHashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
-	nodeStatus, ok := r.NodeStatus.Load(NodeID)
-	if NodeID == "" || !ok || !nodeStatus.(bool) || r.NodeCount <= 0 {
+	online, ok := r.NodeStatus.Load(NodeID)
+	if NodeID == "" || !ok || !online.(bool) || r.NodeCount <= 0 {
 		return "", ""
 	}
 
@@ -296,13 +296,13 @@ func (r *WeightedHashRing) GetNodeByIndex(keyIndex uint32) (uint32, string) {
 
 	r.VRing.Ascend(&VWeightedNode{Index: keyIndex}, func(item rbtree.Item) bool {
 		vWeightedNode = item.(*VWeightedNode)
-		if nodeStatus, ok := r.NodeStatus.Load(vWeightedNode.NodeID); ok && !nodeStatus.(bool) {
+		if online, ok := r.NodeStatus.Load(vWeightedNode.NodeID); ok && !online.(bool) {
 			return true
 		}
 		return false
 	})
 
-	if nodeStatus, ok := r.NodeStatus.Load(vWeightedNode.NodeID); ok && !nodeStatus.(bool) {
+	if online, ok := r.NodeStatus.Load(vWeightedNode.NodeID); ok && !online.(bool) {
 		r.VRing.Ascend(minVWeightedNodeOfRing, func(item rbtree.Item) bool {
 			vWeightedNode = item.(*VWeightedNode)
 			if online, ok := r.NodeStatus.Load(vWeightedNode.NodeID); ok && !online.(bool) {
