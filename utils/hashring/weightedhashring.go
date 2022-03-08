@@ -52,8 +52,8 @@ func (vwn *VWeightedNode) Less(than rbtree.Item) bool {
 type WeightedHashRing struct {
 	VRing           *rbtree.Rbtree
 	NRing           *rbtree.Rbtree
-	Nodes           *sync.Map       // map(NodeID => *WeightedNode)
-	NodeStatus      map[string]bool // map(NodeID => status)
+	Nodes           *sync.Map // map(NodeID => *WeightedNode)
+	NodeStatus      *sync.Map // map(NodeID => status)
 	NodeCount       uint32
 	NodeOkCount     uint32
 	NumberOfVirtual uint32
@@ -99,7 +99,7 @@ func (r *WeightedHashRing) AddNode(node *WeightedNode) {
 	}
 
 	r.Nodes.Store(node.ID, node)
-	r.NodeStatus[node.ID] = false
+	r.NodeStatus.Store(node.ID, false)
 
 	r.NRing.Insert(node)
 
@@ -129,7 +129,7 @@ func (r *WeightedHashRing) RemoveNode(nodeID string) bool {
 	}
 
 	r.Nodes.Delete(node.ID)
-	delete(r.NodeStatus, node.ID)
+	r.NodeStatus.Delete(node.ID)
 
 	r.NRing.Delete(node)
 
@@ -146,16 +146,16 @@ func (r *WeightedHashRing) Node(ID string) *WeightedNode {
 }
 
 func (r *WeightedHashRing) IsOnline(ID string) bool {
-	ok, online := r.NodeStatus[ID]
-	return ok && online
+	nodeStatus, ok := r.NodeStatus.Load(ID)
+	return ok && nodeStatus.(bool)
 }
 
 func (r *WeightedHashRing) SetOffline(ID string) {
 	r.Lock()
 	defer r.Unlock()
 
-	if b, ok := r.NodeStatus[ID]; ok && b {
-		r.NodeStatus[ID] = false
+	if nodeStatus, ok := r.NodeStatus.Load(ID); ok && nodeStatus.(bool) {
+		r.NodeStatus.Store(ID, false)
 		r.NodeOkCount--
 	}
 }
@@ -164,9 +164,9 @@ func (r *WeightedHashRing) SetOnline(ID string) {
 	r.Lock()
 	defer r.Unlock()
 
-	if b, ok := r.NodeStatus[ID]; ok && !b {
+	if nodeStatus, ok := r.NodeStatus.Load(ID); ok && !nodeStatus.(bool) {
 		r.NodeOkCount++
-		r.NodeStatus[ID] = true
+		r.NodeStatus.Store(ID, true)
 	}
 }
 
@@ -183,11 +183,14 @@ func (r *WeightedHashRing) RandomGetNodes(num int) []*WeightedNode {
 	nodes := make([]*WeightedNode, num)
 
 	ids := make([]string, 0)
-	for id, ok := range r.NodeStatus {
+	r.NodeStatus.Range(func(key, value interface{}) bool {
+		id := key.(string)
+		ok := value.(bool)
 		if ok {
 			ids = append(ids, id)
 		}
-	}
+		return false
+	})
 
 	indexes := utils.GenerateRandomNumber(0, len(ids), num)
 
@@ -248,8 +251,8 @@ func (r *WeightedHashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string) 
 // GetNodeUpDownNodes get upstream of downstream of node
 // @params
 func (r *WeightedHashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
-
-	if NodeID == "" || !r.NodeStatus[NodeID] || r.NodeCount <= 0 {
+	nodeStatus, ok := r.NodeStatus.Load(NodeID)
+	if NodeID == "" || !ok || !nodeStatus.(bool) || r.NodeCount <= 0 {
 		return "", ""
 	}
 
@@ -293,16 +296,16 @@ func (r *WeightedHashRing) GetNodeByIndex(keyIndex uint32) (uint32, string) {
 
 	r.VRing.Ascend(&VWeightedNode{Index: keyIndex}, func(item rbtree.Item) bool {
 		vWeightedNode = item.(*VWeightedNode)
-		if r.NodeStatus[vWeightedNode.NodeID] == false {
+		if nodeStatus, ok := r.NodeStatus.Load(vWeightedNode.NodeID); ok && !nodeStatus.(bool) {
 			return true
 		}
 		return false
 	})
 
-	if !r.NodeStatus[vWeightedNode.NodeID] {
+	if nodeStatus, ok := r.NodeStatus.Load(vWeightedNode.NodeID); ok && !nodeStatus.(bool) {
 		r.VRing.Ascend(minVWeightedNodeOfRing, func(item rbtree.Item) bool {
 			vWeightedNode = item.(*VWeightedNode)
-			if r.NodeStatus[vWeightedNode.NodeID] == false {
+			if online, ok := r.NodeStatus.Load(vWeightedNode.NodeID); ok && !online.(bool) {
 				return true
 			}
 			return false
@@ -351,7 +354,7 @@ func (r *WeightedHashRing) TraversalNRing() {
 func NewWeightedHashRing() *WeightedHashRing {
 	r := new(WeightedHashRing)
 	r.Nodes = new(sync.Map)
-	r.NodeStatus = make(map[string]bool)
+	r.NodeStatus = new(sync.Map)
 	r.NodeCount = 0
 	//r.NumberOfVirtual = numOfVNode
 
