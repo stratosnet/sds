@@ -47,7 +47,6 @@ var reCount int
 
 type VideoCacheTask struct {
 	Slices        []*protos.DownloadSliceInfo
-	TaskID        string
 	FileHash      string
 	DownloadChain chan bool
 }
