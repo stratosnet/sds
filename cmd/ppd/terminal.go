@@ -72,7 +72,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 
 		mnemonic, err := console.Stdin.PromptPassword("input bip39 mnemonic (leave blank to generate a new one)")
 		if err != nil {
-			fmt.Println("failed to get input mnemonic words")
+			utils.ErrorLog("failed to get input mnemonic words")
 			return false
 		}
 		return callRpc(c, "newWallet", []string{password, param[0], mnemonic, setting.HD_PATH})

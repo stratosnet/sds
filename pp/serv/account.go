@@ -22,6 +22,11 @@ func CreateWallet(password, name, mnemonic, hdPath string) string {
 			return ""
 		}
 		mnemonic = newMnemonic
+		utils.Log("\n * IMPORTANT *: Please save the generated mnemonic for future recovery :  \n" +
+			"=======================================================================  \n" +
+			mnemonic + "\n" +
+			"======================================================================= \n")
+
 	}
 	account, err := utils.CreateWallet(setting.Config.AccountDir, name, password, types.DefaultAddressPrefix,
 		mnemonic, "", hdPath)
