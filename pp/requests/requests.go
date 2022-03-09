@@ -168,18 +168,20 @@ func RequestUploadFileData(paths, storagePath, reqID, ownerWalletAddress string,
 func RspDownloadSliceData(target *protos.ReqDownloadSlice) *protos.RspDownloadSlice {
 	slice := task.GetDownloadSlice(target)
 	return &protos.RspDownloadSlice{
-		P2PAddress:    target.P2PAddress,
-		WalletAddress: target.WalletAddress,
-		SliceInfo:     target.SliceInfo,
-		FileCrc:       slice.FileCrc,
-		FileHash:      target.FileHash,
-		TaskId:        target.TaskId,
-		Data:          slice.Data,
-		SliceSize:     uint64(len(slice.Data)),
-		SavePath:      target.SavePath,
-		ReqId:         target.ReqId,
-		IsEncrypted:   target.IsEncrypted,
-		SpP2PAddress:  target.SpP2PAddress,
+		P2PAddress:     target.P2PAddress,
+		WalletAddress:  target.WalletAddress,
+		SliceInfo:      target.SliceInfo,
+		FileCrc:        slice.FileCrc,
+		FileHash:       target.FileHash,
+		TaskId:         target.TaskId,
+		Data:           slice.Data,
+		SliceSize:      uint64(len(slice.Data)),
+		SavePath:       target.SavePath,
+		Result:         &protos.Result{State: protos.ResultState_RES_SUCCESS, Msg: ""},
+		ReqId:          target.ReqId,
+		IsEncrypted:    target.IsEncrypted,
+		SpP2PAddress:   target.SpP2PAddress,
+		IsVideoCaching: target.IsVideoCaching,
 	}
 }
 
@@ -196,19 +198,20 @@ func RspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 				SliceOffsetEnd:   dataEnd,
 			},
 		},
-		FileCrc:       rsp.FileCrc,
-		FileHash:      rsp.FileHash,
-		Data:          rsp.Data[dataStart:],
-		P2PAddress:    rsp.P2PAddress,
-		WalletAddress: rsp.WalletAddress,
-		TaskId:        rsp.TaskId,
-		SliceSize:     rsp.SliceSize,
-		Result:        rsp.Result,
-		NeedReport:    last,
-		SavePath:      rsp.SavePath,
-		ReqId:         rsp.ReqId,
-		SpP2PAddress:  rsp.SpP2PAddress,
-		IsEncrypted:   rsp.IsEncrypted,
+		FileCrc:        rsp.FileCrc,
+		FileHash:       rsp.FileHash,
+		Data:           rsp.Data[dataStart:],
+		P2PAddress:     rsp.P2PAddress,
+		WalletAddress:  rsp.WalletAddress,
+		TaskId:         rsp.TaskId,
+		SliceSize:      rsp.SliceSize,
+		Result:         rsp.Result,
+		NeedReport:     last,
+		SavePath:       rsp.SavePath,
+		ReqId:          rsp.ReqId,
+		SpP2PAddress:   rsp.SpP2PAddress,
+		IsEncrypted:    rsp.IsEncrypted,
+		IsVideoCaching: rsp.IsVideoCaching,
 	}
 
 	if last {
@@ -339,7 +342,7 @@ func ReqReportDownloadResultData(target *protos.RspDownloadSlice, isPP bool) *pr
 func ReqDownloadSliceData(target *protos.RspFileStorageInfo, rsp *protos.DownloadSliceInfo) *protos.ReqDownloadSlice {
 	return &protos.ReqDownloadSlice{
 		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
+		WalletAddress: target.WalletAddress,
 		FileHash:      target.FileHash,
 		TaskId:        rsp.TaskId,
 		SliceInfo: &protos.SliceOffsetInfo{
@@ -349,6 +352,8 @@ func ReqDownloadSliceData(target *protos.RspFileStorageInfo, rsp *protos.Downloa
 		SavePath:     target.SavePath,
 		ReqId:        uuid.New().String(),
 		IsEncrypted:  target.EncryptionTag != "",
+		SliceNumber:  rsp.SliceNumber,
+		Sign:         target.Sign,
 		SpP2PAddress: target.SpP2PAddress,
 	}
 }
@@ -414,15 +419,15 @@ func ReqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
 	}
 }
 
-func ReqFileStorageInfoData(path, savePath, reqID string, isVideoStream bool, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
+func ReqFileStorageInfoData(path, savePath, reqID, walletAddr string, isVideoStream bool, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
 	return &protos.ReqFileStorageInfo{
 		FileIndexes: &protos.FileIndexes{
 			P2PAddress:    setting.P2PAddress,
-			WalletAddress: setting.WalletAddress,
+			WalletAddress: walletAddr,
 			FilePath:      path,
 			SavePath:      savePath,
 		},
-		Sign:          setting.GetSign(setting.P2PAddress + path),
+		Sign:          setting.GetSign(walletAddr + setting.GetNetworkID().String() + path + header.ReqFileStorageInfo),
 		ReqId:         reqID,
 		IsVideoStream: isVideoStream,
 		ShareRequest:  shareRequest,

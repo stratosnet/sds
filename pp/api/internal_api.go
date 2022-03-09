@@ -64,8 +64,10 @@ func StartHTTPServ() {
 	httpServ.MyRoute("/closeHTTP", closeHTTP)
 	httpServ.MyRoute("/legal", legal)
 	httpServ.MyRoute("/changeName", changeName)
-	httpServ.MyRoute("/streamVideoStorageInfo/", streamVideoStorageInfo)
-	httpServ.MyRoute("/streamVideo/", streamVideo)
+	httpServ.MyRoute("/streamVideoStorageInfo/", streamVideoInfoCache)
+	httpServ.MyRoute("/streamVideo/", streamVideoP2P)
+	httpServ.MyRoute("/streamVideoStorageInfoHttp/", streamVideoInfoHttp)
+	httpServ.MyRoute("/streamVideoHttp/", streamVideoHttp)
 	httpServ.MyRoute("/clearStreamTask/", clearStreamTask)
 	httpServ.MyStart()
 }

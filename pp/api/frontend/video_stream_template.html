@@ -27,10 +27,9 @@
     const url = "localhost"
     const internalPort = 9608 //corresponds to the InternalPort in the config of pp node
     const fileHash = "[Hash of the file to be streamed]";
-    const walletAddress = "[wallet address of the owner]";
-    const p2pAddress = "[p2p address of the owner]";
+    const ownerWalletAddress = "[wallet address of the owner]";
     let streamInfo;
-    httpGetAsync(`http://${url}:${internalPort}/streamVideoStorageInfo/${fileHash}`, function(responseText) {
+    httpGetAsync(`http://${url}:${internalPort}/streamVideoStorageInfo/${ownerWalletAddress}/${fileHash}`, function(responseText) {
         streamInfo = JSON.parse(responseText);
         playVideo();
     })
@@ -45,8 +44,7 @@
             options.body = JSON.stringify({
                 fileHash,
                 fileName: streamInfo.FileInfo.file_name,
-                walletAddress,
-                p2pAddress,
+                p2pAddress: streamInfo.FileInfo.p2p_address,
                 restAddress: sliceInfo.storage_pp_info.rest_address,
                 sign: streamInfo.FileInfo.sign,
                 spP2pAddress: streamInfo.FileInfo.sp_p2p_address,

@@ -22,11 +22,12 @@ import (
 )
 
 // GetFileStorageInfo p to pp
-func GetFileStorageInfo(path, savePath, reqID string, isVideoStream bool, w http.ResponseWriter) {
+func GetFileStorageInfo(path, savePath, reqID, walletAddr string, isVideoStream bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		if CheckDownloadPath(path) {
 			utils.DebugLog("path:", path)
-			peers.SendMessageDirectToSPOrViaPP(requests.ReqFileStorageInfoData(path, savePath, reqID, isVideoStream, nil), header.ReqFileStorageInfo)
+			req := requests.ReqFileStorageInfoData(path, savePath, reqID, walletAddr, isVideoStream, nil)
+			peers.SendMessageDirectToSPOrViaPP(req, header.ReqFileStorageInfo)
 		} else {
 			utils.ErrorLog("please input correct download link, eg: sdm://address/fileHash|filename(optional)")
 			if w != nil {
@@ -89,6 +90,80 @@ func GetVideoSlice(sliceInfo *protos.DownloadSliceInfo, fInfo *protos.RspFileSto
 		}
 	} else {
 		notLogin(w)
+	}
+}
+
+func GetVideoSlices(fInfo *protos.RspFileStorageInfo) {
+	slices := make([]*protos.DownloadSliceInfo, len(fInfo.SliceInfo))
+
+	// reverse order to download start from last slice
+	for i := 0; i < len(fInfo.SliceInfo); i++ {
+		idx := uint64(len(fInfo.SliceInfo)) - fInfo.SliceInfo[i].SliceNumber
+		slices[idx] = fInfo.SliceInfo[i]
+	}
+
+	videoCacheTask := &task.VideoCacheTask{
+		Slices:        slices,
+		FileHash:      fInfo.FileHash,
+		DownloadChain: make(chan bool, setting.STREAM_CACHE_MAXSLICE),
+	}
+
+	task.VideoCacheTaskMap.Store(fInfo.FileHash, videoCacheTask)
+
+	if len(videoCacheTask.Slices) > setting.STREAM_CACHE_MAXSLICE {
+		go cacheSlice(videoCacheTask, fInfo)
+		for i := 0; i < setting.STREAM_CACHE_MAXSLICE; i++ {
+			videoCacheTask.DownloadChain <- true
+		}
+	} else {
+		for _, sliceInfo := range videoCacheTask.Slices {
+			if !file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceInfo.SliceStorageInfo.SliceHash, fInfo.SavePath) {
+
+				req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
+				req.IsVideoCaching = true
+				if req != nil {
+					SendReqDownloadSlice(fInfo.FileHash, sliceInfo, req)
+				}
+			}
+		}
+		utils.DebugLog("all slices of the task have begun downloading")
+		_, ok := <-videoCacheTask.DownloadChain
+		if ok {
+			close(videoCacheTask.DownloadChain)
+		}
+		task.VideoCacheTaskMap.Delete(fInfo.FileHash)
+	}
+}
+
+func cacheSlice(videoCacheTask *task.VideoCacheTask, fInfo *protos.RspFileStorageInfo) {
+	for {
+		select {
+		case goon := <-videoCacheTask.DownloadChain:
+			if !goon {
+				continue
+			}
+
+			if len(videoCacheTask.Slices) == 0 {
+				utils.DebugLog("all slices of the task have begun downloading")
+				if _, ok := <-videoCacheTask.DownloadChain; ok {
+					close(videoCacheTask.DownloadChain)
+				}
+				task.VideoCacheTaskMap.Delete(videoCacheTask.FileHash)
+				return
+			}
+			sliceInfo := videoCacheTask.Slices[0]
+			utils.DebugLog("start Download!!!!!", sliceInfo.SliceNumber)
+			if file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceInfo.SliceStorageInfo.SliceHash, fInfo.SavePath) {
+				utils.DebugLog("slice exist already ", sliceInfo.SliceNumber)
+				videoCacheTask.DownloadChain <- true
+			} else {
+				req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
+				req.IsVideoCaching = true
+				SendReqDownloadSlice(fInfo.FileHash, sliceInfo, req)
+			}
+
+			videoCacheTask.Slices = append(videoCacheTask.Slices[:0], videoCacheTask.Slices[0+1:]...)
+		}
 	}
 }
 

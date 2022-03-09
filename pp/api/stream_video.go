@@ -7,10 +7,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stratosnet/sds/pp/types"
+	"github.com/stratosnet/sds/utils/datamesh"
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/bech32"
 
@@ -19,7 +22,6 @@ import (
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
@@ -48,79 +50,99 @@ type SliceInfo struct {
 	TaskId    string
 }
 
-func streamVideoStorageInfo(w http.ResponseWriter, req *http.Request) {
-	url := req.URL.Path
-	fileHash := url[strings.LastIndex(url, "/")+1:]
+func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
+	ownerWalletAddress, fileHash, err := parseFilePath(req.RequestURI)
+	if err != nil {
+		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
+		return
+	}
 
-	var fInfo *protos.RspFileStorageInfo
+	if setting.State == types.PP_ACTIVE {
+		w.WriteHeader(setting.FAILCode)
+		w.Write(httpserv.NewErrorJson(setting.FAILCode, "Current node is activated and is not allowed to cache video").ToBytes())
+		return
+	}
+
+	task.VideoCacheTaskMap.Delete(fileHash)
 	task.DownloadFileMap.Delete(fileHash)
-	event.GetFileStorageInfo("sdm://"+setting.WalletAddress+"/"+fileHash, setting.VIDEOPATH, uuid.New().String(), true, w)
-	start := time.Now().Unix()
-	for {
-		if f, ok := task.DownloadFileMap.Load(fileHash); ok {
-			fInfo = f.(*protos.RspFileStorageInfo)
-			utils.DebugLog("Received file storage info from sp ", fInfo)
-			break
-		} else {
-			select {
-			case <-time.After(time.Second):
-			}
-			// timeout
-			if time.Now().Unix()-start > setting.HTTPTIMEOUT {
-				w.WriteHeader(setting.FAILCode)
-				w.Write(httpserv.NewErrorJson(setting.FAILCode, "http stream video failed to get file storage info!").ToBytes())
-				return
-			}
-		}
+	streamInfo, err := getStreamInfo(fileHash, ownerWalletAddress, setting.WalletAddress, w)
+	if err != nil {
+		w.WriteHeader(setting.FAILCode)
+		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
+		return
 	}
-
-	hlsInfo := event.GetHlsInfo(fInfo)
-	segmentToSliceInfo := make(map[string]*protos.DownloadSliceInfo, 0)
-	for segment := range hlsInfo.SegmentToSlice {
-		segmentInfo := event.GetVideoSliceInfo(segment, fInfo)
-		segmentToSliceInfo[segment] = segmentInfo
-	}
-
-	ret, _ := json.Marshal(
-		StreamInfo{
-			HeaderFile:         hlsInfo.HeaderFile,
-			SegmentToSliceInfo: segmentToSliceInfo,
-			FileInfo:           fInfo,
-		})
+	event.GetVideoSlices(streamInfo.FileInfo)
+	ret, _ := json.Marshal(streamInfo)
 	w.Write(ret)
 }
 
-func streamVideo(w http.ResponseWriter, req *http.Request) {
-	url := req.URL.Path
-	sliceHash := url[strings.LastIndex(url, "/")+1:]
+func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
+	ownerWalletAddress, fileHash, err := parseFilePath(req.RequestURI)
+	if err != nil {
+		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
+		return
+	}
 
-	body, err := verifyStreamReqBody(req, "")
+	task.DownloadFileMap.Delete(fileHash)
+	streamInfo, err := getStreamInfo(fileHash, ownerWalletAddress, setting.WalletAddress, w)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
 		return
 	}
 
-	if setting.State != types.PP_ACTIVE && setting.Config.StreamingCache {
-		utils.DebugLog("Send request to sp to retrieve the slice ", sliceHash)
-
-		fInfo := &protos.RspFileStorageInfo{
-			FileHash: body.FileHash,
-			SavePath: body.SavePath,
-			FileName: body.FileName,
-		}
-
-		event.GetVideoSlice(body.SliceInfo, fInfo, w)
-	} else {
-		utils.DebugLog("Redirect the request to resource node.")
-		redirectToResourceNode(body.FileHash, sliceHash, body.RestAddress, w, req)
-		sendReportStreamResult(body, sliceHash, false)
-	}
+	ret, _ := json.Marshal(streamInfo)
+	w.Write(ret)
 }
 
-func redirectToResourceNode(fileHash, sliceHash, restAddress string, w http.ResponseWriter, req *http.Request) {
+func streamVideoP2P(w http.ResponseWriter, req *http.Request) {
+	sliceHash := parseSliceHash(req.URL)
+
+	body, err := verifyStreamReqBody(req)
+	if err != nil {
+		w.WriteHeader(setting.FAILCode)
+		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
+		return
+	}
+
+	if setting.State == types.PP_ACTIVE {
+		w.WriteHeader(setting.FAILCode)
+		w.Write(httpserv.NewErrorJson(setting.FAILCode, "Current node is activated and is not allowed to cache video").ToBytes())
+		return
+	}
+
+	utils.DebugLog("Send request to retrieve the slice ", sliceHash)
+
+	fInfo := &protos.RspFileStorageInfo{
+		FileHash:      body.FileHash,
+		SavePath:      body.SavePath,
+		FileName:      body.FileName,
+		Sign:          body.Sign,
+		SpP2PAddress:  body.SpP2pAddress,
+		WalletAddress: setting.WalletAddress,
+	}
+
+	event.GetVideoSlice(body.SliceInfo, fInfo, w)
+}
+
+func streamVideoHttp(w http.ResponseWriter, req *http.Request) {
+	sliceHash := parseSliceHash(req.URL)
+
+	body, err := verifyStreamReqBody(req)
+	if err != nil {
+		w.WriteHeader(setting.FAILCode)
+		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
+		return
+	}
+
+	utils.DebugLog("Redirect the request to resource node.")
+	redirectToResourceNode(body.FileHash, sliceHash, body.RestAddress, setting.WalletAddress, w, req)
+	sendReportStreamResult(body, sliceHash, false)
+}
+
+func redirectToResourceNode(fileHash, sliceHash, restAddress, walletAddress string, w http.ResponseWriter, req *http.Request) {
 	var targetAddress string
-	if dlTask, ok := task.DownloadTaskMap.Load(fileHash + setting.WalletAddress); ok {
+	if dlTask, ok := task.DownloadTaskMap.Load(fileHash + walletAddress); ok {
 		//self is the resource PP and has task info
 		downloadTask := dlTask.(*task.DownloadTask)
 		targetAddress = downloadTask.SliceInfo[sliceHash].StoragePpInfo.RestAddress
@@ -128,24 +150,21 @@ func redirectToResourceNode(fileHash, sliceHash, restAddress string, w http.Resp
 		//to ask resource pp for slice addresses
 		targetAddress = restAddress
 	}
-	url := fmt.Sprintf("http://%s/videoSlice/%s", targetAddress, sliceHash)
-	utils.DebugLog("Redirect URL ", url)
-	http.Redirect(w, req, url, http.StatusTemporaryRedirect)
+	redirectURL := fmt.Sprintf("http://%s/videoSlice/%s", targetAddress, sliceHash)
+	utils.DebugLog("Redirect URL ", redirectURL)
+	http.Redirect(w, req, redirectURL, http.StatusTemporaryRedirect)
 }
 
 func clearStreamTask(w http.ResponseWriter, req *http.Request) {
-	url := req.URL.Path
-	fileHash := url[strings.LastIndex(url, "/")+1:]
-	event.ClearFileInfoAndDownloadTask(fileHash, w)
+	event.ClearFileInfoAndDownloadTask(parseFileHash(req.URL), w)
 }
 
 func GetVideoSlice(w http.ResponseWriter, req *http.Request) {
-	url := req.URL.Path
-	sliceHash := url[strings.LastIndex(url, "/")+1:]
+	sliceHash := parseSliceHash(req.URL)
 
-	utils.Log("Received get video slice request :", url)
+	utils.Log("Received get video slice request :", req.URL)
 
-	body, err := verifyStreamReqBody(req, sliceHash)
+	body, err := verifyStreamReqBody(req)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
@@ -154,16 +173,16 @@ func GetVideoSlice(w http.ResponseWriter, req *http.Request) {
 
 	utils.DebugLog("The request body is ", body)
 
-	if dlTask, ok := task.DownloadTaskMap.Load(body.FileHash + body.WalletAddress); ok {
+	if dlTask, ok := task.DownloadTaskMap.Load(body.FileHash + setting.WalletAddress); ok {
 		utils.DebugLog("Found task info ", body)
 		downloadTask := dlTask.(*task.DownloadTask)
 		ppInfo := downloadTask.SliceInfo[sliceHash].StoragePpInfo
 		if ppInfo.P2PAddress != setting.P2PAddress {
 			utils.DebugLog("Current P2PAddress does not have the requested slice")
 			targetAddress := ppInfo.RestAddress
-			url := fmt.Sprintf("http://%s/videoSlice/%s", targetAddress, sliceHash)
-			utils.DebugLog("Redirect the request to " + url)
-			http.Redirect(w, req, url, http.StatusTemporaryRedirect)
+			redirectURL := fmt.Sprintf("http://%s/videoSlice/%s", targetAddress, sliceHash)
+			utils.DebugLog("Redirect the request to " + redirectURL)
+			http.Redirect(w, req, redirectURL, http.StatusTemporaryRedirect)
 			return
 		}
 	}
@@ -189,7 +208,68 @@ func GetVideoSlice(w http.ResponseWriter, req *http.Request) {
 	sendReportStreamResult(body, sliceHash, true)
 }
 
-func verifyStreamReqBody(req *http.Request, sliceHash string) (*StreamReqBody, error) {
+func parseFilePath(reqURI string) (walletAddress, fileHash string, err error) {
+	filePath := reqURI[strings.Index(reqURI[1:], "/")+2:]
+
+	if filePath == "" || len(filePath) != 82 || filePath[41] != '/' {
+		err = errors.New("invalid file path")
+		return
+	}
+
+	walletAddress = filePath[0:41]
+	fileHash = filePath[42:82]
+	return
+}
+
+func parseFileHash(reqURL *url.URL) string {
+	reqPath := reqURL.Path
+	return reqPath[strings.LastIndex(reqPath, "/")+1:]
+}
+
+func parseSliceHash(reqURL *url.URL) string {
+	reqPath := reqURL.Path
+	return reqPath[strings.LastIndex(reqPath, "/")+1:]
+}
+
+func getStreamInfo(fileHash, ownerWalletAddress, walletAddress string, w http.ResponseWriter) (*StreamInfo, error) {
+	filePath := datamesh.DataMashId{
+		Owner: ownerWalletAddress,
+		Hash:  fileHash,
+	}.String()
+	event.GetFileStorageInfo(filePath, setting.VIDEOPATH, uuid.New().String(), walletAddress, true, w)
+	var fInfo *protos.RspFileStorageInfo
+	start := time.Now().Unix()
+	for {
+		if f, ok := task.DownloadFileMap.Load(fileHash); ok {
+			fInfo = f.(*protos.RspFileStorageInfo)
+			utils.DebugLog("Received file storage info from sp ", fInfo)
+			break
+		} else {
+			select {
+			case <-time.After(time.Second):
+			}
+			// timeout
+			if time.Now().Unix()-start > setting.HTTPTIMEOUT {
+				return nil, errors.New("http stream video failed to get file storage info!")
+			}
+		}
+	}
+
+	hlsInfo := event.GetHlsInfo(fInfo)
+	segmentToSliceInfo := make(map[string]*protos.DownloadSliceInfo, 0)
+	for segment := range hlsInfo.SegmentToSlice {
+		segmentInfo := event.GetVideoSliceInfo(segment, fInfo)
+		segmentToSliceInfo[segment] = segmentInfo
+	}
+	StreamInfo := &StreamInfo{
+		HeaderFile:         hlsInfo.HeaderFile,
+		SegmentToSliceInfo: segmentToSliceInfo,
+		FileInfo:           fInfo,
+	}
+	return StreamInfo, nil
+}
+
+func verifyStreamReqBody(req *http.Request) (*StreamReqBody, error) {
 	body, err := ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
 
@@ -206,10 +286,6 @@ func verifyStreamReqBody(req *http.Request, sliceHash string) (*StreamReqBody, e
 
 	if len(reqBody.FileHash) != 40 {
 		return nil, errors.New("incorrect file fileHash")
-	}
-
-	if len(reqBody.WalletAddress) != 41 {
-		return nil, errors.New("incorrect wallet address")
 	}
 
 	if len(reqBody.P2PAddress) != 47 {
@@ -232,38 +308,44 @@ func verifyStreamReqBody(req *http.Request, sliceHash string) (*StreamReqBody, e
 }
 
 func verifySignature(reqBody *StreamReqBody, sliceHash string, data []byte) bool {
-	if sliceHash != utils.CalcSliceHash(data, reqBody.FileHash, reqBody.SliceInfo.SliceNumber) {
+	val, ok := setting.SPMap.Load(reqBody.SpP2pAddress)
+	if !ok {
+		utils.ErrorLog("cannot find sp info by given the SP address ", reqBody.SpP2pAddress)
 		return false
 	}
-	if val, ok := setting.SPMap.Load(reqBody.SpP2pAddress); ok {
-		spInfo, ok := val.(setting.SPBaseInfo)
-		if !ok {
-			return false
-		}
-		_, pubKeyRaw, err := bech32.DecodeAndConvert(spInfo.P2PPublicKey)
-		if err != nil {
-			utils.ErrorLog("Error when trying to decode P2P pubKey bech32", err)
-			return false
-		}
 
-		p2pPubKey := tmed25519.PubKeyEd25519{}
-		err = stratoschain.Cdc.UnmarshalBinaryBare(pubKeyRaw, &p2pPubKey)
-		if err != nil {
-			utils.ErrorLog("Error when trying to read P2P pubKey ed25519 binary", err)
-			return false
-		}
-
-		return ed25519.Verify(p2pPubKey[:], []byte(reqBody.P2PAddress+reqBody.FileHash), reqBody.Sign)
-	} else {
+	spInfo, ok := val.(setting.SPBaseInfo)
+	if !ok {
+		utils.ErrorLog("Fail to parse SP info ", reqBody.SpP2pAddress)
 		return false
 	}
+
+	_, pubKeyRaw, err := bech32.DecodeAndConvert(spInfo.P2PPublicKey)
+	if err != nil {
+		utils.ErrorLog("Error when trying to decode P2P pubKey bech32", err)
+		return false
+	}
+
+	p2pPubKey := tmed25519.PubKeyEd25519{}
+	err = stratoschain.Cdc.UnmarshalBinaryBare(pubKeyRaw, &p2pPubKey)
+
+	if err != nil {
+		utils.ErrorLog("Error when trying to read P2P pubKey ed25519 binary", err)
+		return false
+	}
+
+	if !ed25519.Verify(p2pPubKey[:], []byte(reqBody.P2PAddress+reqBody.FileHash), reqBody.Sign) {
+		return false
+	}
+
+	return sliceHash == utils.CalcSliceHash(data, reqBody.FileHash, reqBody.SliceInfo.SliceNumber)
 }
 
 func sendReportStreamResult(body *StreamReqBody, sliceHash string, isPP bool) {
 	event.SendReportStreamingResult(&protos.RspDownloadSlice{
 		SliceInfo:     &protos.SliceOffsetInfo{SliceHash: sliceHash},
 		FileHash:      body.FileHash,
-		WalletAddress: body.WalletAddress,
+		WalletAddress: setting.WalletAddress,
 		P2PAddress:    body.P2PAddress,
 		TaskId:        body.SliceInfo.TaskId,
 		SpP2PAddress:  body.SpP2pAddress,
