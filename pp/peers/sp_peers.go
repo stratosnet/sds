@@ -136,9 +136,13 @@ func SendLatencyCheckMessageToSPList() {
 }
 
 func checkSingleSpLatency(server string, heartbeat bool) {
+	if client.SPConn == nil {
+		utils.DebugLog("SP latency check skipped until connection to SP is recovered")
+		return
+	}
 	utils.DebugLog("[SP_LATENCY_CHECK] SendHeartbeat(", server, ", req, header.ReqHeartbeat)")
 	var spConn *cf.ClientConn
-	if client.SPConn.GetName() != server {
+	if client.GetConnectionName(client.SPConn) != server {
 		spConn = client.NewClient(server, heartbeat)
 	} else {
 		utils.DebugLog("Checking latency for working SP ", server)
@@ -154,7 +158,7 @@ func checkSingleSpLatency(server string, heartbeat bool) {
 			PingTime:         strconv.FormatInt(start, 10),
 		}
 		SendMessage(spConn, pb, header.ReqHeart)
-		if client.SPConn.GetName() != server {
+		if client.GetConnectionName(client.SPConn) != server {
 			bufferedSpConns = append(bufferedSpConns, spConn)
 		}
 	}
