@@ -129,64 +129,71 @@ func SetupWalletKey() error {
 		if err != nil {
 			return errors.New("couldn't read nickname from console: " + err.Error())
 		}
+		err = SetupWallet(nickname)
+		if err != nil {
+			utils.ErrorLog(err)
+			return err
+		}
+	}
+	return nil
+}
 
-		password, err := console.Stdin.PromptPassword("Enter password: ")
-		if err != nil {
-			return errors.New("couldn't read password from console: " + err.Error())
-		}
-		confimation, err := console.Stdin.PromptPassword("Enter password again: ")
-		if err != nil {
-			return errors.New("couldn't read confirmation password from console: " + err.Error())
-		}
-		if password != confimation {
-			return errors.New("invalid. The two passwords don't match")
-		}
+func SetupWallet(nickname string) error {
+	password, err := console.Stdin.PromptPassword("Enter password: ")
+	if err != nil {
+		return errors.New("couldn't read password from console: " + err.Error())
+	}
+	confirmation, err := console.Stdin.PromptPassword("Enter password again: ")
+	if err != nil {
+		return errors.New("couldn't read confirmation password from console: " + err.Error())
+	}
+	if password != confirmation {
+		return errors.New("invalid. The two passwords don't match")
+	}
 
-		mnemonic, err := console.Stdin.PromptPassword("input bip39 mnemonic (leave blank to generate a new one)")
-		if mnemonic == "" {
-			newMnemonic, err := utils.NewMnemonic()
-			if err != nil {
-				return errors.Wrap(err, "Couldn't generate new mnemonic")
-			}
-			mnemonic = newMnemonic
-			fmt.Println("generated mnemonic is :  \n" +
-				"=======================================================================  \n" +
-				mnemonic + "\n" +
-				"======================================================================= \n")
-		}
-
-		hdPath, err := console.Stdin.PromptInput("input hd-path for the account, default: \"m/44'/606'/0'/0/0\" : ")
+	mnemonic, err := console.Stdin.PromptPassword("input bip39 mnemonic (leave blank to generate a new one)")
+	if mnemonic == "" {
+		newMnemonic, err := utils.NewMnemonic()
 		if err != nil {
-			return errors.New("couldn't read the hd-path")
+			return errors.Wrap(err, "Couldn't generate new mnemonic")
 		}
-		if hdPath == "" {
-			hdPath = setting.HD_PATH
-		}
-		//hrp, mnemonic, bip39Passphrase, hdPath
-		walletKeyAddress, err := utils.CreateWallet(setting.Config.AccountDir, nickname, password,
-			types.DefaultAddressPrefix, mnemonic, "", hdPath)
-		if err != nil {
-			return errors.New("couldn't create WalletAddress: " + err.Error())
-		}
-
-		walletKeyAddressString, err := walletKeyAddress.ToBech(types.DefaultAddressPrefix)
-		if err != nil {
-			return errors.New("couldn't convert P2P key address to bech string: " + err.Error())
-		}
-		setting.SetConfig("WalletAddress", walletKeyAddressString)
-
-		save, err := console.Stdin.PromptInput("save wallet password to config file: Y(es)/N(o): ")
-		if err != nil {
-			return errors.New("couldn't read the input, not saving by default")
-		}
-		if strings.ToLower(save) == "yes" || strings.ToLower(save) == "y" {
-			setting.SetConfig("WalletPassword", password)
-		}
-		fmt.Println("save the mnemonic phase properly for future recover: \n" +
+		mnemonic = newMnemonic
+		fmt.Println("generated mnemonic is :  \n" +
 			"=======================================================================  \n" +
 			mnemonic + "\n" +
 			"======================================================================= \n")
 	}
 
+	hdPath, err := console.Stdin.PromptInput("input hd-path for the account, default: \"m/44'/606'/0'/0/0\" : ")
+	if err != nil {
+		return errors.New("couldn't read the hd-path")
+	}
+	if hdPath == "" {
+		hdPath = setting.HD_PATH
+	}
+	//hrp, mnemonic, bip39Passphrase, hdPath
+	walletKeyAddress, err := utils.CreateWallet(setting.Config.AccountDir, nickname, password,
+		types.DefaultAddressPrefix, mnemonic, "", hdPath)
+	if err != nil {
+		return errors.New("couldn't create WalletAddress: " + err.Error())
+	}
+
+	walletKeyAddressString, err := walletKeyAddress.ToBech(types.DefaultAddressPrefix)
+	if err != nil {
+		return errors.New("couldn't convert P2P key address to bech string: " + err.Error())
+	}
+	setting.SetConfig("WalletAddress", walletKeyAddressString)
+
+	save, err := console.Stdin.PromptInput("save wallet password to config file: Y(es)/N(o): ")
+	if err != nil {
+		return errors.New("couldn't read the input, not saving by default")
+	}
+	if strings.ToLower(save) == "yes" || strings.ToLower(save) == "y" {
+		setting.SetConfig("WalletPassword", password)
+	}
+	fmt.Println("save the mnemonic phase properly for future recover: \n" +
+		"=======================================================================  \n" +
+		mnemonic + "\n" +
+		"======================================================================= \n")
 	return nil
 }

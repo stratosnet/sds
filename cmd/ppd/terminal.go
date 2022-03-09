@@ -63,19 +63,12 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 			fmt.Println("Not enough arguments. Please provide the new wallet name")
 			return false
 		}
-
-		password := console.MyGetPassword("input password", true)
-		if len(password) == 0 {
-			fmt.Println("wrong password")
-			return false
-		}
-
-		mnemonic, err := console.Stdin.PromptPassword("input bip39 mnemonic (leave blank to generate a new one)")
+		err := SetupWallet(param[0])
 		if err != nil {
-			fmt.Println("failed to get input mnemonic words")
+			fmt.Println(err)
 			return false
 		}
-		return callRpc(c, "newWallet", []string{password, param[0], mnemonic, setting.HD_PATH})
+		return true
 	}
 
 	login := func(line string, param []string) bool {
