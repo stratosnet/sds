@@ -568,7 +568,7 @@ message RspGetHDInfo {
   string wallet_address = 4;
 }
 
-// sp 
+// sp
 message ReqDeleteSlice {
   string p2p_address = 1;
   string slice_hash = 2; //
@@ -778,4 +778,14 @@ message ReqReportNodeStatus {
   MemoryStat    memory = 3;
   DiskStat      disk = 4;
   BandwidthStat bandwidth = 5;
+}
+
+message ReqGetPPStatus {
+  PPBaseInfo my_address = 1;
+
+}
+
+message RspGetPPStatus{
+  uint32 ActivationState = 1;
+  Result result = 2;
 }

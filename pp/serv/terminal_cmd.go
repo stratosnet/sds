@@ -72,7 +72,7 @@ func (api *terminalCmd) Activate(param []string) (CmdResult, error) {
 	}
 
 	if setting.State != types.PP_INACTIVE {
-		return CmdResult{Msg: "the pp is not inactive"}, nil
+		return CmdResult{Msg: "the pp is already active"}, nil
 	}
 
 	if !setting.IsPP {

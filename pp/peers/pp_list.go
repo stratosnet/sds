@@ -14,14 +14,24 @@ import (
 // Peers is a list of the know PP node peers
 var Peers types.PeerList
 
+const (
+	RELOAD_PP_LIST_INTERVAL_SHORT  = 5 * time.Second
+	RELOAD_PP_LIST_INTERVAL_MEDIUM = 15 * time.Second
+	RELOAD_PP_LIST_INTERVAL_LONG   = 30 * time.Second
+)
+
 // InitPPList
 func InitPPList() {
 	pplist := Peers.GetPPList()
 	if len(pplist) == 0 {
 		GetPPList()
 	} else {
-		if success := SendRegisterRequestViaPP(pplist); !success {
+		if success := ConnectToGatewayPP(pplist); !success {
 			GetPPList()
+			return
+		}
+		if setting.IsAuto && setting.State == types.PP_ACTIVE && !setting.IsLoginToSP {
+			RegisterToSP(true)
 		}
 	}
 }
@@ -40,7 +50,7 @@ func GetPPList() {
 	SendMessageToSPServer(requests.ReqGetPPlistData(), header.ReqGetPPList)
 }
 
-func SendRegisterRequestViaPP(pplist []*types.PeerInfo) bool {
+func ConnectToGatewayPP(pplist []*types.PeerInfo) bool {
 	for _, ppInfo := range pplist {
 		if ppInfo.NetworkAddress == setting.NetworkAddress {
 			Peers.DeletePPByNetworkAddress(ppInfo.NetworkAddress)
@@ -48,9 +58,6 @@ func SendRegisterRequestViaPP(pplist []*types.PeerInfo) bool {
 		}
 		client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
 		if client.PPConn != nil {
-			if client.SPConn == nil {
-				RegisterToSP(false)
-			}
 			return true
 		}
 		utils.DebugLog("failed to conn PP，delete:", ppInfo)
@@ -59,7 +66,20 @@ func SendRegisterRequestViaPP(pplist []*types.PeerInfo) bool {
 	return false
 }
 
-func ScheduleReloadPPlist(future time.Duration) {
+/**
+Long: 	pp not activated
+Medium: mining not yet started
+Short: 	by default (mining)
+*/
+func ScheduleReloadPPlist() {
+	var future time.Duration
+	if setting.State != types.PP_ACTIVE {
+		future = RELOAD_PP_LIST_INTERVAL_LONG
+	} else if !setting.IsStartMining {
+		future = RELOAD_PP_LIST_INTERVAL_MEDIUM
+	} else {
+		future = RELOAD_PP_LIST_INTERVAL_SHORT
+	}
 	utils.DebugLog("scheduled to get pp-list after: ", future.Seconds(), "second")
 	ppPeerClock.AddJobWithInterval(future, GetPPList)
 }

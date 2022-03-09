@@ -22,7 +22,7 @@ func Activate(amount, fee, gas int64) error {
 	ppState, err := stratoschain.QueryResourceNodeState(setting.GetNetworkID().String())
 	if err != nil {
 		utils.ErrorLog("Couldn't query node status from the blockchain", err)
-		return err
+		//return err
 	}
 
 	var activateReq *protos.ReqActivatePP
@@ -89,4 +89,9 @@ func RspActivated(ctx context.Context, conn core.WriteCloser) {
 
 	setting.State = types.PP_ACTIVE
 	utils.Log("This PP node is now active")
+
+	// if autorun = true, bond pp to sp
+	if setting.IsAuto && !setting.IsLoginToSP {
+		peers.RegisterToSP(true)
+	}
 }

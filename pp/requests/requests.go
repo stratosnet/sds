@@ -95,6 +95,17 @@ func ReqGetSPlistData() *protos.ReqGetSPList {
 	}
 }
 
+func ReqGetPPStatusData() *protos.ReqGetPPStatus {
+	return &protos.ReqGetPPStatus{
+		MyAddress: &protos.PPBaseInfo{
+			P2PAddress:     setting.P2PAddress,
+			WalletAddress:  setting.WalletAddress,
+			NetworkAddress: setting.NetworkAddress,
+			RestAddress:    setting.RestAddress,
+		},
+	}
+}
+
 // RequestUploadFileData RequestUploadFileData, ownerWalletAddress can be either pp node's walletAddr or file owner's walletAddr
 func RequestUploadFileData(paths, storagePath, reqID, ownerWalletAddress string, isCover, isVideoStream, isEncrypted bool) *protos.ReqUploadFile {
 	info := file.GetFileInfo(paths)
