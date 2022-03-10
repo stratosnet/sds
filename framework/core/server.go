@@ -155,26 +155,26 @@ func (s *Server) Start(l net.Listener) error {
 	)
 	//Assign the value of secondRead/WriteFlowA to secondRead/WriteFlowB for monitor use, then reset secondRead/WriteFlowA to 0
 	myClock.AddJobRepeat(time.Second*1, 0, logFunc)
-	// var tempDelay time.Duration
+	var tempDelay time.Duration
 	for {
 		spbConn, err := l.Accept()
 		if err != nil {
-			// if ne, ok := err.(net.Error); ok && ne.Temporary() {
-			// 	if tempDelay == 0 {
-			// 		tempDelay = 5 * time.Millisecond
-			// 	} else {
-			// 		tempDelay *= 2
-			// 	}
-			// 	if max := 1 * time.Second; tempDelay >= max {
-			// 		tempDelay = max
-			// 	}
-			// 	holmes.Errorf("accept error %v, retrying in %d\n", err, tempDelay)
-			// 	select {
-			// 	case <-time.After(tempDelay):
-			// 	case <-s.ctx.Done():
-			// 	}
-			// 	continue
-			// }
+			if ne, ok := err.(net.Error); ok && ne.Temporary() {
+				if tempDelay == 0 {
+					tempDelay = 5 * time.Millisecond
+				} else {
+					tempDelay *= 2
+				}
+				if max := 1 * time.Second; tempDelay >= max {
+					tempDelay = max
+				}
+				utils.ErrorLogf("accept error %v, retrying in %d\n", err, tempDelay)
+				select {
+				case <-time.After(tempDelay):
+				case <-s.ctx.Done():
+				}
+				continue
+			}
 
 			utils.ErrorLog("accept err:", err)
 			return err
@@ -239,8 +239,11 @@ func (s *Server) Stop() {
 
 	s.conns.Range(func(k, v interface{}) bool {
 		i := k.(int64)
-		c := v.(*ServerConn)
-		conns[i] = c
+		switch v.(type) {
+		case *ServerConn:
+			c := v.(*ServerConn)
+			conns[i] = c
+		}
 		return true
 	})
 	// let GC do the cleanings
