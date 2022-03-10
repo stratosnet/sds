@@ -24,7 +24,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	helpStr := "\n" +
 		"help                                       			show all the commands\n" +
 		"wallets                                    			acquire all wallet wallets' address\n" +
-		"newwallet <walletName> ->password                      create new wallet, input password in prompt\n" +
+		"newwallet							                    create new wallet, input password in prompt\n" +
 		"login <walletAddress> ->password           			unlock and log in wallet, input password in prompt\n" +
 		"registerpeer                               			register peer to index node\n" +
 		"rp                                         			register peer to index node\n" +
@@ -58,12 +58,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		return callRpc(c, "wallets", param)
 	}
 
-	newWallet := func(line string, param []string) bool {
-		if len(param) < 1 {
-			fmt.Println("Not enough arguments. Please provide the new wallet name")
-			return false
-		}
-		err := SetupWallet(param[0])
+	newwallet := func(line string, param []string) bool {
+		err := SetupWallet()
 		if err != nil {
 			fmt.Println(err)
 			return false
@@ -214,7 +210,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("help", help, true)
 	console.Mystdin.RegisterProcessFunc("h", help, true)
 	console.Mystdin.RegisterProcessFunc("wallets", wallets, false)
-	console.Mystdin.RegisterProcessFunc("newwallet", newWallet, false)
+	console.Mystdin.RegisterProcessFunc("newwallet", newwallet, false)
 	console.Mystdin.RegisterProcessFunc("login", login, false)
 	console.Mystdin.RegisterProcessFunc("startmining", start, true)
 	console.Mystdin.RegisterProcessFunc("rp", registerPP, true)
