@@ -33,11 +33,11 @@ var (
 )
 
 func ReqHBLatencyCheckSpList(ctx context.Context, conn core.WriteCloser) {
-	if conn.(*cf.ClientConn).GetName() != client.SPConn.GetName() {
-		//utils.DebugLogf("====== not sending latency check %v ======", conn.(*cf.ClientConn).GetName())
+	if client.GetConnectionName(conn) != client.GetConnectionName(client.SPConn) {
+		//utils.DebugLogf("====== not sending latency check %v ======", client.GetConnectionName(conn))
 		return
 	}
-	//utils.DebugLogf("====== sending latency check %v ======", conn.(*cf.ClientConn).GetName())
+	//utils.DebugLogf("====== sending latency check %v ======", client.GetConnectionName(conn))
 	peers.ClearBufferedSpConns()
 	// clear optSp before ping sp list
 	summary.optSp = OptimalSp{}
@@ -112,13 +112,13 @@ func connectAndRegisterToOptSp() {
 func SendHeartBeat(ctx context.Context, conn core.WriteCloser) {
 	switch conn.(type) {
 	case *core.ServerConn:
-		utils.DebugLog("not sending regular heartbeat as this is a server conn, ", conn.(*core.ServerConn).GetName())
+		utils.DebugLog("not sending regular heartbeat as this is a server conn, ", client.GetConnectionName(conn))
 		return
 	case *cf.ClientConn:
-		utils.DebugLog("this is a client conn, ", conn.(*cf.ClientConn).GetName())
+		utils.DebugLog("this is a client conn, ", client.GetConnectionName(conn))
 	}
 
-	if client.SPConn.GetName() == conn.(*cf.ClientConn).GetName() {
+	if client.GetConnectionName(client.SPConn) == client.GetConnectionName(conn) {
 		start := time.Now().UnixNano()
 		pb := &protos.ReqHeartbeat{
 			HbType:       protos.HeartbeatType_REGULAR_HEARTBEAT,
@@ -126,11 +126,11 @@ func SendHeartBeat(ctx context.Context, conn core.WriteCloser) {
 			PingTime:     strconv.FormatInt(start, 10),
 		}
 		peers.SendMessage(conn.(*cf.ClientConn), pb, header.ReqHeart)
-		utils.DebugLogf("regular heartbeat sent to SP node(%v)", conn.(*cf.ClientConn).GetName())
+		utils.DebugLogf("regular heartbeat sent to SP node(%v)", client.GetConnectionName(conn))
 		return
 	}
 	// TODO decide if to send heartbeat to PP, which would maintain lots of pp conns in client
-	utils.DebugLogf("not sending regular heartbeat to PP node(%v)", conn.(*cf.ClientConn).GetName())
+	utils.DebugLogf("not sending regular heartbeat to PP node(%v)", client.GetConnectionName(conn))
 }
 
 // RspHeartBeat - regular heartbeat getting no rsp from sp

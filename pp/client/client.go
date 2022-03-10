@@ -105,3 +105,16 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 	ConnMap[server] = conn
 	return conn
 }
+
+func GetConnectionName(conn core.WriteCloser) string {
+	if conn == nil {
+		return ""
+	}
+	switch conn.(type) {
+	case *core.ServerConn:
+		return conn.(*core.ServerConn).GetName()
+	case *cf.ClientConn:
+		return conn.(*cf.ClientConn).GetName()
+	}
+	return ""
+}
