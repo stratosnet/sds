@@ -109,11 +109,14 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 			return
 		}
 
+		initialStake := result.Events["create_resource_node.initial_stake"]
+
 		activatedMsg := &protos.ReqActivatedPP{
 			P2PAddress:        p2pAddressString,
 			P2PPubkey:         hex.EncodeToString(p2pPubkey[:]),
 			OzoneLimitChanges: ozoneLimitChangeStr[0],
 			TxHash:            txHashList[0],
+			InitialStake:      initialStake[0],
 		}
 
 		err = postToSP("/pp/activated", activatedMsg)

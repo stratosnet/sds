@@ -9,7 +9,7 @@ import (
 	"github.com/stratosnet/sds/utils/types"
 )
 
-func reqActivateData(amount, fee, gas int64) (*protos.ReqActivatePP, error) {
+func reqActivateData(tier, amount, fee, gas int64) (*protos.ReqActivatePP, error) {
 	// Create and sign transaction to add new resource node
 	ownerAddress, err := types.BechToAddress(setting.WalletAddress)
 	if err != nil {
@@ -29,6 +29,8 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivatePP, error) {
 		Tx:            txBytes,
 		PpInfo:        setting.GetPPInfo(),
 		AlreadyActive: false,
+		Tier:          uint32(tier),
+		InitialStake:  uint64(amount),
 	}
 	return req, nil
 }

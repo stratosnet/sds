@@ -294,6 +294,8 @@ message ReqActivatePP {
   bytes      tx = 1;
   PPBaseInfo pp_info = 2;
   bool       already_active = 3;
+  uint32     tier = 4;
+  uint64     initial_stake = 5;
 }
 
 message RspActivatePP {
@@ -307,6 +309,7 @@ message ReqActivatedPP {
   string p2p_pubkey = 2;
   string ozone_limit_changes = 3; // positive
   string tx_hash = 4;
+  string initial_stake = 5;
 }
 
 message ReqActivatedSP {
