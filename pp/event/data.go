@@ -21,7 +21,8 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivatePP, error) {
 	signatureKeys := []stratoschain.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: stratoschain.SignatureSecp256k1},
 	}
-	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastBlock, txMsg, fee, gas, signatureKeys)
+	unsignedMsgs := []*stratoschain.UnsignedMsg{{Msg: txMsg, SignatureKeys: signatureKeys}}
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastBlock, unsignedMsgs, fee, gas)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +47,8 @@ func reqUpdateStakeData(stakeDelta, fee, gas int64, incrStake bool) (*protos.Req
 	signatureKeys := []stratoschain.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: stratoschain.SignatureSecp256k1},
 	}
-	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastSync, txMsg, fee, gas, signatureKeys)
+	unsignedMsgs := []*stratoschain.UnsignedMsg{{Msg: txMsg, SignatureKeys: signatureKeys}}
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastSync, unsignedMsgs, fee, gas)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +72,8 @@ func reqDeactivateData(fee, gas int64) (*protos.ReqDeactivatePP, error) {
 	signatureKeys := []stratoschain.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: stratoschain.SignatureSecp256k1},
 	}
-	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastSync, txMsg, fee, gas, signatureKeys)
+	unsignedMsgs := []*stratoschain.UnsignedMsg{{Msg: txMsg, SignatureKeys: signatureKeys}}
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastSync, unsignedMsgs, fee, gas)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +96,8 @@ func reqPrepayData(amount, fee, gas int64) (*protos.ReqPrepay, error) {
 	signatureKeys := []stratoschain.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: stratoschain.SignatureSecp256k1},
 	}
-	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastSync, txMsg, fee, gas, signatureKeys)
+	unsignedMsgs := []*stratoschain.UnsignedMsg{{Msg: txMsg, SignatureKeys: signatureKeys}}
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastSync, unsignedMsgs, fee, gas)
 	if err != nil {
 		return nil, err
 	}

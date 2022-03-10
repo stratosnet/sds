@@ -374,6 +374,8 @@ type SlashedPPReq struct {
 
 func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
+		// TODO: update for multiple events
+		utils.Logf("Received %v messages in SlashingResourceNodeHandler", len(result.Events["slashing_resource_node.network_address"]))
 		_, p2pAddressString, err := getP2pAddressFromEvent(result, "slashing_resource_node", "network_address")
 		if err != nil {
 			utils.ErrorLog(err.Error())
