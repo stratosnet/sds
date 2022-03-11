@@ -285,18 +285,22 @@ func BroadcastTxBytes(txBytes []byte) error {
 			return errors.New("broadcastReq tx doesn't contain any messages")
 		}
 
-		// TODO: update for multiple msgs
-		msg := broadcastReq.Tx.Msgs[0]
-		if msg.Type() == "slashing_resource_node" {
-			// Directly call slashing_resource_node handler
-			slashMsg, ok := msg.(pottypes.MsgSlashingResourceNode)
-			if !ok {
-				return errors.New("cannot convert msg to MsgSlashingResourceNode")
-			}
+		// Additional processing based on the msg type
+		slashPPEvents := make(map[string][]string)
+		for _, msg := range broadcastReq.Tx.Msgs {
+			if msg.Type() == "slashing_resource_node" {
+				slashMsg, ok := msg.(pottypes.MsgSlashingResourceNode)
+				if !ok {
+					return errors.New("cannot convert msg to MsgSlashingResourceNode")
+				}
 
-			result := coretypes.ResultEvent{Events: make(map[string][]string, 0)}
-			result.Events["slashing_resource_node.network_address"] = []string{slashMsg.NetworkAddress.String()}
-			result.Events["slashing_resource_node.suspended"] = []string{strconv.FormatBool(slashMsg.Suspend)}
+				slashPPEvents["slashing_resource_node.network_address"] = append(slashPPEvents["slashing_resource_node.network_address"], slashMsg.NetworkAddress.String())
+				slashPPEvents["slashing_resource_node.suspended"] = append(slashPPEvents["slashing_resource_node.suspended"], strconv.FormatBool(slashMsg.Suspend))
+			}
+		}
+		if len(slashPPEvents) > 0 {
+			// Directly call slashing_resource_node handler
+			result := coretypes.ResultEvent{Events: slashPPEvents}
 			handlers.SlashingResourceNodeHandler()(result)
 		}
 	}

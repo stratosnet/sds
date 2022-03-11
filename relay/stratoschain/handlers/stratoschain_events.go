@@ -19,6 +19,7 @@ import (
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
+// TODO: update remaining handlers to be able to process multiple events
 func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 
@@ -366,39 +367,58 @@ func VolumeReportHandler() func(event coretypes.ResultEvent) {
 	}
 }
 
-type SlashedPPReq struct {
+type SlashedPP struct {
 	P2PAddress string `json:"p2p_address"`
 	QueryFirst bool   `json:"query_first"`
 	Suspended  bool   `json:"suspended"`
 }
 
+type SlashedPPReq struct {
+	PPList []SlashedPP `json:"pp_list"`
+}
+
 func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		// TODO: update for multiple events
-		utils.Logf("Received %v messages in SlashingResourceNodeHandler", len(result.Events["slashing_resource_node.network_address"]))
-		_, p2pAddressString, err := getP2pAddressFromEvent(result, "slashing_resource_node", "network_address")
-		if err != nil {
-			utils.ErrorLog(err.Error())
-			return
+		requiredAttributes := []string{
+			"slashing_resource_node.network_address",
+			"slashing_resource_node.suspended",
+		}
+		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+
+		var slashedPPs []SlashedPP
+		for _, event := range processedEvents {
+			_, p2pAddressString, err := getP2pAddressFromAttribute(event["slashing_resource_node.network_address"])
+			if err != nil {
+				utils.DebugLog("Invalid P2P address in the slashing_resource_node message from stratos-chain", err)
+				continue
+			}
+
+			suspended, err := strconv.ParseBool(event["slashing_resource_node.suspended"])
+			if err != nil {
+				utils.DebugLog("Invalid suspended boolean in the slashing_resource_node message from stratos-chain", err)
+				continue
+			}
+
+			slashedPP := SlashedPP{
+				P2PAddress: p2pAddressString,
+				QueryFirst: false,
+				Suspended:  suspended,
+			}
+			slashedPPs = append(slashedPPs, slashedPP)
 		}
 
-		suspendedList := result.Events["slashing_resource_node.suspended"]
-		if len(suspendedList) < 1 {
-			utils.ErrorLog("No suspended boolean was specified in the slashing_resource_node message from stratos-chain")
-			return
+		if len(slashedPPs) != initialEventCount {
+			utils.ErrorLogf("slashing_resource_node message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+				len(slashedPPs), initialEventCount-len(processedEvents), len(processedEvents)-len(slashedPPs))
 		}
-		suspended, err := strconv.ParseBool(suspendedList[0])
-		if err != nil {
-			utils.ErrorLog("Invalid suspended boolean in the slashing_resource_node message from stratos-chain: " + err.Error())
+		if len(slashedPPs) == 0 {
 			return
 		}
 
 		slashedPPMsg := SlashedPPReq{
-			P2PAddress: p2pAddressString,
-			QueryFirst: false,
-			Suspended:  suspended,
+			PPList: slashedPPs,
 		}
-		err = postToSP("/pp/slashed", slashedPPMsg)
+		err := postToSP("/pp/slashed", slashedPPMsg)
 		if err != nil {
 			utils.ErrorLog(err)
 			return
@@ -446,4 +466,45 @@ func getP2pAddressFromEvent(result coretypes.ResultEvent, eventName, attribName 
 	}
 
 	return p2pAddress, p2pAddressString, nil
+}
+
+func getP2pAddressFromAttribute(attribute string) (types.Address, string, error) {
+	p2pAddress, err := types.BechToAddress(attribute)
+	if err != nil {
+		return types.Address{}, "", errors.New("error when trying to convert P2P address to bytes")
+	}
+	p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
+	if err != nil {
+		return types.Address{}, "", errors.New("error when trying to convert P2P address to bech32")
+	}
+
+	return p2pAddress, p2pAddressString, nil
+}
+
+func processEvents(eventsMap map[string][]string, attributesRequired []string) (processedEvents []map[string]string, totalEventCount int) {
+	if len(attributesRequired) < 1 {
+		return nil, 0
+	}
+
+	// Count how many events are valid (all required attributes are present)
+	validEventCount := len(eventsMap[attributesRequired[0]])
+	for _, attribute := range attributesRequired {
+		numberOfEvents := len(eventsMap[attribute])
+		if numberOfEvents > totalEventCount {
+			totalEventCount = numberOfEvents
+		}
+		if numberOfEvents < validEventCount {
+			validEventCount = numberOfEvents
+		}
+	}
+
+	// Separate the events map into an individual map for each valid event
+	for i := 0; i < validEventCount; i++ {
+		processedEvent := make(map[string]string)
+		for _, attribute := range attributesRequired {
+			processedEvent[attribute] = eventsMap[attribute][i]
+		}
+		processedEvents = append(processedEvents, processedEvent)
+	}
+	return
 }

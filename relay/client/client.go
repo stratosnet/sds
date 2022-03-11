@@ -125,7 +125,7 @@ func (m *MultiClient) connectToSDS() {
 
 		// Client to subscribe to events from SDS SP node
 		fullSdsWebsocketUrl := "ws://" + sdsWebsocketUrl + "/websocket"
-		sdsTopics := []string{"broadcast"}
+		sdsTopics := []string{sds.TypeBroadcast}
 		ws := sds.DialWebsocket(fullSdsWebsocketUrl, sdsTopics)
 		if ws == nil {
 			break
