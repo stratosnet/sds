@@ -103,9 +103,9 @@ func GetVideoSlices(fInfo *protos.RspFileStorageInfo) {
 	}
 
 	videoCacheTask := &task.VideoCacheTask{
-		Slices:        slices,
-		FileHash:      fInfo.FileHash,
-		DownloadChain: make(chan bool, setting.STREAM_CACHE_MAXSLICE),
+		Slices:     slices,
+		FileHash:   fInfo.FileHash,
+		DownloadCh: make(chan bool, setting.STREAM_CACHE_MAXSLICE),
 	}
 
 	task.VideoCacheTaskMap.Store(fInfo.FileHash, videoCacheTask)
@@ -113,7 +113,7 @@ func GetVideoSlices(fInfo *protos.RspFileStorageInfo) {
 	if len(videoCacheTask.Slices) > setting.STREAM_CACHE_MAXSLICE {
 		go cacheSlice(videoCacheTask, fInfo)
 		for i := 0; i < setting.STREAM_CACHE_MAXSLICE; i++ {
-			videoCacheTask.DownloadChain <- true
+			videoCacheTask.DownloadCh <- true
 		}
 	} else {
 		for _, sliceInfo := range videoCacheTask.Slices {
@@ -127,9 +127,9 @@ func GetVideoSlices(fInfo *protos.RspFileStorageInfo) {
 			}
 		}
 		utils.DebugLog("all slices of the task have begun downloading")
-		_, ok := <-videoCacheTask.DownloadChain
+		_, ok := <-videoCacheTask.DownloadCh
 		if ok {
-			close(videoCacheTask.DownloadChain)
+			close(videoCacheTask.DownloadCh)
 		}
 		task.VideoCacheTaskMap.Delete(fInfo.FileHash)
 	}
@@ -138,15 +138,15 @@ func GetVideoSlices(fInfo *protos.RspFileStorageInfo) {
 func cacheSlice(videoCacheTask *task.VideoCacheTask, fInfo *protos.RspFileStorageInfo) {
 	for {
 		select {
-		case goon := <-videoCacheTask.DownloadChain:
+		case goon := <-videoCacheTask.DownloadCh:
 			if !goon {
 				continue
 			}
 
 			if len(videoCacheTask.Slices) == 0 {
 				utils.DebugLog("all slices of the task have begun downloading")
-				if _, ok := <-videoCacheTask.DownloadChain; ok {
-					close(videoCacheTask.DownloadChain)
+				if _, ok := <-videoCacheTask.DownloadCh; ok {
+					close(videoCacheTask.DownloadCh)
 				}
 				task.VideoCacheTaskMap.Delete(videoCacheTask.FileHash)
 				return
@@ -155,7 +155,7 @@ func cacheSlice(videoCacheTask *task.VideoCacheTask, fInfo *protos.RspFileStorag
 			utils.DebugLog("start Download!!!!!", sliceInfo.SliceNumber)
 			if file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceInfo.SliceStorageInfo.SliceHash, fInfo.SavePath) {
 				utils.DebugLog("slice exist already ", sliceInfo.SliceNumber)
-				videoCacheTask.DownloadChain <- true
+				videoCacheTask.DownloadCh <- true
 			} else {
 				req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
 				req.IsVideoCaching = true

@@ -337,6 +337,7 @@ func ReqReportDownloadResultData(target *protos.RspDownloadSlice, isPP bool) *pr
 			repReq.SliceInfo = &protos.DownloadSliceInfo{
 				SliceStorageInfo: &protos.SliceStorageInfo{
 					SliceHash: target.SliceInfo.SliceHash,
+					SliceSize: target.SliceSize,
 				},
 			}
 		}
@@ -344,6 +345,7 @@ func ReqReportDownloadResultData(target *protos.RspDownloadSlice, isPP bool) *pr
 		repReq.SliceInfo = &protos.DownloadSliceInfo{
 			SliceStorageInfo: &protos.SliceStorageInfo{
 				SliceHash: target.SliceInfo.SliceHash,
+				SliceSize: target.SliceSize,
 			},
 		}
 	}

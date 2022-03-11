@@ -199,7 +199,7 @@ func videoCacheKeep(fileHash, taskID string) {
 	utils.DebugLogf("download keep fileHash = %v  taskID = %v", fileHash, taskID)
 	if ing, ok := task.VideoCacheTaskMap.Load(fileHash); ok {
 		ING := ing.(*task.VideoCacheTask)
-		ING.DownloadChain <- true
+		ING.DownloadCh <- true
 	}
 }
 

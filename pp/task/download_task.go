@@ -46,9 +46,9 @@ var VideoCacheTaskMap = &sync.Map{}
 var reCount int
 
 type VideoCacheTask struct {
-	Slices        []*protos.DownloadSliceInfo
-	FileHash      string
-	DownloadChain chan bool
+	Slices     []*protos.DownloadSliceInfo
+	FileHash   string
+	DownloadCh chan bool
 }
 
 // DownloadTask signal task convert sliceHash list to map
