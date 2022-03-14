@@ -227,7 +227,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("rp", registerPP, true)
 	console.Mystdin.RegisterProcessFunc("registerpeer", registerPP, true)
 	console.Mystdin.RegisterProcessFunc("activate", activate, true)
-	console.Mystdin.RegisterProcessFunc("updateStake", updateStake, false)
+	console.Mystdin.RegisterProcessFunc("updateStake", updateStake, true)
 	console.Mystdin.RegisterProcessFunc("deactivate", deactivate, true)
 	console.Mystdin.RegisterProcessFunc("prepay", prepay, true)
 	console.Mystdin.RegisterProcessFunc("u", upload, true)

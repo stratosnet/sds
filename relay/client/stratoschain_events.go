@@ -150,11 +150,14 @@ func (m *MultiClient) UpdateResourceNodeStakeMsgHandler() func(event coretypes.R
 			return
 		}
 
+		stakeDelta := result.Events["update_resource_node_stake.stake_delta"]
+
 		updatedStakeMsg := &protos.ReqUpdatedStakePP{
 			P2PAddress:        p2pAddressString,
 			OzoneLimitChanges: ozoneLimitChangeStr[0],
 			IncrStake:         incrStakeBoolList[0],
 			TxHash:            txHashList[0],
+			StakeDelta:        stakeDelta[0],
 		}
 
 		err = postToSP("/pp/updatedStake", updatedStakeMsg)
