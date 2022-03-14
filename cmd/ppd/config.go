@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
@@ -185,13 +186,15 @@ func SetupWallet() error {
 		"======================================================================= \n")
 	utils.Logf("Wallet %s has been generated successfully", walletKeyAddressString)
 
-	save, err := console.Stdin.PromptInput("save wallet address and password to config file: Y(es)/N(o): ")
+	save, err := console.Stdin.PromptInput("Do you want to use this wallet as your current wallet: Y(es)/N(o): ")
 	if err != nil {
 		return errors.New("couldn't read the input, not saving by default")
 	}
 	if strings.ToLower(save) == "yes" || strings.ToLower(save) == "y" {
-		setting.SetConfig("WalletAddress", walletKeyAddressString)
-		setting.SetConfig("WalletPassword", password)
+		err := serv.Login(walletKeyAddressString, password)
+		if err != nil {
+			return errors.Wrapf(err, "Login %s failed.", walletKeyAddressString)
+		}
 	}
 
 	return nil
