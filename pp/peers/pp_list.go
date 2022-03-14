@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
@@ -11,8 +12,8 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// Peers is a list of the know PP node peers
-var Peers types.PeerList
+// PeerList is a list of the know PP node peers
+var peerList types.PeerList
 
 const (
 	RELOAD_PP_LIST_INTERVAL_SHORT  = 5 * time.Second
@@ -22,12 +23,12 @@ const (
 
 // InitPPList
 func InitPPList() {
-	pplist := Peers.GetPPList()
+	pplist, _, _ := peerList.GetPPList()
 	if len(pplist) == 0 {
-		GetPPList()
+		GetPPListFromSP()
 	} else {
 		if success := ConnectToGatewayPP(pplist); !success {
-			GetPPList()
+			GetPPListFromSP()
 			return
 		}
 		if setting.IsAuto && setting.State == types.PP_ACTIVE && !setting.IsLoginToSP {
@@ -44,8 +45,8 @@ func StartStatusReportToSP() {
 	ppPeerClock.AddJobRepeat(time.Second*setting.NodeReportIntervalSec, 0, ReportNodeStatus)
 }
 
-// GetPPList P node get ppList from sp
-func GetPPList() {
+// GetPPListFromSP node get ppList from sp
+func GetPPListFromSP() {
 	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetPPList)")
 	SendMessageToSPServer(requests.ReqGetPPlistData(), header.ReqGetPPList)
 }
@@ -53,7 +54,7 @@ func GetPPList() {
 func ConnectToGatewayPP(pplist []*types.PeerInfo) bool {
 	for _, ppInfo := range pplist {
 		if ppInfo.NetworkAddress == setting.NetworkAddress {
-			Peers.DeletePPByNetworkAddress(ppInfo.NetworkAddress)
+			peerList.DeletePPByNetworkAddress(ppInfo.NetworkAddress)
 			continue
 		}
 		client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
@@ -61,16 +62,15 @@ func ConnectToGatewayPP(pplist []*types.PeerInfo) bool {
 			return true
 		}
 		utils.DebugLog("failed to conn PP，delete:", ppInfo)
-		Peers.DeletePPByNetworkAddress(ppInfo.NetworkAddress)
+		peerList.DeletePPByNetworkAddress(ppInfo.NetworkAddress)
 	}
 	return false
 }
 
-/**
-Long: 	pp not activated
-Medium: mining not yet started
-Short: 	by default (mining)
-*/
+//ScheduleReloadPPlist
+//	Long: 	pp not activated
+//	Medium: mining not yet started
+//	Short: 	by default (mining)
 func ScheduleReloadPPlist() {
 	var future time.Duration
 	if setting.State != types.PP_ACTIVE {
@@ -81,5 +81,21 @@ func ScheduleReloadPPlist() {
 		future = RELOAD_PP_LIST_INTERVAL_SHORT
 	}
 	utils.DebugLog("scheduled to get pp-list after: ", future.Seconds(), "second")
-	ppPeerClock.AddJobWithInterval(future, GetPPList)
+	ppPeerClock.AddJobWithInterval(future, GetPPListFromSP)
+}
+
+//GetPPList will just get the list from
+func GetPPList() (list []*types.PeerInfo, total int64) {
+	list, total, _ = peerList.GetPPList()
+	return
+}
+
+//SavePPList will save the target list to local list
+func SavePPList(target *protos.RspGetPPList) error {
+	return peerList.SavePPList(target)
+}
+
+//UpdatePP will update one pp info to local list
+func UpdatePP(pp *types.PeerInfo) {
+	peerList.UpdatePP(pp)
 }
