@@ -22,7 +22,7 @@ const (
 	// REPORTDHTIME 1 hour
 	REPORTDHTIME = 60 * 60
 	// NodeReportIntervalSec Interval of node stat report
-	NodeReportIntervalSec   = 30     // in seconds TODO: change to 300
+	NodeReportIntervalSec   = 300    // in seconds
 	NodeReportCheckInterval = 1000   // in num of heights
 	WeightDeductionInterval = 100000 // interval for weight deduction in heights
 
