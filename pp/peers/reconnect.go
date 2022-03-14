@@ -32,7 +32,7 @@ func ListenOffline() {
 					GetSPList()
 				}
 			} else {
-				Peers.PPDisconnected("", offline.NetworkAddress)
+				peerList.PPDisconnected("", offline.NetworkAddress)
 				InitPPList()
 			}
 		}
