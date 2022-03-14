@@ -294,8 +294,8 @@ func BroadcastTxBytes(txBytes []byte) error {
 					return errors.New("cannot convert msg to MsgSlashingResourceNode")
 				}
 
-				slashPPEvents["slashing_resource_node.network_address"] = append(slashPPEvents["slashing_resource_node.network_address"], slashMsg.NetworkAddress.String())
-				slashPPEvents["slashing_resource_node.suspended"] = append(slashPPEvents["slashing_resource_node.suspended"], strconv.FormatBool(slashMsg.Suspend))
+				slashPPEvents["slashing.network_address"] = append(slashPPEvents["slashing.network_address"], slashMsg.NetworkAddress.String())
+				slashPPEvents["slashing.suspended"] = append(slashPPEvents["slashing.suspended"], strconv.FormatBool(slashMsg.Suspend))
 			}
 		}
 		if len(slashPPEvents) > 0 {

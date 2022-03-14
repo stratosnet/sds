@@ -380,22 +380,22 @@ type SlashedPPReq struct {
 func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		requiredAttributes := []string{
-			"slashing_resource_node.network_address",
-			"slashing_resource_node.suspended",
+			"slashing.network_address",
+			"slashing.suspended",
 		}
 		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
 
 		var slashedPPs []SlashedPP
 		for _, event := range processedEvents {
-			_, p2pAddressString, err := getP2pAddressFromAttribute(event["slashing_resource_node.network_address"])
+			_, p2pAddressString, err := getP2pAddressFromAttribute(event["slashing.network_address"])
 			if err != nil {
-				utils.DebugLog("Invalid P2P address in the slashing_resource_node message from stratos-chain", err)
+				utils.DebugLog("Invalid P2P address in the slashing message from stratos-chain", err)
 				continue
 			}
 
-			suspended, err := strconv.ParseBool(event["slashing_resource_node.suspended"])
+			suspended, err := strconv.ParseBool(event["slashing.suspended"])
 			if err != nil {
-				utils.DebugLog("Invalid suspended boolean in the slashing_resource_node message from stratos-chain", err)
+				utils.DebugLog("Invalid suspended boolean in the slashing message from stratos-chain", err)
 				continue
 			}
 
@@ -408,7 +408,7 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 		}
 
 		if len(slashedPPs) != initialEventCount {
-			utils.ErrorLogf("slashing_resource_node message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+			utils.ErrorLogf("slashing message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
 				len(slashedPPs), initialEventCount-len(processedEvents), len(processedEvents)-len(slashedPPs))
 		}
 		if len(slashedPPs) == 0 {
