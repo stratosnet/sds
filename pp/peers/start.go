@@ -13,7 +13,7 @@ import (
 // StartPP
 func StartPP(registerFn func()) {
 	GetNetworkAddress()
-	Peers.Init(setting.NetworkAddress, filepath.Join(setting.Config.PPListDir, "pp-list"))
+	peerList.Init(setting.NetworkAddress, filepath.Join(setting.Config.PPListDir, "pp-list"))
 	//todo: register func call shouldn't be in peers package
 	registerFn()
 	GetSPList()

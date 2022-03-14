@@ -19,8 +19,9 @@ func ReportNodeStatus() {
 func doReportNodeStatus(status *protos.ReqReportNodeStatus) {
 	utils.DebugLog("Sending RNS message to SP! " + status.String())
 	SendMessageToSPServer(status, header.ReqReportNodeStatus)
-	// if current ppList isn't empty, try refresh the list
-	if len(Peers.GetPPList()) != 0 {
-		GetPPList()
+	// if current reachable is too less, try refresh the list
+	_, total, _ := peerList.GetPPList()
+	if total <= 2 {
+		GetPPListFromSP()
 	}
 }

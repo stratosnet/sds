@@ -76,7 +76,7 @@ func TransferSendMessageToPPServ(addr string, msgBuf *msg.RelayMsgBuf) {
 }
 
 func TransferSendMessageToPPServByP2pAddress(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
-	ppInfo := Peers.GetPPByP2pAddress(p2pAddress)
+	ppInfo := peerList.GetPPByP2pAddress(p2pAddress)
 	if ppInfo == nil {
 		utils.ErrorLogf("PP %v missing from local ppList. Cannot transfer message due to missing network address", p2pAddress)
 		return
@@ -102,7 +102,7 @@ func ReqTransferSendSP(ctx context.Context, conn core.WriteCloser) {
 
 // transferSendMessageToClient
 func TransferSendMessageToClient(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
-	pp := Peers.GetPPByP2pAddress(p2pAddress)
+	pp := peerList.GetPPByP2pAddress(p2pAddress)
 	if pp != nil && pp.Status == types.PEER_CONNECTED {
 		utils.Log("transfer to netid = ", pp.NetId)
 		GetPPServer().Unicast(pp.NetId, msgBuf)
@@ -117,7 +117,7 @@ func GetPPStatusFromSP() {
 	SendMessageToSPServer(requests.ReqGetPPStatusData(), header.ReqGetPPStatus)
 }
 
-// GetPPList P node get ppList
+// GetSPList node get spList
 func GetSPList() {
 	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetSPList)")
 	SendMessageToSPServer(requests.ReqGetSPlistData(), header.ReqGetSPList)
