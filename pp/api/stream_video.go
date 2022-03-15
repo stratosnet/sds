@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stratosnet/sds/relay"
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/bech32"
 
@@ -20,7 +21,6 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
 )
@@ -247,7 +247,7 @@ func verifySignature(reqBody *StreamReqBody, sliceHash string, data []byte) bool
 		}
 
 		p2pPubKey := tmed25519.PubKeyEd25519{}
-		err = stratoschain.Cdc.UnmarshalBinaryBare(pubKeyRaw, &p2pPubKey)
+		err = relay.Cdc.UnmarshalBinaryBare(pubKeyRaw, &p2pPubKey)
 		if err != nil {
 			utils.ErrorLog("Error when trying to read P2P pubKey ed25519 binary", err)
 			return false

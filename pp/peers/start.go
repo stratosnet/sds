@@ -20,8 +20,8 @@ func StartPP(registerFn func()) {
 	GetPPStatusFromSP()
 	//go SendLatencyCheckMessageToSPList()
 	//InitPPList() // moved to rsp of GetPPStatusFromSP()
-	ListenOffline()
 	StartStatusReportToSP()
+	ListenOffline()
 }
 
 // InitPeer
