@@ -39,7 +39,7 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 	}.String()
 	downTaskID := uuid.New().String()
 
-	event.GetFileStorageInfo(path, "", downTaskID, false, w)
+	event.GetFileStorageInfo(path, "", downTaskID, setting.WalletAddress, false, w)
 
 	type df struct {
 		TaskID             string `json:"taskID"`

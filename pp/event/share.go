@@ -170,6 +170,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			Owner: fileInfo.OwnerWalletAddress,
 			Hash:  fileInfo.FileHash,
 		}.String()
-		peers.SendMessageDirectToSPOrViaPP(requests.ReqFileStorageInfoData(filePath, "", "", false, target.ShareRequest), header.ReqFileStorageInfo)
+		peers.SendMessageDirectToSPOrViaPP(requests.ReqFileStorageInfoData(filePath, "", "", setting.WalletAddress,
+			false, target.ShareRequest), header.ReqFileStorageInfo)
 	}
 }

@@ -41,7 +41,15 @@ var DownloadSliceProgress = &sync.Map{}
 // This is used because slices can only be decrypted after being fully downloaded
 var DownloadEncryptedSlices = &sync.Map{}
 
+var VideoCacheTaskMap = &sync.Map{}
+
 var reCount int
+
+type VideoCacheTask struct {
+	Slices     []*protos.DownloadSliceInfo
+	FileHash   string
+	DownloadCh chan bool
+}
 
 // DownloadTask signal task convert sliceHash list to map
 type DownloadTask struct {
