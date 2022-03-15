@@ -372,6 +372,7 @@ message ReqUnbondingPP {
   string ozone_limit_changes = 2; // negative
   string unbonding_mature_time = 3;
   string tx_hash = 4;
+  string stake_to_remove = 5;
 }
 
 message RspUnbondingPP {

@@ -179,6 +179,9 @@ func (m *MultiClient) UnbondingResourceNodeMsgHandler() func(event coretypes.Res
 		// get ozone limit change
 		ozoneLimitChange := result.Events["unbonding_resource_node.ozone_limit_changes"]
 		ozoneLimitChangeStr := ozoneLimitChange[0]
+		// get stake_to_remove
+		stakeToRemove := result.Events["unbonding_resource_node.stake_to_remove"]
+		stakeToRemoveStr := stakeToRemove[0]
 		// get mature time
 		ubdMatureTime := result.Events["unbonding_resource_node.unbonding_mature_time"]
 		ubdMatureTimeStr := ubdMatureTime[0]
@@ -194,6 +197,7 @@ func (m *MultiClient) UnbondingResourceNodeMsgHandler() func(event coretypes.Res
 			OzoneLimitChanges:   ozoneLimitChangeStr,
 			UnbondingMatureTime: ubdMatureTimeStr,
 			TxHash:              txHashList[0],
+			StakeToRemove:       stakeToRemoveStr,
 		}
 
 		err = postToSP("/pp/unbonding", ubdMsg)
