@@ -4,9 +4,9 @@ package event
 import (
 	"context"
 
-	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
@@ -18,7 +18,7 @@ import (
 func ReqRegister(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqRegister
 	if requests.UnmarshalData(ctx, &target) {
-		peers.Peers.UpdatePP(&types.PeerInfo{
+		peers.UpdatePP(&types.PeerInfo{
 			NetworkAddress: target.Address.NetworkAddress,
 			P2pAddress:     target.Address.P2PAddress,
 			RestAddress:    target.Address.RestAddress,
@@ -78,7 +78,7 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("Register successful", target.Result.Msg)
 	setting.IsLoad = true
 	setting.IsLoginToSP = true
-	utils.DebugLog("@@@@@@@@@@@@@@@@@@@@@@@@@@@@", conn.(*cf.ClientConn).GetName())
+	utils.DebugLog("@@@@@@@@@@@@@@@@@@@@@@@@@@@@", client.GetConnectionName(conn))
 	setting.IsPP = target.IsPP
 	if !setting.IsPP {
 		reportDHInfoToPP()

@@ -13,6 +13,7 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/relay/sds"
 	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/relay/stratoschain/handlers"
 	"github.com/stratosnet/sds/utils"
 	tmHttp "github.com/tendermint/tendermint/rpc/client/http"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -124,7 +125,7 @@ func (m *MultiClient) connectToSDS() {
 
 		// Client to subscribe to events from SDS SP node
 		fullSdsWebsocketUrl := "ws://" + sdsWebsocketUrl + "/websocket"
-		sdsTopics := []string{"broadcast"}
+		sdsTopics := []string{sds.TypeBroadcast}
 		ws := sds.DialWebsocket(fullSdsWebsocketUrl, sdsTopics)
 		if ws == nil {
 			break
@@ -279,6 +280,67 @@ func (m *MultiClient) SubscribeToStratosChain(query string, handler func(coretyp
 	go m.stratosSubscriptionReaderLoop(subscription, handler)
 
 	return nil
+}
+
+func (m *MultiClient) SubscribeToStratosChainEvents() error {
+	err := m.SubscribeToStratosChain("message.action='create_resource_node'", handlers.CreateResourceNodeMsgHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='update_resource_node_stake'", handlers.UpdateResourceNodeStakeMsgHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='unbonding_resource_node'", handlers.UnbondingResourceNodeMsgHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='remove_resource_node'", handlers.RemoveResourceNodeMsgHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='complete_unbonding_resource_node'", handlers.CompleteUnbondingResourceNodeMsgHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='create_indexing_node'", handlers.CreateIndexingNodeMsgHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='update_indexing_node_stake'", handlers.UpdateIndexingNodeStakeMsgHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='unbonding_indexing_node'", handlers.UnbondingIndexingNodeMsgHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='remove_indexing_node'", handlers.RemoveIndexingNodeMsgHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='complete_unbonding_indexing_node'", handlers.CompleteUnbondingIndexingNodeMsgHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='indexing_node_reg_vote'", handlers.IndexingNodeVoteMsgHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='SdsPrepayTx'", handlers.PrepayMsgHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='FileUploadTx'", handlers.FileUploadMsgHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='volume_report'", handlers.VolumeReportHandler())
+	if err != nil {
+		return err
+	}
+	err = m.SubscribeToStratosChain("message.action='slashing_resource_node'", handlers.SlashingResourceNodeHandler())
+	return err
 }
 
 func (m *MultiClient) GetSdsClientConn() *cf.ClientConn {
