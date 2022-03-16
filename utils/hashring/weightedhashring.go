@@ -19,11 +19,11 @@ import (
 
 // Node
 type WeightedNode struct {
-	ID     string
-	Host   string
-	Rest   string
-	Weight float64
-	Data   *sync.Map
+	ID   string
+	Host string
+	Rest string
+	Tier uint32
+	Data *sync.Map
 }
 
 // nodeKey
@@ -87,10 +87,9 @@ func (r *WeightedHashRing) AddNode(node *WeightedNode) {
 
 	defer r.Unlock()
 
-	// min weight is math.E, that is, WeightedNode should have at least 1 copy
-	effectiveWeight := math.Max(node.Weight, math.E)
-	numOfCopies := math.Ceil(math.Log(effectiveWeight))
-	//utils.DebugLogf("effectiveWeight is %v, numOfCopies is %v", effectiveWeight, numOfCopies)
+	// calc numOfCopies with node tier, WeightedNode should have at least 1 copy
+	numOfCopies := getNumOfCopies(node.Tier)
+	//utils.DebugLogf("node.Tier is %v, numOfCopies is %v", node.Tier, numOfCopies)
 	var i uint32
 	for i = 0; i < uint32(numOfCopies); i++ {
 		index := r.CalcIndex(r.virtualKey(node.ID, i))
@@ -104,6 +103,11 @@ func (r *WeightedHashRing) AddNode(node *WeightedNode) {
 	r.NRing.Insert(node)
 
 	r.NodeCount++
+}
+
+func getNumOfCopies(nodeTier uint32) float64 {
+	// numOfCopies = nodeTier ^ 2
+	return math.Round(math.Pow(float64(nodeTier), 2))
 }
 
 // RemoveNode
