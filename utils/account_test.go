@@ -5,9 +5,10 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
+	"github.com/stratosnet/sds/utils/types"
+	stchaintypes "github.com/stratosnet/stratos-chain/types"
 	"github.com/tendermint/go-amino"
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
 	cryptoamino "github.com/tendermint/tendermint/crypto/encoding/amino"
@@ -24,18 +25,17 @@ func init() {
 func TestCreateWallet(t *testing.T) {
 	t.SkipNow() // Comment this line out to run the method and create a wallet
 	password := "aaa"
-	hrp := "st"
 
 	mnemonic, err := NewMnemonic()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	addr, err := CreateWallet("keys", "", password, hrp, mnemonic, "passphrase", "44'/606'/0'/0/44")
+	addr, err := CreateWallet("keys", "", password, stchaintypes.StratosBech32Prefix, mnemonic, "passphrase", "44'/606'/0'/0/44")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	bechAddr, err := addr.ToBech(hrp)
+	bechAddr, err := addr.ToBech(stchaintypes.StratosBech32Prefix)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -51,7 +51,7 @@ func TestCreateWallet(t *testing.T) {
 
 	privKey := secp256k1.PrivKeyBytesToTendermint(key.PrivateKey)
 	pubKey := privKey.PubKey()
-	bechPub, err := types.Bech32ifyPubKey(types.Bech32PubKeyTypeAccPub, pubKey)
+	bechPub, err := stchaintypes.Bech32ifyPubKey(stchaintypes.Bech32PubKeyTypeAccPub, pubKey)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -61,14 +61,13 @@ func TestCreateWallet(t *testing.T) {
 func TestCreateP2PKey(t *testing.T) {
 	t.SkipNow() // Comment this line out to run the method and create a P2PKey
 	password := "aaa"
-	hrp := "stsdsp2p"
 
-	addr, err := CreateP2PKey("keys", "", password, hrp)
+	addr, err := CreateP2PKey("keys", "", password, stchaintypes.SdsNodeP2PAddressPrefix)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	bechAddr, err := addr.ToBech(hrp)
+	bechAddr, err := types.P2pAddressToBech(addr)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -83,7 +82,7 @@ func TestCreateP2PKey(t *testing.T) {
 	}
 
 	pubKey := ed25519.PrivKeyBytesToPubKey(key.PrivateKey)
-	bechPub, err := bech32.ConvertAndEncode(hrp, pubKey.Bytes())
+	bechPub, err := stchaintypes.Bech32ifyPubKey(stchaintypes.Bech32PubKeyTypeAccPub, pubKey)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -92,19 +91,18 @@ func TestCreateP2PKey(t *testing.T) {
 
 func TestDecryptP2PKeyJson(t *testing.T) {
 	t.SkipNow() // Comment this line out to run the method and decrypt a P2PKey JSON file
-	hrp := "stsdsp2p"
 	key, err := DecryptKey([]byte("put the content of the P2P key JSON file here"), "aaa")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	pubKey := ed25519.PrivKeyBytesToPubKey(key.PrivateKey)
-	bechPub, err := bech32.ConvertAndEncode(hrp, pubKey.Bytes())
+	bechPub, err := stchaintypes.Bech32ifyPubKey(stchaintypes.Bech32PubKeyTypeSdsP2PPub, pubKey)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	bechAddr, err := bech32.ConvertAndEncode(hrp, pubKey.Address().Bytes())
+	bechAddr, err := bech32.ConvertAndEncode(stchaintypes.SdsNodeP2PAddressPrefix, pubKey.Address().Bytes())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -114,7 +112,6 @@ func TestDecryptP2PKeyJson(t *testing.T) {
 
 func TestDecryptWalletJson(t *testing.T) {
 	t.SkipNow() // Comment this line out to run the method and decrypt a wallet JSON file
-	hrp := "st"
 	key, err := DecryptKey([]byte("put the content of the wallet JSON file here"), "aaa")
 	if err != nil {
 		t.Fatal(err.Error())
@@ -123,12 +120,12 @@ func TestDecryptWalletJson(t *testing.T) {
 	tmPrivKey := secp256k1.PrivKeyBytesToTendermint(key.PrivateKey)
 	tmPubKey := tmPrivKey.PubKey()
 
-	bechPub, err := bech32.ConvertAndEncode(hrp+"pub", tmPubKey.Bytes())
+	bechPub, err := stchaintypes.Bech32ifyPubKey(stchaintypes.Bech32PubKeyTypeAccPub, tmPubKey)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	bechAddr, err := bech32.ConvertAndEncode(hrp, tmPubKey.Address().Bytes())
+	bechAddr, err := bech32.ConvertAndEncode(stchaintypes.StratosBech32Prefix, tmPubKey.Address().Bytes())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -137,8 +134,7 @@ func TestDecryptWalletJson(t *testing.T) {
 }
 
 func TestDecryptPrivValidatorKeyJson(t *testing.T) {
-	t.SkipNow() // Comment this line out to run the method and decrypt a priv_validator_key JSON file (SP node validator key)
-	hrp := "stsdsp2p"
+	//t.SkipNow() // Comment this line out to run the method and decrypt a priv_validator_key JSON file (SP node validator key)
 	p2pKey := privval.FilePVKey{}
 	err := cdc.UnmarshalJSON([]byte("put the content of the priv_validator_key.json file here"), &p2pKey)
 	if err != nil {
@@ -151,12 +147,12 @@ func TestDecryptPrivValidatorKeyJson(t *testing.T) {
 	}
 	pubKey := p2pKeyTm.PubKey()
 
-	bechPub, err := bech32.ConvertAndEncode(hrp, pubKey.Bytes())
+	bechPub, err := stchaintypes.Bech32ifyPubKey(stchaintypes.Bech32PubKeyTypeSdsP2PPub, pubKey)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	bechAddr, err := bech32.ConvertAndEncode(hrp, pubKey.Address().Bytes())
+	bechAddr, err := bech32.ConvertAndEncode(stchaintypes.SdsNodeP2PAddressPrefix, pubKey.Address().Bytes())
 	if err != nil {
 		t.Fatal(err.Error())
 	}

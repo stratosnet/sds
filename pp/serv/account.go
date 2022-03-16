@@ -10,7 +10,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
-	"github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/stratos-chain/types"
 )
 
 // CreateWallet
@@ -23,13 +23,13 @@ func CreateWallet(password, name, mnemonic, hdPath string) string {
 		}
 		mnemonic = newMnemonic
 	}
-	account, err := utils.CreateWallet(setting.Config.AccountDir, name, password, types.DefaultAddressPrefix,
+	account, err := utils.CreateWallet(setting.Config.AccountDir, name, password, types.StratosBech32Prefix,
 		mnemonic, "", hdPath)
 	if utils.CheckError(err) {
 		utils.ErrorLog("CreateWallet error", err)
 		return ""
 	}
-	setting.WalletAddress, err = account.ToBech(types.DefaultAddressPrefix)
+	setting.WalletAddress, err = account.ToBech(types.StratosBech32Prefix)
 	if utils.CheckError(err) {
 		utils.ErrorLog("CreateWallet error", err)
 		return ""
@@ -96,7 +96,7 @@ func Wallets() {
 	var wallets []string
 	for _, file := range files {
 		fileName := file.Name()
-		if fileName[len(fileName)-5:] == ".json" && fileName[:len(types.DefaultP2PKeyPrefix)] != types.DefaultP2PKeyPrefix {
+		if fileName[len(fileName)-5:] == ".json" && fileName[:len(types.SdsNodeP2PAddressPrefix)] != types.SdsNodeP2PAddressPrefix {
 			wallets = append(wallets, fileName[:len(fileName)-5])
 		}
 	}

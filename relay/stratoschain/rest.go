@@ -259,8 +259,9 @@ func BroadcastTxBytes(txBytes []byte) error {
 		return err
 	}
 	if resp.StatusCode != 200 {
-		return errors.Errorf("invalid response HTTP%v: %v", resp.Status, responseBody)
+		return errors.Errorf("invalid response HTTP%v: %v", resp.Status, string(responseBody))
 	}
+	utils.Log(string(responseBody))
 
 	var broadcastReq rest.BroadcastReq
 	err = relay.Cdc.UnmarshalJSON(txBytes, &broadcastReq)
@@ -308,12 +309,12 @@ func BroadcastTxBytes(txBytes []byte) error {
 	return nil
 }
 
-func QueryResourceNodeState(networkId string) (int, error) {
+func QueryResourceNodeState(p2pAddress string) (int, error) {
 	if Url == "" {
 		return 0, errors.New("the stratos-chain URL is not set")
 	}
 
-	url, err := utils.ParseUrl(Url + "/register/resource-nodes?network=" + networkId)
+	url, err := utils.ParseUrl(Url + "/register/resource-nodes?network=" + p2pAddress)
 	if err != nil {
 		return 0, err
 	}
@@ -349,7 +350,7 @@ func QueryResourceNodeState(networkId string) (int, error) {
 	if resourceNodes[0].GetStatus() == sdktypes.Unbonding {
 		return types.PP_UNBONDING, nil
 	}
-	if resourceNodes[0].GetStatus() == sdktypes.Bonded && resourceNodes[0].GetNetworkID() == networkId {
+	if resourceNodes[0].GetStatus() == sdktypes.Bonded && resourceNodes[0].GetNetworkAddr().String() == p2pAddress {
 		return types.PP_ACTIVE, nil
 	}
 	return types.PP_INACTIVE, nil

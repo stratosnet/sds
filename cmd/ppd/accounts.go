@@ -9,7 +9,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
-	"github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/stratos-chain/types"
 )
 
 const (
@@ -32,12 +32,12 @@ func createAccounts(cmd *cobra.Command, args []string) error {
 	if len(p2pkeyfiles) < 1 || newP2pKey {
 		fmt.Println("generating new p2p key")
 		p2pKeyAddress, err := utils.CreateP2PKey(setting.Config.AccountDir, "p2pkey", p2ppass,
-			types.DefaultP2PKeyPrefix)
+			types.SdsNodeP2PAddressPrefix)
 		if err != nil {
 			return errors.New("couldn't create p2pkey: " + err.Error())
 		}
 
-		p2pKeyAddressString, err := p2pKeyAddress.ToBech(types.DefaultP2PKeyPrefix)
+		p2pKeyAddressString, err := p2pKeyAddress.ToBech(types.SdsNodeP2PAddressPrefix)
 		if err != nil {
 			return errors.New("couldn't convert P2P key address to bech string: " + err.Error())
 		}
@@ -78,12 +78,12 @@ func createAccounts(cmd *cobra.Command, args []string) error {
 	}
 	//hrp, mnemonic, bip39Passphrase, hdPath
 	walletKeyAddress, err := utils.CreateWallet(setting.Config.AccountDir, nickname, password,
-		types.DefaultAddressPrefix, mnemonic, "", hdPath)
+		types.SdsNodeP2PAddressPrefix, mnemonic, "", hdPath)
 	if err != nil {
 		return errors.New("couldn't create WalletAddress: " + err.Error())
 	}
 
-	walletKeyAddressString, err := walletKeyAddress.ToBech(types.DefaultAddressPrefix)
+	walletKeyAddressString, err := walletKeyAddress.ToBech(types.SdsNodeP2PAddressPrefix)
 	if err != nil {
 		return errors.New("couldn't convert wallet address to bech string: " + err.Error())
 	}
@@ -106,7 +106,7 @@ func findp2pKeyFiles() []string {
 	var p2pkeyfiles []string
 	for _, file := range files {
 		fileName := file.Name()
-		if fileName[len(fileName)-5:] == ".json" && fileName[:len(types.DefaultP2PKeyPrefix)] == types.DefaultP2PKeyPrefix {
+		if fileName[len(fileName)-5:] == ".json" && fileName[:len(types.SdsNodeP2PAddressPrefix)] == types.SdsNodeP2PAddressPrefix {
 			p2pkeyfiles = append(p2pkeyfiles, fileName)
 		}
 	}

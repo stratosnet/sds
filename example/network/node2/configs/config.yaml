@@ -1,14 +1,14 @@
-version: 3
-versionshow: v0.4.0
+version: 5
+versionshow: v0.5.1
 downloadpathminlen: 88
-Port: 9082
+Port: "9082"
 NetworkAddress: 127.0.0.1
 Debug: true
-PPListDir: ./peers
-AccountDir: ./accounts
-StorehousePath: ./storage
-DownloadPath: ./download
-P2PAddress: stsdsp2p1faej5w4q6hgnt0ft598dlm408g4p747ymg5jq6
+PPListDir: /Users/trexb/workspace/sds/example/network/node2/peers
+AccountDir: /Users/trexb/workspace/sds/example/network/node2/accounts
+StorehousePath: /Users/trexb/workspace/sds/example/network/node2/storage
+DownloadPath: /Users/trexb/workspace/sds/example/network/node2/download
+P2PAddress: stsds1faej5w4q6hgnt0ft598dlm408g4p747y4krwca
 P2PPassword: aaa
 WalletAddress: st1ppcc7hmgwnr6e67ad4tcxxyskqpahuc2y4w7yq
 WalletPassword: aaa
@@ -26,15 +26,15 @@ RestPort: "18092"
 InternalPort: ""
 TrafficLogInterval: 10
 SPList:
-- P2PAddress: stsdsp2p1cw8qhgsxddak8hh8gs7veqmy5ku8f8za57guzj
-  P2PPublicKey: stsdsp2p1zcjduepqjmfc8j7ve0jg3jwq9wkefpa34fg9hhrp7nu6rkf6hff7ml769f6q240avl
-  NetworkAddress: 0.0.0.0:8888
-- P2PAddress: stsdsp2p14c3em44vlh276cujnr2ez802uyjyeqrr7zj4ys
-  P2PPublicKey: stsdsp2p1zcjduepqzgqd566qdnj4kna050jz505vamjhglxcpdepqctkregdt6snxm6s3dcgzj
-  NetworkAddress: 0.0.0.0:18888
-- P2PAddress: stsdsp2p15sya4n40da64z6n6hvk0p9f7sx72hqpjud54ar
-  P2PPublicKey: stsdsp2p1zcjduepqpfr08evmk73dtf7ud69pwdznl4xdfghx6k6dyugwpk2jhqq890yq6c29ze
-  NetworkAddress: 0.0.0.0:28888
-- P2PAddress: stsdsp2p13yakj2xgzzdfcw7kd5gtfcfv2k6sn5egmj64pu
-  P2PPublicKey: stsdsp2p1zcjduepqhhplcrnkn9597gnh87y9zshe0kfs87fvmtrjpyq4heqjcz0dhlts5m0t3a
-  NetworkAddress: 0.0.0.0:38888
+- P2PAddress: stsds13yakj2xgzzdfcw7kd5gtfcfv2k6sn5eg4vdfem
+  P2PPublicKey: stsdspub1zcjduepqhhplcrnkn9597gnh87y9zshe0kfs87fvmtrjpyq4heqjcz0dhltsys64es
+  NetworkAddress: 127.0.0.1:38888
+- P2PAddress: stsds15sya4n40da64z6n6hvk0p9f7sx72hqpjjnrf9y
+  P2PPublicKey: stsdspub1zcjduepqpfr08evmk73dtf7ud69pwdznl4xdfghx6k6dyugwpk2jhqq890yq2nlm25
+  NetworkAddress: 127.0.0.1:28888
+- P2PAddress: stsds14c3em44vlh276cujnr2ez802uyjyeqrrsu9fuh
+  P2PPublicKey: stsdspub1zcjduepqzgqd566qdnj4kna050jz505vamjhglxcpdepqctkregdt6snxm6spxdk2l
+  NetworkAddress: 127.0.0.1:18888
+- P2PAddress: stsds1cw8qhgsxddak8hh8gs7veqmy5ku8f8za6qlq64
+  P2PPublicKey: stsdspub1zcjduepqjmfc8j7ve0jg3jwq9wkefpa34fg9hhrp7nu6rkf6hff7ml769f6q676ryj
+  NetworkAddress: 127.0.0.1:8888

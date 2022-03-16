@@ -456,29 +456,16 @@ func getP2pAddressFromEvent(result coretypes.ResultEvent, eventName, attribName 
 	if len(attribSlice) < 1 {
 		return types.Address{}, "", errors.New("no " + attribName + " was specified in " + eventName + " msg from st-chain")
 	}
-	p2pAddress, err := types.BechToAddress(attribSlice[0])
-	if err != nil {
-		return types.Address{}, "", errors.New("error when trying to convert P2P address to bytes")
-	}
-	p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
-	if err != nil {
-		return types.Address{}, "", errors.New("error when trying to convert P2P address to bech32")
-	}
-
-	return p2pAddress, p2pAddressString, nil
+	return getP2pAddressFromAttribute(attribSlice[0])
 }
 
 func getP2pAddressFromAttribute(attribute string) (types.Address, string, error) {
-	p2pAddress, err := types.BechToAddress(attribute)
+	p2pAddress, err := types.P2pAddressFromBech(attribute)
 	if err != nil {
 		return types.Address{}, "", errors.New("error when trying to convert P2P address to bytes")
 	}
-	p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
-	if err != nil {
-		return types.Address{}, "", errors.New("error when trying to convert P2P address to bech32")
-	}
 
-	return p2pAddress, p2pAddressString, nil
+	return p2pAddress, attribute, nil
 }
 
 func processEvents(eventsMap map[string][]string, attributesRequired []string) (processedEvents []map[string]string, totalEventCount int) {
