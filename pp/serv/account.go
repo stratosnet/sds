@@ -135,6 +135,8 @@ func Login(walletAddress, password string) error {
 		}
 		utils.Log(info.Name())
 		if getPublicKey(filepath.Join(setting.Config.AccountDir, fileName), password) {
+			setting.SetConfig("WalletAddress", walletAddress)
+			setting.SetConfig("WalletPassword", password)
 			setting.WalletAddress = walletAddress
 			peers.InitPeer(event.RegisterEventHandle)
 			return nil

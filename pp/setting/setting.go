@@ -33,6 +33,10 @@ const (
 	// IMAGEPATH
 	IMAGEPATH = "./images/"
 	VIDEOPATH = "./videos"
+
+	STREAM_CACHE_MAXSLICE = 2
+
+	FILE_SLICE_DOWNLOAD_BATCH_SIZE = 20
 )
 
 var (
@@ -105,7 +109,6 @@ type config struct {
 	ChainId              string       `yaml:"ChainId"`
 	Token                string       `yaml:"Token"`
 	StratosChainUrl      string       `yaml:"StratosChainUrl"`
-	StreamingCache       bool         `yaml:"StreamingCache"`
 	RestPort             string       `yaml:"RestPort"`
 	InternalPort         string       `yaml:"InternalPort"`
 	TrafficLogInterval   uint64       `yaml:"TrafficLogInterval"`
@@ -286,7 +289,6 @@ func defaultConfig() *config {
 		ChainId:              "tropos-1",
 		Token:                "ustos",
 		StratosChainUrl:      "http://127.0.0.1:1317",
-		StreamingCache:       false,
 		RestPort:             "",
 		InternalPort:         "",
 		TrafficLogInterval:   10,

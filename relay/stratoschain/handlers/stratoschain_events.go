@@ -1,4 +1,4 @@
-package client
+package handlers
 
 import (
 	"bytes"
@@ -7,75 +7,20 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	sdkTypes "github.com/cosmos/cosmos-sdk/types"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
 	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
-func (m *MultiClient) SubscribeToStratosChainEvents() error {
-	err := m.SubscribeToStratosChain("message.action='create_resource_node'", m.CreateResourceNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='update_resource_node_stake'", m.UpdateResourceNodeStakeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='unbonding_resource_node'", m.UnbondingResourceNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='remove_resource_node'", m.RemoveResourceNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='complete_unbonding_resource_node'", m.CompleteUnbondingResourceNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='create_indexing_node'", m.CreateIndexingNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='update_indexing_node_stake'", m.UpdateIndexingNodeStakeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='unbonding_indexing_node'", m.UnbondingIndexingNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='remove_indexing_node'", m.RemoveIndexingNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='complete_unbonding_indexing_node'", m.CompleteUnbondingIndexingNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='indexing_node_reg_vote'", m.IndexingNodeVoteMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='SdsPrepayTx'", m.PrepayMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='FileUploadTx'", m.FileUploadMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='volume_report'", m.VolumeReportHandler())
-	return err
-}
-
-func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
+// TODO: update remaining handlers to be able to process multiple events
+func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 
 		_, p2pAddressString, err := getP2pAddressFromEvent(result, "create_resource_node", "network_address")
@@ -95,7 +40,7 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 			return
 		}
 		p2pPubkey := ed25519.PubKeyEd25519{}
-		err = stratoschain.Cdc.UnmarshalBinaryBare(p2pPubkeyRaw, &p2pPubkey)
+		err = relay.Cdc.UnmarshalBinaryBare(p2pPubkeyRaw, &p2pPubkey)
 		if err != nil {
 			utils.ErrorLog("Error when trying to read P2P pubkey ed25519 binary", err)
 			return
@@ -127,7 +72,7 @@ func (m *MultiClient) CreateResourceNodeMsgHandler() func(event coretypes.Result
 	}
 }
 
-func (m *MultiClient) UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
+func UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 
 		_, p2pAddressString, err := getP2pAddressFromEvent(result, "update_resource_node_stake", "network_address")
@@ -168,7 +113,7 @@ func (m *MultiClient) UpdateResourceNodeStakeMsgHandler() func(event coretypes.R
 	}
 }
 
-func (m *MultiClient) UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
+func UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		_, p2pAddressString, err := getP2pAddressFromEvent(result, "unbonding_resource_node", "resource_node")
 		if err != nil {
@@ -208,7 +153,7 @@ func (m *MultiClient) UnbondingResourceNodeMsgHandler() func(event coretypes.Res
 	}
 }
 
-func (m *MultiClient) RemoveResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
+func RemoveResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		_, p2pAddressString, err := getP2pAddressFromEvent(result, "remove_resource_node", "resource_node")
 		if err != nil {
@@ -234,18 +179,18 @@ func (m *MultiClient) RemoveResourceNodeMsgHandler() func(event coretypes.Result
 	}
 }
 
-func (m *MultiClient) CompleteUnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
-	return m.RemoveResourceNodeMsgHandler()
+func CompleteUnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
+	return RemoveResourceNodeMsgHandler()
 }
 
-func (m *MultiClient) CreateIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
+func CreateIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
 		utils.Log(fmt.Sprintf("%+v", result))
 	}
 }
 
-func (m *MultiClient) UpdateIndexingNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
+func UpdateIndexingNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		_, p2pAddressString, err := getP2pAddressFromEvent(result, "update_indexing_node_stake", "network_address")
 		if err != nil {
@@ -281,23 +226,23 @@ func (m *MultiClient) UpdateIndexingNodeStakeMsgHandler() func(event coretypes.R
 	}
 }
 
-func (m *MultiClient) UnbondingIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
+func UnbondingIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
 		utils.Logf("%+v\n", result)
 	}
 }
-func (m *MultiClient) RemoveIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
+func RemoveIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
 		utils.Logf("%+v", result)
 	}
 }
-func (m *MultiClient) CompleteUnbondingIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
-	return m.RemoveIndexingNodeMsgHandler()
+func CompleteUnbondingIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
+	return RemoveIndexingNodeMsgHandler()
 }
 
-func (m *MultiClient) IndexingNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
+func IndexingNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		_, p2pAddressString, err := getP2pAddressFromEvent(result, "indexing_node_reg_vote", "candidate_network_address")
 		if err != nil {
@@ -334,7 +279,7 @@ func (m *MultiClient) IndexingNodeVoteMsgHandler() func(event coretypes.ResultEv
 	}
 }
 
-func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
+func PrepayMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		utils.Log(fmt.Sprintf("%+v", result))
 
@@ -370,7 +315,7 @@ func (m *MultiClient) PrepayMsgHandler() func(event coretypes.ResultEvent) {
 	}
 }
 
-func (m *MultiClient) FileUploadMsgHandler() func(event coretypes.ResultEvent) {
+func FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		reporterAddressList := result.Events["FileUpload.reporter"]
 		if len(reporterAddressList) < 1 {
@@ -415,7 +360,7 @@ type VolumeReportedReq struct {
 	Epoch string `json:"epoch"`
 }
 
-func (m *MultiClient) VolumeReportHandler() func(event coretypes.ResultEvent) {
+func VolumeReportHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		epochList := result.Events["volume_report.epoch"]
 		if len(epochList) < 1 {
@@ -425,6 +370,65 @@ func (m *MultiClient) VolumeReportHandler() func(event coretypes.ResultEvent) {
 
 		volumeReportedMsg := VolumeReportedReq{Epoch: epochList[0]}
 		err := postToSP("/volume/reported", volumeReportedMsg)
+		if err != nil {
+			utils.ErrorLog(err)
+			return
+		}
+	}
+}
+
+type SlashedPP struct {
+	P2PAddress string `json:"p2p_address"`
+	QueryFirst bool   `json:"query_first"`
+	Suspended  bool   `json:"suspended"`
+}
+
+type SlashedPPReq struct {
+	PPList []SlashedPP `json:"pp_list"`
+}
+
+func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
+		requiredAttributes := []string{
+			"slashing.network_address",
+			"slashing.suspended",
+		}
+		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+
+		var slashedPPs []SlashedPP
+		for _, event := range processedEvents {
+			_, p2pAddressString, err := getP2pAddressFromAttribute(event["slashing.network_address"])
+			if err != nil {
+				utils.DebugLog("Invalid P2P address in the slashing message from stratos-chain", err)
+				continue
+			}
+
+			suspended, err := strconv.ParseBool(event["slashing.suspended"])
+			if err != nil {
+				utils.DebugLog("Invalid suspended boolean in the slashing message from stratos-chain", err)
+				continue
+			}
+
+			slashedPP := SlashedPP{
+				P2PAddress: p2pAddressString,
+				QueryFirst: false,
+				Suspended:  suspended,
+			}
+			slashedPPs = append(slashedPPs, slashedPP)
+		}
+
+		if len(slashedPPs) != initialEventCount {
+			utils.ErrorLogf("slashing message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+				len(slashedPPs), initialEventCount-len(processedEvents), len(processedEvents)-len(slashedPPs))
+		}
+		if len(slashedPPs) == 0 {
+			return
+		}
+
+		slashedPPMsg := SlashedPPReq{
+			PPList: slashedPPs,
+		}
+		err := postToSP("/pp/slashed", slashedPPMsg)
 		if err != nil {
 			utils.ErrorLog(err)
 			return
@@ -472,4 +476,45 @@ func getP2pAddressFromEvent(result coretypes.ResultEvent, eventName, attribName 
 	}
 
 	return p2pAddress, p2pAddressString, nil
+}
+
+func getP2pAddressFromAttribute(attribute string) (types.Address, string, error) {
+	p2pAddress, err := types.BechToAddress(attribute)
+	if err != nil {
+		return types.Address{}, "", errors.New("error when trying to convert P2P address to bytes")
+	}
+	p2pAddressString, err := p2pAddress.ToBech(setting.Config.BlockchainInfo.P2PAddressPrefix)
+	if err != nil {
+		return types.Address{}, "", errors.New("error when trying to convert P2P address to bech32")
+	}
+
+	return p2pAddress, p2pAddressString, nil
+}
+
+func processEvents(eventsMap map[string][]string, attributesRequired []string) (processedEvents []map[string]string, totalEventCount int) {
+	if len(attributesRequired) < 1 {
+		return nil, 0
+	}
+
+	// Count how many events are valid (all required attributes are present)
+	validEventCount := len(eventsMap[attributesRequired[0]])
+	for _, attribute := range attributesRequired {
+		numberOfEvents := len(eventsMap[attribute])
+		if numberOfEvents > totalEventCount {
+			totalEventCount = numberOfEvents
+		}
+		if numberOfEvents < validEventCount {
+			validEventCount = numberOfEvents
+		}
+	}
+
+	// Separate the events map into an individual map for each valid event
+	for i := 0; i < validEventCount; i++ {
+		processedEvent := make(map[string]string)
+		for _, attribute := range attributesRequired {
+			processedEvent[attribute] = eventsMap[attribute][i]
+		}
+		processedEvents = append(processedEvents, processedEvent)
+	}
+	return
 }
