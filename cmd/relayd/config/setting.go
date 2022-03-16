@@ -30,10 +30,8 @@ type config struct {
 }
 
 type blockchainInfoConfig struct {
-	AddressPrefix    string `yaml:"addressPrefix"`
-	P2PAddressPrefix string `yaml:"p2pAddressPrefix"`
-	ChainId          string `yaml:"chainId"`
-	Token            string `yaml:"token"`
+	ChainId string `yaml:"chainId"`
+	Token   string `yaml:"token"`
 }
 
 var Config *config

@@ -19,7 +19,7 @@ import (
 // Activate Inactive PP node becomes active
 func Activate(tier, amount, fee, gas int64) error {
 	// Query blockchain to know if this node is already a resource node
-	ppState, err := stratoschain.QueryResourceNodeState(setting.GetNetworkID().String())
+	ppState, err := stratoschain.QueryResourceNodeState(setting.P2PAddress)
 	if err != nil {
 		utils.ErrorLog("Couldn't query node status from the blockchain", err)
 		//return err

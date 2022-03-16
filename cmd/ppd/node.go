@@ -14,7 +14,7 @@ import (
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	"github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/stratos-chain/types"
 )
 
 const (
@@ -81,12 +81,12 @@ func SetupP2PKey() error {
 		}
 
 		p2pKeyAddress, err := utils.CreateP2PKey(setting.Config.AccountDir, nickname, password,
-			types.DefaultP2PKeyPrefix)
+			types.SdsNodeP2PAddressPrefix)
 		if err != nil {
 			return errors.New("couldn't create p2p key: " + err.Error())
 		}
 
-		p2pKeyAddressString, err := p2pKeyAddress.ToBech(types.DefaultP2PKeyPrefix)
+		p2pKeyAddressString, err := p2pKeyAddress.ToBech(types.SdsNodeP2PAddressPrefix)
 		if err != nil {
 			return errors.New("couldn't convert P2P key address to bech string: " + err.Error())
 		}

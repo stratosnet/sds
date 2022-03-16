@@ -9,7 +9,7 @@ import (
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/stratosnet/sds/utils/httpserv"
-	"github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/stratos-chain/types"
 )
 
 // importWallet POST, params：(keystore , password)
@@ -44,7 +44,7 @@ func importWallet(w http.ResponseWriter, request *http.Request) {
 	}
 	setting.WalletPrivateKey = key.PrivateKey
 	setting.WalletPublicKey = secp256k1.PrivKeyToPubKey(key.PrivateKey)
-	setting.WalletAddress, err = key.Address.ToBech(types.DefaultAddressPrefix)
+	setting.WalletAddress, err = key.Address.ToBech(types.StratosBech32Prefix)
 	if err != nil {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to convert wallet address to bech32 string").ToBytes())
 		return

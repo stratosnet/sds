@@ -6,6 +6,7 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	utiltypes "github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/stratos-chain/types"
 	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
@@ -19,7 +20,7 @@ type Traffic struct {
 
 // Stratos-chain 'pot' module
 func BuildVolumeReportMsg(traffic []*Traffic, reporterAddress, reporterOwnerAddress []byte, epoch uint64,
-	reportReference string, blsTxData, blsSignature []byte, blsPubKeys [][]byte) (sdktypes.Msg, error) {
+	reportReference string, blsTxDataHash, blsSignature []byte, blsPubKeys [][]byte) (sdktypes.Msg, error) {
 	aggregatedVolume := make(map[string]uint64)
 	for _, trafficRecord := range traffic {
 		aggregatedVolume[trafficRecord.WalletAddress] += trafficRecord.Volume
@@ -38,13 +39,13 @@ func BuildVolumeReportMsg(traffic []*Traffic, reporterAddress, reporterOwnerAddr
 		})
 	}
 
-	blsSignatureInfo := pottypes.NewBLSSignatureInfo(blsPubKeys, blsSignature, blsTxData)
+	blsSignatureInfo := pottypes.NewBLSSignatureInfo(blsPubKeys, blsSignature, blsTxDataHash)
 
 	return pottypes.NewMsgVolumeReport(nodesVolume, reporterAddress, sdktypes.NewIntFromUint64(epoch), reportReference, reporterOwnerAddress, blsSignatureInfo), nil
 }
 
 func BuildSlashingResourceNodeMsg(spP2pAddress, spWalletAddress []utiltypes.Address, ppP2pAddress, ppWalletAddress utiltypes.Address, slashingAmount *big.Int, suspend bool) sdktypes.Msg {
-	var spP2pAddressSdk []sdktypes.AccAddress
+	var spP2pAddressSdk []types.SdsAddress
 	for _, p2pAddress := range spP2pAddress {
 		spP2pAddressSdk = append(spP2pAddressSdk, p2pAddress[:])
 	}
@@ -64,12 +65,12 @@ func BuildSlashingResourceNodeMsg(spP2pAddress, spWalletAddress []utiltypes.Addr
 }
 
 // Stratos-chain 'register' module
-func BuildCreateResourceNodeMsg(networkID, token, moniker, nodeType string, pubKey []byte, stakeAmount int64, ownerAddress utiltypes.Address) sdktypes.Msg {
-	if nodeType == "" {
-		nodeType = registertypes.STORAGE.Type()
+func BuildCreateResourceNodeMsg(token, moniker string, nodeType registertypes.NodeType, pubKey []byte, stakeAmount int64, ownerAddress, p2pAddress utiltypes.Address) sdktypes.Msg {
+	if nodeType == 0 {
+		nodeType = registertypes.STORAGE
 	}
 	return registertypes.NewMsgCreateResourceNode(
-		networkID,
+		p2pAddress[:],
 		ed25519.PubKeyBytesToPubKey(pubKey),
 		sdktypes.NewInt64Coin(token, stakeAmount),
 		ownerAddress[:],
@@ -80,9 +81,9 @@ func BuildCreateResourceNodeMsg(networkID, token, moniker, nodeType string, pubK
 	)
 }
 
-func BuildCreateIndexingNodeMsg(networkID, token, moniker string, pubKey []byte, stakeAmount int64, ownerAddress utiltypes.Address) sdktypes.Msg {
+func BuildCreateIndexingNodeMsg(token, moniker string, pubKey []byte, stakeAmount int64, ownerAddress, p2pAddress utiltypes.Address) sdktypes.Msg {
 	return registertypes.NewMsgCreateIndexingNode(
-		networkID,
+		p2pAddress[:],
 		ed25519.PubKeyBytesToPubKey(pubKey),
 		sdktypes.NewInt64Coin(token, stakeAmount),
 		ownerAddress[:],
