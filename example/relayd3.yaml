@@ -13,7 +13,5 @@ stratosChain:
     max: 100
     sleepDuration: 3000 # milliseconds
 blockchainInfo:
-  addressPrefix: st
-  p2pAddressPrefix: stsdsp2p
   chainId: test-chain
   token: ustos

@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/relay"
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/libs/bech32"
 
@@ -378,7 +378,7 @@ func verifySignature(target *protos.ReqDownloadSlice, rsp *protos.RspDownloadSli
 	}
 
 	p2pPubKey := tmed25519.PubKeyEd25519{}
-	err = stratoschain.Cdc.UnmarshalBinaryBare(pubKeyRaw, &p2pPubKey)
+	err = relay.Cdc.UnmarshalBinaryBare(pubKeyRaw, &p2pPubKey)
 
 	if err != nil {
 		utils.ErrorLog("Error when trying to read P2P pubKey ed25519 binary", err)

@@ -10,7 +10,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
-	"github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/stratos-chain/types"
 )
 
 // createWallet POST, params：(password，againpassword，name, mnemonic, passphrase, hdpath)
@@ -67,13 +67,13 @@ func createWallet(w http.ResponseWriter, request *http.Request) {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "password doesn't match").ToBytes())
 		return
 	}
-	walletAddress, err := utils.CreateWallet(setting.Config.AccountDir, name, password, types.DefaultAddressPrefix,
+	walletAddress, err := utils.CreateWallet(setting.Config.AccountDir, name, password, types.StratosBech32Prefix,
 		mnemonic, "", hdPath)
 	if err != nil {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to create wallet").ToBytes())
 		return
 	}
-	walletAddressString, err := walletAddress.ToBech(types.DefaultAddressPrefix)
+	walletAddressString, err := walletAddress.ToBech(types.StratosBech32Prefix)
 	if err != nil {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to convert wallet address to bech32 string").ToBytes())
 		return

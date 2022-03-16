@@ -6,8 +6,9 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/cosmos/cosmos-sdk/types"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stratosnet/sds/utils/crypto/sha3"
+	"github.com/stratosnet/stratos-chain/types"
 	"github.com/tendermint/tendermint/libs/bech32"
 )
 
@@ -17,9 +18,6 @@ const (
 	HashLength = 32
 	// AddressLength
 	AddressLength = 20
-
-	DefaultAddressPrefix = "st"
-	DefaultP2PKeyPrefix  = "stsdsp2p"
 )
 
 // Address
@@ -148,11 +146,11 @@ func (a Address) ToBech(hrp string) (string, error) {
 }
 
 func BechToAddress(str string) (Address, error) {
-	addr, err := types.GetFromBech32(str, DefaultAddressPrefix)
+	addr, err := sdktypes.GetFromBech32(str, types.StratosBech32Prefix)
 	if err != nil {
 		return Address{}, err
 	}
-	err = types.VerifyAddressFormat(addr)
+	err = sdktypes.VerifyAddressFormat(addr)
 	if err != nil {
 		return Address{}, err
 	}
@@ -163,11 +161,11 @@ func P2pAddressFromBech(str string) (Address, error) {
 	if len(strings.TrimSpace(str)) == 0 {
 		return Address{}, nil
 	}
-	bz, err := types.GetFromBech32(str, DefaultP2PKeyPrefix)
+	bz, err := sdktypes.GetFromBech32(str, types.SdsNodeP2PAddressPrefix)
 	if err != nil {
 		return Address{}, err
 	}
-	err = types.VerifyAddressFormat(bz)
+	err = sdktypes.VerifyAddressFormat(bz)
 	if err != nil {
 		return Address{}, err
 	}
@@ -175,7 +173,7 @@ func P2pAddressFromBech(str string) (Address, error) {
 }
 
 func P2pAddressToBech(p2pAddr Address) (string, error) {
-	return p2pAddr.ToBech(DefaultP2PKeyPrefix)
+	return p2pAddr.ToBech(types.SdsNodeP2PAddressPrefix)
 }
 
 // Bytes2Hex returns the hexadecimal encoding of d.
