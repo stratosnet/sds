@@ -4,10 +4,10 @@ downloadpathminlen: 88
 Port: "9082"
 NetworkAddress: 127.0.0.1
 Debug: true
-PPListDir: /Users/trexb/workspace/sds/example/network/node2/peers
-AccountDir: /Users/trexb/workspace/sds/example/network/node2/accounts
-StorehousePath: /Users/trexb/workspace/sds/example/network/node2/storage
-DownloadPath: /Users/trexb/workspace/sds/example/network/node2/download
+PPListDir: ./peers
+AccountDir: ./accounts
+StorehousePath: ./storage
+DownloadPath: ./download
 P2PAddress: stsds1faej5w4q6hgnt0ft598dlm408g4p747y4krwca
 P2PPassword: aaa
 WalletAddress: st1ppcc7hmgwnr6e67ad4tcxxyskqpahuc2y4w7yq
