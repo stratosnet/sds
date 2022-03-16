@@ -134,7 +134,7 @@ func TestDecryptWalletJson(t *testing.T) {
 }
 
 func TestDecryptPrivValidatorKeyJson(t *testing.T) {
-	//t.SkipNow() // Comment this line out to run the method and decrypt a priv_validator_key JSON file (SP node validator key)
+	t.SkipNow() // Comment this line out to run the method and decrypt a priv_validator_key JSON file (SP node validator key)
 	p2pKey := privval.FilePVKey{}
 	err := cdc.UnmarshalJSON([]byte("put the content of the priv_validator_key.json file here"), &p2pKey)
 	if err != nil {
