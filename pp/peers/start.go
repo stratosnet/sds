@@ -2,6 +2,7 @@ package peers
 
 import (
 	"path/filepath"
+	"time"
 
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/pp/client"
@@ -10,7 +11,6 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// StartPP
 func StartPP(registerFn func()) {
 	GetNetworkAddress()
 	peerList.Init(setting.NetworkAddress, filepath.Join(setting.Config.PPListDir, "pp-list"))
@@ -24,7 +24,6 @@ func StartPP(registerFn func()) {
 	ListenOffline()
 }
 
-// InitPeer
 func InitPeer(registerFn func()) {
 	// TODO: To make sure this InitPeer method is correctly called and work as expected
 	utils.DebugLog("InitPeer InitPeerInitPeer InitPeerInitPeer InitPeer")
@@ -37,7 +36,6 @@ func InitPeer(registerFn func()) {
 	go ListenOffline()
 }
 
-// RegisterToSP
 func RegisterToSP(toSP bool) {
 	if toSP {
 		SendMessageToSPServer(requests.ReqRegisterData(), header.ReqRegister)
@@ -48,7 +46,6 @@ func RegisterToSP(toSP bool) {
 	}
 }
 
-// StartMining
 func StartMining() {
 	if setting.CheckLogin() {
 		if setting.IsPP && !setting.IsLoginToSP {
@@ -63,4 +60,9 @@ func StartMining() {
 			utils.Log("register as miner first")
 		}
 	}
+}
+
+func RetryMining() {
+	utils.Logf("Retrying to start mining in %v seconds", setting.MiningRetryInterval)
+	ppPeerClock.AddJobWithInterval(time.Second*setting.MiningRetryInterval, StartMining)
 }

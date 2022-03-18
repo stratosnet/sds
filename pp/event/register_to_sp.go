@@ -3,6 +3,7 @@ package event
 // Author j
 import (
 	"context"
+	"strings"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
@@ -92,28 +93,34 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 func RspMining(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspMining", conn)
 	var target protos.RspMining
-	if requests.UnmarshalData(ctx, &target) {
-		if target.Result.State == protos.ResultState_RES_SUCCESS {
-			utils.Log("start mining")
-			if peers.GetPPServer() == nil {
-				go peers.StartListenServer(setting.Config.Port)
-			}
-			setting.IsStartMining = true
-
-			newConnection, err := peers.ConnectToSP()
-			if err != nil {
-				utils.ErrorLog(err)
-				return
-			}
-			if newConnection {
-				peers.RegisterToSP(true)
-			}
-
-			utils.DebugLog("Start reporting node status to SP")
-			// trigger 1 stat report immediately
-			peers.ReportNodeStatus()
-		} else {
-			utils.Log(target.Result.Msg)
-		}
+	if !requests.UnmarshalData(ctx, &target) {
+		return
 	}
+
+	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		utils.Log(target.Result.Msg)
+		if strings.Contains(target.Result.Msg, "request to unsuspend has been sent") {
+			peers.RetryMining()
+		}
+		return
+	}
+
+	utils.Log("start mining")
+	if peers.GetPPServer() == nil {
+		go peers.StartListenServer(setting.Config.Port)
+	}
+	setting.IsStartMining = true
+
+	newConnection, err := peers.ConnectToSP()
+	if err != nil {
+		utils.ErrorLog(err)
+		return
+	}
+	if newConnection {
+		peers.RegisterToSP(true)
+	}
+
+	utils.DebugLog("Start reporting node status to SP")
+	// trigger 1 stat report immediately
+	peers.ReportNodeStatus()
 }

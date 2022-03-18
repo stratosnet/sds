@@ -33,6 +33,10 @@ func Activate(amount, fee, gas int64) error {
 			PpInfo:        setting.GetPPInfo(),
 			AlreadyActive: true,
 		}
+	case types.PP_SUSPENDED:
+		utils.Log("This node is currently suspended. Start mining to unsuspend it")
+		setting.State = types.PP_SUSPENDED
+		return nil
 	default:
 		activateReq, err = reqActivateData(amount, fee, gas)
 		if err != nil {
@@ -51,7 +55,7 @@ func Activate(amount, fee, gas int64) error {
 	return nil
 }
 
-// RspActivate. Response to asking the SP node to activate this PP node
+// RspActivate Response to asking the SP node to activate this PP node
 func RspActivate(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspActivatePP
 	success := requests.UnmarshalData(ctx, &target)
@@ -64,21 +68,26 @@ func RspActivate(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	if target.ActivationState == types.PP_ACTIVE {
-		utils.Log("Current node is already active")
-		setting.State = byte(target.ActivationState)
-		return
-	}
+	setting.State = byte(target.ActivationState)
 
-	err := stratoschain.BroadcastTxBytes(target.Tx)
-	if err != nil {
-		utils.ErrorLog("The activation transaction couldn't be broadcast", err)
-	} else {
-		utils.Log("The activation transaction was broadcast")
+	switch target.ActivationState {
+	case types.PP_INACTIVE:
+		err := stratoschain.BroadcastTxBytes(target.Tx)
+		if err != nil {
+			utils.ErrorLog("The activation transaction couldn't be broadcast", err)
+		} else {
+			utils.Log("The activation transaction was broadcast")
+		}
+	case types.PP_ACTIVE:
+		utils.Log("This node is already active")
+	case types.PP_UNBONDING:
+		utils.Log("This node is unbonding")
+	case types.PP_SUSPENDED:
+		utils.Log("This node is suspended. Start mining to unsuspend it")
 	}
 }
 
-// RspActivated. Response when this PP node was successfully activated
+// RspActivated Response when this PP node was successfully activated
 func RspActivated(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspActivatePP
 	success := requests.UnmarshalData(ctx, &target)
