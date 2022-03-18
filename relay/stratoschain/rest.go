@@ -329,6 +329,14 @@ func QueryResourceNodeState(p2pAddress string) (int, error) {
 		return 0, err
 	}
 
+	if resp.StatusCode == http.StatusNotFound {
+		return types.PP_INACTIVE, nil
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, errors.Errorf("HTTP%v: %v", resp.StatusCode, string(respBody))
+	}
+
 	var wrappedResponse sdkrest.ResponseWithHeight
 	err = codec.Cdc.UnmarshalJSON(respBody, &wrappedResponse)
 	if err != nil {

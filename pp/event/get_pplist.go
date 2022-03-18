@@ -31,10 +31,14 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 	if err != nil {
 		utils.ErrorLog("Error when saving PP List", err)
 	}
+
+	shouldRegisterToSP := setting.IsAuto && !setting.IsLoginToSP &&
+		(setting.State == types.PP_ACTIVE || setting.State == types.PP_SUSPENDED)
+
 	list, total := peers.GetPPList()
 	if total == 0 {
 		// no PP exist, register to SP
-		if setting.IsAuto && !setting.IsLoginToSP && setting.State == types.PP_ACTIVE {
+		if shouldRegisterToSP {
 			peers.RegisterToSP(true)
 		}
 		peers.ScheduleReloadPPlist()
@@ -48,7 +52,7 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 		}
 	}
 
-	if setting.IsAuto && setting.State == types.PP_ACTIVE && !setting.IsLoginToSP {
+	if shouldRegisterToSP {
 		peers.RegisterToSP(true)
 	}
 }
