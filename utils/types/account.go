@@ -145,7 +145,7 @@ func (a Address) ToBech(hrp string) (string, error) {
 	return bech32.ConvertAndEncode(hrp, a.Bytes())
 }
 
-func BechToAddress(str string) (Address, error) {
+func WalletAddressFromBech(str string) (Address, error) {
 	addr, err := sdktypes.GetFromBech32(str, types.StratosBech32Prefix)
 	if err != nil {
 		return Address{}, err
