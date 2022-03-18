@@ -440,7 +440,7 @@ func ReqFileStorageInfoData(path, savePath, reqID, walletAddr string, isVideoStr
 			FilePath:      path,
 			SavePath:      savePath,
 		},
-		Sign:          setting.GetSign(walletAddr + setting.GetNetworkID().String() + path + header.ReqFileStorageInfo),
+		Sign:          setting.GetSign(walletAddr + setting.P2PAddress + path + header.ReqFileStorageInfo),
 		ReqId:         reqID,
 		IsVideoStream: isVideoStream,
 		ShareRequest:  shareRequest,

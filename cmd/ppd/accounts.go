@@ -78,12 +78,12 @@ func createAccounts(cmd *cobra.Command, args []string) error {
 	}
 	//hrp, mnemonic, bip39Passphrase, hdPath
 	walletKeyAddress, err := utils.CreateWallet(setting.Config.AccountDir, nickname, password,
-		types.SdsNodeP2PAddressPrefix, mnemonic, "", hdPath)
+		types.StratosBech32Prefix, mnemonic, "", hdPath)
 	if err != nil {
 		return errors.New("couldn't create WalletAddress: " + err.Error())
 	}
 
-	walletKeyAddressString, err := walletKeyAddress.ToBech(types.SdsNodeP2PAddressPrefix)
+	walletKeyAddressString, err := walletKeyAddress.ToBech(types.StratosBech32Prefix)
 	if err != nil {
 		return errors.New("couldn't convert wallet address to bech string: " + err.Error())
 	}

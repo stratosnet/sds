@@ -10,7 +10,7 @@ func TestAccountAddressBechConversion(t *testing.T) {
 	hrp := "st"
 
 	addressString := "st1yx3kkx9jnqeck59j744nc5qgtv4lt4dc45jcwz"
-	addr, err := BechToAddress(addressString)
+	addr, err := WalletAddressFromBech(addressString)
 	if err != nil {
 		t.Fatal("couldn't convert bech32 string to Address: " + err.Error())
 	}

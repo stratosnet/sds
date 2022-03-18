@@ -13,7 +13,7 @@ import (
 
 func reqActivateData(tier, amount, fee, gas int64) (*protos.ReqActivatePP, error) {
 	// Create and sign transaction to add new resource node
-	ownerAddress, err := types.BechToAddress(setting.WalletAddress)
+	ownerAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func reqDeactivateData(fee, gas int64) (*protos.ReqDeactivatePP, error) {
 
 func reqPrepayData(amount, fee, gas int64) (*protos.ReqPrepay, error) {
 	// Create and sign a prepay transaction
-	senderAddress, err := types.BechToAddress(setting.WalletAddress)
+	senderAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
 	if err != nil {
 		return nil, err
 	}

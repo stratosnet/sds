@@ -64,7 +64,7 @@ func RspActivate(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	if target.ActivationState != types.PP_INACTIVE {
+	if target.ActivationState == types.PP_ACTIVE {
 		utils.Log("Current node is already active")
 		setting.State = byte(target.ActivationState)
 		return
