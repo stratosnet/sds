@@ -47,7 +47,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"ver                                        			version\n" +
 		"monitor                                    			show monitor\n" +
 		"stopmonitor                                			stop monitor\n" +
-		"config  <key> <value>                      			set config key value\n"
+		"config  <key> <value>                      			set config key value\n" +
+		"getoz								get current ozone balance\n"
 
 	help := func(line string, param []string) bool {
 		fmt.Println(helpStr)
@@ -56,6 +57,10 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 
 	wallets := func(line string, param []string) bool {
 		return callRpc(c, "wallets", param)
+	}
+
+	getoz := func(line string, param []string) bool {
+		return callRpc(c, "getoz", param)
 	}
 
 	newwallet := func(line string, param []string) bool {
@@ -210,6 +215,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("help", help, true)
 	console.Mystdin.RegisterProcessFunc("h", help, true)
 	console.Mystdin.RegisterProcessFunc("wallets", wallets, false)
+	console.Mystdin.RegisterProcessFunc("getoz", getoz, true)
 	console.Mystdin.RegisterProcessFunc("newwallet", newwallet, false)
 	console.Mystdin.RegisterProcessFunc("login", login, false)
 	console.Mystdin.RegisterProcessFunc("startmining", start, true)
