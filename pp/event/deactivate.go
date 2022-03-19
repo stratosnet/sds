@@ -39,7 +39,7 @@ func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	setting.State = byte(target.ActivationState)
+	setting.State = target.ActivationState
 
 	if target.ActivationState == types.PP_INACTIVE {
 		utils.Log("Current node is already inactive")
