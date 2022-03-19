@@ -41,8 +41,12 @@ const (
 	RspGetSPList   = "RspGSPL" // response to get sp list
 	ReqGetPPStatus = "ReqGPPS" // request to get pp status
 	RspGetPPStatus = "RspGPPS" // response to get pp status
-	ReqRegister    = "ReqReg"  // request to register
-	RspRegister    = "RspReg"  // response to register
+
+	ReqGetPPOzone = "ReqGPPO" // request to get pp ozone
+	RspGetPPOzone = "RspGPPO" // response to get pp ozone
+
+	ReqRegister = "ReqReg" // request to register
+	RspRegister = "RspReg" // response to register
 
 	ReqActivatePP  = "ReqActvp" // request to activate a PP node
 	RspActivatePP  = "RspActvp" // response to activate a PP node

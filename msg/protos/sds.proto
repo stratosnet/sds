@@ -788,4 +788,5 @@ message ReqGetPPStatus {
 message RspGetPPStatus{
   uint32 ActivationState = 1;
   Result result = 2;
+  string Uoz = 3;
 }
