@@ -12,7 +12,7 @@ var IsPP = false
 
 var IsLoginToSP = false
 
-var State byte = ppTypes.PP_INACTIVE
+var State uint32 = ppTypes.PP_INACTIVE
 
 var IsStartMining = false // Is the node currently mining
 

@@ -33,7 +33,7 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	shouldRegisterToSP := setting.IsAuto && !setting.IsLoginToSP &&
-		(setting.State == types.PP_ACTIVE || setting.State == types.PP_SUSPENDED)
+		(setting.State == types.PP_ACTIVE)
 
 	list, total := peers.GetPPList()
 	if total == 0 {

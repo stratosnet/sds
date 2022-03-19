@@ -26,17 +26,13 @@ func Activate(amount, fee, gas int64) error {
 	}
 
 	var activateReq *protos.ReqActivatePP
-	switch ppState {
+	switch ppState.IsActive {
 	case types.PP_ACTIVE:
 		utils.Log("This node is already active on the blockchain. Waiting for SP node to confirm...")
 		activateReq = &protos.ReqActivatePP{
 			PpInfo:        setting.GetPPInfo(),
 			AlreadyActive: true,
 		}
-	case types.PP_SUSPENDED:
-		utils.Log("This node is currently suspended. Start mining to unsuspend it")
-		setting.State = types.PP_SUSPENDED
-		return nil
 	default:
 		activateReq, err = reqActivateData(amount, fee, gas)
 		if err != nil {
@@ -68,7 +64,11 @@ func RspActivate(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	setting.State = byte(target.ActivationState)
+	if target.ActivationState == types.PP_ACTIVE {
+		utils.Log("Current node is already active")
+		setting.State = target.ActivationState
+		return
+	}
 
 	switch target.ActivationState {
 	case types.PP_INACTIVE:
@@ -82,8 +82,6 @@ func RspActivate(ctx context.Context, conn core.WriteCloser) {
 		utils.Log("This node is already active")
 	case types.PP_UNBONDING:
 		utils.Log("This node is unbonding")
-	case types.PP_SUSPENDED:
-		utils.Log("This node is suspended. Start mining to unsuspend it")
 	}
 }
 

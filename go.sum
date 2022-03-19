@@ -533,6 +533,8 @@ github.com/stratosnet/stratos-chain v0.6.3-0.20220316170526-ec1aa92e8ffa h1:BZRX
 github.com/stratosnet/stratos-chain v0.6.3-0.20220316170526-ec1aa92e8ffa/go.mod h1:hBq9j7lrAxNjCF/TpgR11xvMvrjVkebWoM2vb4MqO1s=
 github.com/stratosnet/stratos-chain v0.6.3-0.20220316185355-893f2e36cca9 h1:F6peWTzhSHRZ0SKOQUAZ/c2PJQYbyZ6YMhF3Zhjcs+c=
 github.com/stratosnet/stratos-chain v0.6.3-0.20220316185355-893f2e36cca9/go.mod h1:hBq9j7lrAxNjCF/TpgR11xvMvrjVkebWoM2vb4MqO1s=
+github.com/stratosnet/stratos-chain v0.6.3-0.20220318143013-31934fedd96c h1:w6VwVfCepR1iRADJ409QXq9D99mGCVMnOlNo1dhcUJ0=
+github.com/stratosnet/stratos-chain v0.6.3-0.20220318143013-31934fedd96c/go.mod h1:hBq9j7lrAxNjCF/TpgR11xvMvrjVkebWoM2vb4MqO1s=
 github.com/streadway/amqp v0.0.0-20190404075320-75d898a42a94/go.mod h1:AZpEONHx3DKn8O/DFsRAY58/XVQiIPMTMB1SddzLXVw=
 github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271/go.mod h1:AZpEONHx3DKn8O/DFsRAY58/XVQiIPMTMB1SddzLXVw=
 github.com/streadway/handy v0.0.0-20190108123426-d5acb3125c2a/go.mod h1:qNTQ5P5JnDBl6z3cMAg/SywNDC5ABu5ApDIw6lUbRmI=

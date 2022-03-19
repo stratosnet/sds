@@ -31,8 +31,8 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	setting.State = byte(target.ActivationState)
-	if setting.State == ppTypes.PP_ACTIVE || setting.State == ppTypes.PP_SUSPENDED {
+	setting.State = target.ActivationState
+	if setting.State == ppTypes.PP_ACTIVE {
 		setting.IsPP = true
 	}
 	peers.InitPPList()
