@@ -25,10 +25,9 @@ func RspGetPPOzone(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-	utils.Logf("get GetPPOzone RSP, PP ozone balance = %v", target.Uoz)
+	utils.Logf("get GetPPOzone RSP, PP ozone balance = %v", target.GetUoz())
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
-		utils.Log("failed to get any meta nodes, reloading")
-		peers.ScheduleReloadPPlist()
+		utils.Logf("failed to get ozone balance: %v", target.Result.Msg)
 		return
 	}
 }
