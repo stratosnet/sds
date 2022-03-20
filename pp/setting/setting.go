@@ -25,7 +25,6 @@ const (
 	NodeReportIntervalSec   = 300    // in seconds
 	NodeReportCheckInterval = 1000   // in num of heights
 	WeightDeductionInterval = 100000 // interval for weight deduction in heights
-	MiningRetryInterval     = 30     // in seconds
 
 	// MAXDATA max slice size
 	MAXDATA = 1024 * 1024 * 3

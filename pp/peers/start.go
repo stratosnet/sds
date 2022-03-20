@@ -2,7 +2,6 @@ package peers
 
 import (
 	"path/filepath"
-	"time"
 
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/pp/client"
@@ -60,9 +59,4 @@ func StartMining() {
 			utils.Log("register as miner first")
 		}
 	}
-}
-
-func RetryMining() {
-	utils.Logf("Retrying to start mining in %v seconds", setting.MiningRetryInterval)
-	ppPeerClock.AddJobWithInterval(time.Second*setting.MiningRetryInterval, StartMining)
 }

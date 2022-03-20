@@ -3,7 +3,6 @@ package event
 // Author j
 import (
 	"context"
-	"strings"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
@@ -99,9 +98,6 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.Log(target.Result.Msg)
-		if strings.Contains(target.Result.Msg, "request to unsuspend has been sent") {
-			peers.RetryMining()
-		}
 		return
 	}
 

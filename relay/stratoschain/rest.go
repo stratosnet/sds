@@ -271,6 +271,7 @@ func BroadcastTxBytes(txBytes []byte) error {
 
 	// In block broadcast mode, do additional verification
 	if broadcastReq.Mode == flags.BroadcastBlock {
+		// TODO: QB-1064 use events from the result instead of unmarshalling the tx bytes
 		var txResponse sdktypes.TxResponse
 
 		err = relay.Cdc.UnmarshalJSON(responseBody, &txResponse)
@@ -310,103 +311,69 @@ func BroadcastTxBytes(txBytes []byte) error {
 }
 
 type ResourceNodeState struct {
-	IsActive uint32
-	Suspened bool
+	IsActive  uint32
+	Suspended bool
 }
 
 func QueryResourceNodeState(p2pAddress string) (state ResourceNodeState, err error) {
+	state = ResourceNodeState{
+		IsActive:  types.PP_INACTIVE,
+		Suspended: true,
+	}
 	if Url == "" {
-		return ResourceNodeState{
-			IsActive: types.PP_INACTIVE,
-			Suspened: true,
-		}, errors.New("the stratos-chain URL is not set")
+		return state, errors.New("the stratos-chain URL is not set")
 	}
 
 	url, err := utils.ParseUrl(Url + "/register/resource-nodes?network=" + p2pAddress)
 	if err != nil {
-		return ResourceNodeState{
-			IsActive: types.PP_INACTIVE,
-			Suspened: true,
-		}, err
+		return state, err
 	}
 
 	resp, err := http.Get(url.String(true, true, true, true))
 	if err != nil {
-		return ResourceNodeState{
-			IsActive: types.PP_INACTIVE,
-			Suspened: true,
-		}, err
+		return state, err
 	}
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return ResourceNodeState{
-			IsActive: types.PP_INACTIVE,
-			Suspened: true,
-		}, err
+		return state, err
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		return ResourceNodeState{
-			IsActive: types.PP_INACTIVE,
-			Suspened: true,
-		}, nil
+		return state, nil
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return ResourceNodeState{
-			IsActive: types.PP_INACTIVE,
-			Suspened: true,
-		}, errors.Errorf("HTTP%v: %v", resp.StatusCode, string(respBody))
+		return state, errors.Errorf("HTTP%v: %v", resp.StatusCode, string(respBody))
 	}
 
 	var wrappedResponse sdkrest.ResponseWithHeight
 	err = codec.Cdc.UnmarshalJSON(respBody, &wrappedResponse)
 	if err != nil {
-		return ResourceNodeState{
-			IsActive: types.PP_INACTIVE,
-			Suspened: true,
-		}, err
+		return state, err
 	}
 
 	var resourceNodes registertypes.ResourceNodes
 	err = authtypes.ModuleCdc.UnmarshalJSON(wrappedResponse.Result, &resourceNodes)
 	if err != nil {
-		return ResourceNodeState{
-			IsActive: types.PP_INACTIVE,
-			Suspened: true,
-		}, nil
+		return state, err
 	}
 
 	if len(resourceNodes) == 0 {
-		return ResourceNodeState{
-			IsActive: types.PP_INACTIVE,
-			Suspened: true,
-		}, nil
+		return state, nil
 	}
-	if resourceNodes[0].GetNetworkAddr().String() == p2pAddress {
-		return ResourceNodeState{
-			IsActive: types.PP_INACTIVE,
-			Suspened: true,
-		}, nil
+	if resourceNodes[0].GetNetworkAddr().String() != p2pAddress {
+		return state, nil
 	}
 
+	state.Suspended = resourceNodes[0].IsSuspended()
 	switch resourceNodes[0].GetStatus() {
 	case sdktypes.Bonded:
-		return ResourceNodeState{
-			IsActive: types.PP_ACTIVE,
-			Suspened: resourceNodes[0].IsSuspended(),
-		}, nil
+		state.IsActive = types.PP_ACTIVE
 	case sdktypes.Unbonding:
-		return ResourceNodeState{
-			IsActive: types.PP_UNBONDING,
-			Suspened: resourceNodes[0].IsSuspended(),
-		}, nil
+		state.IsActive = types.PP_UNBONDING
 	case sdktypes.Unbonded:
-		return ResourceNodeState{
-			IsActive: types.PP_INACTIVE,
-			Suspened: resourceNodes[0].IsSuspended(),
-		}, nil
+		state.IsActive = types.PP_INACTIVE
 	}
-	return
+	return state, nil
 }
