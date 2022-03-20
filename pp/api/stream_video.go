@@ -285,7 +285,7 @@ func verifyStreamReqBody(req *http.Request) (*StreamReqBody, error) {
 		return nil, err
 	}
 
-	if _, err := cid.Decode(reqBody.FileName); err != nil {
+	if _, err := cid.Decode(reqBody.FileHash); err != nil {
 		return nil, errors.Wrap(err, "incorrect file fileHash")
 	}
 
