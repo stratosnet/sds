@@ -2,6 +2,7 @@ package serv
 
 import (
 	"errors"
+	"io/fs"
 	"io/ioutil"
 	"path/filepath"
 
@@ -112,21 +113,9 @@ func Wallets() {
 
 // Login
 func Login(walletAddress, password string) error {
-	utils.DebugLog("walletAddress = ", walletAddress)
-	// utils.DebugLog("password = ", password)
-	if walletAddress == "" {
-		utils.ErrorLog("please input wallet address")
-		return errors.New("please input wallet address")
-	}
-	if password == "" {
-		utils.ErrorLog("please input password")
-		return errors.New("please input password")
-	}
-
-	files, _ := ioutil.ReadDir(setting.Config.AccountDir)
-	if len(files) == 0 {
-		utils.ErrorLog("wrong account or password")
-		return errors.New("wrong account or password")
+	files, err := GetWallets(walletAddress, password)
+	if err != nil {
+		return err
 	}
 	fileName := walletAddress + ".json"
 	for _, info := range files {
@@ -146,4 +135,23 @@ func Login(walletAddress, password string) error {
 	}
 	utils.ErrorLog("wrong walletAddress or password")
 	return errors.New("wrong walletAddress or password")
+}
+
+func GetWallets(walletAddress string, password string) ([]fs.FileInfo, error) {
+	utils.DebugLog("walletAddress = ", walletAddress)
+	if walletAddress == "" {
+		utils.ErrorLog("please input wallet address")
+		return nil, errors.New("please input wallet address")
+	}
+	if password == "" {
+		utils.ErrorLog("please input password")
+		return nil, errors.New("please input password")
+	}
+
+	files, _ := ioutil.ReadDir(setting.Config.AccountDir)
+	if len(files) == 0 {
+		utils.ErrorLog("wrong account or password")
+		return nil, errors.New("wrong account or password")
+	}
+	return files, nil
 }

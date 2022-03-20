@@ -788,5 +788,15 @@ message ReqGetPPStatus {
 message RspGetPPStatus{
   uint32 ActivationState = 1;
   Result result = 2;
-  string Uoz = 3;
+}
+
+message ReqGetWalletOz {
+  PPBaseInfo my_address = 1;
+}
+
+message RspGetWalletOz{
+  string wallet_oz = 1;
+  PPBaseInfo my_address = 2;
+  Result result = 3;
+
 }

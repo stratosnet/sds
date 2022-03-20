@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/pp/serv"
@@ -48,7 +50,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"monitor                                    			show monitor\n" +
 		"stopmonitor                                			stop monitor\n" +
 		"config  <key> <value>                      			set config key value\n" +
-		"getoz								get current ozone balance\n"
+		"getoz <walletAddress> ->password           			get current ozone balance\n"
 
 	help := func(line string, param []string) bool {
 		fmt.Println(helpStr)
@@ -60,7 +62,44 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	}
 
 	getoz := func(line string, param []string) bool {
-		return callRpc(c, "getoz", param)
+		if len(param) < 1 {
+			fmt.Println("missing wallet address")
+			return false
+		}
+		password, err := console.Stdin.PromptPassword("Enter password: ")
+		if err != nil {
+			fmt.Println(err)
+			return false
+		}
+
+		files, err := serv.GetWallets(param[0], password)
+		if err != nil {
+			fmt.Println(err)
+			return false
+		}
+		fileName := param[0] + ".json"
+		for _, info := range files {
+			if info.Name() == ".placeholder" || info.Name() != fileName {
+				continue
+			}
+			utils.Log("find file: " + filepath.Join(setting.Config.AccountDir, fileName))
+			keyjson, err := ioutil.ReadFile(filepath.Join(setting.Config.AccountDir, fileName))
+			if utils.CheckError(err) {
+				utils.ErrorLog("getPublicKey ioutil.ReadFile", err)
+				fmt.Println(err)
+				return false
+			}
+			_, err = utils.DecryptKey(keyjson, password)
+
+			if utils.CheckError(err) {
+				utils.ErrorLog("getPublicKey DecryptKey", err)
+				return false
+			}
+			return callRpc(c, "getoz", param)
+		}
+
+		utils.ErrorLogf("Wallet %v does not exists", param[0])
+		return false
 	}
 
 	newwallet := func(line string, param []string) bool {
