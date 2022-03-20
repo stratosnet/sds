@@ -26,7 +26,7 @@ func Activate(amount, fee, gas int64) error {
 	}
 
 	var activateReq *protos.ReqActivatePP
-	switch ppState {
+	switch ppState.IsActive {
 	case types.PP_ACTIVE:
 		utils.Log("This node is already active on the blockchain. Waiting for SP node to confirm...")
 		activateReq = &protos.ReqActivatePP{
@@ -51,7 +51,7 @@ func Activate(amount, fee, gas int64) error {
 	return nil
 }
 
-// RspActivate. Response to asking the SP node to activate this PP node
+// RspActivate Response to asking the SP node to activate this PP node
 func RspActivate(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspActivatePP
 	success := requests.UnmarshalData(ctx, &target)
@@ -66,19 +66,26 @@ func RspActivate(ctx context.Context, conn core.WriteCloser) {
 
 	if target.ActivationState == types.PP_ACTIVE {
 		utils.Log("Current node is already active")
-		setting.State = byte(target.ActivationState)
+		setting.State = target.ActivationState
 		return
 	}
 
-	err := stratoschain.BroadcastTxBytes(target.Tx)
-	if err != nil {
-		utils.ErrorLog("The activation transaction couldn't be broadcast", err)
-	} else {
-		utils.Log("The activation transaction was broadcast")
+	switch target.ActivationState {
+	case types.PP_INACTIVE:
+		err := stratoschain.BroadcastTxBytes(target.Tx)
+		if err != nil {
+			utils.ErrorLog("The activation transaction couldn't be broadcast", err)
+		} else {
+			utils.Log("The activation transaction was broadcast")
+		}
+	case types.PP_ACTIVE:
+		utils.Log("This node is already active")
+	case types.PP_UNBONDING:
+		utils.Log("This node is unbonding")
 	}
 }
 
-// RspActivated. Response when this PP node was successfully activated
+// RspActivated Response when this PP node was successfully activated
 func RspActivated(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspActivatePP
 	success := requests.UnmarshalData(ctx, &target)

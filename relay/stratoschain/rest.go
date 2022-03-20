@@ -271,6 +271,7 @@ func BroadcastTxBytes(txBytes []byte) error {
 
 	// In block broadcast mode, do additional verification
 	if broadcastReq.Mode == flags.BroadcastBlock {
+		// TODO: QB-1064 use events from the result instead of unmarshalling the tx bytes
 		var txResponse sdktypes.TxResponse
 
 		err = relay.Cdc.UnmarshalJSON(responseBody, &txResponse)
@@ -309,49 +310,70 @@ func BroadcastTxBytes(txBytes []byte) error {
 	return nil
 }
 
-func QueryResourceNodeState(p2pAddress string) (int, error) {
+type ResourceNodeState struct {
+	IsActive  uint32
+	Suspended bool
+}
+
+func QueryResourceNodeState(p2pAddress string) (state ResourceNodeState, err error) {
+	state = ResourceNodeState{
+		IsActive:  types.PP_INACTIVE,
+		Suspended: true,
+	}
 	if Url == "" {
-		return 0, errors.New("the stratos-chain URL is not set")
+		return state, errors.New("the stratos-chain URL is not set")
 	}
 
 	url, err := utils.ParseUrl(Url + "/register/resource-nodes?network=" + p2pAddress)
 	if err != nil {
-		return 0, err
+		return state, err
 	}
 
 	resp, err := http.Get(url.String(true, true, true, true))
 	if err != nil {
-		return 0, err
+		return state, err
 	}
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return 0, err
+		return state, err
+	}
+
+	if resp.StatusCode == http.StatusNotFound {
+		return state, nil
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return state, errors.Errorf("HTTP%v: %v", resp.StatusCode, string(respBody))
 	}
 
 	var wrappedResponse sdkrest.ResponseWithHeight
 	err = codec.Cdc.UnmarshalJSON(respBody, &wrappedResponse)
 	if err != nil {
-		return 0, err
+		return state, err
 	}
 
 	var resourceNodes registertypes.ResourceNodes
 	err = authtypes.ModuleCdc.UnmarshalJSON(wrappedResponse.Result, &resourceNodes)
 	if err != nil {
-		return 0, err
+		return state, err
 	}
 
 	if len(resourceNodes) == 0 {
-		return types.PP_INACTIVE, nil
+		return state, nil
 	}
-	if resourceNodes[0].IsSuspended() {
-		return types.PP_SUSPENDED, nil
+	if resourceNodes[0].GetNetworkAddr().String() != p2pAddress {
+		return state, nil
 	}
-	if resourceNodes[0].GetStatus() == sdktypes.Unbonding {
-		return types.PP_UNBONDING, nil
+
+	state.Suspended = resourceNodes[0].IsSuspended()
+	switch resourceNodes[0].GetStatus() {
+	case sdktypes.Bonded:
+		state.IsActive = types.PP_ACTIVE
+	case sdktypes.Unbonding:
+		state.IsActive = types.PP_UNBONDING
+	case sdktypes.Unbonded:
+		state.IsActive = types.PP_INACTIVE
 	}
-	if resourceNodes[0].GetStatus() == sdktypes.Bonded && resourceNodes[0].GetNetworkAddr().String() == p2pAddress {
-		return types.PP_ACTIVE, nil
-	}
-	return types.PP_INACTIVE, nil
+	return state, nil
 }
