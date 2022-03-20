@@ -791,12 +791,12 @@ message RspGetPPStatus{
 }
 
 message ReqGetWalletOz {
-  PPBaseInfo my_address = 1;
+  string wallet_address = 1;
 }
 
 message RspGetWalletOz{
   string wallet_oz = 1;
-  PPBaseInfo my_address = 2;
+  string wallet_address = 2;
   Result result = 3;
 
 }

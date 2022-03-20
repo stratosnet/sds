@@ -107,12 +107,7 @@ func ReqGetPPStatusData() *protos.ReqGetPPStatus {
 
 func ReqGetWalletOzData(walletAddr string) *protos.ReqGetWalletOz {
 	return &protos.ReqGetWalletOz{
-		MyAddress: &protos.PPBaseInfo{
-			P2PAddress:     setting.P2PAddress,
-			WalletAddress:  walletAddr,
-			NetworkAddress: setting.NetworkAddress,
-			RestAddress:    setting.RestAddress,
-		},
+		WalletAddress: walletAddr,
 	}
 }
 

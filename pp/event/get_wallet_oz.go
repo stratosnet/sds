@@ -24,7 +24,7 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-	utils.Logf("get GetWalletOz RSP, the current ozone balance of %v = %v", target.GetMyAddress().WalletAddress, target.GetWalletOz())
+	utils.Logf("get GetWalletOz RSP, the current ozone balance of %v = %v", target.GetWalletAddress(), target.GetWalletOz())
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.Logf("failed to get ozone balance: %v", target.Result.Msg)
 		return
