@@ -42,8 +42,8 @@ const (
 	ReqGetPPStatus = "ReqGPPS" // request to get pp status
 	RspGetPPStatus = "RspGPPS" // response to get pp status
 
-	ReqGetPPOzone = "ReqGPPO" // request to get pp ozone
-	RspGetPPOzone = "RspGPPO" // response to get pp ozone
+	ReqGetWalletOz = "ReqGOz" // request to get wallet ozone
+	RspGetWalletOz = "RspGOz" // response to get wallet ozone
 
 	ReqRegister = "ReqReg" // request to register
 	RspRegister = "RspReg" // response to register
@@ -51,6 +51,7 @@ const (
 	ReqActivatePP  = "ReqActvp" // request to activate a PP node
 	RspActivatePP  = "RspActvp" // response to activate a PP node
 	ReqActivatedPP = "ReqActdp" // request when a PP node was successfully activated
+
 	ReqActivatedSP = "ReqActds" // request when a SP node was successfully activated
 	RspActivatedPP = "RspActdp" // response when a PP node was successfully activated
 
