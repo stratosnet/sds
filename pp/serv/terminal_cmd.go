@@ -34,37 +34,6 @@ func (api *terminalCmd) Wallets(param []string) (CmdResult, error) {
 }
 
 func (api *terminalCmd) Getoz(param []string) (CmdResult, error) {
-	//if len(param) < 1 {
-	//	return CmdResult{Msg: ""}, errors.New("missing wallet address")
-	//}
-	//password, err := console.Stdin.PromptPassword("Enter password: ")
-	//if err != nil {
-	//	return CmdResult{Msg: ""}, errors.New("couldn't read password from console: " + err.Error())
-	//}
-	//files, err := GetWallets(param[0], password)
-	//files, err := GetWallets(param[0], param[1])
-	//if err != nil {
-	//	return CmdResult{Msg: ""}, err
-	//}
-	//
-	//fileName := param[0] + ".json"
-	//for _, info := range files {
-	//	if info.Name() == ".placeholder" || info.Name() != fileName {
-	//		continue
-	//	}
-	//	utils.Log(info.Name())
-	//	keyjson, err := ioutil.ReadFile(filepath.Join(setting.Config.AccountDir, fileName))
-	//	if utils.CheckError(err) {
-	//		utils.ErrorLog("getPublicKey ioutil.ReadFile", err)
-	//		return CmdResult{Msg: ""}, errors.New(err.Error())
-	//	}
-	//	_, err = utils.DecryptKey(keyjson, param[1])
-	//
-	//	if utils.CheckError(err) {
-	//		utils.ErrorLog("getPublicKey DecryptKey", err)
-	//		return CmdResult{Msg: ""}, errors.New("wrong walletAddress or password")
-	//	}
-	//}
 	if err := event.GetWalletOz(param[0]); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
