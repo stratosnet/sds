@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/pp/serv"
@@ -24,7 +26,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	helpStr := "\n" +
 		"help                                       			show all the commands\n" +
 		"wallets                                    			acquire all wallet wallets' address\n" +
-		"newwallet <walletName> ->password                      create new wallet, input password in prompt\n" +
+		"newwallet							                    create new wallet, input password in prompt\n" +
 		"login <walletAddress> ->password           			unlock and log in wallet, input password in prompt\n" +
 		"registerpeer                               			register peer to index node\n" +
 		"rp                                         			register peer to index node\n" +
@@ -47,7 +49,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"ver                                        			version\n" +
 		"monitor                                    			show monitor\n" +
 		"stopmonitor                                			stop monitor\n" +
-		"config  <key> <value>                      			set config key value\n"
+		"config  <key> <value>                      			set config key value\n" +
+		"getoz <walletAddress> ->password           			get current ozone balance\n"
 
 	help := func(line string, param []string) bool {
 		fmt.Println(helpStr)
@@ -58,24 +61,54 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		return callRpc(c, "wallets", param)
 	}
 
-	newWallet := func(line string, param []string) bool {
+	getoz := func(line string, param []string) bool {
 		if len(param) < 1 {
-			fmt.Println("Not enough arguments. Please provide the new wallet name")
+			fmt.Println("missing wallet address")
 			return false
 		}
-
-		password := console.MyGetPassword("input password", true)
-		if len(password) == 0 {
-			fmt.Println("wrong password")
-			return false
-		}
-
-		mnemonic, err := console.Stdin.PromptPassword("input bip39 mnemonic (leave blank to generate a new one)")
+		password, err := console.Stdin.PromptPassword("Enter password: ")
 		if err != nil {
-			fmt.Println("failed to get input mnemonic words")
+			fmt.Println(err)
 			return false
 		}
-		return callRpc(c, "newWallet", []string{password, param[0], mnemonic, setting.HD_PATH})
+
+		files, err := serv.GetWallets(param[0], password)
+		if err != nil {
+			fmt.Println(err)
+			return false
+		}
+		fileName := param[0] + ".json"
+		for _, info := range files {
+			if info.Name() == ".placeholder" || info.Name() != fileName {
+				continue
+			}
+			utils.Log("find file: " + filepath.Join(setting.Config.AccountDir, fileName))
+			keyjson, err := ioutil.ReadFile(filepath.Join(setting.Config.AccountDir, fileName))
+			if utils.CheckError(err) {
+				utils.ErrorLog("getPublicKey ioutil.ReadFile", err)
+				fmt.Println(err)
+				return false
+			}
+			_, err = utils.DecryptKey(keyjson, password)
+
+			if utils.CheckError(err) {
+				utils.ErrorLog("getPublicKey DecryptKey", err)
+				return false
+			}
+			return callRpc(c, "getoz", param)
+		}
+
+		utils.ErrorLogf("Wallet %v does not exists", param[0])
+		return false
+	}
+
+	newwallet := func(line string, param []string) bool {
+		err := SetupWallet()
+		if err != nil {
+			fmt.Println(err)
+			return false
+		}
+		return true
 	}
 
 	login := func(line string, param []string) bool {
@@ -221,7 +254,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("help", help, true)
 	console.Mystdin.RegisterProcessFunc("h", help, true)
 	console.Mystdin.RegisterProcessFunc("wallets", wallets, false)
-	console.Mystdin.RegisterProcessFunc("newwallet", newWallet, false)
+	console.Mystdin.RegisterProcessFunc("getoz", getoz, true)
+	console.Mystdin.RegisterProcessFunc("newwallet", newwallet, false)
 	console.Mystdin.RegisterProcessFunc("login", login, false)
 	console.Mystdin.RegisterProcessFunc("startmining", start, true)
 	console.Mystdin.RegisterProcessFunc("rp", registerPP, true)

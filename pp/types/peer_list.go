@@ -16,7 +16,6 @@ import (
 const (
 	PEER_NOT_CONNECTED = iota
 	PEER_CONNECTED
-	PEER_UNREACHABLE // Unreachable peers will not be stored to the pp list file
 )
 
 type PeerInfo struct {
@@ -129,10 +128,6 @@ func (peerList *PeerList) savePPListToFile() error {
 			return true
 		}
 
-		if pp.Status == PEER_UNREACHABLE {
-			return true
-		}
-
 		line := []string{
 			types.NetworkID{P2pAddress: pp.P2pAddress, NetworkAddress: pp.NetworkAddress}.String(),
 			pp.RestAddress,
@@ -154,7 +149,7 @@ func (peerList *PeerList) savePPListToFile() error {
 	return nil
 }
 
-func (peerList *PeerList) GetPPList() []*PeerInfo {
+func (peerList *PeerList) GetPPList() (list []*PeerInfo, total, connected int64) {
 	empty := true
 	peerList.ppMapByNetworkAddress.Range(func(k, v interface{}) bool {
 		empty = false
@@ -169,18 +164,27 @@ func (peerList *PeerList) GetPPList() []*PeerInfo {
 	}
 
 	var ppList []*PeerInfo
+	totalCnt := int64(0)
+	connectCnt := int64(0)
+
 	peerList.ppMapByNetworkAddress.Range(func(k, v interface{}) bool {
 		pp, ok := v.(*PeerInfo)
 		if !ok {
 			utils.ErrorLogf("Invalid PP with network address %v in local PP map)", k)
 			return true
 		}
+
+		totalCnt += 1
+		if pp.Status == PEER_CONNECTED {
+			connectCnt += 1
+		}
+
 		ppList = append(ppList, pp)
 		return true
 	})
 
-	utils.Log("ppList == ", ppList)
-	return ppList
+	utils.Logf("#pp_in_list:[%d], #pp_connected:[%d]", totalCnt, connectCnt)
+	return ppList, totalCnt, connectCnt
 }
 
 func (peerList *PeerList) SavePPList(target *protos.RspGetPPList) error {

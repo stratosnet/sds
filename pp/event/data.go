@@ -1,26 +1,33 @@
 package event
 
 import (
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/types"
+	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 )
 
 func reqActivateData(amount, fee, gas int64) (*protos.ReqActivatePP, error) {
 	// Create and sign transaction to add new resource node
-	ownerAddress, err := types.BechToAddress(setting.WalletAddress)
+	ownerAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
+	if err != nil {
+		return nil, err
+	}
+	p2pAddress, err := types.P2pAddressFromBech(setting.P2PAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	txMsg := stratoschain.BuildCreateResourceNodeMsg(setting.GetNetworkID().String(), setting.Config.Token, setting.P2PAddress, "", setting.P2PPublicKey, amount, ownerAddress)
+	txMsg := stratoschain.BuildCreateResourceNodeMsg(setting.Config.Token, setting.P2PAddress, registertypes.STORAGE, setting.P2PPublicKey, amount, ownerAddress, p2pAddress)
 	signatureKeys := []stratoschain.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: stratoschain.SignatureSecp256k1},
 	}
-	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", "block", txMsg, fee, gas, signatureKeys)
+	unsignedMsgs := []*stratoschain.UnsignedMsg{{Msg: txMsg, SignatureKeys: signatureKeys}}
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastBlock, unsignedMsgs, fee, gas)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +52,8 @@ func reqUpdateStakeData(stakeDelta, fee, gas int64, incrStake bool) (*protos.Req
 	signatureKeys := []stratoschain.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: stratoschain.SignatureSecp256k1},
 	}
-	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", "sync", txMsg, fee, gas, signatureKeys)
+	unsignedMsgs := []*stratoschain.UnsignedMsg{{Msg: txMsg, SignatureKeys: signatureKeys}}
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastSync, unsignedMsgs, fee, gas)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +77,8 @@ func reqDeactivateData(fee, gas int64) (*protos.ReqDeactivatePP, error) {
 	signatureKeys := []stratoschain.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: stratoschain.SignatureSecp256k1},
 	}
-	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", "sync", txMsg, fee, gas, signatureKeys)
+	unsignedMsgs := []*stratoschain.UnsignedMsg{{Msg: txMsg, SignatureKeys: signatureKeys}}
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastSync, unsignedMsgs, fee, gas)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +92,7 @@ func reqDeactivateData(fee, gas int64) (*protos.ReqDeactivatePP, error) {
 
 func reqPrepayData(amount, fee, gas int64) (*protos.ReqPrepay, error) {
 	// Create and sign a prepay transaction
-	senderAddress, err := types.BechToAddress(setting.WalletAddress)
+	senderAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +101,8 @@ func reqPrepayData(amount, fee, gas int64) (*protos.ReqPrepay, error) {
 	signatureKeys := []stratoschain.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: stratoschain.SignatureSecp256k1},
 	}
-	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", "sync", txMsg, fee, gas, signatureKeys)
+	unsignedMsgs := []*stratoschain.UnsignedMsg{{Msg: txMsg, SignatureKeys: signatureKeys}}
+	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastSync, unsignedMsgs, fee, gas)
 	if err != nil {
 		return nil, err
 	}

@@ -3,10 +3,14 @@ package event
 // Author j cc
 import (
 	"context"
+	ed25519crypto "crypto/ed25519"
 	"fmt"
 	"net/http"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/stratosnet/sds/relay"
+	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/tendermint/tendermint/libs/bech32"
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
@@ -29,6 +33,12 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqDownloadSlice
 	if requests.UnmarshalData(ctx, &target) {
 		rsp := requests.RspDownloadSliceData(&target)
+		if target.Sign == nil || !verifySignature(&target, rsp) {
+			rsp.Data = nil
+			rsp.Result.State = protos.ResultState_RES_FAIL
+			rsp.Result.Msg = "signature validation failed"
+			peers.SendMessage(conn, rsp, header.RspDownloadSlice)
+		}
 		if rsp.SliceSize > 0 {
 			SendReportDownloadResult(rsp, true)
 			splitSendDownloadSliceData(rsp, conn)
@@ -68,6 +78,11 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspDownloadSlice")
 	var target protos.RspDownloadSlice
 	if !requests.UnmarshalData(ctx, &target) {
+		return
+	}
+
+	if target.Result.State == protos.ResultState_RES_FAIL {
+		utils.ErrorLog(target.Result.Msg)
 		return
 	}
 
@@ -172,10 +187,20 @@ func receivedSlice(target *protos.RspDownloadSlice, fInfo *protos.RspFileStorage
 	target.Result = &protos.Result{
 		State: protos.ResultState_RES_SUCCESS,
 	}
-	if fInfo.IsVideoStream {
+	if fInfo.IsVideoStream && !target.IsVideoCaching {
 		putData(target.ReqId, HTTPDownloadSlice, target)
+	} else if fInfo.IsVideoStream && target.IsVideoCaching {
+		videoCacheKeep(fInfo.FileHash, target.TaskId)
 	}
 	SendReportDownloadResult(target, false)
+}
+
+func videoCacheKeep(fileHash, taskID string) {
+	utils.DebugLogf("download keep fileHash = %v  taskID = %v", fileHash, taskID)
+	if ing, ok := task.VideoCacheTaskMap.Load(fileHash); ok {
+		ING := ing.(*task.VideoCacheTask)
+		ING.DownloadCh <- true
+	}
 }
 
 // ReportDownloadResult  PP-SP OR StoragePP-SP
@@ -331,4 +356,38 @@ func decryptSliceData(dataToDecrypt []byte) ([]byte, error) {
 	}
 
 	return encryption.DecryptAES(key.PrivateKey(), encryptedSlice.Data, encryptedSlice.AesNonce)
+}
+
+func verifySignature(target *protos.ReqDownloadSlice, rsp *protos.RspDownloadSlice) bool {
+	val, ok := setting.SPMap.Load(target.SpP2PAddress)
+	if !ok {
+		utils.ErrorLog("cannot find sp info by given the SP address ", target.SpP2PAddress)
+		return false
+	}
+
+	spInfo, ok := val.(setting.SPBaseInfo)
+	if !ok {
+		utils.ErrorLog("Fail to parse SP info ", target.SpP2PAddress)
+		return false
+	}
+
+	_, pubKeyRaw, err := bech32.DecodeAndConvert(spInfo.P2PPublicKey)
+	if err != nil {
+		utils.ErrorLog("Error when trying to decode P2P pubKey bech32", err)
+		return false
+	}
+
+	p2pPubKey := tmed25519.PubKeyEd25519{}
+	err = relay.Cdc.UnmarshalBinaryBare(pubKeyRaw, &p2pPubKey)
+
+	if err != nil {
+		utils.ErrorLog("Error when trying to read P2P pubKey ed25519 binary", err)
+		return false
+	}
+
+	if !ed25519crypto.Verify(p2pPubKey[:], []byte(target.P2PAddress+target.FileHash), target.Sign) {
+		return false
+	}
+
+	return target.SliceInfo.SliceHash == utils.CalcSliceHash(rsp.Data, target.FileHash, target.SliceNumber)
 }

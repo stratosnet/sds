@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/stratosnet/sds/framework/core"
@@ -15,19 +16,22 @@ import (
 
 // RspGetPPStatus
 func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
-	utils.DebugLog("get GetPPStatus RSP")
 	var target protos.RspGetPPStatus
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
 	utils.DebugLogf("get GetPPStatus RSP, activation status = %v", target.ActivationState)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
-		utils.Log("failed to get any indexing nodes, reloading")
-		peers.ScheduleReloadPPStatus(time.Second * 3)
+		utils.ErrorLog(target.Result.Msg)
+		if strings.Contains(target.Result.Msg, "Please register first") {
+			return
+		}
+		utils.Log("failed to query node status, retrying in 10 seconds...")
+		peers.ScheduleReloadPPStatus(time.Second * 10)
 		return
 	}
 
-	setting.State = byte(target.ActivationState)
+	setting.State = target.ActivationState
 	if setting.State == ppTypes.PP_ACTIVE {
 		setting.IsPP = true
 	}

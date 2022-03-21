@@ -81,12 +81,13 @@ func DumpTraffic(v ...interface{}) {
 }
 
 func init() {
-	level2String[Detail] = "[Detail]"
-	level2String[Debug] = "[DEBUG]"
-	level2String[Info] = "[INFO]"
-	level2String[Warn] = "[WARN]"
-	level2String[Error] = "[ERROR]"
-	level2String[Fatal] = "[FATAL]"
+	clear := "\033[0m"
+	level2String[Detail] = "\033[0;32m[Detail]" + clear
+	level2String[Debug] = "\033[0;36m[DEBUG]" + clear
+	level2String[Info] = "\033[0;34m[INFO]" + clear
+	level2String[Warn] = "\033[0;33m[WARN]" + clear
+	level2String[Error] = "\033[0;35m[ERROR]" + clear
+	level2String[Fatal] = "\033[0;31m[FATAL]" + clear
 	//MyLogger = newLogger("./tmp/logs/stdout.log", true, true)
 }
 

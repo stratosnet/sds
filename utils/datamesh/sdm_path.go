@@ -32,7 +32,7 @@ func DataMashIdFromString(idString string) (*DataMashId, error) {
 	if len(parts) != 2 {
 		return nil, errors.New("invalid data mesh id, no owner or no hash")
 	}
-	_, err := types.BechToAddress(parts[0])
+	_, err := types.WalletAddressFromBech(parts[0])
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to decode owner")
 	}

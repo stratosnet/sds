@@ -41,12 +41,17 @@ const (
 	RspGetSPList   = "RspGSPL" // response to get sp list
 	ReqGetPPStatus = "ReqGPPS" // request to get pp status
 	RspGetPPStatus = "RspGPPS" // response to get pp status
-	ReqRegister    = "ReqReg"  // request to register
-	RspRegister    = "RspReg"  // response to register
+
+	ReqGetWalletOz = "ReqGOz" // request to get wallet ozone
+	RspGetWalletOz = "RspGOz" // response to get wallet ozone
+
+	ReqRegister = "ReqReg" // request to register
+	RspRegister = "RspReg" // response to register
 
 	ReqActivatePP  = "ReqActvp" // request to activate a PP node
 	RspActivatePP  = "RspActvp" // response to activate a PP node
 	ReqActivatedPP = "ReqActdp" // request when a PP node was successfully activated
+
 	ReqActivatedSP = "ReqActds" // request when a SP node was successfully activated
 	RspActivatedPP = "RspActdp" // response when a PP node was successfully activated
 

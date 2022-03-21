@@ -53,7 +53,7 @@ func NewServer() *PPServer {
 	})
 	onCloseOption := core.OnCloseOption(func(conn core.WriteCloser) {
 		netID := conn.(*core.ServerConn).GetNetID()
-		Peers.PPDisconnectedNetId(netID)
+		peerList.PPDisconnectedNetId(netID)
 	})
 	bufferSize := core.BufferSizeOption(10000)
 	return &PPServer{

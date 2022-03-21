@@ -50,8 +50,8 @@ func (vn *VNode) Less(than rbtree.Item) bool {
 type HashRing struct {
 	VRing           *rbtree.Rbtree
 	NRing           *rbtree.Rbtree
-	Nodes           *sync.Map       // map(NodeID => *Node)
-	NodeStatus      map[string]bool // map(NodeID => status)
+	Nodes           *sync.Map // map(NodeID => *Node)
+	NodeStatus      *sync.Map // map(NodeID => status)
 	NodeCount       uint32
 	NodeOkCount     uint32
 	NumberOfVirtual uint32
@@ -97,7 +97,7 @@ func (r *HashRing) AddNode(node *Node) {
 	}
 
 	r.Nodes.Store(node.ID, node)
-	r.NodeStatus[node.ID] = false
+	r.NodeStatus.Store(node.ID, false)
 
 	r.NRing.Insert(node)
 
@@ -127,7 +127,7 @@ func (r *HashRing) RemoveNode(nodeID string) bool {
 	}
 
 	r.Nodes.Delete(node.ID)
-	delete(r.NodeStatus, node.ID)
+	r.NodeStatus.Delete(node.ID)
 
 	r.NRing.Delete(node)
 
@@ -144,16 +144,16 @@ func (r *HashRing) Node(ID string) *Node {
 }
 
 func (r *HashRing) IsOnline(ID string) bool {
-	ok, online := r.NodeStatus[ID]
-	return ok && online
+	online, ok := r.NodeStatus.Load(ID)
+	return ok && online.(bool)
 }
 
 func (r *HashRing) SetOffline(ID string) {
 	r.Lock()
 	defer r.Unlock()
 
-	if b, ok := r.NodeStatus[ID]; ok && b {
-		r.NodeStatus[ID] = false
+	if online, ok := r.NodeStatus.Load(ID); ok && online.(bool) {
+		r.NodeStatus.Store(ID, false)
 		r.NodeOkCount--
 	}
 }
@@ -162,9 +162,9 @@ func (r *HashRing) SetOnline(ID string) {
 	r.Lock()
 	defer r.Unlock()
 
-	if b, ok := r.NodeStatus[ID]; ok && !b {
+	if online, ok := r.NodeStatus.Load(ID); ok && !online.(bool) {
 		r.NodeOkCount++
-		r.NodeStatus[ID] = true
+		r.NodeStatus.Store(ID, true)
 	}
 }
 
@@ -181,11 +181,14 @@ func (r *HashRing) RandomGetNodes(num int) []*Node {
 	nodes := make([]*Node, num)
 
 	ids := make([]string, 0)
-	for id, ok := range r.NodeStatus {
+	r.NodeStatus.Range(func(key, value interface{}) bool {
+		id := key.(string)
+		ok := value.(bool)
 		if ok {
 			ids = append(ids, id)
 		}
-	}
+		return true
+	})
 
 	indexes := utils.GenerateRandomNumber(0, len(ids), num)
 
@@ -245,8 +248,8 @@ func (r *HashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string) (uint32,
 // GetNodeUpDownNodes get upstream of downstream of node
 // @params
 func (r *HashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
-
-	if NodeID == "" || !r.NodeStatus[NodeID] || r.NodeCount <= 0 {
+	online, ok := r.NodeStatus.Load(NodeID)
+	if NodeID == "" || !ok || !online.(bool) || r.NodeCount <= 0 {
 		return "", ""
 	}
 
@@ -290,16 +293,16 @@ func (r *HashRing) GetNodeByIndex(keyIndex uint32) (uint32, string) {
 
 	r.VRing.Ascend(&VNode{Index: keyIndex}, func(item rbtree.Item) bool {
 		vNode = item.(*VNode)
-		if r.NodeStatus[vNode.NodeID] == false {
+		if online, ok := r.NodeStatus.Load(vNode.NodeID); ok && !online.(bool) {
 			return true
 		}
 		return false
 	})
 
-	if !r.NodeStatus[vNode.NodeID] {
+	if online, ok := r.NodeStatus.Load(vNode.NodeID); ok && !online.(bool) {
 		r.VRing.Ascend(minVNodeOfRing, func(item rbtree.Item) bool {
 			vNode = item.(*VNode)
-			if r.NodeStatus[vNode.NodeID] == false {
+			if online, ok := r.NodeStatus.Load(vNode.NodeID); ok && !online.(bool) {
 				return true
 			}
 			return false
@@ -348,7 +351,7 @@ func (r *HashRing) TraversalNRing() {
 func New(numOfVNode uint32) *HashRing {
 	r := new(HashRing)
 	r.Nodes = new(sync.Map)
-	r.NodeStatus = make(map[string]bool)
+	r.NodeStatus = new(sync.Map)
 	r.NodeCount = 0
 	r.NumberOfVirtual = numOfVNode
 

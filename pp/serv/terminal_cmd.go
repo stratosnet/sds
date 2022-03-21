@@ -33,6 +33,14 @@ func (api *terminalCmd) Wallets(param []string) (CmdResult, error) {
 	return CmdResult{Msg: ""}, nil
 }
 
+func (api *terminalCmd) Getoz(param []string) (CmdResult, error) {
+	if err := event.GetWalletOz(param[0]); err != nil {
+		return CmdResult{Msg: ""}, err
+	}
+	return CmdResult{Msg: DefaultMsg}, nil
+
+}
+
 func (api *terminalCmd) NewWallet(param []string) (CmdResult, error) {
 	CreateWallet(param[0], param[1], param[2], param[3])
 	return CmdResult{Msg: ""}, nil
@@ -207,7 +215,7 @@ func (api *terminalCmd) Download(param []string) (CmdResult, error) {
 	if len(param) == 0 {
 		return CmdResult{}, errors.New("input download path, e.g: sdm://account_address/file_hash|filename(optional)")
 	}
-	event.GetFileStorageInfo(param[0], "", "", false, nil)
+	event.GetFileStorageInfo(param[0], "", "", setting.WalletAddress, false, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 

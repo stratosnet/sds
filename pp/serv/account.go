@@ -2,6 +2,7 @@ package serv
 
 import (
 	"errors"
+	"io/fs"
 	"io/ioutil"
 	"path/filepath"
 
@@ -10,7 +11,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
-	"github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/stratos-chain/types"
 )
 
 // CreateWallet
@@ -23,13 +24,13 @@ func CreateWallet(password, name, mnemonic, hdPath string) string {
 		}
 		mnemonic = newMnemonic
 	}
-	account, err := utils.CreateWallet(setting.Config.AccountDir, name, password, types.DefaultAddressPrefix,
+	account, err := utils.CreateWallet(setting.Config.AccountDir, name, password, types.StratosBech32Prefix,
 		mnemonic, "", hdPath)
 	if utils.CheckError(err) {
 		utils.ErrorLog("CreateWallet error", err)
 		return ""
 	}
-	setting.WalletAddress, err = account.ToBech(types.DefaultAddressPrefix)
+	setting.WalletAddress, err = account.ToBech(types.StratosBech32Prefix)
 	if utils.CheckError(err) {
 		utils.ErrorLog("CreateWallet error", err)
 		return ""
@@ -96,7 +97,7 @@ func Wallets() {
 	var wallets []string
 	for _, file := range files {
 		fileName := file.Name()
-		if fileName[len(fileName)-5:] == ".json" && fileName[:len(types.DefaultP2PKeyPrefix)] != types.DefaultP2PKeyPrefix {
+		if fileName[len(fileName)-5:] == ".json" && fileName[:len(types.SdsNodeP2PAddressPrefix)] != types.SdsNodeP2PAddressPrefix {
 			wallets = append(wallets, fileName[:len(fileName)-5])
 		}
 	}
@@ -112,21 +113,9 @@ func Wallets() {
 
 // Login
 func Login(walletAddress, password string) error {
-	utils.DebugLog("walletAddress = ", walletAddress)
-	// utils.DebugLog("password = ", password)
-	if walletAddress == "" {
-		utils.ErrorLog("please input wallet address")
-		return errors.New("please input wallet address")
-	}
-	if password == "" {
-		utils.ErrorLog("please input password")
-		return errors.New("please input password")
-	}
-
-	files, _ := ioutil.ReadDir(setting.Config.AccountDir)
-	if len(files) == 0 {
-		utils.ErrorLog("wrong account or password")
-		return errors.New("wrong account or password")
+	files, err := GetWallets(walletAddress, password)
+	if err != nil {
+		return err
 	}
 	fileName := walletAddress + ".json"
 	for _, info := range files {
@@ -135,6 +124,8 @@ func Login(walletAddress, password string) error {
 		}
 		utils.Log(info.Name())
 		if getPublicKey(filepath.Join(setting.Config.AccountDir, fileName), password) {
+			setting.SetConfig("WalletAddress", walletAddress)
+			setting.SetConfig("WalletPassword", password)
 			setting.WalletAddress = walletAddress
 			peers.InitPeer(event.RegisterEventHandle)
 			return nil
@@ -144,4 +135,23 @@ func Login(walletAddress, password string) error {
 	}
 	utils.ErrorLog("wrong walletAddress or password")
 	return errors.New("wrong walletAddress or password")
+}
+
+func GetWallets(walletAddress string, password string) ([]fs.FileInfo, error) {
+	utils.DebugLog("walletAddress = ", walletAddress)
+	if walletAddress == "" {
+		utils.ErrorLog("please input wallet address")
+		return nil, errors.New("please input wallet address")
+	}
+	if password == "" {
+		utils.ErrorLog("please input password")
+		return nil, errors.New("please input password")
+	}
+
+	files, _ := ioutil.ReadDir(setting.Config.AccountDir)
+	if len(files) == 0 {
+		utils.ErrorLog("wrong account or password")
+		return nil, errors.New("wrong account or password")
+	}
+	return files, nil
 }

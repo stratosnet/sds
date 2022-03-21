@@ -194,6 +194,9 @@ message ReqDownloadSlice {
   string             req_id = 7;
   bool               is_encrypted = 8;
   string             sp_p2p_address = 9;
+  uint64             slice_number = 10;
+  bytes              sign = 11;
+  bool               is_video_caching = 12;
 }
 
 message RspDownloadSlice {
@@ -212,6 +215,7 @@ message RspDownloadSlice {
   string req_id = 13;
   bool   is_encrypted = 14;
   string sp_p2p_address = 15;
+  bool   is_video_caching = 16;
 }
 
 message ReqDownloadSliceWrong {
@@ -784,4 +788,15 @@ message ReqGetPPStatus {
 message RspGetPPStatus{
   uint32 ActivationState = 1;
   Result result = 2;
+}
+
+message ReqGetWalletOz {
+  string wallet_address = 1;
+}
+
+message RspGetWalletOz{
+  string wallet_oz = 1;
+  string wallet_address = 2;
+  Result result = 3;
+
 }
