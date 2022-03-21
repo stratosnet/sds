@@ -42,7 +42,7 @@ func RspUpdateStake(ctx context.Context, conn core.WriteCloser) {
 	if target.UpdateState == types.PP_INACTIVE {
 		utils.Log("Current node isn't active yet")
 	}
-	setting.State = byte(target.UpdateState)
+	setting.State = target.UpdateState
 
 	err := stratoschain.BroadcastTxBytes(target.Tx)
 	if err != nil {

@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	Version = "v0.5.1"
+	Version = "v0.6.0"
 	HD_PATH = "m/44'/606'/0'/0/0"
 
 	// REPORTDHTIME 1 hour
@@ -265,7 +265,7 @@ func SetConfig(key, value string) bool {
 
 func defaultConfig() *config {
 	return &config{
-		Version:              5,
+		Version:              6,
 		VersionShow:          Version,
 		DownloadPathMinLen:   0,
 		Port:                 "18081",

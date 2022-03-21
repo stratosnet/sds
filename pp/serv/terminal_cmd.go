@@ -33,6 +33,14 @@ func (api *terminalCmd) Wallets(param []string) (CmdResult, error) {
 	return CmdResult{Msg: ""}, nil
 }
 
+func (api *terminalCmd) Getoz(param []string) (CmdResult, error) {
+	if err := event.GetWalletOz(param[0]); err != nil {
+		return CmdResult{Msg: ""}, err
+	}
+	return CmdResult{Msg: DefaultMsg}, nil
+
+}
+
 func (api *terminalCmd) NewWallet(param []string) (CmdResult, error) {
 	CreateWallet(param[0], param[1], param[2], param[3])
 	return CmdResult{Msg: ""}, nil

@@ -794,3 +794,14 @@ message RspGetPPStatus{
   uint32 ActivationState = 1;
   Result result = 2;
 }
+
+message ReqGetWalletOz {
+  string wallet_address = 1;
+}
+
+message RspGetWalletOz{
+  string wallet_oz = 1;
+  string wallet_address = 2;
+  Result result = 3;
+
+}

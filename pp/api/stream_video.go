@@ -3,7 +3,6 @@ package api
 import (
 	"crypto/ed25519"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -12,19 +11,21 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/relay"
-	"github.com/stratosnet/sds/utils/datamesh"
-	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/bech32"
-
+	"github.com/ipfs/go-cid"
+	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/pp/types"
+	"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/datamesh"
 	"github.com/stratosnet/sds/utils/httpserv"
+	utiltypes "github.com/stratosnet/sds/utils/types"
+	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/tendermint/tendermint/libs/bech32"
 )
 
 type StreamReqBody struct {
@@ -284,20 +285,20 @@ func verifyStreamReqBody(req *http.Request) (*StreamReqBody, error) {
 		return nil, err
 	}
 
-	if len(reqBody.FileHash) != 40 {
-		return nil, errors.New("incorrect file fileHash")
+	if _, err := cid.Decode(reqBody.FileHash); err != nil {
+		return nil, errors.Wrap(err, "incorrect file fileHash")
 	}
 
-	if len(reqBody.P2PAddress) != 47 {
-		return nil, errors.New("incorrect P2P address")
+	if _, err := utiltypes.P2pAddressFromBech(reqBody.P2PAddress); err != nil {
+		return nil, errors.Wrap(err, "incorrect P2P address")
 	}
 
 	if reqBody.FileName == "" {
 		return nil, errors.New("please give file name")
 	}
 
-	if len(reqBody.SpP2pAddress) != 47 {
-		return nil, errors.New("incorrect SP P2P address")
+	if _, err := utiltypes.P2pAddressFromBech(reqBody.SpP2pAddress); err != nil {
+		return nil, errors.Wrap(err, "incorrect SP P2P address")
 	}
 
 	if reqBody.RestAddress == "" {

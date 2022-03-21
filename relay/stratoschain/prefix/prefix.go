@@ -1,28 +1,19 @@
 package prefix
 
-import "github.com/cosmos/cosmos-sdk/types"
-
-const (
-	AccountPubKeyPrefix    = "pub"
-	ValidatorAddressPrefix = "valoper"
-	ValidatorPubKeyPrefix  = "valoperpub"
-	ConsNodeAddressPrefix  = "valcons"
-	ConsNodePubKeyPrefix   = "valconspub"
+import (
+	"github.com/stratosnet/stratos-chain/types"
 )
 
 var sealed = false
 
 func init() {
-	setConfig("st")
+	setConfig()
 }
-func setConfig(addressPrefix string) {
+
+func setConfig() {
 	if !sealed {
 		config := types.GetConfig()
-		config.SetBech32PrefixForAccount(addressPrefix, addressPrefix+AccountPubKeyPrefix)
-		config.SetBech32PrefixForValidator(addressPrefix+ValidatorAddressPrefix, addressPrefix+ValidatorPubKeyPrefix)
-		config.SetBech32PrefixForConsensusNode(addressPrefix+ConsNodeAddressPrefix, addressPrefix+ConsNodePubKeyPrefix)
 		config.Seal()
-
 		sealed = true
 	}
 }

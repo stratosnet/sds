@@ -13,7 +13,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
-
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
@@ -103,6 +102,12 @@ func ReqGetPPStatusData() *protos.ReqGetPPStatus {
 			NetworkAddress: setting.NetworkAddress,
 			RestAddress:    setting.RestAddress,
 		},
+	}
+}
+
+func ReqGetWalletOzData(walletAddr string) *protos.ReqGetWalletOz {
+	return &protos.ReqGetWalletOz{
+		WalletAddress: walletAddr,
 	}
 }
 
