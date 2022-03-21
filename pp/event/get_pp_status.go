@@ -36,8 +36,5 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 		setting.IsPP = true
 	}
 
-	if setting.State == ppTypes.PP_SUSPENDED {
-		utils.Log("*** this node has already been suspended ***")
-	}
 	peers.InitPPList()
 }

@@ -792,7 +792,8 @@ message ReqGetPPStatus {
 
 message RspGetPPStatus{
   uint32 ActivationState = 1;
-  Result result = 2;
+  uint32 OngoingTier = 2;
+  Result result = 3;
 }
 
 message ReqGetWalletOz {
