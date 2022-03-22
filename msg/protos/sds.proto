@@ -354,6 +354,9 @@ message ReqUpdatedStakeSP {
 
 message RspUpdatedStakePP {
   Result result = 1;
+  string stake_balance = 2;
+  string node_tier = 3;
+  string weight_score = 4;
 }
 
 message ReqDeactivatePP {
