@@ -89,7 +89,7 @@ func (r *WeightedHashRing) AddNode(node *WeightedNode) {
 
 	// calc numOfCopies with node tier, WeightedNode should have at least 1 copy
 	numOfCopies := getNumOfCopies(node.Tier)
-	//utils.DebugLogf("node.Tier is %v, numOfCopies is %v", node.Tier, numOfCopies)
+	//utils.DebugLogf("for node %v (Tier=%v), numOfCopies is %v", node.ID, node.Tier, numOfCopies)
 	var i uint32
 	for i = 0; i < uint32(numOfCopies); i++ {
 		index := r.CalcIndex(r.virtualKey(node.ID, i))
