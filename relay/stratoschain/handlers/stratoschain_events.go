@@ -4,64 +4,55 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
 	sdkTypes "github.com/cosmos/cosmos-sdk/types"
+	"github.com/pkg/errors"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/relay"
+	relayTypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
-// TODO: update remaining handlers to be able to process multiple events
 func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
+		requiredAttributes := []string{
+			"create_resource_node.network_address",
+			"create_resource_node.pub_key",
+			"create_resource_node.ozone_limit_changes",
+			"tx.hash",
+		}
+		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
 
-		_, p2pAddressString, err := getP2pAddressFromEvent(result, "create_resource_node", "network_address")
-		if err != nil {
-			utils.ErrorLog(err.Error())
+		req := &relayTypes.ActivatedPPReq{}
+		for _, event := range processedEvents {
+			p2pPubkey, err := processHexPubkey(event["create_resource_node.pub_key"])
+			if err != nil {
+				utils.ErrorLog(err)
+				continue
+			}
+
+			req.PPList = append(req.PPList, &protos.ReqActivatedPP{
+				P2PAddress:        event["create_resource_node.network_address"],
+				P2PPubkey:         hex.EncodeToString(p2pPubkey[:]),
+				OzoneLimitChanges: event["create_resource_node.ozone_limit_changes"],
+				TxHash:            event["tx.hash"],
+			})
+		}
+
+		if len(req.PPList) != initialEventCount {
+			utils.ErrorLogf("activated PP message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+				len(req.PPList), initialEventCount-len(processedEvents), len(processedEvents)-len(req.PPList))
+		}
+		if len(req.PPList) == 0 {
 			return
 		}
 
-		nodePubkeyList := result.Events["create_resource_node.pub_key"]
-		if len(nodePubkeyList) < 1 {
-			utils.ErrorLog("No node pubkey was specified in the create_resource_node message from stratos-chain")
-			return
-		}
-		p2pPubkeyRaw, err := hex.DecodeString(nodePubkeyList[0])
-		if err != nil {
-			utils.ErrorLog("Error when trying to decode P2P pubkey hex", err)
-			return
-		}
-		p2pPubkey := ed25519.PubKeyEd25519{}
-		err = relay.Cdc.UnmarshalBinaryBare(p2pPubkeyRaw, &p2pPubkey)
-		if err != nil {
-			utils.ErrorLog("Error when trying to read P2P pubkey ed25519 binary", err)
-			return
-		}
-
-		ozoneLimitChangeStr := result.Events["create_resource_node.ozone_limit_changes"]
-
-		txHashList := result.Events["tx.hash"]
-		if len(txHashList) < 1 {
-			utils.ErrorLog("No txHash was specified in the create_resource_node message from stratos-chain")
-			return
-		}
-
-		activatedMsg := &protos.ReqActivatedPP{
-			P2PAddress:        p2pAddressString,
-			P2PPubkey:         hex.EncodeToString(p2pPubkey[:]),
-			OzoneLimitChanges: ozoneLimitChangeStr[0],
-			TxHash:            txHashList[0],
-		}
-
-		err = postToSP("/pp/activated", activatedMsg)
+		err := postToSP("/pp/activated", req)
 		if err != nil {
 			utils.ErrorLog(err)
 			return
@@ -71,35 +62,33 @@ func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 
 func UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
+		requiredAttributes := []string{
+			"update_resource_node_stake.network_address",
+			"update_resource_node_stake.ozone_limit_changes",
+			"update_resource_node_stake.incr_stake",
+			"tx.hash",
+		}
+		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
 
-		_, p2pAddressString, err := getP2pAddressFromEvent(result, "update_resource_node_stake", "network_address")
-		if err != nil {
-			utils.ErrorLog(err.Error())
+		req := &relayTypes.UpdatedStakePPReq{}
+		for _, event := range processedEvents {
+			req.PPList = append(req.PPList, &protos.ReqUpdatedStakePP{
+				P2PAddress:        event["update_resource_node_stake.network_address"],
+				OzoneLimitChanges: event["update_resource_node_stake.ozone_limit_changes"],
+				IncrStake:         event["update_resource_node_stake.incr_stake"],
+				TxHash:            event["tx.hash"],
+			})
+		}
+
+		if len(req.PPList) != initialEventCount {
+			utils.ErrorLogf("updatedStake PP message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+				len(req.PPList), initialEventCount-len(processedEvents), len(processedEvents)-len(req.PPList))
+		}
+		if len(req.PPList) == 0 {
 			return
 		}
 
-		ozoneLimitChangeStr := result.Events["update_resource_node_stake.ozone_limit_changes"]
-
-		incrStakeBoolList := result.Events["update_resource_node_stake.incr_stake"]
-		if len(incrStakeBoolList) < 1 {
-			utils.ErrorLog("No incr stake status was specified in the update_resource_node_stake message from stratos-chain")
-			return
-		}
-
-		txHashList := result.Events["tx.hash"]
-		if len(txHashList) < 1 {
-			utils.ErrorLog("No txHash was specified in the update_resource_node_stake message from stratos-chain")
-			return
-		}
-
-		updatedStakeMsg := &protos.ReqUpdatedStakePP{
-			P2PAddress:        p2pAddressString,
-			OzoneLimitChanges: ozoneLimitChangeStr[0],
-			IncrStake:         incrStakeBoolList[0],
-			TxHash:            txHashList[0],
-		}
-
-		err = postToSP("/pp/updatedStake", updatedStakeMsg)
+		err := postToSP("/pp/updatedStake", req)
 		if err != nil {
 			utils.ErrorLog(err)
 			return
@@ -109,59 +98,33 @@ func UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 
 func UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		_, p2pAddressString, err := getP2pAddressFromEvent(result, "unbonding_resource_node", "resource_node")
-		if err != nil {
-			utils.ErrorLog(err.Error())
+		requiredAttributes := []string{
+			"unbonding_resource_node.resource_node",
+			"unbonding_resource_node.ozone_limit_changes",
+			"unbonding_resource_node.unbonding_mature_time",
+			"tx.hash",
+		}
+		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+
+		req := &relayTypes.UnbondingPPReq{}
+		for _, event := range processedEvents {
+			req.PPList = append(req.PPList, &protos.ReqUnbondingPP{
+				P2PAddress:          event["unbonding_resource_node.resource_node"],
+				OzoneLimitChanges:   event["unbonding_resource_node.ozone_limit_changes"],
+				UnbondingMatureTime: event["unbonding_resource_node.unbonding_mature_time"],
+				TxHash:              event["tx.hash"],
+			})
+		}
+
+		if len(req.PPList) != initialEventCount {
+			utils.ErrorLogf("unbonding PP message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+				len(req.PPList), initialEventCount-len(processedEvents), len(processedEvents)-len(req.PPList))
+		}
+		if len(req.PPList) == 0 {
 			return
 		}
 
-		// get ozone limit change
-		ozoneLimitChange := result.Events["unbonding_resource_node.ozone_limit_changes"]
-		ozoneLimitChangeStr := ozoneLimitChange[0]
-		// get mature time
-		ubdMatureTime := result.Events["unbonding_resource_node.unbonding_mature_time"]
-		ubdMatureTimeStr := ubdMatureTime[0]
-
-		txHashList := result.Events["tx.hash"]
-		if len(txHashList) < 1 {
-			utils.ErrorLog("No txHash was specified in the unbonding_resource_node message from stratos-chain")
-			return
-		}
-
-		ubdMsg := &protos.ReqUnbondingPP{
-			P2PAddress:          p2pAddressString,
-			OzoneLimitChanges:   ozoneLimitChangeStr,
-			UnbondingMatureTime: ubdMatureTimeStr,
-			TxHash:              txHashList[0],
-		}
-
-		err = postToSP("/pp/unbonding", ubdMsg)
-		if err != nil {
-			utils.ErrorLog(err)
-			return
-		}
-	}
-}
-
-func RemoveResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
-	return func(result coretypes.ResultEvent) {
-		_, p2pAddressString, err := getP2pAddressFromEvent(result, "remove_resource_node", "resource_node")
-		if err != nil {
-			utils.ErrorLog(err.Error())
-			return
-		}
-
-		deactivatedMsg := &protos.ReqDeactivatedPP{
-			P2PAddress: p2pAddressString,
-		}
-
-		txHashList := result.Events["tx.hash"]
-		if len(txHashList) < 1 {
-			utils.ErrorLog("No txHash was specified in the remove_resource_node message from stratos-chain")
-			return
-		}
-
-		err = postToSP("/pp/deactivated", deactivatedMsg)
+		err := postToSP("/pp/unbonding", req)
 		if err != nil {
 			utils.ErrorLog(err)
 			return
@@ -170,45 +133,73 @@ func RemoveResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 }
 
 func CompleteUnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
-	return RemoveResourceNodeMsgHandler()
+	return func(result coretypes.ResultEvent) {
+		requiredAttributes := []string{
+			"complete_unbonding_resource_node.network_address",
+			"tx.hash",
+		}
+		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+
+		req := &relayTypes.DeactivatedPPReq{}
+		for _, event := range processedEvents {
+			req.PPList = append(req.PPList, &protos.ReqDeactivatedPP{
+				P2PAddress: event["complete_unbonding_resource_node.network_address"],
+				TxHash:     event["tx.hash"],
+			})
+		}
+
+		if len(req.PPList) != initialEventCount {
+			utils.ErrorLogf("Complete unbonding PP message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+				len(req.PPList), initialEventCount-len(processedEvents), len(processedEvents)-len(req.PPList))
+		}
+		if len(req.PPList) == 0 {
+			return
+		}
+
+		err := postToSP("/pp/deactivated", req)
+		if err != nil {
+			utils.ErrorLog(err)
+			return
+		}
+	}
 }
 
 func CreateIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
-		utils.Log(fmt.Sprintf("%+v", result))
+		utils.Logf("%+v", result)
 	}
 }
 
 func UpdateIndexingNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		_, p2pAddressString, err := getP2pAddressFromEvent(result, "update_indexing_node_stake", "network_address")
-		if err != nil {
-			utils.ErrorLog(err.Error())
+		requiredAttributes := []string{
+			"update_indexing_node_stake.network_address",
+			"update_indexing_node_stake.ozone_limit_changes",
+			"update_indexing_node_stake.incr_stake",
+			"tx.hash",
+		}
+		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+
+		req := &relayTypes.UpdatedStakeSPReq{}
+		for _, event := range processedEvents {
+			req.SPList = append(req.SPList, &protos.ReqUpdatedStakeSP{
+				P2PAddress:        event["update_indexing_node_stake.network_address"],
+				OzoneLimitChanges: event["update_indexing_node_stake.ozone_limit_changes"],
+				IncrStake:         event["update_indexing_node_stake.incr_stake"],
+				TxHash:            event["tx.hash"],
+			})
+		}
+
+		if len(req.SPList) != initialEventCount {
+			utils.ErrorLogf("Updated SP stake message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+				len(req.SPList), initialEventCount-len(processedEvents), len(processedEvents)-len(req.SPList))
+		}
+		if len(req.SPList) == 0 {
 			return
 		}
 
-		ozoneLimitChangeStr := result.Events["update_indexing_node_stake.ozone_limit_changes"]
-
-		incrStakeBoolList := result.Events["update_indexing_node_stake.incr_stake"]
-		if len(incrStakeBoolList) < 1 {
-			utils.ErrorLog("No incr stake status was specified in the update_indexing_node_stake message from stratos-chain")
-			return
-		}
-
-		txHashList := result.Events["tx.hash"]
-		if len(txHashList) < 1 {
-			utils.ErrorLog("No txHash was specified in the update_indexing_node_stake message from stratos-chain")
-			return
-		}
-
-		updatedStakeMsg := &protos.ReqUpdatedStakeSP{
-			P2PAddress:        p2pAddressString,
-			OzoneLimitChanges: ozoneLimitChangeStr[0],
-			IncrStake:         incrStakeBoolList[0],
-			TxHash:            txHashList[0],
-		}
-		err = postToSP("/chain/updatedStake", updatedStakeMsg)
+		err := postToSP("/chain/updatedStake", req)
 		if err != nil {
 			utils.ErrorLog(err)
 			return
@@ -219,49 +210,48 @@ func UpdateIndexingNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 func UnbondingIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
-		utils.Logf("%+v\n", result)
+		utils.Logf("%+v", result)
 	}
 }
-func RemoveIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
+func CompleteUnbondingIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
 		utils.Logf("%+v", result)
 	}
 }
-func CompleteUnbondingIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
-	return RemoveIndexingNodeMsgHandler()
-}
 
 func IndexingNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		_, p2pAddressString, err := getP2pAddressFromEvent(result, "indexing_node_reg_vote", "candidate_network_address")
-		if err != nil {
-			utils.ErrorLog(err.Error())
+		requiredAttributes := []string{
+			"indexing_node_reg_vote.candidate_network_address",
+			"indexing_node_reg_vote.ozone_limit_changes",
+			"indexing_node_reg_vote.candidate_status",
+			"tx.hash",
+		}
+		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+
+		req := &relayTypes.ActivatedSPReq{}
+		for _, event := range processedEvents {
+			if event["indexing_node_reg_vote.candidate_status"] != sdkTypes.BondStatusBonded {
+				utils.ErrorLogf("Indexing node vote handler: The candidate [%v] needs more votes before being considered active", event["indexing_node_reg_vote.candidate_network_address"])
+				continue
+			}
+
+			req.SPList = append(req.SPList, &protos.ReqActivatedSP{
+				P2PAddress: event["indexing_node_reg_vote.candidate_network_address"],
+				TxHash:     event["tx.hash"],
+			})
+		}
+
+		if len(req.SPList) != initialEventCount {
+			utils.ErrorLogf("Indexing node vote message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+				len(req.SPList), initialEventCount-len(processedEvents), len(processedEvents)-len(req.SPList))
+		}
+		if len(req.SPList) == 0 {
 			return
 		}
 
-		candidateStatusList := result.Events["indexing_node_reg_vote.candidate_status"]
-		if len(candidateStatusList) < 1 {
-			utils.ErrorLog("No candidate status was specified in the indexing_node_reg_vote message from stratos-chain")
-			return
-		}
-		if candidateStatusList[0] != sdkTypes.BondStatusBonded {
-			utils.DebugLog("Indexing node vote handler: The candidate needs more votes before being considered active")
-			return
-		}
-
-		txHashList := result.Events["tx.hash"]
-		if len(txHashList) < 1 {
-			utils.ErrorLog("No txHash was specified in the indexing_node_reg_vote message from stratos-chain")
-			return
-		}
-
-		activatedMsg := &protos.ReqActivatedSP{
-			P2PAddress: p2pAddressString,
-			TxHash:     txHashList[0],
-		}
-
-		err = postToSP("/chain/activated", activatedMsg)
+		err := postToSP("/chain/activated", req)
 		if err != nil {
 			utils.ErrorLog(err)
 			return
@@ -271,33 +261,33 @@ func IndexingNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
 
 func PrepayMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		utils.Log(fmt.Sprintf("%+v", result))
+		utils.Logf("%+v", result)
 
-		reporterList := result.Events["Prepay.sender"]
-		if len(reporterList) < 1 {
-			utils.ErrorLog("No wallet address was specified in the prepay message from stratos-chain")
+		requiredAttributes := []string{
+			"Prepay.sender",
+			"Prepay.purchased",
+			"tx.hash",
+		}
+		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+
+		req := &relayTypes.PrepaidReq{}
+		for _, event := range processedEvents {
+			req.WalletList = append(req.WalletList, &protos.ReqPrepaid{
+				WalletAddress: event["Prepay.purchased"],
+				PurchasedUoz:  event["Prepay.purchased"],
+				TxHash:        event["tx.hash"],
+			})
+		}
+
+		if len(req.WalletList) != initialEventCount {
+			utils.ErrorLogf("Prepay message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+				len(req.WalletList), initialEventCount-len(processedEvents), len(processedEvents)-len(req.WalletList))
+		}
+		if len(req.WalletList) == 0 {
 			return
 		}
 
-		purchasedUozList := result.Events["Prepay.purchased"]
-		if len(purchasedUozList) < 1 {
-			utils.ErrorLog("No purchased ozone amount was specified in the prepay message from stratos-chain")
-			return
-		}
-
-		txHashList := result.Events["tx.hash"]
-		if len(txHashList) < 1 {
-			utils.ErrorLog("No txHash was specified in the prepay message from stratos-chain")
-			return
-		}
-
-		prepaidMsg := &protos.ReqPrepaid{
-			WalletAddress: reporterList[0],
-			PurchasedUoz:  purchasedUozList[0],
-			TxHash:        txHashList[0],
-		}
-
-		err := postToSP("/pp/prepaid", prepaidMsg)
+		err := postToSP("/pp/prepaid", req)
 		if err != nil {
 			utils.ErrorLog(err)
 			return
@@ -307,74 +297,66 @@ func PrepayMsgHandler() func(event coretypes.ResultEvent) {
 
 func FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		reporterAddressList := result.Events["FileUpload.reporter"]
-		if len(reporterAddressList) < 1 {
-			utils.ErrorLog("No reporter address was specified in the FileUploadTx message from stratos-chain")
+		requiredAttributes := []string{
+			"FileUpload.reporter",
+			"FileUpload.uploader",
+			"FileUpload.file_hash",
+			"tx.hash",
+		}
+		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+
+		req := &relayTypes.FileUploadedReq{}
+		for _, event := range processedEvents {
+			req.UploadList = append(req.UploadList, &protos.Uploaded{
+				ReporterAddress: event["FileUpload.reporter"],
+				UploaderAddress: event["FileUpload.uploader"],
+				FileHash:        event["FileUpload.file_hash"],
+				TxHash:          event["tx.hash"],
+			})
+		}
+
+		if len(req.UploadList) != initialEventCount {
+			utils.ErrorLogf("File upload message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+				len(req.UploadList), initialEventCount-len(processedEvents), len(processedEvents)-len(req.UploadList))
+		}
+		if len(req.UploadList) == 0 {
 			return
 		}
 
-		uploaderAddressList := result.Events["FileUpload.uploader"]
-		if len(uploaderAddressList) < 1 {
-			utils.ErrorLog("No uploader address was specified in the FileUploadTx message from stratos-chain")
-			return
-		}
-
-		fileHashList := result.Events["FileUpload.file_hash"]
-		if len(fileHashList) < 1 {
-			utils.ErrorLog("No file hash was specified in the FileUploadTx message from stratos-chain")
-			return
-		}
-
-		txHashList := result.Events["tx.hash"]
-		if len(txHashList) < 1 {
-			utils.ErrorLog("No txHash was specified in the FileUploadTx message from stratos-chain")
-			return
-		}
-
-		uploadedMsg := &protos.Uploaded{
-			ReporterAddress: reporterAddressList[0],
-			UploaderAddress: uploaderAddressList[0],
-			FileHash:        fileHashList[0],
-			TxHash:          txHashList[0],
-		}
-
-		err := postToSP("/pp/uploaded", uploadedMsg)
+		err := postToSP("/pp/uploaded", req)
 		if err != nil {
 			utils.ErrorLog(err)
 			return
 		}
 	}
-}
-
-type VolumeReportedReq struct {
-	Epoch string `json:"epoch"`
 }
 
 func VolumeReportHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		epochList := result.Events["volume_report.epoch"]
-		if len(epochList) < 1 {
-			utils.ErrorLog("No epoch was specified in the volume_report message from stratos-chain")
+		requiredAttributes := []string{
+			"volume_report.epoch",
+		}
+		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+
+		req := &relayTypes.VolumeReportedReq{}
+		for _, event := range processedEvents {
+			req.Epochs = append(req.Epochs, event["volume_report.epoch"])
+		}
+
+		if len(req.Epochs) != initialEventCount {
+			utils.ErrorLogf("Volume report message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+				len(req.Epochs), initialEventCount-len(processedEvents), len(processedEvents)-len(req.Epochs))
+		}
+		if len(req.Epochs) == 0 {
 			return
 		}
 
-		volumeReportedMsg := VolumeReportedReq{Epoch: epochList[0]}
-		err := postToSP("/volume/reported", volumeReportedMsg)
+		err := postToSP("/volume/reported", req)
 		if err != nil {
 			utils.ErrorLog(err)
 			return
 		}
 	}
-}
-
-type SlashedPP struct {
-	P2PAddress string `json:"p2p_address"`
-	QueryFirst bool   `json:"query_first"`
-	Suspended  bool   `json:"suspended"`
-}
-
-type SlashedPPReq struct {
-	PPList []SlashedPP `json:"pp_list"`
 }
 
 func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
@@ -385,22 +367,16 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 		}
 		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
 
-		var slashedPPs []SlashedPP
+		var slashedPPs []relayTypes.SlashedPP
 		for _, event := range processedEvents {
-			_, p2pAddressString, err := getP2pAddressFromAttribute(event["slashing.network_address"])
-			if err != nil {
-				utils.DebugLog("Invalid P2P address in the slashing message from stratos-chain", err)
-				continue
-			}
-
 			suspended, err := strconv.ParseBool(event["slashing.suspended"])
 			if err != nil {
 				utils.DebugLog("Invalid suspended boolean in the slashing message from stratos-chain", err)
 				continue
 			}
 
-			slashedPP := SlashedPP{
-				P2PAddress: p2pAddressString,
+			slashedPP := relayTypes.SlashedPP{
+				P2PAddress: event["slashing.network_address"],
 				QueryFirst: false,
 				Suspended:  suspended,
 			}
@@ -415,10 +391,10 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 			return
 		}
 
-		slashedPPMsg := SlashedPPReq{
+		req := relayTypes.SlashedPPReq{
 			PPList: slashedPPs,
 		}
-		err := postToSP("/pp/slashed", slashedPPMsg)
+		err := postToSP("/pp/slashed", req)
 		if err != nil {
 			utils.ErrorLog(err)
 			return
@@ -451,23 +427,6 @@ func postToSP(endpoint string, data interface{}) error {
 	return nil
 }
 
-func getP2pAddressFromEvent(result coretypes.ResultEvent, eventName, attribName string) (types.Address, string, error) {
-	attribSlice := result.Events[eventName+"."+attribName]
-	if len(attribSlice) < 1 {
-		return types.Address{}, "", errors.New("no " + attribName + " was specified in " + eventName + " msg from st-chain")
-	}
-	return getP2pAddressFromAttribute(attribSlice[0])
-}
-
-func getP2pAddressFromAttribute(attribute string) (types.Address, string, error) {
-	p2pAddress, err := types.P2pAddressFromBech(attribute)
-	if err != nil {
-		return types.Address{}, "", errors.New("error when trying to convert P2P address to bytes")
-	}
-
-	return p2pAddress, attribute, nil
-}
-
 func processEvents(eventsMap map[string][]string, attributesRequired []string) (processedEvents []map[string]string, totalEventCount int) {
 	if len(attributesRequired) < 1 {
 		return nil, 0
@@ -494,4 +453,18 @@ func processEvents(eventsMap map[string][]string, attributesRequired []string) (
 		processedEvents = append(processedEvents, processedEvent)
 	}
 	return
+}
+
+func processHexPubkey(attribute string) (ed25519.PubKeyEd25519, error) {
+	p2pPubkeyRaw, err := hex.DecodeString(attribute)
+	if err != nil {
+		return ed25519.PubKeyEd25519{}, errors.Wrap(err, "Error when trying to decode P2P pubkey hex")
+	}
+	p2pPubkey := ed25519.PubKeyEd25519{}
+	err = relay.Cdc.UnmarshalBinaryBare(p2pPubkeyRaw, &p2pPubkey)
+	if err != nil {
+		return ed25519.PubKeyEd25519{}, errors.Wrap(err, "Error when trying to read P2P pubkey ed25519 binary")
+	}
+
+	return p2pPubkey, nil
 }

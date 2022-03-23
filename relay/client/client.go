@@ -291,11 +291,7 @@ func (m *MultiClient) SubscribeToStratosChainEvents() error {
 	if err != nil {
 		return err
 	}
-	err = m.SubscribeToStratosChain("message.action='unbonding_resource_node'", handlers.UnbondingResourceNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='remove_resource_node'", handlers.RemoveResourceNodeMsgHandler())
+	err = m.SubscribeToStratosChain("message.action='remove_resource_node'", handlers.UnbondingResourceNodeMsgHandler())
 	if err != nil {
 		return err
 	}
@@ -311,11 +307,7 @@ func (m *MultiClient) SubscribeToStratosChainEvents() error {
 	if err != nil {
 		return err
 	}
-	err = m.SubscribeToStratosChain("message.action='unbonding_indexing_node'", handlers.UnbondingIndexingNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='remove_indexing_node'", handlers.RemoveIndexingNodeMsgHandler())
+	err = m.SubscribeToStratosChain("message.action='remove_indexing_node'", handlers.UnbondingIndexingNodeMsgHandler())
 	if err != nil {
 		return err
 	}
