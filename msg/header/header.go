@@ -55,19 +55,19 @@ const (
 	ReqActivatedSP = "ReqActds" // request when a SP node was successfully activated
 	RspActivatedPP = "RspActdp" // response when a PP node was successfully activated
 
-	ReqUpdateStakePP  = "ReqUpdtp"  // request to update stake for a PP node
-	RspUpdateStakePP  = "RspUpdtp"  // response to update stake for a PP node
-	ReqUpdatedStakePP = "ReqUpdtdp" // request when a PP node's stake was successfully updated
-	ReqUpdatedStakeSP = "ReqUpdtds" // request when a SP node's stake was successfully updated
-	RspUpdatedStakePP = "RspUpdtdp" // response when a PP node's stake  was successfully updated
+	ReqUpdateStakePP  = "ReqUpp"   // request to update stake for a PP node
+	RspUpdateStakePP  = "RspUpp"   // response to update stake for a PP node
+	ReqUpdatedStakePP = "ReqUptdp" // request when a PP node's stake was successfully updated
+	ReqUpdatedStakeSP = "ReqUptds" // request when a SP node's stake was successfully updated
+	RspUpdatedStakePP = "RspUptdp" // response when a PP node's stake  was successfully updated
 
-	ReqDeactivatePP     = "ReqDctvp"  // request to deactivate a PP node
-	RspDeactivatePP     = "RspDctvp"  // response to deactivate a PP node
-	ReqUnbondingPP      = "ReqUbdp"   // request to unbonding a PP node
-	RspUnbondingPP      = "RspUbdp"   // response to unbonding a PP node
-	ReqDeactivatedPP    = "ReqDctdp"  // request when a PP node was successfully deactivated
-	RspDeactivatedPP    = "RspDctdp"  // response when a PP node was successfully deactivated
-	RspPPRegisteredToSP = "RspPRegds" // response when a PP node was successfully registered to SP
+	ReqDeactivatePP     = "ReqDctvp" // request to deactivate a PP node
+	RspDeactivatePP     = "RspDctvp" // response to deactivate a PP node
+	ReqUnbondingPP      = "ReqUbdp"  // request to unbonding a PP node
+	RspUnbondingPP      = "RspUbdp"  // response to unbonding a PP node
+	ReqDeactivatedPP    = "ReqDctdp" // request when a PP node was successfully deactivated
+	RspDeactivatedPP    = "RspDctdp" // response when a PP node was successfully deactivated
+	RspPPRegisteredToSP = "Rspbdsp"  // response when a PP node was successfully registered to SP
 
 	ReqPrepay  = "ReqPrpay" // request for a PP node sending a prepay transaction
 	RspPrepay  = "RspPrpay" // response for a PP node sending a prepay transaction
