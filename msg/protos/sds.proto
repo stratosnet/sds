@@ -790,13 +790,17 @@ message ReqReportNodeStatus {
 
 message ReqGetPPStatus {
   PPBaseInfo my_address = 1;
-
+  bool init_pp_list = 2;
 }
 
 message RspGetPPStatus{
-  uint32 ActivationState = 1;
-  uint32 OngoingTier = 2;
-  Result result = 3;
+  uint32 is_active = 1;
+  uint32 ongoing_tier = 2;
+  uint32 init_tier = 3;
+  uint32 weight_score = 4;
+  int32 state = 5;
+  bool init_pp_list = 6;
+  Result result = 7;
 }
 
 message ReqGetWalletOz {
@@ -807,5 +811,10 @@ message RspGetWalletOz{
   string wallet_oz = 1;
   string wallet_address = 2;
   Result result = 3;
+}
 
+enum PPState {
+  OFFLINE = 0;
+  ONLINE = 1;
+  SUSPEND = 2;
 }

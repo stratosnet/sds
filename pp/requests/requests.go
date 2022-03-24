@@ -94,7 +94,7 @@ func ReqGetSPlistData() *protos.ReqGetSPList {
 	}
 }
 
-func ReqGetPPStatusData() *protos.ReqGetPPStatus {
+func ReqGetPPStatusData(initPPList bool) *protos.ReqGetPPStatus {
 	return &protos.ReqGetPPStatus{
 		MyAddress: &protos.PPBaseInfo{
 			P2PAddress:     setting.P2PAddress,
@@ -102,6 +102,7 @@ func ReqGetPPStatusData() *protos.ReqGetPPStatus {
 			NetworkAddress: setting.NetworkAddress,
 			RestAddress:    setting.RestAddress,
 		},
+		InitPpList: initPPList,
 	}
 }
 

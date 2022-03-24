@@ -135,6 +135,11 @@ func (api *terminalCmd) UpdateStake(param []string) (CmdResult, error) {
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
+func (api *terminalCmd) Status(param []string) (CmdResult, error) {
+	peers.GetPPStatusFromSP()
+	return CmdResult{Msg: DefaultMsg}, nil
+}
+
 func (api *terminalCmd) Deactivate(param []string) (CmdResult, error) {
 	if len(param) != 2 {
 		return CmdResult{Msg: ""}, errors.New("expecting 2 params. Input fee amount and gas amount")
