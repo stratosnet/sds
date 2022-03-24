@@ -63,7 +63,7 @@ func (api *terminalCmd) RegisterPP(param []string) (CmdResult, error) {
 
 func (api *terminalCmd) Activate(param []string) (CmdResult, error) {
 	if len(param) != 4 {
-		return CmdResult{Msg: ""}, errors.New("expecting 4 params. Input amount of tokens, fee amount and gas amount")
+		return CmdResult{Msg: ""}, errors.New("expecting 4 params. Input desired node tier, amount of tokens, fee amount and gas amount")
 	}
 
 	tier, err := strconv.ParseInt(param[0], 10, 64)
