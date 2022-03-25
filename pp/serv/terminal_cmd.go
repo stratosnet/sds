@@ -62,23 +62,19 @@ func (api *terminalCmd) RegisterPP(param []string) (CmdResult, error) {
 }
 
 func (api *terminalCmd) Activate(param []string) (CmdResult, error) {
-	if len(param) != 4 {
-		return CmdResult{Msg: ""}, errors.New("expecting 4 params. Input desired node tier, amount of tokens, fee amount and gas amount")
+	if len(param) != 3 {
+		return CmdResult{Msg: ""}, errors.New("expecting 3 params. Input amount of tokens, fee amount and gas amount")
 	}
 
-	tier, err := strconv.ParseInt(param[0], 10, 64)
-	if err != nil {
-		return CmdResult{Msg: ""}, errors.New("invalid tier param. Should be an integer")
-	}
-	amount, err := strconv.ParseInt(param[1], 10, 64)
+	amount, err := strconv.ParseInt(param[0], 10, 64)
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be an integer")
 	}
-	fee, err := strconv.ParseInt(param[2], 10, 64)
+	fee, err := strconv.ParseInt(param[1], 10, 64)
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be an integer")
 	}
-	gas, err := strconv.ParseInt(param[3], 10, 64)
+	gas, err := strconv.ParseInt(param[2], 10, 64)
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be an integer")
 	}
@@ -91,7 +87,7 @@ func (api *terminalCmd) Activate(param []string) (CmdResult, error) {
 		return CmdResult{Msg: "register as a PP node first"}, nil
 	}
 
-	if err := event.Activate(tier, amount, fee, gas); err != nil {
+	if err := event.Activate(amount, fee, gas); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 	return CmdResult{Msg: DefaultMsg}, nil

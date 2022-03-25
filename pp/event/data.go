@@ -11,7 +11,7 @@ import (
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 )
 
-func reqActivateData(tier, amount, fee, gas int64) (*protos.ReqActivatePP, error) {
+func reqActivateData(amount, fee, gas int64) (*protos.ReqActivatePP, error) {
 	// Create and sign transaction to add new resource node
 	ownerAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
 	if err != nil {
@@ -36,7 +36,6 @@ func reqActivateData(tier, amount, fee, gas int64) (*protos.ReqActivatePP, error
 		Tx:            txBytes,
 		PpInfo:        setting.GetPPInfo(),
 		AlreadyActive: false,
-		Tier:          uint32(tier),
 		InitialStake:  uint64(amount),
 	}
 	return req, nil

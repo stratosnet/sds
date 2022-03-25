@@ -17,7 +17,7 @@ import (
 )
 
 // Activate Inactive PP node becomes active
-func Activate(tier, amount, fee, gas int64) error {
+func Activate(amount, fee, gas int64) error {
 	// Query blockchain to know if this node is already a resource node
 	ppState, err := stratoschain.QueryResourceNodeState(setting.P2PAddress)
 	if err != nil {
@@ -34,7 +34,7 @@ func Activate(tier, amount, fee, gas int64) error {
 			AlreadyActive: true,
 		}
 	default:
-		activateReq, err = reqActivateData(tier, amount, fee, gas)
+		activateReq, err = reqActivateData(amount, fee, gas)
 		if err != nil {
 			utils.ErrorLog("Couldn't build PP activate request", err)
 			return err
