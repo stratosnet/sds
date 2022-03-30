@@ -380,17 +380,18 @@ func ReqDownloadSliceData(target *protos.RspFileStorageInfo, rsp *protos.Downloa
 func ReqRegisterNewPPData() *protos.ReqRegisterNewPP {
 	sysInfo := utils.GetSysInfo(setting.Config.StorehousePath)
 	return &protos.ReqRegisterNewPP{
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		DiskSize:      sysInfo.DiskSize,
-		FreeDisk:      sysInfo.FreeDisk,
-		MemorySize:    sysInfo.MemorySize,
-		OsAndVer:      sysInfo.OSInfo,
-		CpuInfo:       sysInfo.CPUInfo,
-		MacAddress:    sysInfo.MacAddress,
-		Version:       setting.Config.Version,
-		PubKey:        setting.P2PPublicKey,
-		Sign:          setting.GetSign(setting.P2PAddress),
+		P2PAddress:     setting.P2PAddress,
+		WalletAddress:  setting.WalletAddress,
+		DiskSize:       sysInfo.DiskSize,
+		FreeDisk:       sysInfo.FreeDisk,
+		MemorySize:     sysInfo.MemorySize,
+		OsAndVer:       sysInfo.OSInfo,
+		CpuInfo:        sysInfo.CPUInfo,
+		MacAddress:     sysInfo.MacAddress,
+		Version:        setting.Config.Version,
+		PubKey:         setting.P2PPublicKey,
+		Sign:           setting.GetSign(setting.P2PAddress),
+		NetworkAddress: setting.NetworkAddress,
 	}
 }
 
