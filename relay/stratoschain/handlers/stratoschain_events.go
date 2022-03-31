@@ -224,7 +224,6 @@ func IndexingNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		requiredAttributes := []string{
 			"indexing_node_reg_vote.candidate_network_address",
-			"indexing_node_reg_vote.ozone_limit_changes",
 			"indexing_node_reg_vote.candidate_status",
 			"tx.hash",
 		}
