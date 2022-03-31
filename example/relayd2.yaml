@@ -12,6 +12,12 @@ stratosChain:
   connectionRetries:
     max: 100
     sleepDuration: 3000 # milliseconds
+  broadcast:
+    channelSize: 2000
+    maxMsgPerTx: 250
 blockchainInfo:
   chainId: test-chain
   token: ustos
+  transactions:
+    fee: 30000
+    gas: 20000000
