@@ -258,10 +258,8 @@ func BroadcastTxBytes(txBytes []byte) error {
 
 	// In block broadcast mode, do additional verification
 	if broadcastReq.Mode == flags.BroadcastBlock {
-		// TODO: QB-1064 use events from the result instead of unmarshalling the tx bytes
-		// Check if it's even possible to get events.
-		// If not possible, use /events RPC endpoint in stratos-chain client to fetch events for each TX broadcasted (if broadcast success so we have tx hash)
-		// Or just continue unmarshalling the tx bytes for msgs when it makes sense
+		// TODO: use events from the result instead of unmarshalling the tx bytes
+		// The events are in the txResponse.Logs list. Each msg has an ABCIMessageLog that contains the events as StringEvents
 		// Add a cache with a TTL to make sure we don't handle events twice (once from stchain, once from here)
 		var txResponse sdktypes.TxResponse
 
@@ -273,7 +271,7 @@ func BroadcastTxBytes(txBytes []byte) error {
 		if txResponse.Height <= 0 || txResponse.Empty() || txResponse.Code != 0 {
 			return errors.Errorf("broadcast unsuccessful: %v", txResponse)
 		}
-
+		txResponse.Logs[0].Events.Flatten()
 		if len(broadcastReq.Tx.Msgs) < 1 {
 			return errors.New("broadcastReq tx doesn't contain any messages")
 		}
