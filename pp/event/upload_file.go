@@ -109,7 +109,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		utils.ErrorLog("target.Result is nil")
 
 	} else if target.Result.State != protos.ResultState_RES_SUCCESS {
-		utils.Log("upload failed", target.Result.Msg)
+		utils.Log(target.Result.Msg)
 		file.ClearFileMap(target.FileHash)
 
 	} else if len(target.PpList) != 0 {
