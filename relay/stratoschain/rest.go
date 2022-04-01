@@ -18,6 +18,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/relay/stratoschain/handlers"
+	relaytypes "github.com/stratosnet/sds/relay/types"
 	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 	"github.com/tendermint/tendermint/crypto"
@@ -31,24 +32,6 @@ import (
 )
 
 var Url string
-
-const (
-	SignatureSecp256k1 = iota
-	SignatureEd25519
-)
-
-type SignatureKey struct {
-	AccountNum      uint64
-	AccountSequence uint64
-	Address         string
-	PrivateKey      []byte
-	Type            int
-}
-
-type UnsignedMsg struct {
-	Msg           sdktypes.Msg
-	SignatureKeys []SignatureKey
-}
 
 func FetchAccountInfo(address string) (*authtypes.BaseAccount, error) {
 	if Url == "" {
@@ -80,14 +63,18 @@ func FetchAccountInfo(address string) (*authtypes.BaseAccount, error) {
 	return &account, err
 }
 
-func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*UnsignedMsg, fee, gas int64) (*authtypes.StdTx, error) {
+func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas int64) (*authtypes.StdTx, error) {
+	if len(unsignedMsgs) == 0 {
+		return nil, errors.New("cannot build tx: no msgs to sign")
+	}
+
 	stdFee := authtypes.NewStdFee(
 		uint64(gas),
 		sdktypes.NewCoins(sdktypes.NewInt64Coin(token, fee)),
 	)
 
 	// Collect list of signatures to do. Must match order of GetSigners() method in cosmos-sdk's stdtx.go
-	var signaturesToDo []SignatureKey
+	var signaturesToDo []relaytypes.SignatureKey
 	signersSeen := make(map[string]bool)
 	var sdkMsgs []sdktypes.Msg
 	for _, msg := range unsignedMsgs {
@@ -109,7 +96,7 @@ func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*UnsignedMsg,
 		var pubKey crypto.PubKey
 
 		switch signatureKey.Type {
-		case SignatureEd25519:
+		case relaytypes.SignatureEd25519:
 			if len(signatureKey.PrivateKey) != ed25519crypto.PrivateKeySize {
 				return nil, errors.New("ed25519 private key has wrong length: " + hex.EncodeToString(signatureKey.PrivateKey))
 			}
@@ -141,7 +128,7 @@ func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*UnsignedMsg,
 	return &tx, nil
 }
 
-func BuildTxBytes(token, chainId, memo, mode string, unsignedMsgs []*UnsignedMsg, fee, gas int64) ([]byte, error) {
+func BuildTxBytes(token, chainId, memo, mode string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas int64) ([]byte, error) {
 	filteredMsgs := filterInvalidSignatures(unsignedMsgs)          // Filter msgs with invalid signatures
 	accountInfos := fetchAllAccountInfos(filteredMsgs)             // Fetch account info from stratos-chain for each signature
 	updatedMsgs := updateSignatureKeys(filteredMsgs, accountInfos) // Update signatureKeys for each msg
@@ -164,8 +151,8 @@ func BuildTxBytes(token, chainId, memo, mode string, unsignedMsgs []*UnsignedMsg
 	return relay.Cdc.MarshalJSON(body)
 }
 
-func filterInvalidSignatures(msgs []*UnsignedMsg) []*UnsignedMsg {
-	var filteredMsgs []*UnsignedMsg
+func filterInvalidSignatures(msgs []*relaytypes.UnsignedMsg) []*relaytypes.UnsignedMsg {
+	var filteredMsgs []*relaytypes.UnsignedMsg
 	for _, msg := range msgs {
 		invalidSignature := false
 		for _, signature := range msg.SignatureKeys {
@@ -182,7 +169,7 @@ func filterInvalidSignatures(msgs []*UnsignedMsg) []*UnsignedMsg {
 	return filteredMsgs
 }
 
-func fetchAllAccountInfos(msgs []*UnsignedMsg) map[string]*authtypes.BaseAccount {
+func fetchAllAccountInfos(msgs []*relaytypes.UnsignedMsg) map[string]*authtypes.BaseAccount {
 	// Gather all accounts to fetch
 	accountsToFetch := make(map[string]bool)
 	for _, msg := range msgs {
@@ -214,8 +201,8 @@ func fetchAllAccountInfos(msgs []*UnsignedMsg) map[string]*authtypes.BaseAccount
 	return results
 }
 
-func updateSignatureKeys(msgs []*UnsignedMsg, accountInfos map[string]*authtypes.BaseAccount) []*UnsignedMsg {
-	var filteredMsgs []*UnsignedMsg
+func updateSignatureKeys(msgs []*relaytypes.UnsignedMsg, accountInfos map[string]*authtypes.BaseAccount) []*relaytypes.UnsignedMsg {
+	var filteredMsgs []*relaytypes.UnsignedMsg
 	for _, msg := range msgs {
 		missingInfos := false
 		for i, signatureKey := range msg.SignatureKeys {
@@ -271,7 +258,9 @@ func BroadcastTxBytes(txBytes []byte) error {
 
 	// In block broadcast mode, do additional verification
 	if broadcastReq.Mode == flags.BroadcastBlock {
-		// TODO: QB-1064 use events from the result instead of unmarshalling the tx bytes
+		// TODO: use events from the result instead of unmarshalling the tx bytes
+		// The events are in the txResponse.Logs list. Each msg has an ABCIMessageLog that contains the events as StringEvents
+		// Add a cache with a TTL to make sure we don't handle events twice (once from stchain, once from here)
 		var txResponse sdktypes.TxResponse
 
 		err = relay.Cdc.UnmarshalJSON(responseBody, &txResponse)
@@ -282,7 +271,7 @@ func BroadcastTxBytes(txBytes []byte) error {
 		if txResponse.Height <= 0 || txResponse.Empty() || txResponse.Code != 0 {
 			return errors.Errorf("broadcast unsuccessful: %v", txResponse)
 		}
-
+		txResponse.Logs[0].Events.Flatten()
 		if len(broadcastReq.Tx.Msgs) < 1 {
 			return errors.New("broadcastReq tx doesn't contain any messages")
 		}

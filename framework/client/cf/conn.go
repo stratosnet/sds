@@ -506,7 +506,10 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				n, err := io.ReadFull(spbConn, buffer)
 				cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
 				if err != nil {
-					utils.ErrorLog("client heart err", err)
+					if err == io.EOF {
+						return
+					}
+					utils.ErrorLog("client read err", err)
 					return
 				}
 				header.NewDecodeHeader(buffer, &msgH)

@@ -287,12 +287,16 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				sc.belong.secondReadFlowA = sc.belong.secondReadAtomA.AddAndGetNew(int64(n))
 				sc.belong.allFlow = sc.belong.allAtom.AddAndGetNew(int64(n))
 				if err != nil {
+					if err == io.EOF {
+						return
+					}
 					utils.ErrorLog("server header err", err)
 					return
 				}
 				header.NewDecodeHeader(buffer, &msgH)
 				buffer = nil
 
+				//when header shows msg length = 0, directly handle msg
 				if msgH.Len == 0 {
 					// if utils.ByteToString(msgH.Cmd) == header.ReqHeart {
 					// 	sc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.HeartTimeOut) * time.Second))
@@ -309,6 +313,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				}
 
 			} else {
+				// start to process msg if there are more than header to read
 				if msgH.Len > utils.MessageBeatLen {
 					utils.ErrorLog("msgHeader over sized")
 					return
