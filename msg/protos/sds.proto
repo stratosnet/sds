@@ -801,3 +801,8 @@ message RspGetWalletOz{
   Result result = 3;
 
 }
+
+message RspReportNodeStatus{
+  int32 ppstate = 1;
+  Result result = 2;
+}
