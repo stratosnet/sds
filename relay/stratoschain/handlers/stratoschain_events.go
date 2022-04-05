@@ -278,7 +278,7 @@ func PrepayMsgHandler() func(event coretypes.ResultEvent) {
 		req := &relayTypes.PrepaidReq{}
 		for _, event := range processedEvents {
 			req.WalletList = append(req.WalletList, &protos.ReqPrepaid{
-				WalletAddress: event["Prepay.purchased"],
+				WalletAddress: event["Prepay.sender"],
 				PurchasedUoz:  event["Prepay.purchased"],
 				TxHash:        event["tx.hash"],
 			})
