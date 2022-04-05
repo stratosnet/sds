@@ -4,6 +4,7 @@ import (
 	"bytes"
 	ed25519crypto "crypto/ed25519"
 	"encoding/hex"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -50,6 +51,10 @@ func FetchAccountInfo(address string) (*authtypes.BaseAccount, error) {
 	respBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, errors.Errorf("invalid response HTTP%v: %v", resp.Status, string(respBytes))
 	}
 
 	var wrappedResponse sdkrest.ResponseWithHeight
@@ -142,6 +147,16 @@ func BuildTxBytes(token, chainId, memo, mode string, unsignedMsgs []*relaytypes.
 		utils.ErrorLogf("BuildTxBytes couldn't build all the msgs provided (success: %v  invalid_signature: %v  missing_account_infos: %v",
 			len(updatedMsgs), len(unsignedMsgs)-len(filteredMsgs), len(filteredMsgs)-len(updatedMsgs))
 	}
+
+	// Print account sequences
+	accountsStr := ""
+	for walletAddress, account := range accountInfos {
+		if accountsStr != "" {
+			accountsStr += ", "
+		}
+		accountsStr += fmt.Sprintf("(Wallet %v  Num %v  Sequence %v)", walletAddress, account.AccountNumber, account.Sequence)
+	}
+	utils.DebugLogf("BuildTxBytes ChainId [%v] Accounts [%v] Mode [%v]", chainId, accountsStr, mode)
 
 	body := rest.BroadcastReq{
 		Tx:   *tx,
