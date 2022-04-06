@@ -27,6 +27,7 @@ var (
 	limitUploadSpeed     uint64
 	isLimitDownloadSpeed bool
 	isLimitUploadSpeed   bool
+	isSpLatencyChecked   bool
 )
 
 // MsgHandler
@@ -253,8 +254,9 @@ func (cc *ClientConn) Start() {
 		spLatencyCheckHandler = core.GetHandlerFunc(header.ReqSpLatencyCheck)
 
 		spLatencyCheckJobFunc = func() {
-			if spLatencyCheckHandler != nil {
+			if !isSpLatencyChecked && spLatencyCheckHandler != nil {
 				cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, spLatencyCheckHandler}
+				isSpLatencyChecked = true
 			}
 		}
 
@@ -276,7 +278,7 @@ func (cc *ClientConn) Start() {
 		hbJob, _ := myClock.AddJobRepeat(time.Second*utils.ClientSendHeartTime, 0, jobFunc)
 		cc.jobs = append(cc.jobs, hbJob)
 	}
-	latencyJob, _ := myClock.AddJobRepeat(time.Second*utils.LatencyCheckSpListInterval, 0, spLatencyCheckJobFunc)
+	latencyJob, _ := myClock.AddJobRepeat(time.Second*utils.LatencyCheckSpListInterval, 1, spLatencyCheckJobFunc)
 	cc.jobs = append(cc.jobs, latencyJob)
 	logJob, _ := myClock.AddJobRepeat(time.Second*1, 0, logFunc)
 	cc.jobs = append(cc.jobs, logJob)
