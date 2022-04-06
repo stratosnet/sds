@@ -2,10 +2,12 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"sync"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
@@ -14,6 +16,7 @@ import (
 	"github.com/stratosnet/sds/relay/sds"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/relay/stratoschain/handlers"
+	relaytypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils"
 	tmHttp "github.com/tendermint/tendermint/rpc/client/http"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -27,6 +30,7 @@ type MultiClient struct {
 	sdsWebsocketConn      *websocket.Conn
 	stratosWebsocketUrl   string
 	stratosEventsChannels *sync.Map
+	txBroadcasterChan     chan relaytypes.UnsignedMsg
 	wg                    *sync.WaitGroup
 }
 
@@ -133,6 +137,7 @@ func (m *MultiClient) connectToSDS() {
 		m.sdsWebsocketConn = ws
 
 		go m.sdsEventsReaderLoop()
+		go m.txBroadcasterLoop()
 
 		utils.Log("Successfully subscribed to events from SDS SP node and started client to send messages back")
 		return
@@ -194,6 +199,7 @@ func (m *MultiClient) sdsEventsReaderLoop() {
 		}
 		m.wg.Done()
 	}()
+
 	for {
 		if m.Ctx.Err() != nil {
 			return
@@ -214,10 +220,84 @@ func (m *MultiClient) sdsEventsReaderLoop() {
 
 		switch msg.Type {
 		case sds.TypeBroadcast:
-			err = stratoschain.BroadcastTxBytes(msg.Data)
+			unsignedMsgs := relaytypes.UnsignedMsgs{}
+			err = json.Unmarshal(msg.Data, &unsignedMsgs)
 			if err != nil {
-				utils.ErrorLog("couldn't broadcast transaction", err)
+				utils.ErrorLog("couldn't unmarshal UnsignedMsgs json", err)
 				continue
+			}
+			for _, msgBytes := range unsignedMsgs.Msgs {
+				unsignedMsg, err := msgBytes.FromBytes()
+				if err != nil {
+					utils.ErrorLog(err)
+					continue
+				}
+				// Add unsignedMsg to tx broadcast channel
+				m.txBroadcasterChan <- unsignedMsg
+			}
+		}
+	}
+}
+
+func (m *MultiClient) txBroadcasterLoop() {
+	if m.txBroadcasterChan != nil {
+		// tx broadcaster loop already running
+		return
+	}
+
+	m.wg.Add(1)
+	defer func() {
+		// Close existing channel
+		close(m.txBroadcasterChan)
+		m.txBroadcasterChan = nil
+
+		// If the ctx is not done yet, restart the Tx broadcaster channel
+		if m.Ctx.Err() == nil {
+			go m.txBroadcasterLoop()
+		}
+		m.wg.Done()
+	}()
+
+	m.txBroadcasterChan = make(chan relaytypes.UnsignedMsg, setting.Config.StratosChain.Broadcast.ChannelSize)
+
+	var unsignedMsgs []*relaytypes.UnsignedMsg
+	broadcastTx := func() {
+		utils.Logf("Tx broadcaster loop will try to broadcast %v msgs", len(unsignedMsgs))
+		txBytes, err := stratoschain.BuildTxBytes(setting.Config.BlockchainInfo.Token, setting.Config.BlockchainInfo.ChainId, "",
+			flags.BroadcastBlock, unsignedMsgs, setting.Config.BlockchainInfo.Transactions.Fee,
+			setting.Config.BlockchainInfo.Transactions.Gas)
+		unsignedMsgs = nil // Clearing msg list
+		if err != nil {
+			utils.ErrorLog("couldn't build tx bytes", err)
+			return
+		}
+
+		err = stratoschain.BroadcastTxBytes(txBytes)
+		if err != nil {
+			utils.ErrorLog("couldn't broadcast transaction", err)
+			return
+		}
+	}
+
+	for {
+		select {
+		case <-m.Ctx.Done():
+			return
+		case msg, ok := <-m.txBroadcasterChan:
+			if !ok {
+				utils.ErrorLog("The stratos-chain tx broadcaster channel has been closed")
+				return
+			}
+			utils.DebugLogf("Received a new msg of type [%v] to broadcast! ", msg.Msg.Type())
+			unsignedMsgs = append(unsignedMsgs, &msg)
+			if len(unsignedMsgs) >= setting.Config.StratosChain.Broadcast.MaxMsgPerTx {
+				// Max broadcast size is reached. Broadcasting now
+				broadcastTx()
+			}
+		case <-time.After(500 * time.Millisecond):
+			// No new messages are waiting to broadcast. Broadcasting existing messages now
+			if len(unsignedMsgs) > 0 {
+				broadcastTx()
 			}
 		}
 	}
@@ -250,7 +330,7 @@ func (m *MultiClient) stratosSubscriptionReaderLoop(subscription websocketSubscr
 				utils.Log("The stratos-chain events websocket channel has been closed")
 				return
 			}
-			utils.Log("Received a new message from stratos-chain!", subscription.query)
+			utils.Logf("Received a new message of type [%v] from stratos-chain!", subscription.query)
 			handler(message)
 		}
 	}
@@ -291,11 +371,7 @@ func (m *MultiClient) SubscribeToStratosChainEvents() error {
 	if err != nil {
 		return err
 	}
-	err = m.SubscribeToStratosChain("message.action='unbonding_resource_node'", handlers.UnbondingResourceNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='remove_resource_node'", handlers.RemoveResourceNodeMsgHandler())
+	err = m.SubscribeToStratosChain("message.action='remove_resource_node'", handlers.UnbondingResourceNodeMsgHandler())
 	if err != nil {
 		return err
 	}
@@ -311,11 +387,7 @@ func (m *MultiClient) SubscribeToStratosChainEvents() error {
 	if err != nil {
 		return err
 	}
-	err = m.SubscribeToStratosChain("message.action='unbonding_indexing_node'", handlers.UnbondingIndexingNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='remove_indexing_node'", handlers.RemoveIndexingNodeMsgHandler())
+	err = m.SubscribeToStratosChain("message.action='remove_indexing_node'", handlers.UnbondingIndexingNodeMsgHandler())
 	if err != nil {
 		return err
 	}

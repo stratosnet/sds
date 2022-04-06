@@ -296,6 +296,7 @@ message ReqRegisterNewPP {
   uint32  version = 9;
   bytes   pub_key = 10;
   bytes   sign = 11;
+  string  network_address = 12;
 }
 
 message RspRegisterNewPP {
@@ -808,4 +809,9 @@ message RspGetWalletOz{
   string wallet_address = 2;
   Result result = 3;
 
+}
+
+message RspReportNodeStatus{
+  int32 ppstate = 1;
+  Result result = 2;
 }
