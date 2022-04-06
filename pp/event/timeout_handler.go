@@ -36,7 +36,7 @@ func (handler *DownloadTimeoutHandler) Handle(message *msg.RelayMsgBuf) {
 }
 
 func (handler *DownloadTimeoutHandler) GetDuration() time.Duration {
-	return 5 * time.Second
+	return 120 * time.Second
 }
 
 func (handler *DownloadTimeoutHandler) GetTimeoutMsg(reqMessage *msg.RelayMsgBuf) *msg.RelayMsgBuf {
