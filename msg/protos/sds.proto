@@ -818,3 +818,8 @@ enum PPState {
   ONLINE = 1;
   SUSPEND = 2;
 }
+
+message RspReportNodeStatus{
+  int32 ppstate = 1;
+  Result result = 2;
+}
