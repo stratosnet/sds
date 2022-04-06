@@ -118,7 +118,13 @@ func TransferSendMessageToClient(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
 // GetMyNodeStatusFromSP P node get node status
 func GetPPStatusFromSP() {
 	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetPPStatus)")
-	SendMessageToSPServer(requests.ReqGetPPStatusData(), header.ReqGetPPStatus)
+	SendMessageToSPServer(requests.ReqGetPPStatusData(false), header.ReqGetPPStatus)
+}
+
+// GetMyNodeStatusFromSP P node get node status
+func GetPPStatusInitPPList() {
+	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetPPStatus)")
+	SendMessageToSPServer(requests.ReqGetPPStatusData(true), header.ReqGetPPStatus)
 }
 
 // GetSPList node get spList
@@ -183,5 +189,5 @@ func ScheduleReloadSPlist(future time.Duration) {
 
 func ScheduleReloadPPStatus(future time.Duration) {
 	utils.DebugLog("scheduled to get pp status from sp after: ", future.Seconds(), "second")
-	ppPeerClock.AddJobWithInterval(future, GetPPStatusFromSP)
+	ppPeerClock.AddJobWithInterval(future, GetPPStatusInitPPList)
 }

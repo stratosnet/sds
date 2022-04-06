@@ -25,6 +25,7 @@ func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 			"create_resource_node.pub_key",
 			"create_resource_node.ozone_limit_changes",
 			"tx.hash",
+			"create_resource_node.initial_stake",
 		}
 		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
 
@@ -41,6 +42,7 @@ func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 				P2PPubkey:         hex.EncodeToString(p2pPubkey[:]),
 				OzoneLimitChanges: event["create_resource_node.ozone_limit_changes"],
 				TxHash:            event["tx.hash"],
+				InitialStake:      event["create_resource_node.initial_stake"],
 			})
 		}
 
@@ -67,6 +69,7 @@ func UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 			"update_resource_node_stake.ozone_limit_changes",
 			"update_resource_node_stake.incr_stake",
 			"tx.hash",
+			"update_resource_node_stake.stake_delta",
 		}
 		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
 
@@ -77,6 +80,7 @@ func UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 				OzoneLimitChanges: event["update_resource_node_stake.ozone_limit_changes"],
 				IncrStake:         event["update_resource_node_stake.incr_stake"],
 				TxHash:            event["tx.hash"],
+				StakeDelta:        event["update_resource_node_stake.stake_delta"],
 			})
 		}
 
@@ -103,6 +107,7 @@ func UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 			"unbonding_resource_node.ozone_limit_changes",
 			"unbonding_resource_node.unbonding_mature_time",
 			"tx.hash",
+			"unbonding_resource_node.stake_to_remove",
 		}
 		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
 
@@ -113,6 +118,7 @@ func UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 				OzoneLimitChanges:   event["unbonding_resource_node.ozone_limit_changes"],
 				UnbondingMatureTime: event["unbonding_resource_node.unbonding_mature_time"],
 				TxHash:              event["tx.hash"],
+				StakeToRemove:       event["unbonding_resource_node.stake_to_remove"],
 			})
 		}
 

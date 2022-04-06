@@ -22,7 +22,7 @@ func doReportNodeStatus(status *protos.ReqReportNodeStatus) {
 	SendMessageToSPServer(status, header.ReqReportNodeStatus)
 	// if current reachable is too less, try refresh the list
 	_, total, _ := peerList.GetPPList()
-	if total <= 2 {
+	if total > 0 && total <= 2 {
 		GetPPListFromSP()
 	}
 }

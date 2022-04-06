@@ -22,6 +22,7 @@ LimitUploadSpeed: 100
 ChainId: test-chain
 Token: ustos
 StratosChainUrl: http://127.0.0.1:1317
+StreamingCache: false
 RestPort: "18094"
 InternalPort: ""
 TrafficLogInterval: 10

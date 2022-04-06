@@ -37,6 +37,7 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivatePP, error) {
 		Tx:            txBytes,
 		PpInfo:        setting.GetPPInfo(),
 		AlreadyActive: false,
+		InitialStake:  uint64(amount),
 	}
 	return req, nil
 }
