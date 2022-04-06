@@ -1,6 +1,7 @@
 package peers
 
 import (
+	"math"
 	"math/rand"
 	"sync"
 	"time"
@@ -17,7 +18,10 @@ type OptimalSp struct {
 }
 
 var (
-	optSp = &OptimalSp{}
+	optSp               = &OptimalSp{}
+	minReloadSpInterval = 3
+	maxReloadSpInterval = 600
+	retry               = 0
 )
 
 func ListenOffline() {
@@ -43,14 +47,19 @@ func reloadConnectSP() {
 	newConnection, err := ConnectToSP()
 	if newConnection {
 		RegisterToSP(true)
+		retry = 0
 		if setting.IsStartMining {
 			StartMining()
 		}
 	}
 
 	if err != nil {
-		utils.Log("couldn't connect to SP node. Retrying in 3 seconds...")
-		ppPeerClock.AddJobWithInterval(time.Second*3, reloadConnectSP)
+		//calc next reload interval
+		reloadSpInterval := minReloadSpInterval * int(math.Ceil(math.Pow(10, float64(retry))))
+		reloadSpInterval = int(math.Min(float64(reloadSpInterval), float64(maxReloadSpInterval)))
+		utils.Logf("couldn't connect to SP node. Retrying in %v seconds...", reloadSpInterval)
+		retry += 1
+		ppPeerClock.AddJobWithInterval(time.Duration(reloadSpInterval)*time.Second, reloadConnectSP)
 	}
 }
 

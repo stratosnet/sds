@@ -161,8 +161,8 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf) (err error) {
 		sendCh chan *message.RelayMsgBuf
 	)
 	sendCh = c.(*ServerConn).sendCh
-	msgH := make([]byte, 16)
-	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), msgH)
+	msgH := make([]byte, utils.MsgHeaderLen)
+	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), m.MSGHead.ReqId, msgH)
 	// msgData := make([]byte, utils.MessageBeatLen)
 	// copy(msgData[0:], msgH)
 	// copy(msgData[utils.MsgHeaderLen:], m.MSGData)

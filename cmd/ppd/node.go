@@ -45,6 +45,11 @@ func nodePreRunE(cmd *cobra.Command, args []string) error {
 	trafficLogger := utils.NewTrafficLogger(filepath.Join(setting.GetRootPath(), "./tmp/logs/traffic_dump.log"), false, true)
 	trafficLogger.SetLogLevel(utils.Info)
 
+	err = utils.InitIdWorker()
+	if err != nil {
+		return errors.Wrap(err, "Couldn't initialize id worker")
+	}
+
 	serv.StartDumpTrafficLog()
 	err = SetupP2PKey()
 	if err != nil {

@@ -24,6 +24,10 @@ var bufferedSpConns = make([]*cf.ClientConn, 0)
 
 // SendMessage
 func SendMessage(conn core.WriteCloser, pb proto.Message, cmd string) error {
+	return SendResponseMessageWithReqId(conn, pb, cmd, int64(0))
+}
+
+func SendResponseMessageWithReqId(conn core.WriteCloser, pb proto.Message, cmd string, reqId int64) error {
 	data, err := proto.Marshal(pb)
 
 	if err != nil {
@@ -31,7 +35,7 @@ func SendMessage(conn core.WriteCloser, pb proto.Message, cmd string) error {
 		return errors.New("error decoding")
 	}
 	msg := &msg.RelayMsgBuf{
-		MSGHead: requests.PPMsgHeader(data, cmd),
+		MSGHead: header.MakeMessageHeader(1, uint16(setting.Config.Version), uint32(len(data)), cmd, reqId),
 		MSGData: data,
 	}
 	switch conn.(type) {

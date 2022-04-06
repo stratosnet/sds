@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -128,7 +129,7 @@ func LoadHlsInfo(fileHash, sliceHash, savePath string) *HlsInfo {
 }
 
 func GetVideoTmpFolder(fileHash string) string {
-	return TEMP_FOLDER + "/" + fileHash
+	return filepath.Join(setting.GetRootPath(), TEMP_FOLDER, fileHash)
 }
 
 func GetDumpySliceData(fileHash string, sliceNumber uint64) []byte {

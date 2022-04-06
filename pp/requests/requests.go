@@ -54,7 +54,7 @@ func ReqRegisterDataTR(target *protos.ReqRegister) *msg.RelayMsgBuf {
 		utils.ErrorLog(err)
 	}
 	return &msg.RelayMsgBuf{
-		MSGHead: PPMsgHeader(data, header.ReqRegister),
+		MSGHead: PPMsgHeaderWithoutReqId(data, header.ReqRegister),
 		MSGData: data,
 	}
 }
@@ -411,7 +411,7 @@ func ReqTransferDownloadData(notice *protos.ReqFileSliceBackupNotice, newPpP2pAd
 		utils.ErrorLog(err)
 	}
 	return &msg.RelayMsgBuf{
-		MSGHead: PPMsgHeader(data, header.ReqTransferDownload),
+		MSGHead: PPMsgHeaderWithoutReqId(data, header.ReqTransferDownload),
 		MSGData: data,
 	}
 }
@@ -434,7 +434,7 @@ func ReqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
 		utils.ErrorLog(err)
 	}
 	return &msg.RelayMsgBuf{
-		MSGHead: PPMsgHeader(data, header.ReqReportTaskBP),
+		MSGHead: PPMsgHeaderWithoutReqId(data, header.ReqReportTaskBP),
 		MSGData: data,
 	}
 }
@@ -451,6 +451,30 @@ func ReqFileStorageInfoData(path, savePath, reqID, walletAddr string, isVideoStr
 		ReqId:         reqID,
 		IsVideoStream: isVideoStream,
 		ShareRequest:  shareRequest,
+	}
+}
+
+func ReqDownloadFileWrongData(fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask) *protos.ReqDownloadFileWrong {
+	var failedSlices []string
+	var failedPPNodes []*protos.PPBaseInfo
+	for sliceHash, _ := range dTask.FailedSlice {
+		failedSlices = append(failedSlices, sliceHash)
+	}
+	for _, nodeInfo := range dTask.FailedPPNodes {
+		failedPPNodes = append(failedPPNodes, nodeInfo)
+	}
+	return &protos.ReqDownloadFileWrong{
+		FileIndexes: &protos.FileIndexes{
+			P2PAddress:    fInfo.P2PAddress,
+			WalletAddress: fInfo.WalletAddress,
+			SavePath:      fInfo.SavePath,
+		},
+		FileHash:      fInfo.FileHash,
+		Sign:          fInfo.Sign,
+		ReqId:         fInfo.ReqId,
+		IsVideoStream: fInfo.IsVideoStream,
+		FailedSlices:  failedSlices,
+		FailedPpNodes: failedPPNodes,
 	}
 }
 
@@ -525,7 +549,7 @@ func RspDownloadSliceWrong(target *protos.RspDownloadSliceWrong) *msg.RelayMsgBu
 		utils.ErrorLog(err)
 	}
 	return &msg.RelayMsgBuf{
-		MSGHead: PPMsgHeader(data, header.ReqDownloadSlice),
+		MSGHead: PPMsgHeaderWithoutReqId(data, header.ReqDownloadSlice),
 		MSGData: data,
 	}
 }
@@ -657,15 +681,18 @@ func ReqNodeStatusData() *protos.ReqReportNodeStatus {
 }
 
 // PPMsgHeader
-func PPMsgHeader(data []byte, head string) header.MessageHead {
-	return header.MakeMessageHeader(1, uint16(setting.Config.Version), uint32(len(data)), head)
-
+func PPMsgHeaderWithoutReqId(data []byte, head string) header.MessageHead {
+	return header.MakeMessageHeader(1, uint16(setting.Config.Version), uint32(len(data)), head, utils.ZeroId())
 }
 
 func UnmarshalData(ctx context.Context, target interface{}) bool {
 	msgBuf := core.MessageFromContext(ctx)
 	utils.DebugLogf("Received message type = %v msgBuf len = %v", reflect.TypeOf(target), len(msgBuf.MSGData))
-	if err := proto.Unmarshal(msgBuf.MSGData, target.(proto.Message)); err != nil {
+	return UnmarshalMessageData(msgBuf.MSGData, target)
+}
+
+func UnmarshalMessageData(data []byte, target interface{}) bool {
+	if err := proto.Unmarshal(data, target.(proto.Message)); err != nil {
 		utils.ErrorLog("protobuf Unmarshal error", err)
 		return false
 	}
@@ -673,4 +700,9 @@ func UnmarshalData(ctx context.Context, target interface{}) bool {
 		utils.DebugLog("target = ", target)
 	}
 	return true
+}
+
+func GetReqIdFromMessage(ctx context.Context) int64 {
+	msgBuf := core.MessageFromContext(ctx)
+	return msgBuf.MSGHead.ReqId
 }
