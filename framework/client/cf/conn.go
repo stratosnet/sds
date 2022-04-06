@@ -427,8 +427,9 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf) (err error) {
 		sendCh chan *msg.RelayMsgBuf
 	)
 	sendCh = c.sendCh
-	msgH := make([]byte, 16)
-	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), msgH)
+	msgH := make([]byte, utils.MsgHeaderLen)
+	reqId, _ := utils.NextSnowFakeId()
+	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, msgH)
 	// msgData := make([]byte, utils.MessageBeatLen)
 	// copy((*msgData)[0:], msgH)
 	// copy((*msgData)[utils.MsgHeaderLen:], m.MSGData)
@@ -456,6 +457,8 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf) (err error) {
 		memory = nil
 		return
 	}
+
+	core.TimoutMap.Store(reqId, m)
 
 	return
 }
@@ -721,6 +724,7 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			return
 		case msgHandler := <-handlerCh:
 			msg, handler := msgHandler.message, msgHandler.handler
+			core.TimoutMap.DeleteByRspMsg(&msg)
 			handler(core.CreateContextWithNetID(core.CreateContextWithMessage(ctx, &msg), netID), c)
 		}
 	}

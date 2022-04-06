@@ -27,6 +27,8 @@ const (
 	maxNextIdsNum      = 100 //max number of Ids per retrieve
 )
 
+var MyIdWorker *IdWorker
+
 type IdWorker struct {
 	sequence      int64
 	lastTimestamp int64
@@ -111,4 +113,18 @@ func (id *IdWorker) nextid() (int64, error) {
 	}
 	id.lastTimestamp = timestamp
 	return ((timestamp - id.twepoch) << timestampLeftShift) | (id.districtId << DistrictIdShift) | (id.nodeId << nodeIdShift) | id.sequence, nil
+}
+
+func InitIdWorker() error {
+	idWorker, err := NewIdWorker(int64(0))
+	MyIdWorker = idWorker
+	return err
+}
+
+func NextSnowFakeId() (int64, error) {
+	return MyIdWorker.NextId()
+}
+
+func ZeroId() int64 {
+	return int64(0)
 }
