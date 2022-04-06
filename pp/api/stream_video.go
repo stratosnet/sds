@@ -301,10 +301,6 @@ func verifyStreamReqBody(req *http.Request) (*StreamReqBody, error) {
 		return nil, errors.Wrap(err, "incorrect SP P2P address")
 	}
 
-	if reqBody.RestAddress == "" {
-		return nil, errors.New("please give correct rest address to the file slice")
-	}
-
 	return &reqBody, nil
 }
 
