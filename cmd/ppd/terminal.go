@@ -26,7 +26,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	helpStr := "\n" +
 		"help                                       			show all the commands\n" +
 		"wallets                                    			acquire all wallet wallets' address\n" +
-		"newwallet							                    create new wallet, input password in prompt\n" +
+		"newwallet		                                        create new wallet, input password in prompt\n" +
 		"login <walletAddress> ->password           			unlock and log in wallet, input password in prompt\n" +
 		"registerpeer                               			register peer to index node\n" +
 		"rp                                         			register peer to index node\n" +
@@ -40,8 +40,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"list <filename>                            			query uploaded file by self\n" +
 		"list                                       			query all files\n" +
 		"delete <filehash>                          			delete file\n" +
-		"get <sdm://account/filehash|filename>      			download file, need to consume ozone\n" +
-		"	e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe|test.mp4\n" +
+		"get <sdm://account/filehash>			                download file, need to consume ozone\n" +
+		"	e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe\n" +
 		"sharefile <filehash> <expiry> <private>    			share an uploaded file\n" +
 		"allshare                                   			list all shared files\n" +
 		"getsharefile <sharelink> <password>        			download a shared file, need to consume ozone\n" +
@@ -50,7 +50,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"monitor                                    			show monitor\n" +
 		"stopmonitor                                			stop monitor\n" +
 		"config  <key> <value>                      			set config key value\n" +
-		"getoz <walletAddress> ->password           			get current ozone balance\n"
+		"getoz <walletAddress> ->password           			get current ozone balance\n" +
+		"status			                                        get current resource node status\n"
 
 	help := func(line string, param []string) bool {
 		fmt.Println(helpStr)
