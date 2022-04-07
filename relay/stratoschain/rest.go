@@ -317,6 +317,7 @@ func BroadcastTxBytes(txBytes []byte) error {
 type ResourceNodeState struct {
 	IsActive  uint32
 	Suspended bool
+	Tokens    uint64
 }
 
 func QueryResourceNodeState(p2pAddress string) (state ResourceNodeState, err error) {
@@ -379,5 +380,7 @@ func QueryResourceNodeState(p2pAddress string) (state ResourceNodeState, err err
 	case sdktypes.Unbonded:
 		state.IsActive = types.PP_INACTIVE
 	}
+
+	state.Tokens = resourceNodes[0].GetTokens().Uint64()
 	return state, nil
 }
