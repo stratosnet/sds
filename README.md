@@ -12,7 +12,7 @@ Here, we provide a concise quickstart guide to help set up and run a SDS resourc
 ```bash
 git clone https://github.com/stratosnet/sds.git
 cd sds
-git checkout v0.6.0
+git checkout v0.6.2
 make build
 ```
 Then you will find the executable binary `ppd` under `./target`
@@ -207,6 +207,11 @@ stopmonitor
 ### Query Ozone Balance of Your Resource Node's Wallet
 ```bash
 getoz WALLET_ADDRESS
+```
+
+### Query the current status of a resource node
+```bash
+status
 ```
 
 You can exit the `ppd terminal` command-line terminal by typing `exit` and leave the `ppd start` terminal to run the resource node in background.
