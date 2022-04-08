@@ -22,11 +22,12 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get GetWalletOz RSP")
 	var target protos.RspGetWalletOz
 	if !requests.UnmarshalData(ctx, &target) {
+		utils.DebugLog("Cannot unmarshal ozone balance data")
 		return
 	}
-	utils.Logf("get GetWalletOz RSP, the current ozone balance of %v = %v", target.GetWalletAddress(), target.GetWalletOz())
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.Logf("failed to get ozone balance: %v", target.Result.Msg)
 		return
 	}
+	utils.Logf("get GetWalletOz RSP, the current ozone balance of %v = %v", target.GetWalletAddress(), target.GetWalletOz())
 }

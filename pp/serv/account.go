@@ -143,10 +143,6 @@ func GetWallets(walletAddress string, password string) ([]fs.FileInfo, error) {
 		utils.ErrorLog("please input wallet address")
 		return nil, errors.New("please input wallet address")
 	}
-	if password == "" {
-		utils.ErrorLog("please input password")
-		return nil, errors.New("please input password")
-	}
 
 	files, _ := ioutil.ReadDir(setting.Config.AccountDir)
 	if len(files) == 0 {
