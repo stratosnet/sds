@@ -308,7 +308,7 @@ message ReqActivatePP {
   bytes      tx = 1;
   PPBaseInfo pp_info = 2;
   bool       already_active = 3;
-  uint64     initial_stake = 4;
+  string     initial_stake = 4;
 }
 
 message RspActivatePP {
