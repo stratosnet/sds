@@ -73,6 +73,10 @@ func (u UnsignedMsgBytes) FromBytes() (UnsignedMsg, error) {
 		msg := sdstypes.MsgFileUpload{}
 		err = relay.Cdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = msg
+	case "SdsPrepayTx":
+		msg := sdstypes.MsgPrepay{}
+		err = relay.Cdc.UnmarshalJSON(u.Msg, &msg)
+		unsignedMsg.Msg = msg
 	case "volume_report":
 		msg := pottypes.MsgVolumeReport{}
 		err = relay.Cdc.UnmarshalJSON(u.Msg, &msg)

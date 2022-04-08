@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	sdkTypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
@@ -14,9 +15,32 @@ import (
 	"github.com/stratosnet/sds/relay"
 	relayTypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
+
+var Handlers map[string]func(coretypes.ResultEvent)
+var cache *utils.AutoCleanMap // Cache with a TTL to make sure each event is only handled once
+
+func init() {
+	Handlers = make(map[string]func(coretypes.ResultEvent))
+	Handlers["create_resource_node"] = CreateResourceNodeMsgHandler()
+	Handlers["update_resource_node_stake"] = UpdateResourceNodeStakeMsgHandler()
+	Handlers["remove_resource_node"] = UnbondingResourceNodeMsgHandler()
+	Handlers["complete_unbonding_resource_node"] = CompleteUnbondingResourceNodeMsgHandler()
+	Handlers["create_indexing_node"] = CreateIndexingNodeMsgHandler()
+	Handlers["update_indexing_node_stake"] = UpdateIndexingNodeStakeMsgHandler()
+	Handlers["remove_indexing_node"] = UnbondingIndexingNodeMsgHandler()
+	Handlers["complete_unbonding_indexing_node"] = CompleteUnbondingIndexingNodeMsgHandler()
+	Handlers["indexing_node_reg_vote"] = IndexingNodeVoteMsgHandler()
+	Handlers["SdsPrepayTx"] = PrepayMsgHandler()
+	Handlers["FileUploadTx"] = FileUploadMsgHandler()
+	Handlers["volume_report"] = VolumeReportHandler()
+	Handlers["slashing_resource_node"] = SlashingResourceNodeHandler()
+
+	cache = utils.NewAutoCleanMap(time.Minute)
+}
 
 func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
@@ -24,10 +48,15 @@ func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 			"create_resource_node.network_address",
 			"create_resource_node.pub_key",
 			"create_resource_node.ozone_limit_changes",
-			"tx.hash",
 			"create_resource_node.initial_stake",
 		}
-		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
+		key := getCacheKey(requiredAttributes, result)
+		if _, ok := cache.Load(key); ok {
+			utils.DebugLogf("Event create_resource_node was already handled for tx [%v]. Ignoring...", txHash)
+			return
+		}
+		cache.Store(key, true)
 
 		req := &relayTypes.ActivatedPPReq{}
 		for _, event := range processedEvents {
@@ -41,7 +70,7 @@ func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 				P2PAddress:        event["create_resource_node.network_address"],
 				P2PPubkey:         hex.EncodeToString(p2pPubkey[:]),
 				OzoneLimitChanges: event["create_resource_node.ozone_limit_changes"],
-				TxHash:            event["tx.hash"],
+				TxHash:            txHash,
 				InitialStake:      event["create_resource_node.initial_stake"],
 			})
 		}
@@ -68,10 +97,15 @@ func UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 			"update_resource_node_stake.network_address",
 			"update_resource_node_stake.ozone_limit_changes",
 			"update_resource_node_stake.incr_stake",
-			"tx.hash",
 			"update_resource_node_stake.stake_delta",
 		}
-		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
+		key := getCacheKey(requiredAttributes, result)
+		if _, ok := cache.Load(key); ok {
+			utils.DebugLogf("Event update_resource_node_stake was already handled for tx [%v]. Ignoring...", txHash)
+			return
+		}
+		cache.Store(key, true)
 
 		req := &relayTypes.UpdatedStakePPReq{}
 		for _, event := range processedEvents {
@@ -79,7 +113,7 @@ func UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 				P2PAddress:        event["update_resource_node_stake.network_address"],
 				OzoneLimitChanges: event["update_resource_node_stake.ozone_limit_changes"],
 				IncrStake:         event["update_resource_node_stake.incr_stake"],
-				TxHash:            event["tx.hash"],
+				TxHash:            txHash,
 				StakeDelta:        event["update_resource_node_stake.stake_delta"],
 			})
 		}
@@ -106,10 +140,15 @@ func UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 			"unbonding_resource_node.resource_node",
 			"unbonding_resource_node.ozone_limit_changes",
 			"unbonding_resource_node.unbonding_mature_time",
-			"tx.hash",
 			"unbonding_resource_node.stake_to_remove",
 		}
-		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
+		key := getCacheKey(requiredAttributes, result)
+		if _, ok := cache.Load(key); ok {
+			utils.DebugLogf("Event unbonding_resource_node was already handled for tx [%v]. Ignoring...", txHash)
+			return
+		}
+		cache.Store(key, true)
 
 		req := &relayTypes.UnbondingPPReq{}
 		for _, event := range processedEvents {
@@ -117,7 +156,7 @@ func UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 				P2PAddress:          event["unbonding_resource_node.resource_node"],
 				OzoneLimitChanges:   event["unbonding_resource_node.ozone_limit_changes"],
 				UnbondingMatureTime: event["unbonding_resource_node.unbonding_mature_time"],
-				TxHash:              event["tx.hash"],
+				TxHash:              txHash,
 				StakeToRemove:       event["unbonding_resource_node.stake_to_remove"],
 			})
 		}
@@ -142,15 +181,20 @@ func CompleteUnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent)
 	return func(result coretypes.ResultEvent) {
 		requiredAttributes := []string{
 			"complete_unbonding_resource_node.network_address",
-			"tx.hash",
 		}
-		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
+		key := getCacheKey(requiredAttributes, result)
+		if _, ok := cache.Load(key); ok {
+			utils.DebugLogf("Event complete_unbonding_resource_node was already handled for tx [%v]. Ignoring...", txHash)
+			return
+		}
+		cache.Store(key, true)
 
 		req := &relayTypes.DeactivatedPPReq{}
 		for _, event := range processedEvents {
 			req.PPList = append(req.PPList, &protos.ReqDeactivatedPP{
 				P2PAddress: event["complete_unbonding_resource_node.network_address"],
-				TxHash:     event["tx.hash"],
+				TxHash:     txHash,
 			})
 		}
 
@@ -183,9 +227,14 @@ func UpdateIndexingNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 			"update_indexing_node_stake.network_address",
 			"update_indexing_node_stake.ozone_limit_changes",
 			"update_indexing_node_stake.incr_stake",
-			"tx.hash",
 		}
-		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
+		key := getCacheKey(requiredAttributes, result)
+		if _, ok := cache.Load(key); ok {
+			utils.DebugLogf("Event update_indexing_node_stake was already handled for tx [%v]. Ignoring...", txHash)
+			return
+		}
+		cache.Store(key, true)
 
 		req := &relayTypes.UpdatedStakeSPReq{}
 		for _, event := range processedEvents {
@@ -193,7 +242,7 @@ func UpdateIndexingNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 				P2PAddress:        event["update_indexing_node_stake.network_address"],
 				OzoneLimitChanges: event["update_indexing_node_stake.ozone_limit_changes"],
 				IncrStake:         event["update_indexing_node_stake.incr_stake"],
-				TxHash:            event["tx.hash"],
+				TxHash:            txHash,
 			})
 		}
 
@@ -231,9 +280,14 @@ func IndexingNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
 		requiredAttributes := []string{
 			"indexing_node_reg_vote.candidate_network_address",
 			"indexing_node_reg_vote.candidate_status",
-			"tx.hash",
 		}
-		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
+		key := getCacheKey(requiredAttributes, result)
+		if _, ok := cache.Load(key); ok {
+			utils.DebugLogf("Event indexing_node_reg_vote was already handled for tx [%v]. Ignoring...", txHash)
+			return
+		}
+		cache.Store(key, true)
 
 		req := &relayTypes.ActivatedSPReq{}
 		for _, event := range processedEvents {
@@ -244,7 +298,7 @@ func IndexingNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
 
 			req.SPList = append(req.SPList, &protos.ReqActivatedSP{
 				P2PAddress: event["indexing_node_reg_vote.candidate_network_address"],
-				TxHash:     event["tx.hash"],
+				TxHash:     txHash,
 			})
 		}
 
@@ -271,16 +325,21 @@ func PrepayMsgHandler() func(event coretypes.ResultEvent) {
 		requiredAttributes := []string{
 			"Prepay.sender",
 			"Prepay.purchased",
-			"tx.hash",
 		}
-		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
+		key := getCacheKey(requiredAttributes, result)
+		if _, ok := cache.Load(key); ok {
+			utils.DebugLogf("Event Prepay was already handled for tx [%v]. Ignoring...", txHash)
+			return
+		}
+		cache.Store(key, true)
 
 		req := &relayTypes.PrepaidReq{}
 		for _, event := range processedEvents {
 			req.WalletList = append(req.WalletList, &protos.ReqPrepaid{
 				WalletAddress: event["Prepay.sender"],
 				PurchasedUoz:  event["Prepay.purchased"],
-				TxHash:        event["tx.hash"],
+				TxHash:        txHash,
 			})
 		}
 
@@ -306,9 +365,14 @@ func FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 			"FileUpload.reporter",
 			"FileUpload.uploader",
 			"FileUpload.file_hash",
-			"tx.hash",
 		}
-		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
+		key := getCacheKey(requiredAttributes, result)
+		if _, ok := cache.Load(key); ok {
+			utils.DebugLogf("Event FileUpload was already handled for tx [%v]. Ignoring...", txHash)
+			return
+		}
+		cache.Store(key, true)
 
 		req := &relayTypes.FileUploadedReq{}
 		for _, event := range processedEvents {
@@ -316,7 +380,7 @@ func FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 				ReporterAddress: event["FileUpload.reporter"],
 				UploaderAddress: event["FileUpload.uploader"],
 				FileHash:        event["FileUpload.file_hash"],
-				TxHash:          event["tx.hash"],
+				TxHash:          txHash,
 			})
 		}
 
@@ -341,7 +405,13 @@ func VolumeReportHandler() func(event coretypes.ResultEvent) {
 		requiredAttributes := []string{
 			"volume_report.epoch",
 		}
-		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
+		key := getCacheKey(requiredAttributes, result)
+		if _, ok := cache.Load(key); ok {
+			utils.DebugLogf("Event volume_report was already handled for tx [%v]. Ignoring...", txHash)
+			return
+		}
+		cache.Store(key, true)
 
 		req := &relayTypes.VolumeReportedReq{}
 		for _, event := range processedEvents {
@@ -367,21 +437,27 @@ func VolumeReportHandler() func(event coretypes.ResultEvent) {
 func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		requiredAttributes := []string{
-			"slashing.network_address",
-			"slashing.suspended",
+			"slashing.p2p_address",
+			"slashing.suspend",
 		}
-		processedEvents, initialEventCount := processEvents(result.Events, requiredAttributes)
+		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
+		key := getCacheKey(requiredAttributes, result)
+		if _, ok := cache.Load(key); ok {
+			utils.DebugLogf("Event slashing was already handled for tx [%v]. Ignoring...", txHash)
+			return
+		}
+		cache.Store(key, true)
 
 		var slashedPPs []relayTypes.SlashedPP
 		for _, event := range processedEvents {
-			suspended, err := strconv.ParseBool(event["slashing.suspended"])
+			suspended, err := strconv.ParseBool(event["slashing.suspend"])
 			if err != nil {
 				utils.DebugLog("Invalid suspended boolean in the slashing message from stratos-chain", err)
 				continue
 			}
 
 			slashedPP := relayTypes.SlashedPP{
-				P2PAddress: event["slashing.network_address"],
+				P2PAddress: event["slashing.p2p_address"],
 				QueryFirst: false,
 				Suspended:  suspended,
 			}
@@ -432,9 +508,14 @@ func postToSP(endpoint string, data interface{}) error {
 	return nil
 }
 
-func processEvents(eventsMap map[string][]string, attributesRequired []string) (processedEvents []map[string]string, totalEventCount int) {
+func processEvents(eventsMap map[string][]string, attributesRequired []string) (processedEvents []map[string]string, txHash string, totalEventCount int) {
 	if len(attributesRequired) < 1 {
-		return nil, 0
+		return nil, "", 0
+	}
+
+	// Get tx hash
+	if len(eventsMap["tx.hash"]) > 0 {
+		txHash = eventsMap["tx.hash"][0]
 	}
 
 	// Count how many events are valid (all required attributes are present)
@@ -472,4 +553,20 @@ func processHexPubkey(attribute string) (ed25519.PubKeyEd25519, error) {
 	}
 
 	return p2pPubkey, nil
+}
+
+func getCacheKey(requiredAttributes []string, result coretypes.ResultEvent) string {
+	rawKey := ""
+	if len(result.Events["tx.hash"]) > 0 {
+		rawKey = result.Events["tx.hash"][0]
+	}
+
+	for _, attribute := range requiredAttributes {
+		rawKey += attribute
+		for _, value := range result.Events[attribute] {
+			rawKey += value
+		}
+	}
+	hash := crypto.Keccak256([]byte(rawKey))
+	return string(hash)
 }

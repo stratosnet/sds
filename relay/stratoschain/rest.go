@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"math/big"
 	"net/http"
-	"strconv"
 	"sync"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -18,19 +17,18 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/pkg/errors"
+	setting "github.com/stratosnet/sds/cmd/relayd/config"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/relay/stratoschain/handlers"
-	relaytypes "github.com/stratosnet/sds/relay/types"
-	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
-	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
-	"github.com/tendermint/tendermint/crypto"
-	coretypes "github.com/tendermint/tendermint/rpc/core/types"
-
-	"github.com/stratosnet/sds/pp/types"
 	_ "github.com/stratosnet/sds/relay/stratoschain/prefix"
+	relaytypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
+	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
+	"github.com/tendermint/tendermint/crypto"
+	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 var Url string
@@ -274,9 +272,6 @@ func BroadcastTxBytes(txBytes []byte) error {
 
 	// In block broadcast mode, do additional verification
 	if broadcastReq.Mode == flags.BroadcastBlock {
-		// TODO: use events from the result instead of unmarshalling the tx bytes
-		// The events are in the txResponse.Logs list. Each msg has an ABCIMessageLog that contains the events as StringEvents
-		// Add a cache with a TTL to make sure we don't handle events twice (once from stchain, once from here)
 		var txResponse sdktypes.TxResponse
 
 		err = relay.Cdc.UnmarshalJSON(responseBody, &txResponse)
@@ -287,32 +282,69 @@ func BroadcastTxBytes(txBytes []byte) error {
 		if txResponse.Height <= 0 || txResponse.Empty() || txResponse.Code != 0 {
 			return errors.Errorf("broadcast unsuccessful: %v", txResponse)
 		}
-		txResponse.Logs[0].Events.Flatten()
-		if len(broadcastReq.Tx.Msgs) < 1 {
-			return errors.New("broadcastReq tx doesn't contain any messages")
+
+		if setting.Config == nil {
+			return nil // If the relayd config is nil, then this is ppd broadcasting a tx. We don't want to call the event handler in this case
 		}
-
-		// Additional processing based on the msg type
-		slashPPEvents := make(map[string][]string)
-		for _, msg := range broadcastReq.Tx.Msgs {
-			if msg.Type() == "slashing_resource_node" {
-				slashMsg, ok := msg.(pottypes.MsgSlashingResourceNode)
-				if !ok {
-					return errors.New("cannot convert msg to MsgSlashingResourceNode")
-				}
-
-				slashPPEvents["slashing.network_address"] = append(slashPPEvents["slashing.network_address"], slashMsg.NetworkAddress.String())
-				slashPPEvents["slashing.suspended"] = append(slashPPEvents["slashing.suspended"], strconv.FormatBool(slashMsg.Suspend))
+		events := processEvents(txResponse)
+		for msgType, event := range events {
+			if handler, ok := handlers.Handlers[msgType]; ok {
+				go handler(event)
+			} else {
+				utils.ErrorLogf("No handler for event type [%v]", msgType)
 			}
-		}
-		if len(slashPPEvents) > 0 {
-			// Directly call slashing_resource_node handler
-			result := coretypes.ResultEvent{Events: slashPPEvents}
-			handlers.SlashingResourceNodeHandler()(result)
 		}
 	}
 
 	return nil
+}
+
+func processEvents(response sdktypes.TxResponse) map[string]coretypes.ResultEvent {
+	// Read the events from each msg in the log
+	var events []map[string]string
+	for _, msg := range response.Logs {
+		msgMap := make(map[string]string)
+		for _, stringEvent := range msg.Events {
+			for _, attrib := range stringEvent.Attributes {
+				msgMap[fmt.Sprintf("%v.%v", stringEvent.Type, attrib.Key)] = attrib.Value
+			}
+		}
+		if len(msgMap) > 0 {
+			events = append(events, msgMap)
+		}
+	}
+
+	// Aggregate events by msg type
+	aggregatedEvents := make(map[string]map[string][]string)
+	for _, event := range events {
+		typeStr := event["message.action"]
+		currentMap := aggregatedEvents[typeStr]
+		if currentMap == nil {
+			currentMap = make(map[string][]string)
+			currentMap["tx.hash"] = []string{response.TxHash}
+		}
+
+		for key, value := range event {
+			switch key {
+			case "message.action":
+				continue
+			default:
+				currentMap[key] = append(currentMap[key], value)
+			}
+		}
+		aggregatedEvents[typeStr] = currentMap
+	}
+
+	// Convert to coretypes.ResultEvent
+	resultMap := make(map[string]coretypes.ResultEvent)
+	for key, value := range aggregatedEvents {
+		resultMap[key] = coretypes.ResultEvent{
+			Query:  "",
+			Data:   nil,
+			Events: value,
+		}
+	}
+	return resultMap
 }
 
 type ResourceNodeState struct {
