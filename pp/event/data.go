@@ -1,6 +1,8 @@
 package event
 
 import (
+	"math/big"
+
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/setting"
@@ -37,7 +39,7 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivatePP, error) {
 		Tx:            txBytes,
 		PpInfo:        setting.GetPPInfo(),
 		AlreadyActive: false,
-		InitialStake:  uint64(amount),
+		InitialStake:  big.NewInt(amount).String(),
 	}
 	return req, nil
 }

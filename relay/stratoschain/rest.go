@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
+	"math/big"
 	"net/http"
 	"strconv"
 	"sync"
@@ -317,7 +318,7 @@ func BroadcastTxBytes(txBytes []byte) error {
 type ResourceNodeState struct {
 	IsActive  uint32
 	Suspended bool
-	Tokens    uint64
+	Tokens    *big.Int
 }
 
 func QueryResourceNodeState(p2pAddress string) (state ResourceNodeState, err error) {
@@ -381,6 +382,6 @@ func QueryResourceNodeState(p2pAddress string) (state ResourceNodeState, err err
 		state.IsActive = types.PP_INACTIVE
 	}
 
-	state.Tokens = resourceNodes[0].GetTokens().Uint64()
+	state.Tokens = resourceNodes[0].GetTokens().BigInt()
 	return state, nil
 }
