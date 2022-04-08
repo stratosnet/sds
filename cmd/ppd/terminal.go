@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/pp/serv"
@@ -67,40 +65,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 			fmt.Println("missing wallet address")
 			return false
 		}
-		password, err := console.Stdin.PromptPassword("Enter password: ")
-		if err != nil {
-			fmt.Println(err)
-			return false
-		}
-
-		files, err := serv.GetWallets(param[0], password)
-		if err != nil {
-			fmt.Println(err)
-			return false
-		}
-		fileName := param[0] + ".json"
-		for _, info := range files {
-			if info.Name() == ".placeholder" || info.Name() != fileName {
-				continue
-			}
-			utils.Log("find file: " + filepath.Join(setting.Config.AccountDir, fileName))
-			keyjson, err := ioutil.ReadFile(filepath.Join(setting.Config.AccountDir, fileName))
-			if utils.CheckError(err) {
-				utils.ErrorLog("getPublicKey ioutil.ReadFile", err)
-				fmt.Println(err)
-				return false
-			}
-			_, err = utils.DecryptKey(keyjson, password)
-
-			if utils.CheckError(err) {
-				utils.ErrorLog("getPublicKey DecryptKey", err)
-				return false
-			}
-			return callRpc(c, "getoz", param)
-		}
-
-		utils.ErrorLogf("Wallet %v does not exists", param[0])
-		return false
+		password := console.MyGetPassword("input password", false)
+		return callRpc(c, "getoz", []string{param[0], password})
 	}
 
 	newwallet := func(line string, param []string) bool {
@@ -122,10 +88,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 			return false
 		}
 		password := console.MyGetPassword("input password", false)
-		if len(password) == 0 {
-			fmt.Println("empty password")
-			return false
-		}
+
 		return callRpc(c, "login", []string{param[0], password})
 	}
 
