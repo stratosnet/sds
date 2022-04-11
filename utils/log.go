@@ -213,6 +213,19 @@ func DebugLogf(template string, v ...interface{}) {
 	MyLogger.logDepth(Debug, 3, fmt.Sprintf(template, v...))
 }
 
+//DetailLog calls default logger and output detail log
+func DetailLog(v ...interface{}) {
+	//GetLogger().Log(Info, v...)
+	MyLogger.logDepth(Detail, 3, v...)
+}
+
+//DetailLog calls default logger and output detail log
+func DetailLogf(template string, v ...interface{}) {
+	//GetLogger().Log(Info, v...)
+	MyLogger.logDepth(Detail, 3, fmt.Sprintf(template, v...))
+}
+
+
 // CheckError  TODO This is a bad way to call error log, as you cannot know where this method is called in your error log
 // This give log line like this : [ERROR]2021/04/13 22:39:11 log.go:150: Fatal error: address 127.0.0.1: missing port in address
 // it always refer to this file and this line
