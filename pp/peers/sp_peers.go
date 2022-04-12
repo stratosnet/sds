@@ -161,13 +161,13 @@ func checkSingleSpLatency(server string, heartbeat bool) {
 	//defer spConn.Close()
 	if spConn != nil {
 		start := time.Now().UnixNano()
-		pb := &protos.ReqHeartbeat{
+		pb := &protos.ReqLatencyCheck{
 			HbType:           protos.HeartbeatType_LATENCY_CHECK,
 			P2PAddressPp:     setting.P2PAddress,
 			NetworkAddressSp: server,
 			PingTime:         strconv.FormatInt(start, 10),
 		}
-		SendMessage(spConn, pb, header.ReqHeart)
+		SendMessage(spConn, pb, header.ReqLatencyCheck)
 		if client.GetConnectionName(client.SPConn) != server {
 			bufferedSpConns = append(bufferedSpConns, spConn)
 		}

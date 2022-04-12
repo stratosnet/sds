@@ -249,8 +249,8 @@ func (cc *ClientConn) Start() {
 		go looper(cc, cc.wg)
 	}
 	var (
-		myClock               = clock.NewClock()
-		handler               = core.GetHandlerFunc(header.ReqHeart)
+		myClock = clock.NewClock()
+		//handler               = core.GetHandlerFunc(header.ReqHeart)
 		spLatencyCheckHandler = core.GetHandlerFunc(header.ReqSpLatencyCheck)
 
 		spLatencyCheckJobFunc = func() {
@@ -260,11 +260,11 @@ func (cc *ClientConn) Start() {
 			}
 		}
 
-		jobFunc = func() {
-			if handler != nil {
-				cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
-			}
-		}
+		//jobFunc = func() {
+		//	if handler != nil {
+		//		cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
+		//	}
+		//}
 		logFunc = func() {
 			cc.inbound = cc.inboundAtomic.AddAndGetNew(cc.secondReadFlowA)
 			cc.outbound = cc.outboundAtomic.AddAndGetNew(cc.secondWriteFlowA)
@@ -274,10 +274,10 @@ func (cc *ClientConn) Start() {
 			cc.secondWriteFlowA = cc.secondWriteAtomA.GetNewAndSetAtomic(0)
 		}
 	)
-	if !cc.opts.heartClose {
-		hbJob, _ := myClock.AddJobRepeat(time.Second*utils.ClientSendHeartTime, 0, jobFunc)
-		cc.jobs = append(cc.jobs, hbJob)
-	}
+	//if !cc.opts.heartClose {
+	//	hbJob, _ := myClock.AddJobRepeat(time.Second*utils.ClientSendHeartTime, 0, jobFunc)
+	//	cc.jobs = append(cc.jobs, hbJob)
+	//}
 	latencyJob, _ := myClock.AddJobRepeat(time.Second*utils.LatencyCheckSpListInterval, 1, spLatencyCheckJobFunc)
 	cc.jobs = append(cc.jobs, latencyJob)
 	logJob, _ := myClock.AddJobRepeat(time.Second*1, 0, logFunc)

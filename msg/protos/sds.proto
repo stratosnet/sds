@@ -599,7 +599,7 @@ message RspDeleteSlice {
   Result result = 4;
 }
 
-message ReqHeartbeat {
+message ReqLatencyCheck {
   HeartbeatType hb_type = 1;
   string p2p_address_pp = 2;
   string network_address_sp = 3;
@@ -607,7 +607,7 @@ message ReqHeartbeat {
   string ping_time = 5;
 }
 
-message RspHeartbeat {
+message RspLatencyCheck {
   HeartbeatType hb_type = 1;
   string p2p_address_pp = 2;
   string network_address_sp = 3;
