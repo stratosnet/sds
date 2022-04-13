@@ -20,7 +20,10 @@ import (
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/utils"
+	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/tendermint/tendermint/libs/bech32"
 )
 
 func ReqRegisterData() *protos.ReqRegister {
@@ -128,7 +131,7 @@ func RequestUploadFileData(paths, storagePath, reqID, ownerWalletAddress string,
 	fileHash := file.GetFileHash(paths, encryptionTag)
 	utils.Log("fileHash~~~~~~~~~~~~~~~~~~~~~~", fileHash)
 
-	p2pFileString := setting.P2PAddress + fileHash
+	p2pFileString := setting.WalletAddress + setting.P2PAddress + ownerWalletAddress + fileHash + header.ReqUploadFile
 
 	req := &protos.ReqUploadFile{
 		FileInfo: &protos.FileInfo{
@@ -248,7 +251,7 @@ func RspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 	return rspDownloadSlice
 }
 
-func ReqUploadFileSliceData(task *task.UploadSliceTask) *protos.ReqUploadFileSlice {
+func ReqUploadFileSliceData(task *task.UploadSliceTask, target *protos.RspUploadFile) *protos.ReqUploadFileSlice {
 	return &protos.ReqUploadFileSlice{
 		TaskId:        task.TaskID,
 		FileCrc:       task.FileCRC,
@@ -260,6 +263,7 @@ func ReqUploadFileSliceData(task *task.UploadSliceTask) *protos.ReqUploadFileSli
 		WalletAddress: setting.WalletAddress,
 		SliceSize:     task.SliceTotalSize,
 		SpP2PAddress:  task.SpP2pAddress,
+		Sign:          target.Sign,
 	}
 }
 
@@ -705,4 +709,34 @@ func UnmarshalMessageData(data []byte, target interface{}) bool {
 func GetReqIdFromMessage(ctx context.Context) int64 {
 	msgBuf := core.MessageFromContext(ctx)
 	return msgBuf.MSGHead.ReqId
+}
+
+func VerifySpSignature(spP2PAddress string, message, sign []byte) bool {
+	val, ok := setting.SPMap.Load(spP2PAddress)
+	if !ok {
+		utils.ErrorLog("cannot find sp info by given the SP address ", spP2PAddress)
+		return false
+	}
+
+	spInfo, ok := val.(setting.SPBaseInfo)
+	if !ok {
+		utils.ErrorLog("Fail to parse SP info ", spP2PAddress)
+		return false
+	}
+
+	_, pubKeyRaw, err := bech32.DecodeAndConvert(spInfo.P2PPublicKey)
+	if err != nil {
+		utils.ErrorLog("Error when trying to decode P2P pubKey bech32", err)
+		return false
+	}
+
+	p2pPubKey := tmed25519.PubKeyEd25519{}
+	err = relay.Cdc.UnmarshalBinaryBare(pubKeyRaw, &p2pPubKey)
+
+	if err != nil {
+		utils.ErrorLog("Error when trying to read P2P pubKey ed25519 binary", err)
+		return false
+	}
+
+	return ed25519.Verify(p2pPubKey[:], message, sign)
 }

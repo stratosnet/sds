@@ -74,6 +74,7 @@ message RspUploadFile {
   uint64 video_slice_duration = 10;
   bool   is_encrypted = 11;
   string sp_p2p_address = 12;
+  bytes  sign = 13;
 }
 
 message ReqUploadFileSlice {
@@ -87,6 +88,7 @@ message ReqUploadFileSlice {
   string          task_id = 8; //
   uint64          slice_size = 9; //
   string          sp_p2p_address = 10;
+  bytes           sign = 11;
 }
 
 message RspUploadFileSlice {
