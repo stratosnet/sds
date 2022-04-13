@@ -129,7 +129,7 @@ func LogOpenOption(b bool) ClientOption {
 // Mylog my
 func Mylog(b bool, v ...interface{}) {
 	if b {
-		utils.DebugLog(v...)
+		utils.DetailLog(v...)
 	}
 }
 
@@ -309,13 +309,13 @@ func (cc *ClientConn) ClientClose() {
 		// wait until all go-routines exited.
 		cc.wg.Wait()
 
-		utils.DebugLog("cc.wg.Wait() finished")
+		utils.DetailLog("cc.wg.Wait() finished")
 
 		// close all channels.
 		close(cc.sendCh)
 		close(cc.handlerCh)
 		if len(cc.jobs) > 0 {
-			utils.DebugLogf("cancel %v jobs, %v", len(cc.jobs), cc.GetName())
+			utils.DetailLogf("cancel %v jobs, %v", len(cc.jobs), cc.GetName())
 			for _, job := range cc.jobs {
 				job.Cancel()
 			}
@@ -350,7 +350,7 @@ func (cc *ClientConn) Close() {
 		close(cc.sendCh)
 		close(cc.handlerCh)
 		if len(cc.jobs) > 0 {
-			utils.DebugLogf("cancel %v jobs, %v", len(cc.jobs), cc.GetName())
+			utils.DetailLogf("cancel %v jobs, %v", len(cc.jobs), cc.GetName())
 			for _, job := range cc.jobs {
 				job.Cancel()
 			}
