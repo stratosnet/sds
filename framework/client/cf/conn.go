@@ -530,7 +530,6 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				// Mylog(cc.opts.logOpen,"client msg size", msgH.Cmd)
 				if msgH.Len == 0 {
 					if msgH.Version < cc.opts.minAppVer {
-						// TODO: send a message back to warn the server to update their version
 						utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
 						continue
 					}
@@ -566,7 +565,6 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				}
 				if uint32(i) == msgH.Len {
 					if msgH.Version < cc.opts.minAppVer {
-						// TODO: send a message back to warn the server to update their version
 						utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
 						msgH.Len = 0
 						i = 0

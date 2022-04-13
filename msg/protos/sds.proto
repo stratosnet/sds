@@ -832,3 +832,9 @@ message RspReportNodeStatus{
   int32 ppstate = 1;
   Result result = 2;
 }
+
+message RspBadVersion{
+  int32  version = 1;
+  int32  minimum_version = 2;
+  string command = 3;
+}

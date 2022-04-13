@@ -70,6 +70,7 @@ func RegisterEventHandle() {
 	core.Register(header.RspLatencyCheck, RspHBLatencyCheckSpList)
 	core.Register(header.ReqDeleteFile, ReqDeleteFile)
 	core.Register(header.RspDeleteFile, RspDeleteFile)
+	core.Register(header.RspBadVersion, RspBadVersion)
 
 	core.RegisterTimeoutHandler(header.ReqDownloadSlice, &DownloadTimeoutHandler{})
 }

@@ -162,6 +162,8 @@ const (
 
 	ReqTransferBLSSignature = "ReqTrBLS"
 	RspTransferBLSSignature = "RspTrBLS"
+
+	RspBadVersion = "RspBdVer"
 )
 
 // DecodeHeader

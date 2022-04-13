@@ -10,8 +10,10 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/golang/protobuf/proto"
 	message "github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/cmem"
 )
@@ -236,6 +238,29 @@ func (sc *ServerConn) Close() {
 	})
 }
 
+func (sc *ServerConn) SendBadVersionMsg(version uint16, cmd string) {
+	req := &protos.RspBadVersion{
+		Version:        int32(version),
+		MinimumVersion: int32(sc.minAppVer),
+		Command:        cmd,
+	}
+	data, err := proto.Marshal(req)
+	if err != nil {
+		utils.ErrorLog(err)
+		return
+	}
+
+	err = sc.Write(&message.RelayMsgBuf{
+		MSGHead: header.MakeMessageHeader(1, sc.minAppVer, uint32(len(data)), header.RspBadVersion, utils.ZeroId()),
+		MSGData: data,
+	})
+	if err != nil {
+		utils.ErrorLog(err)
+	}
+	time.Sleep(500 * time.Millisecond)
+	return
+}
+
 // readLoop
 func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 	var (
@@ -307,9 +332,8 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					// 	}
 					// } else {
 					if msgH.Version < sc.minAppVer {
-						// TODO: send a message back to warn the client to update their version
-						utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, sc.minAppVer)
-						continue
+						sc.SendBadVersionMsg(msgH.Version, utils.ByteToString(msgH.Cmd))
+						return
 					}
 					handler := GetHandlerFunc(utils.ByteToString(msgH.Cmd))
 					if handler != nil {
@@ -348,12 +372,8 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				Mylog(sc.belong.opts.logOpen, "end", time.Now().Unix())
 				if uint32(i) == msgH.Len {
 					if msgH.Version < sc.minAppVer {
-						// TODO: send a message back to warn the client to update their version
-						utils.DetailLogf("received a [%v] message with an outdated version [%v] (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, sc.minAppVer)
-						msgH.Len = 0
-						i = 0
-						msgBuf = nil
-						continue
+						sc.SendBadVersionMsg(msgH.Version, utils.ByteToString(msgH.Cmd))
+						return
 					}
 
 					msg = &message.RelayMsgBuf{
