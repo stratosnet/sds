@@ -1,7 +1,7 @@
 Version:
-  AppVer: 5
+  AppVer: 6
   MinAppVer: 6
-  Show: v0.5.0
+  Show: v0.6.0
 downloadpathminlen: 88
 Port: "9082"
 NetworkAddress: 127.0.0.1
