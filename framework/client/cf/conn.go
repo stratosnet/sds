@@ -50,7 +50,7 @@ type options struct {
 	reconnect  bool // only ClientConn
 	heartClose bool
 	logOpen    bool
-	minAppVer  uint32
+	minAppVer  uint16
 }
 
 // ClientOption client configuration
@@ -103,12 +103,11 @@ func CreateClientConn(netid int64, c net.Conn, opt ...ClientOption) *ClientConn 
 	for _, o := range opt {
 		o(&opts)
 	}
-	utils.DebugLogf("after CreateClientConn, opts.minAppVer = %v", opts.minAppVer)
 	return newClientConnWithOptions(netid, c, opts)
 }
 
 // MinAppVersionOption
-func MinAppVersionOption(b uint32) ClientOption {
+func MinAppVersionOption(b uint16) ClientOption {
 	return func(o *options) {
 		o.minAppVer = b
 	}
@@ -167,7 +166,6 @@ func newClientConnWithOptions(netid int64, c net.Conn, opts options) *ClientConn
 	cc.ctx, cc.cancel = context.WithCancel(context.Background())
 	cc.name = c.RemoteAddr().String()
 	cc.pending = []int64{}
-	utils.DebugLogf("[Conn-client] min app version is set to %v", opts.minAppVer)
 	return cc
 }
 
@@ -292,7 +290,6 @@ func (cc *ClientConn) Start() {
 	cc.jobs = append(cc.jobs, latencyJob)
 	logJob, _ := myClock.AddJobRepeat(time.Second*1, 0, logFunc)
 	cc.jobs = append(cc.jobs, logJob)
-	utils.DebugLogf("[conn-client] min app version after start is %v", cc.opts.minAppVer)
 }
 
 // ClientClose Actively closes the client connection
@@ -532,6 +529,11 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				buffer = nil
 				// Mylog(cc.opts.logOpen,"client msg size", msgH.Cmd)
 				if msgH.Len == 0 {
+					if msgH.Version < cc.opts.minAppVer {
+						// TODO: send a message back to warn the server to update their version
+						utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
+						continue
+					}
 					handler := core.GetHandlerFunc(utils.ByteToString(msgH.Cmd))
 					if handler != nil {
 						handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
@@ -563,6 +565,15 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					}
 				}
 				if uint32(i) == msgH.Len {
+					if msgH.Version < cc.opts.minAppVer {
+						// TODO: send a message back to warn the server to update their version
+						utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
+						msgH.Len = 0
+						i = 0
+						msgBuf = nil
+						continue
+					}
+
 					message = &msg.RelayMsgBuf{
 						MSGHead: msgH,
 						MSGData: msgBuf[0:msgH.Len],

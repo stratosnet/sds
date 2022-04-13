@@ -28,10 +28,8 @@ type WriteCloser interface {
 	Close()
 }
 
-// GoroutineMap
 var (
 	GoroutineMap = &sync.Map{}
-	minAppVer    uint32
 )
 
 // ServerConn
@@ -48,7 +46,7 @@ type ServerConn struct {
 	mu        sync.Mutex // guards following
 	name      string
 	heart     int64
-	minAppVer uint32
+	minAppVer uint16
 	ctx       context.Context
 	cancel    context.CancelFunc
 }
@@ -68,8 +66,7 @@ func CreateServerConn(id int64, s *Server, c net.Conn) *ServerConn {
 	// context.WithValue get key-value context
 	sc.ctx, sc.cancel = context.WithCancel(context.WithValue(s.ctx, serverCtxKey, s))
 	sc.name = c.RemoteAddr().String()
-	sc.minAppVer = minAppVer
-	utils.DebugLogf("[Conn-server] min app version is set to %v", sc.minAppVer)
+	sc.minAppVer = s.opts.minAppVersion
 	return sc
 }
 
@@ -144,7 +141,6 @@ func (sc *ServerConn) Start() {
 		GoroutineMap.Store(name, strArr[i])
 		go looper(sc, sc.wg)
 	}
-	utils.DebugLogf("[conn-server] min app version after start is %v", sc.minAppVer)
 }
 
 // Write
@@ -310,6 +306,11 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					// 		sc.handlerCh <- MsgHandler{message.RelayMsgBuf{}, handler}
 					// 	}
 					// } else {
+					if msgH.Version < sc.minAppVer {
+						// TODO: send a message back to warn the client to update their version
+						utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, sc.minAppVer)
+						continue
+					}
 					handler := GetHandlerFunc(utils.ByteToString(msgH.Cmd))
 					if handler != nil {
 						sc.handlerCh <- MsgHandler{message.RelayMsgBuf{}, handler}
@@ -346,6 +347,15 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				}
 				Mylog(sc.belong.opts.logOpen, "end", time.Now().Unix())
 				if uint32(i) == msgH.Len {
+					if msgH.Version < sc.minAppVer {
+						// TODO: send a message back to warn the client to update their version
+						utils.DetailLogf("received a [%v] message with an outdated version [%v] (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, sc.minAppVer)
+						msgH.Len = 0
+						i = 0
+						msgBuf = nil
+						continue
+					}
+
 					msg = &message.RelayMsgBuf{
 						MSGHead: msgH,
 						MSGData: msgBuf[0:msgH.Len],

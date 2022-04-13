@@ -7,6 +7,7 @@ import (
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
+	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -92,7 +93,7 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 	})
 	heartClose := cf.HeartCloseOption(!heartbeat)
 	bufferSize := cf.BufferSizeOption(100)
-	minAppVer := cf.MinAppVersionOption(minAppVersion)
+	minAppVer := cf.MinAppVersionOption(setting.Config.Version.MinAppVer)
 	logOpen := cf.LogOpenOption(true)
 	options := []cf.ClientOption{
 		onConnect,
@@ -121,9 +122,4 @@ func GetConnectionName(conn core.WriteCloser) string {
 		return conn.(*cf.ClientConn).GetName()
 	}
 	return ""
-}
-
-// SetLimitUploadSpeed
-func SetMinAppVer(ver uint32) {
-	minAppVersion = ver
 }

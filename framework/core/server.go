@@ -35,6 +35,7 @@ type options struct {
 	logOpen        bool
 	maxConnections int
 	maxflow        int
+	minAppVersion  uint16
 }
 
 // ServerOption
@@ -304,6 +305,12 @@ func MaxConnectionsOption(indicator int) ServerOption {
 func MaxFlowOption(indicator int) ServerOption {
 	return func(o *options) {
 		o.maxflow = indicator
+	}
+}
+
+func MinAppVersionOption(minAppVersion uint16) ServerOption {
+	return func(o *options) {
+		o.minAppVersion = minAppVersion
 	}
 }
 

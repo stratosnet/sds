@@ -8,16 +8,14 @@ import (
 	"syscall"
 
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
-	ppclient "github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/relay/client"
-	"github.com/stratosnet/sds/relay/sds"
 	"github.com/stratosnet/sds/utils"
 )
 
 func main() {
 	dir, err := os.Getwd()
 	if err != nil {
-		fmt.Println("error load the wording directory", err)
+		fmt.Println("error loading the working directory", err)
 		return
 	}
 	_ = utils.NewDefaultLogger(filepath.Join(dir, "./tmp/logs/stdout.log"), true, true)
@@ -31,10 +29,6 @@ func main() {
 		utils.ErrorLog("Error loading the config file", err)
 		return
 	}
-
-	ppclient.SetMinAppVer(setting.Config.Version.MinAppVer) // as client
-	sds.SetMinAppVersion(setting.Config.Version.MinAppVer)  // as client to pp
-	utils.Logf("Min app version is set to %v", setting.Config.Version.MinAppVer)
 
 	multiClient := client.NewClient()
 	defer multiClient.Stop()

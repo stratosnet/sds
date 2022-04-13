@@ -3,13 +3,12 @@ package sds
 import (
 	"net"
 
+	setting "github.com/stratosnet/sds/cmd/relayd/config"
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/utils"
 )
-
-var minAppVersion uint32
 
 func NewClient(server string) *cf.ClientConn {
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", server)
@@ -25,7 +24,7 @@ func NewClient(server string) *cf.ClientConn {
 	onMessage := cf.OnMessageOption(func(msg msg.RelayMsgBuf, c core.WriteCloser) {})
 	bufferSize := cf.BufferSizeOption(100)
 	logOpen := cf.LogOpenOption(true)
-	minAppVer := cf.MinAppVersionOption(minAppVersion)
+	minAppVer := cf.MinAppVersionOption(setting.Config.Version.MinAppVer)
 	options := []cf.ClientOption{
 		onMessage,
 		bufferSize,
@@ -37,9 +36,4 @@ func NewClient(server string) *cf.ClientConn {
 	conn.Start()
 
 	return conn
-}
-
-// SetMinAppVersion
-func SetMinAppVersion(ver uint32) {
-	minAppVersion = ver
 }

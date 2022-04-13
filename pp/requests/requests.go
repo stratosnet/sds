@@ -388,7 +388,7 @@ func ReqRegisterNewPPData() *protos.ReqRegisterNewPP {
 		OsAndVer:       sysInfo.OSInfo,
 		CpuInfo:        sysInfo.CPUInfo,
 		MacAddress:     sysInfo.MacAddress,
-		Version:        setting.Config.Version.AppVer,
+		Version:        uint32(setting.Config.Version.AppVer),
 		PubKey:         setting.P2PPublicKey,
 		Sign:           setting.GetSign(setting.P2PAddress),
 		NetworkAddress: setting.NetworkAddress,

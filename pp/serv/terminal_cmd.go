@@ -266,7 +266,7 @@ func (api *terminalCmd) DeleteFn(param []string) (CmdResult, error) {
 }
 
 func (api *terminalCmd) Ver(param []string) (CmdResult, error) {
-	return CmdResult{Msg: fmt.Sprintf("version:", setting.Config.VersionShow)}, nil
+	return CmdResult{Msg: fmt.Sprintf("version: %v", setting.Config.Version.Show)}, nil
 }
 
 func (api *terminalCmd) Monitor(param []string) (CmdResult, error) {

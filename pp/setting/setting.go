@@ -11,8 +11,6 @@ import (
 	"sync"
 
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/pp/client"
-	rlclient "github.com/stratosnet/sds/relay/sds"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
 )
@@ -84,8 +82,9 @@ var (
 )
 
 type AppVersion struct {
-	AppVer    uint32 `yaml:"app_ver"`
-	MinAppVer uint32 `yaml:"min_app_ver"`
+	AppVer    uint16 `yaml:"AppVer"`
+	MinAppVer uint16 `yaml:"MinAppVer"`
+	Show      string `yaml:"Show"`
 }
 
 type SPBaseInfo struct {
@@ -95,9 +94,8 @@ type SPBaseInfo struct {
 }
 
 type config struct {
-	Version              AppVersion `yaml:"Version"`
-	VersionShow          string
-	DownloadPathMinLen   int
+	Version              AppVersion   `yaml:"Version"`
+	DownloadPathMinLen   int          `yaml:"downloadpathminlen"`
 	Port                 string       `yaml:"Port"`
 	NetworkAddress       string       `yaml:"NetworkAddress"`
 	Debug                bool         `yaml:"Debug"`
@@ -162,8 +160,7 @@ func LoadConfig(configPath string) error {
 
 	cf.SetLimitDownloadSpeed(Config.LimitDownloadSpeed, Config.IsLimitDownloadSpeed)
 	cf.SetLimitUploadSpeed(Config.LimitUploadSpeed, Config.IsLimitUploadSpeed)
-	client.SetMinAppVer(Config.Version.MinAppVer)
-	rlclient.SetMinAppVersion(Config.Version.MinAppVer)
+
 	IsAuto = Config.AutoRun
 	utils.DebugLogf("AutoRun flag: %v", IsAuto)
 	// todo: we shouldn't call stratoschain package to setup a global variable
@@ -277,8 +274,7 @@ func SetConfig(key, value string) bool {
 
 func defaultConfig() *config {
 	return &config{
-		Version:              AppVersion{AppVer: APP_VER, MinAppVer: MIN_APP_VER},
-		VersionShow:          Version,
+		Version:              AppVersion{AppVer: APP_VER, MinAppVer: MIN_APP_VER, Show: Version},
 		DownloadPathMinLen:   0,
 		Port:                 "18081",
 		NetworkAddress:       "127.0.0.1",
@@ -298,7 +294,7 @@ func defaultConfig() *config {
 		LimitDownloadSpeed:   0,
 		IsLimitUploadSpeed:   false,
 		LimitUploadSpeed:     0,
-		ChainId:              "tropos-1",
+		ChainId:              "tropos-3",
 		Token:                "ustos",
 		StratosChainUrl:      "http://127.0.0.1:1317",
 		RestPort:             "",

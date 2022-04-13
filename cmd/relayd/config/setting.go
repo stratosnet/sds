@@ -41,8 +41,8 @@ type blockchainInfoConfig struct {
 }
 
 type Version struct {
-	AppVer    uint32 `yaml:"appVer"`
-	MinAppVer uint32 `yaml:"minAppVer"`
+	AppVer    uint16 `yaml:"appVer"`
+	MinAppVer uint16 `yaml:"minAppVer"`
 }
 
 type config struct {
