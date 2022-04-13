@@ -194,7 +194,7 @@ func up(ING *task.UpFileIng, target *protos.RspUploadFile) {
 				continue
 			}
 
-			UploadFileSlice(uploadTask)
+			UploadFileSlice(uploadTask, target)
 			ING.Slices = append(ING.Slices[:0], ING.Slices[0+1:]...)
 		}
 	}
@@ -218,7 +218,7 @@ func sendUploadFileSlice(target *protos.RspUploadFile) {
 			uploadTask := task.GetUploadSliceTask(pp, target.FileHash, target.TaskId, target.SpP2PAddress,
 				target.IsVideoStream, target.IsEncrypted, ING.FileCRC)
 			if uploadTask != nil {
-				UploadFileSlice(uploadTask)
+				UploadFileSlice(uploadTask, target)
 			}
 		}
 		utils.DebugLog("all slices of the task have begun uploading")
