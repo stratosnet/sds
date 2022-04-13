@@ -137,7 +137,7 @@ func LogOpenOption(b bool) ClientOption {
 // Mylog my
 func Mylog(b bool, v ...interface{}) {
 	if b {
-		utils.DebugLog(v...)
+		utils.DetailLog(v...)
 	}
 }
 
@@ -257,8 +257,8 @@ func (cc *ClientConn) Start() {
 		go looper(cc, cc.wg)
 	}
 	var (
-		myClock               = clock.NewClock()
-		handler               = core.GetHandlerFunc(header.ReqHeart)
+		myClock = clock.NewClock()
+		//handler               = core.GetHandlerFunc(header.ReqHeart)
 		spLatencyCheckHandler = core.GetHandlerFunc(header.ReqSpLatencyCheck)
 
 		spLatencyCheckJobFunc = func() {
@@ -268,11 +268,11 @@ func (cc *ClientConn) Start() {
 			}
 		}
 
-		jobFunc = func() {
-			if handler != nil {
-				cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
-			}
-		}
+		//jobFunc = func() {
+		//	if handler != nil {
+		//		cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
+		//	}
+		//}
 		logFunc = func() {
 			cc.inbound = cc.inboundAtomic.AddAndGetNew(cc.secondReadFlowA)
 			cc.outbound = cc.outboundAtomic.AddAndGetNew(cc.secondWriteFlowA)
@@ -282,10 +282,10 @@ func (cc *ClientConn) Start() {
 			cc.secondWriteFlowA = cc.secondWriteAtomA.GetNewAndSetAtomic(0)
 		}
 	)
-	if !cc.opts.heartClose {
-		hbJob, _ := myClock.AddJobRepeat(time.Second*utils.ClientSendHeartTime, 0, jobFunc)
-		cc.jobs = append(cc.jobs, hbJob)
-	}
+	//if !cc.opts.heartClose {
+	//	hbJob, _ := myClock.AddJobRepeat(time.Second*utils.ClientSendHeartTime, 0, jobFunc)
+	//	cc.jobs = append(cc.jobs, hbJob)
+	//}
 	latencyJob, _ := myClock.AddJobRepeat(time.Second*utils.LatencyCheckSpListInterval, 1, spLatencyCheckJobFunc)
 	cc.jobs = append(cc.jobs, latencyJob)
 	logJob, _ := myClock.AddJobRepeat(time.Second*1, 0, logFunc)
@@ -317,13 +317,13 @@ func (cc *ClientConn) ClientClose() {
 		// wait until all go-routines exited.
 		cc.wg.Wait()
 
-		utils.DebugLog("cc.wg.Wait() finished")
+		utils.DetailLog("cc.wg.Wait() finished")
 
 		// close all channels.
 		close(cc.sendCh)
 		close(cc.handlerCh)
 		if len(cc.jobs) > 0 {
-			utils.DebugLogf("cancel %v jobs, %v", len(cc.jobs), cc.GetName())
+			utils.DetailLogf("cancel %v jobs, %v", len(cc.jobs), cc.GetName())
 			for _, job := range cc.jobs {
 				job.Cancel()
 			}
@@ -358,7 +358,7 @@ func (cc *ClientConn) Close() {
 		close(cc.sendCh)
 		close(cc.handlerCh)
 		if len(cc.jobs) > 0 {
-			utils.DebugLogf("cancel %v jobs, %v", len(cc.jobs), cc.GetName())
+			utils.DetailLogf("cancel %v jobs, %v", len(cc.jobs), cc.GetName())
 			for _, job := range cc.jobs {
 				job.Cancel()
 			}

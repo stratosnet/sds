@@ -7,9 +7,7 @@ import (
 	"time"
 
 	"github.com/alex023/clock"
-	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/peers"
@@ -49,7 +47,7 @@ func ReqHBLatencyCheckSpList(ctx context.Context, conn core.WriteCloser) {
 func RspHBLatencyCheckSpList(ctx context.Context, _ core.WriteCloser) {
 	utils.DebugLog("get Heartbeat RSP")
 	rspTime := time.Now().UnixNano()
-	var response protos.RspHeartbeat
+	var response protos.RspLatencyCheck
 	if !requests.UnmarshalData(ctx, &response) {
 		utils.ErrorLog("unmarshal error")
 		return
@@ -61,7 +59,7 @@ func RspHBLatencyCheckSpList(ctx context.Context, _ core.WriteCloser) {
 	go updateOptimalSp(rspTime, &response, &summary.optSp)
 }
 
-func updateOptimalSp(rspTime int64, rsp *protos.RspHeartbeat, optSp *OptimalSp) {
+func updateOptimalSp(rspTime int64, rsp *protos.RspLatencyCheck, optSp *OptimalSp) {
 	summary.mtx.Lock()
 	if rsp.P2PAddressPp != setting.Config.P2PAddress || len(rsp.P2PAddressPp) == 0 {
 		// invalid response containing unknown PP p2pAddr
@@ -106,33 +104,4 @@ func connectAndRegisterToOptSp() {
 	}
 	peers.ConfirmOptSP(summary.optSp.NetworkAddr)
 	summary.mtx.Unlock()
-}
-
-// SendHeartBeat
-func SendHeartBeat(ctx context.Context, conn core.WriteCloser) {
-	switch conn.(type) {
-	case *core.ServerConn:
-		utils.DebugLog("not sending regular heartbeat as this is a server conn, ", client.GetConnectionName(conn))
-		return
-	case *cf.ClientConn:
-		utils.DebugLog("this is a client conn, ", client.GetConnectionName(conn))
-	}
-
-	if client.GetConnectionName(client.SPConn) == client.GetConnectionName(conn) {
-		start := time.Now().UnixNano()
-		pb := &protos.ReqHeartbeat{
-			HbType:       protos.HeartbeatType_REGULAR_HEARTBEAT,
-			P2PAddressPp: setting.P2PAddress,
-			PingTime:     strconv.FormatInt(start, 10),
-		}
-		peers.SendMessage(conn.(*cf.ClientConn), pb, header.ReqHeart)
-		utils.DebugLogf("regular heartbeat sent to SP node(%v)", client.GetConnectionName(conn))
-		return
-	}
-	// TODO decide if to send heartbeat to PP, which would maintain lots of pp conns in client
-	utils.DebugLogf("not sending regular heartbeat to PP node(%v)", client.GetConnectionName(conn))
-}
-
-// RspHeartBeat - regular heartbeat getting no rsp from sp
-func RspHeartBeat(ctx context.Context, conn core.WriteCloser) {
 }

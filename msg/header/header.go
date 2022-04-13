@@ -151,8 +151,8 @@ const (
 	RspGetShareFile = "RspGSF"
 
 	// heartbeat
-	ReqHeart = "ReqHeart"
-	RspHeart = "RspHeart"
+	ReqLatencyCheck = "ReqLatencyCheck"
+	RspLatencyCheck = "RspLatencyCheck"
 	// test sp latency
 	ReqSpLatencyCheck = "ReqSpLatencyCheck"
 

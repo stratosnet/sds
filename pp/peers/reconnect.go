@@ -74,7 +74,7 @@ func ConnectToSP() (newConnection bool, err error) {
 
 	if optSpNetworkAddr, err := GetOptSPAndClear(); err == nil {
 		utils.DebugLog("reconnect to detected optimal SP ", optSpNetworkAddr)
-		client.SPConn = client.NewClient(optSpNetworkAddr, true)
+		client.SPConn = client.NewClient(optSpNetworkAddr, false)
 		if client.SPConn != nil {
 			return true, nil
 		}
@@ -83,7 +83,7 @@ func ConnectToSP() (newConnection bool, err error) {
 	spListOrder := rand.Perm(len(setting.Config.SPList))
 	for _, index := range spListOrder {
 		selectedSP := setting.Config.SPList[index]
-		client.SPConn = client.NewClient(selectedSP.NetworkAddress, true)
+		client.SPConn = client.NewClient(selectedSP.NetworkAddress, false)
 		if client.SPConn != nil {
 			return true, nil
 		}
