@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
@@ -17,8 +18,6 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
-
-	"github.com/golang/protobuf/proto"
 )
 
 // ProgressMap required by API
@@ -29,6 +28,17 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	//check whether self is the target, if not, transfer
 	var target protos.ReqUploadFileSlice
 	if requests.UnmarshalData(ctx, &target) {
+		if target.Sign == nil || !verifyUploadSliceSign(&target) {
+			rsp := &protos.RspUploadFileSlice{
+				Result: &protos.Result{
+					State: protos.ResultState_RES_FAIL,
+					Msg:   "signature validation failed",
+				},
+			}
+			peers.SendMessage(conn, rsp, header.RspUploadFileSlice)
+			return
+		}
+
 		peers.SendMessage(conn, requests.UploadSpeedOfProgressData(target.FileHash, uint64(len(target.Data))), header.UploadSpeedOfProgress)
 		if !task.SaveUploadFile(&target) {
 			// save failed, not handing yet
@@ -90,7 +100,7 @@ func RspReportUploadSliceResult(ctx context.Context, conn core.WriteCloser) {
 }
 
 // UploadFileSlice
-func UploadFileSlice(tk *task.UploadSliceTask) {
+func UploadFileSlice(tk *task.UploadSliceTask, target *protos.RspUploadFile) {
 	tkDataLen := len(tk.Data)
 	fileHash := tk.FileHash
 	storageP2pAddress := tk.SliceNumAddr.PpInfo.P2PAddress
@@ -119,19 +129,19 @@ func UploadFileSlice(tk *task.UploadSliceTask) {
 				newTask.Data = tk.Data[dataStart:dataEnd]
 				utils.DebugLog("dataStart = ", dataStart)
 				utils.DebugLog("dataEnd = ", dataEnd)
-				sendSlice(requests.ReqUploadFileSliceData(newTask), fileHash, storageP2pAddress, storageNetworkAddress)
+				sendSlice(requests.ReqUploadFileSliceData(newTask, target), fileHash, storageP2pAddress, storageNetworkAddress)
 				dataStart += setting.MAXDATA
 				dataEnd += setting.MAXDATA
 			} else {
 				utils.DebugLog("dataStart = ", dataStart)
 				newTask.Data = tk.Data[dataStart:]
-				sendSlice(requests.ReqUploadFileSliceData(newTask), fileHash, storageP2pAddress, storageNetworkAddress)
+				sendSlice(requests.ReqUploadFileSliceData(newTask, target), fileHash, storageP2pAddress, storageNetworkAddress)
 				return
 			}
 		}
 	} else {
 		tk.SliceOffsetInfo.SliceOffset.SliceOffsetStart = 0
-		sendSlice(requests.ReqUploadFileSliceData(tk), fileHash, storageP2pAddress, storageNetworkAddress)
+		sendSlice(requests.ReqUploadFileSliceData(tk, target), fileHash, storageP2pAddress, storageNetworkAddress)
 	}
 }
 
@@ -188,4 +198,9 @@ func UploadSpeedOfProgress(ctx context.Context, conn core.WriteCloser) {
 			utils.DebugLog("paused!!")
 		}
 	}
+}
+
+func verifyUploadSliceSign(target *protos.ReqUploadFileSlice) bool {
+	return requests.VerifySpSignature(target.SpP2PAddress,
+		[]byte(target.P2PAddress+target.FileHash+header.ReqUploadFileSlice), target.Sign)
 }
