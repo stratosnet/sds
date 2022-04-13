@@ -40,10 +40,16 @@ type blockchainInfoConfig struct {
 	Transactions transactionsConfig `yaml:"transactions"`
 }
 
+type Version struct {
+	AppVer    uint32 `yaml:"appVer"`
+	MinAppVer uint32 `yaml:"minAppVer"`
+}
+
 type config struct {
 	BlockchainInfo blockchainInfoConfig `yaml:"blockchainInfo"`
 	SDS            sds                  `yaml:"sds"`
 	StratosChain   stratoschain         `yaml:"stratosChain"`
+	Version        Version              `yaml:"version"`
 }
 
 var Config *config

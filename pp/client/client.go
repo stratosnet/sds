@@ -16,6 +16,8 @@ type Offline struct {
 	NetworkAddress string
 }
 
+var minAppVersion uint32
+
 // OfflineChan OfflineChan
 var OfflineChan = make(chan *Offline, 2)
 
@@ -90,6 +92,7 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 	})
 	heartClose := cf.HeartCloseOption(!heartbeat)
 	bufferSize := cf.BufferSizeOption(100)
+	minAppVer := cf.MinAppVersionOption(minAppVersion)
 	logOpen := cf.LogOpenOption(true)
 	options := []cf.ClientOption{
 		onConnect,
@@ -99,6 +102,7 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 		bufferSize,
 		heartClose,
 		logOpen,
+		minAppVer,
 	}
 	conn := cf.CreateClientConn(0, c, options...)
 	conn.Start()
@@ -117,4 +121,9 @@ func GetConnectionName(conn core.WriteCloser) string {
 		return conn.(*cf.ClientConn).GetName()
 	}
 	return ""
+}
+
+// SetLimitUploadSpeed
+func SetMinAppVer(ver uint32) {
+	minAppVersion = ver
 }

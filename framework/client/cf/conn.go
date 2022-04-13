@@ -50,6 +50,7 @@ type options struct {
 	reconnect  bool // only ClientConn
 	heartClose bool
 	logOpen    bool
+	minAppVer  uint32
 }
 
 // ClientOption client configuration
@@ -102,7 +103,15 @@ func CreateClientConn(netid int64, c net.Conn, opt ...ClientOption) *ClientConn 
 	for _, o := range opt {
 		o(&opts)
 	}
+	utils.DebugLogf("after CreateClientConn, opts.minAppVer = %v", opts.minAppVer)
 	return newClientConnWithOptions(netid, c, opts)
+}
+
+// MinAppVersionOption
+func MinAppVersionOption(b uint32) ClientOption {
+	return func(o *options) {
+		o.minAppVer = b
+	}
 }
 
 // BufferSizeOption
@@ -158,6 +167,7 @@ func newClientConnWithOptions(netid int64, c net.Conn, opts options) *ClientConn
 	cc.ctx, cc.cancel = context.WithCancel(context.Background())
 	cc.name = c.RemoteAddr().String()
 	cc.pending = []int64{}
+	utils.DebugLogf("[Conn-client] min app version is set to %v", opts.minAppVer)
 	return cc
 }
 
@@ -282,6 +292,7 @@ func (cc *ClientConn) Start() {
 	cc.jobs = append(cc.jobs, latencyJob)
 	logJob, _ := myClock.AddJobRepeat(time.Second*1, 0, logFunc)
 	cc.jobs = append(cc.jobs, logJob)
+	utils.DebugLogf("[conn-client] min app version after start is %v", cc.opts.minAppVer)
 }
 
 // ClientClose Actively closes the client connection

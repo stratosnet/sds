@@ -31,6 +31,7 @@ type WriteCloser interface {
 // GoroutineMap
 var (
 	GoroutineMap = &sync.Map{}
+	minAppVer    uint32
 )
 
 // ServerConn
@@ -44,11 +45,12 @@ type ServerConn struct {
 	sendCh    chan *message.RelayMsgBuf
 	handlerCh chan MsgHandler
 
-	mu     sync.Mutex // guards following
-	name   string
-	heart  int64
-	ctx    context.Context
-	cancel context.CancelFunc
+	mu        sync.Mutex // guards following
+	name      string
+	heart     int64
+	minAppVer uint32
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
 
 // CreateServerConn
@@ -66,6 +68,8 @@ func CreateServerConn(id int64, s *Server, c net.Conn) *ServerConn {
 	// context.WithValue get key-value context
 	sc.ctx, sc.cancel = context.WithCancel(context.WithValue(s.ctx, serverCtxKey, s))
 	sc.name = c.RemoteAddr().String()
+	sc.minAppVer = minAppVer
+	utils.DebugLogf("[Conn-server] min app version is set to %v", sc.minAppVer)
 	return sc
 }
 
@@ -140,6 +144,7 @@ func (sc *ServerConn) Start() {
 		GoroutineMap.Store(name, strArr[i])
 		go looper(sc, sc.wg)
 	}
+	utils.DebugLogf("[conn-server] min app version after start is %v", sc.minAppVer)
 }
 
 // Write

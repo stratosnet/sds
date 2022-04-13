@@ -11,13 +11,17 @@ import (
 	"sync"
 
 	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/pp/client"
+	rlclient "github.com/stratosnet/sds/relay/sds"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
 )
 
 const (
-	Version = "v0.6.0"
-	HD_PATH = "m/44'/606'/0'/0/0"
+	Version     = "v0.6.0"
+	APP_VER     = 6
+	MIN_APP_VER = 6
+	HD_PATH     = "m/44'/606'/0'/0/0"
 
 	// REPORTDHTIME 1 hour
 	REPORTDHTIME = 60 * 60
@@ -79,6 +83,11 @@ var (
 	UpChan = make(chan string, 100)
 )
 
+type AppVersion struct {
+	AppVer    uint32 `yaml:"app_ver"`
+	MinAppVer uint32 `yaml:"min_app_ver"`
+}
+
 type SPBaseInfo struct {
 	P2PAddress     string `yaml:"P2PAddress"`
 	P2PPublicKey   string `yaml:"P2PPublicKey"`
@@ -86,7 +95,7 @@ type SPBaseInfo struct {
 }
 
 type config struct {
-	Version              uint32
+	Version              AppVersion `yaml:"Version"`
 	VersionShow          string
 	DownloadPathMinLen   int
 	Port                 string       `yaml:"Port"`
@@ -153,6 +162,8 @@ func LoadConfig(configPath string) error {
 
 	cf.SetLimitDownloadSpeed(Config.LimitDownloadSpeed, Config.IsLimitDownloadSpeed)
 	cf.SetLimitUploadSpeed(Config.LimitUploadSpeed, Config.IsLimitUploadSpeed)
+	client.SetMinAppVer(Config.Version.MinAppVer)
+	rlclient.SetMinAppVersion(Config.Version.MinAppVer)
 	IsAuto = Config.AutoRun
 	utils.DebugLogf("AutoRun flag: %v", IsAuto)
 	// todo: we shouldn't call stratoschain package to setup a global variable
@@ -266,7 +277,7 @@ func SetConfig(key, value string) bool {
 
 func defaultConfig() *config {
 	return &config{
-		Version:              6,
+		Version:              AppVersion{AppVer: APP_VER, MinAppVer: MIN_APP_VER},
 		VersionShow:          Version,
 		DownloadPathMinLen:   0,
 		Port:                 "18081",
