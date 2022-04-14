@@ -40,20 +40,36 @@ type options struct {
 // ServerOption
 type ServerOption func(*options)
 
+type onInboundFunc func(VolRecType, VolRecorder)
+type onOutboundFunc func(VolRecType, VolRecorder)
+type onReadFunc func(VolRecType, VolRecorder)
+type onWriteFunc func(VolRecType, VolRecorder)
+
+type volRecOpts struct {
+	onInbound  onInboundFunc
+	onOutbound onOutboundFunc
+	onRead     onReadFunc
+	onWrite    onWriteFunc
+}
+
+type ServerVolRecOption func(*volRecOpts)
+
 // Server
 type Server struct {
-	opts             options
-	ctx              context.Context
-	cancel           context.CancelFunc
-	conns            *connPool
-	wg               *sync.WaitGroup
-	mu               sync.Mutex // lock
-	lis              map[net.Listener]bool
-	interv           time.Duration
-	goroutine        int64
-	goAtom           *utils.AtomicInt64
-	allFlow          int64 //including read flow & write flow
-	allAtom          *utils.AtomicInt64
+	opts       options
+	ctx        context.Context
+	cancel     context.CancelFunc
+	conns      *connPool
+	wg         *sync.WaitGroup
+	mu         sync.Mutex // lock
+	lis        map[net.Listener]bool
+	interv     time.Duration
+	goroutine  int64
+	goAtom     *utils.AtomicInt64
+	allFlow    int64 //including read flow & write flow
+	allAtom    *utils.AtomicInt64
+	volRecOpts volRecOpts
+
 	readFlow         int64 //not used for now
 	readAtom         *utils.AtomicInt64
 	writeFlow        int64 //not used for now
@@ -107,6 +123,14 @@ func CreateServer(opt ...ServerOption) *Server {
 	}
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 	return s
+}
+
+func (s *Server) SetVolRecOptions(opt ...ServerVolRecOption) {
+	var opts volRecOpts
+	for _, o := range opt {
+		o(&opts)
+	}
+	s.volRecOpts = opts
 }
 
 // ConnsSize
