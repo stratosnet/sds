@@ -392,7 +392,7 @@ func ReqRegisterNewPPData() *protos.ReqRegisterNewPP {
 		OsAndVer:       sysInfo.OSInfo,
 		CpuInfo:        sysInfo.CPUInfo,
 		MacAddress:     sysInfo.MacAddress,
-		Version:        setting.Config.Version,
+		Version:        uint32(setting.Config.Version.AppVer),
 		PubKey:         setting.P2PPublicKey,
 		Sign:           setting.GetSign(setting.P2PAddress),
 		NetworkAddress: setting.NetworkAddress,
@@ -686,7 +686,7 @@ func ReqNodeStatusData() *protos.ReqReportNodeStatus {
 
 // PPMsgHeader
 func PPMsgHeaderWithoutReqId(data []byte, head string) header.MessageHead {
-	return header.MakeMessageHeader(1, uint16(setting.Config.Version), uint32(len(data)), head, utils.ZeroId())
+	return header.MakeMessageHeader(1, uint16(setting.Config.Version.AppVer), uint32(len(data)), head, utils.ZeroId())
 }
 
 func UnmarshalData(ctx context.Context, target interface{}) bool {

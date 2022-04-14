@@ -50,6 +50,7 @@ type options struct {
 	reconnect  bool // only ClientConn
 	heartClose bool
 	logOpen    bool
+	minAppVer  uint16
 }
 
 // ClientOption client configuration
@@ -103,6 +104,13 @@ func CreateClientConn(netid int64, c net.Conn, opt ...ClientOption) *ClientConn 
 		o(&opts)
 	}
 	return newClientConnWithOptions(netid, c, opts)
+}
+
+// MinAppVersionOption
+func MinAppVersionOption(b uint16) ClientOption {
+	return func(o *options) {
+		o.minAppVer = b
+	}
 }
 
 // BufferSizeOption
@@ -521,6 +529,10 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				buffer = nil
 				// Mylog(cc.opts.logOpen,"client msg size", msgH.Cmd)
 				if msgH.Len == 0 {
+					if msgH.Version < cc.opts.minAppVer {
+						utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
+						continue
+					}
 					handler := core.GetHandlerFunc(utils.ByteToString(msgH.Cmd))
 					if handler != nil {
 						handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
@@ -552,6 +564,14 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					}
 				}
 				if uint32(i) == msgH.Len {
+					if msgH.Version < cc.opts.minAppVer {
+						utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
+						msgH.Len = 0
+						i = 0
+						msgBuf = nil
+						continue
+					}
+
 					message = &msg.RelayMsgBuf{
 						MSGHead: msgH,
 						MSGData: msgBuf[0:msgH.Len],

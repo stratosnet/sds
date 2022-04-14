@@ -1,3 +1,6 @@
+version:
+  appVer: 6
+  minAppVer: 6
 sds:
   networkAddress: 127.0.0.1
   apiPort: 18081

@@ -10,8 +10,10 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/golang/protobuf/proto"
 	message "github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/cmem"
 )
@@ -28,7 +30,6 @@ type WriteCloser interface {
 	Close()
 }
 
-// GoroutineMap
 var (
 	GoroutineMap = &sync.Map{}
 )
@@ -44,11 +45,12 @@ type ServerConn struct {
 	sendCh    chan *message.RelayMsgBuf
 	handlerCh chan MsgHandler
 
-	mu     sync.Mutex // guards following
-	name   string
-	heart  int64
-	ctx    context.Context
-	cancel context.CancelFunc
+	mu        sync.Mutex // guards following
+	name      string
+	heart     int64
+	minAppVer uint16
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
 
 // CreateServerConn
@@ -66,6 +68,7 @@ func CreateServerConn(id int64, s *Server, c net.Conn) *ServerConn {
 	// context.WithValue get key-value context
 	sc.ctx, sc.cancel = context.WithCancel(context.WithValue(s.ctx, serverCtxKey, s))
 	sc.name = c.RemoteAddr().String()
+	sc.minAppVer = s.opts.minAppVersion
 	return sc
 }
 
@@ -235,6 +238,29 @@ func (sc *ServerConn) Close() {
 	})
 }
 
+func (sc *ServerConn) SendBadVersionMsg(version uint16, cmd string) {
+	req := &protos.RspBadVersion{
+		Version:        int32(version),
+		MinimumVersion: int32(sc.minAppVer),
+		Command:        cmd,
+	}
+	data, err := proto.Marshal(req)
+	if err != nil {
+		utils.ErrorLog(err)
+		return
+	}
+
+	err = sc.Write(&message.RelayMsgBuf{
+		MSGHead: header.MakeMessageHeader(1, sc.minAppVer, uint32(len(data)), header.RspBadVersion, utils.ZeroId()),
+		MSGData: data,
+	})
+	if err != nil {
+		utils.ErrorLog(err)
+	}
+	time.Sleep(500 * time.Millisecond)
+	return
+}
+
 // readLoop
 func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 	var (
@@ -305,6 +331,10 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					// 		sc.handlerCh <- MsgHandler{message.RelayMsgBuf{}, handler}
 					// 	}
 					// } else {
+					if msgH.Version < sc.minAppVer {
+						sc.SendBadVersionMsg(msgH.Version, utils.ByteToString(msgH.Cmd))
+						return
+					}
 					handler := GetHandlerFunc(utils.ByteToString(msgH.Cmd))
 					if handler != nil {
 						sc.handlerCh <- MsgHandler{message.RelayMsgBuf{}, handler}
@@ -341,6 +371,11 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				}
 				Mylog(sc.belong.opts.logOpen, "end", time.Now().Unix())
 				if uint32(i) == msgH.Len {
+					if msgH.Version < sc.minAppVer {
+						sc.SendBadVersionMsg(msgH.Version, utils.ByteToString(msgH.Cmd))
+						return
+					}
+
 					msg = &message.RelayMsgBuf{
 						MSGHead: msgH,
 						MSGData: msgBuf[0:msgH.Len],

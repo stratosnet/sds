@@ -16,8 +16,10 @@ import (
 )
 
 const (
-	Version = "v0.6.0"
-	HD_PATH = "m/44'/606'/0'/0/0"
+	Version     = "v0.6.0"
+	APP_VER     = 6
+	MIN_APP_VER = 6
+	HD_PATH     = "m/44'/606'/0'/0/0"
 
 	// REPORTDHTIME 1 hour
 	REPORTDHTIME = 60 * 60
@@ -79,6 +81,12 @@ var (
 	UpChan = make(chan string, 100)
 )
 
+type AppVersion struct {
+	AppVer    uint16 `yaml:"AppVer"`
+	MinAppVer uint16 `yaml:"MinAppVer"`
+	Show      string `yaml:"Show"`
+}
+
 type SPBaseInfo struct {
 	P2PAddress     string `yaml:"P2PAddress"`
 	P2PPublicKey   string `yaml:"P2PPublicKey"`
@@ -86,9 +94,8 @@ type SPBaseInfo struct {
 }
 
 type config struct {
-	Version              uint32
-	VersionShow          string
-	DownloadPathMinLen   int
+	Version              AppVersion   `yaml:"Version"`
+	DownloadPathMinLen   int          `yaml:"downloadpathminlen"`
 	Port                 string       `yaml:"Port"`
 	NetworkAddress       string       `yaml:"NetworkAddress"`
 	Debug                bool         `yaml:"Debug"`
@@ -153,6 +160,7 @@ func LoadConfig(configPath string) error {
 
 	cf.SetLimitDownloadSpeed(Config.LimitDownloadSpeed, Config.IsLimitDownloadSpeed)
 	cf.SetLimitUploadSpeed(Config.LimitUploadSpeed, Config.IsLimitUploadSpeed)
+
 	IsAuto = Config.AutoRun
 	utils.DebugLogf("AutoRun flag: %v", IsAuto)
 	// todo: we shouldn't call stratoschain package to setup a global variable
@@ -266,8 +274,7 @@ func SetConfig(key, value string) bool {
 
 func defaultConfig() *config {
 	return &config{
-		Version:              6,
-		VersionShow:          Version,
+		Version:              AppVersion{AppVer: APP_VER, MinAppVer: MIN_APP_VER, Show: Version},
 		DownloadPathMinLen:   0,
 		Port:                 "18081",
 		NetworkAddress:       "127.0.0.1",
@@ -287,7 +294,7 @@ func defaultConfig() *config {
 		LimitDownloadSpeed:   0,
 		IsLimitUploadSpeed:   false,
 		LimitUploadSpeed:     0,
-		ChainId:              "tropos-1",
+		ChainId:              "tropos-3",
 		Token:                "ustos",
 		StratosChainUrl:      "http://127.0.0.1:1317",
 		RestPort:             "",
