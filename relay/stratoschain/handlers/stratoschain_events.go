@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"math/big"
 	"net/http"
 	"strconv"
 	"time"
@@ -439,6 +440,7 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 		requiredAttributes := []string{
 			"slashing.p2p_address",
 			"slashing.suspend",
+			"slashing.amount",
 		}
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
 		key := getCacheKey(requiredAttributes, result)
@@ -455,11 +457,17 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 				utils.DebugLog("Invalid suspended boolean in the slashing message from stratos-chain", err)
 				continue
 			}
-
+			slashedAmt, ok := new(big.Int).SetString(event["slashing.amount"], 10)
+			if !ok {
+				utils.DebugLog("Invalid slashed amount in big integer in the slashing message from stratos-chain")
+				continue
+			}
+			utils.DebugLogf("slashed amount is %v", slashedAmt.String())
 			slashedPP := relayTypes.SlashedPP{
 				P2PAddress: event["slashing.p2p_address"],
 				QueryFirst: false,
 				Suspended:  suspended,
+				SlashedAmt: slashedAmt,
 			}
 			slashedPPs = append(slashedPPs, slashedPP)
 		}
@@ -474,6 +482,7 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 
 		req := relayTypes.SlashedPPReq{
 			PPList: slashedPPs,
+			TxHash: txHash,
 		}
 		err := postToSP("/pp/slashed", req)
 		if err != nil {

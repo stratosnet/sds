@@ -1,6 +1,8 @@
 package types
 
 import (
+	"math/big"
+
 	"github.com/stratosnet/sds/msg/protos"
 )
 
@@ -41,11 +43,13 @@ type VolumeReportedReq struct {
 }
 
 type SlashedPP struct {
-	P2PAddress string `json:"p2p_address"`
-	QueryFirst bool   `json:"query_first"`
-	Suspended  bool   `json:"suspended"`
+	P2PAddress string   `json:"p2p_address"`
+	QueryFirst bool     `json:"query_first"`
+	Suspended  bool     `json:"suspended"`
+	SlashedAmt *big.Int `json:"slashed_amt"`
 }
 
 type SlashedPPReq struct {
 	PPList []SlashedPP `json:"pp_list"`
+	TxHash string      `json:"tx_hash"`
 }
