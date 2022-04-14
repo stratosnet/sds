@@ -1,6 +1,6 @@
 Version:
-  AppVer: 6
-  MinAppVer: 6
+  AppVer: 7
+  MinAppVer: 7
   Show: v0.6.0
 downloadpathminlen: 88
 Port: "9081"
@@ -29,7 +29,7 @@ RestPort: "18091"
 InternalPort: "9608"
 TrafficLogInterval: 10
 SPList:
-- P2PAddress: 
-  P2PPublicKey: 
+- P2PAddress:
+  P2PPublicKey:
   NetworkAddress: 0.0.0.0:8888
 
