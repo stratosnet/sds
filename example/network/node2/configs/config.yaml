@@ -1,6 +1,6 @@
 Version:
-  AppVer: 6
-  MinAppVer: 6
+  AppVer: 7
+  MinAppVer: 7
   Show: v0.6.0
 downloadpathminlen: 88
 Port: "9082"

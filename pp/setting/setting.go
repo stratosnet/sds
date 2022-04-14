@@ -17,8 +17,8 @@ import (
 
 const (
 	Version     = "v0.6.0"
-	APP_VER     = 6
-	MIN_APP_VER = 6
+	APP_VER     = 7
+	MIN_APP_VER = 7
 	HD_PATH     = "m/44'/606'/0'/0/0"
 
 	// REPORTDHTIME 1 hour
