@@ -3,15 +3,10 @@ package event
 // Author j cc
 import (
 	"context"
-	ed25519crypto "crypto/ed25519"
 	"fmt"
 	"net/http"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/stratosnet/sds/relay"
-	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/bech32"
-
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
@@ -38,7 +33,7 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	reqId := requests.GetReqIdFromMessage(ctx)
 	if requests.UnmarshalData(ctx, &target) {
 		rsp := requests.RspDownloadSliceData(&target)
-		if target.Sign == nil || !verifySignature(&target, rsp) {
+		if target.Sign == nil || !verifyDownloadSliceSign(&target, rsp) {
 			rsp.Data = nil
 			rsp.Result.State = protos.ResultState_RES_FAIL
 			rsp.Result.Msg = "signature validation failed"
@@ -377,34 +372,8 @@ func decryptSliceData(dataToDecrypt []byte) ([]byte, error) {
 	return encryption.DecryptAES(key.PrivateKey(), encryptedSlice.Data, encryptedSlice.AesNonce)
 }
 
-func verifySignature(target *protos.ReqDownloadSlice, rsp *protos.RspDownloadSlice) bool {
-	val, ok := setting.SPMap.Load(target.SpP2PAddress)
-	if !ok {
-		utils.ErrorLog("cannot find sp info by given the SP address ", target.SpP2PAddress)
-		return false
-	}
-
-	spInfo, ok := val.(setting.SPBaseInfo)
-	if !ok {
-		utils.ErrorLog("Fail to parse SP info ", target.SpP2PAddress)
-		return false
-	}
-
-	_, pubKeyRaw, err := bech32.DecodeAndConvert(spInfo.P2PPublicKey)
-	if err != nil {
-		utils.ErrorLog("Error when trying to decode P2P pubKey bech32", err)
-		return false
-	}
-
-	p2pPubKey := tmed25519.PubKeyEd25519{}
-	err = relay.Cdc.UnmarshalBinaryBare(pubKeyRaw, &p2pPubKey)
-
-	if err != nil {
-		utils.ErrorLog("Error when trying to read P2P pubKey ed25519 binary", err)
-		return false
-	}
-
-	if !ed25519crypto.Verify(p2pPubKey[:], []byte(target.P2PAddress+target.FileHash), target.Sign) {
+func verifyDownloadSliceSign(target *protos.ReqDownloadSlice, rsp *protos.RspDownloadSlice) bool {
+	if !requests.VerifySpSignature(target.SpP2PAddress, []byte(target.P2PAddress+target.FileHash+header.ReqDownloadSlice), target.Sign) {
 		return false
 	}
 

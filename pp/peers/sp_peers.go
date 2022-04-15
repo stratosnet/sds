@@ -35,7 +35,7 @@ func SendResponseMessageWithReqId(conn core.WriteCloser, pb proto.Message, cmd s
 		return errors.New("error decoding")
 	}
 	msg := &msg.RelayMsgBuf{
-		MSGHead: header.MakeMessageHeader(1, uint16(setting.Config.Version), uint32(len(data)), cmd, reqId),
+		MSGHead: header.MakeMessageHeader(1, uint16(setting.Config.Version.AppVer), uint32(len(data)), cmd, reqId),
 		MSGData: data,
 	}
 	switch conn.(type) {

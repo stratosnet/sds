@@ -5,6 +5,7 @@ import (
 
 	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -57,6 +58,6 @@ func NewServer() *PPServer {
 	})
 	bufferSize := core.BufferSizeOption(10000)
 	return &PPServer{
-		core.CreateServer(onConnectOption, onErrorOption, onCloseOption, bufferSize, core.LogOpenOption(true)),
+		core.CreateServer(onConnectOption, onErrorOption, onCloseOption, bufferSize, core.LogOpenOption(true), core.MinAppVersionOption(setting.Config.Version.MinAppVer)),
 	}
 }

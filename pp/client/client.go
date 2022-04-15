@@ -7,6 +7,7 @@ import (
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
+	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -15,6 +16,8 @@ type Offline struct {
 	IsSp           bool
 	NetworkAddress string
 }
+
+var minAppVersion uint32
 
 // OfflineChan OfflineChan
 var OfflineChan = make(chan *Offline, 2)
@@ -90,6 +93,7 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 	})
 	heartClose := cf.HeartCloseOption(!heartbeat)
 	bufferSize := cf.BufferSizeOption(100)
+	minAppVer := cf.MinAppVersionOption(setting.Config.Version.MinAppVer)
 	logOpen := cf.LogOpenOption(true)
 	options := []cf.ClientOption{
 		onConnect,
@@ -99,6 +103,7 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 		bufferSize,
 		heartClose,
 		logOpen,
+		minAppVer,
 	}
 	conn := cf.CreateClientConn(0, c, options...)
 	conn.Start()
