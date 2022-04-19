@@ -60,7 +60,7 @@ and then the indexing node list:
 SPList:
     - P2PAddress: ""
       P2PPublicKey: ""
-      NetworkAddress: 13.58.35.167:8888
+      NetworkAddress: 18.223.175.117:8888
 ```
 You also need to change the `ChainId` to the value visible [`Stratos Explorer`](https://explorer-tropos.thestratos.org/) right next to the search bar at the top of the page. Currently, it is `tropos-3`.
 ```yaml
