@@ -15,7 +15,7 @@ import (
 func main() {
 	dir, err := os.Getwd()
 	if err != nil {
-		fmt.Println("error load the wording directory", err)
+		fmt.Println("error loading the working directory", err)
 		return
 	}
 	_ = utils.NewDefaultLogger(filepath.Join(dir, "./tmp/logs/stdout.log"), true, true)

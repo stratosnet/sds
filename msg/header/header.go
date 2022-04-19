@@ -10,27 +10,30 @@ type MessageHead struct {
 	Tag     int16
 	Len     uint32
 	Cmd     []byte //8 byte
+	ReqId   int64  //8 byte
 	Version uint16
 }
 
 // MakeMessageHeader
-func MakeMessageHeader(tag int16, varsion uint16, length uint32, cmd string) MessageHead {
+func MakeMessageHeader(tag int16, version uint16, length uint32, cmd string, reqId int64) MessageHead {
 	var cmdByte = []byte(cmd)[:8]
 	return MessageHead{
 		Tag:     tag,
 		Len:     length,
 		Cmd:     cmdByte,
-		Version: varsion,
+		Version: version,
+		ReqId:   reqId,
 	}
 }
 
 // GetMessageHeader
-func GetMessageHeader(tag int16, varsion uint16, length uint32, cmd string, data []byte) {
+func GetMessageHeader(tag int16, varsion uint16, length uint32, cmd string, reqId int64, data []byte) {
 	var cmdByte = []byte(cmd)[:8]
 	copy(data[0:2], utils.Int16ToBytes(tag))
 	copy(data[2:6], utils.Uint32ToBytes(length))
 	copy(data[6:14], cmdByte)
-	copy(data[14:16], utils.Uint16ToBytes(varsion))
+	copy(data[14:22], utils.Uint64ToBytes(uint64(reqId)))
+	copy(data[22:24], utils.Uint16ToBytes(varsion))
 }
 
 //cmd, 8 bytes string, exceeded will be truncate
@@ -55,19 +58,19 @@ const (
 	ReqActivatedSP = "ReqActds" // request when a SP node was successfully activated
 	RspActivatedPP = "RspActdp" // response when a PP node was successfully activated
 
-	ReqUpdateStakePP  = "ReqUpdtp"  // request to update stake for a PP node
-	RspUpdateStakePP  = "RspUpdtp"  // response to update stake for a PP node
-	ReqUpdatedStakePP = "ReqUpdtdp" // request when a PP node's stake was successfully updated
-	ReqUpdatedStakeSP = "ReqUpdtds" // request when a SP node's stake was successfully updated
-	RspUpdatedStakePP = "RspUpdtdp" // response when a PP node's stake  was successfully updated
+	ReqUpdateStakePP  = "ReqUpp"   // request to update stake for a PP node
+	RspUpdateStakePP  = "RspUpp"   // response to update stake for a PP node
+	ReqUpdatedStakePP = "ReqUptdp" // request when a PP node's stake was successfully updated
+	ReqUpdatedStakeSP = "ReqUptds" // request when a SP node's stake was successfully updated
+	RspUpdatedStakePP = "RspUptdp" // response when a PP node's stake  was successfully updated
 
-	ReqDeactivatePP     = "ReqDctvp"  // request to deactivate a PP node
-	RspDeactivatePP     = "RspDctvp"  // response to deactivate a PP node
-	ReqUnbondingPP      = "ReqUbdp"   // request to unbonding a PP node
-	RspUnbondingPP      = "RspUbdp"   // response to unbonding a PP node
-	ReqDeactivatedPP    = "ReqDctdp"  // request when a PP node was successfully deactivated
-	RspDeactivatedPP    = "RspDctdp"  // response when a PP node was successfully deactivated
-	RspPPRegisteredToSP = "RspPRegds" // response when a PP node was successfully registered to SP
+	ReqDeactivatePP     = "ReqDctvp" // request to deactivate a PP node
+	RspDeactivatePP     = "RspDctvp" // response to deactivate a PP node
+	ReqUnbondingPP      = "ReqUbdp"  // request to unbonding a PP node
+	RspUnbondingPP      = "RspUbdp"  // response to unbonding a PP node
+	ReqDeactivatedPP    = "ReqDctdp" // request when a PP node was successfully deactivated
+	RspDeactivatedPP    = "RspDctdp" // response when a PP node was successfully deactivated
+	RspPPRegisteredToSP = "Rspbdsp"  // response when a PP node was successfully registered to SP
 
 	ReqPrepay  = "ReqPrpay" // request for a PP node sending a prepay transaction
 	RspPrepay  = "RspPrpay" // response for a PP node sending a prepay transaction
@@ -108,6 +111,8 @@ const (
 	RspReportDownloadResult = "RspDLRep" // response to download result report
 	ReqDownloadTaskInfo     = "ReqDLTI"
 	RspDownloadTaskInfo     = "RspDLTI"
+	ReqDownloadFileWrong    = "ReqDFW"
+	RspDownloadFileWrong    = "RspDFW"
 	ReqDownloadSliceWrong   = "ReqDSW"
 	RspDownloadSliceWrong   = "RspDSW"
 	ReqClearDownloadTask    = "ReqCDT"
@@ -146,8 +151,8 @@ const (
 	RspGetShareFile = "RspGSF"
 
 	// heartbeat
-	ReqHeart = "ReqHeart"
-	RspHeart = "RspHeart"
+	ReqLatencyCheck = "ReqLatencyCheck"
+	RspLatencyCheck = "RspLatencyCheck"
 	// test sp latency
 	ReqSpLatencyCheck = "ReqSpLatencyCheck"
 
@@ -157,6 +162,8 @@ const (
 
 	ReqTransferBLSSignature = "ReqTrBLS"
 	RspTransferBLSSignature = "RspTrBLS"
+
+	RspBadVersion = "RspBdVer"
 )
 
 // DecodeHeader
@@ -175,5 +182,6 @@ func NewDecodeHeader(packet []byte, msgH *MessageHead) {
 	msgH.Tag = utils.BytesToInt16(packet[:2])
 	msgH.Len = utils.BytesToUInt32(packet[2:6])
 	msgH.Cmd = packet[6:14]
-	msgH.Version = utils.BytesToUint16(packet[14:])
+	msgH.ReqId = int64(utils.BytesToUInt64(packet[14:22]))
+	msgH.Version = utils.BytesToUint16(packet[22:])
 }

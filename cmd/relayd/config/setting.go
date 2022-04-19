@@ -17,21 +17,39 @@ type sds struct {
 	ConnectionRetries connectionRetries `yaml:"connectionRetries"`
 }
 
+type broadcast struct {
+	ChannelSize int `yaml:"channelSize"`
+	MaxMsgPerTx int `yaml:"maxMsgPerTx"`
+}
+
 type stratoschain struct {
 	RestServer        string            `yaml:"restServer"`
 	WebsocketServer   string            `yaml:"websocketServer"`
 	ConnectionRetries connectionRetries `yaml:"connectionRetries"`
+	Broadcast         broadcast         `yaml:"broadcast"`
+}
+
+type transactionsConfig struct {
+	Fee int64 `yaml:"fee"`
+	Gas int64 `yaml:"gas"`
+}
+
+type blockchainInfoConfig struct {
+	ChainId      string             `yaml:"chainId"`
+	Token        string             `yaml:"token"`
+	Transactions transactionsConfig `yaml:"transactions"`
+}
+
+type Version struct {
+	AppVer    uint16 `yaml:"appVer"`
+	MinAppVer uint16 `yaml:"minAppVer"`
 }
 
 type config struct {
 	BlockchainInfo blockchainInfoConfig `yaml:"blockchainInfo"`
 	SDS            sds                  `yaml:"sds"`
 	StratosChain   stratoschain         `yaml:"stratosChain"`
-}
-
-type blockchainInfoConfig struct {
-	ChainId string `yaml:"chainId"`
-	Token   string `yaml:"token"`
+	Version        Version              `yaml:"version"`
 }
 
 var Config *config

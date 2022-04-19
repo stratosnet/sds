@@ -74,6 +74,7 @@ message RspUploadFile {
   uint64 video_slice_duration = 10;
   bool   is_encrypted = 11;
   string sp_p2p_address = 12;
+  bytes  sign = 13;
 }
 
 message ReqUploadFileSlice {
@@ -87,6 +88,7 @@ message ReqUploadFileSlice {
   string          task_id = 8; //
   uint64          slice_size = 9; //
   string          sp_p2p_address = 10;
+  bytes           sign = 11;
 }
 
 message RspUploadFileSlice {
@@ -183,6 +185,15 @@ message RspFileStorageInfo {
   string encryption_tag = 15;
 }
 
+message ReqDownloadFileWrong {
+  FileIndexes         file_indexes = 1;
+  string              file_hash = 2;
+  bytes               sign = 3;
+  string              req_id = 4;
+  bool                is_video_stream = 5;
+  repeated string     failed_slices = 6;
+  repeated PPBaseInfo failed_pp_nodes = 7;
+}
 
 message ReqDownloadSlice {
   SliceOffsetInfo    slice_info = 1;
@@ -287,6 +298,7 @@ message ReqRegisterNewPP {
   uint32  version = 9;
   bytes   pub_key = 10;
   bytes   sign = 11;
+  string  network_address = 12;
 }
 
 message RspRegisterNewPP {
@@ -298,6 +310,7 @@ message ReqActivatePP {
   bytes      tx = 1;
   PPBaseInfo pp_info = 2;
   bool       already_active = 3;
+  string     initial_stake = 4;
 }
 
 message RspActivatePP {
@@ -311,6 +324,7 @@ message ReqActivatedPP {
   string p2p_pubkey = 2;
   string ozone_limit_changes = 3; // positive
   string tx_hash = 4;
+  string initial_stake = 5;
 }
 
 message ReqActivatedSP {
@@ -339,6 +353,7 @@ message ReqUpdatedStakePP {
   string ozone_limit_changes = 2;
   string incr_stake = 3; // true/false
   string tx_hash = 4;
+  string stake_delta = 5;
 }
 
 message ReqUpdatedStakeSP {
@@ -350,6 +365,9 @@ message ReqUpdatedStakeSP {
 
 message RspUpdatedStakePP {
   Result result = 1;
+  string stake_balance = 2;
+  string node_tier = 3;
+  string weight_score = 4;
 }
 
 message ReqDeactivatePP {
@@ -372,6 +390,7 @@ message ReqUnbondingPP {
   string ozone_limit_changes = 2; // negative
   string unbonding_mature_time = 3;
   string tx_hash = 4;
+  string stake_to_remove = 5;
 }
 
 message RspUnbondingPP {
@@ -582,7 +601,7 @@ message RspDeleteSlice {
   Result result = 4;
 }
 
-message ReqHeartbeat {
+message ReqLatencyCheck {
   HeartbeatType hb_type = 1;
   string p2p_address_pp = 2;
   string network_address_sp = 3;
@@ -590,7 +609,7 @@ message ReqHeartbeat {
   string ping_time = 5;
 }
 
-message RspHeartbeat {
+message RspLatencyCheck {
   HeartbeatType hb_type = 1;
   string p2p_address_pp = 2;
   string network_address_sp = 3;
@@ -782,12 +801,17 @@ message ReqReportNodeStatus {
 
 message ReqGetPPStatus {
   PPBaseInfo my_address = 1;
-
+  bool init_pp_list = 2;
 }
 
 message RspGetPPStatus{
-  uint32 ActivationState = 1;
-  Result result = 2;
+  uint32 is_active = 1;
+  uint32 ongoing_tier = 2;
+  uint32 init_tier = 3;
+  uint32 weight_score = 4;
+  int32 state = 5;
+  bool init_pp_list = 6;
+  Result result = 7;
 }
 
 message ReqGetWalletOz {
@@ -798,5 +822,21 @@ message RspGetWalletOz{
   string wallet_oz = 1;
   string wallet_address = 2;
   Result result = 3;
+}
 
+enum PPState {
+  OFFLINE = 0;
+  ONLINE = 1;
+  SUSPEND = 2;
+}
+
+message RspReportNodeStatus{
+  int32 ppstate = 1;
+  Result result = 2;
+}
+
+message RspBadVersion{
+  int32  version = 1;
+  int32  minimum_version = 2;
+  string command = 3;
 }

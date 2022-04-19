@@ -24,6 +24,10 @@ var bufferedSpConns = make([]*cf.ClientConn, 0)
 
 // SendMessage
 func SendMessage(conn core.WriteCloser, pb proto.Message, cmd string) error {
+	return SendResponseMessageWithReqId(conn, pb, cmd, int64(0))
+}
+
+func SendResponseMessageWithReqId(conn core.WriteCloser, pb proto.Message, cmd string, reqId int64) error {
 	data, err := proto.Marshal(pb)
 
 	if err != nil {
@@ -31,7 +35,7 @@ func SendMessage(conn core.WriteCloser, pb proto.Message, cmd string) error {
 		return errors.New("error decoding")
 	}
 	msg := &msg.RelayMsgBuf{
-		MSGHead: requests.PPMsgHeader(data, cmd),
+		MSGHead: header.MakeMessageHeader(1, uint16(setting.Config.Version.AppVer), uint32(len(data)), cmd, reqId),
 		MSGData: data,
 	}
 	switch conn.(type) {
@@ -114,7 +118,13 @@ func TransferSendMessageToClient(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
 // GetMyNodeStatusFromSP P node get node status
 func GetPPStatusFromSP() {
 	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetPPStatus)")
-	SendMessageToSPServer(requests.ReqGetPPStatusData(), header.ReqGetPPStatus)
+	SendMessageToSPServer(requests.ReqGetPPStatusData(false), header.ReqGetPPStatus)
+}
+
+// GetMyNodeStatusFromSP P node get node status
+func GetPPStatusInitPPList() {
+	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetPPStatus)")
+	SendMessageToSPServer(requests.ReqGetPPStatusData(true), header.ReqGetPPStatus)
 }
 
 // GetSPList node get spList
@@ -151,13 +161,13 @@ func checkSingleSpLatency(server string, heartbeat bool) {
 	//defer spConn.Close()
 	if spConn != nil {
 		start := time.Now().UnixNano()
-		pb := &protos.ReqHeartbeat{
+		pb := &protos.ReqLatencyCheck{
 			HbType:           protos.HeartbeatType_LATENCY_CHECK,
 			P2PAddressPp:     setting.P2PAddress,
 			NetworkAddressSp: server,
 			PingTime:         strconv.FormatInt(start, 10),
 		}
-		SendMessage(spConn, pb, header.ReqHeart)
+		SendMessage(spConn, pb, header.ReqLatencyCheck)
 		if client.GetConnectionName(client.SPConn) != server {
 			bufferedSpConns = append(bufferedSpConns, spConn)
 		}
@@ -179,5 +189,5 @@ func ScheduleReloadSPlist(future time.Duration) {
 
 func ScheduleReloadPPStatus(future time.Duration) {
 	utils.DebugLog("scheduled to get pp status from sp after: ", future.Seconds(), "second")
-	ppPeerClock.AddJobWithInterval(future, GetPPStatusFromSP)
+	ppPeerClock.AddJobWithInterval(future, GetPPStatusInitPPList)
 }

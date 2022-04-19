@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/pp/serv"
@@ -26,7 +24,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	helpStr := "\n" +
 		"help                                       			show all the commands\n" +
 		"wallets                                    			acquire all wallet wallets' address\n" +
-		"newwallet							                    create new wallet, input password in prompt\n" +
+		"newwallet		                                        create new wallet, input password in prompt\n" +
 		"login <walletAddress> ->password           			unlock and log in wallet, input password in prompt\n" +
 		"registerpeer                               			register peer to index node\n" +
 		"rp                                         			register peer to index node\n" +
@@ -40,8 +38,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"list <filename>                            			query uploaded file by self\n" +
 		"list                                       			query all files\n" +
 		"delete <filehash>                          			delete file\n" +
-		"get <sdm://account/filehash|filename>      			download file, need to consume ozone\n" +
-		"	e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe|test.mp4\n" +
+		"get <sdm://account/filehash>			                download file, need to consume ozone\n" +
+		"	e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe\n" +
 		"sharefile <filehash> <expiry> <private>    			share an uploaded file\n" +
 		"allshare                                   			list all shared files\n" +
 		"getsharefile <sharelink> <password>        			download a shared file, need to consume ozone\n" +
@@ -50,7 +48,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"monitor                                    			show monitor\n" +
 		"stopmonitor                                			stop monitor\n" +
 		"config  <key> <value>                      			set config key value\n" +
-		"getoz <walletAddress> ->password           			get current ozone balance\n"
+		"getoz <walletAddress> ->password           			get current ozone balance\n" +
+		"status			                                        get current resource node status\n"
 
 	help := func(line string, param []string) bool {
 		fmt.Println(helpStr)
@@ -66,40 +65,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 			fmt.Println("missing wallet address")
 			return false
 		}
-		password, err := console.Stdin.PromptPassword("Enter password: ")
-		if err != nil {
-			fmt.Println(err)
-			return false
-		}
-
-		files, err := serv.GetWallets(param[0], password)
-		if err != nil {
-			fmt.Println(err)
-			return false
-		}
-		fileName := param[0] + ".json"
-		for _, info := range files {
-			if info.Name() == ".placeholder" || info.Name() != fileName {
-				continue
-			}
-			utils.Log("find file: " + filepath.Join(setting.Config.AccountDir, fileName))
-			keyjson, err := ioutil.ReadFile(filepath.Join(setting.Config.AccountDir, fileName))
-			if utils.CheckError(err) {
-				utils.ErrorLog("getPublicKey ioutil.ReadFile", err)
-				fmt.Println(err)
-				return false
-			}
-			_, err = utils.DecryptKey(keyjson, password)
-
-			if utils.CheckError(err) {
-				utils.ErrorLog("getPublicKey DecryptKey", err)
-				return false
-			}
-			return callRpc(c, "getoz", param)
-		}
-
-		utils.ErrorLogf("Wallet %v does not exists", param[0])
-		return false
+		password := console.MyGetPassword("input password", false)
+		return callRpc(c, "getoz", []string{param[0], password})
 	}
 
 	newwallet := func(line string, param []string) bool {
@@ -121,10 +88,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 			return false
 		}
 		password := console.MyGetPassword("input password", false)
-		if len(password) == 0 {
-			fmt.Println("empty password")
-			return false
-		}
+
 		return callRpc(c, "login", []string{param[0], password})
 	}
 
@@ -142,6 +106,10 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 
 	updateStake := func(line string, param []string) bool {
 		return callRpc(c, "updateStake", param)
+	}
+
+	status := func(line string, param []string) bool {
+		return callRpc(c, "status", param)
 	}
 
 	deactivate := func(line string, param []string) bool {
@@ -261,7 +229,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("rp", registerPP, true)
 	console.Mystdin.RegisterProcessFunc("registerpeer", registerPP, true)
 	console.Mystdin.RegisterProcessFunc("activate", activate, true)
-	console.Mystdin.RegisterProcessFunc("updateStake", updateStake, false)
+	console.Mystdin.RegisterProcessFunc("updateStake", updateStake, true)
+	console.Mystdin.RegisterProcessFunc("status", status, true)
 	console.Mystdin.RegisterProcessFunc("deactivate", deactivate, true)
 	console.Mystdin.RegisterProcessFunc("prepay", prepay, true)
 	console.Mystdin.RegisterProcessFunc("u", upload, true)

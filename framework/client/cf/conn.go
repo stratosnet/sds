@@ -27,6 +27,7 @@ var (
 	limitUploadSpeed     uint64
 	isLimitDownloadSpeed bool
 	isLimitUploadSpeed   bool
+	isSpLatencyChecked   bool
 )
 
 // MsgHandler
@@ -49,6 +50,7 @@ type options struct {
 	reconnect  bool // only ClientConn
 	heartClose bool
 	logOpen    bool
+	minAppVer  uint16
 }
 
 // ClientOption client configuration
@@ -104,6 +106,13 @@ func CreateClientConn(netid int64, c net.Conn, opt ...ClientOption) *ClientConn 
 	return newClientConnWithOptions(netid, c, opts)
 }
 
+// MinAppVersionOption
+func MinAppVersionOption(b uint16) ClientOption {
+	return func(o *options) {
+		o.minAppVer = b
+	}
+}
+
 // BufferSizeOption
 func BufferSizeOption(indicator int) ClientOption {
 	return func(o *options) {
@@ -128,7 +137,7 @@ func LogOpenOption(b bool) ClientOption {
 // Mylog my
 func Mylog(b bool, v ...interface{}) {
 	if b {
-		utils.DebugLog(v...)
+		utils.DetailLog(v...)
 	}
 }
 
@@ -248,21 +257,22 @@ func (cc *ClientConn) Start() {
 		go looper(cc, cc.wg)
 	}
 	var (
-		myClock               = clock.NewClock()
-		handler               = core.GetHandlerFunc(header.ReqHeart)
+		myClock = clock.NewClock()
+		//handler               = core.GetHandlerFunc(header.ReqHeart)
 		spLatencyCheckHandler = core.GetHandlerFunc(header.ReqSpLatencyCheck)
 
 		spLatencyCheckJobFunc = func() {
-			if spLatencyCheckHandler != nil {
+			if !isSpLatencyChecked && spLatencyCheckHandler != nil {
 				cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, spLatencyCheckHandler}
+				isSpLatencyChecked = true
 			}
 		}
 
-		jobFunc = func() {
-			if handler != nil {
-				cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
-			}
-		}
+		//jobFunc = func() {
+		//	if handler != nil {
+		//		cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
+		//	}
+		//}
 		logFunc = func() {
 			cc.inbound = cc.inboundAtomic.AddAndGetNew(cc.secondReadFlowA)
 			cc.outbound = cc.outboundAtomic.AddAndGetNew(cc.secondWriteFlowA)
@@ -272,11 +282,11 @@ func (cc *ClientConn) Start() {
 			cc.secondWriteFlowA = cc.secondWriteAtomA.GetNewAndSetAtomic(0)
 		}
 	)
-	if !cc.opts.heartClose {
-		hbJob, _ := myClock.AddJobRepeat(time.Second*utils.ClientSendHeartTime, 0, jobFunc)
-		cc.jobs = append(cc.jobs, hbJob)
-	}
-	latencyJob, _ := myClock.AddJobRepeat(time.Second*utils.LatencyCheckSpListInterval, 0, spLatencyCheckJobFunc)
+	//if !cc.opts.heartClose {
+	//	hbJob, _ := myClock.AddJobRepeat(time.Second*utils.ClientSendHeartTime, 0, jobFunc)
+	//	cc.jobs = append(cc.jobs, hbJob)
+	//}
+	latencyJob, _ := myClock.AddJobRepeat(time.Second*utils.LatencyCheckSpListInterval, 1, spLatencyCheckJobFunc)
 	cc.jobs = append(cc.jobs, latencyJob)
 	logJob, _ := myClock.AddJobRepeat(time.Second*1, 0, logFunc)
 	cc.jobs = append(cc.jobs, logJob)
@@ -307,13 +317,13 @@ func (cc *ClientConn) ClientClose() {
 		// wait until all go-routines exited.
 		cc.wg.Wait()
 
-		utils.DebugLog("cc.wg.Wait() finished")
+		utils.DetailLog("cc.wg.Wait() finished")
 
 		// close all channels.
 		close(cc.sendCh)
 		close(cc.handlerCh)
 		if len(cc.jobs) > 0 {
-			utils.DebugLogf("cancel %v jobs, %v", len(cc.jobs), cc.GetName())
+			utils.DetailLogf("cancel %v jobs, %v", len(cc.jobs), cc.GetName())
 			for _, job := range cc.jobs {
 				job.Cancel()
 			}
@@ -348,7 +358,7 @@ func (cc *ClientConn) Close() {
 		close(cc.sendCh)
 		close(cc.handlerCh)
 		if len(cc.jobs) > 0 {
-			utils.DebugLogf("cancel %v jobs, %v", len(cc.jobs), cc.GetName())
+			utils.DetailLogf("cancel %v jobs, %v", len(cc.jobs), cc.GetName())
 			for _, job := range cc.jobs {
 				job.Cancel()
 			}
@@ -427,8 +437,9 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf) (err error) {
 		sendCh chan *msg.RelayMsgBuf
 	)
 	sendCh = c.sendCh
-	msgH := make([]byte, 16)
-	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), msgH)
+	msgH := make([]byte, utils.MsgHeaderLen)
+	reqId, _ := utils.NextSnowFakeId()
+	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, msgH)
 	// msgData := make([]byte, utils.MessageBeatLen)
 	// copy((*msgData)[0:], msgH)
 	// copy((*msgData)[utils.MsgHeaderLen:], m.MSGData)
@@ -456,6 +467,8 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf) (err error) {
 		memory = nil
 		return
 	}
+
+	core.TimoutMap.Store(reqId, m)
 
 	return
 }
@@ -506,13 +519,20 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				n, err := io.ReadFull(spbConn, buffer)
 				cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
 				if err != nil {
-					utils.ErrorLog("client heart err", err)
+					if err == io.EOF {
+						return
+					}
+					utils.ErrorLog("client read err", err)
 					return
 				}
 				header.NewDecodeHeader(buffer, &msgH)
 				buffer = nil
 				// Mylog(cc.opts.logOpen,"client msg size", msgH.Cmd)
 				if msgH.Len == 0 {
+					if msgH.Version < cc.opts.minAppVer {
+						utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
+						continue
+					}
 					handler := core.GetHandlerFunc(utils.ByteToString(msgH.Cmd))
 					if handler != nil {
 						handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
@@ -544,6 +564,14 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					}
 				}
 				if uint32(i) == msgH.Len {
+					if msgH.Version < cc.opts.minAppVer {
+						utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
+						msgH.Len = 0
+						i = 0
+						msgBuf = nil
+						continue
+					}
+
 					message = &msg.RelayMsgBuf{
 						MSGHead: msgH,
 						MSGData: msgBuf[0:msgH.Len],
@@ -721,6 +749,7 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			return
 		case msgHandler := <-handlerCh:
 			msg, handler := msgHandler.message, msgHandler.handler
+			core.TimoutMap.DeleteByRspMsg(&msg)
 			handler(core.CreateContextWithNetID(core.CreateContextWithMessage(ctx, &msg), netID), c)
 		}
 	}

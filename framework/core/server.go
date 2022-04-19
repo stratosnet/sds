@@ -35,6 +35,7 @@ type options struct {
 	logOpen        bool
 	maxConnections int
 	maxflow        int
+	minAppVersion  uint16
 }
 
 // ServerOption
@@ -45,7 +46,7 @@ type Server struct {
 	opts             options
 	ctx              context.Context
 	cancel           context.CancelFunc
-	conns            *sync.Map
+	conns            *connPool
 	wg               *sync.WaitGroup
 	mu               sync.Mutex // lock
 	lis              map[net.Listener]bool
@@ -91,7 +92,7 @@ func CreateServer(opt ...ServerOption) *Server {
 
 	s := &Server{
 		opts:             opts,
-		conns:            &sync.Map{},
+		conns:            newConnPool(),
 		wg:               &sync.WaitGroup{},
 		lis:              make(map[net.Listener]bool),
 		goAtom:           utils.CreateAtomicInt64(0),
@@ -111,12 +112,7 @@ func CreateServer(opt ...ServerOption) *Server {
 
 // ConnsSize
 func (s *Server) ConnsSize() int {
-	var sz int
-	s.conns.Range(func(k, v interface{}) bool {
-		sz++
-		return true
-	})
-	return sz
+	return int(s.conns.Count())
 }
 
 // Start
@@ -237,13 +233,8 @@ func (s *Server) Stop() {
 	// close all connections
 	conns := map[int64]*ServerConn{}
 
-	s.conns.Range(func(k, v interface{}) bool {
-		i := k.(int64)
-		switch v.(type) {
-		case *ServerConn:
-			c := v.(*ServerConn)
-			conns[i] = c
-		}
+	s.conns.Range(func(id int64, conn *ServerConn) bool {
+		conns[id] = conn
 		return true
 	})
 	// let GC do the cleanings
@@ -251,8 +242,8 @@ func (s *Server) Stop() {
 
 	for _, c := range conns {
 		c.spbConn.Close()
-		Mylog(s.opts.logOpen, "close client \n", c.GetName())
 	}
+	Mylog(s.opts.logOpen, "closed connection cnt: ", len(conns))
 
 	s.mu.Lock()
 	s.cancel()
@@ -317,11 +308,17 @@ func MaxFlowOption(indicator int) ServerOption {
 	}
 }
 
+func MinAppVersionOption(minAppVersion uint16) ServerOption {
+	return func(o *options) {
+		o.minAppVersion = minAppVersion
+	}
+}
+
 // Unicast
 func (s *Server) Unicast(netid int64, msg *msg.RelayMsgBuf) error {
 	v, ok := s.conns.Load(netid)
 	if ok {
-		return v.(*ServerConn).Write(msg)
+		return v.Write(msg)
 	}
 	Mylog(s.opts.logOpen, "conn id not found", msg)
 	return nil
@@ -329,10 +326,9 @@ func (s *Server) Unicast(netid int64, msg *msg.RelayMsgBuf) error {
 
 // Broadcast
 func (s *Server) Broadcast(msg *msg.RelayMsgBuf) {
-	s.conns.Range(func(k, v interface{}) bool {
-		c := v.(*ServerConn)
-		if err := c.Write(msg); err != nil {
-			Mylog(s.opts.logOpen, "broadcast error:", err, "conn id:", k.(int64))
+	s.conns.Range(func(id int64, conn *ServerConn) bool {
+		if err := conn.Write(msg); err != nil {
+			Mylog(s.opts.logOpen, "broadcast error:", err, "conn id:", id)
 			return false
 		}
 		return true

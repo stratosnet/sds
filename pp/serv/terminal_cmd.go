@@ -3,6 +3,8 @@ package serv
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 	"strconv"
 
 	"github.com/stratosnet/sds/pp/event"
@@ -34,11 +36,38 @@ func (api *terminalCmd) Wallets(param []string) (CmdResult, error) {
 }
 
 func (api *terminalCmd) Getoz(param []string) (CmdResult, error) {
-	if err := event.GetWalletOz(param[0]); err != nil {
+	files, err := GetWallets(param[0], param[1])
+
+	if err != nil {
+		fmt.Println(err)
 		return CmdResult{Msg: ""}, err
 	}
-	return CmdResult{Msg: DefaultMsg}, nil
+	fileName := param[0] + ".json"
+	for _, info := range files {
+		if info.Name() == ".placeholder" || info.Name() != fileName {
+			continue
+		}
+		utils.Log("find file: " + filepath.Join(setting.Config.AccountDir, fileName))
+		keyjson, err := ioutil.ReadFile(filepath.Join(setting.Config.AccountDir, fileName))
+		if utils.CheckError(err) {
+			utils.ErrorLog("getPublicKey ioutil.ReadFile", err)
+			fmt.Println(err)
+			return CmdResult{Msg: ""}, err
+		}
+		_, err = utils.DecryptKey(keyjson, param[1])
 
+		if utils.CheckError(err) {
+			utils.ErrorLog("getPublicKey DecryptKey", err)
+			return CmdResult{Msg: ""}, err
+		}
+		if err := event.GetWalletOz(param[0]); err != nil {
+			return CmdResult{Msg: ""}, err
+		}
+		return CmdResult{Msg: DefaultMsg}, nil
+	}
+
+	utils.ErrorLogf("Wallet %v does not exists", param[0])
+	return CmdResult{Msg: ""}, err
 }
 
 func (api *terminalCmd) NewWallet(param []string) (CmdResult, error) {
@@ -128,6 +157,11 @@ func (api *terminalCmd) UpdateStake(param []string) (CmdResult, error) {
 	if err := event.UpdateStake(stakeDelta, fee, gas, incrStake); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
+	return CmdResult{Msg: DefaultMsg}, nil
+}
+
+func (api *terminalCmd) Status(param []string) (CmdResult, error) {
+	peers.GetPPStatusFromSP()
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -232,7 +266,7 @@ func (api *terminalCmd) DeleteFn(param []string) (CmdResult, error) {
 }
 
 func (api *terminalCmd) Ver(param []string) (CmdResult, error) {
-	return CmdResult{Msg: fmt.Sprintf("version:", setting.Config.VersionShow)}, nil
+	return CmdResult{Msg: fmt.Sprintf("version: %v", setting.Config.Version.Show)}, nil
 }
 
 func (api *terminalCmd) Monitor(param []string) (CmdResult, error) {

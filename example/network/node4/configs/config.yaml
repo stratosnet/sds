@@ -1,5 +1,7 @@
-version: 5
-versionshow: v0.5.1
+Version:
+  AppVer: 7
+  MinAppVer: 7
+  Show: v0.6.0
 downloadpathminlen: 88
 Port: "9084"
 NetworkAddress: 127.0.0.1
@@ -22,19 +24,12 @@ LimitUploadSpeed: 100
 ChainId: test-chain
 Token: ustos
 StratosChainUrl: http://127.0.0.1:1317
+StreamingCache: false
 RestPort: "18094"
 InternalPort: ""
 TrafficLogInterval: 10
 SPList:
-- P2PAddress: stsds1cw8qhgsxddak8hh8gs7veqmy5ku8f8za6qlq64
-  P2PPublicKey: stsdspub1zcjduepqjmfc8j7ve0jg3jwq9wkefpa34fg9hhrp7nu6rkf6hff7ml769f6q676ryj
-  NetworkAddress: 127.0.0.1:8888
-- P2PAddress: stsds13yakj2xgzzdfcw7kd5gtfcfv2k6sn5eg4vdfem
-  P2PPublicKey: stsdspub1zcjduepqhhplcrnkn9597gnh87y9zshe0kfs87fvmtrjpyq4heqjcz0dhltsys64es
-  NetworkAddress: 127.0.0.1:38888
-- P2PAddress: stsds15sya4n40da64z6n6hvk0p9f7sx72hqpjjnrf9y
-  P2PPublicKey: stsdspub1zcjduepqpfr08evmk73dtf7ud69pwdznl4xdfghx6k6dyugwpk2jhqq890yq2nlm25
-  NetworkAddress: 127.0.0.1:28888
-- P2PAddress: stsds14c3em44vlh276cujnr2ez802uyjyeqrrsu9fuh
-  P2PPublicKey: stsdspub1zcjduepqzgqd566qdnj4kna050jz505vamjhglxcpdepqctkregdt6snxm6spxdk2l
-  NetworkAddress: 127.0.0.1:18888
+- P2PAddress:
+  P2PPublicKey:
+  NetworkAddress: 0.0.0.0:8888
+

@@ -2,18 +2,22 @@ package client
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
+	"github.com/pkg/errors"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/relay/sds"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/relay/stratoschain/handlers"
+	relaytypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils"
 	tmHttp "github.com/tendermint/tendermint/rpc/client/http"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -27,6 +31,7 @@ type MultiClient struct {
 	sdsWebsocketConn      *websocket.Conn
 	stratosWebsocketUrl   string
 	stratosEventsChannels *sync.Map
+	txBroadcasterChan     chan relaytypes.UnsignedMsg
 	wg                    *sync.WaitGroup
 }
 
@@ -133,6 +138,7 @@ func (m *MultiClient) connectToSDS() {
 		m.sdsWebsocketConn = ws
 
 		go m.sdsEventsReaderLoop()
+		go m.txBroadcasterLoop()
 
 		utils.Log("Successfully subscribed to events from SDS SP node and started client to send messages back")
 		return
@@ -194,6 +200,7 @@ func (m *MultiClient) sdsEventsReaderLoop() {
 		}
 		m.wg.Done()
 	}()
+
 	for {
 		if m.Ctx.Err() != nil {
 			return
@@ -214,10 +221,86 @@ func (m *MultiClient) sdsEventsReaderLoop() {
 
 		switch msg.Type {
 		case sds.TypeBroadcast:
-			err = stratoschain.BroadcastTxBytes(msg.Data)
+			unsignedMsgs := relaytypes.UnsignedMsgs{}
+			err = json.Unmarshal(msg.Data, &unsignedMsgs)
 			if err != nil {
-				utils.ErrorLog("couldn't broadcast transaction", err)
+				utils.ErrorLog("couldn't unmarshal UnsignedMsgs json", err)
 				continue
+			}
+			for _, msgBytes := range unsignedMsgs.Msgs {
+				unsignedMsg, err := msgBytes.FromBytes()
+				if err != nil {
+					utils.ErrorLog(err)
+					continue
+				}
+				// Add unsignedMsg to tx broadcast channel
+				m.txBroadcasterChan <- unsignedMsg
+			}
+		}
+	}
+}
+
+func (m *MultiClient) txBroadcasterLoop() {
+	if m.txBroadcasterChan != nil {
+		// tx broadcaster loop already running
+		return
+	}
+
+	m.wg.Add(1)
+	defer func() {
+		// Close existing channel
+		close(m.txBroadcasterChan)
+		m.txBroadcasterChan = nil
+
+		// If the ctx is not done yet, restart the Tx broadcaster channel
+		if m.Ctx.Err() == nil {
+			go m.txBroadcasterLoop()
+		}
+		m.wg.Done()
+	}()
+
+	m.txBroadcasterChan = make(chan relaytypes.UnsignedMsg, setting.Config.StratosChain.Broadcast.ChannelSize)
+
+	var unsignedMsgs []*relaytypes.UnsignedMsg
+	broadcastTx := func() {
+		utils.Logf("Tx broadcaster loop will try to broadcast %v msgs %v", len(unsignedMsgs), countMsgsByType(unsignedMsgs))
+		txBytes, err := stratoschain.BuildTxBytes(setting.Config.BlockchainInfo.Token, setting.Config.BlockchainInfo.ChainId, "",
+			flags.BroadcastBlock, unsignedMsgs, setting.Config.BlockchainInfo.Transactions.Fee,
+			setting.Config.BlockchainInfo.Transactions.Gas)
+		unsignedMsgs = nil // Clearing msg list
+		if err != nil {
+			utils.ErrorLog("couldn't build tx bytes", err)
+			return
+		}
+
+		err = stratoschain.BroadcastTxBytes(txBytes)
+		if err != nil {
+			utils.ErrorLog("couldn't broadcast transaction", err)
+			return
+		}
+	}
+
+	for {
+		select {
+		case <-m.Ctx.Done():
+			return
+		case msg, ok := <-m.txBroadcasterChan:
+			if !ok {
+				utils.ErrorLog("The stratos-chain tx broadcaster channel has been closed")
+				return
+			}
+			if msg.Msg.Type() != "slashing_resource_node" { // Not printing slashing messages, since SP can slash up to 500 PPs at once, polluting the logs
+				utils.DebugLogf("Received a new msg of type [%v] to broadcast! ", msg.Msg.Type())
+			}
+			unsignedMsgs = append(unsignedMsgs, &msg)
+			if len(unsignedMsgs) >= setting.Config.StratosChain.Broadcast.MaxMsgPerTx {
+				// Max broadcast size is reached. Broadcasting now
+				broadcastTx()
+			}
+		case <-time.After(500 * time.Millisecond):
+			// No new messages are waiting to broadcast. Broadcasting existing messages now
+			if len(unsignedMsgs) > 0 {
+				broadcastTx()
 			}
 		}
 	}
@@ -250,13 +333,19 @@ func (m *MultiClient) stratosSubscriptionReaderLoop(subscription websocketSubscr
 				utils.Log("The stratos-chain events websocket channel has been closed")
 				return
 			}
-			utils.Log("Received a new message from stratos-chain!", subscription.query)
+			utils.Logf("Received a new message of type [%v] from stratos-chain!", subscription.query)
 			handler(message)
 		}
 	}
 }
 
-func (m *MultiClient) SubscribeToStratosChain(query string, handler func(coretypes.ResultEvent)) error {
+func (m *MultiClient) SubscribeToStratosChain(msgType string) error {
+	handler, ok := handlers.Handlers[msgType]
+	if !ok {
+		return errors.Errorf("Cannot subscribe to message [%v] in stratos-chain: missing handler function")
+	}
+
+	query := fmt.Sprintf("message.action='%v'", msgType)
 	if _, ok := m.stratosEventsChannels.Load(query); ok {
 		return nil
 	}
@@ -283,64 +372,13 @@ func (m *MultiClient) SubscribeToStratosChain(query string, handler func(coretyp
 }
 
 func (m *MultiClient) SubscribeToStratosChainEvents() error {
-	err := m.SubscribeToStratosChain("message.action='create_resource_node'", handlers.CreateResourceNodeMsgHandler())
-	if err != nil {
-		return err
+	for msgType := range handlers.Handlers {
+		err := m.SubscribeToStratosChain(msgType)
+		if err != nil {
+			return err
+		}
 	}
-	err = m.SubscribeToStratosChain("message.action='update_resource_node_stake'", handlers.UpdateResourceNodeStakeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='unbonding_resource_node'", handlers.UnbondingResourceNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='remove_resource_node'", handlers.RemoveResourceNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='complete_unbonding_resource_node'", handlers.CompleteUnbondingResourceNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='create_indexing_node'", handlers.CreateIndexingNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='update_indexing_node_stake'", handlers.UpdateIndexingNodeStakeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='unbonding_indexing_node'", handlers.UnbondingIndexingNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='remove_indexing_node'", handlers.RemoveIndexingNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='complete_unbonding_indexing_node'", handlers.CompleteUnbondingIndexingNodeMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='indexing_node_reg_vote'", handlers.IndexingNodeVoteMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='SdsPrepayTx'", handlers.PrepayMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='FileUploadTx'", handlers.FileUploadMsgHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='volume_report'", handlers.VolumeReportHandler())
-	if err != nil {
-		return err
-	}
-	err = m.SubscribeToStratosChain("message.action='slashing_resource_node'", handlers.SlashingResourceNodeHandler())
-	return err
+	return nil
 }
 
 func (m *MultiClient) GetSdsClientConn() *cf.ClientConn {
@@ -349,4 +387,20 @@ func (m *MultiClient) GetSdsClientConn() *cf.ClientConn {
 
 func (m *MultiClient) GetSdsWebsocketConn() *websocket.Conn {
 	return m.sdsWebsocketConn
+}
+
+func countMsgsByType(unsignedMsgs []*relaytypes.UnsignedMsg) string {
+	msgCount := make(map[string]int)
+	for _, msg := range unsignedMsgs {
+		msgCount[msg.Msg.Type()]++
+	}
+
+	countString := ""
+	for msgType, count := range msgCount {
+		if countString != "" {
+			countString += ", "
+		}
+		countString += fmt.Sprintf("%v: %v", msgType, count)
+	}
+	return "[" + countString + "]"
 }

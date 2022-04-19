@@ -59,8 +59,5 @@ func RspUpdatedStake(ctx context.Context, conn core.WriteCloser) {
 	if !success {
 		return
 	}
-	utils.Log("get RspUpdatedStakePP", target.Result.State, target.Result.Msg)
-
-	setting.State = types.PP_ACTIVE
-	utils.Log("This PP node is now active")
+	utils.Logf("get RspUpdatedStakePP, StakeBalance: %v, NodeTier: %v, Weight_Score: %v", target.StakeBalance, target.NodeTier, target.WeightScore)
 }

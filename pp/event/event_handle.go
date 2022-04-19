@@ -13,6 +13,7 @@ func RegisterEventHandle() {
 	core.Register(header.RspGetPPStatus, RspGetPPStatus)
 
 	core.Register(header.RspGetWalletOz, RspGetWalletOz)
+	core.Register(header.RspReportNodeStatus, RspReportNodeStatus)
 
 	core.Register(header.RspRegister, RspRegister)
 	core.Register(header.ReqRegister, ReqRegister)
@@ -48,6 +49,7 @@ func RegisterEventHandle() {
 
 	core.Register(header.RspDownloadSliceWrong, RspDownloadSliceWrong)
 	core.Register(header.RspFileStorageInfo, RspFileStorageInfo)
+	core.Register(header.RspDownloadFileWrong, RspDownloadFileWrong)
 	core.Register(header.ReqClearDownloadTask, ReqClearDownloadTask)
 	core.Register(header.ReqGetHDInfo, ReqGetHDInfo)
 	core.Register(header.RspGetHDInfo, RspGetHDInfo)
@@ -64,9 +66,11 @@ func RegisterEventHandle() {
 	core.Register(header.ReqGetShareFile, ReqGetShareFile)
 	core.Register(header.RspGetShareFile, RspGetShareFile)
 
-	core.Register(header.ReqHeart, SendHeartBeat)
 	core.Register(header.ReqSpLatencyCheck, ReqHBLatencyCheckSpList)
-	core.Register(header.RspHeart, RspHBLatencyCheckSpList)
+	core.Register(header.RspLatencyCheck, RspHBLatencyCheckSpList)
 	core.Register(header.ReqDeleteFile, ReqDeleteFile)
 	core.Register(header.RspDeleteFile, RspDeleteFile)
+	core.Register(header.RspBadVersion, RspBadVersion)
+
+	core.RegisterTimeoutHandler(header.ReqDownloadSlice, &DownloadTimeoutHandler{})
 }

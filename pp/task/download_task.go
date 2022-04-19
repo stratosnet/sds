@@ -57,6 +57,52 @@ type DownloadTask struct {
 	FileHash      string
 	VisitCer      string
 	SliceInfo     map[string]*protos.DownloadSliceInfo
+	FailedSlice   map[string]bool
+	SuccessSlice  map[string]bool
+	FailedPPNodes map[string]*protos.PPBaseInfo
+	SliceCount    int
+	taskMutex     sync.RWMutex
+}
+
+func (task *DownloadTask) SetSliceSuccess(sliceHash string) {
+	task.taskMutex.Lock()
+	defer task.taskMutex.Unlock()
+
+	delete(task.FailedSlice, sliceHash)
+	task.SuccessSlice[sliceHash] = true
+}
+
+func (task *DownloadTask) AddFailedSlice(sliceHash string) {
+	task.taskMutex.Lock()
+	defer task.taskMutex.Unlock()
+
+	if _, ok := task.SuccessSlice[sliceHash]; ok {
+		return
+	}
+
+	task.FailedSlice[sliceHash] = true
+	sliceInfo, ok := task.SliceInfo[sliceHash]
+	if !ok {
+		return
+	}
+	task.FailedPPNodes[sliceInfo.StoragePpInfo.P2PAddress] = sliceInfo.StoragePpInfo
+}
+
+func (task *DownloadTask) NeedRetry() (needRetry bool) {
+	task.taskMutex.Lock()
+	defer task.taskMutex.Unlock()
+	needRetry = len(task.FailedSlice) > 0 && len(task.SuccessSlice)+len(task.FailedSlice) == task.SliceCount
+	return
+}
+
+func (task *DownloadTask) RefreshTask(target *protos.RspFileStorageInfo) {
+	task.taskMutex.Lock()
+	defer task.taskMutex.Unlock()
+	for _, dlSliceInfo := range target.SliceInfo {
+		key := dlSliceInfo.SliceStorageInfo.SliceHash
+		task.SliceInfo[key] = dlSliceInfo
+	}
+	task.FailedSlice = make(map[string]bool)
 }
 
 // DownloadSliceData
@@ -78,8 +124,25 @@ func AddDownloadTask(target *protos.RspFileStorageInfo) {
 		FileHash:      target.FileHash,
 		VisitCer:      target.VisitCer,
 		SliceInfo:     SliceInfoMap,
+		FailedSlice:   make(map[string]bool),
+		SuccessSlice:  make(map[string]bool),
+		FailedPPNodes: make(map[string]*protos.PPBaseInfo),
+		SliceCount:    len(target.SliceInfo),
 	}
 	DownloadTaskMap.Store((target.FileHash + target.WalletAddress), dTask)
+}
+
+func GetDownloadTask(fileHash, walletAddress string) (*DownloadTask, bool) {
+	task, ok := DownloadTaskMap.Load(fileHash + walletAddress)
+	if !ok {
+		return nil, false
+	}
+	dTask, ok := task.(*DownloadTask)
+	if !ok {
+		utils.ErrorLog("failed to parse the download task for the file ", fileHash)
+		return nil, false
+	}
+	return dTask, true
 }
 
 // CleanDownloadTask

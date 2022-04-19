@@ -4,9 +4,10 @@ import (
 	"bytes"
 	ed25519crypto "crypto/ed25519"
 	"encoding/hex"
+	"fmt"
 	"io/ioutil"
+	"math/big"
 	"net/http"
-	"strconv"
 	"sync"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -16,39 +17,21 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/pkg/errors"
+	setting "github.com/stratosnet/sds/cmd/relayd/config"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/relay/stratoschain/handlers"
-	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
-	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
-	"github.com/tendermint/tendermint/crypto"
-	coretypes "github.com/tendermint/tendermint/rpc/core/types"
-
-	"github.com/stratosnet/sds/pp/types"
 	_ "github.com/stratosnet/sds/relay/stratoschain/prefix"
+	relaytypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
+	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
+	"github.com/tendermint/tendermint/crypto"
+	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
 var Url string
-
-const (
-	SignatureSecp256k1 = iota
-	SignatureEd25519
-)
-
-type SignatureKey struct {
-	AccountNum      uint64
-	AccountSequence uint64
-	Address         string
-	PrivateKey      []byte
-	Type            int
-}
-
-type UnsignedMsg struct {
-	Msg           sdktypes.Msg
-	SignatureKeys []SignatureKey
-}
 
 func FetchAccountInfo(address string) (*authtypes.BaseAccount, error) {
 	if Url == "" {
@@ -69,6 +52,10 @@ func FetchAccountInfo(address string) (*authtypes.BaseAccount, error) {
 		return nil, err
 	}
 
+	if resp.StatusCode != 200 {
+		return nil, errors.Errorf("invalid response HTTP%v: %v", resp.Status, string(respBytes))
+	}
+
 	var wrappedResponse sdkrest.ResponseWithHeight
 	err = codec.Cdc.UnmarshalJSON(respBytes, &wrappedResponse)
 	if err != nil {
@@ -80,14 +67,18 @@ func FetchAccountInfo(address string) (*authtypes.BaseAccount, error) {
 	return &account, err
 }
 
-func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*UnsignedMsg, fee, gas int64) (*authtypes.StdTx, error) {
+func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas int64) (*authtypes.StdTx, error) {
+	if len(unsignedMsgs) == 0 {
+		return nil, errors.New("cannot build tx: no msgs to sign")
+	}
+
 	stdFee := authtypes.NewStdFee(
 		uint64(gas),
 		sdktypes.NewCoins(sdktypes.NewInt64Coin(token, fee)),
 	)
 
 	// Collect list of signatures to do. Must match order of GetSigners() method in cosmos-sdk's stdtx.go
-	var signaturesToDo []SignatureKey
+	var signaturesToDo []relaytypes.SignatureKey
 	signersSeen := make(map[string]bool)
 	var sdkMsgs []sdktypes.Msg
 	for _, msg := range unsignedMsgs {
@@ -109,7 +100,7 @@ func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*UnsignedMsg,
 		var pubKey crypto.PubKey
 
 		switch signatureKey.Type {
-		case SignatureEd25519:
+		case relaytypes.SignatureEd25519:
 			if len(signatureKey.PrivateKey) != ed25519crypto.PrivateKeySize {
 				return nil, errors.New("ed25519 private key has wrong length: " + hex.EncodeToString(signatureKey.PrivateKey))
 			}
@@ -141,7 +132,7 @@ func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*UnsignedMsg,
 	return &tx, nil
 }
 
-func BuildTxBytes(token, chainId, memo, mode string, unsignedMsgs []*UnsignedMsg, fee, gas int64) ([]byte, error) {
+func BuildTxBytes(token, chainId, memo, mode string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas int64) ([]byte, error) {
 	filteredMsgs := filterInvalidSignatures(unsignedMsgs)          // Filter msgs with invalid signatures
 	accountInfos := fetchAllAccountInfos(filteredMsgs)             // Fetch account info from stratos-chain for each signature
 	updatedMsgs := updateSignatureKeys(filteredMsgs, accountInfos) // Update signatureKeys for each msg
@@ -156,6 +147,16 @@ func BuildTxBytes(token, chainId, memo, mode string, unsignedMsgs []*UnsignedMsg
 			len(updatedMsgs), len(unsignedMsgs)-len(filteredMsgs), len(filteredMsgs)-len(updatedMsgs))
 	}
 
+	// Print account sequences
+	accountsStr := ""
+	for walletAddress, account := range accountInfos {
+		if accountsStr != "" {
+			accountsStr += ", "
+		}
+		accountsStr += fmt.Sprintf("(Wallet %v  Num %v  Sequence %v)", walletAddress, account.AccountNumber, account.Sequence)
+	}
+	utils.DebugLogf("BuildTxBytes ChainId [%v] Accounts [%v] Mode [%v]", chainId, accountsStr, mode)
+
 	body := rest.BroadcastReq{
 		Tx:   *tx,
 		Mode: mode,
@@ -164,8 +165,8 @@ func BuildTxBytes(token, chainId, memo, mode string, unsignedMsgs []*UnsignedMsg
 	return relay.Cdc.MarshalJSON(body)
 }
 
-func filterInvalidSignatures(msgs []*UnsignedMsg) []*UnsignedMsg {
-	var filteredMsgs []*UnsignedMsg
+func filterInvalidSignatures(msgs []*relaytypes.UnsignedMsg) []*relaytypes.UnsignedMsg {
+	var filteredMsgs []*relaytypes.UnsignedMsg
 	for _, msg := range msgs {
 		invalidSignature := false
 		for _, signature := range msg.SignatureKeys {
@@ -182,7 +183,7 @@ func filterInvalidSignatures(msgs []*UnsignedMsg) []*UnsignedMsg {
 	return filteredMsgs
 }
 
-func fetchAllAccountInfos(msgs []*UnsignedMsg) map[string]*authtypes.BaseAccount {
+func fetchAllAccountInfos(msgs []*relaytypes.UnsignedMsg) map[string]*authtypes.BaseAccount {
 	// Gather all accounts to fetch
 	accountsToFetch := make(map[string]bool)
 	for _, msg := range msgs {
@@ -214,8 +215,8 @@ func fetchAllAccountInfos(msgs []*UnsignedMsg) map[string]*authtypes.BaseAccount
 	return results
 }
 
-func updateSignatureKeys(msgs []*UnsignedMsg, accountInfos map[string]*authtypes.BaseAccount) []*UnsignedMsg {
-	var filteredMsgs []*UnsignedMsg
+func updateSignatureKeys(msgs []*relaytypes.UnsignedMsg, accountInfos map[string]*authtypes.BaseAccount) []*relaytypes.UnsignedMsg {
+	var filteredMsgs []*relaytypes.UnsignedMsg
 	for _, msg := range msgs {
 		missingInfos := false
 		for i, signatureKey := range msg.SignatureKeys {
@@ -271,7 +272,6 @@ func BroadcastTxBytes(txBytes []byte) error {
 
 	// In block broadcast mode, do additional verification
 	if broadcastReq.Mode == flags.BroadcastBlock {
-		// TODO: QB-1064 use events from the result instead of unmarshalling the tx bytes
 		var txResponse sdktypes.TxResponse
 
 		err = relay.Cdc.UnmarshalJSON(responseBody, &txResponse)
@@ -283,36 +283,74 @@ func BroadcastTxBytes(txBytes []byte) error {
 			return errors.Errorf("broadcast unsuccessful: %v", txResponse)
 		}
 
-		if len(broadcastReq.Tx.Msgs) < 1 {
-			return errors.New("broadcastReq tx doesn't contain any messages")
+		if setting.Config == nil {
+			return nil // If the relayd config is nil, then this is ppd broadcasting a tx. We don't want to call the event handler in this case
 		}
-
-		// Additional processing based on the msg type
-		slashPPEvents := make(map[string][]string)
-		for _, msg := range broadcastReq.Tx.Msgs {
-			if msg.Type() == "slashing_resource_node" {
-				slashMsg, ok := msg.(pottypes.MsgSlashingResourceNode)
-				if !ok {
-					return errors.New("cannot convert msg to MsgSlashingResourceNode")
-				}
-
-				slashPPEvents["slashing.network_address"] = append(slashPPEvents["slashing.network_address"], slashMsg.NetworkAddress.String())
-				slashPPEvents["slashing.suspended"] = append(slashPPEvents["slashing.suspended"], strconv.FormatBool(slashMsg.Suspend))
+		events := processEvents(txResponse)
+		for msgType, event := range events {
+			if handler, ok := handlers.Handlers[msgType]; ok {
+				go handler(event)
+			} else {
+				utils.ErrorLogf("No handler for event type [%v]", msgType)
 			}
-		}
-		if len(slashPPEvents) > 0 {
-			// Directly call slashing_resource_node handler
-			result := coretypes.ResultEvent{Events: slashPPEvents}
-			handlers.SlashingResourceNodeHandler()(result)
 		}
 	}
 
 	return nil
 }
 
+func processEvents(response sdktypes.TxResponse) map[string]coretypes.ResultEvent {
+	// Read the events from each msg in the log
+	var events []map[string]string
+	for _, msg := range response.Logs {
+		msgMap := make(map[string]string)
+		for _, stringEvent := range msg.Events {
+			for _, attrib := range stringEvent.Attributes {
+				msgMap[fmt.Sprintf("%v.%v", stringEvent.Type, attrib.Key)] = attrib.Value
+			}
+		}
+		if len(msgMap) > 0 {
+			events = append(events, msgMap)
+		}
+	}
+
+	// Aggregate events by msg type
+	aggregatedEvents := make(map[string]map[string][]string)
+	for _, event := range events {
+		typeStr := event["message.action"]
+		currentMap := aggregatedEvents[typeStr]
+		if currentMap == nil {
+			currentMap = make(map[string][]string)
+			currentMap["tx.hash"] = []string{response.TxHash}
+		}
+
+		for key, value := range event {
+			switch key {
+			case "message.action":
+				continue
+			default:
+				currentMap[key] = append(currentMap[key], value)
+			}
+		}
+		aggregatedEvents[typeStr] = currentMap
+	}
+
+	// Convert to coretypes.ResultEvent
+	resultMap := make(map[string]coretypes.ResultEvent)
+	for key, value := range aggregatedEvents {
+		resultMap[key] = coretypes.ResultEvent{
+			Query:  "",
+			Data:   nil,
+			Events: value,
+		}
+	}
+	return resultMap
+}
+
 type ResourceNodeState struct {
 	IsActive  uint32
 	Suspended bool
+	Tokens    *big.Int
 }
 
 func QueryResourceNodeState(p2pAddress string) (state ResourceNodeState, err error) {
@@ -375,5 +413,7 @@ func QueryResourceNodeState(p2pAddress string) (state ResourceNodeState, err err
 	case sdktypes.Unbonded:
 		state.IsActive = types.PP_INACTIVE
 	}
+
+	state.Tokens = resourceNodes[0].GetTokens().BigInt()
 	return state, nil
 }

@@ -109,7 +109,11 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		utils.ErrorLog("target.Result is nil")
 
 	} else if target.Result.State != protos.ResultState_RES_SUCCESS {
-		utils.Log("upload failed", target.Result.Msg)
+		if strings.Contains(target.Result.Msg, "Same file with the name") {
+			utils.Log(target.Result.Msg)
+		} else {
+			utils.Log("upload failed: ", target.Result.Msg)
+		}
 		file.ClearFileMap(target.FileHash)
 
 	} else if len(target.PpList) != 0 {
@@ -190,7 +194,7 @@ func up(ING *task.UpFileIng, target *protos.RspUploadFile) {
 				continue
 			}
 
-			UploadFileSlice(uploadTask)
+			UploadFileSlice(uploadTask, target)
 			ING.Slices = append(ING.Slices[:0], ING.Slices[0+1:]...)
 		}
 	}
@@ -214,7 +218,7 @@ func sendUploadFileSlice(target *protos.RspUploadFile) {
 			uploadTask := task.GetUploadSliceTask(pp, target.FileHash, target.TaskId, target.SpP2PAddress,
 				target.IsVideoStream, target.IsEncrypted, ING.FileCRC)
 			if uploadTask != nil {
-				UploadFileSlice(uploadTask)
+				UploadFileSlice(uploadTask, target)
 			}
 		}
 		utils.DebugLog("all slices of the task have begun uploading")

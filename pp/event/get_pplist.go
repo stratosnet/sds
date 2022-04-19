@@ -6,7 +6,6 @@ import (
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
@@ -22,8 +21,7 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
-		utils.Log("failed to get any peers, reloading")
-		peers.ScheduleReloadPPlist()
+		utils.Log("failed to get any peers")
 		return
 	}
 
@@ -34,23 +32,6 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 
 	shouldRegisterToSP := setting.IsAuto && !setting.IsLoginToSP &&
 		(setting.State == types.PP_ACTIVE)
-
-	list, total := peers.GetPPList()
-	if total == 0 {
-		// no PP exist, register to SP
-		if shouldRegisterToSP {
-			peers.RegisterToSP(true)
-		}
-		peers.ScheduleReloadPPlist()
-		return
-	}
-
-	// if gateway pp is nil, go connect one from ppList
-	if client.PPConn == nil {
-		if success := peers.ConnectToGatewayPP(list); !success {
-			peers.ScheduleReloadPPlist()
-		}
-	}
 
 	if shouldRegisterToSP {
 		peers.RegisterToSP(true)

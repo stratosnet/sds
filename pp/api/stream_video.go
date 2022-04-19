@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/ipfs/go-cid"
 	"github.com/pkg/errors"
+	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
@@ -301,10 +302,6 @@ func verifyStreamReqBody(req *http.Request) (*StreamReqBody, error) {
 		return nil, errors.Wrap(err, "incorrect SP P2P address")
 	}
 
-	if reqBody.RestAddress == "" {
-		return nil, errors.New("please give correct rest address to the file slice")
-	}
-
 	return &reqBody, nil
 }
 
@@ -335,7 +332,7 @@ func verifySignature(reqBody *StreamReqBody, sliceHash string, data []byte) bool
 		return false
 	}
 
-	if !ed25519.Verify(p2pPubKey[:], []byte(reqBody.P2PAddress+reqBody.FileHash), reqBody.Sign) {
+	if !ed25519.Verify(p2pPubKey[:], []byte(reqBody.P2PAddress+reqBody.FileHash+header.ReqDownloadSlice), reqBody.Sign) {
 		return false
 	}
 
