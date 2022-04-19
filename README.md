@@ -12,7 +12,7 @@ Here, we provide a concise quickstart guide to help set up and run a SDS resourc
 ```bash
 git clone https://github.com/stratosnet/sds.git
 cd sds
-git checkout v0.6.2
+git checkout v0.7.0
 make build
 ```
 Then you will find the executable binary `ppd` under `./target`
@@ -33,13 +33,23 @@ mkdir rsnode
 cd rsnode
 ```
 ### Configuring Your Resource Node
-Next, you need to configurate for your resource node. The binary will help you create a configuration file at `configs/config.yaml`.
+Next, you need to configure your resource node. The binary will help you create a configuration file at `configs/config.yaml`.
 ```bash
 ppd config -w -p
 # following the instructions to generate a new wallet account or recovery an existing wallet account
 ```
-You will need to edit a few lines in that file to specify the blockchain you want to connect to.  
-To connect to the Stratos chain testnet, make the following changes:
+You will need to edit a few lines in the `configs/config.yaml` file to configure your resource node. 
+
+First, make sure or change the SDS version section in the `configs/config.yaml` file as the following.
+
+```yaml
+Version: 7
+  AppVer: 7
+  MinAppVer: 7
+  Show: v0.7.0
+```
+
+To connect to the Stratos chain Tropos testnet, make the following changes:
 ```yaml
 StratosChainUrl: https://rest-tropos.thestratos.org:443
 # you can also configure it to your own `stchaincli rest-server` if you already run one with your Stratos-chaind full-node
@@ -52,11 +62,11 @@ SPList:
       P2PPublicKey: ""
       NetworkAddress: 13.58.35.167:8888
 ```
-You also need to change the `ChainId` to the value visible [`Stratos Explorer`](https://explorer-tropos.thestratos.org/) right next to the search bar at the top of the page.
+You also need to change the `ChainId` to the value visible [`Stratos Explorer`](https://explorer-tropos.thestratos.org/) right next to the search bar at the top of the page. Currently, it is `tropos-3`.
 ```yaml
  ChainId: tropos-3
 ```
-Finally, make sure to set the `NetworkAddress` to your public IP address and port. 
+Finally, make sure to set the `NetworkAddress` to your public IP address and port.
 
 Please note, it is not the SPList's indexing node NetworkAddress
 
@@ -83,14 +93,9 @@ cd rsnode
 # start the resource node
 ppd start
 ```
-> First starting: if you did not register and activate your resource node yet, 
-please follow the next `Starting Mining` section to `register` and `activate` your resource node first and then `startmining`
-> 
-> Re-starting: if you already registered and activated your resource node before, 
-just skip the next `Starting Mining` section. `ppd start` will use the current registered configurations to `startmining` automatically.
 
 ### Starting Mining
-In order to interact with the resource node, you need to open a new COMMAND-LINE TERMINAL, and enter the root directory of the same resource node. 
+In order to interact with the resource node, you need to open a new COMMAND-LINE TERMINAL, and enter the root directory of the same resource node.
 Then, use `ppd terminal` command to start the interaction.
 ```bash
 # Open a new command-line terminal
@@ -105,30 +110,45 @@ Your resource node needs to register to a meta node before doing anything else.
 In the `ppd terminal` command-line terminal, input one of the two following identical commands:
 ```bash
 rp
-#or
+# or
 registerpeer
 ```
 
 #### Activating the Resource Node by Staking
 Now you need to activate your node within the blockchain.  
-Use this command in the terminal:
+Use this command in the `ppd terminal` command-line terminal:
 ```bash
 activate stakingAmount feeAmount gasAmount
 ```
->`stakingAmount` is the amount of uSTOS you want to stake. A basic amount would be 1000000000.  
+>`stakingAmount` is the amount of uSTOS you want to stake. A basic amount would be 1000000000.
 >
->`feeAmount` is the amount of uSTOS to pay as a fee for the activation transaction. 10000 would work. it will use default number if not provide  
+>`feeAmount` is the amount of uSTOS to pay as a fee for the activation transaction. 10000 would work. it will use default number if not provide
 >
 >`gasAmount` is the amount of gas to use for the transaction. 1000000 would be a safe number. it will use default number if not provide
 
-#### Starting to Mine
-Use this command in the terminal to start mining. Your node will start acting as a resource node and receiving traffic.
-```bash
-startmining
-```
+Resource node will start to receive tasks from meta nodes and thus gain mining rewards automatically after it has been activated successfully.
 
 ## What to Do With a Running Resource Node?
-Here are a few of the things you can do in the `ppd terminal` command-line terminal.
+Here are a set of `ppd terminal` subcommands you can try in the `ppd terminal` command-line terminal.
+
+You can find more details about these subcommands at `ppd terminal` [subcommands](https://github.com/stratosnet/sds/wiki/%60ppd-terminal%60--subcommands)
+
+### Check the current status of a resource node
+
+```bash
+status
+```
+
+### Update stake of an active resource node
+
+```shell
+updateStake stakeDelta fee gas isIncrStake 
+```
+> `stakeDelta` is the absolute amount of difference between the original and the updated stake. It should be a positive integer, in the unit of `ustos`.
+>
+> `isIncrStake` is a flag with `0` for decreasing the original stake and `1` for increasing the original stake.
+>
+> When a resource node is suspended, use this command to update its state and re-start mining by increasing its stake.
 
 ### Purchase Ozone
 Ozone is the unit of traffic used by SDS. Operations involving network traffic require ozone to be executed.  
@@ -137,8 +157,13 @@ You can purchase ozone with the following command:
 prepay purchaseAmount feeAmount gasAmount
 ```
 >`purchaseAmount` is the amount of uSTOS you want to spend to purchase ozone.
-> 
+>
 > The other two parameters are the same as above.
+
+### Query Ozone Balance of Resource Node's Wallet
+```bash
+getoz WALLET_ADDRESS
+```
 
 ### Upload a File
 ```bash
@@ -157,13 +182,15 @@ putstream FILE_PATH
 ### List Your Uploaded Files
 ```bash
 list
+# or
+ls
 ```
 
 ### Download a File
 ```bash
 get sdm://WALLET_ADDRESS/FILE_HASH
 ```
-> Every file uploaded to SDS is attributed a unique file hash. You can view the file hash for each of your files when your list your uploaded files.
+> Every file uploaded to SDS is attributed a unique file hash. You can view the file hash for each of your files when you list your uploaded files.
 
 ### Delete a File
 ```bash
@@ -174,9 +201,11 @@ delete FILE_HASH
 ```bash
 sharefile FILE_HASH EXPIRY_TIME PRIVATE
 ```
-> `EXPIRY_TIME` is the unix timestamp where the file share expires. Put `0` for unlimited time. 
-> 
+> `EXPIRY_TIME` is the unix timestamp period(in seconds) when the file share expires. Put `0` for unlimited time.
+>
 > `PRIVATE` is whether the file share should be protected by a password. Put `0` for no password, and `1` for a password.
+>
+> After this command has been executed successfully, SDS will provide a password to this shared file, like ` SharePassword 3gxw`. Please keep this password for future use.
 
 ### List All Shared Files
 ```bash
@@ -204,16 +233,6 @@ monitor
 stopmonitor
 ```
 
-### Query Ozone Balance of Your Resource Node's Wallet
-```bash
-getoz WALLET_ADDRESS
-```
-
-### Query the current status of a resource node
-```bash
-status
-```
-
 You can exit the `ppd terminal` command-line terminal by typing `exit` and leave the `ppd start` terminal to run the resource node in background.
 
 # Contribution
@@ -232,7 +251,7 @@ Please make sure your contributions adhere to our coding guidelines:
   guidelines.
 * Pull requests need to be based on and opened against the `dev` branch, PR name should follow `conventional commits`.
 * Commit messages should be prefixed with the package(s) they modify.
-    * E.g. "pp: make trace configs optional"
+  * E.g. "pp: make trace configs optional"
 
 --- ---
 
