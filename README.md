@@ -43,7 +43,7 @@ You will need to edit a few lines in the `configs/config.yaml` file to configure
 First, make sure or change the SDS version section in the `configs/config.yaml` file as the following.
 
 ```yaml
-Version: 7
+Version:
   AppVer: 7
   MinAppVer: 7
   Show: v0.7.0
@@ -79,7 +79,7 @@ NetworkAddress: <your node external ip>
 Before you can do anything with your resource node, you will need to acquire some STOS tokens.  
 You can get some by using the faucet API:
 ````bash
-ccurl -X POST https://faucet-tropos.thestratos.org/faucet/WALLET_ADDRESS
+curl -X POST https://faucet-tropos.thestratos.org/faucet/WALLET_ADDRESS
 ````
 Just put your wallet address in the command above, and you should be good to go.
 
