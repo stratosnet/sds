@@ -43,7 +43,7 @@ You will need to edit a few lines in the `configs/config.yaml` file to configure
 First, make sure or change the SDS version section in the `configs/config.yaml` file as the following.
 
 ```yaml
-Version: 
+Version:
   AppVer: 7
   MinAppVer: 7
   Show: v0.7.0
