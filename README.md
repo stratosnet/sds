@@ -43,7 +43,7 @@ You will need to edit a few lines in the `configs/config.yaml` file to configure
 First, make sure or change the SDS version section in the `configs/config.yaml` file as the following.
 
 ```yaml
-Version: 7
+Version: 
   AppVer: 7
   MinAppVer: 7
   Show: v0.7.0
@@ -58,9 +58,27 @@ StratosChainUrl: https://rest-tropos.thestratos.org:443
 and then the indexing node list:
 ```yaml
 SPList:
-    - P2PAddress: ""
-      P2PPublicKey: ""
-      NetworkAddress: 18.223.175.117:8888
+- P2PAddress: stsds1mr668mxu0lyfysypq88sffurm5skwjvjgxu2xt
+  P2PPublicKey: stsdspub1zcjduepq4v8yu6nzem787nfnwvzrfvpc5f7thktsqjts6xp4cy4a2j4rgm7sgdy4zy
+  NetworkAddress: 35.73.160.68:8888
+- P2PAddress: stsds1ftcvm2h9rjtzlwauxmr67hd5r4hpxqucjawpz6
+  P2PPublicKey: stsdspub1zcjduepqq9rk5zwkzfnnszt5tqg524meeqd9zts0jrjtqk2ly2swm5phlc2qtrcgys
+  NetworkAddress: 46.51.251.196:8888
+- P2PAddress: stsds12uufhp4wunhy2n8y5p07xsvy9htnp6zjr40tuw
+  P2PPublicKey: stsdspub1zcjduepqkst98p2642fv8eh8297ppx7xuzu7qjz67s9hjjhxjxs834md7e0s5rm3lf
+  NetworkAddress: 18.130.202.53:8888
+- P2PAddress: stsds1wy6xupax33qksaguga60wcmxpk6uetxt3h5e3e
+  P2PPublicKey: stsdspub1zcjduepqyyfl7ljwc68jh2kuaqmy84hawfkak4fl2sjlpf8t3dd00ed2eqeqlm65ar
+  NetworkAddress: 35.74.33.155:8888
+- P2PAddress: stsds1nds6cwl67pp7w4sa5ng5c4a5af9hsjknpcymxn
+  P2PPublicKey: stsdspub1zcjduepq6mz8w7dygzrsarhh76tnpz0hkqdq44u7usvtnt2qd9qgp8hs8wssl6ye0g
+  NetworkAddress: 52.13.28.64:8888
+- P2PAddress: stsds1403qtm2t7xscav9vd3vhu0anfh9cg2dl6zx2wg
+  P2PPublicKey: stsdspub1zcjduepqzarvtl2ulqzw3t42dcxeryvlj6yf80jjchvsr3s8ljsn7c25y3hq2fv5qv
+  NetworkAddress: 3.9.152.251:8888
+- P2PAddress: stsds1hv3qmnujlrug00frk86zxr0q23rnqcaquh62j2
+  P2PPublicKey: stsdspub1zcjduepqj69eeq07yfdgu4cdlupvga897zjqjakuru0qar5na7as4kjr7jgs0k7aln
+  NetworkAddress: 18.223.175.117:8888
 ```
 You also need to change the `ChainId` to the value visible [`Stratos Explorer`](https://explorer-tropos.thestratos.org/) right next to the search bar at the top of the page. Currently, it is `tropos-3`.
 ```yaml
@@ -79,7 +97,7 @@ NetworkAddress: <your node external ip>
 Before you can do anything with your resource node, you will need to acquire some STOS tokens.  
 You can get some by using the faucet API:
 ````bash
-ccurl -X POST https://faucet-tropos.thestratos.org/faucet/WALLET_ADDRESS
+curl -X POST https://faucet-tropos.thestratos.org/faucet/WALLET_ADDRESS
 ````
 Just put your wallet address in the command above, and you should be good to go.
 
