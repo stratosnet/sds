@@ -34,7 +34,7 @@ var UpConnMap = &sync.Map{}
 // DownloadConnMap  download connection between  P-PP
 var DownloadConnMap = &sync.Map{}
 
-// ConnMap PP connection map
+// ConnMap client connection map
 var ConnMap = make(map[string]*cf.ClientConn)
 
 // NewClient

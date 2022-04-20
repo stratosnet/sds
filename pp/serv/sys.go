@@ -68,22 +68,33 @@ func dumpTrafficLog() {
 		serverInbound = peers.GetPPServer().Server.GetInboundAndReset()
 		serverOutbound = peers.GetPPServer().Server.GetOutboundAndReset()
 	}
+
 	if client.PPConn != nil {
 		clientInbound += client.PPConn.GetInboundAndReset()
-		clientOutbound += client.PPConn.GetSecondWriteFlow()
-		client.UpConnMap.Range(func(k, v interface{}) bool {
-			vconn := v.(*cf.ClientConn)
-			in := vconn.GetInboundAndReset()
-			clientInbound += in
-			out := vconn.GetOutboundAndReset()
-			clientOutbound += out
-			return true
-		})
+		clientOutbound += client.PPConn.GetOutboundAndReset()
 	}
 	if client.SPConn != nil {
 		clientInbound += client.SPConn.GetInboundAndReset()
 		clientOutbound += client.SPConn.GetOutboundAndReset()
 	}
+
+	client.UpConnMap.Range(func(k, v interface{}) bool {
+		vconn := v.(*cf.ClientConn)
+		in := vconn.GetInboundAndReset()
+		clientInbound += in
+		out := vconn.GetOutboundAndReset()
+		clientOutbound += out
+		return true
+	})
+
+	client.DownloadConnMap.Range(func(k, v interface{}) bool {
+		vconn := v.(*cf.ClientConn)
+		in := vconn.GetInboundAndReset()
+		clientInbound += in
+		out := vconn.GetOutboundAndReset()
+		clientOutbound += out
+		return true
+	})
 
 	trafficInbound := uint64(clientInbound + serverInbound)
 	trafficOutbound := uint64(clientOutbound + serverOutbound)
@@ -144,33 +155,38 @@ func monitor() {
 	r := int64(0)
 	w := int64(0)
 	if setting.IsPP && peers.GetPPServer() != nil {
-		r = peers.GetPPServer().Server.GetSecondReadFlow()
-		w = peers.GetPPServer().Server.GetSecondWriteFlow()
-		utils.Logf("        Upload      : %f MB/s ", float64(w)/1024/1024)
-		utils.Logf("        Download    : %f MB/s ", float64(r)/1024/1024)
-	} else if client.PPConn != nil {
-		r = client.PPConn.GetSecondReadFlow()
-		w = client.PPConn.GetSecondWriteFlow()
-		client.UpConnMap.Range(func(k, v interface{}) bool {
-			vconn := v.(*cf.ClientConn)
-			r1 := vconn.GetSecondReadFlow()
-			r += r1
-			w1 := vconn.GetSecondWriteFlow()
-			w += w1
-			return true
-		})
-		utils.Logf("        Upload      : %f MB/s ", float64(w)/1024/1024)
-		utils.Logf("        Download    : %f MB/s ", float64(r)/1024/1024)
-	} else if client.SPConn != nil {
-		r = client.SPConn.GetSecondReadFlow()
-		w = client.SPConn.GetSecondWriteFlow()
-		utils.Logf("        Upload      : %f MB/s ", float64(w)/1024/1024)
-		utils.Logf("        Download    : %f MB/s ", float64(r)/1024/1024)
-	} else {
-		utils.Logf("        Upload      : %f MB/s ", float64(w)/1024/1024)
-		utils.Logf("        Download    : %f MB/s ", float64(r)/1024/1024)
+		r += peers.GetPPServer().Server.GetSecondReadFlow()
+		w += peers.GetPPServer().Server.GetSecondWriteFlow()
+	}
+	if client.PPConn != nil {
+		r += client.PPConn.GetSecondReadFlow()
+		w += client.PPConn.GetSecondWriteFlow()
+	}
+	if client.SPConn != nil {
+		r += client.SPConn.GetSecondReadFlow()
+		w += client.SPConn.GetSecondWriteFlow()
 	}
 
+	client.UpConnMap.Range(func(k, v interface{}) bool {
+		vconn := v.(*cf.ClientConn)
+		r1 := vconn.GetSecondReadFlow()
+		r += r1
+		w1 := vconn.GetSecondWriteFlow()
+		w += w1
+		return true
+	})
+
+	client.DownloadConnMap.Range(func(k, v interface{}) bool {
+		vconn := v.(*cf.ClientConn)
+		r1 := vconn.GetSecondReadFlow()
+		r += r1
+		w1 := vconn.GetSecondWriteFlow()
+		w += w1
+		return true
+	})
+
+	utils.Logf("        Upload      : %f MB/s ", float64(w)/1024/1024)
+	utils.Logf("        Download    : %f MB/s ", float64(r)/1024/1024)
 	utils.Logf("__________________________________________________________________________")
 
 }
