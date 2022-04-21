@@ -98,7 +98,6 @@ func (s *Server) ConnsSize() int {
 
 func (s *Server) AddVolumeLogJob(logAll bool, logRead bool, logWrite bool, logInbound bool, logOutbound bool) {
 	var (
-		myClock = clock.NewClock()
 		logFunc = func() {
 			// utils.Log("connsSize:", s.ConnsSize(), "routine num:", s.goroutine, "allread:", fmt.Sprintf("%.4f", float64(s.readFlow)/1024/1024), "MB", "allwrite:", fmt.Sprintf("%.4f", float64(s.writeFlow)/1024/1024), "MB", "all:", fmt.Sprintf("%.4f", float64(s.allFlow)/1024/1024), "MB",
 			// "read/s:", fmt.Sprintf("%.4f", float64(s.secondReadFlow)/1024/1024), "MB", "write/s:", fmt.Sprintf("%.4f", float64(s.secondWriteFlow)/1024/1024), "MB")
@@ -122,7 +121,10 @@ func (s *Server) AddVolumeLogJob(logAll bool, logRead bool, logWrite bool, logIn
 		}
 	)
 	//Assign the value of secondRead/WriteFlowA to secondRead/WriteFlowB for monitor use, then reset secondRead/WriteFlowA to 0
-	myClock.AddJobRepeat(time.Second*1, 0, logFunc)
+	if logAll || logRead || logWrite || logInbound || logOutbound {
+		var myClock = clock.NewClock()
+		myClock.AddJobRepeat(time.Second*1, 0, logFunc)
+	}
 }
 
 // Start
