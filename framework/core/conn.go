@@ -133,7 +133,8 @@ func (sc *ServerConn) Start() {
 	if onConnect != nil {
 		onConnect(sc)
 	}
-	loopers := []func(WriteCloser, *sync.WaitGroup){readLoop, writeLoop, handleLoop}
+
+	loopers := []func(WriteCloser, *sync.WaitGroup, volRecOpts){readLoop, writeLoop, handleLoop}
 	strArr := []string{"read", "write", "handle"}
 	for i, l := range loopers {
 		looper := l
@@ -141,7 +142,7 @@ func (sc *ServerConn) Start() {
 		sc.belong.goroutine = sc.belong.goAtom.IncrementAndGetNew()
 		name := sc.GetName() + strArr[i]
 		GoroutineMap.Store(name, strArr[i])
-		go looper(sc, sc.wg)
+		go looper(sc, sc.wg, sc.belong.volRecOpts)
 	}
 }
 
@@ -262,7 +263,7 @@ func (sc *ServerConn) SendBadVersionMsg(version uint16, cmd string) {
 }
 
 // readLoop
-func readLoop(c WriteCloser, wg *sync.WaitGroup) {
+func readLoop(c WriteCloser, wg *sync.WaitGroup, logOpts volRecOpts) {
 	var (
 		spbConn   net.Conn
 		cDone     <-chan struct{}
@@ -309,9 +310,16 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				buffer := make([]byte, utils.MsgHeaderLen)
 				n, err := io.ReadFull(spbConn, buffer)
 				// Mylog(sc.belong.opts.logOpen, "server header==>", buffer)
-				sc.belong.readFlow = sc.belong.readAtom.AddAndGetNew(int64(n))
-				sc.belong.secondReadFlowA = sc.belong.secondReadAtomA.AddAndGetNew(int64(n))
-				sc.belong.allFlow = sc.belong.allAtom.AddAndGetNew(int64(n))
+				if logOpts.logAll {
+					sc.belong.volRecOpts.allFlow = sc.belong.volRecOpts.allAtom.AddAndGetNew(int64(n))
+				}
+				if logOpts.logRead {
+					sc.belong.volRecOpts.readFlow = sc.belong.volRecOpts.readAtom.AddAndGetNew(int64(n))
+					sc.belong.volRecOpts.secondReadFlowA = sc.belong.volRecOpts.secondReadAtomA.AddAndGetNew(int64(n))
+				}
+				if logOpts.logInbound {
+					sc.belong.volRecOpts.inbound = sc.belong.volRecOpts.inboundAtomic.AddAndGetNew(int64(n))
+				}
 				if err != nil {
 					if err == io.EOF {
 						return
@@ -359,11 +367,17 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					spbConn.SetDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
 					n, err = io.ReadFull(spbConn, msgBuf[i:i+onereadlen])
 					// Mylog(s.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
-
 					// Mylog(s.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
-					sc.belong.readFlow = sc.belong.readAtom.AddAndGetNew(int64(n))
-					sc.belong.secondReadFlowA = sc.belong.secondReadAtomA.AddAndGetNew(int64(n))
-					sc.belong.allFlow = sc.belong.allAtom.AddAndGetNew(int64(n))
+					if logOpts.logAll {
+						sc.belong.volRecOpts.allFlow = sc.belong.volRecOpts.allAtom.AddAndGetNew(int64(n))
+					}
+					if logOpts.logRead {
+						sc.belong.volRecOpts.readFlow = sc.belong.volRecOpts.readAtom.AddAndGetNew(int64(n))
+						sc.belong.volRecOpts.secondReadFlowA = sc.belong.volRecOpts.secondReadAtomA.AddAndGetNew(int64(n))
+					}
+					if logOpts.logInbound {
+						sc.belong.volRecOpts.inbound = sc.belong.volRecOpts.inboundAtomic.AddAndGetNew(int64(n))
+					}
 					if err != nil {
 						utils.ErrorLog("server body err", err)
 						return
@@ -412,7 +426,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 }
 
 // writeLoop
-func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
+func writeLoop(c WriteCloser, wg *sync.WaitGroup, logOpts volRecOpts) {
 	var (
 		spbConn net.Conn
 		sendCh  chan *message.RelayMsgBuf
@@ -450,9 +464,16 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 						n, err = spbConn.Write(packet.MSGData[i : i+onereadlen])
 						// Mylog(s.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
 						// Mylog(s.opts.logOpen,"i+onereadlen:", i+onereadlen)
-						sc.belong.writeFlow = sc.belong.writeAtom.AddAndGetNew(int64(n))
-						sc.belong.secondWriteFlowA = sc.belong.secondWriteAtomA.AddAndGetNew(int64(n))
-						sc.belong.allFlow = sc.belong.allAtom.AddAndGetNew(int64(n))
+						if logOpts.logAll {
+							sc.belong.volRecOpts.allFlow = sc.belong.volRecOpts.allAtom.AddAndGetNew(int64(n))
+						}
+						if logOpts.logWrite {
+							sc.belong.volRecOpts.writeFlow = sc.belong.volRecOpts.writeAtom.AddAndGetNew(int64(n))
+							sc.belong.volRecOpts.secondWriteFlowA = sc.belong.volRecOpts.secondWriteAtomA.AddAndGetNew(int64(n))
+						}
+						if logOpts.logOutbound {
+							sc.belong.volRecOpts.outbound = sc.belong.volRecOpts.outboundAtomic.AddAndGetNew(int64(n))
+						}
 						if err != nil {
 							utils.ErrorLog("server write err", err)
 							return
@@ -501,9 +522,14 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 					n, err = spbConn.Write(packet.MSGData[i : i+onereadlen])
 					// Mylog(s.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
 					// Mylog(s.opts.logOpen,"i+onereadlen:", i+onereadlen)
-					sc.belong.writeFlow = sc.belong.writeAtom.AddAndGetNew(int64(n))
-					sc.belong.secondWriteFlowA = sc.belong.secondWriteAtomA.AddAndGetNew(int64(n))
-					sc.belong.allFlow = sc.belong.allAtom.AddAndGetNew(int64(n))
+					if logOpts.logAll || logOpts.logOutbound || logOpts.logWrite {
+						sc.belong.volRecOpts.writeFlow = sc.belong.volRecOpts.writeAtom.AddAndGetNew(int64(n))
+						sc.belong.volRecOpts.secondWriteFlowA = sc.belong.volRecOpts.secondWriteAtomA.AddAndGetNew(int64(n))
+						sc.belong.volRecOpts.allFlow = sc.belong.volRecOpts.allAtom.AddAndGetNew(int64(n))
+					}
+					//sc.belong.writeFlow = sc.belong.writeAtom.AddAndGetNew(int64(n))
+					//sc.belong.secondWriteFlowA = sc.belong.secondWriteAtomA.AddAndGetNew(int64(n))
+					//sc.belong.allFlow = sc.belong.allAtom.AddAndGetNew(int64(n))
 					if err != nil {
 						utils.ErrorLog("server write err", err)
 						return
@@ -524,7 +550,7 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 }
 
 // handleLoop
-func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
+func handleLoop(c WriteCloser, wg *sync.WaitGroup, _ volRecOpts) {
 	var (
 		cDone <-chan struct{}
 		sDone <-chan struct{}
