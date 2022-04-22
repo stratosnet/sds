@@ -40,7 +40,6 @@ type httpres struct {
 // StartHTTPServ
 func StartHTTPServ() {
 	httpServ := httpserv.MyNewHTTPServ(setting.Config.InternalPort)
-	httpServ.MyRoute("/unlock", login)
 	httpServ.MyRoute("/walletList", getWalletList)
 	httpServ.MyRoute("/createWallet", createWallet)
 	httpServ.MyRoute("/importWallet", importWallet)
