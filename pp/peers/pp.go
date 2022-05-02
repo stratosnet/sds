@@ -63,10 +63,15 @@ func NewServer() *PPServer {
 		netID := conn.(*core.ServerConn).GetNetID()
 		peerList.PPDisconnectedNetId(netID)
 	})
-	bufferSize := core.BufferSizeOption(10000)
 
-	ppServer := &PPServer{
-		core.CreateServer(onConnectOption, onErrorOption, onCloseOption, bufferSize, core.LogOpenOption(true), core.MinAppVersionOption(setting.Config.Version.MinAppVer)),
+	ppServer := &PPServer{core.CreateServer(
+		onConnectOption,
+		onErrorOption,
+		onCloseOption,
+		core.BufferSizeOption(10000),
+		core.LogOpenOption(true),
+		core.MinAppVersionOption(setting.Config.Version.MinAppVer),
+		core.P2pAddressOption(setting.P2PAddress)),
 	}
 
 	ppServer.SetVolRecOptions(
