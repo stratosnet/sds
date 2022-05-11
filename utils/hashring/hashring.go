@@ -96,12 +96,13 @@ func (r *HashRing) AddNode(node *Node) {
 		r.VRing.Insert(&VNode{Index: index, NodeID: node.ID})
 	}
 
+	if _, exists := r.Nodes.Load(node.ID); !exists {
+		r.NodeCount++
+	}
 	r.Nodes.Store(node.ID, node)
 	r.NodeStatus.Store(node.ID, false)
 
 	r.NRing.Insert(node)
-
-	r.NodeCount++
 }
 
 // RemoveNode
