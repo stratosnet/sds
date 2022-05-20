@@ -546,6 +546,24 @@ message RspReportBackupSliceResult {
   string slice_hash = 3;
 }
 
+message ReqBackupStatus {
+  string task_id = 1;
+  string file_hash = 2;
+  string p2p_address = 3;
+  string wallet_address = 4;
+}
+
+message RspBackupStatus {
+  string  task_id = 1;
+  Result  result = 2;
+  string  file_hash = 3;
+  uint32  replicas = 4;
+  bool    delete_origin_tmp = 5;
+  string  sp_p2p_address = 6;
+  bytes   sign = 7;
+  repeated SliceHashAddr pp_list = 8;
+}
+
 message ReqTransferDownload {
   string           task_id = 1;
   PPBaseInfo       new_pp = 2;

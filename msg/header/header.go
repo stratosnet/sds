@@ -137,6 +137,8 @@ const (
 	RspTransferDownloadResult  = "RspTdlR"
 	ReqReportBackupSliceResult = "ReqRBSR"
 	RspReportBackupSliceResult = "RspRBSR"
+	ReqFileBackupStatus        = "ReqFBSt"
+	RspFileBackupStatus        = "RspFBSt"
 
 	//TODO change to report to SP
 	ReqReportTaskBP = "ReqRTBP" // report to BP

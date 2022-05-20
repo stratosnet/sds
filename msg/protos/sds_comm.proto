@@ -73,6 +73,13 @@ message SliceNumAddr {
      PPBaseInfo pp_info = 3;
 }
 
+message SliceHashAddr {
+  string slice_hash = 1;
+  uint64 slice_number = 2;
+  uint64 slice_size = 3;
+  SliceOffset slice_offset = 4;
+  PPBaseInfo pp_info = 5;
+}
 
 message SliceOffsetInfo {
      string slice_hash = 1;
