@@ -96,12 +96,13 @@ func (r *HashRing) AddNode(node *Node) {
 		r.VRing.Insert(&VNode{Index: index, NodeID: node.ID})
 	}
 
+	if _, exists := r.Nodes.Load(node.ID); !exists {
+		r.NodeCount++
+	}
 	r.Nodes.Store(node.ID, node)
 	r.NodeStatus.Store(node.ID, false)
 
 	r.NRing.Insert(node)
-
-	r.NodeCount++
 }
 
 // RemoveNode
@@ -208,10 +209,9 @@ func (r *HashRing) GetNode(key string) (uint32, string) {
 	return r.GetNodeByIndex(keyIndex)
 }
 
-// GetNodeMissNodeID get node excluded given NodeIDs
+// GetNodeExcludedNodeIDs get node and exclude given NodeIDs. If setOffline is true, the excluded nodes will become offline.
 // @params key
-func (r *HashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string) (uint32, string) {
-
+func (r *HashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string, setOffline bool) (uint32, string) {
 	if len(NodeIDs) <= 0 {
 		return r.GetNode(key)
 	}
@@ -220,11 +220,21 @@ func (r *HashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string) (uint32,
 		return 0, ""
 	}
 
+	var temporaryOffline []string
 	for _, id := range NodeIDs {
-		r.SetOffline(id)
+		if r.IsOnline(id) {
+			temporaryOffline = append(temporaryOffline, id)
+			r.SetOffline(id)
+		}
 	}
 
 	index, id := r.GetNode(key)
+
+	if !setOffline {
+		for _, offlineId := range temporaryOffline {
+			r.SetOnline(offlineId)
+		}
+	}
 	return index, id
 
 	//tmpRing := New(r.NumberOfVirtual)
