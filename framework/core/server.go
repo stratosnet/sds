@@ -35,6 +35,7 @@ type options struct {
 	maxConnections int
 	maxflow        int
 	minAppVersion  uint16
+	p2pAddress     string
 }
 
 // ServerOption
@@ -320,6 +321,12 @@ func MinAppVersionOption(minAppVersion uint16) ServerOption {
 func OnStartLogOption(cb func(*Server)) ServerVolRecOption {
 	return func(o *volRecOpts) {
 		o.onStartLog = cb
+	}
+}
+
+func P2pAddressOption(p2pAddress string) ServerOption {
+	return func(o *options) {
+		o.p2pAddress = p2pAddress
 	}
 }
 

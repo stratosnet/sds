@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"sync"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
 	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/relay/sds"
 	"github.com/stratosnet/sds/relay/stratoschain"
@@ -27,6 +29,8 @@ type MultiClient struct {
 	cancel                context.CancelFunc
 	Ctx                   context.Context
 	once                  *sync.Once
+	tcpServer             *core.Server
+	tcpListener           *net.Listener
 	sdsClientConn         *cf.ClientConn
 	sdsWebsocketConn      *websocket.Conn
 	stratosWebsocketUrl   string
@@ -59,6 +63,7 @@ func (m *MultiClient) Start() error {
 	// Client to subscribe to stratos-chain events and receive messages via websocket
 	m.stratosWebsocketUrl = setting.Config.StratosChain.WebsocketServer
 
+	go m.startTCPServer() // TCP server to listen to handshake connections
 	go m.connectToSDS()
 	go m.connectToStratosChain()
 
@@ -96,6 +101,35 @@ func (m *MultiClient) Stop() {
 		m.wg.Wait()
 		utils.Log("All client connections have been stopped")
 	})
+}
+
+func (m *MultiClient) startTCPServer() {
+	m.wg.Add(1)
+	defer m.wg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+			utils.ErrorLog("Recovering from panic in handshake TCP server goroutine", r)
+		}
+		m.cancel()
+	}()
+
+	tcpServer, err := sds.NewTCPServer()
+	if err != nil {
+		utils.ErrorLog("Couldn't create TCP server", err)
+		return
+	}
+
+	listener, err := net.Listen("tcp4", ":"+setting.Config.SDS.HandshakePort)
+	if err != nil {
+		utils.ErrorLog("Couldn't create TCP listener", err)
+		return
+	}
+
+	err = tcpServer.Start(listener)
+	if err != nil {
+		utils.ErrorLog("Error when starting TCP server", err)
+		return
+	}
 }
 
 func (m *MultiClient) connectToSDS() {

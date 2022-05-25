@@ -4,18 +4,25 @@ package cf
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"reflect"
+	"strconv"
 	"sync"
 	"time"
 	"unsafe"
 
+	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/utils/cmem"
+	"github.com/stratosnet/sds/utils/crypto/ed25519"
+	"github.com/stratosnet/sds/utils/encryption"
+	"github.com/stratosnet/sds/utils/types"
+	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
 
 	"github.com/stratosnet/sds/utils"
 
@@ -51,6 +58,8 @@ type options struct {
 	heartClose bool
 	logOpen    bool
 	minAppVer  uint16
+	p2pAddress string
+	serverPort uint16
 }
 
 // ClientOption client configuration
@@ -58,7 +67,6 @@ type ClientOption func(*options)
 
 // ClientConn
 type ClientConn struct {
-	// TODO to add p2p key usage (handshake)
 	addr      string
 	opts      options
 	netid     int64
@@ -88,6 +96,8 @@ type ClientConn struct {
 	outbound         int64              // for traffic log
 	outboundAtomic   *utils.AtomicInt64 // for traffic log
 	is_active        bool
+	sharedKey        []byte // ECDH shared key derived during handshake
+	remoteP2pAddress string
 }
 
 // ReconnectOption
@@ -131,6 +141,20 @@ func HeartCloseOption(b bool) ClientOption {
 func LogOpenOption(b bool) ClientOption {
 	return func(o *options) {
 		o.logOpen = b
+	}
+}
+
+// P2pAddressOption sets the local P2P address for this conn
+func P2pAddressOption(p2pAddress string) ClientOption {
+	return func(o *options) {
+		o.p2pAddress = p2pAddress
+	}
+}
+
+// ServerPortOption sets the port used by the local p2p server
+func ServerPortOption(serverPort uint16) ClientOption {
+	return func(o *options) {
+		o.serverPort = serverPort
 	}
 }
 
@@ -229,6 +253,14 @@ func (cc *ClientConn) GetRemoteAddr() string {
 	return cc.spbConn.RemoteAddr().String()
 }
 
+func (cc *ClientConn) GetLocalP2pAddress() string {
+	return cc.opts.p2pAddress
+}
+
+func (cc *ClientConn) GetRemoteP2pAddress() string {
+	return cc.remoteP2pAddress
+}
+
 // SetContextValue
 func (cc *ClientConn) SetContextValue(k, v interface{}) {
 	cc.mu.Lock()
@@ -243,9 +275,98 @@ func (cc *ClientConn) ContextValue(k interface{}) interface{} {
 	return cc.ctx.Value(k)
 }
 
-// Start client start readLoop, writeLoop, handleLoop
+func (cc *ClientConn) handshake() error {
+	// Set handshake timeout
+	if err := cc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.HandshakeTimeOut) * time.Second)); err != nil {
+		return err
+	}
+
+	// Create a channel to receive tmp key from handshake connection
+	handshakeChan := make(chan []byte)
+	channelId := rand.Uint32()
+	core.HandshakeChanMap.Store(strconv.FormatUint(uint64(channelId), 10), handshakeChan)
+	defer func() {
+		core.HandshakeChanMap.Delete(cc.GetRemoteAddr())
+		close(handshakeChan)
+	}()
+
+	// Write the connection type as first message
+	firstMessage := core.CreateFirstMessage(core.ConnTypeClient, cc.opts.serverPort, channelId)
+	if err := core.WriteFull(cc.spbConn, firstMessage); err != nil {
+		return err
+	}
+
+	// Create tmp key
+	tmpPrivKeyBytes := ed25519.NewKey()
+	tmpPrivKey := ed25519.PrivKeyBytesToPrivKey(tmpPrivKeyBytes)
+	tmpPubKeyBytes := ed25519.PrivKeyBytesToPubKeyBytes(tmpPrivKeyBytes)
+
+	// Write tmp key to conn
+	handshakeSignature, err := tmpPrivKey.Sign([]byte(core.HandshakeMessage))
+	if err != nil {
+		return err
+	}
+	if err = core.WriteFull(cc.spbConn, append(tmpPubKeyBytes, handshakeSignature...)); err != nil {
+		return err
+	}
+
+	// Receive tmp key from channel:
+	var tmpKeyMsg []byte
+	select {
+	case tmpKeyMsg = <-handshakeChan:
+		if len(tmpKeyMsg) < tmed25519.PubKeyEd25519Size+tmed25519.SignatureSize {
+			return errors.Errorf("Handshake message too small (%v bytes)", len(tmpKeyMsg))
+		}
+	case <-time.After(time.Second):
+		return errors.New("Timed out when reading from server channel")
+	}
+
+	peerPubKeyBytes := tmpKeyMsg[:tmed25519.PubKeyEd25519Size]
+	peerPubKey := ed25519.PubKeyBytesToPubKey(peerPubKeyBytes)
+	peerSignature := tmpKeyMsg[tmed25519.PubKeyEd25519Size:]
+	if !peerPubKey.VerifyBytes([]byte(core.HandshakeMessage), peerSignature) {
+		return errors.New("Invalid signature in tmp key from peer")
+	}
+
+	// ECDH. Store encryption info in conn
+	sharedPrivKeyBytes, err := encryption.ECDH(tmpPrivKeyBytes, peerPubKeyBytes)
+	if err != nil {
+		return err
+	}
+	cc.sharedKey = sharedPrivKeyBytes
+
+	// Send local p2p address
+	encryptedMsg, err := core.EncryptAndPack(sharedPrivKeyBytes, []byte(cc.GetLocalP2pAddress()))
+	if err != nil {
+		return err
+	}
+	if err = core.WriteFull(cc.spbConn, encryptedMsg); err != nil {
+		return err
+	}
+
+	// Read remote p2p address
+	p2pAddressBytes, _, err := core.ReadEncryptedHeaderAndBody(cc.spbConn, sharedPrivKeyBytes, utils.MessageBeatLen)
+	if err != nil {
+		return err
+	}
+	cc.remoteP2pAddress = string(p2pAddressBytes)
+	if _, err = types.P2pAddressFromBech(cc.remoteP2pAddress); err != nil {
+		return errors.Wrap(err, "incorrect P2pAddress")
+	}
+
+	return cc.spbConn.SetDeadline(time.Time{}) // Remove handshake timeout
+}
+
+// Start client starts readLoop, writeLoop, handleLoop
 func (cc *ClientConn) Start() {
-	Mylog(cc.opts.logOpen, "client conn start", cc.spbConn.LocalAddr(), "->", cc.spbConn.RemoteAddr(), "\n")
+	err := cc.handshake()
+	if err != nil {
+		utils.ErrorLog("client conn handshake error", cc.spbConn.LocalAddr(), "->", cc.spbConn.RemoteAddr(), err)
+		cc.ClientClose()
+		return
+	}
+
+	Mylog(cc.opts.logOpen, fmt.Sprintf("client conn start %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
 	onConnect := cc.opts.onConnect
 	if onConnect != nil {
 		onConnect(cc)
@@ -296,7 +417,7 @@ func (cc *ClientConn) Start() {
 func (cc *ClientConn) ClientClose() {
 	cc.is_active = true
 	cc.once.Do(func() {
-		Mylog(cc.opts.logOpen, "client close connection", cc.spbConn.LocalAddr(), "->", cc.spbConn.RemoteAddr(), "\n")
+		Mylog(cc.opts.logOpen, fmt.Sprintf("client close connection %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
 
 		// callback on close
 		onClose := cc.opts.onClose
@@ -334,7 +455,7 @@ func (cc *ClientConn) ClientClose() {
 // Close
 func (cc *ClientConn) Close() {
 	cc.once.Do(func() {
-		Mylog(cc.opts.logOpen, "conn close gracefully", cc.spbConn.LocalAddr(), "->", cc.spbConn.RemoteAddr(), "\n")
+		Mylog(cc.opts.logOpen, fmt.Sprintf("client close gracefully %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
 
 		// callback on close
 		onClose := cc.opts.onClose
@@ -482,7 +603,6 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 		onMessage onMessageFunc
 		handlerCh chan MsgHandler
 		message   = new(msg.RelayMsgBuf)
-		err       error
 		cc        *ClientConn
 	)
 	cc = c.(*ClientConn)
@@ -515,8 +635,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 		default:
 			// Mylog(cc.opts.logOpen,"client read ok", msgH.Len)
 			if msgH.Len == 0 {
-				buffer := make([]byte, utils.MsgHeaderLen)
-				n, err := io.ReadFull(spbConn, buffer)
+				headerBytes, n, err := core.ReadEncryptedHeaderAndBody(spbConn, cc.sharedKey, utils.MessageBeatLen)
 				cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
 				if err != nil {
 					if err == io.EOF {
@@ -525,28 +644,41 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					utils.ErrorLog("client read err", err)
 					return
 				}
-				header.NewDecodeHeader(buffer, &msgH)
-				buffer = nil
+
+				header.DecodeHeader(headerBytes, &msgH)
+				headerBytes = nil
+
+				if msgH.Version < cc.opts.minAppVer {
+					utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
+					continue
+				}
+
 				// Mylog(cc.opts.logOpen,"client msg size", msgH.Cmd)
 				if msgH.Len == 0 {
-					if msgH.Version < cc.opts.minAppVer {
-						utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
-						continue
-					}
 					handler := core.GetHandlerFunc(utils.ByteToString(msgH.Cmd))
 					if handler != nil {
 						handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
 					}
 				}
 			} else {
+				// start to process the msg if there is more than just the header to read
+				nonce, dataLen, n, err := core.ReadEncryptedHeader(spbConn)
+				cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
+				if err != nil {
+					utils.ErrorLog("error when reading encrypted header for msg body", err)
+					return
+				}
+				if dataLen > utils.MessageBeatLen {
+					utils.ErrorLogf("encrypted message length over sized [%v], for cmd [%v]", dataLen, utils.ByteToString(msgH.Cmd))
+					return
+				}
 
 				var onereadlen = 1024
-				var n int
 				msgBuf := make([]byte, 0, utils.MessageBeatLen)
 				cmd := utils.ByteToString(msgH.Cmd)
-				for ; i < int(msgH.Len); i = i + n {
-					if int(msgH.Len)-i < 1024 {
-						onereadlen = int(msgH.Len) - i
+				for ; i < int(dataLen); i = i + n {
+					if int(dataLen)-i < 1024 {
+						onereadlen = int(dataLen) - i
 					}
 					n, err = io.ReadFull(spbConn, msgBuf[i:i+onereadlen])
 					cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
@@ -563,20 +695,19 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 						}
 					}
 				}
-				if uint32(i) == msgH.Len {
-					if msgH.Version < cc.opts.minAppVer {
-						utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
-						msgH.Len = 0
-						i = 0
-						msgBuf = nil
-						continue
+
+				if uint32(i) == dataLen {
+					decryptedBody, err := encryption.DecryptAES(cc.sharedKey, msgBuf[:dataLen], nonce)
+					if err != nil {
+						utils.ErrorLog("client body decryption err", err)
+						return
 					}
 
 					message = &msg.RelayMsgBuf{
 						MSGHead: msgH,
-						MSGData: msgBuf[0:msgH.Len],
+						MSGData: decryptedBody,
 					}
-					handler := core.GetHandlerFunc(utils.ByteToString(msgH.Cmd))
+					handler := core.GetHandlerFunc(cmd)
 					//Mylog(cc.opts.logOpen, "read handler:", handler, utils.ByteToString(msgH.Cmd))
 					if handler == nil {
 						if onMessage != nil {
@@ -610,15 +741,12 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 // writeLoop
 func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	var (
-		spbConn net.Conn
-		sendCh  chan *msg.RelayMsgBuf
-		cDone   <-chan struct{}
-		packet  *msg.RelayMsgBuf
-		err     error
-		cc      *ClientConn
+		sendCh chan *msg.RelayMsgBuf
+		cDone  <-chan struct{}
+		packet *msg.RelayMsgBuf
+		cc     *ClientConn
 	)
 	cc = c.(*ClientConn)
-	spbConn = c.(*ClientConn).spbConn
 	sendCh = c.(*ClientConn).sendCh
 	cDone = c.(*ClientConn).ctx.Done()
 	defer func() {
@@ -665,7 +793,6 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 		}
 	}()
 
-	var lr utils.LimitRate
 	for {
 		select {
 		case <-cDone: // connection closed
@@ -673,47 +800,65 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			return
 		case packet = <-sendCh:
 			if packet != nil {
-				// _, err = spbConn.Write(packet.MSGData)
-				// spbConn.SetWriteDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
-				// if err != nil {
-				// 	utils.ErrorLog("error writing data", err, "\n")
-				// 	return
-				// }
-				var onereadlen = 1024
-				var n int
-				// Mylog(cc.opts.logOpen, "write header", packet.MSGData[:16])
-				// Mylog(cc.opts.logOpen, "write body", packet.MSGData[16:])
-				cmd := utils.ByteToString(packet.MSGHead.Cmd)
-				for i := 0; i < len(packet.MSGData); i = i + n {
-					// Mylog(cc.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
-					if len(packet.MSGData)-i < 1024 {
-						onereadlen = len(packet.MSGData) - i
-						// Mylog(cc.opts.logOpen,"onereadlen:", onereadlen)
-					}
-					n, err = spbConn.Write(packet.MSGData[i : i+onereadlen])
-					cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(n))
-					// Mylog(cc.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
-					// Mylog(cc.opts.logOpen,"i+onereadlen:", i+onereadlen)
-					if err != nil {
-						utils.ErrorLog("client body err", err)
-						return
-					}
-					if cmd == header.ReqUploadFileSlice {
-						if isLimitUploadSpeed {
-							if limitUploadSpeed > 0 {
-								lr.SetRate(limitUploadSpeed)
-								lr.Limit()
-							}
-						}
-					}
+				if err := cc.writePacket(packet); err != nil {
+					utils.ErrorLog(err)
+					return
 				}
-				// runtime.SetFinalizer(packet, func(item *msg.RelayMsgBuf) {
-				cmem.Free(packet.Alloc)
 				packet = nil
-				// })
 			}
 		}
 	}
+}
+
+func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
+	var lr utils.LimitRate
+	var onereadlen = 1024
+	var n int
+	// Mylog(cc.opts.logOpen, "write header", packet.MSGData[:16])
+	// Mylog(cc.opts.logOpen, "write body", packet.MSGData[16:])
+	cmd := utils.ByteToString(packet.MSGHead.Cmd)
+
+	// Encrypt and write message header
+	encryptedHeader, err := core.EncryptAndPack(cc.sharedKey, packet.MSGData[:utils.MsgHeaderLen])
+	if err != nil {
+		return errors.Wrap(err, "client cannot encrypt header")
+	}
+	//_ = cc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
+	if err = core.WriteFull(cc.spbConn, encryptedHeader); err != nil {
+		return errors.Wrap(err, "client write err")
+	}
+	cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(len(encryptedHeader)))
+
+	// Encrypt and write message data
+	encryptedData, err := core.EncryptAndPack(cc.sharedKey, packet.MSGData[utils.MsgHeaderLen:])
+	if err != nil {
+		return errors.Wrap(err, "server cannot encrypt msg")
+	}
+	for i := 0; i < len(encryptedData); i = i + n {
+		// Mylog(cc.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
+		if len(encryptedData)-i < 1024 {
+			onereadlen = len(encryptedData) - i
+			// Mylog(cc.opts.logOpen,"onereadlen:", onereadlen)
+		}
+		//_ = cc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
+		n, err = cc.spbConn.Write(encryptedData[i : i+onereadlen])
+		cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(n))
+		// Mylog(cc.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
+		// Mylog(cc.opts.logOpen,"i+onereadlen:", i+onereadlen)
+		if err != nil {
+			return errors.Wrap(err, "client write err")
+		}
+		if cmd == header.ReqUploadFileSlice {
+			if isLimitUploadSpeed {
+				if limitUploadSpeed > 0 {
+					lr.SetRate(limitUploadSpeed)
+					lr.Limit()
+				}
+			}
+		}
+	}
+	cmem.Free(packet.Alloc)
+	return nil
 }
 
 // handleLoop
