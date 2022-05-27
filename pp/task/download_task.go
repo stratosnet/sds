@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/google/uuid"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
@@ -390,7 +391,12 @@ func addSeqNum2FileName(filePath string, seq int) string {
 	if seq > 0 {
 		ext := filepath.Ext(filePath)
 		filename := strings.TrimSuffix(filepath.Base(filePath), ext)
-		lastPath = fmt.Sprintf("%s/%s(%d)%s", filepath.Dir(filePath), filename, seq, ext)
+		if seq < 3000 {
+			lastPath = fmt.Sprintf("%s/%s(%d)%s", filepath.Dir(filePath), filename, seq, ext)
+		} else {
+			utils.ErrorLog("Maximum sequence number of duplicate file name has been reached, use UUID instead")
+			lastPath = fmt.Sprintf("%s/%s(%s)%s", filepath.Dir(filePath), filename, uuid.New().String(), ext)
+		}
 	}
 
 	if exist, err := file.PathExists(lastPath); err != nil || !exist {
