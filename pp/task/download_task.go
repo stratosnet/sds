@@ -395,7 +395,7 @@ func addSeqNum2FileName(filePath string, seq int) string {
 			lastPath = fmt.Sprintf("%s/%s(%d)%s", filepath.Dir(filePath), filename, seq, ext)
 		} else {
 			utils.ErrorLog("Maximum sequence number of duplicate file name has been reached, use UUID instead")
-			lastPath = fmt.Sprintf("%s/%s(%s)%s", filepath.Dir(filePath), filename, uuid.New().String(), ext)
+			return fmt.Sprintf("%s/%s(%s)%s", filepath.Dir(filePath), filename, uuid.New().String(), ext)
 		}
 	}
 
