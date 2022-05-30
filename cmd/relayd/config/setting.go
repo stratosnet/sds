@@ -5,29 +5,29 @@ import (
 )
 
 type connectionRetries struct {
-	Max           int `yaml:"max"`
-	SleepDuration int `yaml:"sleepDuration"`
+	Max           int `toml:"max"`
+	SleepDuration int `toml:"sleep_duration"`
 }
 
 type sds struct {
-	ApiPort           string            `yaml:"apiPort"`
-	ClientPort        string            `yaml:"clientPort"`
-	NetworkAddress    string            `yaml:"networkAddress"`
-	WebsocketPort     string            `yaml:"websocketPort"`
-	HandshakePort     string            `yaml:"handshakePort"`
-	ConnectionRetries connectionRetries `yaml:"connectionRetries"`
+	ApiPort           string            `toml:"api_port"`
+	ClientPort        string            `toml:"client_port"`
+	NetworkAddress    string            `toml:"network_address"`
+	WebsocketPort     string            `toml:"websocket_port"`
+	HandshakePort     string            `toml:"handshake_port"`
+	ConnectionRetries connectionRetries `toml:"connection_retries"`
 }
 
 type broadcast struct {
-	ChannelSize int `yaml:"channelSize"`
-	MaxMsgPerTx int `yaml:"maxMsgPerTx"`
+	ChannelSize int `toml:"channel_size"`
+	MaxMsgPerTx int `toml:"max_msg_per_tx"`
 }
 
 type stratoschain struct {
-	RestServer        string            `yaml:"restServer"`
-	WebsocketServer   string            `yaml:"websocketServer"`
-	ConnectionRetries connectionRetries `yaml:"connectionRetries"`
-	Broadcast         broadcast         `yaml:"broadcast"`
+	RestServer        string            `toml:"rest_server"`
+	WebsocketServer   string            `toml:"websocket_server"`
+	ConnectionRetries connectionRetries `toml:"connection_retries"`
+	Broadcast         broadcast         `toml:"broadcast"`
 }
 
 type transactionsConfig struct {
@@ -36,28 +36,28 @@ type transactionsConfig struct {
 }
 
 type blockchainInfoConfig struct {
-	ChainId      string             `yaml:"chainId"`
-	Token        string             `yaml:"token"`
-	Transactions transactionsConfig `yaml:"transactions"`
+	ChainId      string             `toml:"chain_id"`
+	Token        string             `toml:"token"`
+	Transactions transactionsConfig `toml:"transactions"`
 }
 
 type Version struct {
-	AppVer    uint16 `yaml:"appVer"`
-	MinAppVer uint16 `yaml:"minAppVer"`
+	AppVer    uint16 `toml:"app_ver"`
+	MinAppVer uint16 `toml:"min_app_ver"`
 }
 
 type config struct {
-	BlockchainInfo blockchainInfoConfig `yaml:"blockchainInfo"`
-	SDS            sds                  `yaml:"sds"`
-	StratosChain   stratoschain         `yaml:"stratosChain"`
-	Version        Version              `yaml:"version"`
+	BlockchainInfo blockchainInfoConfig `toml:"blockchain_info"`
+	SDS            sds                  `toml:"sds"`
+	StratosChain   stratoschain         `toml:"stratos_chain"`
+	Version        Version              `toml:"version"`
 }
 
 var Config *config
 
 func LoadConfig(path string) error {
 	Config = new(config)
-	err := utils.LoadYamlConfig(Config, path)
+	err := utils.LoadTomlConfig(Config, path)
 	if err != nil {
 		return err
 	}

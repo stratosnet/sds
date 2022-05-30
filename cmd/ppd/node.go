@@ -20,7 +20,7 @@ import (
 const (
 	HOME              string = "home"
 	CONFIG            string = "config"
-	defaultConfigPath string = "./configs/config.yaml"
+	defaultConfigPath string = "./configs/config.toml"
 )
 
 func nodePP(cmd *cobra.Command, args []string) error {
