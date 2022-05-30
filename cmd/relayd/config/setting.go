@@ -14,7 +14,6 @@ type sds struct {
 	ClientPort        string            `yaml:"clientPort"`
 	NetworkAddress    string            `yaml:"networkAddress"`
 	WebsocketPort     string            `yaml:"websocketPort"`
-	HandshakePort     string            `yaml:"handshakePort"`
 	ConnectionRetries connectionRetries `yaml:"connectionRetries"`
 }
 

@@ -6,7 +6,6 @@ sds:
   apiPort: 28081
   clientPort: 28888
   websocketPort: 28889
-  handshakePort: 28890
   connectionRetries:
     max: 100
     sleepDuration: 3000 # milliseconds
