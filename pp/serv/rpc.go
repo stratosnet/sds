@@ -3,12 +3,15 @@ package serv
 import (
 	"crypto/sha256"
 	b64 "encoding/base64"
+	"context"
 	"encoding/hex"
 	"sync"
 	"encoding/json"
 	"time"
+	"github.com/google/uuid"
 	"github.com/stratosnet/sds/msg/header"
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
+	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
@@ -131,7 +134,7 @@ func (api *rpcApi) RequestUpload(param rpc_api.ParamReqUploadFile) rpc_api.Resul
 	}()
 
 	select {
-	case <-time.After(WAIT_TIMEOUT * time.Second):
+	case <-time.After(WAIT_TIMEOUT):
 		utils.DebugLog("TO QUIT TIMEOUT")
 		return rpc_api.Result{Return: rpc_api.TIME_OUT}
 	case <-done:
@@ -200,7 +203,7 @@ func (api *rpcApi) UploadData(param rpc_api.ParamUploadData) rpc_api.Result {
 	}()
 
 	select {
-	case <-time.After(WAIT_TIMEOUT * time.Second):
+	case <-time.After(WAIT_TIMEOUT):
 		return rpc_api.Result{Return: rpc_api.TIME_OUT}
 	case <-done:
 		return *result
@@ -280,7 +283,7 @@ func (api *rpcApi) DownloadData(param rpc_api.ParamDownloadData) rpc_api.Result 
 
 	// wait too long, failure of timeout
 	select {
-	case <-time.After(WAIT_TIMEOUT * time.Second):
+	case <-time.After(WAIT_TIMEOUT):
 		// end of the session
 		file.CleanFileHash(key)
 		return rpc_api.Result{Return: rpc_api.TIME_OUT}
@@ -331,9 +334,38 @@ func (api *rpcApi) DownloadedFileInfo(param rpc_api.ParamDownloadFileInfo) rpc_a
 
 	// wait too long, failure of timeout
 	select {
-	case <-time.After(WAIT_TIMEOUT * time.Second):
+	case <-time.After(WAIT_TIMEOUT):
 		return rpc_api.Result{Return: rpc_api.TIME_OUT}
 	case <-event:
+	}
+
+	return *result
+}
+
+// RequestFileList
+func (api *rpcApi) RequestList(param rpc_api.ParamReqFileList) rpc_api.FileListResult {
+
+	reqId := uuid.New().String()
+	parentCtx := context.Background()
+	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
+
+	event.FindFileList("", param.WalletAddr, param.PageId, reqId, "", 0, true, nil)
+
+	// wait for result, SUCCESS or some failure
+	var result *rpc_api.FileListResult
+	var found bool
+
+	for {
+		select {
+		case <-ctx.Done():
+			result = &rpc_api.FileListResult{Return: rpc_api.TIME_OUT}
+			return *result
+		default:
+			result, found = file.GetFileListResult(param.WalletAddr+reqId)
+			if result != nil && found {
+				return *result
+			}
+		}
 	}
 
 	return *result

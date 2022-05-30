@@ -555,12 +555,12 @@ func ReqDownloadFileWrongData(fInfo *protos.RspFileStorageInfo, dTask *task.Down
 	}
 }
 
-func FindMyFileListData(fileName, dir, reqID, keyword string, fileType protos.FileSortType, isUp bool) *protos.ReqFindMyFileList {
+func FindFileListData(fileName string, walletAddr string, pageId uint64, reqID, keyword string, fileType protos.FileSortType, isUp bool) *protos.ReqFindMyFileList {
 	return &protos.ReqFindMyFileList{
 		FileName:      fileName,
 		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		Directory:     dir,
+		WalletAddress: walletAddr,
+		PageId:        pageId,
 		ReqId:         reqID,
 		FileType:      fileType,
 		IsUp:          isUp,

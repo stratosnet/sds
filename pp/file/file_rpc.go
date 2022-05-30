@@ -33,6 +33,9 @@ var (
 
 	// gracefully close download session
 	rpcDownSessionClosing = &sync.Map{}
+
+	// key(walletAddr + reqid): value(file list result)
+	rpcFileListResult = &sync.Map{}
 )
 
 type pipe struct {
@@ -64,6 +67,7 @@ func GetRemoteFileData(hash string, offset *protos.SliceOffset) []byte {
 	}
 
 	// send event and open the pipe for coming data
+
 	reFileMutex.Lock()
 	rpcFileEvent.Store(hash, r)
 	var p pipe
@@ -260,3 +264,21 @@ func CleanFileHash(key string) {
 func CloseDownloadSession(key string) {
 	rpcDownSessionClosing.Store(key, true)
 }
+
+// GetFileListResult
+func GetFileListResult(key string) (*rpc.FileListResult, bool) {
+	result, loaded := rpcFileListResult.LoadAndDelete(key)
+	if result != nil && loaded {
+		return result.(*rpc.FileListResult), loaded
+	}else {
+		return nil, loaded
+	}
+}
+
+// SetFileListResult
+func SetFileListResult(key string, result *rpc.FileListResult) {
+	if result != nil {
+		rpcFileListResult.Store(key, result)
+	}
+}
+
