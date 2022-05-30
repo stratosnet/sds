@@ -22,6 +22,7 @@ token = 'ustos'
 stratos_chain_url = 'http://127.0.0.1:1317'
 rest_port = '18092'
 internal_port = ''
+rpc_port = '8235'
 traffic_log_interval = 10
 max_connection = 1000
 [version]

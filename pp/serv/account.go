@@ -92,7 +92,7 @@ func getPublicKey(filePath, password string) bool {
 }
 
 // Wallets get all wallets
-func Wallets() {
+func Wallets() []string {
 	files, _ := ioutil.ReadDir(setting.Config.AccountDir)
 	var wallets []string
 	for _, file := range files {
@@ -109,6 +109,7 @@ func Wallets() {
 			utils.Log(wallet)
 		}
 	}
+	return wallets
 }
 
 // Login
