@@ -389,7 +389,88 @@ func get(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// reqListMsg
+func reqListMsg(page uint64) []byte {
+	// wallet address
+	ret := readWalletKeys(WalletAddress)
+	if !ret {
+		utils.DebugLog("Failed reading key file.")
+		return nil
+	}
+
+	// param
+	var params = []rpc.ParamReqFileList{}
+	params = append(params, rpc.ParamReqFileList {
+		WalletAddr: WalletAddress,
+		PageId: page,
+	})
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.DebugLog("failed marshal param for ReqUploadFile")
+		return nil
+	}
+
+	// wrap to the json-rpc message
+	return wrapJsonRpc("user_requestList", pm)
+}
+
+// printFileList
+func printFileList(res rpc.FileListResult){
+	if res.Return == rpc.SUCCESS {
+		fmt.Printf("\n%-20s %-41s %-9s %-8s\n", "File Name", "File Hash", "File Size", "Create Time")
+		fmt.Printf("_____________________________________________________________________________________\n")
+		for i:= range res.FileInfo {
+			f := res.FileInfo[i]
+			fmt.Printf("%-20s %-25s %10d %8d\n", f.FileName, f.FileHash, f.FileSize, f.CreateTime)
+		}
+		fmt.Printf("_____________________________________________________________________________________\n")
+		fmt.Printf("Total: %d\tPage: %d\n\n", res.TotalNumber, res.PageId)
+	}
+
+}
+
+// list
+func list(cmd *cobra.Command, args []string) error {
+	var page uint64
+	var e error
+	page = 0
+	if len(args) == 1 {
+		page, e = strconv.ParseUint(args[0], 10, 64)
+		if e != nil {
+			return e
+		}
+	}
+	r := reqListMsg(page)
+	if r == nil {
+		return nil
+	}
+
+	// http request-respond
+	body := httpRequest(r)
+	if body == nil {
+		utils.DebugLog("json marshal error")
+		return nil
+	}
+
+	// Handle rsp
+	var rsp jsonrpcMessage
+	err := json.Unmarshal(body, &rsp)
+	if err != nil {
+	  return nil
+	}
+
+	var res rpc.FileListResult
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+	  return nil
+	}
+
+	printFileList(res)
+	return nil
 }
 
 // httpRequest
@@ -462,8 +543,15 @@ func main() {
 		RunE:    get,
 	}
 
+	listCmd := &cobra.Command{
+		Use:     "list",
+		Short:   "list files",
+		RunE:    list,
+	}
+
 	rootCmd.AddCommand(putCmd)
 	rootCmd.AddCommand(getCmd)
+	rootCmd.AddCommand(listCmd)
 
 	utils.NewDefaultLogger("./logs/stdout.log", true, true)
 

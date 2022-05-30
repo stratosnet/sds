@@ -246,10 +246,14 @@ func (api *terminalCmd) BackupStatus(param []string) (CmdResult, error) {
 
 func (api *terminalCmd) List(param []string) (CmdResult, error) {
 	if len(param) == 0 {
-		event.FindMyFileList("", "", "", "", 0, true, nil)
-
-	} else {
-		event.FindMyFileList(param[0], "", "", "", 0, true, nil)
+		event.FindFileList("", setting.WalletAddress, 0, "", "", 0, true, nil)
+	}else {
+		pageId, err := strconv.ParseUint(param[0], 10, 64)
+		if err == nil {
+			event.FindFileList("", setting.WalletAddress, pageId, "", "", 0, true, nil)
+		}else {
+			event.FindFileList(param[0], setting.WalletAddress, 0, "", "", 0, true, nil)
+		}
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
 }

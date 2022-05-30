@@ -53,7 +53,19 @@ type ParamDownloadFileInfo struct {
 	ReqId         string   `json:"reqid"`
 }
 
-// result for all upload and download messages
+// list: request file list
+type ParamReqFileList struct {
+	WalletAddr    string   `json:"walletaddr"`
+	PageId        uint64   `json:"page"`
+}
+
+type FileInfo struct {
+	FileHash      string   `json:"filehash"`
+	FileSize      uint64   `json:"filesize"`
+	FileName      string   `json:"filename"`
+	CreateTime    uint64   `json:"createtime"`
+}
+
 type Result struct {
 	Return        string     `json:"return"`
 	ReqId         string     `json:"reqid,omitempty"`
@@ -62,3 +74,9 @@ type Result struct {
 	FileData      string     `json:"filedata,omitempty"`
 }
 
+type FileListResult struct {
+	Return        string     `json:"return"`
+	FileInfo      []FileInfo `json:"fileinfo,omitempty"`
+	TotalNumber   uint64     `json:"totalnumber,omitempty"`
+	PageId        uint64     `json:"page,omitempty"`
+}
