@@ -115,6 +115,62 @@ func ReqGetWalletOzData(walletAddr string) *protos.ReqGetWalletOz {
 	}
 }
 
+func GetUploadFileSignMessage(ppWalletAddr, p2pAddr, ownerWalletAddr, fileHash, reqUploadFileStr string) string {
+	return ppWalletAddr + p2pAddr + ownerWalletAddr + fileHash + reqUploadFileStr
+}
+
+// RequestUploadFile request upload file without locating the file at the "path"
+func RequestUploadFile(fileName, fileHash string, fileSize uint64, reqID, ownerWalletAddress string, isEncrypted bool) *protos.ReqUploadFile {
+	utils.Log("fileName: ", fileName)
+	encryptionTag := ""
+	if isEncrypted {
+		encryptionTag = utils.GetRandomString(8)
+	}
+
+	utils.Log("fileHash: ", fileHash)
+
+	p2pFileString := GetUploadFileSignMessage(setting.WalletAddress, setting.P2PAddress, ownerWalletAddress, fileHash, header.ReqUploadFile)
+
+	file.SaveRemoteFileHash(fileHash, "rpc:" + fileName, fileSize)
+
+	req := &protos.ReqUploadFile{
+		FileInfo: &protos.FileInfo{
+			FileSize:           fileSize,
+			FileName:           fileName,
+			FileHash:           fileHash,
+			StoragePath:        "rpc:" + fileName,
+			EncryptionTag:      encryptionTag,
+			OwnerWalletAddress: ownerWalletAddress,
+		},
+		MyAddress: &protos.PPBaseInfo{
+			P2PAddress:     setting.P2PAddress,
+			WalletAddress:  setting.WalletAddress,
+			NetworkAddress: setting.NetworkAddress,
+			RestAddress:    setting.RestAddress,
+		},
+		Sign:          setting.GetSign(p2pFileString),
+		IsCover:       false,
+		ReqId:         reqID,
+		IsVideoStream: false,
+	}
+
+	p2pFileHash := []byte(p2pFileString)
+	utils.DebugLogf("setting.WalletAddress + fileHash : %v", hex.EncodeToString(p2pFileHash))
+
+	if !ed25519.Verify(setting.P2PPublicKey, p2pFileHash, req.Sign) {
+		utils.ErrorLog("ed25519 verification failed")
+		return nil
+	}
+
+	// info
+	p := &task.UpProgress{
+		Total:     int64(fileSize),
+		HasUpload: 0,
+	}
+	task.UploadProgressMap.Store(fileHash, p)
+	return req
+}
+
 // RequestUploadFileData RequestUploadFileData, ownerWalletAddress can be either pp node's walletAddr or file owner's walletAddr
 func RequestUploadFileData(paths, storagePath, reqID, ownerWalletAddress string, isCover, isVideoStream, isEncrypted bool) *protos.ReqUploadFile {
 	info := file.GetFileInfo(paths)
@@ -131,7 +187,7 @@ func RequestUploadFileData(paths, storagePath, reqID, ownerWalletAddress string,
 	fileHash := file.GetFileHash(paths, encryptionTag)
 	utils.Log("fileHash~~~~~~~~~~~~~~~~~~~~~~", fileHash)
 
-	p2pFileString := setting.WalletAddress + setting.P2PAddress + ownerWalletAddress + fileHash + header.ReqUploadFile
+	p2pFileString := GetUploadFileSignMessage(setting.WalletAddress, setting.P2PAddress, ownerWalletAddress, fileHash, header.ReqUploadFile)
 
 	req := &protos.ReqUploadFile{
 		FileInfo: &protos.FileInfo{

@@ -119,6 +119,7 @@ type config struct {
 	StratosChainUrl      string       `toml:"stratos_chain_url"`
 	RestPort             string       `toml:"rest_port"`
 	InternalPort         string       `toml:"internal_port"`
+	RpcPort              string       `toml:"rpc_port"`
 	TrafficLogInterval   uint64       `toml:"traffic_log_interval"`
 	SPList               []SPBaseInfo `toml:"sp_list"`
 }

@@ -74,24 +74,43 @@ func GetUploadSliceTask(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddress 
 }
 
 func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string, isEncrypted bool, fileCRC uint32) *UploadSliceTask {
-	filePath := file.GetFilePath(fileHash)
+
 	utils.DebugLogf("sliceNumber %v  offsetStart = %v  offsetEnd = %v", pp.SliceNumber, pp.SliceOffset.SliceOffsetStart, pp.SliceOffset.SliceOffsetEnd)
 	startOffset := pp.SliceOffset.SliceOffsetStart
 	endOffset := pp.SliceOffset.SliceOffsetEnd
-	if file.GetFileInfo(filePath) == nil {
-		utils.ErrorLog("wrong file path")
-		return nil
+
+	var fileSize uint64
+	var filePath string
+
+	remote := file.IsFileRpcRemote(fileHash)
+	if !remote {
+		// in case of local file
+		filePath = file.GetFilePath(fileHash)
+		fileInfo := file.GetFileInfo(filePath)
+		if fileInfo == nil {
+			utils.ErrorLog("wrong file path")
+			return nil
+		}
+		fileSize = uint64(fileInfo.Size())
+	} else {
+		// in case of remote (rpc) file
+		fileSize = file.GetRemoteFileSize(fileHash)
 	}
 
-	if uint64(file.GetFileInfo(filePath).Size()) < endOffset {
-		endOffset = uint64(file.GetFileInfo(filePath).Size())
+	if fileSize < endOffset {
+		endOffset = fileSize
 	}
-
 	offset := &protos.SliceOffset{
 		SliceOffsetStart: startOffset,
 		SliceOffsetEnd:   endOffset,
 	}
-	rawData := file.GetFileData(filePath, offset)
+
+	var rawData []byte
+	if !remote {
+		rawData = file.GetFileData(filePath, offset)
+	} else {
+		rawData = file.GetRemoteFileData(fileHash, offset)
+	}
 
 	// Encrypt slice data if required
 	data := rawData
