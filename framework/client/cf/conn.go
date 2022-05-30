@@ -168,8 +168,9 @@ func Mylog(b bool, v ...interface{}) {
 // client
 func newClientConnWithOptions(netid int64, c net.Conn, opts options) *ClientConn {
 	if opts.bufferSize == 0 {
-		opts.bufferSize = 100
+		opts.bufferSize = 200
 	}
+
 	cc := &ClientConn{
 		addr:             c.RemoteAddr().String(),
 		opts:             opts,
