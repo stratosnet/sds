@@ -19,6 +19,10 @@ var (
 	reFileEvent = make(map[string]rpc.Result)
 	// key(fileHash) : value(pipe)
 	pipes = make(map[string]pipe)
+	// key(fileHash) : value(rpcReady)
+	rpcReady = make(map[string]bool)
+	// key(fileHash) : value(download file data)
+	downData = make(map[string][]byte)
 )
 
 type pipe struct {
@@ -88,8 +92,48 @@ func GetRemoteFileData(hash string, offset *protos.SliceOffset) []byte {
 	}
 }
 
+// GetDownloadFileData
+func GetDownloadFileData(hash string) []byte {
+	// listen to the download data
+	var data []byte
+	var found bool
+	for {
+		data, found = downData[hash]
+		if found {
+			break
+		}
+	}
+	return data
+}
+
+// SaveRemoteFileData
+func SaveRemoteFileData(fileHash string, data []byte, offset uint64) {
+
+	wmutex.Lock()
+
+	// 1. send the event rpc.DOWNLOAD_OK
+	offsetend := offset + uint64(len(data))
+	result := rpc.Result {
+		Return: rpc.DOWNLOAD_OK,
+		OffsetStart: &offset,
+		OffsetEnd: &offsetend,
+	}
+
+	SetRemoteFileResult(fileHash, result)
+
+	// 2. download file data -> map
+	downData[fileHash] = data
+
+	// 3. need to wait the reply from rpc comm confirmed
+	WaitDownloadSliceDone(fileHash)
+
+	wmutex.Unlock()
+}
+
 // GetRemoteFileSize
 func GetRemoteFileSize(hash string) uint64{
+	reFileMutex.Lock()
+	defer reFileMutex.Unlock()
 	return rpcFileInfoMap[hash]
 }
 
@@ -132,4 +176,55 @@ func GetRemoteFileEvent(hash string) (rpc.Result, bool) {
 	}
 
 	return result, found
+}
+
+// SetRemoteFileResult a result is given to the remote client
+func SetDownloadSliceDone(hash string) {
+	reFileMutex.Lock()
+	rpcReady[hash] = true
+	reFileMutex.Unlock()
+}
+
+func WaitDownloadSliceDone(hash string) {
+	rpcReady[hash] = false
+
+	for {
+		reFileMutex.Lock()
+		value, found := rpcReady[hash]
+		reFileMutex.Unlock()
+		if found && value {
+			break
+		}
+	}
+
+}
+
+// GetRemoteFileInfo
+func GetRemoteFileInfo(hash string) uint64 {
+	SetRemoteFileResult(hash, rpc.Result{Return: rpc.DL_OK_ASK_INFO})
+	var fileSize uint64
+	for {
+		fileSize = GetRemoteFileSize(hash)
+		if fileSize != 0 {
+			break;
+		}
+	}
+	return fileSize
+}
+
+func SetRemoteFileInfo(hash string, size uint64) {
+	reFileMutex.Lock()
+	rpcFileInfoMap[hash] = size
+	reFileMutex.Unlock()
+}
+
+func CleanFileHash(hash string) {
+	reFileMutex.Lock()
+	delete(rpcFileInfoMap, hash)
+	delete(reFileEvent, hash)
+	//delete(pipes, hash)
+	delete(rpcReady, hash)
+	delete(downData, hash)
+	ClearFileMap(hash)
+	reFileMutex.Unlock()
 }
