@@ -128,6 +128,10 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		return callRpc(c, "uploadStream", param)
 	}
 
+	backupStatus := func(line string, param []string) bool {
+		return callRpc(c, "backupStatus", param)
+	}
+
 	list := func(line string, param []string) bool {
 		return callRpc(c, "list", param)
 	}
@@ -236,6 +240,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("u", upload, true)
 	console.Mystdin.RegisterProcessFunc("put", upload, true)
 	console.Mystdin.RegisterProcessFunc("putstream", uploadStream, true)
+	console.Mystdin.RegisterProcessFunc("backupStatus", backupStatus, true)
 	console.Mystdin.RegisterProcessFunc("d", download, true)
 	console.Mystdin.RegisterProcessFunc("get", download, true)
 	console.Mystdin.RegisterProcessFunc("list", list, false)

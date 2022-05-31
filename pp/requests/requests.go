@@ -251,7 +251,7 @@ func RspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 	return rspDownloadSlice
 }
 
-func ReqUploadFileSliceData(task *task.UploadSliceTask, target *protos.RspUploadFile) *protos.ReqUploadFileSlice {
+func ReqUploadFileSliceData(task *task.UploadSliceTask, sign []byte) *protos.ReqUploadFileSlice {
 	return &protos.ReqUploadFileSlice{
 		TaskId:        task.TaskID,
 		FileCrc:       task.FileCRC,
@@ -263,7 +263,7 @@ func ReqUploadFileSliceData(task *task.UploadSliceTask, target *protos.RspUpload
 		WalletAddress: setting.WalletAddress,
 		SliceSize:     task.SliceTotalSize,
 		SpP2PAddress:  task.SpP2pAddress,
-		Sign:          target.Sign,
+		Sign:          sign,
 	}
 }
 

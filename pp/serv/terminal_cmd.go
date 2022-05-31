@@ -235,6 +235,14 @@ func (api *terminalCmd) UploadStream(param []string) (CmdResult, error) {
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
+func (api *terminalCmd) BackupStatus(param []string) (CmdResult, error) {
+	if len(param) == 0 {
+		return CmdResult{}, errors.New("input file hash")
+	}
+	event.ReqBackupStatus(param[0])
+	return CmdResult{Msg: DefaultMsg}, nil
+}
+
 func (api *terminalCmd) List(param []string) (CmdResult, error) {
 	if len(param) == 0 {
 		event.FindMyFileList("", "", "", "", 0, true, nil)

@@ -100,7 +100,7 @@ func RspReportUploadSliceResult(ctx context.Context, conn core.WriteCloser) {
 }
 
 // UploadFileSlice
-func UploadFileSlice(tk *task.UploadSliceTask, target *protos.RspUploadFile) {
+func UploadFileSlice(tk *task.UploadSliceTask, sign []byte) {
 	tkDataLen := len(tk.Data)
 	fileHash := tk.FileHash
 	storageP2pAddress := tk.SliceNumAddr.PpInfo.P2PAddress
@@ -129,19 +129,19 @@ func UploadFileSlice(tk *task.UploadSliceTask, target *protos.RspUploadFile) {
 				newTask.Data = tk.Data[dataStart:dataEnd]
 				utils.DebugLog("dataStart = ", dataStart)
 				utils.DebugLog("dataEnd = ", dataEnd)
-				sendSlice(requests.ReqUploadFileSliceData(newTask, target), fileHash, storageP2pAddress, storageNetworkAddress)
+				sendSlice(requests.ReqUploadFileSliceData(newTask, sign), fileHash, storageP2pAddress, storageNetworkAddress)
 				dataStart += setting.MAXDATA
 				dataEnd += setting.MAXDATA
 			} else {
 				utils.DebugLog("dataStart = ", dataStart)
 				newTask.Data = tk.Data[dataStart:]
-				sendSlice(requests.ReqUploadFileSliceData(newTask, target), fileHash, storageP2pAddress, storageNetworkAddress)
+				sendSlice(requests.ReqUploadFileSliceData(newTask, sign), fileHash, storageP2pAddress, storageNetworkAddress)
 				return
 			}
 		}
 	} else {
 		tk.SliceOffsetInfo.SliceOffset.SliceOffsetStart = 0
-		sendSlice(requests.ReqUploadFileSliceData(tk, target), fileHash, storageP2pAddress, storageNetworkAddress)
+		sendSlice(requests.ReqUploadFileSliceData(tk, sign), fileHash, storageP2pAddress, storageNetworkAddress)
 	}
 }
 
@@ -193,6 +193,7 @@ func UploadSpeedOfProgress(ctx context.Context, conn core.WriteCloser) {
 				utils.Log(fmt.Sprintf("uploaded：%.2f %% \n", p))
 				task.UploadProgressMap.Delete(target.FileHash)
 				task.CleanUpConnMap(target.FileHash)
+				ScheduleReqBackupStatus(target.FileHash)
 			}
 		} else {
 			utils.DebugLog("paused!!")
