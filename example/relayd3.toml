@@ -7,7 +7,6 @@ network_address = "127.0.0.1"
 api_port = "28081"
 client_port = "28888"
 websocket_port = "28889"
-handshake_port = "28890"
 [sds.connection_retries]
 max = 100
 sleep_duration = 3000 # milliseconds
