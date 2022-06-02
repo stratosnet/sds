@@ -104,9 +104,10 @@ func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddr
 		}
 	}
 	dataSize := uint64(len(data))
+	sliceHash := utils.CalcSliceHash(data, fileHash, pp.SliceNumber)
 
 	sl := &protos.SliceOffsetInfo{
-		SliceHash: utils.CalcSliceHash(data, fileHash, pp.SliceNumber),
+		SliceHash: sliceHash,
 		SliceOffset: &protos.SliceOffset{
 			SliceOffsetStart: 0,
 			SliceOffsetEnd:   dataSize,
@@ -123,6 +124,7 @@ func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddr
 		SliceTotalSize:  dataSize,
 		SpP2pAddress:    spP2pAddress,
 	}
+	file.SaveTmpSliceData(fileHash, sliceHash, data)
 	return tk
 }
 
@@ -153,12 +155,13 @@ func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAd
 
 	utils.DebugLog("sliceNumber", pp.SliceNumber)
 
+	sliceHash := utils.CalcSliceHash(data, fileHash, pp.SliceNumber)
 	offset := &protos.SliceOffset{
 		SliceOffsetStart: uint64(0),
 		SliceOffsetEnd:   sliceTotalSize,
 	}
 	sl := &protos.SliceOffsetInfo{
-		SliceHash:   utils.CalcSliceHash(data, fileHash, pp.SliceNumber),
+		SliceHash:   sliceHash,
 		SliceOffset: offset,
 	}
 	SliceNumAddr := &protos.SliceNumAddr{
@@ -175,6 +178,46 @@ func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAd
 		FileCRC:         fileCRC,
 		Data:            data,
 		SliceTotalSize:  sliceTotalSize,
+		SpP2pAddress:    spP2pAddress,
+	}
+	file.SaveTmpSliceData(fileHash, sliceHash, data)
+	return tk
+}
+
+func GetReuploadSliceTask(pp *protos.SliceHashAddr, fileHash, taskID, spP2pAddress string) *UploadSliceTask {
+	utils.DebugLogf("  fileHash %s sliceNumber %v, sliceHash %s",
+		fileHash, pp.SliceNumber, pp.SliceHash)
+
+	rawData := file.GetSliceDataFromTmp(fileHash, pp.SliceHash)
+
+	if rawData == nil {
+		utils.ErrorLogf("Failed to find the file slice in temp folder for fileHash %s sliceNumber %v, sliceHash %s",
+			fileHash, pp.SliceNumber, pp.SliceHash)
+		return nil
+	}
+
+	data := rawData
+	dataSize := uint64(len(data))
+
+	sl := &protos.SliceOffsetInfo{
+		SliceHash: pp.SliceHash,
+		SliceOffset: &protos.SliceOffset{
+			SliceOffsetStart: 0,
+			SliceOffsetEnd:   dataSize,
+		},
+	}
+
+	tk := &UploadSliceTask{
+		TaskID:   taskID,
+		FileHash: fileHash,
+		SliceNumAddr: &protos.SliceNumAddr{
+			SliceNumber: pp.SliceNumber,
+			SliceOffset: pp.SliceOffset,
+			PpInfo:      pp.PpInfo,
+		},
+		SliceOffsetInfo: sl,
+		Data:            data,
+		SliceTotalSize:  dataSize,
 		SpP2pAddress:    spP2pAddress,
 	}
 	return tk

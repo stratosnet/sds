@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net"
 	"sync"
 	"time"
 
@@ -13,8 +12,6 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
-	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/relay/sds"
 	"github.com/stratosnet/sds/relay/stratoschain"
@@ -29,9 +26,6 @@ type MultiClient struct {
 	cancel                context.CancelFunc
 	Ctx                   context.Context
 	once                  *sync.Once
-	tcpServer             *core.Server
-	tcpListener           *net.Listener
-	sdsClientConn         *cf.ClientConn
 	sdsWebsocketConn      *websocket.Conn
 	stratosWebsocketUrl   string
 	stratosEventsChannels *sync.Map
@@ -63,7 +57,6 @@ func (m *MultiClient) Start() error {
 	// Client to subscribe to stratos-chain events and receive messages via websocket
 	m.stratosWebsocketUrl = setting.Config.StratosChain.WebsocketServer
 
-	go m.startTCPServer() // TCP server to listen to handshake connections
 	go m.connectToSDS()
 	go m.connectToStratosChain()
 
@@ -73,9 +66,6 @@ func (m *MultiClient) Start() error {
 func (m *MultiClient) Stop() {
 	m.once.Do(func() {
 		m.cancel()
-		if m.sdsClientConn != nil {
-			m.sdsClientConn.ClientClose()
-		}
 		if m.sdsWebsocketConn != nil {
 			_ = m.sdsWebsocketConn.Close()
 		}
@@ -103,35 +93,6 @@ func (m *MultiClient) Stop() {
 	})
 }
 
-func (m *MultiClient) startTCPServer() {
-	m.wg.Add(1)
-	defer m.wg.Done()
-	defer func() {
-		if r := recover(); r != nil {
-			utils.ErrorLog("Recovering from panic in handshake TCP server goroutine", r)
-		}
-		m.cancel()
-	}()
-
-	tcpServer, err := sds.NewTCPServer()
-	if err != nil {
-		utils.ErrorLog("Couldn't create TCP server", err)
-		return
-	}
-
-	listener, err := net.Listen("tcp4", ":"+setting.Config.SDS.HandshakePort)
-	if err != nil {
-		utils.ErrorLog("Couldn't create TCP listener", err)
-		return
-	}
-
-	err = tcpServer.Start(listener)
-	if err != nil {
-		utils.ErrorLog("Error when starting TCP server", err)
-		return
-	}
-}
-
 func (m *MultiClient) connectToSDS() {
 	m.wg.Add(1)
 	defer m.wg.Done()
@@ -141,12 +102,10 @@ func (m *MultiClient) connectToSDS() {
 		}
 	}()
 
-	sdsClientUrl := setting.Config.SDS.NetworkAddress + ":" + setting.Config.SDS.ClientPort
 	sdsWebsocketUrl := setting.Config.SDS.NetworkAddress + ":" + setting.Config.SDS.WebsocketPort
 
 	// Connect to SDS SP node in a loop
-	i := 0
-	for ; i < setting.Config.SDS.ConnectionRetries.Max; i++ {
+	for i := 0; i < setting.Config.SDS.ConnectionRetries.Max; i++ {
 		if m.Ctx.Err() != nil {
 			return
 		}
@@ -155,19 +114,12 @@ func (m *MultiClient) connectToSDS() {
 			time.Sleep(time.Millisecond * time.Duration(setting.Config.SDS.ConnectionRetries.SleepDuration))
 		}
 
-		// Client to send messages to SDS SP node
-		sdsClient := sds.NewClient(sdsClientUrl)
-		if sdsClient == nil {
-			continue
-		}
-		m.sdsClientConn = sdsClient
-
 		// Client to subscribe to events from SDS SP node
 		fullSdsWebsocketUrl := "ws://" + sdsWebsocketUrl + "/websocket"
 		sdsTopics := []string{sds.TypeBroadcast}
 		ws := sds.DialWebsocket(fullSdsWebsocketUrl, sdsTopics)
 		if ws == nil {
-			break
+			continue
 		}
 		m.sdsWebsocketConn = ws
 
@@ -179,11 +131,7 @@ func (m *MultiClient) connectToSDS() {
 	}
 
 	// This is reached when we couldn't establish the connection to the SP node
-	if i == setting.Config.SDS.ConnectionRetries.Max {
-		utils.ErrorLog("Couldn't connect to SDS SP node after many tries. Relayd will shutdown")
-	} else {
-		utils.ErrorLog("Couldn't subscribe to SDS events through websockets. Relayd will shutdown")
-	}
+	utils.ErrorLog("Couldn't connect to SDS SP node after many tries. Relayd will shutdown")
 	m.cancel()
 }
 
@@ -413,10 +361,6 @@ func (m *MultiClient) SubscribeToStratosChainEvents() error {
 		}
 	}
 	return nil
-}
-
-func (m *MultiClient) GetSdsClientConn() *cf.ClientConn {
-	return m.sdsClientConn
 }
 
 func (m *MultiClient) GetSdsWebsocketConn() *websocket.Conn {

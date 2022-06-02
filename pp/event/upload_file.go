@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
@@ -96,6 +97,21 @@ func RequestUploadStream(path, reqID string, _ http.ResponseWriter) {
 	}
 }
 
+func ScheduleReqBackupStatus(fileHash string) {
+	time.AfterFunc(5*time.Minute, func() {
+		ReqBackupStatus(fileHash)
+	})
+}
+
+func ReqBackupStatus(fileHash string) {
+	p := &protos.ReqBackupStatus{
+		FileHash:      fileHash,
+		P2PAddress:    setting.P2PAddress,
+		WalletAddress: setting.WalletAddress,
+	}
+	peers.SendMessageToSPServer(p, header.ReqFileBackupStatus)
+}
+
 // RspUploadFile response of upload file event
 func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 	utils.DebugLog("get RspUploadFile")
@@ -131,6 +147,69 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		putData(target.ReqId, HTTPUploadFile, target)
 	}
 
+}
+
+func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
+	utils.DebugLog("get RspBackupStatus")
+	target := &protos.RspBackupStatus{}
+	if !requests.UnmarshalData(ctx, target) {
+		utils.ErrorLog("unmarshal error")
+		return
+	}
+
+	if target.Result.State == protos.ResultState_RES_FAIL {
+		utils.Log("Backup status check failed", target.Result.Msg)
+		return
+	}
+
+	utils.Logf("Backup up status for file %s: the number of replica is %d", target.FileHash, target.Replicas)
+	if target.DeleteOriginTmp {
+		utils.Logf("Backup is finished for file %s, delete all the temporary slices", target.FileHash)
+		file.DeleteTmpFileSlices(target.FileHash)
+		return
+	}
+
+	if len(target.PpList) == 0 {
+		ScheduleReqBackupStatus(target.FileHash)
+		return
+	}
+
+	utils.Logf("Start re-uploading slices for the file  %s", target.FileHash)
+	totalSize := int64(0)
+	var sliceAddrList []*protos.SliceNumAddr
+	for _, sliceHashAddr := range target.PpList {
+		sliceAddrList = append(sliceAddrList, &protos.SliceNumAddr{
+			SliceNumber: sliceHashAddr.SliceNumber,
+			SliceOffset: sliceHashAddr.SliceOffset,
+			PpInfo:      sliceHashAddr.PpInfo,
+		})
+		totalSize += int64(sliceHashAddr.GetSliceSize())
+	}
+	taskING := &task.UpFileIng{
+		UPING:    0,
+		Slices:   sliceAddrList,
+		FileHash: target.FileHash,
+		TaskID:   target.TaskId,
+		UpChan:   make(chan bool, task.MAXSLICE),
+	}
+	task.CleanUpConnMap(target.FileHash)
+	task.UpIngMap.Store(target.FileHash, taskING)
+
+	p := &task.UpProgress{
+		Total:     totalSize,
+		HasUpload: 0,
+	}
+	task.UploadProgressMap.Store(target.FileHash, p)
+
+	for _, pp := range target.PpList {
+		uploadTask := task.GetReuploadSliceTask(pp, target.FileHash, target.TaskId, target.SpP2PAddress)
+		if uploadTask != nil {
+			UploadFileSlice(uploadTask, target.Sign)
+		}
+	}
+	utils.DebugLog("all slices of the task have begun uploading")
+	close(taskING.UpChan)
+	task.UpIngMap.Delete(target.FileHash)
 }
 
 // startUploadTask
@@ -184,6 +263,11 @@ func up(ING *task.UpFileIng, target *protos.RspUploadFile) {
 					close(ING.UpChan)
 				}
 				task.UpIngMap.Delete(target.FileHash)
+
+				if target.IsVideoStream {
+					file.DeleteTmpHlsFolder(target.FileHash)
+				}
+
 				return
 			}
 			pp := ING.Slices[0]
@@ -194,7 +278,7 @@ func up(ING *task.UpFileIng, target *protos.RspUploadFile) {
 				continue
 			}
 
-			UploadFileSlice(uploadTask, target)
+			UploadFileSlice(uploadTask, target.Sign)
 			ING.Slices = append(ING.Slices[:0], ING.Slices[0+1:]...)
 		}
 	}
@@ -218,7 +302,7 @@ func sendUploadFileSlice(target *protos.RspUploadFile) {
 			uploadTask := task.GetUploadSliceTask(pp, target.FileHash, target.TaskId, target.SpP2PAddress,
 				target.IsVideoStream, target.IsEncrypted, ING.FileCRC)
 			if uploadTask != nil {
-				UploadFileSlice(uploadTask, target)
+				UploadFileSlice(uploadTask, target.Sign)
 			}
 		}
 		utils.DebugLog("all slices of the task have begun uploading")
@@ -227,6 +311,10 @@ func sendUploadFileSlice(target *protos.RspUploadFile) {
 			close(ING.UpChan)
 		}
 		task.UpIngMap.Delete(target.FileHash)
+
+		if target.IsVideoStream {
+			file.DeleteTmpHlsFolder(target.FileHash)
+		}
 	}
 }
 

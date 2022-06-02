@@ -235,6 +235,14 @@ func (api *terminalCmd) UploadStream(param []string) (CmdResult, error) {
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
+func (api *terminalCmd) BackupStatus(param []string) (CmdResult, error) {
+	if len(param) == 0 {
+		return CmdResult{}, errors.New("input file hash")
+	}
+	event.ReqBackupStatus(param[0])
+	return CmdResult{Msg: DefaultMsg}, nil
+}
+
 func (api *terminalCmd) List(param []string) (CmdResult, error) {
 	if len(param) == 0 {
 		event.FindMyFileList("", "", "", "", 0, true, nil)
@@ -290,11 +298,11 @@ func (api *terminalCmd) Config(param []string) (CmdResult, error) {
 
 func (api *terminalCmd) SharePath(param []string) (CmdResult, error) {
 	if len(param) < 3 {
-		return CmdResult{Msg: ""}, errors.New("input directory hash, expire time(0 for non-expire), is private (0:public,1:private)")
+		return CmdResult{Msg: ""}, errors.New("input directory hash, share duration(in seconds, 0 for default value), is_private (0:public,1:private)")
 	}
 	time, timeErr := strconv.Atoi(param[1])
 	if timeErr != nil {
-		return CmdResult{Msg: ""}, errors.New("input expire time(0 means non-expire)")
+		return CmdResult{Msg: ""}, errors.New("input share duration(in seconds, 0 for default value)")
 	}
 	private, err := strconv.Atoi(param[2])
 	if err != nil {
@@ -314,12 +322,12 @@ func (api *terminalCmd) SharePath(param []string) (CmdResult, error) {
 
 func (api *terminalCmd) ShareFile(param []string) (CmdResult, error) {
 	if len(param) < 3 {
-		return CmdResult{Msg: ""}, errors.New("input file hash or directory path, expire time(0 for non-expire), is private (0:public,1:private)")
+		return CmdResult{Msg: ""}, errors.New("input file hash or directory path, share duration(in seconds, 0 for default value), is_private (0:public,1:private)")
 	}
 	time, timeErr := strconv.Atoi(param[1])
 	if timeErr != nil {
-		fmt.Println("input expire time(0 for non-expire)")
-		return CmdResult{Msg: ""}, errors.New("input expire time(0 for non-expire)")
+		fmt.Println("input share duration(in seconds, 0 for default value)")
+		return CmdResult{Msg: ""}, errors.New("input share duration(in seconds, 0 for default value)")
 	}
 	private, err := strconv.Atoi(param[2])
 	if err != nil {

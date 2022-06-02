@@ -14,7 +14,6 @@ type sds struct {
 	ClientPort        string            `toml:"client_port"`
 	NetworkAddress    string            `toml:"network_address"`
 	WebsocketPort     string            `toml:"websocket_port"`
-	HandshakePort     string            `toml:"handshake_port"`
 	ConnectionRetries connectionRetries `toml:"connection_retries"`
 }
 
