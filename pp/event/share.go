@@ -69,7 +69,7 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 					utils.Log("ShareLink:", info.ShareLink)
 				}
 			} else {
-				utils.Log("action failed", target.Result.Msg)
+				utils.ErrorLog("all share failed:", target.Result.Msg)
 			}
 			putData(target.ReqId, HTTPShareLink, &target)
 		} else {
@@ -94,7 +94,7 @@ func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 				utils.Log("ShareLink", target.ShareLink)
 				utils.Log("SharePassword", target.SharePassword)
 			} else {
-				utils.Log("action failed", target.Result.Msg)
+				utils.ErrorLog("share file failed:", target.Result.Msg)
 			}
 			putData(target.ReqId, HTTPShareFile, &target)
 		} else {
@@ -117,7 +117,7 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				utils.Log("cancel share success:", target.ShareId)
 			} else {
-				utils.Log("action failed", target.Result.Msg)
+				utils.ErrorLog("cancel share failed:", target.Result.Msg)
 			}
 			putData(target.ReqId, HTTPDeleteShare, &target)
 		} else {
