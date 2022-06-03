@@ -10,15 +10,15 @@ import (
 
 // Connect config
 type Connect struct {
-	Dns     string `yaml:"Dns"`
-	Driver  string `yaml:"Driver"`
-	Host    string `yaml:"Host"`
-	Port    uint16 `yaml:"Port"`
-	User    string `yaml:"User"`
-	Pass    string `yaml:"Pass"`
-	DbName  string `yaml:"DbName"`
-	Debug   bool   `yaml:"Debug"`
-	LogFile string `yaml:"LogFile"`
+	Dns     string `toml:"dns"`
+	Driver  string `toml:"driver"`
+	Host    string `toml:"host"`
+	Port    uint16 `toml:"port"`
+	User    string `toml:"user"`
+	Pass    string `toml:"pass"`
+	DbName  string `toml:"db_name"`
+	Debug   bool   `toml:"debug"`
+	LogFile string `toml:"log_file"`
 }
 
 // DNS
@@ -44,6 +44,11 @@ func (c *Connect) DNS() string {
 // LoadConfFromYaml
 func (c *Connect) LoadConfFromYaml(yamlFile string) {
 	utils.LoadYamlConfig(c, yamlFile)
+}
+
+// LoadConfFromToml
+func (c *Connect) LoadConfFromToml(tomlFile string) {
+	utils.LoadTomlConfig(c, tomlFile)
 }
 
 // LoadConfFromMap

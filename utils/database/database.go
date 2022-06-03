@@ -1,10 +1,11 @@
 package database
 
 import (
+	"reflect"
+
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/database/config"
 	"github.com/stratosnet/sds/utils/database/drivers"
-	"reflect"
 )
 
 // @version 0.0.2
@@ -25,7 +26,7 @@ func New(conf interface{}) drivers.DBDriver {
 	default:
 		typeOfConf := reflect.TypeOf(conf)
 		if typeOfConf.Kind() == reflect.String {
-			connectConf.LoadConfFromYaml(conf.(string))
+			connectConf.LoadConfFromToml(conf.(string))
 		} else if typeOfConf.Kind() == reflect.Map {
 			connectConf.LoadConfFromMap(conf.(map[interface{}]interface{}))
 		} else {
