@@ -162,7 +162,7 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	utils.Logf("Backup up status for file %s: the number of replica is %d", target.FileHash, target.Replicas)
+	utils.Logf("Backup status for file %s: the number of replica is %d", target.FileHash, target.Replicas)
 	if target.DeleteOriginTmp {
 		utils.Logf("Backup is finished for file %s, delete all the temporary slices", target.FileHash)
 		file.DeleteTmpFileSlices(target.FileHash)

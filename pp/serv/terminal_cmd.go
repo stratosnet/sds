@@ -257,7 +257,11 @@ func (api *terminalCmd) Download(param []string) (CmdResult, error) {
 	if len(param) == 0 {
 		return CmdResult{}, errors.New("input download path, e.g: sdm://account_address/file_hash|filename(optional)")
 	}
-	event.GetFileStorageInfo(param[0], "", "", setting.WalletAddress, false, nil)
+	saveAs := ""
+	if len(param) == 2 {
+		saveAs = param[1]
+	}
+	event.GetFileStorageInfo(param[0], "", "", setting.WalletAddress, saveAs, false, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
