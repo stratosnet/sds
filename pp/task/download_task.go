@@ -18,8 +18,11 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// DownloadTaskMap PP passway download task map   make(map[string]*DownloadTask)
+// DownloadTaskMap PP (downloader) download file task map   make(map[string]*DownloadTask)
 var DownloadTaskMap = utils.NewAutoCleanMap(5 * time.Minute)
+
+// DownloadSliceTaskMap resource node download slice task map
+var DownloadSliceTaskMap = utils.NewAutoCleanMap(1 * time.Hour)
 
 // DownloadFileMap P download info map  make(map[string]*protos.RspFileStorageInfo)
 var DownloadFileMap = utils.NewAutoCleanMap(5 * time.Minute)
@@ -148,6 +151,10 @@ func GetDownloadTask(fileHash, walletAddress string) (*DownloadTask, bool) {
 	return dTask, true
 }
 
+func CheckDownloadTask(fileHash, walletAddress string) bool {
+	return DownloadTaskMap.HashKey(fileHash + walletAddress)
+}
+
 // CleanDownloadTask
 func CleanDownloadTask(fileHash, sliceHash, walletAddress string) {
 	if dlTask, ok := DownloadTaskMap.Load(fileHash + walletAddress); ok {
@@ -159,12 +166,12 @@ func CleanDownloadTask(fileHash, sliceHash, walletAddress string) {
 			return
 		}
 		utils.DebugLog("PP reported, clean all slice task")
-		DownloadTaskMap.Delete(fileHash + walletAddress)
+		DeleteDownloadTask(fileHash, walletAddress)
 	}
 }
 
 func DeleteDownloadTask(fileHash, walletAddress string) {
-	DownloadFileMap.Delete(fileHash + walletAddress)
+	DownloadTaskMap.Delete(fileHash + walletAddress)
 }
 
 // CleanDownloadFileAndConnMap

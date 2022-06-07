@@ -22,21 +22,35 @@ import (
 )
 
 // GetFileStorageInfo p to pp
-func GetFileStorageInfo(path, savePath, reqID, walletAddr string, isVideoStream bool, w http.ResponseWriter) {
-	if setting.CheckLogin() {
-		if CheckDownloadPath(path) {
-			utils.DebugLog("path:", path)
-			req := requests.ReqFileStorageInfoData(path, savePath, reqID, walletAddr, isVideoStream, nil)
-			peers.SendMessageDirectToSPOrViaPP(req, header.ReqFileStorageInfo)
-		} else {
-			utils.ErrorLog("please input correct download link, eg: sdm://address/fileHash|filename(optional)")
-			if w != nil {
-				w.Write(httpserv.NewJson(nil, setting.FAILCode, "please input correct download link, eg:  sdm://address/fileHash|filename(optional)").ToBytes())
-			}
-		}
-	} else {
+func GetFileStorageInfo(path, savePath, reqID, walletAddr, saveAs string, isVideoStream bool, w http.ResponseWriter) {
+	if !setting.CheckLogin() {
 		notLogin(w)
+		return
 	}
+
+	if !CheckDownloadPath(path) {
+		utils.ErrorLog("please input correct download link, eg: sdm://address/fileHash|filename(optional)")
+		if w != nil {
+			w.Write(httpserv.NewJson(nil, setting.FAILCode, "please input correct download link, eg:  sdm://address/fileHash|filename(optional)").ToBytes())
+		}
+		return
+	}
+
+	utils.DebugLog("path:", path)
+	walletAddress := path[6:47]
+	fileHash := path[48:88]
+
+	if ok := task.CheckDownloadTask(fileHash, walletAddress); ok {
+		msg := "The previous download task hasn't finished, please check back later"
+		utils.ErrorLog(msg)
+		if w != nil {
+			w.Write(httpserv.NewJson(nil, setting.FAILCode, msg).ToBytes())
+		}
+		return
+	}
+
+	req := requests.ReqFileStorageInfoData(path, savePath, reqID, walletAddr, saveAs, isVideoStream, nil)
+	peers.SendMessageDirectToSPOrViaPP(req, header.ReqFileStorageInfo)
 }
 
 func ClearFileInfoAndDownloadTask(fileHash string, w http.ResponseWriter) {

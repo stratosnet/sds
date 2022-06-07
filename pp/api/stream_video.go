@@ -238,7 +238,7 @@ func getStreamInfo(fileHash, ownerWalletAddress, walletAddress string, w http.Re
 		Owner: ownerWalletAddress,
 		Hash:  fileHash,
 	}.String()
-	event.GetFileStorageInfo(filePath, setting.VIDEOPATH, uuid.New().String(), walletAddress, true, w)
+	event.GetFileStorageInfo(filePath, setting.VIDEOPATH, uuid.New().String(), walletAddress, "", true, w)
 	var fInfo *protos.RspFileStorageInfo
 	start := time.Now().Unix()
 	for {

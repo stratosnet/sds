@@ -443,13 +443,14 @@ func ReqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
 	}
 }
 
-func ReqFileStorageInfoData(path, savePath, reqID, walletAddr string, isVideoStream bool, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
+func ReqFileStorageInfoData(path, savePath, reqID, walletAddr, saveAs string, isVideoStream bool, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
 	return &protos.ReqFileStorageInfo{
 		FileIndexes: &protos.FileIndexes{
 			P2PAddress:    setting.P2PAddress,
 			WalletAddress: walletAddr,
 			FilePath:      path,
 			SavePath:      savePath,
+			SaveAs:        saveAs,
 		},
 		Sign:          setting.GetSign(walletAddr + setting.P2PAddress + path + header.ReqFileStorageInfo),
 		ReqId:         reqID,

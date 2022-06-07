@@ -13,6 +13,7 @@ import (
 type downFile struct {
 	FileHash           string `json:"fileHash"`
 	OwnerWalletAddress string `json:"ownerWalletAddress"`
+	SaveAs             string `json:"saveAs"`
 }
 
 func downloadFile(w http.ResponseWriter, request *http.Request) {
@@ -32,6 +33,7 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 	p := &downFile{
 		FileHash:           data["fileHash"].(string),
 		OwnerWalletAddress: data["ownerWalletAddress"].(string),
+		SaveAs:             data["saveAs"].(string),
 	}
 	path := datamesh.DataMashId{
 		Owner: p.OwnerWalletAddress,
@@ -39,7 +41,7 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 	}.String()
 	downTaskID := uuid.New().String()
 
-	event.GetFileStorageInfo(path, "", downTaskID, setting.WalletAddress, false, w)
+	event.GetFileStorageInfo(path, "", downTaskID, setting.WalletAddress, p.SaveAs, false, w)
 
 	type df struct {
 		TaskID             string `json:"taskID"`
