@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/relay/stratoschain"
@@ -25,11 +26,14 @@ func reqActivateData(amount, fee, gas int64) (*protos.ReqActivatePP, error) {
 		return nil, err
 	}
 
-	txMsg := stratoschain.BuildCreateResourceNodeMsg(setting.Config.Token, setting.P2PAddress, registertypes.STORAGE, setting.P2PPublicKey, amount, ownerAddress, p2pAddress)
+	txMsg, err := stratoschain.BuildCreateResourceNodeMsg(setting.Config.Token, setting.P2PAddress, registertypes.STORAGE, setting.P2PPublicKey, amount, ownerAddress, p2pAddress)
+	if err != nil {
+		return nil, err
+	}
 	signatureKeys := []relaytypes.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
-	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg, SignatureKeys: signatureKeys}}
+	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg.(legacytx.LegacyMsg), SignatureKeys: signatureKeys}}
 	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastBlock, unsignedMsgs, fee, gas)
 	if err != nil {
 		return nil, err
@@ -56,7 +60,7 @@ func reqUpdateStakeData(stakeDelta, fee, gas int64, incrStake bool) (*protos.Req
 	signatureKeys := []relaytypes.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
-	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg, SignatureKeys: signatureKeys}}
+	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg.(legacytx.LegacyMsg), SignatureKeys: signatureKeys}}
 	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastSync, unsignedMsgs, fee, gas)
 	if err != nil {
 		return nil, err
@@ -81,7 +85,7 @@ func reqDeactivateData(fee, gas int64) (*protos.ReqDeactivatePP, error) {
 	signatureKeys := []relaytypes.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
-	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg, SignatureKeys: signatureKeys}}
+	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg.(legacytx.LegacyMsg), SignatureKeys: signatureKeys}}
 	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastSync, unsignedMsgs, fee, gas)
 	if err != nil {
 		return nil, err
@@ -105,7 +109,7 @@ func reqPrepayData(amount, fee, gas int64) (*protos.ReqPrepay, error) {
 	signatureKeys := []relaytypes.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
-	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg, SignatureKeys: signatureKeys}}
+	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg.(legacytx.LegacyMsg), SignatureKeys: signatureKeys}}
 	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastSync, unsignedMsgs, fee, gas)
 	if err != nil {
 		return nil, err

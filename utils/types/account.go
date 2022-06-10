@@ -9,7 +9,8 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stratosnet/sds/utils/crypto/sha3"
 	"github.com/stratosnet/stratos-chain/types"
-	"github.com/tendermint/tendermint/libs/bech32"
+	//"github.com/tendermint/tendermint/libs/bech32"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 )
 
 // Lengths of hashes and addresses in bytes.

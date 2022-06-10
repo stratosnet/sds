@@ -11,6 +11,9 @@ import (
 	"github.com/stratosnet/sds/utils/types"
 	"math/big"
 	"reflect"
+
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	stratos "github.com/stratosnet/stratos-chain/types"
 )
 
 var (
@@ -160,4 +163,12 @@ func generateMerkleTree(hashList []types.Hash) []types.Hash {
 	}
 
 	return generateMerkleTree(hs)
+}
+
+func PubKeyBytesToSdkPubKey(pubKey []byte) (cryptotypes.PubKey, error) {
+	pk, err := stratos.SdsPubKeyFromByteArr(pubKey)
+	if err != nil {
+		return nil, err
+	}
+	return pk, nil
 }

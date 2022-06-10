@@ -9,7 +9,8 @@ import (
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/bech32"
+	//"github.com/tendermint/tendermint/libs/bech32"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 )
 
 func TestVerifySignature(t *testing.T) {

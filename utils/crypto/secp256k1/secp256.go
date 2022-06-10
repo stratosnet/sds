@@ -28,10 +28,11 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"errors"
-	"github.com/btcsuite/btcd/btcec"
-	tmsecp256k1 "github.com/tendermint/tendermint/crypto/secp256k1"
 	"math/big"
 	"unsafe"
+
+	"github.com/btcsuite/btcd/btcec"
+	tmsecp256k1 "github.com/tendermint/tendermint/crypto/secp256k1"
 )
 
 var context *C.secp256k1_context
@@ -160,28 +161,29 @@ func CompressPubkey(x, y *big.Int) []byte {
 	return out
 }
 
-func PubKeyToTendermint(pubKey ecdsa.PublicKey) (tmsecp256k1.PubKeySecp256k1, error) {
+func PubKeyToTendermint(pubKey ecdsa.PublicKey) (tmsecp256k1.PubKey, error) {
 	compressed := CompressPubkey(pubKey.X, pubKey.Y)
 	return PubKeyBytesToTendermint(compressed)
 }
 
-func PubKeyBytesToTendermint(pubKey []byte) (tmsecp256k1.PubKeySecp256k1, error) {
+func PubKeyBytesToTendermint(pubKey []byte) (tmsecp256k1.PubKey, error) {
 	if !btcec.IsCompressedPubKey(pubKey) {
 		pubKeyObject, err := UnmarshalPubkey(pubKey)
 		if err != nil {
-			return [33]byte{}, err
+			fixedSizedBytes := [33]byte{}
+			return fixedSizedBytes[:], err
 		}
 		pubKey = CompressPubkey(pubKeyObject.X, pubKeyObject.Y)
 	}
 	var compressedArr [33]byte
 	copy(compressedArr[:], pubKey)
-	return compressedArr, nil
+	return compressedArr[:], nil
 }
 
-func PrivKeyBytesToTendermint(privKey []byte) tmsecp256k1.PrivKeySecp256k1 {
+func PrivKeyBytesToTendermint(privKey []byte) tmsecp256k1.PrivKey {
 	var bzArr [32]byte
 	copy(bzArr[:], privKey)
-	return bzArr
+	return bzArr[:]
 }
 
 // PrivKeyToPubKey returns the public key associated with the given private key in the uncompressed format.

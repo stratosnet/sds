@@ -9,15 +9,19 @@ import (
 	"strconv"
 	"time"
 
-	sdkTypes "github.com/cosmos/cosmos-sdk/types"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/pkg/errors"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
 	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/relay"
+
+	//"github.com/stratosnet/sds/relay"
+	//"github.com/stratosnet/sds/utils/crypto/ed25519"
+	//"github.com/stratosnet/sds/utils/types"
 	relayTypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
+	//"github.com/tendermint/tendermint/crypto/ed25519"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
@@ -30,11 +34,11 @@ func init() {
 	Handlers["update_resource_node_stake"] = UpdateResourceNodeStakeMsgHandler()
 	Handlers["remove_resource_node"] = UnbondingResourceNodeMsgHandler()
 	Handlers["complete_unbonding_resource_node"] = CompleteUnbondingResourceNodeMsgHandler()
-	Handlers["create_indexing_node"] = CreateIndexingNodeMsgHandler()
-	Handlers["update_indexing_node_stake"] = UpdateIndexingNodeStakeMsgHandler()
-	Handlers["remove_indexing_node"] = UnbondingIndexingNodeMsgHandler()
-	Handlers["complete_unbonding_indexing_node"] = CompleteUnbondingIndexingNodeMsgHandler()
-	Handlers["indexing_node_reg_vote"] = IndexingNodeVoteMsgHandler()
+	Handlers["create_meta_node"] = CreateMetaNodeMsgHandler()
+	Handlers["update_meta_node_stake"] = UpdateMetaNodeStakeMsgHandler()
+	Handlers["remove_meta_node"] = UnbondingMetaNodeMsgHandler()
+	Handlers["complete_unbonding_meta_node"] = CompleteUnbondingMetaNodeMsgHandler()
+	Handlers["meta_node_reg_vote"] = MetaNodeVoteMsgHandler()
 	Handlers["SdsPrepayTx"] = PrepayMsgHandler()
 	Handlers["FileUploadTx"] = FileUploadMsgHandler()
 	Handlers["volume_report"] = VolumeReportHandler()
@@ -69,7 +73,7 @@ func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 
 			req.PPList = append(req.PPList, &protos.ReqActivatedPP{
 				P2PAddress:        event["create_resource_node.network_address"],
-				P2PPubkey:         hex.EncodeToString(p2pPubkey[:]),
+				P2PPubkey:         hex.EncodeToString(p2pPubkey.Bytes()),
 				OzoneLimitChanges: event["create_resource_node.ozone_limit_changes"],
 				TxHash:            txHash,
 				InitialStake:      event["create_resource_node.initial_stake"],
@@ -215,24 +219,24 @@ func CompleteUnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent)
 	}
 }
 
-func CreateIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
+func CreateMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
 		utils.Logf("%+v", result)
 	}
 }
 
-func UpdateIndexingNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
+func UpdateMetaNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		requiredAttributes := []string{
-			"update_indexing_node_stake.network_address",
-			"update_indexing_node_stake.ozone_limit_changes",
-			"update_indexing_node_stake.incr_stake",
+			"update_meta_node_stake.network_address",
+			"update_meta_node_stake.ozone_limit_changes",
+			"update_meta_node_stake.incr_stake",
 		}
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
 		key := getCacheKey(requiredAttributes, result)
 		if _, ok := cache.Load(key); ok {
-			utils.DebugLogf("Event update_indexing_node_stake was already handled for tx [%v]. Ignoring...", txHash)
+			utils.DebugLogf("Event update_meta_node_stake was already handled for tx [%v]. Ignoring...", txHash)
 			return
 		}
 		cache.Store(key, true)
@@ -240,9 +244,9 @@ func UpdateIndexingNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 		req := &relayTypes.UpdatedStakeSPReq{}
 		for _, event := range processedEvents {
 			req.SPList = append(req.SPList, &protos.ReqUpdatedStakeSP{
-				P2PAddress:        event["update_indexing_node_stake.network_address"],
-				OzoneLimitChanges: event["update_indexing_node_stake.ozone_limit_changes"],
-				IncrStake:         event["update_indexing_node_stake.incr_stake"],
+				P2PAddress:        event["update_meta_node_stake.network_address"],
+				OzoneLimitChanges: event["update_meta_node_stake.ozone_limit_changes"],
+				IncrStake:         event["update_meta_node_stake.incr_stake"],
 				TxHash:            txHash,
 			})
 		}
@@ -263,42 +267,42 @@ func UpdateIndexingNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 	}
 }
 
-func UnbondingIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
+func UnbondingMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
 		utils.Logf("%+v", result)
 	}
 }
-func CompleteUnbondingIndexingNodeMsgHandler() func(event coretypes.ResultEvent) {
+func CompleteUnbondingMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
 		utils.Logf("%+v", result)
 	}
 }
 
-func IndexingNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
+func MetaNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		requiredAttributes := []string{
-			"indexing_node_reg_vote.candidate_network_address",
-			"indexing_node_reg_vote.candidate_status",
+			"meta_node_reg_vote.candidate_network_address",
+			"meta_node_reg_vote.candidate_status",
 		}
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
 		key := getCacheKey(requiredAttributes, result)
 		if _, ok := cache.Load(key); ok {
-			utils.DebugLogf("Event indexing_node_reg_vote was already handled for tx [%v]. Ignoring...", txHash)
+			utils.DebugLogf("Event meta_node_reg_vote was already handled for tx [%v]. Ignoring...", txHash)
 			return
 		}
 		cache.Store(key, true)
 
 		req := &relayTypes.ActivatedSPReq{}
 		for _, event := range processedEvents {
-			if event["indexing_node_reg_vote.candidate_status"] != sdkTypes.BondStatusBonded {
-				utils.ErrorLogf("Indexing node vote handler: The candidate [%v] needs more votes before being considered active", event["indexing_node_reg_vote.candidate_network_address"])
+			if event["meta_node_reg_vote.candidate_status"] != stakingTypes.BondStatusBonded {
+				utils.ErrorLogf("Indexing node vote handler: The candidate [%v] needs more votes before being considered active", event["meta_node_reg_vote.candidate_network_address"])
 				continue
 			}
 
 			req.SPList = append(req.SPList, &protos.ReqActivatedSP{
-				P2PAddress: event["indexing_node_reg_vote.candidate_network_address"],
+				P2PAddress: event["meta_node_reg_vote.candidate_network_address"],
 				TxHash:     txHash,
 			})
 		}
@@ -550,15 +554,16 @@ func processEvents(eventsMap map[string][]string, attributesRequired []string) (
 	return
 }
 
-func processHexPubkey(attribute string) (ed25519.PubKeyEd25519, error) {
+func processHexPubkey(attribute string) (cryptotypes.PubKey, error) {
 	p2pPubkeyRaw, err := hex.DecodeString(attribute)
 	if err != nil {
-		return ed25519.PubKeyEd25519{}, errors.Wrap(err, "Error when trying to decode P2P pubkey hex")
+		return nil, errors.Wrap(err, "Error when trying to decode P2P pubkey hex")
 	}
-	p2pPubkey := ed25519.PubKeyEd25519{}
-	err = relay.Cdc.UnmarshalBinaryBare(p2pPubkeyRaw, &p2pPubkey)
+	p2pPubkey, err := crypto.PubKeyBytesToSdkPubKey(p2pPubkeyRaw)
+	//p2pPubkey := cryptotypes.PubKey{}
+	//err = relay.Cdc.UnmarshalBinaryBare(p2pPubkeyRaw, &p2pPubkey)
 	if err != nil {
-		return ed25519.PubKeyEd25519{}, errors.Wrap(err, "Error when trying to read P2P pubkey ed25519 binary")
+		return nil, errors.Wrap(err, "Error when trying to read P2P pubkey ed25519 binary")
 	}
 
 	return p2pPubkey, nil

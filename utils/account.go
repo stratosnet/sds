@@ -10,12 +10,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/crypto/keys"
+	//keys "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/go-bip39"
 	"github.com/pborman/uuid"
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/stratos-chain/crypto/hd"
 	"github.com/vmihailenco/msgpack"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
@@ -72,7 +73,7 @@ type hdKeyBytes struct {
 
 // CreateWallet creates a new stratos-chain wallet with the given nickname and password, and saves the key data into the dir folder
 func CreateWallet(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPath string) (types.Address, error) {
-	privateKey, err := keys.SecpDeriveKey(mnemonic, bip39Passphrase, hdPath)
+	privateKey, err := hd.EthSecp256k1.Derive()(mnemonic, bip39Passphrase, hdPath)
 	if err != nil {
 		return types.Address{}, err
 	}

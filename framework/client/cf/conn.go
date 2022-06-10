@@ -314,17 +314,17 @@ func (cc *ClientConn) handshake() error {
 	var tmpKeyMsg []byte
 	select {
 	case tmpKeyMsg = <-handshakeChan:
-		if len(tmpKeyMsg) < tmed25519.PubKeyEd25519Size+tmed25519.SignatureSize {
+		if len(tmpKeyMsg) < tmed25519.PubKeySize+tmed25519.SignatureSize {
 			return errors.Errorf("Handshake message too small (%v bytes)", len(tmpKeyMsg))
 		}
 	case <-time.After(time.Second):
 		return errors.New("Timed out when reading from server channel")
 	}
 
-	peerPubKeyBytes := tmpKeyMsg[:tmed25519.PubKeyEd25519Size]
+	peerPubKeyBytes := tmpKeyMsg[:tmed25519.PubKeySize]
 	peerPubKey := ed25519.PubKeyBytesToPubKey(peerPubKeyBytes)
-	peerSignature := tmpKeyMsg[tmed25519.PubKeyEd25519Size:]
-	if !peerPubKey.VerifyBytes([]byte(core.HandshakeMessage), peerSignature) {
+	peerSignature := tmpKeyMsg[tmed25519.PubKeySize:]
+	if !peerPubKey.VerifySignature([]byte(core.HandshakeMessage), peerSignature) {
 		return errors.New("Invalid signature in tmp key from peer")
 	}
 

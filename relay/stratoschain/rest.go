@@ -11,11 +11,13 @@ import (
 	"sync"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/codec"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkrest "github.com/cosmos/cosmos-sdk/types/rest"
-	"github.com/cosmos/cosmos-sdk/x/auth/client/rest"
+	"github.com/cosmos/cosmos-sdk/x/auth/client/cli"
+	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/pkg/errors"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
 	"github.com/stratosnet/sds/pp/types"
@@ -24,10 +26,11 @@ import (
 	_ "github.com/stratosnet/sds/relay/stratoschain/prefix"
 	relaytypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
-	"github.com/tendermint/tendermint/crypto"
+	//"github.com/tendermint/tendermint/crypto"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
 
@@ -56,23 +59,26 @@ func FetchAccountInfo(address string) (*authtypes.BaseAccount, error) {
 		return nil, errors.Errorf("invalid response HTTP%v: %v", resp.Status, string(respBytes))
 	}
 
-	var wrappedResponse sdkrest.ResponseWithHeight
-	err = codec.Cdc.UnmarshalJSON(respBytes, &wrappedResponse)
+	responseResult, err := sdkrest.ParseResponseWithHeight(relay.Cdc, respBytes)
+	//var wrappedResponse sdkrest.ResponseWithHeight
+	//err = codec.Codec.UnmarshalJSON(respBytes, &wrappedResponse)
 	if err != nil {
 		return nil, err
 	}
 
 	var account authtypes.BaseAccount
-	err = authtypes.ModuleCdc.UnmarshalJSON(wrappedResponse.Result, &account)
+	err = authtypes.ModuleCdc.UnmarshalJSON(responseResult, &account)
 	return &account, err
 }
 
-func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas int64) (*authtypes.StdTx, error) {
+func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas int64) (*legacytx.StdTx, error) {
 	if len(unsignedMsgs) == 0 {
 		return nil, errors.New("cannot build tx: no msgs to sign")
 	}
 
-	stdFee := authtypes.NewStdFee(
+	tx := legacytx.StdTx{TimeoutHeight: relaytypes.DefaultTimeoutHeight}
+
+	stdFee := legacytx.NewStdFee(
 		uint64(gas),
 		sdktypes.NewCoins(sdktypes.NewInt64Coin(token, fee)),
 	)
@@ -92,12 +98,12 @@ func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.U
 	}
 
 	// Sign the tx
-	var signatures []authtypes.StdSignature
+	var signatures []legacytx.StdSignature
 	for _, signatureKey := range signaturesToDo {
-		unsignedBytes := authtypes.StdSignBytes(chainId, signatureKey.AccountNum, signatureKey.AccountSequence, stdFee, sdkMsgs, memo)
+		unsignedBytes := legacytx.StdSignBytes(chainId, signatureKey.AccountNum, signatureKey.AccountSequence, tx.GetTimeoutHeight(), stdFee, sdkMsgs, memo)
 
 		var signedBytes []byte
-		var pubKey crypto.PubKey
+		var pubKey cryptotypes.PubKey
 
 		switch signatureKey.Type {
 		case relaytypes.SignatureEd25519:
@@ -106,7 +112,7 @@ func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.U
 			}
 
 			signedBytes = ed25519crypto.Sign(signatureKey.PrivateKey, unsignedBytes)
-			pubKey = ed25519.PrivKeyBytesToPubKey(signatureKey.PrivateKey)
+			pubKey = ed25519.PrivKeyBytesToSdkPubKey(signatureKey.PrivateKey)
 		default:
 			var err error
 
@@ -115,20 +121,29 @@ func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.U
 				return nil, err
 			}
 
-			pubKey, err = secp256k1.PubKeyBytesToTendermint(secp256k1.PrivKeyToPubKey(signatureKey.PrivateKey))
+			tmPubKey, err := secp256k1.PubKeyBytesToTendermint(secp256k1.PrivKeyToPubKey(signatureKey.PrivateKey))
+			if err != nil {
+				return nil, err
+			}
+
+			pubKey, err = crypto.PubKeyBytesToSdkPubKey(tmPubKey.Bytes())
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		sig := authtypes.StdSignature{
+		sig := legacytx.StdSignature{
 			PubKey:    pubKey,
 			Signature: signedBytes,
 		}
 		signatures = append(signatures, sig)
 	}
 
-	tx := authtypes.NewStdTx(sdkMsgs, stdFee, signatures, memo)
+	tx.Msgs = sdkMsgs
+	tx.Fee = stdFee
+	tx.Signatures = signatures
+	tx.Memo = memo
+	//tx := legacytx.NewStdTx(sdkMsgs, stdFee, signatures, memo)
 	return &tx, nil
 }
 
@@ -157,7 +172,7 @@ func BuildTxBytes(token, chainId, memo, mode string, unsignedMsgs []*relaytypes.
 	}
 	utils.DebugLogf("BuildTxBytes ChainId [%v] Accounts [%v] Mode [%v]", chainId, accountsStr, mode)
 
-	body := rest.BroadcastReq{
+	body := cli.BroadcastReq{
 		Tx:   *tx,
 		Mode: mode,
 	}
@@ -264,7 +279,7 @@ func BroadcastTxBytes(txBytes []byte) error {
 	}
 	utils.Log(string(responseBody))
 
-	var broadcastReq rest.BroadcastReq
+	var broadcastReq cli.BroadcastReq
 	err = relay.Cdc.UnmarshalJSON(txBytes, &broadcastReq)
 	if err != nil {
 		return errors.Wrap(err, "cannot unmarshal txBytes to BroadcastReq")
@@ -385,14 +400,15 @@ func QueryResourceNodeState(p2pAddress string) (state ResourceNodeState, err err
 		return state, errors.Errorf("HTTP%v: %v", resp.StatusCode, string(respBody))
 	}
 
-	var wrappedResponse sdkrest.ResponseWithHeight
-	err = codec.Cdc.UnmarshalJSON(respBody, &wrappedResponse)
+	responseResult, err := sdkrest.ParseResponseWithHeight(relay.Cdc, respBody)
+	//var wrappedResponse sdkrest.ResponseWithHeight
+	//err = codec.Cdc.UnmarshalJSON(respBody, &wrappedResponse)
 	if err != nil {
 		return state, err
 	}
 
 	var resourceNodes registertypes.ResourceNodes
-	err = authtypes.ModuleCdc.UnmarshalJSON(wrappedResponse.Result, &resourceNodes)
+	err = registertypes.ModuleCdc.UnmarshalJSON(responseResult, &resourceNodes)
 	if err != nil {
 		return state, err
 	}
@@ -400,20 +416,20 @@ func QueryResourceNodeState(p2pAddress string) (state ResourceNodeState, err err
 	if len(resourceNodes) == 0 {
 		return state, nil
 	}
-	if resourceNodes[0].GetNetworkAddr().String() != p2pAddress {
+	if resourceNodes[0].GetNetworkAddress() != p2pAddress {
 		return state, nil
 	}
 
-	state.Suspended = resourceNodes[0].IsSuspended()
+	state.Suspended = resourceNodes[0].Suspend
 	switch resourceNodes[0].GetStatus() {
-	case sdktypes.Bonded:
+	case stakingtypes.Bonded:
 		state.IsActive = types.PP_ACTIVE
-	case sdktypes.Unbonding:
+	case stakingtypes.Unbonding:
 		state.IsActive = types.PP_UNBONDING
-	case sdktypes.Unbonded:
+	case stakingtypes.Unbonded:
 		state.IsActive = types.PP_INACTIVE
 	}
 
-	state.Tokens = resourceNodes[0].GetTokens().BigInt()
+	state.Tokens = resourceNodes[0].Tokens.BigInt()
 	return state, nil
 }
