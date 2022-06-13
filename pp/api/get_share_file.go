@@ -1,10 +1,11 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils/httpserv"
-	"net/http"
 
 	"github.com/google/uuid"
 )
@@ -16,6 +17,7 @@ func getShareFile(w http.ResponseWriter, request *http.Request) {
 	}
 	keyword := ""
 	sharePassword := ""
+	saveAs := ""
 	if data["keyword"] != nil {
 		keyword = data["keyword"].(string)
 	} else {
@@ -26,5 +28,10 @@ func getShareFile(w http.ResponseWriter, request *http.Request) {
 	if data["sharePassword"] != nil {
 		sharePassword = data["sharePassword"].(string)
 	}
-	event.GetShareFile(keyword, sharePassword, uuid.New().String(), w)
+
+	if data["saveAs"] != nil {
+		saveAs = data["saveAs"].(string)
+	}
+
+	event.GetShareFile(keyword, sharePassword, saveAs, uuid.New().String(), w)
 }

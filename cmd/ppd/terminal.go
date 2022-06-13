@@ -38,11 +38,11 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"list <filename>                            			query uploaded file by self\n" +
 		"list                                       			query all files\n" +
 		"delete <filehash>                          			delete file\n" +
-		"get <sdm://account/filehash>			                download file, need to consume ozone\n" +
+		"get <sdm://account/filehash> <saveAs>			        download file, need to consume ozone\n" +
 		"	e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe\n" +
 		"sharefile <filehash> <duration> <is_private>			share an uploaded file\n" +
 		"allshare                                   			list all shared files\n" +
-		"getsharefile <sharelink> <password>        			download a shared file, need to consume ozone\n" +
+		"getsharefile <sharelink> <password> <saveAs>           download a shared file, need to consume ozone\n" +
 		"cancelshare <shareID>                      			cancel a shared file\n" +
 		"ver                                        			version\n" +
 		"monitor                                    			show monitor\n" +
