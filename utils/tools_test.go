@@ -10,7 +10,7 @@ import (
 	"github.com/cosmos/go-bip39"
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/math"
-	"github.com/stratosnet/sds/utils/crypto/secp256k1"
+	utilsecp256k1 "github.com/stratosnet/sds/utils/crypto/secp256k1"
 )
 
 func TestECCSignAndVerify(t *testing.T) {
@@ -27,7 +27,7 @@ func TestECCSignAndVerify(t *testing.T) {
 
 	publicKeyECDSA := &privateKeyECDSA.PublicKey
 	privKeyBytes := math.PaddedBigBytes(privateKeyECDSA.D, 32)
-	pubKeyBytes := secp256k1.PrivKeyToPubKey(privKeyBytes)
+	pubKeyBytes := utilsecp256k1.PrivKeyToPubKey(privKeyBytes)
 
 	msg := []byte("this is a random message")
 	sig1, err := ECCSign(msg, privateKeyECDSA)

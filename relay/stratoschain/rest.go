@@ -28,7 +28,8 @@ import (
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	"github.com/stratosnet/sds/utils/crypto/secp256k1"
+	//"github.com/ethereum/go-ethereum/crypto/secp256k1"
+	utilsecp256k1 "github.com/stratosnet/sds/utils/crypto/secp256k1"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 	//"github.com/tendermint/tendermint/crypto"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
@@ -116,12 +117,12 @@ func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.U
 		default:
 			var err error
 
-			signedBytes, err = secp256k1.PrivKeyBytesToTendermint(signatureKey.PrivateKey).Sign(unsignedBytes)
+			signedBytes, err = utilsecp256k1.PrivKeyBytesToTendermint(signatureKey.PrivateKey).Sign(unsignedBytes)
 			if err != nil {
 				return nil, err
 			}
 
-			tmPubKey, err := secp256k1.PubKeyBytesToTendermint(secp256k1.PrivKeyToPubKey(signatureKey.PrivateKey))
+			tmPubKey, err := utilsecp256k1.PubKeyBytesToTendermint(utilsecp256k1.PrivKeyToPubKey(signatureKey.PrivateKey))
 			if err != nil {
 				return nil, err
 			}
