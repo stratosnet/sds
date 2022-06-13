@@ -366,12 +366,10 @@ func (api *terminalCmd) GetShareFile(param []string) (CmdResult, error) {
 	if len(param) < 1 {
 		return CmdResult{Msg: ""}, errors.New("input share link and retrieval secret key(if any)")
 	}
-	if len(param) == 1 {
+	if len(param) < 2 {
 		event.GetShareFile(param[0], "", "", "", nil)
-	} else if len(param) == 2 {
-		event.GetShareFile(param[0], param[1], "", "", nil)
 	} else {
-		event.GetShareFile(param[0], param[1], param[2], "", nil)
+		event.GetShareFile(param[0], param[1], "", "", nil)
 	}
 
 	return CmdResult{Msg: DefaultMsg}, nil
