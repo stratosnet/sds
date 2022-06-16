@@ -15,6 +15,7 @@ import (
 	"github.com/stratosnet/sds/utils/types"
 
 	sdked25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	sdksecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	//stratos "github.com/stratosnet/stratos-chain/types"
 )
@@ -169,6 +170,13 @@ func generateMerkleTree(hashList []types.Hash) []types.Hash {
 }
 
 func PubKeyBytesToSdkPubKey(pubKey []byte) (cryptotypes.PubKey, error) {
-	retPubKey := sdked25519.PubKey{Key: pubKey}
-	return &retPubKey, nil
+	if len(pubKey) == sdked25519.PubKeySize {
+		retPubKey := sdked25519.PubKey{Key: pubKey}
+		return &retPubKey, nil
+	} else if len(pubKey) == sdksecp256k1.PubKeySize {
+		retPubKey := sdksecp256k1.PubKey{Key: pubKey}
+		return &retPubKey, nil
+	} else {
+		return nil, errors.New("unsupported pubkey type")
+	}
 }

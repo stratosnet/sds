@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkrest "github.com/cosmos/cosmos-sdk/types/rest"
@@ -80,12 +81,12 @@ func FetchAccountInfo(address string) (*authtypes.BaseAccount, error) {
 	return account.BaseAccount, err
 }
 
-func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas int64) (*legacytx.StdTx, error) {
+func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas, height int64) (*legacytx.StdTx, error) {
 	if len(unsignedMsgs) == 0 {
 		return nil, errors.New("cannot build tx: no msgs to sign")
 	}
 
-	tx := legacytx.StdTx{TimeoutHeight: relaytypes.DefaultTimeoutHeight}
+	tx := legacytx.StdTx{TimeoutHeight: uint64(height) + relaytypes.DefaultTimeoutHeight}
 
 	stdFee := legacytx.NewStdFee(
 		uint64(gas),
@@ -159,12 +160,12 @@ func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.U
 	return &tx, nil
 }
 
-func BuildTxBytes(token, chainId, memo, mode string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas int64) ([]byte, error) {
+func BuildTxBytes(token, chainId, memo, mode string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas, height int64) ([]byte, error) {
 	filteredMsgs := filterInvalidSignatures(unsignedMsgs)          // Filter msgs with invalid signatures
 	accountInfos := fetchAllAccountInfos(filteredMsgs)             // Fetch account info from stratos-chain for each signature
 	updatedMsgs := updateSignatureKeys(filteredMsgs, accountInfos) // Update signatureKeys for each msg
 
-	tx, err := buildAndSignStdTx(token, chainId, memo, updatedMsgs, fee, gas)
+	tx, err := buildAndSignStdTx(token, chainId, memo, updatedMsgs, fee, gas, height)
 	if err != nil {
 		return nil, err
 	}
@@ -398,56 +399,65 @@ type ResourceNodeState struct {
 	Tokens    *big.Int
 }
 
-func QueryResourceNodeState(p2pAddress string) (state ResourceNodeState, err error) {
+func ParseResponseWithHeight(cdc *codec.LegacyAmino, bz []byte) ([]byte, int64, error) {
+	r := sdkrest.ResponseWithHeight{}
+	if err := cdc.UnmarshalJSON(bz, &r); err != nil {
+		return nil, int64(0), err
+	}
+
+	return r.Result, r.Height, nil
+}
+
+func QueryResourceNodeState(p2pAddress string) (state ResourceNodeState, height int64, err error) {
 	state = ResourceNodeState{
 		IsActive:  types.PP_INACTIVE,
 		Suspended: true,
 	}
 	if Url == "" {
-		return state, errors.New("the stratos-chain URL is not set")
+		return state, int64(0), errors.New("the stratos-chain URL is not set")
 	}
 
 	url, err := utils.ParseUrl(Url + "/register/resource-nodes?network=" + p2pAddress)
 	if err != nil {
-		return state, err
+		return state, int64(0), err
 	}
 
 	resp, err := http.Get(url.String(true, true, true, true))
 	if err != nil {
-		return state, err
+		return state, int64(0), err
 	}
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return state, err
+		return state, int64(0), err
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		return state, nil
+		return state, int64(0), nil
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return state, errors.Errorf("HTTP%v: %v", resp.StatusCode, string(respBody))
+		return state, int64(0), errors.Errorf("HTTP%v: %v", resp.StatusCode, string(respBody))
 	}
 
-	responseResult, err := sdkrest.ParseResponseWithHeight(relay.Cdc, respBody)
+	responseResult, height, err := ParseResponseWithHeight(relay.Cdc, respBody)
 	//var wrappedResponse sdkrest.ResponseWithHeight
 	//err = codec.Cdc.UnmarshalJSON(respBody, &wrappedResponse)
 	if err != nil {
-		return state, err
+		return state, height, err
 	}
 
 	var resourceNodes registertypes.ResourceNodes
 	err = registertypes.ModuleCdc.UnmarshalJSON(responseResult, &resourceNodes)
 	if err != nil {
-		return state, err
+		return state, height, err
 	}
 
 	if len(resourceNodes) == 0 {
-		return state, nil
+		return state, height, nil
 	}
 	if resourceNodes[0].GetNetworkAddress() != p2pAddress {
-		return state, nil
+		return state, height, nil
 	}
 
 	state.Suspended = resourceNodes[0].Suspend
@@ -461,5 +471,5 @@ func QueryResourceNodeState(p2pAddress string) (state ResourceNodeState, err err
 	}
 
 	state.Tokens = resourceNodes[0].Tokens.BigInt()
-	return state, nil
+	return state, height, nil
 }
