@@ -2,6 +2,7 @@ package relay
 
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
@@ -10,8 +11,17 @@ import (
 )
 
 var Cdc *codec.LegacyAmino
+var ProtoCdc *codec.ProtoCodec
+var Ir codectypes.InterfaceRegistry
 
 func init() {
+	Ir = codectypes.NewInterfaceRegistry()
+	ProtoCdc = codec.NewProtoCodec(Ir)
+	registertypes.RegisterInterfaces(Ir)
+	pottypes.RegisterInterfaces(Ir)
+	sdstypes.RegisterInterfaces(Ir)
+	cryptocodec.RegisterInterfaces(Ir)
+
 	Cdc = codec.NewLegacyAmino()
 	sdktypes.RegisterLegacyAminoCodec(Cdc)
 	registertypes.RegisterLegacyAminoCodec(Cdc)

@@ -53,7 +53,7 @@ func TestCreateWallet(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	privKey := secp256k1.PrivKeyBytesToTendermint(key.PrivateKey)
+	privKey := utilsecp256k1.PrivKeyBytesToTendermint(key.PrivateKey)
 	pubKey := privKey.PubKey()
 	sdkPubkey, err := stchaintypes.SdsPubKeyFromByteArr(pubKey.Bytes())
 	if err != nil {
@@ -125,7 +125,7 @@ func TestDecryptWalletJson(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	tmPrivKey := secp256k1.PrivKeyBytesToTendermint(key.PrivateKey)
+	tmPrivKey := utilsecp256k1.PrivKeyBytesToTendermint(key.PrivateKey)
 	tmPubKey := tmPrivKey.PubKey()
 
 	bechPub, err := crypto.PubKeyBytesToSdkPubKey(tmPubKey.Bytes())

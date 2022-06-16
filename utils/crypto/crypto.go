@@ -6,15 +6,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+	"reflect"
+
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	utilsecp256k1 "github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/stratosnet/sds/utils/crypto/sha3"
 	"github.com/stratosnet/sds/utils/types"
-	"math/big"
-	"reflect"
 
+	sdked25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	stratos "github.com/stratosnet/stratos-chain/types"
+	//stratos "github.com/stratosnet/stratos-chain/types"
 )
 
 var (
@@ -167,9 +169,6 @@ func generateMerkleTree(hashList []types.Hash) []types.Hash {
 }
 
 func PubKeyBytesToSdkPubKey(pubKey []byte) (cryptotypes.PubKey, error) {
-	pk, err := stratos.SdsPubKeyFromByteArr(pubKey)
-	if err != nil {
-		return nil, err
-	}
-	return pk, nil
+	retPubKey := sdked25519.PubKey{Key: pubKey}
+	return &retPubKey, nil
 }

@@ -14,8 +14,12 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkrest "github.com/cosmos/cosmos-sdk/types/rest"
+	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
+	//txtypes "github.com/cosmos/cosmos-sdk/types/tx"
+	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
+	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/pkg/errors"
@@ -28,6 +32,8 @@ import (
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
+	types2 "github.com/stratosnet/stratos-chain/types"
+
 	//"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	utilsecp256k1 "github.com/stratosnet/sds/utils/crypto/secp256k1"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
@@ -67,9 +73,11 @@ func FetchAccountInfo(address string) (*authtypes.BaseAccount, error) {
 		return nil, err
 	}
 
-	var account authtypes.BaseAccount
+	//var account authtypes.BaseAccount
+	var account types2.EthAccount
 	err = authtypes.ModuleCdc.UnmarshalJSON(responseResult, &account)
-	return &account, err
+	//err = account.Unmarshal(responseResult)
+	return account.BaseAccount, err
 }
 
 func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas int64) (*legacytx.StdTx, error) {
@@ -145,6 +153,9 @@ func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.U
 	tx.Signatures = signatures
 	tx.Memo = memo
 	//tx := legacytx.NewStdTx(sdkMsgs, stdFee, signatures, memo)
+	txBytes, _ := relay.Cdc.MarshalJSON(tx.Msgs)
+	txHexStr := hex.EncodeToString(txBytes)
+	fmt.Print("tx hex str: " + txHexStr)
 	return &tx, nil
 }
 
@@ -173,12 +184,29 @@ func BuildTxBytes(token, chainId, memo, mode string, unsignedMsgs []*relaytypes.
 	}
 	utils.DebugLogf("BuildTxBytes ChainId [%v] Accounts [%v] Mode [%v]", chainId, accountsStr, mode)
 
-	body := cli.BroadcastReq{
-		Tx:   *tx,
-		Mode: mode,
-	}
+	broadcastmode := sdktx.BroadcastMode_BROADCAST_MODE_BLOCK
 
-	return relay.Cdc.MarshalJSON(body)
+	protoConfig := authtx.NewTxConfig(relay.ProtoCdc, []signingtypes.SignMode{signingtypes.SignMode_SIGN_MODE_DIRECT})
+	txBuilder := protoConfig.NewTxBuilder()
+	txBuilder.SetFeeAmount(tx.Fee.Amount)
+	txBuilder.SetFeeGranter(tx.FeeGranter())
+	txBuilder.SetGasLimit(tx.Fee.Gas)
+	txBuilder.SetMemo(tx.Memo)
+	txBuilder.SetMsgs(tx.Msgs...)
+	//txBuilder.SetTimeoutHeight(tx.TimeoutHeight)
+	txBuilder.SetSignatures(signingtypes.SignatureV2{
+		PubKey: tx.Signatures[0].PubKey,
+		Data: &signingtypes.SingleSignatureData{
+			SignMode:  signingtypes.SignMode_SIGN_MODE_DIRECT,
+			Signature: tx.Signatures[0].Signature,
+		},
+	})
+	txBytes, _ := protoConfig.TxEncoder()(txBuilder.GetTx())
+	txReq := &sdktx.BroadcastTxRequest{
+		TxBytes: txBytes,
+		Mode:    broadcastmode,
+	}
+	return relay.ProtoCdc.MarshalJSON(txReq)
 }
 
 func filterInvalidSignatures(msgs []*relaytypes.UnsignedMsg) []*relaytypes.UnsignedMsg {
@@ -260,7 +288,7 @@ func BroadcastTxBytes(txBytes []byte) error {
 		return errors.New("the stratos-chain URL is not set")
 	}
 
-	url, err := utils.ParseUrl(Url + "/txs")
+	url, err := utils.ParseUrl(Url + "/cosmos/tx/v1beta1/txs")
 	if err != nil {
 		return err
 	}
@@ -280,6 +308,7 @@ func BroadcastTxBytes(txBytes []byte) error {
 	}
 	utils.Log(string(responseBody))
 
+	//var broadcastReq tx.BroadcastTxRequest
 	var broadcastReq cli.BroadcastReq
 	err = relay.Cdc.UnmarshalJSON(txBytes, &broadcastReq)
 	if err != nil {
