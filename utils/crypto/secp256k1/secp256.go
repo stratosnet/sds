@@ -6,6 +6,8 @@ import (
 	"errors"
 
 	"github.com/btcsuite/btcd/btcec"
+	sdksecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	ethsecp256k1 "github.com/ethereum/go-ethereum/crypto/secp256k1"
 	tmsecp256k1 "github.com/tendermint/tendermint/crypto/secp256k1"
 )
@@ -54,4 +56,13 @@ func UnmarshalPubkey(pub []byte) (*ecdsa.PublicKey, error) {
 		return nil, errors.New("invalid secp256k1 public key")
 	}
 	return &ecdsa.PublicKey{Curve: ethsecp256k1.S256(), X: x, Y: y}, nil
+}
+
+func PrivKeyBytesToSdkPriv(privKey []byte) cryptotypes.PrivKey {
+	return &sdksecp256k1.PrivKey{Key: privKey}
+}
+
+func PubKeyBytesToSdkPubKey(pubKey []byte) cryptotypes.PubKey {
+	retPubKey := sdksecp256k1.PubKey{Key: pubKey}
+	return &retPubKey
 }

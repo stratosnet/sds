@@ -4,7 +4,8 @@ import (
 	"math/big"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stratosnet/sds/utils/crypto"
+	"github.com/stratosnet/sds/utils/crypto/ed25519"
+
 	//"github.com/stratosnet/sds/utils/crypto/ed25519"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 	"github.com/stratosnet/stratos-chain/types"
@@ -72,10 +73,7 @@ func BuildCreateResourceNodeMsg(token, moniker string, nodeType registertypes.No
 		nodeType = registertypes.STORAGE
 	}
 
-	pk, err := crypto.PubKeyBytesToSdkPubKey(pubKey)
-	if err != nil {
-		return nil, err
-	}
+	pk := ed25519.PubKeyBytesToSdkPubKey(pubKey)
 
 	return registertypes.NewMsgCreateResourceNode(
 		p2pAddress[:],
@@ -90,10 +88,7 @@ func BuildCreateResourceNodeMsg(token, moniker string, nodeType registertypes.No
 }
 
 func BuildCreateMetaNodeMsg(token, moniker string, pubKey []byte, stakeAmount int64, ownerAddress, p2pAddress utiltypes.Address) (sdktypes.Msg, error) {
-	pk, err := crypto.PubKeyBytesToSdkPubKey(pubKey)
-	if err != nil {
-		return nil, err
-	}
+	pk := ed25519.PubKeyBytesToSdkPubKey(pubKey)
 	return registertypes.NewMsgCreateMetaNode(
 		p2pAddress[:],
 		pk,

@@ -5,6 +5,7 @@ import (
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 
+	sdked25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 )
 
@@ -51,4 +52,9 @@ func PrivKeyBytesToSdkPubKey(privKey []byte) cryptotypes.PubKey {
 	pubKey := PrivKeyBytesToPrivKey(privKey).PubKey()
 	pubKey2 := pubKey.(cryptotypes.PubKey)
 	return pubKey2
+}
+
+func PubKeyBytesToSdkPubKey(pubKey []byte) cryptotypes.PubKey {
+	retPubKey := sdked25519.PubKey{Key: pubKey}
+	return &retPubKey
 }
