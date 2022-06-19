@@ -248,7 +248,7 @@ func (m *MultiClient) txBroadcasterLoop() {
 		utils.Logf("Tx broadcaster loop will try to broadcast %v msgs %v", len(unsignedMsgs), countMsgsByType(unsignedMsgs))
 		txBytes, err := stratoschain.BuildTxBytes(setting.Config.BlockchainInfo.Token, setting.Config.BlockchainInfo.ChainId, "",
 			flags.BroadcastBlock, unsignedMsgs, setting.Config.BlockchainInfo.Transactions.Fee,
-			setting.Config.BlockchainInfo.Transactions.Gas)
+			setting.Config.BlockchainInfo.Transactions.Gas, int64(0))
 		unsignedMsgs = nil // Clearing msg list
 		if err != nil {
 			utils.ErrorLog("couldn't build tx bytes", err)

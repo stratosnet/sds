@@ -48,6 +48,11 @@ func PubKeyBytesToAddress(pubKey []byte) types.Address {
 	return types.BytesToAddress(address)
 }
 
+func PrivKeyBytesToSdkPrivKey(privKey []byte) cryptotypes.PrivKey {
+	retPrivKey := sdked25519.PrivKey{Key: privKey}
+	return &retPrivKey
+}
+
 func PrivKeyBytesToSdkPubKey(privKey []byte) cryptotypes.PubKey {
 	pubKey := PrivKeyBytesToPrivKey(privKey).PubKey()
 	pubKey2 := pubKey.(cryptotypes.PubKey)

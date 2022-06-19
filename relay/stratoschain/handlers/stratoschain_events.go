@@ -14,13 +14,10 @@ import (
 	"github.com/pkg/errors"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
 	"github.com/stratosnet/sds/msg/protos"
-
-	//"github.com/stratosnet/sds/relay"
-	//"github.com/stratosnet/sds/utils/crypto/ed25519"
-	//"github.com/stratosnet/sds/utils/types"
 	relayTypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto"
+	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	//"github.com/tendermint/tendermint/crypto/ed25519"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
@@ -559,12 +556,7 @@ func processHexPubkey(attribute string) (cryptotypes.PubKey, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Error when trying to decode P2P pubkey hex")
 	}
-	p2pPubkey, err := crypto.PubKeyBytesToSdkPubKey(p2pPubkeyRaw)
-	//p2pPubkey := cryptotypes.PubKey{}
-	//err = relay.Cdc.UnmarshalBinaryBare(p2pPubkeyRaw, &p2pPubkey)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error when trying to read P2P pubkey ed25519 binary")
-	}
+	p2pPubkey := ed25519.PubKeyBytesToSdkPubKey(p2pPubkeyRaw)
 
 	return p2pPubkey, nil
 }

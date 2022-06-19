@@ -22,7 +22,7 @@ channel_size = 2000
 max_msg_per_tx = 250
 
 [blockchain_info]
-chain_id = "test-chain"
+chain_id = "testchain_1-1"
 token = "ustos"
 [blockchain_info.transactions]
 fee = 30000

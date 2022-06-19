@@ -10,16 +10,20 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkrest "github.com/cosmos/cosmos-sdk/types/rest"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
+
 	//txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -31,7 +35,7 @@ import (
 	_ "github.com/stratosnet/sds/relay/stratoschain/prefix"
 	relaytypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto"
+	//"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	types2 "github.com/stratosnet/stratos-chain/types"
 
@@ -79,6 +83,105 @@ func FetchAccountInfo(address string) (*authtypes.BaseAccount, error) {
 	err = authtypes.ModuleCdc.UnmarshalJSON(responseResult, &account)
 	//err = account.Unmarshal(responseResult)
 	return account.BaseAccount, err
+}
+
+func buildAndSignStdTxNew(protoConfig client.TxConfig, txBuilder client.TxBuilder, token, chainId, memo string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas, height int64) ([]byte, error) {
+	if len(unsignedMsgs) == 0 {
+		return nil, errors.New("cannot build tx: no msgs to sign")
+	}
+	// Collect list of signatures to do. Must match order of GetSigners() method in cosmos-sdk's stdtx.go
+	var signaturesToDo []relaytypes.SignatureKey
+	signersSeen := make(map[string]bool)
+	var sdkMsgs []sdktypes.Msg
+	for _, msg := range unsignedMsgs {
+		for _, signaturekey := range msg.SignatureKeys {
+			if !signersSeen[signaturekey.Address] {
+				signersSeen[signaturekey.Address] = true
+				signaturesToDo = append(signaturesToDo, signaturekey)
+			}
+		}
+		sdkMsgs = append(sdkMsgs, msg.Msg)
+	}
+
+	var sigsV2 []signingtypes.SignatureV2
+	for _, signatureKey := range signaturesToDo {
+		var pubkey cryptotypes.PubKey
+		switch signatureKey.Type {
+		case relaytypes.SignatureEd25519:
+			if len(signatureKey.PrivateKey) != ed25519crypto.PrivateKeySize {
+				return []byte{}, errors.New("ed25519 private key has wrong length: " + hex.EncodeToString(signatureKey.PrivateKey))
+			}
+			pubkey = ed25519.PrivKeyBytesToSdkPubKey(signatureKey.PrivateKey)
+		default:
+			pubkey = utilsecp256k1.PrivKeyBytesToSdkPriv(signatureKey.PrivateKey).PubKey()
+		}
+		sigV2 := signingtypes.SignatureV2{
+			PubKey: pubkey,
+			Data: &signingtypes.SingleSignatureData{
+				SignMode:  protoConfig.SignModeHandler().DefaultMode(),
+				Signature: nil,
+			},
+			Sequence: signatureKey.AccountSequence,
+		}
+
+		sigsV2 = append(sigsV2, sigV2)
+		err := txBuilder.SetSignatures(sigsV2...)
+		if err != nil {
+			return []byte{}, err
+		}
+	}
+
+	// Sign the tx
+	//var signatures []legacytx.StdSignature
+	for _, signatureKey := range signaturesToDo {
+		signerData := authsigning.SignerData{
+			ChainID:       chainId,
+			AccountNumber: signatureKey.AccountNum,
+			Sequence:      signatureKey.AccountSequence,
+		}
+
+		var privKey cryptotypes.PrivKey
+		switch signatureKey.Type {
+		case relaytypes.SignatureEd25519:
+			privKey = ed25519.PrivKeyBytesToSdkPrivKey(signatureKey.PrivateKey)
+		default:
+			privKey = utilsecp256k1.PrivKeyBytesToSdkPriv(signatureKey.PrivateKey)
+		}
+		sigV2, err := clienttx.SignWithPrivKey(
+			protoConfig.SignModeHandler().DefaultMode(), signerData,
+			txBuilder, privKey, protoConfig, signerData.Sequence)
+		if err != nil {
+			return []byte{}, err
+		}
+		err = txBuilder.SetSignatures(sigV2)
+		if err != nil {
+			return []byte{}, err
+		}
+	}
+	txBytes, err := protoConfig.TxEncoder()(txBuilder.GetTx())
+	if err != nil {
+		return []byte{}, err
+	}
+
+	txReq := &sdktx.BroadcastTxRequest{
+		TxBytes: txBytes,
+		Mode:    sdktx.BroadcastMode_BROADCAST_MODE_BLOCK,
+	}
+	reqBytes, _ := relay.ProtoCdc.MarshalJSON(txReq)
+	return reqBytes, nil
+}
+
+func BuildTxBytesNew(protoConfig client.TxConfig, txBuilder client.TxBuilder, token, chainId, memo, mode string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas, height int64) ([]byte, error) {
+	filteredMsgs := filterInvalidSignatures(unsignedMsgs)          // Filter msgs with invalid signatures
+	accountInfos := fetchAllAccountInfos(filteredMsgs)             // Fetch account info from stratos-chain for each signature
+	updatedMsgs := updateSignatureKeys(filteredMsgs, accountInfos) // Update signatureKeys for each msg
+
+	if len(updatedMsgs) != len(unsignedMsgs) {
+		utils.ErrorLogf("BuildTxBytes couldn't build all the msgs provided (success: %v  invalid_signature: %v  missing_account_infos: %v",
+			len(updatedMsgs), len(unsignedMsgs)-len(filteredMsgs), len(filteredMsgs)-len(updatedMsgs))
+	}
+
+	return buildAndSignStdTxNew(protoConfig, txBuilder, token, chainId, memo, updatedMsgs, fee, gas, height)
 }
 
 func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas, height int64) (*legacytx.StdTx, error) {
@@ -136,10 +239,7 @@ func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.U
 				return nil, err
 			}
 
-			pubKey, err = crypto.PubKeyBytesToSdkPubKey(tmPubKey.Bytes())
-			if err != nil {
-				return nil, err
-			}
+			pubKey = utilsecp256k1.PubKeyBytesToSdkPubKey(tmPubKey.Bytes())
 		}
 
 		sig := legacytx.StdSignature{

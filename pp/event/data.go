@@ -4,11 +4,16 @@ import (
 	"math/big"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
+	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	relaytypes "github.com/stratosnet/sds/relay/types"
+	//authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/types"
@@ -26,15 +31,28 @@ func reqActivateData(amount, fee, gas, height int64) (*protos.ReqActivatePP, err
 		return nil, err
 	}
 
+	protoConfig := authtx.NewTxConfig(relay.ProtoCdc, []signingtypes.SignMode{signingtypes.SignMode_SIGN_MODE_DIRECT})
+	txBuilder := protoConfig.NewTxBuilder()
+
 	txMsg, err := stratoschain.BuildCreateResourceNodeMsg(setting.Config.Token, setting.P2PAddress, registertypes.STORAGE, setting.P2PPublicKey, amount, ownerAddress, p2pAddress)
 	if err != nil {
 		return nil, err
 	}
+	err = txBuilder.SetMsgs(txMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	txBuilder.SetFeeAmount(sdktypes.NewCoins(sdktypes.NewInt64Coin(setting.Config.Token, fee)))
+	//txBuilder.SetFeeGranter(tx.FeeGranter())
+	txBuilder.SetGasLimit(uint64(gas))
+	txBuilder.SetMemo("")
+
 	signatureKeys := []relaytypes.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
 	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg.(legacytx.LegacyMsg), SignatureKeys: signatureKeys}}
-	txBytes, err := stratoschain.BuildTxBytes(setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastBlock, unsignedMsgs, fee, gas, height)
+	txBytes, err := stratoschain.BuildTxBytesNew(protoConfig, txBuilder, setting.Config.Token, setting.Config.ChainId, "", flags.BroadcastBlock, unsignedMsgs, fee, gas, height)
 	if err != nil {
 		return nil, err
 	}
