@@ -104,6 +104,8 @@ func buildAndSignStdTxNew(protoConfig client.TxConfig, txBuilder client.TxBuilde
 	}
 
 	var sigsV2 []signingtypes.SignatureV2
+	// First round: we gather all the signer infos. We use the "set empty
+	// signature" hack to do that.
 	for _, signatureKey := range signaturesToDo {
 		var pubkey cryptotypes.PubKey
 		switch signatureKey.Type {
@@ -131,8 +133,7 @@ func buildAndSignStdTxNew(protoConfig client.TxConfig, txBuilder client.TxBuilde
 		}
 	}
 
-	// Sign the tx
-	//var signatures []legacytx.StdSignature
+	// Second round: all signer infos are set, so each signer can sign.
 	for _, signatureKey := range signaturesToDo {
 		signerData := authsigning.SignerData{
 			ChainID:       chainId,
