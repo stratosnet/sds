@@ -619,13 +619,14 @@ func ReqDeleteShareData(reqID, shareID string) *protos.ReqDeleteShare {
 	}
 }
 
-func ReqGetShareFileData(keyword, sharePassword, reqID string) *protos.ReqGetShareFile {
+func ReqGetShareFileData(keyword, sharePassword, saveAs, reqID string) *protos.ReqGetShareFile {
 	return &protos.ReqGetShareFile{
 		Keyword:       keyword,
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 		SharePassword: sharePassword,
+		SaveAs:        saveAs,
 	}
 }
 

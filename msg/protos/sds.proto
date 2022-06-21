@@ -788,6 +788,7 @@ message ReqGetShareFile {
   string wallet_address = 3; //
   string req_id = 4;
   string share_password = 5;//
+  string save_as = 6;
 }
 
 

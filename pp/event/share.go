@@ -128,10 +128,10 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 }
 
 // GetShareFile
-func GetShareFile(keyword, sharePassword, reqID string, w http.ResponseWriter) {
+func GetShareFile(keyword, sharePassword, saveAs, reqID string, w http.ResponseWriter) {
 	utils.DebugLog("GetShareFile for file ", keyword)
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(requests.ReqGetShareFileData(keyword, sharePassword, reqID), header.ReqGetShareFile)
+		peers.SendMessageDirectToSPOrViaPP(requests.ReqGetShareFileData(keyword, sharePassword, saveAs, reqID), header.ReqGetShareFile)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -165,12 +165,16 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	utils.Log("FileInfo:", target.FileInfo)
 	putData(target.ShareRequest.ReqId, HTTPGetShareFile, &target)
 
-	for _, fileInfo := range target.FileInfo {
+	for idx, fileInfo := range target.FileInfo {
+		saveAs := ""
+		if idx == 0 {
+			saveAs = target.ShareRequest.SaveAs
+		}
 		filePath := datamesh.DataMashId{
 			Owner: fileInfo.OwnerWalletAddress,
 			Hash:  fileInfo.FileHash,
 		}.String()
 		peers.SendMessageDirectToSPOrViaPP(requests.ReqFileStorageInfoData(filePath, "", "", setting.WalletAddress,
-			"", false, target.ShareRequest), header.ReqFileStorageInfo)
+			saveAs, false, target.ShareRequest), header.ReqFileStorageInfo)
 	}
 }
