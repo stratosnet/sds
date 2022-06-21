@@ -27,19 +27,32 @@ var cache *utils.AutoCleanMap // Cache with a TTL to make sure each event is onl
 
 func init() {
 	Handlers = make(map[string]func(coretypes.ResultEvent))
-	Handlers["create_resource_node"] = CreateResourceNodeMsgHandler()
-	Handlers["update_resource_node_stake"] = UpdateResourceNodeStakeMsgHandler()
-	Handlers["remove_resource_node"] = UnbondingResourceNodeMsgHandler()
-	Handlers["complete_unbonding_resource_node"] = CompleteUnbondingResourceNodeMsgHandler()
-	Handlers["create_meta_node"] = CreateMetaNodeMsgHandler()
-	Handlers["update_meta_node_stake"] = UpdateMetaNodeStakeMsgHandler()
-	Handlers["remove_meta_node"] = UnbondingMetaNodeMsgHandler()
-	Handlers["complete_unbonding_meta_node"] = CompleteUnbondingMetaNodeMsgHandler()
-	Handlers["meta_node_reg_vote"] = MetaNodeVoteMsgHandler()
-	Handlers["SdsPrepayTx"] = PrepayMsgHandler()
-	Handlers["FileUploadTx"] = FileUploadMsgHandler()
-	Handlers["volume_report"] = VolumeReportHandler()
-	Handlers["slashing_resource_node"] = SlashingResourceNodeHandler()
+	Handlers[MSG_TYPE_CREATE_RESOURCE_NODE] = CreateResourceNodeMsgHandler()
+	Handlers[MSG_TYPE_UPDATE_RESOURCE_NODE_STAKE] = UpdateResourceNodeStakeMsgHandler()
+	Handlers[MSG_TYPE_REMOVE_RESOURCE_NODE] = UnbondingResourceNodeMsgHandler()
+	//Handlers["complete_unbonding_resource_node"] = CompleteUnbondingResourceNodeMsgHandler()
+	Handlers[MSG_TYPE_CREATE_META_NODE] = CreateMetaNodeMsgHandler()
+	Handlers[MSG_TYPE_UPDATE_META_NODE_STAKE] = UpdateMetaNodeStakeMsgHandler()
+	Handlers[MSG_TYPE_REMOVE_META_NODE] = UnbondingMetaNodeMsgHandler()
+	//Handlers["complete_unbonding_meta_node"] = CompleteUnbondingMetaNodeMsgHandler()
+	Handlers[MSG_TYPE_META_NODE_REG_VOTE] = MetaNodeVoteMsgHandler()
+	Handlers[MSG_TYPE_PREPAY] = PrepayMsgHandler()
+	Handlers[MSG_TYPE_FILE_UPLOAD] = FileUploadMsgHandler()
+	Handlers[MSG_TYPE_VOLUME_REPORT] = VolumeReportHandler()
+	Handlers[MSG_TYPE_SLASHING_RESOURCE_NODE] = SlashingResourceNodeHandler()
+	//Handlers["create_resource_node"] = CreateResourceNodeMsgHandler()
+	//Handlers["update_resource_node_stake"] = UpdateResourceNodeStakeMsgHandler()
+	//Handlers["remove_resource_node"] = UnbondingResourceNodeMsgHandler()
+	//Handlers["complete_unbonding_resource_node"] = CompleteUnbondingResourceNodeMsgHandler()
+	//Handlers["create_meta_node"] = CreateMetaNodeMsgHandler()
+	//Handlers["update_meta_node_stake"] = UpdateMetaNodeStakeMsgHandler()
+	//Handlers["remove_meta_node"] = UnbondingMetaNodeMsgHandler()
+	//Handlers["complete_unbonding_meta_node"] = CompleteUnbondingMetaNodeMsgHandler()
+	//Handlers["meta_node_reg_vote"] = MetaNodeVoteMsgHandler()
+	//Handlers["SdsPrepayTx"] = PrepayMsgHandler()
+	//Handlers["FileUploadTx"] = FileUploadMsgHandler()
+	//Handlers["volume_report"] = VolumeReportHandler()
+	//Handlers["slashing_resource_node"] = SlashingResourceNodeHandler()
 
 	cache = utils.NewAutoCleanMap(time.Minute)
 }
@@ -52,6 +65,8 @@ func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 			"create_resource_node.ozone_limit_changes",
 			"create_resource_node.initial_stake",
 		}
+		utils.Log("11111")
+		utils.Logf("22222 %v", result)
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
 		key := getCacheKey(requiredAttributes, result)
 		if _, ok := cache.Load(key); ok {
@@ -443,6 +458,7 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 			"slashing.suspend",
 			"slashing.amount",
 		}
+		utils.Logf("333 %v", result)
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
 		key := getCacheKey(requiredAttributes, result)
 		if _, ok := cache.Load(key); ok {
@@ -450,7 +466,7 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 			return
 		}
 		cache.Store(key, true)
-
+		utils.Log("444")
 		var slashedPPs []relayTypes.SlashedPP
 		for _, event := range processedEvents {
 			suspended, err := strconv.ParseBool(event["slashing.suspend"])

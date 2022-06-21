@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -418,14 +417,15 @@ func BroadcastTxBytes(txBytes []byte) error {
 	}
 
 	// In block broadcast mode, do additional verification
-	if broadcastReq.Mode == flags.BroadcastBlock {
-		var txResponse sdktypes.TxResponse
+	if broadcastReq.Mode == sdktx.BroadcastMode_BROADCAST_MODE_BLOCK.String() {
+		var broadcastTxResponse sdktx.BroadcastTxResponse
+		//var txResponse sdktypes.TxResponse
 
-		err = relay.Cdc.UnmarshalJSON(responseBody, &txResponse)
+		err = relay.ProtoCdc.UnmarshalJSON(responseBody, &broadcastTxResponse)
 		if err != nil {
 			return errors.Wrap(err, "couldn't unmarshal response body to txResponse")
 		}
-
+		txResponse := broadcastTxResponse.TxResponse
 		if txResponse.Height <= 0 || txResponse.Empty() || txResponse.Code != 0 {
 			return errors.Errorf("broadcast unsuccessful: %v", txResponse)
 		}
@@ -433,7 +433,7 @@ func BroadcastTxBytes(txBytes []byte) error {
 		if setting.Config == nil {
 			return nil // If the relayd config is nil, then this is ppd broadcasting a tx. We don't want to call the event handler in this case
 		}
-		events := processEvents(txResponse)
+		events := processEvents(broadcastTxResponse)
 		for msgType, event := range events {
 			if handler, ok := handlers.Handlers[msgType]; ok {
 				go handler(event)
@@ -446,7 +446,8 @@ func BroadcastTxBytes(txBytes []byte) error {
 	return nil
 }
 
-func processEvents(response sdktypes.TxResponse) map[string]coretypes.ResultEvent {
+func processEvents(broadcastResponse sdktx.BroadcastTxResponse) map[string]coretypes.ResultEvent {
+	response := broadcastResponse.TxResponse
 	// Read the events from each msg in the log
 	var events []map[string]string
 	for _, msg := range response.Logs {
