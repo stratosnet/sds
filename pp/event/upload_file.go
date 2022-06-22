@@ -20,6 +20,7 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
+	"github.com/stratosnet/sds/pp/api/rpc"
 )
 
 //var m *sync.WaitGroup
@@ -130,7 +131,12 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		} else {
 			utils.Log("upload failed: ", target.Result.Msg)
 		}
-		file.ClearFileMap(target.FileHash)
+
+		if file.IsFileRpcRemote(target.FileHash) {
+			file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: target.Result.Msg})
+		}else {
+			file.ClearFileMap(target.FileHash)
+		}
 
 	} else if len(target.PpList) != 0 {
 		go startUploadTask(target)
@@ -141,6 +147,9 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		ProgressMap.Store(target.FileHash, p)
 		task.UploadProgressMap.Delete(target.FileHash)
 
+		if file.IsFileRpcRemote(target.FileHash) {
+			file.SetRemoteFileResult(target.FileHash, rpc.Result{Return:rpc.SUCCESS})
+		}
 	}
 	if isCover {
 		utils.DebugLog("is_cover", target.ReqId)
