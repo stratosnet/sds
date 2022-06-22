@@ -40,6 +40,8 @@ const (
 
 	FILE_SLICE_DOWNLOAD_BATCH_SIZE         = 20
 	UPDATE_LATEST_STATUS_REPORT_BATCH_SIZE = 20
+
+	DEFAULT_MAX_CONNECTION = 1000
 )
 
 var (
@@ -120,6 +122,7 @@ type config struct {
 	RestPort             string       `toml:"rest_port"`
 	InternalPort         string       `toml:"internal_port"`
 	TrafficLogInterval   uint64       `toml:"traffic_log_interval"`
+	MaxConnection        int          `toml:"max_connection"`
 	SPList               []SPBaseInfo `toml:"sp_list"`
 }
 
