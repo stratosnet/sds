@@ -458,7 +458,6 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 			"slashing.suspend",
 			"slashing.amount",
 		}
-		utils.Logf("333 %v", result)
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
 		key := getCacheKey(requiredAttributes, result)
 		if _, ok := cache.Load(key); ok {
@@ -466,7 +465,6 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 			return
 		}
 		cache.Store(key, true)
-		utils.Log("444")
 		var slashedPPs []relayTypes.SlashedPP
 		for _, event := range processedEvents {
 			suspended, err := strconv.ParseBool(event["slashing.suspend"])
