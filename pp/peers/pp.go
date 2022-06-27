@@ -64,6 +64,10 @@ func NewServer() *PPServer {
 		peerList.PPDisconnectedNetId(netID)
 	})
 
+	maxConnection := setting.DEFAULT_MAX_CONNECTION
+	if setting.Config.MaxConnection > maxConnection {
+		maxConnection = setting.Config.MaxConnection
+	}
 	ppServer := &PPServer{core.CreateServer(
 		onConnectOption,
 		onErrorOption,
@@ -71,7 +75,8 @@ func NewServer() *PPServer {
 		core.BufferSizeOption(10000),
 		core.LogOpenOption(true),
 		core.MinAppVersionOption(setting.Config.Version.MinAppVer),
-		core.P2pAddressOption(setting.P2PAddress)),
+		core.P2pAddressOption(setting.P2PAddress),
+		core.MaxConnectionsOption(maxConnection)),
 	}
 
 	ppServer.SetVolRecOptions(
