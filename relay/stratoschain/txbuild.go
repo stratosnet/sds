@@ -23,7 +23,7 @@ type Traffic struct {
 
 // Stratos-chain 'pot' module
 func BuildVolumeReportMsg(traffic []*Traffic, reporterAddress, reporterOwnerAddress []byte, epoch uint64,
-	reportReference string, blsTxDataHash, blsSignature []byte, blsPubKeys [][]byte) (sdktypes.Msg, error) {
+	reportReference string, blsTxDataHash, blsSignature []byte, blsPubKeys [][]byte) (sdktypes.Msg, []byte, error) {
 	aggregatedVolume := make(map[string]uint64)
 	for _, trafficRecord := range traffic {
 		aggregatedVolume[trafficRecord.WalletAddress] += trafficRecord.Volume
@@ -33,7 +33,7 @@ func BuildVolumeReportMsg(traffic []*Traffic, reporterAddress, reporterOwnerAddr
 	for walletAddressString, volume := range aggregatedVolume {
 		_, _, err := bech32.DecodeAndConvert(walletAddressString)
 		if err != nil {
-			return nil, err
+			return nil, []byte{}, err
 		}
 		volume := sdktypes.NewIntFromUint64(volume)
 		nodesVolume = append(nodesVolume, &pottypes.SingleWalletVolume{
@@ -44,7 +44,9 @@ func BuildVolumeReportMsg(traffic []*Traffic, reporterAddress, reporterOwnerAddr
 
 	blsSignatureInfo := pottypes.NewBLSSignatureInfo(blsPubKeys, blsSignature, blsTxDataHash)
 
-	return pottypes.NewMsgVolumeReport(nodesVolume, reporterAddress, sdktypes.NewIntFromUint64(epoch), reportReference, reporterOwnerAddress, blsSignatureInfo), nil
+	volumeReportMsg := pottypes.NewMsgVolumeReport(nodesVolume, reporterAddress, sdktypes.NewIntFromUint64(epoch), reportReference, reporterOwnerAddress, blsSignatureInfo)
+	signBytes := volumeReportMsg.GetSignBytes()
+	return volumeReportMsg, signBytes, nil
 }
 
 func BuildSlashingResourceNodeMsg(spP2pAddress, spWalletAddress []utiltypes.Address, ppP2pAddress, ppWalletAddress utiltypes.Address, slashingAmount *big.Int, suspend bool) sdktypes.Msg {

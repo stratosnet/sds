@@ -519,7 +519,7 @@ func QueryResourceNodeState(p2pAddress string) (state ResourceNodeState, height 
 		return state, int64(0), errors.New("the stratos-chain URL is not set")
 	}
 
-	url, err := utils.ParseUrl(Url + "/register/resource-nodes?network=" + p2pAddress)
+	url, err := utils.ParseUrl(Url + "/register/resource-node/" + p2pAddress)
 	if err != nil {
 		return state, int64(0), err
 	}
@@ -549,21 +549,21 @@ func QueryResourceNodeState(p2pAddress string) (state ResourceNodeState, height 
 		return state, height, err
 	}
 
-	var resourceNodes registertypes.ResourceNodes
-	err = registertypes.ModuleCdc.UnmarshalJSON(responseResult, &resourceNodes)
+	var resourceNode registertypes.ResourceNode
+	err = registertypes.ModuleCdc.UnmarshalJSON(responseResult, &resourceNode)
 	if err != nil {
 		return state, height, err
 	}
 
-	if len(resourceNodes) == 0 {
-		return state, height, nil
-	}
-	if resourceNodes[0].GetNetworkAddress() != p2pAddress {
+	//if len(resourceNodes) == 0 {
+	//	return state, height, nil
+	//}
+	if resourceNode.GetNetworkAddress() != p2pAddress {
 		return state, height, nil
 	}
 
-	state.Suspended = resourceNodes[0].Suspend
-	switch resourceNodes[0].GetStatus() {
+	state.Suspended = resourceNode.Suspend
+	switch resourceNode.GetStatus() {
 	case stakingtypes.Bonded:
 		state.IsActive = types.PP_ACTIVE
 	case stakingtypes.Unbonding:
@@ -572,6 +572,6 @@ func QueryResourceNodeState(p2pAddress string) (state ResourceNodeState, height 
 		state.IsActive = types.PP_INACTIVE
 	}
 
-	state.Tokens = resourceNodes[0].Tokens.BigInt()
+	state.Tokens = resourceNode.Tokens.BigInt()
 	return state, height, nil
 }
