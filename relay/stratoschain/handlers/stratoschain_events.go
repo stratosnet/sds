@@ -40,19 +40,6 @@ func init() {
 	Handlers[MSG_TYPE_FILE_UPLOAD] = FileUploadMsgHandler()
 	Handlers[MSG_TYPE_VOLUME_REPORT] = VolumeReportHandler()
 	Handlers[MSG_TYPE_SLASHING_RESOURCE_NODE] = SlashingResourceNodeHandler()
-	//Handlers["create_resource_node"] = CreateResourceNodeMsgHandler()
-	//Handlers["update_resource_node_stake"] = UpdateResourceNodeStakeMsgHandler()
-	//Handlers["remove_resource_node"] = UnbondingResourceNodeMsgHandler()
-	//Handlers["complete_unbonding_resource_node"] = CompleteUnbondingResourceNodeMsgHandler()
-	//Handlers["create_meta_node"] = CreateMetaNodeMsgHandler()
-	//Handlers["update_meta_node_stake"] = UpdateMetaNodeStakeMsgHandler()
-	//Handlers["remove_meta_node"] = UnbondingMetaNodeMsgHandler()
-	//Handlers["complete_unbonding_meta_node"] = CompleteUnbondingMetaNodeMsgHandler()
-	//Handlers["meta_node_reg_vote"] = MetaNodeVoteMsgHandler()
-	//Handlers["SdsPrepayTx"] = PrepayMsgHandler()
-	//Handlers["FileUploadTx"] = FileUploadMsgHandler()
-	//Handlers["volume_report"] = VolumeReportHandler()
-	//Handlers["slashing_resource_node"] = SlashingResourceNodeHandler()
 
 	cache = utils.NewAutoCleanMap(time.Minute)
 }
@@ -65,8 +52,6 @@ func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 			"create_resource_node.ozone_limit_changes",
 			"create_resource_node.initial_stake",
 		}
-		utils.Log("11111")
-		utils.Logf("22222 %v", result)
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
 		key := getCacheKey(requiredAttributes, result)
 		if _, ok := cache.Load(key); ok {

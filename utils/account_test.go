@@ -6,16 +6,13 @@ import (
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	utilsecp256k1 "github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/stratosnet/sds/utils/types"
 	stchaintypes "github.com/stratosnet/stratos-chain/types"
-	//"github.com/tendermint/go-amino"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
-	//cryptoamino "github.com/tendermint/tendermint/crypto/encoding/amino"
-	//"github.com/tendermint/tendermint/libs/bech32"
-	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/tendermint/tendermint/privval"
 )
 

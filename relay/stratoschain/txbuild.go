@@ -6,14 +6,12 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 
-	//"github.com/stratosnet/sds/utils/crypto/ed25519"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 	"github.com/stratosnet/stratos-chain/types"
 	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
-	//"github.com/tendermint/tendermint/libs/bech32"
-	"github.com/cosmos/cosmos-sdk/types/bech32"
 )
 
 type Traffic struct {

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/google/uuid"
 	"github.com/ipfs/go-cid"
 	"github.com/pkg/errors"
@@ -26,8 +27,6 @@ import (
 	"github.com/stratosnet/sds/utils/httpserv"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
-	//"github.com/tendermint/tendermint/libs/bech32"
-	"github.com/cosmos/cosmos-sdk/types/bech32"
 )
 
 type StreamReqBody struct {

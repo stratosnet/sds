@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/shirou/gopsutil/cpu"
@@ -23,8 +24,6 @@ import (
 	"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/utils"
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
-	//"github.com/tendermint/tendermint/libs/bech32"
-	"github.com/cosmos/cosmos-sdk/types/bech32"
 )
 
 func ReqRegisterData() *protos.ReqRegister {
