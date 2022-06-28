@@ -17,7 +17,7 @@ is_limit_download_speed = false
 limit_download_speed = 100
 is_limit_upload_speed = false
 limit_upload_speed = 100
-chain_id = 'test-chain'
+chain_id = 'testchain_1-1'
 token = 'ustos'
 stratos_chain_url = 'http://127.0.0.1:1317'
 rest_port = '18093'
@@ -27,7 +27,7 @@ max_connection = 1000
 [version]
 app_ver = 7
 min_app_ver = 7
-show = 'v0.6.0'
+show = 'v0.7.0'
 
 [[sp_list]]
 p2p_address = ""

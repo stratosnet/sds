@@ -207,14 +207,14 @@ func (sc *ServerConn) handshake() (error, bool) {
 		}
 
 		// Read tmp key from original conn and verify
-		buffer = make([]byte, tmed25519.PubKeyEd25519Size+tmed25519.SignatureSize)
+		buffer = make([]byte, tmed25519.PubKeySize+tmed25519.SignatureSize)
 		if _, err = io.ReadFull(sc.spbConn, buffer); err != nil {
 			return err, false
 		}
-		peerPubKeyBytes := buffer[:tmed25519.PubKeyEd25519Size]
+		peerPubKeyBytes := buffer[:tmed25519.PubKeySize]
 		peerPubKey := ed25519.PubKeyBytesToPubKey(peerPubKeyBytes)
-		peerSignature := buffer[tmed25519.PubKeyEd25519Size:]
-		if !peerPubKey.VerifyBytes([]byte(HandshakeMessage), peerSignature) {
+		peerSignature := buffer[tmed25519.PubKeySize:]
+		if !peerPubKey.VerifySignature([]byte(HandshakeMessage), peerSignature) {
 			return errors.New("Invalid signature in tmp key from peer"), false
 		}
 
@@ -247,7 +247,7 @@ func (sc *ServerConn) handshake() (error, bool) {
 		_ = handshakeConn.Close()
 	case ConnTypeHandshake:
 		// Read tmp key from conn
-		buffer = make([]byte, tmed25519.PubKeyEd25519Size+tmed25519.SignatureSize)
+		buffer = make([]byte, tmed25519.PubKeySize+tmed25519.SignatureSize)
 		if _, err := io.ReadFull(sc.spbConn, buffer); err != nil {
 			return err, false
 		}

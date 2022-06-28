@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/google/uuid"
 	"github.com/ipfs/go-cid"
 	"github.com/pkg/errors"
@@ -26,7 +27,6 @@ import (
 	"github.com/stratosnet/sds/utils/httpserv"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/bech32"
 )
 
 type StreamReqBody struct {
@@ -324,15 +324,15 @@ func verifySignature(reqBody *StreamReqBody, sliceHash string, data []byte) bool
 		return false
 	}
 
-	p2pPubKey := tmed25519.PubKeyEd25519{}
-	err = relay.Cdc.UnmarshalBinaryBare(pubKeyRaw, &p2pPubKey)
+	p2pPubKey := tmed25519.PubKey{}
+	err = relay.Cdc.Unmarshal(pubKeyRaw, &p2pPubKey)
 
 	if err != nil {
 		utils.ErrorLog("Error when trying to read P2P pubKey ed25519 binary", err)
 		return false
 	}
 
-	if !ed25519.Verify(p2pPubKey[:], []byte(reqBody.P2PAddress+reqBody.FileHash+header.ReqDownloadSlice), reqBody.Sign) {
+	if !ed25519.Verify(p2pPubKey.Bytes(), []byte(reqBody.P2PAddress+reqBody.FileHash+header.ReqDownloadSlice), reqBody.Sign) {
 		return false
 	}
 

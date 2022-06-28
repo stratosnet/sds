@@ -6,11 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stratosnet/sds/utils/crypto/secp256k1"
-	"github.com/stratosnet/sds/utils/crypto/sha3"
-	"github.com/stratosnet/sds/utils/types"
 	"math/big"
 	"reflect"
+
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+	utilsecp256k1 "github.com/stratosnet/sds/utils/crypto/secp256k1"
+	"github.com/stratosnet/sds/utils/crypto/sha3"
+	"github.com/stratosnet/sds/utils/types"
+	//stratos "github.com/stratosnet/stratos-chain/types"
 )
 
 var (
@@ -47,14 +50,14 @@ func S256() elliptic.Curve {
 
 // PubKeyToAddress calculates the wallet address from the user's private key
 func PrivKeyToAddress(privKey []byte) types.Address {
-	tmPrivKey := secp256k1.PrivKeyBytesToTendermint(privKey)
+	tmPrivKey := utilsecp256k1.PrivKeyBytesToTendermint(privKey)
 	tmPubKey := tmPrivKey.PubKey()
 	return types.BytesToAddress(tmPubKey.Address())
 }
 
 // PubKeyToAddress calculates the wallet address from the user's public key
 func PubKeyToAddress(pubKey []byte) (types.Address, error) {
-	tmPubKey, err := secp256k1.PubKeyBytesToTendermint(pubKey)
+	tmPubKey, err := utilsecp256k1.PubKeyBytesToTendermint(pubKey)
 	if err != nil {
 		return types.Address{}, err
 	}
@@ -161,3 +164,15 @@ func generateMerkleTree(hashList []types.Hash) []types.Hash {
 
 	return generateMerkleTree(hs)
 }
+
+//func PubKeyBytesToSdkPubKey(pubKey []byte) (cryptotypes.PubKey, error) {
+//	if len(pubKey) == sdked25519.PubKeySize {
+//		retPubKey := sdked25519.PubKey{Key: pubKey}
+//		return &retPubKey, nil
+//	} else if len(pubKey) == sdksecp256k1.PubKeySize {
+//		retPubKey := sdksecp256k1.PubKey{Key: pubKey}
+//		return &retPubKey, nil
+//	} else {
+//		return nil, errors.New("unsupported pubkey type")
+//	}
+//}

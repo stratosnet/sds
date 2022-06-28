@@ -4,6 +4,9 @@ import (
 	"github.com/stratosnet/sds/utils/types"
 	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/crypto/ed25519"
+
+	sdked25519 "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 )
 
 func NewKey() []byte {
@@ -14,18 +17,18 @@ func NewKey() []byte {
 func PrivKeyBytesToPrivKey(privKey []byte) crypto.PrivKey {
 	var privKey2 [64]byte
 	copy(privKey2[:], privKey)
-	return ed25519.PrivKeyEd25519(privKey2)
+	return ed25519.PrivKey(privKey2[:])
 }
 
 func PrivKeyBytesToPubKey(privKey []byte) crypto.PubKey {
 	pubKey := PrivKeyBytesToPrivKey(privKey).PubKey()
-	pubKey2 := pubKey.(ed25519.PubKeyEd25519)
+	pubKey2 := pubKey.(ed25519.PubKey)
 	return pubKey2
 }
 
 func PrivKeyBytesToPubKeyBytes(privKey []byte) []byte {
 	pubKey := PrivKeyBytesToPrivKey(privKey).PubKey()
-	pubKey2 := pubKey.(ed25519.PubKeyEd25519)
+	pubKey2 := pubKey.(ed25519.PubKey)
 	return pubKey2[:]
 }
 
@@ -35,12 +38,28 @@ func PrivKeyBytesToAddress(privKey []byte) types.Address {
 }
 
 func PubKeyBytesToPubKey(pubKey []byte) crypto.PubKey {
-	var pubKey2 [ed25519.PubKeyEd25519Size]byte
+	var pubKey2 [ed25519.PubKeySize]byte
 	copy(pubKey2[:], pubKey)
-	return ed25519.PubKeyEd25519(pubKey2)
+	return ed25519.PubKey(pubKey2[:])
 }
 
 func PubKeyBytesToAddress(pubKey []byte) types.Address {
 	address := PubKeyBytesToPubKey(pubKey).Address()
 	return types.BytesToAddress(address)
+}
+
+func PrivKeyBytesToSdkPrivKey(privKey []byte) cryptotypes.PrivKey {
+	retPrivKey := sdked25519.PrivKey{Key: privKey}
+	return &retPrivKey
+}
+
+func PrivKeyBytesToSdkPubKey(privKey []byte) cryptotypes.PubKey {
+	pubKey := PrivKeyBytesToPrivKey(privKey).PubKey()
+	pubKey2 := pubKey.(cryptotypes.PubKey)
+	return pubKey2
+}
+
+func PubKeyBytesToSdkPubKey(pubKey []byte) cryptotypes.PubKey {
+	retPubKey := sdked25519.PubKey{Key: pubKey}
+	return &retPubKey
 }
