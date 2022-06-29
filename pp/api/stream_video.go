@@ -30,15 +30,15 @@ import (
 )
 
 type StreamReqBody struct {
-	FileHash      string
-	FileName      string
-	WalletAddress string
-	P2PAddress    string
-	SpP2pAddress  string
-	RestAddress   string
-	Sign          []byte
-	SavePath      string
-	SliceInfo     *protos.DownloadSliceInfo
+	FileHash            string
+	FileName            string
+	WalletAddress       string
+	P2PAddress          string
+	IndexNodeP2pAddress string
+	RestAddress         string
+	Sign                []byte
+	SavePath            string
+	SliceInfo           *protos.DownloadSliceInfo
 }
 
 type StreamInfo struct {
@@ -116,12 +116,12 @@ func streamVideoP2P(w http.ResponseWriter, req *http.Request) {
 	utils.DebugLog("Send request to retrieve the slice ", sliceHash)
 
 	fInfo := &protos.RspFileStorageInfo{
-		FileHash:      body.FileHash,
-		SavePath:      body.SavePath,
-		FileName:      body.FileName,
-		Sign:          body.Sign,
-		SpP2PAddress:  body.SpP2pAddress,
-		WalletAddress: setting.WalletAddress,
+		FileHash:            body.FileHash,
+		SavePath:            body.SavePath,
+		FileName:            body.FileName,
+		Sign:                body.Sign,
+		IndexNodeP2PAddress: body.IndexNodeP2pAddress,
+		WalletAddress:       setting.WalletAddress,
 	}
 
 	event.GetVideoSlice(body.SliceInfo, fInfo, w)
@@ -244,7 +244,7 @@ func getStreamInfo(fileHash, ownerWalletAddress, walletAddress string, w http.Re
 	for {
 		if f, ok := task.DownloadFileMap.Load(fileHash); ok {
 			fInfo = f.(*protos.RspFileStorageInfo)
-			utils.DebugLog("Received file storage info from sp ", fInfo)
+			utils.DebugLog("Received file storage info from index node ", fInfo)
 			break
 		} else {
 			select {
@@ -298,7 +298,7 @@ func verifyStreamReqBody(req *http.Request) (*StreamReqBody, error) {
 		return nil, errors.New("please give file name")
 	}
 
-	if _, err := utiltypes.P2pAddressFromBech(reqBody.SpP2pAddress); err != nil {
+	if _, err := utiltypes.P2pAddressFromBech(reqBody.IndexNodeP2pAddress); err != nil {
 		return nil, errors.Wrap(err, "incorrect SP P2P address")
 	}
 
@@ -306,19 +306,19 @@ func verifyStreamReqBody(req *http.Request) (*StreamReqBody, error) {
 }
 
 func verifySignature(reqBody *StreamReqBody, sliceHash string, data []byte) bool {
-	val, ok := setting.SPMap.Load(reqBody.SpP2pAddress)
+	val, ok := setting.IndexNodeMap.Load(reqBody.IndexNodeP2pAddress)
 	if !ok {
-		utils.ErrorLog("cannot find sp info by given the SP address ", reqBody.SpP2pAddress)
+		utils.ErrorLog("cannot find index node info by given the index node address ", reqBody.IndexNodeP2pAddress)
 		return false
 	}
 
-	spInfo, ok := val.(setting.SPBaseInfo)
+	indexNodeInfo, ok := val.(setting.IndexNodeBaseInfo)
 	if !ok {
-		utils.ErrorLog("Fail to parse SP info ", reqBody.SpP2pAddress)
+		utils.ErrorLog("Fail to parse Index Node info ", reqBody.IndexNodeP2pAddress)
 		return false
 	}
 
-	_, pubKeyRaw, err := bech32.DecodeAndConvert(spInfo.P2PPublicKey)
+	_, pubKeyRaw, err := bech32.DecodeAndConvert(indexNodeInfo.P2PPublicKey)
 	if err != nil {
 		utils.ErrorLog("Error when trying to decode P2P pubKey bech32", err)
 		return false
@@ -341,11 +341,11 @@ func verifySignature(reqBody *StreamReqBody, sliceHash string, data []byte) bool
 
 func sendReportStreamResult(body *StreamReqBody, sliceHash string, isPP bool) {
 	event.SendReportStreamingResult(&protos.RspDownloadSlice{
-		SliceInfo:     &protos.SliceOffsetInfo{SliceHash: sliceHash},
-		FileHash:      body.FileHash,
-		WalletAddress: setting.WalletAddress,
-		P2PAddress:    body.P2PAddress,
-		TaskId:        body.SliceInfo.TaskId,
-		SpP2PAddress:  body.SpP2pAddress,
+		SliceInfo:           &protos.SliceOffsetInfo{SliceHash: sliceHash},
+		FileHash:            body.FileHash,
+		WalletAddress:       setting.WalletAddress,
+		P2PAddress:          body.P2PAddress,
+		TaskId:              body.SliceInfo.TaskId,
+		IndexNodeP2PAddress: body.IndexNodeP2pAddress,
 	}, isPP)
 }

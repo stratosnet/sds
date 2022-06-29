@@ -12,28 +12,28 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-type OptimalSp struct {
+type OptimalIndexNode struct {
 	networkAddr string
 	mtx         sync.Mutex
 }
 
 var (
-	optSp               = &OptimalSp{}
-	minReloadSpInterval = 3
-	maxReloadSpInterval = 600
-	retry               = 0
+	optIndexNode               = &OptimalIndexNode{}
+	minReloadIndexNodeInterval = 3
+	maxReloadIndexNodeInterval = 600
+	retry                      = 0
 )
 
 func ListenOffline() {
 	for {
 		select {
 		case offline := <-client.OfflineChan:
-			if offline.IsSp {
+			if offline.IsIndexNode {
 				if setting.IsPP {
-					utils.DebugLogf("SP %v is offline", offline.NetworkAddress)
+					utils.DebugLogf("IndexNode %v is offline", offline.NetworkAddress)
 					setting.IsStartMining = false
-					reloadConnectSP()
-					GetSPList()
+					reloadConnectIndexNode()
+					GetIndexNodeList()
 				}
 			} else {
 				peerList.PPDisconnected("", offline.NetworkAddress)
@@ -43,10 +43,10 @@ func ListenOffline() {
 	}
 }
 
-func reloadConnectSP() {
-	newConnection, err := ConnectToSP()
+func reloadConnectIndexNode() {
+	newConnection, err := ConnectToIndexNode()
 	if newConnection {
-		RegisterToSP(true)
+		RegisterToIndexNode(true)
 		retry = 0
 		if setting.IsStartMining {
 			StartMining()
@@ -55,63 +55,63 @@ func reloadConnectSP() {
 
 	if err != nil {
 		//calc next reload interval
-		reloadSpInterval := minReloadSpInterval * int(math.Ceil(math.Pow(10, float64(retry))))
-		reloadSpInterval = int(math.Min(float64(reloadSpInterval), float64(maxReloadSpInterval)))
-		utils.Logf("couldn't connect to SP node. Retrying in %v seconds...", reloadSpInterval)
+		reloadIndexNodeInterval := minReloadIndexNodeInterval * int(math.Ceil(math.Pow(10, float64(retry))))
+		reloadIndexNodeInterval = int(math.Min(float64(reloadIndexNodeInterval), float64(maxReloadIndexNodeInterval)))
+		utils.Logf("couldn't connect to IndexNode node. Retrying in %v seconds...", reloadIndexNodeInterval)
 		retry += 1
-		ppPeerClock.AddJobWithInterval(time.Duration(reloadSpInterval)*time.Second, reloadConnectSP)
+		ppPeerClock.AddJobWithInterval(time.Duration(reloadIndexNodeInterval)*time.Second, reloadConnectIndexNode)
 	}
 }
 
-// ConnectToSP Checks if there is a connection to an SP node. If it doesn't, it attempts to create one with a random SP node.
-func ConnectToSP() (newConnection bool, err error) {
-	if client.SPConn != nil {
+// ConnectToIndexNode Checks if there is a connection to an IndexNode node. If it doesn't, it attempts to create one with a random IndexNode node.
+func ConnectToIndexNode() (newConnection bool, err error) {
+	if client.IndexNodeConn != nil {
 		return false, nil
 	}
-	if len(setting.Config.SPList) == 0 {
-		return false, errors.New("there are no SP nodes in the config file")
+	if len(setting.Config.IndexNodeList) == 0 {
+		return false, errors.New("there are no Index Node nodes in the config file")
 	}
 
-	if optSpNetworkAddr, err := GetOptSPAndClear(); err == nil {
-		utils.DebugLog("reconnect to detected optimal SP ", optSpNetworkAddr)
-		client.SPConn = client.NewClient(optSpNetworkAddr, false)
-		if client.SPConn != nil {
+	if optIndexNodeNetworkAddr, err := GetOptIndexNodeAndClear(); err == nil {
+		utils.DebugLog("reconnect to detected optimal Index Node", optIndexNodeNetworkAddr)
+		client.IndexNodeConn = client.NewClient(optIndexNodeNetworkAddr, false)
+		if client.IndexNodeConn != nil {
 			return true, nil
 		}
 	}
-	// Select a random SP node to connect to
-	spListOrder := rand.Perm(len(setting.Config.SPList))
-	for _, index := range spListOrder {
-		selectedSP := setting.Config.SPList[index]
-		client.SPConn = client.NewClient(selectedSP.NetworkAddress, false)
-		if client.SPConn != nil {
+	// Select a random Index node to connect to
+	indexNodeListOrder := rand.Perm(len(setting.Config.IndexNodeList))
+	for _, index := range indexNodeListOrder {
+		selectedIndexNode := setting.Config.IndexNodeList[index]
+		client.IndexNodeConn = client.NewClient(selectedIndexNode.NetworkAddress, false)
+		if client.IndexNodeConn != nil {
 			return true, nil
 		}
 	}
 
-	return false, errors.New("couldn't connect to any SP node")
+	return false, errors.New("couldn't connect to any Index Node node")
 }
 
-// ConnectToOptSP connect if there is a detected optimal SP node.
-func ConfirmOptSP(spNetworkAddr string) {
-	utils.DebugLog("current sp ", client.SPConn.GetName(), " to be altered to new optimal SP ", spNetworkAddr)
-	if client.SPConn.GetName() == spNetworkAddr {
-		utils.DebugLog("optimal SP already in connection, won't change SP")
+// ConnectToOptIndexNode connect if there is a detected optimal Index Node node.
+func ConfirmOptIndexNode(IndexNodeNetworkAddr string) {
+	utils.DebugLog("current Index Node ", client.IndexNodeConn.GetName(), " to be altered to new optimal Index Node ", IndexNodeNetworkAddr)
+	if client.IndexNodeConn.GetName() == IndexNodeNetworkAddr {
+		utils.DebugLog("optimal Index Node already in connection, won't change Index Node")
 		return
 	}
-	setOptSP(spNetworkAddr)
-	client.SPConn.Close()
+	setOptIndexNode(IndexNodeNetworkAddr)
+	client.IndexNodeConn.Close()
 }
 
-func GetOptSPAndClear() (string, error) {
-	if len(optSp.networkAddr) > 0 {
-		optSpNetworkAddr := optSp.networkAddr
-		optSp = &OptimalSp{}
-		return optSpNetworkAddr, nil
+func GetOptIndexNodeAndClear() (string, error) {
+	if len(optIndexNode.networkAddr) > 0 {
+		optIndexNodeNetworkAddr := optIndexNode.networkAddr
+		optIndexNode = &OptimalIndexNode{}
+		return optIndexNodeNetworkAddr, nil
 	}
-	return "", errors.New("optimal SP not detected")
+	return "", errors.New("optimal Index Node not detected")
 }
 
-func setOptSP(spNetworkAddr string) {
-	optSp.networkAddr = spNetworkAddr
+func setOptIndexNode(indexNodeNetworkAddr string) {
+	optIndexNode.networkAddr = indexNodeNetworkAddr
 }

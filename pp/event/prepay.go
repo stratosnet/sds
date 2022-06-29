@@ -20,7 +20,7 @@ func Prepay(amount, fee, gas int64) error {
 		return err
 	}
 	utils.Log("Sending prepay message to SP! " + prepayReq.WalletAddress)
-	peers.SendMessageToSPServer(prepayReq, header.ReqPrepay)
+	peers.SendMessageToIndexNodeServer(prepayReq, header.ReqPrepay)
 	return nil
 }
 

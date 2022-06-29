@@ -8,7 +8,7 @@ import (
 )
 
 type TransferTask struct {
-	FromSp           bool
+	FromIndexNode    bool
 	DeleteOrigin     bool
 	PpInfo           *protos.PPBaseInfo
 	SliceStorageInfo *protos.SliceStorageInfo

@@ -17,7 +17,7 @@ import (
 // GetAllShareLink GetShareLink
 func GetAllShareLink(reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(requests.ReqShareLinkData(reqID), header.ReqShareLink)
+		peers.SendMessageDirectToIndexNodeOrViaPP(requests.ReqShareLinkData(reqID), header.ReqShareLink)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -27,7 +27,7 @@ func GetAllShareLink(reqID string, w http.ResponseWriter) {
 // GetReqShareFile GetReqShareFile
 func GetReqShareFile(reqID, fileHash, pathHash string, shareTime int64, isPrivate bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(requests.ReqShareFileData(reqID, fileHash, pathHash, isPrivate, shareTime), header.ReqShareFile)
+		peers.SendMessageDirectToIndexNodeOrViaPP(requests.ReqShareFileData(reqID, fileHash, pathHash, isPrivate, shareTime), header.ReqShareFile)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -37,7 +37,7 @@ func GetReqShareFile(reqID, fileHash, pathHash string, shareTime int64, isPrivat
 // DeleteShare DeleteShare
 func DeleteShare(shareID, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(requests.ReqDeleteShareData(reqID, shareID), header.ReqDeleteShare)
+		peers.SendMessageDirectToIndexNodeOrViaPP(requests.ReqDeleteShareData(reqID, shareID), header.ReqDeleteShare)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -48,7 +48,7 @@ func DeleteShare(shareID, reqID string, w http.ResponseWriter) {
 func ReqShareLink(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
 	utils.DebugLog("ReqShareLinkReqShareLinkReqShareLinkReqShareLink")
-	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToIndexNodeServer(core.MessageFromContext(ctx))
 }
 
 // RspShareLink
@@ -81,7 +81,7 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 // ReqShareFile
 func ReqShareFile(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
-	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToIndexNodeServer(core.MessageFromContext(ctx))
 }
 
 // RspShareFile
@@ -105,8 +105,8 @@ func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 
 // ReqDeleteShare
 func ReqDeleteShare(ctx context.Context, conn core.WriteCloser) {
-	// pp send to SP
-	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
+	// pp send to Index Node
+	peers.TransferSendMessageToIndexNodeServer(core.MessageFromContext(ctx))
 }
 
 // RspDeleteShare
@@ -131,7 +131,7 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 func GetShareFile(keyword, sharePassword, saveAs, reqID string, w http.ResponseWriter) {
 	utils.DebugLog("GetShareFile for file ", keyword)
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(requests.ReqGetShareFileData(keyword, sharePassword, saveAs, reqID), header.ReqGetShareFile)
+		peers.SendMessageDirectToIndexNodeOrViaPP(requests.ReqGetShareFileData(keyword, sharePassword, saveAs, reqID), header.ReqGetShareFile)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -140,9 +140,9 @@ func GetShareFile(keyword, sharePassword, saveAs, reqID string, w http.ResponseW
 
 // ReqGetShareFile
 func ReqGetShareFile(ctx context.Context, conn core.WriteCloser) {
-	// pp send to SP
+	// pp send to Index Node
 	utils.DebugLog("ReqGetShareFile: transferring message to SP server")
-	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToIndexNodeServer(core.MessageFromContext(ctx))
 }
 
 // RspGetShareFile
@@ -174,7 +174,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			Owner: fileInfo.OwnerWalletAddress,
 			Hash:  fileInfo.FileHash,
 		}.String()
-		peers.SendMessageDirectToSPOrViaPP(requests.ReqFileStorageInfoData(filePath, "", "", setting.WalletAddress,
+		peers.SendMessageDirectToIndexNodeOrViaPP(requests.ReqFileStorageInfoData(filePath, "", "", setting.WalletAddress,
 			saveAs, false, target.ShareRequest), header.ReqFileStorageInfo)
 	}
 }

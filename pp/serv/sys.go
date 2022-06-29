@@ -73,9 +73,9 @@ func dumpTrafficLog() {
 		clientInbound += client.PPConn.GetInboundAndReset()
 		clientOutbound += client.PPConn.GetOutboundAndReset()
 	}
-	if client.SPConn != nil {
-		clientInbound += client.SPConn.GetInboundAndReset()
-		clientOutbound += client.SPConn.GetOutboundAndReset()
+	if client.IndexNodeConn != nil {
+		clientInbound += client.IndexNodeConn.GetInboundAndReset()
+		clientOutbound += client.IndexNodeConn.GetOutboundAndReset()
 	}
 
 	client.UpConnMap.Range(func(k, v interface{}) bool {
@@ -162,9 +162,9 @@ func monitor() {
 		r += client.PPConn.GetSecondReadFlow()
 		w += client.PPConn.GetSecondWriteFlow()
 	}
-	if client.SPConn != nil {
-		r += client.SPConn.GetSecondReadFlow()
-		w += client.SPConn.GetSecondWriteFlow()
+	if client.IndexNodeConn != nil {
+		r += client.IndexNodeConn.GetSecondReadFlow()
+		w += client.IndexNodeConn.GetSecondWriteFlow()
 	}
 
 	client.UpConnMap.Range(func(k, v interface{}) bool {

@@ -25,30 +25,30 @@ const (
 func InitPPList() {
 	pplist, _, _ := peerList.GetPPList()
 	if len(pplist) == 0 {
-		GetPPListFromSP()
+		GetPPListFromIndexNode()
 	} else {
 		if success := ConnectToGatewayPP(pplist); !success {
-			GetPPListFromSP()
+			GetPPListFromIndexNode()
 			return
 		}
-		if setting.IsAuto && setting.State == types.PP_ACTIVE && !setting.IsLoginToSP {
-			RegisterToSP(true)
+		if setting.IsAuto && setting.State == types.PP_ACTIVE && !setting.IsLoginToIndexNode {
+			RegisterToIndexNode(true)
 		}
 	}
 }
 
-func StartStatusReportToSP() {
-	utils.DebugLog("Status will be reported to SP while mining")
+func StartStatusReportToIndexNode() {
+	utils.DebugLog("Status will be reported to Index Node while mining")
 	// trigger first report at time-0 immediately
 	ReportNodeStatus()
 	// trigger consecutive reports with interval
 	ppPeerClock.AddJobRepeat(time.Second*setting.NodeReportIntervalSec, 0, ReportNodeStatus)
 }
 
-// GetPPListFromSP node get ppList from sp
-func GetPPListFromSP() {
-	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetPPList)")
-	SendMessageToSPServer(requests.ReqGetPPlistData(), header.ReqGetPPList)
+// GetPPListFromIndexNode node get ppList from IndexNode
+func GetPPListFromIndexNode() {
+	utils.DebugLog("SendMessage(client.IndexNodeConn, req, header.ReqGetPPList)")
+	SendMessageToIndexNodeServer(requests.ReqGetPPlistData(), header.ReqGetPPList)
 }
 
 func ConnectToGatewayPP(pplist []*types.PeerInfo) bool {
@@ -82,7 +82,7 @@ func ConnectToGatewayPP(pplist []*types.PeerInfo) bool {
 //		future = RELOAD_PP_LIST_INTERVAL_SHORT
 //	}
 //	utils.DebugLog("scheduled to get pp-list after: ", future.Seconds(), "second")
-//	ppPeerClock.AddJobWithInterval(future, GetPPListFromSP)
+//	ppPeerClock.AddJobWithInterval(future, GetPPListFromIndexNode)
 //}
 
 //GetPPList will just get the list from

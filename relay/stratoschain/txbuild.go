@@ -47,19 +47,19 @@ func BuildVolumeReportMsg(traffic []*Traffic, reporterAddress, reporterOwnerAddr
 	return volumeReportMsg, signBytes, nil
 }
 
-func BuildSlashingResourceNodeMsg(spP2pAddress, spWalletAddress []utiltypes.Address, ppP2pAddress, ppWalletAddress utiltypes.Address, slashingAmount *big.Int, suspend bool) sdktypes.Msg {
-	var spP2pAddressSdk []types.SdsAddress
-	for _, p2pAddress := range spP2pAddress {
-		spP2pAddressSdk = append(spP2pAddressSdk, p2pAddress[:])
+func BuildSlashingResourceNodeMsg(metaNodeP2pAddress, spWalletAddress []utiltypes.Address, ppP2pAddress, ppWalletAddress utiltypes.Address, slashingAmount *big.Int, suspend bool) sdktypes.Msg {
+	var metaNodeP2pAddressSdk []types.SdsAddress
+	for _, p2pAddress := range metaNodeP2pAddress {
+		metaNodeP2pAddressSdk = append(metaNodeP2pAddressSdk, p2pAddress[:])
 	}
-	var spWalletAddressSdk []sdktypes.AccAddress
+	var metaNodeWalletAddressSdk []sdktypes.AccAddress
 	for _, walletAddress := range spWalletAddress {
-		spWalletAddressSdk = append(spWalletAddressSdk, walletAddress[:])
+		metaNodeWalletAddressSdk = append(metaNodeWalletAddressSdk, walletAddress[:])
 	}
 
 	return pottypes.NewMsgSlashingResourceNode(
-		spP2pAddressSdk,
-		spWalletAddressSdk,
+		metaNodeP2pAddressSdk,
+		metaNodeWalletAddressSdk,
 		ppP2pAddress[:],
 		ppWalletAddress[:],
 		sdktypes.NewIntFromBigInt(slashingAmount),

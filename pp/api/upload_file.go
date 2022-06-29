@@ -81,7 +81,7 @@ func uploadFile(w http.ResponseWriter, request *http.Request) {
 
 		if isFile {
 			f := requests.RequestUploadFileData(path, sdPath, "", setting.WalletAddress, false, false, false)
-			go peers.SendMessageToSPServer(f, header.ReqUploadFile)
+			go peers.SendMessageToIndexNodeServer(f, header.ReqUploadFile)
 			taskID := uuid.New().String()
 			r := &uploadFileResult{
 				FailInfo: "",
@@ -113,7 +113,7 @@ func uploadFile(w http.ResponseWriter, request *http.Request) {
 			TODO change this func to not directly send file into chan, because total file size needs to be calculated first
 
 		*/
-		file.GetAllFiles(path) // this func should be per connection for sp
+		file.GetAllFiles(path) // this func should be per connection for index node
 
 		dir := filepath.Dir(path)
 		for {
@@ -152,7 +152,7 @@ func uploadFile(w http.ResponseWriter, request *http.Request) {
 				})
 				setting.UploadTaskIDMap.Store(r.TaskID, f.FileInfo.FileHash)
 				resultArr = append(resultArr, r)
-				go peers.SendMessageToSPServer(f, header.ReqUploadFile)
+				go peers.SendMessageToIndexNodeServer(f, header.ReqUploadFile)
 				utils.DebugLog("result>>>>>>>>>>>>>>", resultArr)
 
 			default:

@@ -27,7 +27,7 @@ func ReqTransferNotice(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	utils.DebugLog("target = ", target)
-	if target.FromSp { // if msg from SP, then self is new storage PP
+	if target.FromIndexNode { // if msg from SP, then self is new storage PP
 		utils.DebugLog("if msg from SP, then self is new storage PP")
 		// response to SP first, check whether has capacity to store
 		if target.StoragePpInfo.P2PAddress == setting.P2PAddress {
@@ -49,7 +49,7 @@ func ReqTransferNotice(ctx context.Context, conn core.WriteCloser) {
 	// if msg from PP, then self is the original storage PP, transfer file to new storage PP
 	utils.DebugLog("if msg from PP, then self is the original storage PP, transfer file to new storage PP")
 	// check task with SP first
-	peers.SendMessageToSPServer(requests.ReqValidateTransferCerData(&target), header.ReqValidateTransferCer)
+	peers.SendMessageToIndexNodeServer(requests.ReqValidateTransferCerData(&target), header.ReqValidateTransferCer)
 	// store the task
 	task.TransferTaskMap[target.TransferCer] = &target
 	// store transfer target register peer wallet address
@@ -58,7 +58,7 @@ func ReqTransferNotice(ctx context.Context, conn core.WriteCloser) {
 
 // rspTransferNotice
 func rspTransferNotice(agree bool, cer, spP2pAddress string) {
-	peers.SendMessageToSPServer(requests.RspTransferNoticeData(agree, cer, spP2pAddress), header.RspTransferNotice)
+	peers.SendMessageToIndexNodeServer(requests.RspTransferNoticeData(agree, cer, spP2pAddress), header.RspTransferNotice)
 }
 
 // RspValidateTransferCer  SP-PP OR PP-PP
@@ -75,7 +75,7 @@ func RspValidateTransferCer(ctx context.Context, conn core.WriteCloser) {
 			return
 		}
 		//if cert from SP, then self is the original PP
-		if tTask.FromSp {
+		if tTask.FromIndexNode {
 			// task finished, clean
 			delete(task.TransferTaskMap, target.TransferCer)
 			return
@@ -103,7 +103,7 @@ func RspValidateTransferCer(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	// if transfer cert from SP, then self is the transfer target
-	if tTask.FromSp {
+	if tTask.FromIndexNode {
 		utils.DebugLog("if transfer cert from SP, then self is the transfer target ")
 
 		peers.SendMessage(conn, requests.ReqTransferDownloadData(target.TransferCer, target.SpP2PAddress), header.ReqTransferDownload)
@@ -135,7 +135,7 @@ func ReqReportTransferResult(transferCer, spP2pAddress string, result bool, orig
 		}
 	}
 
-	if tTask.FromSp {
+	if tTask.FromIndexNode {
 		req.IsNew = true
 		req.NewPp = &protos.PPBaseInfo{
 			P2PAddress:     setting.P2PAddress,
@@ -145,7 +145,7 @@ func ReqReportTransferResult(transferCer, spP2pAddress string, result bool, orig
 		req.IsNew = false
 		req.NewPp = tTask.StoragePpInfo
 	}
-	peers.SendMessageToSPServer(req, header.ReqReportTransferResult)
+	peers.SendMessageToIndexNodeServer(req, header.ReqReportTransferResult)
 
 	//todo: whether clean task after get report resp or not.  if not get report, whether add timeout mechanism
 }
@@ -182,7 +182,7 @@ func ReqFileSliceBackupNotice(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	signMessage := target.FileHash + "#" + target.SliceStorageInfo.SliceHash + "#" + target.SpP2PAddress
+	signMessage := target.FileHash + "#" + target.SliceStorageInfo.SliceHash + "#" + target.IndexNodeP2PAddress
 	if !ed25519.Verify(target.Pubkey, []byte(signMessage), target.Sign) {
 		utils.ErrorLog("Invalid slice backup notice signature")
 		return
@@ -194,7 +194,7 @@ func ReqFileSliceBackupNotice(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	tTask := task.TransferTask{
-		FromSp:           true,
+		FromIndexNode:    true,
 		DeleteOrigin:     target.DeleteOrigin,
 		PpInfo:           target.PpInfo,
 		SliceStorageInfo: target.SliceStorageInfo,
@@ -223,7 +223,7 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		Status:         types.PEER_CONNECTED,
 	})
 	tTask := task.TransferTask{
-		FromSp:           false,
+		FromIndexNode:    false,
 		DeleteOrigin:     target.DeleteOrigin,
 		PpInfo:           target.OriginalPp,
 		SliceStorageInfo: target.SliceStorageInfo,
@@ -242,11 +242,11 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	for {
 		if dataEnd >= (sliceDataLen + 1) {
 			peers.SendMessage(conn, requests.RspTransferDownload(sliceData[dataStart:], target.TaskId, sliceHash,
-				target.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
+				target.IndexNodeP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 			return
 		}
 		peers.SendMessage(conn, requests.RspTransferDownload(sliceData[dataStart:dataEnd], target.TaskId, sliceHash,
-			target.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
+			target.IndexNodeP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 		dataStart += setting.MAXDATA
 		dataEnd += setting.MAXDATA
 	}
@@ -260,8 +260,8 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	if task.SaveTransferData(&target) {
-		SendReportBackupSliceResult(target.TaskId, target.SliceHash, target.SpP2PAddress, true, false)
-		peers.SendMessage(conn, requests.RspTransferDownloadResultData(target.TaskId, target.SliceHash, target.SpP2PAddress), header.RspTransferDownloadResult)
+		SendReportBackupSliceResult(target.TaskId, target.SliceHash, target.IndexNodeP2PAddress, true, false)
+		peers.SendMessage(conn, requests.RspTransferDownloadResultData(target.TaskId, target.SliceHash, target.IndexNodeP2PAddress), header.RspTransferDownloadResult)
 	}
 }
 
@@ -275,7 +275,7 @@ func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
 
 	isSuccessful := target.Result.State == protos.ResultState_RES_SUCCESS
 	if !isSuccessful {
-		SendReportBackupSliceResult(target.TaskId, target.SliceHash, target.SpP2PAddress, isSuccessful, false)
+		SendReportBackupSliceResult(target.TaskId, target.SliceHash, target.IndexNodeP2PAddress, isSuccessful, false)
 		return
 	}
 
@@ -288,28 +288,28 @@ func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
 			utils.ErrorLog("Fail to delete original slice ", err)
 		}
 	}
-	SendReportBackupSliceResult(target.TaskId, target.SliceHash, target.SpP2PAddress, isSuccessful, deleteOrigin)
+	SendReportBackupSliceResult(target.TaskId, target.SliceHash, target.IndexNodeP2PAddress, isSuccessful, deleteOrigin)
 }
 
-func SendReportBackupSliceResult(taskId, sliceHash, spP2pAddress string, result bool, originDeleted bool) {
+func SendReportBackupSliceResult(taskId, sliceHash, indexNodeP2PAddress string, result bool, originDeleted bool) {
 	tTask, ok := task.GetTransferTask(taskId, sliceHash)
 	if !ok {
 		return
 	}
 	req := &protos.ReqReportBackupSliceResult{
-		TaskId:        taskId,
-		FileHash:      tTask.FileHash,
-		SliceHash:     tTask.SliceStorageInfo.SliceHash,
-		BackupSuccess: result,
-		IsReceiver:    tTask.FromSp,
-		OriginDeleted: originDeleted,
-		SliceNumber:   tTask.SliceNum,
-		SliceSize:     tTask.SliceStorageInfo.SliceSize,
-		PpInfo:        &protos.PPBaseInfo{P2PAddress: setting.P2PAddress, WalletAddress: setting.WalletAddress},
-		SpP2PAddress:  spP2pAddress,
+		TaskId:              taskId,
+		FileHash:            tTask.FileHash,
+		SliceHash:           tTask.SliceStorageInfo.SliceHash,
+		BackupSuccess:       result,
+		IsReceiver:          tTask.FromIndexNode,
+		OriginDeleted:       originDeleted,
+		SliceNumber:         tTask.SliceNum,
+		SliceSize:           tTask.SliceStorageInfo.SliceSize,
+		PpInfo:              &protos.PPBaseInfo{P2PAddress: setting.P2PAddress, WalletAddress: setting.WalletAddress},
+		IndexNodeP2PAddress: indexNodeP2PAddress,
 	}
 
-	peers.SendMessageToSPServer(req, header.ReqReportBackupSliceResult)
+	peers.SendMessageToIndexNodeServer(req, header.ReqReportBackupSliceResult)
 }
 
 // RspReportBackupSliceResult

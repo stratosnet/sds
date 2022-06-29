@@ -38,12 +38,12 @@ func GetMessageHeader(tag int16, varsion uint16, length uint32, cmd string, reqI
 
 //cmd, 8 bytes string, exceeded will be truncate
 const (
-	ReqGetPPList   = "ReqGPPL" // request to get pp list
-	RspGetPPList   = "RspGPPL" // response to get pp list
-	ReqGetSPList   = "ReqGSPL" // request to get sp list
-	RspGetSPList   = "RspGSPL" // response to get sp list
-	ReqGetPPStatus = "ReqGPPS" // request to get pp status
-	RspGetPPStatus = "RspGPPS" // response to get pp status
+	ReqGetPPList        = "ReqGPPL"   // request to get pp list
+	RspGetPPList        = "RspGPPL"   // response to get pp list
+	ReqGetIndexNodeList = "ReqGIDXNL" // request to get sp list
+	RspGetIndexNodeList = "RspGIDXNL" // response to get sp list
+	ReqGetPPStatus      = "ReqGPPS"   // request to get pp status
+	RspGetPPStatus      = "RspGPPS"   // response to get pp status
 
 	ReqGetWalletOz = "ReqGOz" // request to get wallet ozone
 	RspGetWalletOz = "RspGOz" // response to get wallet ozone
@@ -156,7 +156,7 @@ const (
 	ReqLatencyCheck = "ReqLatencyCheck"
 	RspLatencyCheck = "RspLatencyCheck"
 	// test sp latency
-	ReqSpLatencyCheck = "ReqSpLatencyCheck"
+	ReqIndexNodeLatencyCheck = "ReqIndexNodeLatencyCheck"
 
 	// report node status
 	ReqReportNodeStatus = "ReqRNS"

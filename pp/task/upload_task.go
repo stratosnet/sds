@@ -20,14 +20,14 @@ var urwmutex sync.RWMutex
 
 // UploadSliceTask
 type UploadSliceTask struct {
-	TaskID          string
-	FileHash        string
-	SliceNumAddr    *protos.SliceNumAddr // upload PP address and sliceNumber
-	SliceOffsetInfo *protos.SliceOffsetInfo
-	FileCRC         uint32
-	Data            []byte
-	SliceTotalSize  uint64
-	SpP2pAddress    string
+	TaskID              string
+	FileHash            string
+	SliceNumAddr        *protos.SliceNumAddr // upload PP address and sliceNumber
+	SliceOffsetInfo     *protos.SliceOffsetInfo
+	FileCRC             uint32
+	Data                []byte
+	SliceTotalSize      uint64
+	IndexNodeP2pAddress string
 }
 
 // MAXSLICE max slice number that can upload concurrently for a single file
@@ -65,15 +65,15 @@ func CleanUpConnMap(fileHash string) {
 }
 
 // GetUploadSliceTask
-func GetUploadSliceTask(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string, isVideoStream, isEncrypted bool, fileCRC uint32) *UploadSliceTask {
+func GetUploadSliceTask(pp *protos.SliceNumAddr, fileHash, taskID, indexNodeP2pAddress string, isVideoStream, isEncrypted bool, fileCRC uint32) *UploadSliceTask {
 	if isVideoStream {
-		return GetUploadSliceTaskStream(pp, fileHash, taskID, spP2pAddress, fileCRC)
+		return GetUploadSliceTaskStream(pp, fileHash, taskID, indexNodeP2pAddress, fileCRC)
 	} else {
-		return GetUploadSliceTaskFile(pp, fileHash, taskID, spP2pAddress, isEncrypted, fileCRC)
+		return GetUploadSliceTaskFile(pp, fileHash, taskID, indexNodeP2pAddress, isEncrypted, fileCRC)
 	}
 }
 
-func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string, isEncrypted bool, fileCRC uint32) *UploadSliceTask {
+func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID, indexNodeP2pAddress string, isEncrypted bool, fileCRC uint32) *UploadSliceTask {
 	filePath := file.GetFilePath(fileHash)
 	utils.DebugLogf("sliceNumber %v  offsetStart = %v  offsetEnd = %v", pp.SliceNumber, pp.SliceOffset.SliceOffsetStart, pp.SliceOffset.SliceOffsetEnd)
 	startOffset := pp.SliceOffset.SliceOffsetStart
@@ -115,20 +115,20 @@ func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddr
 	}
 
 	tk := &UploadSliceTask{
-		TaskID:          taskID,
-		FileHash:        fileHash,
-		SliceNumAddr:    pp,
-		SliceOffsetInfo: sl,
-		FileCRC:         fileCRC,
-		Data:            data,
-		SliceTotalSize:  dataSize,
-		SpP2pAddress:    spP2pAddress,
+		TaskID:              taskID,
+		FileHash:            fileHash,
+		SliceNumAddr:        pp,
+		SliceOffsetInfo:     sl,
+		FileCRC:             fileCRC,
+		Data:                data,
+		SliceTotalSize:      dataSize,
+		IndexNodeP2pAddress: indexNodeP2pAddress,
 	}
 	file.SaveTmpSliceData(fileHash, sliceHash, data)
 	return tk
 }
 
-func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string, fileCRC uint32) *UploadSliceTask {
+func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID, indexNodeP2pAddress string, fileCRC uint32) *UploadSliceTask {
 	videoFolder := file.GetVideoTmpFolder(fileHash)
 	videoSliceInfo := file.HlsInfoMap[fileHash]
 	var data []byte
@@ -171,20 +171,20 @@ func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAd
 	}
 	pp.SliceOffset = offset
 	tk := &UploadSliceTask{
-		TaskID:          taskID,
-		FileHash:        fileHash,
-		SliceNumAddr:    SliceNumAddr,
-		SliceOffsetInfo: sl,
-		FileCRC:         fileCRC,
-		Data:            data,
-		SliceTotalSize:  sliceTotalSize,
-		SpP2pAddress:    spP2pAddress,
+		TaskID:              taskID,
+		FileHash:            fileHash,
+		SliceNumAddr:        SliceNumAddr,
+		SliceOffsetInfo:     sl,
+		FileCRC:             fileCRC,
+		Data:                data,
+		SliceTotalSize:      sliceTotalSize,
+		IndexNodeP2pAddress: indexNodeP2pAddress,
 	}
 	file.SaveTmpSliceData(fileHash, sliceHash, data)
 	return tk
 }
 
-func GetReuploadSliceTask(pp *protos.SliceHashAddr, fileHash, taskID, spP2pAddress string) *UploadSliceTask {
+func GetReuploadSliceTask(pp *protos.SliceHashAddr, fileHash, taskID, indexNodeP2pAddress string) *UploadSliceTask {
 	utils.DebugLogf("  fileHash %s sliceNumber %v, sliceHash %s",
 		fileHash, pp.SliceNumber, pp.SliceHash)
 
@@ -215,10 +215,10 @@ func GetReuploadSliceTask(pp *protos.SliceHashAddr, fileHash, taskID, spP2pAddre
 			SliceOffset: pp.SliceOffset,
 			PpInfo:      pp.PpInfo,
 		},
-		SliceOffsetInfo: sl,
-		Data:            data,
-		SliceTotalSize:  dataSize,
-		SpP2pAddress:    spP2pAddress,
+		SliceOffsetInfo:     sl,
+		Data:                data,
+		SliceTotalSize:      dataSize,
+		IndexNodeP2pAddress: indexNodeP2pAddress,
 	}
 	return tk
 }

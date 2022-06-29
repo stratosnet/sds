@@ -21,8 +21,8 @@ func UpdateStake(stakeDelta, fee, gas int64, incrStake bool) error {
 		utils.ErrorLog("Couldn't build update PP stake request: " + err.Error())
 		return err
 	}
-	utils.Log("Sending update stake message to SP! " + updateStakeReq.P2PAddress)
-	peers.SendMessageToSPServer(updateStakeReq, header.ReqUpdateStakePP)
+	utils.Log("Sending update stake message to Index Node! " + updateStakeReq.P2PAddress)
+	peers.SendMessageToIndexNodeServer(updateStakeReq, header.ReqUpdateStakePP)
 	return nil
 }
 

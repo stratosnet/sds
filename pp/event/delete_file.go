@@ -18,7 +18,7 @@ import (
 // DeleteFile
 func DeleteFile(fileHash, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(requests.ReqDeleteFileData(fileHash, reqID), header.ReqDeleteFile)
+		peers.SendMessageDirectToIndexNodeOrViaPP(requests.ReqDeleteFileData(fileHash, reqID), header.ReqDeleteFile)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -27,7 +27,7 @@ func DeleteFile(fileHash, reqID string, w http.ResponseWriter) {
 
 // ReqDeleteFile
 func ReqDeleteFile(ctx context.Context, conn core.WriteCloser) {
-	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToIndexNodeServer(core.MessageFromContext(ctx))
 }
 
 // RspDeleteFile
@@ -47,7 +47,7 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-// ReqDeleteSlice delete slice sp-pp  or pp-p only works if sent from server to client
+// ReqDeleteSlice delete slice indexNode-pp  or pp-p only works if sent from server to client
 func ReqDeleteSlice(ctx context.Context, conn core.WriteCloser) {
 	switch conn.(type) {
 	case *cf.ClientConn:
@@ -73,5 +73,5 @@ func ReqDeleteSlice(ctx context.Context, conn core.WriteCloser) {
 
 // RspDeleteSlice RspDeleteSlice
 func RspDeleteSlice(ctx context.Context, conn core.WriteCloser) {
-	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToIndexNodeServer(core.MessageFromContext(ctx))
 }

@@ -13,47 +13,47 @@ import (
 )
 
 // RspGetPPList
-func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
-	utils.DebugLog("get GetSPList RSP")
-	var target protos.RspGetSPList
+func RspGetIndexNodeList(ctx context.Context, conn core.WriteCloser) {
+	utils.DebugLog("get GetIndexNodeList RSP")
+	var target protos.RspGetIndexNodeList
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-	utils.DebugLog("get GetSPList RSP", target.SpList)
+	utils.DebugLog("get GetIndexNodeList RSP", target.IndexNodeList)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.Log("failed to get any indexing nodes, reloading")
-		peers.ScheduleReloadSPlist(time.Second * 3)
+		peers.ScheduleReloadIndexNodelist(time.Second * 3)
 		return
 	}
 
 	changed := false
-	for _, sp := range target.SpList {
-		existing, ok := setting.SPMap.Load(sp.P2PAddress)
+	for _, indexNode := range target.IndexNodeList {
+		existing, ok := setting.IndexNodeMap.Load(indexNode.P2PAddress)
 		if ok {
-			existingSp := existing.(setting.SPBaseInfo)
-			if sp.P2PPubKey != existingSp.P2PPublicKey || sp.NetworkAddress != existingSp.NetworkAddress {
+			existingIndexNode := existing.(setting.IndexNodeBaseInfo)
+			if indexNode.P2PPubKey != existingIndexNode.P2PPublicKey || indexNode.NetworkAddress != existingIndexNode.NetworkAddress {
 				changed = true
 			}
 		} else {
 			changed = true
 		}
 
-		setting.SPMap.Store(sp.P2PAddress, setting.SPBaseInfo{
-			P2PAddress:     sp.P2PAddress,
-			P2PPublicKey:   sp.P2PPubKey,
-			NetworkAddress: sp.NetworkAddress,
+		setting.IndexNodeMap.Store(indexNode.P2PAddress, setting.IndexNodeBaseInfo{
+			P2PAddress:     indexNode.P2PAddress,
+			P2PPublicKey:   indexNode.P2PPubKey,
+			NetworkAddress: indexNode.NetworkAddress,
 		})
 	}
 	if changed {
-		setting.SPMap.Delete("unknown")
-		setting.Config.SPList = nil
-		setting.SPMap.Range(func(k, v interface{}) bool {
-			sp := v.(setting.SPBaseInfo)
-			setting.Config.SPList = append(setting.Config.SPList, sp)
+		setting.IndexNodeMap.Delete("unknown")
+		setting.Config.IndexNodeList = nil
+		setting.IndexNodeMap.Range(func(k, v interface{}) bool {
+			indexNode := v.(setting.IndexNodeBaseInfo)
+			setting.Config.IndexNodeList = append(setting.Config.IndexNodeList, indexNode)
 			return true
 		})
 		if err := utils.WriteTomlConfig(setting.Config, setting.ConfigPath); err != nil {
-			utils.ErrorLog("Couldn't write config with updated SP list to yaml file", err)
+			utils.ErrorLog("Couldn't write config with updated Index Node list to yaml file", err)
 		}
 	}
 }

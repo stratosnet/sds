@@ -50,7 +50,7 @@ func GetFileStorageInfo(path, savePath, reqID, walletAddr, saveAs string, isVide
 	}
 
 	req := requests.ReqFileStorageInfoData(path, savePath, reqID, walletAddr, saveAs, isVideoStream, nil)
-	peers.SendMessageDirectToSPOrViaPP(req, header.ReqFileStorageInfo)
+	peers.SendMessageDirectToIndexNodeOrViaPP(req, header.ReqFileStorageInfo)
 }
 
 func ClearFileInfoAndDownloadTask(fileHash string, w http.ResponseWriter) {
@@ -215,13 +215,13 @@ func GetSliceInfoBySliceNumber(fInfo *protos.RspFileStorageInfo, sliceNumber uin
 	return nil
 }
 
-// ReqFileStorageInfo  P-PP , PP-SP
+// ReqFileStorageInfo  P-PP , PP-IndexNode
 func ReqFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
-	utils.Log("pp get ReqFileStorageInfo directly transfer to SP")
-	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
+	utils.Log("pp get ReqFileStorageInfo directly transfer to IndexNode")
+	peers.TransferSendMessageToIndexNodeServer(core.MessageFromContext(ctx))
 }
 
-// RspFileStorageInfo SP-PP , PP-P
+// RspFileStorageInfo IndexNode-PP , PP-P
 func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	// PP check whether itself is the storage PP, if not transfer
 	utils.Log("get，RspFileStorageInfo")

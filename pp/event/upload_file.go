@@ -38,11 +38,11 @@ func RequestUploadCoverImage(pathStr, reqID string, w http.ResponseWriter) {
 		return
 	}
 	p := requests.RequestUploadFileData(tmpString, "", reqID, setting.WalletAddress, true, false, false)
-	peers.SendMessageToSPServer(p, header.ReqUploadFile)
+	peers.SendMessageToIndexNodeServer(p, header.ReqUploadFile)
 	storeResponseWriter(reqID, w)
 }
 
-// RequestUploadFile request to SP for upload file
+// RequestUploadFile request to Index Node for upload file
 func RequestUploadFile(path, reqID string, isEncrypted bool, _ http.ResponseWriter) {
 	utils.DebugLog("______________path", path)
 	if !setting.CheckLogin() {
@@ -56,7 +56,7 @@ func RequestUploadFile(path, reqID string, isEncrypted bool, _ http.ResponseWrit
 	}
 	if isFile {
 		p := requests.RequestUploadFileData(path, "", reqID, setting.WalletAddress, false, false, isEncrypted)
-		peers.SendMessageToSPServer(p, header.ReqUploadFile)
+		peers.SendMessageToIndexNodeServer(p, header.ReqUploadFile)
 		return
 	}
 
@@ -68,7 +68,7 @@ func RequestUploadFile(path, reqID string, isEncrypted bool, _ http.ResponseWrit
 		case pathString := <-setting.UpChan:
 			utils.DebugLog("path string == ", pathString)
 			p := requests.RequestUploadFileData(pathString, "", reqID, setting.WalletAddress, false, false, isEncrypted)
-			peers.SendMessageToSPServer(p, header.ReqUploadFile)
+			peers.SendMessageToIndexNodeServer(p, header.ReqUploadFile)
 		default:
 			return
 		}
@@ -88,7 +88,7 @@ func RequestUploadStream(path, reqID string, _ http.ResponseWriter) {
 	if isFile {
 		p := requests.RequestUploadFileData(path, "", reqID, setting.WalletAddress, false, true, false)
 		if p != nil {
-			peers.SendMessageToSPServer(p, header.ReqUploadFile)
+			peers.SendMessageToIndexNodeServer(p, header.ReqUploadFile)
 		}
 		return
 	} else {
@@ -109,7 +109,7 @@ func ReqBackupStatus(fileHash string) {
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 	}
-	peers.SendMessageToSPServer(p, header.ReqFileBackupStatus)
+	peers.SendMessageToIndexNodeServer(p, header.ReqFileBackupStatus)
 }
 
 // RspUploadFile response of upload file event
@@ -120,7 +120,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		utils.ErrorLog("unmarshal error")
 		return
 	}
-	// upload file to PP based on the PP info provided by SP
+	// upload file to PP based on the PP info provided by Index Node
 	if target.Result == nil {
 		utils.ErrorLog("target.Result is nil")
 
@@ -202,7 +202,7 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 	task.UploadProgressMap.Store(target.FileHash, p)
 
 	for _, pp := range target.PpList {
-		uploadTask := task.GetReuploadSliceTask(pp, target.FileHash, target.TaskId, target.SpP2PAddress)
+		uploadTask := task.GetReuploadSliceTask(pp, target.FileHash, target.TaskId, target.IndexNodeP2PAddress)
 		if uploadTask != nil {
 			UploadFileSlice(uploadTask, target.Sign)
 		}
@@ -272,7 +272,7 @@ func up(ING *task.UpFileIng, target *protos.RspUploadFile) {
 			}
 			pp := ING.Slices[0]
 			utils.DebugLog("start upload!!!!!", pp.SliceNumber)
-			uploadTask := task.GetUploadSliceTask(pp, ING.FileHash, ING.TaskID, target.SpP2PAddress,
+			uploadTask := task.GetUploadSliceTask(pp, ING.FileHash, ING.TaskID, target.IndexNodeP2PAddress,
 				target.IsVideoStream, target.IsEncrypted, ING.FileCRC)
 			if uploadTask == nil {
 				continue
@@ -299,7 +299,7 @@ func sendUploadFileSlice(target *protos.RspUploadFile) {
 
 	} else {
 		for _, pp := range ING.Slices {
-			uploadTask := task.GetUploadSliceTask(pp, target.FileHash, target.TaskId, target.SpP2PAddress,
+			uploadTask := task.GetUploadSliceTask(pp, target.FileHash, target.TaskId, target.IndexNodeP2PAddress,
 				target.IsVideoStream, target.IsEncrypted, ING.FileCRC)
 			if uploadTask != nil {
 				UploadFileSlice(uploadTask, target.Sign)

@@ -26,7 +26,7 @@ func ReqRegister(ctx context.Context, conn core.WriteCloser) {
 			NetId:          core.NetIDFromContext(ctx),
 			Status:         types.PEER_CONNECTED,
 		})
-		peers.TransferSendMessageToSPServer(requests.ReqRegisterDataTR(&target))
+		peers.TransferSendMessageToIndexNodeServer(requests.ReqRegisterDataTR(&target))
 
 		// IPProt := strings.Split(target.Address.NetworkAddress, ":")
 		// ip := ""
@@ -45,7 +45,7 @@ func ReqRegister(ctx context.Context, conn core.WriteCloser) {
 		// 		NetworkAddress: conn.(*core.ServerConn).GetIP() + ":" + port,
 		// 	}
 		// 	utils.DebugLog("req", req)
-		// 	SendMessageToSPServer(&req, header.ReqRegister)
+		// 	SendMessageToIndexNodeServer(&req, header.ReqRegister)
 		// } else {
 		// 	// transfer to SP
 		// 	transferSendMessageToSPServer(reqRegisterDataTR(&target))
@@ -77,7 +77,7 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 
 	utils.Log("Register successful", target.Result.Msg)
 	setting.IsLoad = true
-	setting.IsLoginToSP = true
+	setting.IsLoginToIndexNode = true
 	utils.DebugLog("@@@@@@@@@@@@@@@@@@@@@@@@@@@@", client.GetConnectionName(conn))
 	setting.IsPP = target.IsPP
 	if !setting.IsPP {
@@ -107,16 +107,16 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 	}
 	setting.IsStartMining = true
 
-	newConnection, err := peers.ConnectToSP()
+	newConnection, err := peers.ConnectToIndexNode()
 	if err != nil {
 		utils.ErrorLog(err)
 		return
 	}
 	if newConnection {
-		peers.RegisterToSP(true)
+		peers.RegisterToIndexNode(true)
 	}
 
-	utils.DebugLog("Start reporting node status to SP")
+	utils.DebugLog("Start reporting node status to Index Node")
 	// trigger 1 stat report immediately
 	peers.ReportNodeStatus()
 }

@@ -10,7 +10,7 @@ import (
 
 var IsPP = false
 
-var IsLoginToSP = false
+var IsLoginToIndexNode = false
 
 var State uint32 = ppTypes.PP_INACTIVE
 
@@ -35,7 +35,7 @@ var P2PPublicKey []byte
 
 var P2PPrivateKey []byte
 
-var SPMap = &sync.Map{}
+var IndexNodeMap = &sync.Map{}
 
 func GetNetworkID() types.NetworkID {
 	return types.NetworkID{

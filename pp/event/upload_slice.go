@@ -55,7 +55,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 			if utils.CalcSliceHash(file.GetSliceData(target.SliceInfo.SliceHash), target.FileHash, target.SliceNumAddr.SliceNumber) == target.SliceInfo.SliceHash {
 				peers.SendMessage(conn, requests.RspUploadFileSliceData(&target), header.RspUploadFileSlice)
 				// report upload result to SP
-				peers.SendMessageToSPServer(requests.ReqReportUploadSliceResultDataPP(&target), header.ReqReportUploadSliceResult)
+				peers.SendMessageToIndexNodeServer(requests.ReqReportUploadSliceResultDataPP(&target), header.ReqReportUploadSliceResult)
 				utils.DebugLog("storage PP report to SP upload task finished: ，", target.SliceInfo.SliceHash)
 			} else {
 				utils.DebugLog("newly stored sliceHash is not equal to target sliceHash!")
@@ -75,7 +75,7 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		utils.DebugLog("******************************************")
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
 			utils.DebugLog("reqReportUploadSliceResultData RspUploadFileSlice")
-			peers.SendMessageToSPServer(requests.ReqReportUploadSliceResultData(&target), header.ReqReportUploadSliceResult)
+			peers.SendMessageToIndexNodeServer(requests.ReqReportUploadSliceResultData(&target), header.ReqReportUploadSliceResult)
 		} else {
 			utils.DebugLog("RspUploadFileSlice ErrorLog")
 			utils.ErrorLog(target.Result.Msg)
@@ -122,7 +122,7 @@ func UploadFileSlice(tk *task.UploadSliceTask, sign []byte) {
 						SliceOffsetEnd:   uint64(dataEnd),
 					},
 				},
-				SpP2pAddress: tk.SpP2pAddress,
+				IndexNodeP2pAddress: tk.IndexNodeP2pAddress,
 			}
 			utils.DebugLog("*****************", newTask.SliceTotalSize)
 			if dataEnd < (tkDataLen + 1) {
@@ -202,6 +202,6 @@ func UploadSpeedOfProgress(ctx context.Context, conn core.WriteCloser) {
 }
 
 func verifyUploadSliceSign(target *protos.ReqUploadFileSlice) bool {
-	return requests.VerifySpSignature(target.SpP2PAddress,
+	return requests.VerifyIndexNodeSignature(target.IndexNodeP2PAddress,
 		[]byte(target.P2PAddress+target.FileHash+header.ReqUploadFileSlice), target.Sign)
 }
