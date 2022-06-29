@@ -36,8 +36,6 @@ import (
 	"github.com/stratosnet/sds/utils"
 	//"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	types2 "github.com/stratosnet/stratos-chain/types"
-
 	//"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	utilsecp256k1 "github.com/stratosnet/sds/utils/crypto/secp256k1"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
@@ -78,10 +76,10 @@ func FetchAccountInfo(address string) (*authtypes.BaseAccount, error) {
 	}
 
 	//var account authtypes.BaseAccount
-	var account types2.EthAccount
+	var account authtypes.BaseAccount
 	err = authtypes.ModuleCdc.UnmarshalJSON(responseResult, &account)
 	//err = account.Unmarshal(responseResult)
-	return account.BaseAccount, err
+	return &account, err
 }
 
 func buildAndSignStdTxNew(protoConfig client.TxConfig, txBuilder client.TxBuilder, token, chainId, memo string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas, height int64) ([]byte, error) {
