@@ -19,7 +19,7 @@ require (
 	github.com/cosmos/cosmos-sdk v0.45.4
 	github.com/cosmos/go-bip39 v1.0.0
 	github.com/deckarep/golang-set v1.8.0
-	github.com/ethereum/go-ethereum v1.10.16 // indirect
+	github.com/ethereum/go-ethereum v1.10.16
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.6.0
@@ -39,7 +39,7 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.4.0
-	github.com/stratosnet/stratos-chain v0.6.3-0.20220318143013-31934fedd96c
+	github.com/stratosnet/stratos-chain v0.6.3-0.20220628235628-600cacd2a288
 	github.com/tendermint/tendermint v0.34.19
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
