@@ -59,7 +59,7 @@ func (u UnsignedMsgBytes) FromBytes() (UnsignedMsg, error) {
 		msg := registertypes.MsgCreateMetaNode{}
 		err = relay.Cdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = &msg
-	case "meta_node_reg_vote":
+	case "meta_node_registration_vote":
 		msg := registertypes.MsgMetaNodeRegistrationVote{}
 		err = relay.Cdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = &msg
