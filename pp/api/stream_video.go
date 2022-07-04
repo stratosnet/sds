@@ -325,7 +325,7 @@ func verifySignature(reqBody *StreamReqBody, sliceHash string, data []byte) bool
 	}
 
 	p2pPubKey := tmed25519.PubKey{}
-	err = relay.Cdc.Unmarshal(pubKeyRaw, &p2pPubKey)
+	err = relay.Cdc.Amino.UnmarshalBinaryBare(pubKeyRaw, &p2pPubKey)
 
 	if err != nil {
 		utils.ErrorLog("Error when trying to read P2P pubKey ed25519 binary", err)
