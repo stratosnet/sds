@@ -21,9 +21,10 @@ import (
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/relay"
+	//"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/utils"
-	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
+	//tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
+	utiled25519 "github.com/stratosnet/sds/utils/crypto/ed25519"
 )
 
 func ReqRegisterData() *protos.ReqRegister {
@@ -732,13 +733,7 @@ func VerifySpSignature(spP2PAddress string, message, sign []byte) bool {
 		return false
 	}
 
-	p2pPubKey := tmed25519.PubKey{}
-	err = relay.Cdc.Amino.UnmarshalBinaryBare(pubKeyRaw, &p2pPubKey)
-
-	if err != nil {
-		utils.ErrorLog("Error when trying to read P2P pubKey ed25519 binary", err)
-		return false
-	}
+	p2pPubKey := utiled25519.PubKeyBytesToPubKey(pubKeyRaw)
 
 	return ed25519.Verify(p2pPubKey.Bytes(), message, sign)
 }
