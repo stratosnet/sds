@@ -2,7 +2,7 @@ package rpc
 
 
 const (
-	
+	GENERIC_ERR           string = "-1"
 	SIGNATURE_FAILURE     string = "-3"
 	WRONG_FILE_SIZE       string = "-4"
 	TIME_OUT              string = "-5"
@@ -11,10 +11,12 @@ const (
 	WRONG_PP_ADDRESS      string = "-8"
 	INTERNAL_DATA_FAILURE string = "-9"
 	INTERNAL_COMM_FAILURE string = "-10"
+	WRONG_FILE_INFO       string = "-11"
 
 	UPLOAD_DATA           string = "1"
 	DOWNLOAD_OK           string = "2"
 	DL_OK_ASK_INFO        string = "3"
+	SHARED_DL_START       string = "4"
 	SUCCESS               string = "0"
 )
 
@@ -59,11 +61,41 @@ type ParamReqFileList struct {
 	PageId        uint64   `json:"page"`
 }
 
+// share: request share a file
+type ParamReqShareFile struct {
+	FileHash      string   `json:"filehash"`
+	WalletAddr    string   `json:"walletaddr"`
+	Duration      int64    `json:"duration"`
+	PrivateFlag   bool     `json:"bool"`
+}
+
+// share: request list shared files
+type ParamReqListShared struct {
+	WalletAddr    string   `json:"walletaddr"`
+	PageId        uint64   `json:"page"`
+}
+
+// share: request stop sharing a file
+type ParamReqStopShare struct {
+	WalletAddr    string   `json:"walletaddr"`
+	ShareId       string   `json:"shareid"`
+}
+
+// share: request download a shared file
+type ParamReqGetShared struct {
+	WalletAddr    string   `json:"walletaddr"`
+	ShareLink     string   `json:"sharelink"`
+}
+
 type FileInfo struct {
 	FileHash      string   `json:"filehash"`
 	FileSize      uint64   `json:"filesize"`
 	FileName      string   `json:"filename"`
-	CreateTime    uint64   `json:"createtime"`
+	CreateTime    uint64   `json:"createtime",omitempty`
+	LinkTime      uint64   `json:"linktime",omitempty"`
+	LinkTimeExp   uint64   `json:"linktimeexp",omitempty"`
+	ShareId       string   `json:"shareid",omitempty"`
+	ShareLink     string   `json:"sharelink",omitempty"`
 }
 
 type Result struct {
@@ -76,6 +108,15 @@ type Result struct {
 
 type FileListResult struct {
 	Return        string     `json:"return"`
+	FileInfo      []FileInfo `json:"fileinfo,omitempty"`
+	TotalNumber   uint64     `json:"totalnumber,omitempty"`
+	PageId        uint64     `json:"page,omitempty"`
+}
+
+type FileShareResult struct {
+	Return        string     `json:"return"`
+	ShareId       string     `json:"shareid,omitempty"`
+	ShareLink     string     `json:"sharelink,omitempty"`
 	FileInfo      []FileInfo `json:"fileinfo,omitempty"`
 	TotalNumber   uint64     `json:"totalnumber,omitempty"`
 	PageId        uint64     `json:"page,omitempty"`

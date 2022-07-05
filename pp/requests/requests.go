@@ -242,16 +242,20 @@ func RequestUploadFileData(paths, storagePath, reqID, ownerWalletAddress string,
 }
 
 // RequestDownloadFile the entry for rpc remote download
-func RequestDownloadFile(fileHash, walletAddr string) (*protos.ReqFileStorageInfo, string) {
+func RequestDownloadFile(fileHash, walletAddr, reqId string, shareRequest *protos.ReqGetShareFile) (*protos.ReqFileStorageInfo, string) {
 	// file's request id is used for identifying the download session
-    fileReqId := uuid.New().String()
+	fileReqId := reqId
+	if reqId == "" {
+		fileReqId = uuid.New().String()
+	}
 
 	// download file uses fileHash + fileReqId as the key
 	file.SaveRemoteFileHash(fileHash + fileReqId, "rpc:", 0)
 
 	// path: mesh network address
 	sdmPath := "sdm://" + walletAddr + "/" + fileHash
-	req := ReqFileStorageInfoData(sdmPath, "", fileReqId, setting.WalletAddress, "", false, nil)
+	req := ReqFileStorageInfoData(sdmPath, "", fileReqId, setting.WalletAddress, "", false, shareRequest)
+
 	return req, fileReqId
 }
 
@@ -660,40 +664,41 @@ func RspDeleteSliceData(sliceHash, msg string, result bool) *protos.RspDeleteSli
 	}
 }
 
-func ReqShareLinkData(reqID string) *protos.ReqShareLink {
+func ReqShareLinkData(reqID, walletAddr string, page uint64) *protos.ReqShareLink {
 	return &protos.ReqShareLink{
 		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
+		WalletAddress: walletAddr,
 		ReqId:         reqID,
+		PageId:        page,
 	}
 }
 
-func ReqShareFileData(reqID, fileHash, pathHash string, isPrivate bool, shareTime int64) *protos.ReqShareFile {
+func ReqShareFileData(reqID, fileHash, pathHash, walletAddr string, isPrivate bool, shareTime int64) *protos.ReqShareFile {
 	return &protos.ReqShareFile{
 		FileHash:      fileHash,
 		IsPrivate:     isPrivate,
 		ShareTime:     shareTime,
 		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
+		WalletAddress: walletAddr,
 		PathHash:      pathHash,
 		ReqId:         reqID,
 	}
 }
 
-func ReqDeleteShareData(reqID, shareID string) *protos.ReqDeleteShare {
+func ReqDeleteShareData(reqID, shareID,walletAddr string) *protos.ReqDeleteShare {
 	return &protos.ReqDeleteShare{
 		ReqId:         reqID,
 		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
+		WalletAddress: walletAddr,
 		ShareId:       shareID,
 	}
 }
 
-func ReqGetShareFileData(keyword, sharePassword, saveAs, reqID string) *protos.ReqGetShareFile {
+func ReqGetShareFileData(keyword, sharePassword, saveAs, reqID, walletAddr string) *protos.ReqGetShareFile {
 	return &protos.ReqGetShareFile{
 		Keyword:       keyword,
 		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
+		WalletAddress: walletAddr,
 		ReqId:         reqID,
 		SharePassword: sharePassword,
 		SaveAs:        saveAs,

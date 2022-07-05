@@ -36,6 +36,8 @@ var (
 
 	// key(walletAddr + reqid): value(file list result)
 	rpcFileListResult = &sync.Map{}
+
+	rpcFileShareResult = &sync.Map{}
 )
 
 type pipe struct {
@@ -270,10 +272,10 @@ func GetFileListResult(key string) (*rpc.FileListResult, bool) {
 	result, loaded := rpcFileListResult.LoadAndDelete(key)
 	if result != nil && loaded {
 		return result.(*rpc.FileListResult), loaded
-	}else {
-		return nil, loaded
 	}
+	return nil, loaded
 }
+
 
 // SetFileListResult
 func SetFileListResult(key string, result *rpc.FileListResult) {
@@ -282,3 +284,18 @@ func SetFileListResult(key string, result *rpc.FileListResult) {
 	}
 }
 
+// GetFileShareResult
+func GetFileShareResult(key string) (*rpc.FileShareResult, bool) {
+	result, loaded := rpcFileShareResult.LoadAndDelete(key)
+	if result != nil && loaded {
+		return result.(*rpc.FileShareResult), loaded
+	}
+	return nil, loaded
+}
+
+// SetFileShareResult
+func SetFileShareResult(key string, result *rpc.FileShareResult) {
+	if result != nil {
+		rpcFileShareResult.Store(key, result)
+	}
+}
