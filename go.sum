@@ -1081,8 +1081,6 @@ github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4/go.mod h1:RZL
 github.com/status-im/keycard-go v0.0.0-20200402102358-957c09536969/go.mod h1:RZLeN1LMWmRsyYjvAu+I6Dm9QmlDaIIt+Y+4Kd7Tp+Q=
 github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570/go.mod h1:8OR4w3TdeIHIh1g6EMY5p0gVNOovcWC+1vpc7naMuAw=
 github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3/go.mod h1:hpGUWaI9xL8pRQCTXQgocU38Qw1g0Us7n5PxxTwTCYU=
-github.com/stratosnet/stratos-chain v0.6.3-0.20220628235628-600cacd2a288 h1:BPnj0wdW3iO3Q6ZyntQ/xLLnIy+MaWJWsLSfSTwb0K4=
-github.com/stratosnet/stratos-chain v0.6.3-0.20220628235628-600cacd2a288/go.mod h1:8eokyi1NCn1rbFa6sUM+/im0tjKXwKaDcHOyuGog3e8=
 github.com/stratosnet/stratos-chain v0.6.3-0.20220629202759-4a5f6b6e0096 h1:hPa7d9N/OsWvc2Lka5k/O9FB7cCafGAApuYpKqUbN5Y=
 github.com/stratosnet/stratos-chain v0.6.3-0.20220629202759-4a5f6b6e0096/go.mod h1:8eokyi1NCn1rbFa6sUM+/im0tjKXwKaDcHOyuGog3e8=
 github.com/streadway/amqp v0.0.0-20190404075320-75d898a42a94/go.mod h1:AZpEONHx3DKn8O/DFsRAY58/XVQiIPMTMB1SddzLXVw=

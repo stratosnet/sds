@@ -6,9 +6,11 @@ import (
 	"errors"
 
 	"github.com/btcsuite/btcd/btcec"
-	sdksecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	ethsecp256k1 "github.com/ethereum/go-ethereum/crypto/secp256k1"
+	"github.com/stratosnet/sds/utils/types"
+	chainethsecp256k1 "github.com/stratosnet/stratos-chain/crypto/ethsecp256k1"
+	"github.com/stratosnet/stratos-chain/crypto/hd"
 	tmsecp256k1 "github.com/tendermint/tendermint/crypto/secp256k1"
 )
 
@@ -49,6 +51,12 @@ func PrivKeyToPubKeyCompressed(privKey []byte) []byte {
 	return pubKeyObject.SerializeCompressed()
 }
 
+// PrivKeyToAddress calculates the wallet address from the user's private key
+func PrivKeyToAddress(privKey []byte) types.Address {
+	ethPrivKey := hd.EthSecp256k1.Generate()(privKey)
+	return types.BytesToAddress(ethPrivKey.PubKey().Address())
+}
+
 // UnmarshalPubkey converts bytes to a secp256k1 public key.
 func UnmarshalPubkey(pub []byte) (*ecdsa.PublicKey, error) {
 	x, y := elliptic.Unmarshal(ethsecp256k1.S256(), pub)
@@ -59,10 +67,10 @@ func UnmarshalPubkey(pub []byte) (*ecdsa.PublicKey, error) {
 }
 
 func PrivKeyBytesToSdkPriv(privKey []byte) cryptotypes.PrivKey {
-	return &sdksecp256k1.PrivKey{Key: privKey}
+	return &chainethsecp256k1.PrivKey{Key: privKey}
 }
 
 func PubKeyBytesToSdkPubKey(pubKey []byte) cryptotypes.PubKey {
-	retPubKey := sdksecp256k1.PubKey{Key: pubKey}
+	retPubKey := chainethsecp256k1.PubKey{Key: pubKey}
 	return &retPubKey
 }

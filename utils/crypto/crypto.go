@@ -48,13 +48,6 @@ func S256() elliptic.Curve {
 	return secp256k1.S256()
 }
 
-// PubKeyToAddress calculates the wallet address from the user's private key
-func PrivKeyToAddress(privKey []byte) types.Address {
-	tmPrivKey := utilsecp256k1.PrivKeyBytesToTendermint(privKey)
-	tmPubKey := tmPrivKey.PubKey()
-	return types.BytesToAddress(tmPubKey.Address())
-}
-
 // PubKeyToAddress calculates the wallet address from the user's public key
 func PubKeyToAddress(pubKey []byte) (types.Address, error) {
 	tmPubKey, err := utilsecp256k1.PubKeyBytesToTendermint(pubKey)

@@ -10,7 +10,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	utilsecp256k1 "github.com/stratosnet/sds/utils/crypto/secp256k1"
-	"github.com/stratosnet/sds/utils/types"
 	stchaintypes "github.com/stratosnet/stratos-chain/types"
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/privval"
@@ -30,7 +29,7 @@ func TestCreateWallet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	addr, err := CreateWallet("keys", "", password, stchaintypes.StratosBech32Prefix, mnemonic, "passphrase", "44'/606'/0'/0/44")
+	addr, err := CreateWallet("keys", "", password, stchaintypes.StratosBech32Prefix, mnemonic, "", "m/44'/606'/0'/0/44")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -49,9 +48,7 @@ func TestCreateWallet(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	privKey := utilsecp256k1.PrivKeyBytesToTendermint(key.PrivateKey)
-	pubKey := privKey.PubKey()
-	sdkPubkey, err := stchaintypes.SdsPubKeyFromByteArr(pubKey.Bytes())
+	sdkPubkey, err := stchaintypes.SdsPubKeyFromByteArr(utilsecp256k1.PrivKeyToPubKey(key.PrivateKey))
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -71,7 +68,7 @@ func TestCreateP2PKey(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	bechAddr, err := types.P2pAddressToBech(addr)
+	bechAddr, err := addr.P2pAddressToBech()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -115,17 +112,17 @@ func TestDecryptWalletJson(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	tmPrivKey := utilsecp256k1.PrivKeyBytesToTendermint(key.PrivateKey)
-	tmPubKey := tmPrivKey.PubKey()
+	sdkPrivKey := utilsecp256k1.PrivKeyBytesToSdkPriv(key.PrivateKey)
+	sdkPubKey := sdkPrivKey.PubKey()
 
-	bechPub := utilsecp256k1.PubKeyBytesToSdkPubKey(tmPubKey.Bytes())
+	bechPub := utilsecp256k1.PubKeyBytesToSdkPubKey(sdkPubKey.Bytes())
 
-	bechAddr, err := bech32.ConvertAndEncode(stchaintypes.StratosBech32Prefix, tmPubKey.Address().Bytes())
+	bechAddr, err := bech32.ConvertAndEncode(stchaintypes.StratosBech32Prefix, sdkPubKey.Address().Bytes())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	fmt.Printf("Address: %v  PublicKey: %v  HdPath: %v", bechAddr, bechPub, key.HdPath)
+	fmt.Printf("Address: %v  PublicKey: %v  HdPath: %v  Mnemonic: %v", bechAddr, bechPub, key.HdPath, key.Mnemonic)
 }
 
 func TestDecryptPrivValidatorKeyJson(t *testing.T) {
