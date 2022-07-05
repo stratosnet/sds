@@ -207,125 +207,17 @@ func (api *rpcApi) UploadData(param rpc_api.ParamUploadData) rpc_api.Result {
 	}
 }
 
-func (api *rpcApi) RequestDownload(param rpc_api.ParamReqDownloadFile) rpc_api.Result {
-
-	fileHash := param.FileHash
-	wallet := param.WalletAddr
-	// request for downloading file
-	req := requests.RequestDownloadFile(fileHash, wallet)
-	peers.SendMessageDirectToSPOrViaPP(req, header.ReqFileStorageInfo)
-
-	// wait for the result
-	var event = make(chan bool)
-	var result rpc_api.Result
-	var found bool
-	go func() {
-		for {
-			result, found = file.GetRemoteFileEvent(fileHash)
-			if found {
-				event <- true
-				break
-			}
-		}
-	}()
-
-	select {
-	case <-time.After(WAIT_TIMEOUT * time.Second):
-		// end of the session
-		file.CleanFileHash(fileHash)
-		return rpc_api.Result{Return: rpc_api.TIME_OUT}
-	case <-event:
-	}
-
-	//
-	if result.Return == rpc_api.DOWNLOAD_OK {
-		rawData := file.GetDownloadFileData(fileHash)
-		encoded := b64.StdEncoding.EncodeToString(rawData)
-		result.FileData = encoded
-	} else {
-		// end of the session
-		file.CleanFileHash(fileHash)
-	}
-
-	return result
+type test struct {
+	FileName     string    `json:"filename"`
+	FileSize     int       `json:"filesize"`
+	FileHash     string    `json:"filehash"`
+	WalletAddr   string    `json:"walletaddr"`
+	WalletPubkey string    `json:"walletpubkey"`
+	Signature    string    `json:"signatur"`
 }
 
-func (api *rpcApi) DownloadData(param rpc_api.ParamDownloadData) rpc_api.Result {
-	fileHash := param.FileHash
+func (api *rpcApi) Test(t test) []string {
 
-	// last piece was done, tell the called of driver to move on
-	file.SetDownloadSliceDone(fileHash)
-
-	// wait for result: DOWNLOAD_OK or DL_OK_ASK_INFO
-	var event = make(chan bool)
-	var result rpc_api.Result
-	var found bool
-
-	go func() {
-		for {
-			result, found = file.GetRemoteFileEvent(fileHash)
-			if found {
-				event <- true
-				break
-			}
-		}
-	}()
-
-	// wait too long, failure of timeout
-	select {
-	case <-time.After(WAIT_TIMEOUT * time.Second):
-		// end of the session
-		file.CleanFileHash(fileHash)
-		return rpc_api.Result{Return: rpc_api.TIME_OUT}
-	case <-event:
-	}
-
-
-	if result.Return == rpc_api.DOWNLOAD_OK {
-		rawData := file.GetDownloadFileData(fileHash)
-		encoded := b64.StdEncoding.EncodeToString(rawData)
-		result.FileData = encoded
-	}else if result.Return == rpc_api.DL_OK_ASK_INFO {
-		// finished download, and ask the file info to verify downloaded file
-	}else {
-		// end of the session
-		file.CleanFileHash(fileHash)
-	}
-
-	return result
-
-}
-
-func (api *rpcApi) DownloadedFileInfo(param rpc_api.ParamDownloadFileInfo) rpc_api.Result {
-
-	fileHash := param.FileHash
-	fileSize := param.FileSize
-	// no matter what reason, this is the end of the session, clean everything related to tthe session
-	defer file.CleanFileHash(fileHash)
-
-	file.SetRemoteFileInfo(fileHash, fileSize)
-
-	// wait for result, SUCCESS or some failure
-	var result rpc_api.Result
-	var found bool
-	var event = make(chan bool)
-
-	go func() {
-		for {
-			result, found = file.GetRemoteFileEvent(fileHash)
-			if found {
-				event <- true
-				break
-			}
-		}
-	}()
-
-	// wait too long, failure of timeout
-	select {
-	case <-time.After(WAIT_TIMEOUT * time.Second):
-		return rpc_api.Result{Return: rpc_api.TIME_OUT}
-	case <-event:
-	}
-
-	return result
+	utils.DebugLog("hello, the world", t.FileName, t.FileHash, t.WalletAddr)
+	return []string{"0"}
 }
