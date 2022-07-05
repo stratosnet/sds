@@ -333,7 +333,7 @@ func get(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Handle rsp
+	// handle rsp
 	var rsp jsonrpcMessage
 	err := json.Unmarshal(body, &rsp)
 	if err != nil {
@@ -448,7 +448,6 @@ func list(cmd *cobra.Command, args []string) error {
 	if r == nil {
 		return nil
 	}
-
 	// http request-respond
 	body := httpRequest(r)
 	if body == nil {
@@ -473,12 +472,304 @@ func list(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// printSharedFileList
+func printSharedFileList(res rpc.FileShareResult){
+	if res.Return == rpc.SUCCESS {
+		fmt.Printf("\n%-20s %-41s %-9s %-8s  %-8s   %-15s  %-15s\n", "File Name", "File Hash", "File Size", "Link Time", "Link Exp", "Share ID", "Share Link")
+		fmt.Printf("________________________________________________________________________________________________________________________________________\n")
+		for i:= range res.FileInfo {
+			f := res.FileInfo[i]
+			fmt.Printf("%-20s %-25s %10d %8d %8d %-15s %-15s\n", f.FileName, f.FileHash, f.FileSize, f.LinkTime, f.LinkTimeExp, f.ShareId, f.ShareLink)
+		}
+		fmt.Printf("________________________________________________________________________________________________________________________________________\n")
+		fmt.Printf("Total: %d\tPage: %d\n\n", res.TotalNumber, res.PageId)
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// reqListShareMsg
+func reqListShareMsg(page uint64) []byte {
+	// wallet address
+	ret := readWalletKeys(WalletAddress)
+	if !ret {
+		utils.DebugLog("Failed reading key file.")
+		return nil
+	}
+
+	// param
+	var params = []rpc.ParamReqListShared{}
+	params = append(params, rpc.ParamReqListShared {
+		WalletAddr    : WalletAddress,
+		PageId        : page,
+	})
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.DebugLog("failed marshal param for ReqUploadFile")
+		return nil
+	}
+
+	// wrap into request message
+	return wrapJsonRpc("user_requestListShare", pm)
+}
+
+// listshared
+func listshare(cmd *cobra.Command, args[]string) error {
+	var page uint64
+	var e error
+	page = 0
+	if len(args) == 1 {
+		page, e = strconv.ParseUint(args[0], 10, 64)
+		if e != nil {
+			return e
+		}
+	}
+	// compose request
+	r := reqListShareMsg(page)
+	if r == nil {
+		return nil
+	}
+	// http request-respond
+	body := httpRequest(r)
+	if body == nil {
+		utils.DebugLog("json marshal error")
+		return nil
+	}
+	// handle response
+	var rsp jsonrpcMessage
+	err := json.Unmarshal(body, &rsp)
+	if err != nil {
+	  return err
+	}
+	var res rpc.FileShareResult
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+	  return nil
+	}
+	printSharedFileList(res)
+	return nil
+}
+
+// reqShareMsg
+func reqShareMsg(hash string) []byte {
+	// wallet address
+	ret := readWalletKeys(WalletAddress)
+	if !ret {
+		utils.DebugLog("Failed reading key file.")
+		return nil
+	}
+
+	// param
+	var params = []rpc.ParamReqShareFile{}
+	params = append(params, rpc.ParamReqShareFile {
+		FileHash      : hash,
+		WalletAddr    : WalletAddress,
+	})
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.DebugLog("failed marshal param for ReqUploadFile")
+		return nil
+	}
+
+	// wrap into request message
+	return wrapJsonRpc("user_requestShare", pm)
+}
+
+// share
+func share(cmd *cobra.Command, args[]string) error {
+	// check input
+	if len(args) != 1 {
+		utils.DebugLog("file hash is not provided")
+		return nil
+	}
+	// compose request
+	r := reqShareMsg(args[0])
+	if r == nil {
+		return nil
+	}
+
+	// http request-respond
+	body := httpRequest(r)
+	if body == nil {
+		utils.DebugLog("json marshal error")
+		return nil
+	}
+	// handle response
+	var rsp jsonrpcMessage
+	err := json.Unmarshal(body, &rsp)
+	if err != nil {
+	  return err
+	}
+	var res rpc.FileShareResult
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+	  return nil
+	}
+
+	return nil
+}
+
+// reqStopShareMsg
+func reqStopShareMsg(shareId string) []byte {
+	// wallet address
+	ret := readWalletKeys(WalletAddress)
+	if !ret {
+		utils.DebugLog("Failed reading key file.")
+		return nil
+	}
+
+	// param
+	var params = []rpc.ParamReqStopShare{}
+	params = append(params, rpc.ParamReqStopShare {
+		WalletAddr    : WalletAddress,
+		ShareId       : shareId,
+	})
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.DebugLog("failed marshal param for ReqStopShare")
+		return nil
+	}
+
+	// wrap into request message
+	return wrapJsonRpc("user_requestStopShare", pm)
+}
+
+// stopshare
+func stopshare(cmd *cobra.Command, args[]string) error {
+
+	// compose request
+	r := reqStopShareMsg(args[0])
+	if r == nil {
+		return nil
+	}
+	// http request-respond
+	body := httpRequest(r)
+	if body == nil {
+		utils.DebugLog("json marshal error")
+		return nil
+	}
+	// handle response
+	var rsp jsonrpcMessage
+	err := json.Unmarshal(body, &rsp)
+	if err != nil {
+	  return err
+	}
+	var res rpc.FileShareResult
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+	  return nil
+	}
+
+	return nil
+}
+
+// reqGetSharedMsg
+func reqGetSharedMsg(shareLink string) []byte {
+	// wallet address
+	ret := readWalletKeys(WalletAddress)
+	if !ret {
+		utils.DebugLog("Failed reading key file.")
+		return nil
+	}
+
+	// param
+	var params = []rpc.ParamReqGetShared{}
+	params = append(params, rpc.ParamReqGetShared {
+		WalletAddr    : WalletAddress,
+		ShareLink     : shareLink,
+	})
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.DebugLog("failed marshal param for ReqStopShare")
+		return nil
+	}
+
+	// wrap into request message
+	return wrapJsonRpc("user_requestGetShared", pm)
+}
+
+// getshared
+func getshared(cmd *cobra.Command, args[]string) error {
+
+	// compose request
+	r := reqGetSharedMsg(args[0])
+	if r == nil {
+		return nil
+	}
+	fileHash := args[1]
+
+	// http request-respond
+	body := httpRequest(r)
+	if body == nil {
+		utils.DebugLog("json marshal error")
+		return nil
+	}
+	// handle response
+	var rsp jsonrpcMessage
+	err := json.Unmarshal(body, &rsp)
+	if err != nil {
+	  return err
+	}
+	var res rpc.Result
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+	  return nil
+	}
+
+	var fileSize uint64 = 0
+	var pieceCount uint64 = 0
+	// Handle result:1 sending the content
+	for res.Return == rpc.DOWNLOAD_OK || res.Return == rpc.DL_OK_ASK_INFO {
+		// TODO: save the piece to the file
+		if res.Return == rpc.DL_OK_ASK_INFO {
+			r = downloadedFileInfoMsg(fileHash, fileSize, res.ReqId)
+			fmt.Println("There are", pieceCount, "pieces received.")
+		}else {
+			start := *res.OffsetStart
+			end := *res.OffsetEnd
+			fileSize = fileSize + (end - start)
+			decoded, _ := base64.StdEncoding.DecodeString(res.FileData)
+			if len(decoded) != int(end - start) {
+				utils.DebugLog("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+				utils.DebugLog("Wrong size:", strconv.Itoa(len(decoded)), " ", strconv.Itoa(int(end-start)))
+				return nil
+			}
+			pieceCount = pieceCount + 1
+			r = downloadDataMsg(fileHash, res.ReqId)
+		}
+
+		body := httpRequest(r)
+		if body == nil {
+			utils.DebugLog("json marshal error")
+			return nil
+		}
+
+		// Handle rsp
+		err := json.Unmarshal(body, &rsp)
+		if err != nil {
+			return nil
+		}
+
+		err = json.Unmarshal(rsp.Result, &res)
+		if err != nil {
+			utils.DebugLog("unmarshal failed")
+			return nil
+		}
+	}
+
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // httpRequest
 func httpRequest(request []byte) []byte {
-	if len(request) < 200 {
+	if len(request) < 300 {
 		fmt.Println("--> ", string(request))
 	} else {
-		fmt.Println("--> ", string(request[:130]), "... \"}]}")
+		fmt.Println("--> ", string(request[:230]), "... \"}]}")
 	}
 
 	// http post
@@ -494,10 +785,10 @@ func httpRequest(request []byte) []byte {
 	}
 
 	body, _ := ioutil.ReadAll(resp.Body)
-	if len(body) < 200 {
+	if len(body) < 300 {
 		fmt.Println("<-- ", string(body))
 	} else {
-		fmt.Println("<-- ", string(body[:130]), "... \"}]}")
+		fmt.Println("<-- ", string(body[:230]), "... \"}]}")
 	}
 
 	resp.Body.Close()
@@ -549,9 +840,37 @@ func main() {
 		RunE:    list,
 	}
 
+	shareCmd := &cobra.Command{
+		Use:     "share",
+		Short:   "share a file from uploaded files",
+		RunE:    share,
+	}
+
+	listsharedCmd := &cobra.Command{
+		Use:     "listshared",
+		Short:   "list shared files",
+		RunE:    listshare,
+	}
+
+	stopsharedCmd := &cobra.Command{
+		Use:     "stopshare",
+		Short:   "stop sharing a file",
+		RunE:    stopshare,
+	}
+
+	getsharedCmd := &cobra.Command{
+		Use:     "getshared",
+		Short:   "download a shared file",
+		RunE:    getshared,
+	}
+
 	rootCmd.AddCommand(putCmd)
 	rootCmd.AddCommand(getCmd)
 	rootCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(shareCmd)
+	rootCmd.AddCommand(listsharedCmd)
+	rootCmd.AddCommand(stopsharedCmd)
+	rootCmd.AddCommand(getsharedCmd)
 
 	utils.NewDefaultLogger("./logs/stdout.log", true, true)
 

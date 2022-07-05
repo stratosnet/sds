@@ -1,5 +1,4 @@
 package event
-
 // Author j
 import (
 	"context"
@@ -10,6 +9,7 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
@@ -227,7 +227,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get，RspFileStorageInfo")
 	var target protos.RspFileStorageInfo
 	if requests.UnmarshalData(ctx, &target) {
-		utils.DebugLog("file hash", target.FileHash)
+		utils.DebugLog("file hash, reqid:", target.FileHash, target.ReqId)
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
 			utils.Log("download starts: ")
 			task.CleanDownloadFileAndConnMap(target.FileHash, target.ReqId)
@@ -239,6 +239,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 			DownloadFileSlice(&target)
 			utils.DebugLog("DownloadFileSlice(&target)", target)
 		} else {
+			file.SetRemoteFileResult(target.FileHash + target.ReqId, rpc.Result{Return:rpc.FILE_REQ_FAILURE})
 			utils.Log("failed to download，", target.Result.Msg)
 		}
 	}

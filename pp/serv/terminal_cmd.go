@@ -324,7 +324,7 @@ func (api *terminalCmd) SharePath(param []string) (CmdResult, error) {
 	// if len(str1) == setting.FILEHASHLEN { //
 	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
-	event.GetReqShareFile("", "", param[0], int64(time), isPrivate, nil)
+	event.GetReqShareFile("", "", param[0], setting.WalletAddress, int64(time), isPrivate, nil)
 	// }
 	return CmdResult{Msg: DefaultMsg}, nil
 }
@@ -346,7 +346,7 @@ func (api *terminalCmd) ShareFile(param []string) (CmdResult, error) {
 	if private == 1 {
 		isPrivate = true
 	}
-	event.GetReqShareFile("", param[0], "", int64(time), isPrivate, nil)
+	event.GetReqShareFile("", param[0], "", setting.WalletAddress,int64(time), isPrivate, nil)
 	// if len(str1) == setting.FILEHASHLEN { //
 	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
@@ -355,7 +355,16 @@ func (api *terminalCmd) ShareFile(param []string) (CmdResult, error) {
 }
 
 func (api *terminalCmd) AllShare(param []string) (CmdResult, error) {
-	event.GetAllShareLink("", nil)
+	if len(param) < 1 {
+		event.GetAllShareLink("", setting.WalletAddress, 0, nil)
+	}else {
+		page, err := strconv.ParseUint(param[0], 10, 64)
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.New("invalid page id.")
+		}
+		event.GetAllShareLink("", setting.WalletAddress, page, nil)
+	}
+
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -363,7 +372,7 @@ func (api *terminalCmd) CancelShare(param []string) (CmdResult, error) {
 	if len(param) < 1 {
 		return CmdResult{Msg: ""}, errors.New("input share id")
 	}
-	event.DeleteShare(param[0], "", nil)
+	event.DeleteShare(param[0], "", setting.WalletAddress, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -372,9 +381,9 @@ func (api *terminalCmd) GetShareFile(param []string) (CmdResult, error) {
 		return CmdResult{Msg: ""}, errors.New("input share link and retrieval secret key(if any)")
 	}
 	if len(param) < 2 {
-		event.GetShareFile(param[0], "", "", "", nil)
+		event.GetShareFile(param[0], "", "", task.LOCAL_REQID, setting.WalletAddress, nil)
 	} else {
-		event.GetShareFile(param[0], param[1], "", "", nil)
+		event.GetShareFile(param[0], param[1], "", task.LOCAL_REQID, setting.WalletAddress, nil)
 	}
 
 	return CmdResult{Msg: DefaultMsg}, nil
