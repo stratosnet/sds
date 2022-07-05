@@ -236,22 +236,8 @@ func RequestUploadFileData(paths, storagePath, reqID, ownerWalletAddress string,
 	}
 	task.UploadProgressMap.Store(fileHash, p)
 	// if isCover {
-	//	os.Remove(path)
+	// 	os.Remove(path)
 	// }
-	return req
-}
-
-func RequestDownloadFile(fileHash, walletAddr string) *protos.ReqFileStorageInfo {
-	// don't know the name nor the size of the file at this point, put empty name with "rpc:" flag, and 0 as the size
-	file.SaveRemoteFileHash(fileHash, "rpc:", 0)
-
-	// path: mesh network address
-	sdmPath := "sdm://" + walletAddr + "/" + fileHash
-
-	//
-	utils.DebugLog("path:", sdmPath)
-	// may need an UUID for reqId
-	req := ReqFileStorageInfoData(sdmPath, "", "", setting.WalletAddress, "", false, nil)
 	return req
 }
 

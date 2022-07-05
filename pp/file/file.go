@@ -19,6 +19,7 @@ var wmutex sync.RWMutex
 
 // key(fileHash) : value(file path)
 var fileMap = make(map[string]string)
+
 var infoMutex sync.Mutex
 
 // GetFileInfo
@@ -160,12 +161,6 @@ func SaveSliceData(data []byte, sliceHash string, offset uint64) bool {
 func SaveFileData(data []byte, offset int64, sliceHash, fileName, fileHash, savePath string) bool {
 
 	utils.DebugLog("sliceHash", sliceHash)
-
-	if IsFileRpcRemote(fileHash) {
-		// write to rpc
-		SaveRemoteFileData(fileHash, data, uint64(offset))
-		return true
-	}
 	wmutex.Lock()
 	if fileName == "" {
 		fileName = fileHash
@@ -249,12 +244,6 @@ func RecordDownloadCSV(target *protos.RspFileStorageInfo) {
 // CheckFileExisting
 func CheckFileExisting(fileHash, fileName, savePath, encryptionTag string) bool {
 	utils.DebugLog("CheckFileExisting: file Hash", fileHash)
-
-	// check if the target path is remote, return false for "not match"
-	if IsFileRpcRemote(fileHash) {
-		return false
-	}
-
 	filePath := ""
 	if savePath == "" {
 		filePath = filepath.Join(setting.Config.DownloadPath, fileName)
@@ -262,7 +251,7 @@ func CheckFileExisting(fileHash, fileName, savePath, encryptionTag string) bool 
 		filePath = filepath.Join(setting.Config.DownloadPath, savePath, fileName)
 	}
 	// if setting.IsWindows {
-	//	filePath = filepath.FromSlash(filePath)
+	// 	filePath = filepath.FromSlash(filePath)
 	// }
 	utils.DebugLog("filePath", filePath)
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0777)

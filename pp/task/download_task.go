@@ -15,7 +15,6 @@ import (
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -329,23 +328,16 @@ func DoneDownload(fileHash, fileName, savePath string) {
 // CheckFileOver check finished
 func CheckFileOver(fileHash, filePath string) bool {
 	utils.DebugLog("CheckFileOver")
-
 	if s, ok := DownloadSpeedOfProgress.Load(fileHash); ok {
 		sp := s.(*DownloadSP)
-		var size int64
-		if file.IsFileRpcRemote(fileHash) {
-			size = int64(file.GetRemoteFileInfo(fileHash))
-		} else {
-			info := file.GetFileInfo(filePath)
-			if info == nil {
-				return false
-			}
-			utils.DebugLog("info", info.Size())
-			utils.DebugLog("sp.RawSize", sp.RawSize)
-			size = info.Size()
+		info := file.GetFileInfo(filePath)
+		if info == nil {
+			return false
 		}
+		utils.DebugLog("info", info.Size())
+		utils.DebugLog("sp.RawSize", sp.RawSize)
 		// TODO calculate fileHash to check if download is finished
-		if size == sp.RawSize {
+		if info.Size() == sp.RawSize {
 			utils.DebugLog("ok!")
 			return true
 		}
@@ -370,9 +362,6 @@ func CheckDownloadOver(fileHash string) (bool, float32) {
 				if CheckFileOver(fileHash, filePath) {
 					DoneDownload(fileHash, fName, fInfo.SavePath)
 					CleanDownloadFileAndConnMap(fileHash)
-					if file.IsFileRpcRemote(fileHash) {
-						file.SetRemoteFileResult(fileHash, rpc.Result{Return:rpc.SUCCESS})
-					}
 					return true, 1.0
 				}
 				reCount = 5
