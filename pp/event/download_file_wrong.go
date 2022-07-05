@@ -17,7 +17,7 @@ func CheckAndSendRetryMessage(dTask *task.DownloadTask) {
 	if !dTask.NeedRetry() {
 		return
 	}
-	if f, ok := task.DownloadFileMap.Load(dTask.FileHash); ok {
+	if f, ok := task.DownloadFileMap.Load(dTask.FileHash + task.LOCAL_REQID); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
 		peers.SendMessageToSPServer(requests.ReqDownloadFileWrongData(fInfo, dTask), header.ReqDownloadFileWrong)
 	}
@@ -32,7 +32,7 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 		utils.DebugLog("file hash", target.FileHash)
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
 			utils.Log("download starts: ")
-			dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress)
+			dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress, target.ReqId)
 			if !ok {
 				utils.DebugLog("cannot find the download task")
 				return
@@ -41,25 +41,25 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 			if target.IsVideoStream {
 				return
 			}
-			if _, ok := task.DownloadSpeedOfProgress.Load(target.FileHash); !ok {
+			if _, ok := task.DownloadSpeedOfProgress.Load(target.FileHash + target.ReqId); !ok {
 				utils.Log("download has stopped")
 				return
 			}
 			for _, rsp := range target.SliceInfo {
 				utils.DebugLog("taskid ======= ", rsp.TaskId)
-				if file.CheckSliceExisting(target.FileHash, target.FileName, rsp.SliceStorageInfo.SliceHash, target.SavePath) {
+				if file.CheckSliceExisting(target.FileHash, target.FileName, rsp.SliceStorageInfo.SliceHash, target.SavePath, target.ReqId) {
 					utils.Log("slice exist already,", rsp.SliceStorageInfo.SliceHash)
 					setDownloadSliceSuccess(rsp.SliceStorageInfo.SliceHash, dTask)
-					task.DownloadProgress(target.FileHash, rsp.SliceStorageInfo.SliceSize)
+					task.DownloadProgress(target.FileHash, target.ReqId, rsp.SliceStorageInfo.SliceSize)
 				} else {
 					utils.DebugLog("request download data")
 					req := requests.ReqDownloadSliceData(&target, rsp)
-					SendReqDownloadSlice(target.FileHash, rsp, req)
+					SendReqDownloadSlice(target.FileHash, rsp, req, target.ReqId)
 				}
 			}
 			utils.DebugLog("DownloadFileSlice(&target)", target)
 		} else {
-			task.DeleteDownloadTask(target.FileHash, target.WalletAddress)
+			task.DeleteDownloadTask(target.FileHash, target.WalletAddress, task.LOCAL_REQID)
 			utils.Log("failed to download，", target.Result.Msg)
 		}
 	}

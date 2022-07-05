@@ -236,9 +236,23 @@ func RequestUploadFileData(paths, storagePath, reqID, ownerWalletAddress string,
 	}
 	task.UploadProgressMap.Store(fileHash, p)
 	// if isCover {
-	// 	os.Remove(path)
+	//	os.Remove(path)
 	// }
 	return req
+}
+
+// RequestDownloadFile the entry for rpc remote download
+func RequestDownloadFile(fileHash, walletAddr string) (*protos.ReqFileStorageInfo, string) {
+	// file's request id is used for identifying the download session
+    fileReqId := uuid.New().String()
+
+	// download file uses fileHash + fileReqId as the key
+	file.SaveRemoteFileHash(fileHash + fileReqId, "rpc:", 0)
+
+	// path: mesh network address
+	sdmPath := "sdm://" + walletAddr + "/" + fileHash
+	req := ReqFileStorageInfoData(sdmPath, "", fileReqId, setting.WalletAddress, "", false, nil)
+	return req, fileReqId
 }
 
 func RspDownloadSliceData(target *protos.ReqDownloadSlice) *protos.RspDownloadSlice {
@@ -389,6 +403,7 @@ func ReqReportDownloadResultData(target *protos.RspDownloadSlice, isPP bool) *pr
 	}
 	if isPP {
 		utils.Log("PP ReportDownloadResult ")
+
 		if dlTask, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress); ok {
 			downloadTask := dlTask.(*task.DownloadTask)
 			utils.DebugLog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^downloadTask", downloadTask)
