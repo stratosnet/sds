@@ -75,10 +75,8 @@ func FetchAccountInfo(address string) (*authtypes.BaseAccount, error) {
 		return nil, err
 	}
 
-	//var account authtypes.BaseAccount
 	var account authtypes.BaseAccount
-	err = relay.Cdc.UnmarshalJSON(responseResult, &account)
-	//err = account.Unmarshal(responseResult)
+	err = authtypes.ModuleCdc.UnmarshalJSON(responseResult, &account)
 	return &account, err
 }
 
