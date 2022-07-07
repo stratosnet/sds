@@ -341,7 +341,7 @@ func (m *MultiClient) stratosSubscriptionReaderLoop(subscription websocketSubscr
 func (m *MultiClient) SubscribeToStratosChain(msgType string) error {
 	handler, ok := handlers.Handlers[msgType]
 	if !ok {
-		return errors.Errorf("Cannot subscribe to message [%v] in stratos-chain: missing handler function")
+		return errors.Errorf("Cannot subscribe to message [%v] in stratos-chain: missing handler function", msgType)
 	}
 
 	query := fmt.Sprintf("message.action='%v'", msgType)
