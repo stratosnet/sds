@@ -27,7 +27,7 @@ func TestECCSignAndVerify(t *testing.T) {
 
 	publicKeyECDSA := &privateKeyECDSA.PublicKey
 	privKeyBytes := math.PaddedBigBytes(privateKeyECDSA.D, 32)
-	pubKeyBytes := utilsecp256k1.PrivKeyToPubKey(privKeyBytes)
+	pubKeyBytes := utilsecp256k1.PrivKeyToPubKey(privKeyBytes).Bytes()
 
 	msg := []byte("this is a random message")
 	sig1, err := ECCSign(msg, privateKeyECDSA)

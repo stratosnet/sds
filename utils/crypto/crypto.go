@@ -9,11 +9,9 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
-	utilsecp256k1 "github.com/stratosnet/sds/utils/crypto/secp256k1"
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/stratosnet/sds/utils/crypto/sha3"
 	"github.com/stratosnet/sds/utils/types"
-	//stratos "github.com/stratosnet/stratos-chain/types"
 )
 
 var (
@@ -45,16 +43,7 @@ func Keccak256Hash(data ...[]byte) (h types.Hash) {
 
 // S256 returns an instance of the secp256k1 curve.
 func S256() elliptic.Curve {
-	return secp256k1.S256()
-}
-
-// PubKeyToAddress calculates the wallet address from the user's public key
-func PubKeyToAddress(pubKey []byte) (types.Address, error) {
-	tmPubKey, err := utilsecp256k1.PubKeyBytesToTendermint(pubKey)
-	if err != nil {
-		return types.Address{}, err
-	}
-	return types.BytesToAddress(tmPubKey.Address()), nil
+	return btcec.S256()
 }
 
 // ToECDSAUnsafe blindly converts a binary blob to a private key. It should almost
@@ -157,15 +146,3 @@ func generateMerkleTree(hashList []types.Hash) []types.Hash {
 
 	return generateMerkleTree(hs)
 }
-
-//func PubKeyBytesToSdkPubKey(pubKey []byte) (cryptotypes.PubKey, error) {
-//	if len(pubKey) == sdked25519.PubKeySize {
-//		retPubKey := sdked25519.PubKey{Key: pubKey}
-//		return &retPubKey, nil
-//	} else if len(pubKey) == sdksecp256k1.PubKeySize {
-//		retPubKey := sdksecp256k1.PubKey{Key: pubKey}
-//		return &retPubKey, nil
-//	} else {
-//		return nil, errors.New("unsupported pubkey type")
-//	}
-//}

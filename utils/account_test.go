@@ -7,9 +7,9 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	utilsecp256k1 "github.com/stratosnet/sds/utils/crypto/secp256k1"
+	"github.com/stratosnet/sds/utils/types"
 	stchaintypes "github.com/stratosnet/stratos-chain/types"
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/privval"
@@ -29,12 +29,12 @@ func TestCreateWallet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	addr, err := CreateWallet("keys", "", password, stchaintypes.StratosBech32Prefix, mnemonic, "", "m/44'/606'/0'/0/44")
+	addr, err := CreateWallet("keys", "", password, stchaintypes.StratosBech32Prefix, mnemonic, "", "m/44'/606'/0'/0/0")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	bechAddr, err := addr.ToBech(stchaintypes.StratosBech32Prefix)
+	bechAddr, err := addr.WalletAddressToBech()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -48,10 +48,7 @@ func TestCreateWallet(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	sdkPubkey, err := stchaintypes.SdsPubKeyFromByteArr(utilsecp256k1.PrivKeyToPubKey(key.PrivateKey))
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	sdkPubkey := utilsecp256k1.PrivKeyToPubKey(key.PrivateKey)
 	bechPub, err := stchaintypes.SdsPubKeyToBech32(sdkPubkey)
 	if err != nil {
 		t.Fatal(err.Error())
@@ -97,7 +94,7 @@ func TestDecryptP2PKeyJson(t *testing.T) {
 	pubKey := ed25519.PrivKeyBytesToPubKey(key.PrivateKey)
 	bechPub := ed25519.PubKeyBytesToSdkPubKey(pubKey.Bytes())
 
-	bechAddr, err := bech32.ConvertAndEncode(stchaintypes.SdsNodeP2PAddressPrefix, pubKey.Address().Bytes())
+	bechAddr, err := types.BytesToAddress(pubKey.Address().Bytes()).P2pAddressToBech()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -112,12 +109,15 @@ func TestDecryptWalletJson(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	sdkPrivKey := utilsecp256k1.PrivKeyBytesToSdkPriv(key.PrivateKey)
+	sdkPrivKey := utilsecp256k1.PrivKeyToSdkPrivKey(key.PrivateKey)
 	sdkPubKey := sdkPrivKey.PubKey()
 
-	bechPub := utilsecp256k1.PubKeyBytesToSdkPubKey(sdkPubKey.Bytes())
+	bechPub, err := stchaintypes.SdsPubKeyToBech32(sdkPubKey)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 
-	bechAddr, err := bech32.ConvertAndEncode(stchaintypes.StratosBech32Prefix, sdkPubKey.Address().Bytes())
+	bechAddr, err := types.BytesToAddress(sdkPubKey.Address().Bytes()).WalletAddressToBech()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -141,7 +141,7 @@ func TestDecryptPrivValidatorKeyJson(t *testing.T) {
 
 	bechPub := ed25519.PubKeyBytesToSdkPubKey(pubKey.Bytes())
 
-	bechAddr, err := bech32.ConvertAndEncode(stchaintypes.SdsNodeP2PAddressPrefix, pubKey.Address().Bytes())
+	bechAddr, err := types.BytesToAddress(pubKey.Address().Bytes()).P2pAddressToBech()
 	if err != nil {
 		t.Fatal(err.Error())
 	}

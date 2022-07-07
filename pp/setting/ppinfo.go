@@ -20,7 +20,7 @@ var IsAuto = false
 
 var WalletAddress string
 
-// WalletPublicKey Public key in uncompressed format
+// WalletPublicKey Public key in compressed format
 var WalletPublicKey []byte
 
 var WalletPrivateKey []byte

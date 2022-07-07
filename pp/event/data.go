@@ -14,9 +14,8 @@ import (
 	"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	relaytypes "github.com/stratosnet/sds/relay/types"
-	//authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
+	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/stratosnet/sds/utils/types"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 )
@@ -93,14 +92,14 @@ func createTxConfigAndTxBuilder() (client.TxConfig, client.TxBuilder) {
 func reqUpdateStakeData(stakeDelta, fee, gas int64, incrStake bool) (*protos.ReqUpdateStakePP, error) {
 	// Create and sign transaction to update stake for existing resource node
 	networkAddr := ed25519.PubKeyBytesToAddress(setting.P2PPublicKey)
-	ownerAddr, err := crypto.PubKeyToAddress(setting.WalletPublicKey)
+	ownerAddr, err := secp256k1.PubKeyToAddress(setting.WalletPublicKey)
 	if err != nil {
 		return nil, err
 	}
 
 	protoConfig, txBuilder := createTxConfigAndTxBuilder()
 
-	txMsg := stratoschain.BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr, setting.Config.Token, stakeDelta, incrStake)
+	txMsg := stratoschain.BuildUpdateResourceNodeStakeMsg(networkAddr, *ownerAddr, setting.Config.Token, stakeDelta, incrStake)
 	txBuilder, err = setMsgInfoToTxBuilder(txBuilder, txMsg, fee, gas)
 	if err != nil {
 		return nil, err
@@ -124,13 +123,13 @@ func reqUpdateStakeData(stakeDelta, fee, gas int64, incrStake bool) (*protos.Req
 func reqDeactivateData(fee, gas int64) (*protos.ReqDeactivatePP, error) {
 	// Create and sign transaction to remove a resource node
 	nodeAddress := ed25519.PubKeyBytesToAddress(setting.P2PPublicKey)
-	ownerAddress, err := crypto.PubKeyToAddress(setting.WalletPublicKey)
+	ownerAddress, err := secp256k1.PubKeyToAddress(setting.WalletPublicKey)
 	if err != nil {
 		return nil, err
 	}
 
 	protoConfig, txBuilder := createTxConfigAndTxBuilder()
-	txMsg := stratoschain.BuildRemoveResourceNodeMsg(nodeAddress, ownerAddress)
+	txMsg := stratoschain.BuildRemoveResourceNodeMsg(nodeAddress, *ownerAddress)
 	txBuilder, err = setMsgInfoToTxBuilder(txBuilder, txMsg, fee, gas)
 	if err != nil {
 		return nil, err

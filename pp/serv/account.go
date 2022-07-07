@@ -85,7 +85,7 @@ func getPublicKey(filePath, password string) bool {
 		return false
 	}
 	setting.WalletPrivateKey = key.PrivateKey
-	setting.WalletPublicKey = secp256k1.PrivKeyToPubKey(key.PrivateKey)
+	setting.WalletPublicKey = secp256k1.PrivKeyToPubKey(key.PrivateKey).Bytes()
 	utils.DebugLog("publicKey", setting.WalletPublicKey)
 	utils.Log("unlock wallet successfully ", setting.WalletAddress)
 	return true

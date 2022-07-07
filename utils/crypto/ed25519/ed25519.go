@@ -54,9 +54,8 @@ func PrivKeyBytesToSdkPrivKey(privKey []byte) cryptotypes.PrivKey {
 }
 
 func PrivKeyBytesToSdkPubKey(privKey []byte) cryptotypes.PubKey {
-	pubKey := PrivKeyBytesToPrivKey(privKey).PubKey()
-	pubKey2 := pubKey.(cryptotypes.PubKey)
-	return pubKey2
+	pubKey := PrivKeyBytesToSdkPrivKey(privKey).PubKey()
+	return pubKey
 }
 
 func PubKeyBytesToSdkPubKey(pubKey []byte) cryptotypes.PubKey {

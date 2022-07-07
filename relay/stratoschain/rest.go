@@ -77,7 +77,7 @@ func FetchAccountInfo(address string) (*authtypes.BaseAccount, error) {
 
 	//var account authtypes.BaseAccount
 	var account authtypes.BaseAccount
-	err = authtypes.ModuleCdc.UnmarshalJSON(responseResult, &account)
+	err = relay.Cdc.UnmarshalJSON(responseResult, &account)
 	//err = account.Unmarshal(responseResult)
 	return &account, err
 }
@@ -112,7 +112,7 @@ func buildAndSignStdTxNew(protoConfig client.TxConfig, txBuilder client.TxBuilde
 			}
 			pubkey = ed25519.PrivKeyBytesToSdkPubKey(signatureKey.PrivateKey)
 		default:
-			pubkey = utilsecp256k1.PrivKeyBytesToSdkPriv(signatureKey.PrivateKey).PubKey()
+			pubkey = utilsecp256k1.PrivKeyToSdkPrivKey(signatureKey.PrivateKey).PubKey()
 		}
 		sigV2 := signingtypes.SignatureV2{
 			PubKey: pubkey,
@@ -143,7 +143,7 @@ func buildAndSignStdTxNew(protoConfig client.TxConfig, txBuilder client.TxBuilde
 		case relaytypes.SignatureEd25519:
 			privKey = ed25519.PrivKeyBytesToSdkPrivKey(signatureKey.PrivateKey)
 		default:
-			privKey = utilsecp256k1.PrivKeyBytesToSdkPriv(signatureKey.PrivateKey)
+			privKey = utilsecp256k1.PrivKeyToSdkPrivKey(signatureKey.PrivateKey)
 		}
 		sigV2, err := clienttx.SignWithPrivKey(
 			protoConfig.SignModeHandler().DefaultMode(), signerData,
@@ -226,18 +226,13 @@ func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.U
 			pubKey = ed25519.PrivKeyBytesToSdkPubKey(signatureKey.PrivateKey)
 		default:
 			var err error
-
-			signedBytes, err = utilsecp256k1.PrivKeyBytesToTendermint(signatureKey.PrivateKey).Sign(unsignedBytes)
+			privKey := utilsecp256k1.PrivKeyToSdkPrivKey(signatureKey.PrivateKey)
+			signedBytes, err = privKey.Sign(unsignedBytes)
 			if err != nil {
 				return nil, err
 			}
 
-			tmPubKey, err := utilsecp256k1.PubKeyBytesToTendermint(utilsecp256k1.PrivKeyToPubKey(signatureKey.PrivateKey))
-			if err != nil {
-				return nil, err
-			}
-
-			pubKey = utilsecp256k1.PubKeyBytesToSdkPubKey(tmPubKey.Bytes())
+			pubKey = privKey.PubKey()
 		}
 
 		sig := legacytx.StdSignature{
