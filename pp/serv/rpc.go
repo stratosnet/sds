@@ -528,3 +528,33 @@ func (api *rpcApi) RequestGetShared(param rpc_api.ParamReqGetShared) rpc_api.Res
 
 	return *result
 }
+
+// RequestGetOzone
+func (api *rpcApi) RequestGetOzone(param rpc_api.ParamReqGetOzone) rpc_api.GetOzoneResult {
+	reqId := uuid.New().String()
+	parentCtx := context.Background()
+	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
+	err := event.GetWalletOz(param.WalletAddr, reqId)
+	if err != nil {
+		return rpc_api.GetOzoneResult{Return: rpc_api.TIME_OUT}
+	}
+
+	// wait for result, SUCCESS or some failure
+	var result *rpc_api.GetOzoneResult
+	var found bool
+
+	for {
+		select {
+		case <-ctx.Done():
+			result = &rpc_api.GetOzoneResult{Return: rpc_api.TIME_OUT}
+			return *result
+		default:
+			result, found = file.GetQueryOzoneResult(param.WalletAddr + reqId)
+			if result != nil && found {
+				return *result
+			}
+		}
+	}
+
+	return *result
+}

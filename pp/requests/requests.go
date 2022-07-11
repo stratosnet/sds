@@ -109,9 +109,10 @@ func ReqGetPPStatusData(initPPList bool) *protos.ReqGetPPStatus {
 	}
 }
 
-func ReqGetWalletOzData(walletAddr string) *protos.ReqGetWalletOz {
+func ReqGetWalletOzData(walletAddr, reqId string) *protos.ReqGetWalletOz {
 	return &protos.ReqGetWalletOz{
 		WalletAddress: walletAddr,
+		ReqId:         reqId,
 	}
 }
 

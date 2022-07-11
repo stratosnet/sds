@@ -391,7 +391,6 @@ func get(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // reqListMsg
 func reqListMsg(page uint64) []byte {
 	// wallet address
@@ -410,7 +409,7 @@ func reqListMsg(page uint64) []byte {
 
 	pm, e := json.Marshal(params)
 	if e != nil {
-		utils.DebugLog("failed marshal param for ReqUploadFile")
+		utils.DebugLog("failed marshal param for ReqFileList")
 		return nil
 	}
 
@@ -430,7 +429,6 @@ func printFileList(res rpc.FileListResult){
 		fmt.Printf("_____________________________________________________________________________________\n")
 		fmt.Printf("Total: %d\tPage: %d\n\n", res.TotalNumber, res.PageId)
 	}
-
 }
 
 // list
@@ -448,6 +446,7 @@ func list(cmd *cobra.Command, args []string) error {
 	if r == nil {
 		return nil
 	}
+
 	// http request-respond
 	body := httpRequest(r)
 	if body == nil {
@@ -469,6 +468,62 @@ func list(cmd *cobra.Command, args []string) error {
 	}
 
 	printFileList(res)
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// reqGetOzoneMsg
+func reqGetOzoneMsg() []byte {
+	// wallet address
+	ret := readWalletKeys(WalletAddress)
+	if !ret {
+		utils.DebugLog("Failed reading key file.")
+		return nil
+	}
+
+	// param
+	var params = []rpc.ParamReqGetOzone{}
+	params = append(params, rpc.ParamReqGetOzone {
+		WalletAddr: WalletAddress,
+	})
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.DebugLog("failed marshal param for ReqUGetOzone")
+		return nil
+	}
+
+	// wrap to the json-rpc message
+	return wrapJsonRpc("user_requestGetOzone", pm)
+}
+
+// getozone
+func getozone(cmd *cobra.Command, args []string) error {
+	// compose "request file download" request
+	r := reqGetOzoneMsg()
+	if r == nil {
+		return nil
+	}
+	// http request-respond
+	body := httpRequest(r)
+	if body == nil {
+		utils.DebugLog("json marshal error")
+		return nil
+	}
+
+	// Handle rsp
+	var rsp jsonrpcMessage
+	err := json.Unmarshal(body, &rsp)
+	if err != nil {
+	  return nil
+	}
+
+	var res rpc.GetOzoneResult
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+		utils.DebugLog("unmarshal failed")
+		return nil
+	}
 	return nil
 }
 
@@ -864,6 +919,12 @@ func main() {
 		RunE:    getshared,
 	}
 
+	getozoneCmd := &cobra.Command{
+		Use:     "getozone",
+		Short:   "get the ozone of the wallet",
+		RunE:    getozone,
+	}
+
 	rootCmd.AddCommand(putCmd)
 	rootCmd.AddCommand(getCmd)
 	rootCmd.AddCommand(listCmd)
@@ -871,6 +932,7 @@ func main() {
 	rootCmd.AddCommand(listsharedCmd)
 	rootCmd.AddCommand(stopsharedCmd)
 	rootCmd.AddCommand(getsharedCmd)
+	rootCmd.AddCommand(getozoneCmd)
 
 	utils.NewDefaultLogger("./logs/stdout.log", true, true)
 
