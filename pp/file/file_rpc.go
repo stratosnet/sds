@@ -38,6 +38,9 @@ var (
 	rpcFileListResult = &sync.Map{}
 
 	rpcFileShareResult = &sync.Map{}
+
+	// key(wallet + reqid) : value(*rpc.GetOzoneResult)
+	rpcOzone = &sync.Map{}
 )
 
 type pipe struct {
@@ -299,3 +302,20 @@ func SetFileShareResult(key string, result *rpc.FileShareResult) {
 		rpcFileShareResult.Store(key, result)
 	}
 }
+
+// GetQueryOzoneResult
+func GetQueryOzoneResult(key string) (*rpc.GetOzoneResult, bool) {
+	result, loaded := rpcOzone.LoadAndDelete(key)
+	if result != nil && loaded {
+		return result.(*rpc.GetOzoneResult), loaded
+	}
+	return nil, loaded
+}
+
+// SetQueryOzoneResult
+func SetQueryOzoneResult(key string, result *rpc.GetOzoneResult) {
+	if result != nil {
+		rpcOzone.Store(key, result)
+	}
+}
+

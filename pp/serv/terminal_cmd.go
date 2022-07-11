@@ -61,7 +61,7 @@ func (api *terminalCmd) Getoz(param []string) (CmdResult, error) {
 			utils.ErrorLog("getPublicKey DecryptKey", err)
 			return CmdResult{Msg: ""}, err
 		}
-		if err := event.GetWalletOz(param[0]); err != nil {
+		if err := event.GetWalletOz(param[0], task.LOCAL_REQID); err != nil {
 			return CmdResult{Msg: ""}, err
 		}
 		return CmdResult{Msg: DefaultMsg}, nil

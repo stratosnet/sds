@@ -98,6 +98,12 @@ type FileInfo struct {
 	ShareLink     string   `json:"sharelink",omitempty"`
 }
 
+// ozone: get ozone
+type ParamReqGetOzone struct {
+	WalletAddr    string   `json:"walletaddr"`
+}
+
+// result for all upload and download messages
 type Result struct {
 	Return        string     `json:"return"`
 	ReqId         string     `json:"reqid,omitempty"`
@@ -120,4 +126,10 @@ type FileShareResult struct {
 	FileInfo      []FileInfo `json:"fileinfo,omitempty"`
 	TotalNumber   uint64     `json:"totalnumber,omitempty"`
 	PageId        uint64     `json:"page,omitempty"`
+}
+
+// result for getozone
+type GetOzoneResult struct {
+	Return        string     `json:"return"`
+	Ozone         string     `json:"ozone,omitempty"`
 }
