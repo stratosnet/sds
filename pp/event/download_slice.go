@@ -226,12 +226,12 @@ func videoCacheKeep(fileHash, taskID string) {
 // ReportDownloadResult  PP-SP OR StoragePP-SP
 func SendReportDownloadResult(target *protos.RspDownloadSlice, isPP bool) {
 	utils.DebugLog("ReportDownloadResult report result target.fileHash = ", target.FileHash)
-	peers.SendMessageDirectToSPOrViaPP(requests.ReqReportDownloadResultData(target, isPP), header.ReqReportDownloadResult)
+	peers.SendMessageDirectToIndexNodeOrViaPP(requests.ReqReportDownloadResultData(target, isPP), header.ReqReportDownloadResult)
 }
 
 // ReportDownloadResult  P-SP OR PP-SP
 func SendReportStreamingResult(target *protos.RspDownloadSlice, isPP bool) {
-	peers.SendMessageToSPServer(requests.ReqReportDownloadResultData(target, isPP), header.ReqReportDownloadResult)
+	peers.SendMessageToIndexNodeServer(requests.ReqReportDownloadResultData(target, isPP), header.ReqReportDownloadResult)
 }
 
 // DownloadFileSlice
@@ -311,7 +311,7 @@ func SendReqDownloadSlice(fileHash string, sliceInfo *protos.DownloadSliceInfo, 
 	}
 }
 
-// RspReportDownloadResult  SP-P OR SP-PP
+// RspReportDownloadResult  IndexNode-P OR IndexNode-PP
 func RspReportDownloadResult(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspReportDownloadResult")
 	var target protos.RspReportDownloadResult
@@ -342,7 +342,7 @@ func RspDownloadSliceWrong(ctx context.Context, conn core.WriteCloser) {
 
 func downloadWrong(taskID, sliceHash, p2pAddress, walletAddress string, wrongType protos.DownloadWrongType) {
 	utils.DebugLog("downloadWrong, sliceHash: ", sliceHash)
-	peers.SendMessageToSPServer(requests.ReqDownloadSliceWrong(taskID, sliceHash, p2pAddress, walletAddress, wrongType), header.ReqDownloadSliceWrong)
+	peers.SendMessageToIndexNodeServer(requests.ReqDownloadSliceWrong(taskID, sliceHash, p2pAddress, walletAddress, wrongType), header.ReqDownloadSliceWrong)
 }
 
 // DownloadSlicePause
@@ -386,7 +386,7 @@ func decryptSliceData(dataToDecrypt []byte) ([]byte, error) {
 }
 
 func verifyDownloadSliceSign(target *protos.ReqDownloadSlice, rsp *protos.RspDownloadSlice) bool {
-	if !requests.VerifySpSignature(target.SpP2PAddress, []byte(target.P2PAddress+target.FileHash+header.ReqDownloadSlice), target.Sign) {
+	if !requests.VerifyIndexNodeSignature(target.IndexNodeP2PAddress, []byte(target.P2PAddress+target.FileHash+header.ReqDownloadSlice), target.Sign) {
 		return false
 	}
 

@@ -14,15 +14,15 @@ import (
 
 // Offline Offline
 type Offline struct {
-	IsSp           bool
+	IsIndexNode    bool
 	NetworkAddress string
 }
 
 // OfflineChan OfflineChan
 var OfflineChan = make(chan *Offline, 2)
 
-// SPConn super node connection
-var SPConn *cf.ClientConn
+// IndexNodeConn super node connection
+var IndexNodeConn *cf.ClientConn
 
 // PPConn current connected pp node
 var PPConn *cf.ClientConn
@@ -65,7 +65,7 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 				utils.DebugLog("lost gateway PP conn, delete and change to new PP")
 				select {
 				case OfflineChan <- &Offline{
-					IsSp:           false,
+					IsIndexNode:    false,
 					NetworkAddress: PPConn.GetRemoteAddr(),
 				}:
 				default:
@@ -73,13 +73,13 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 				}
 			}
 		}
-		if SPConn != nil {
-			if SPConn.GetName() == c.(*cf.ClientConn).GetName() {
-				utils.DebugLog("lost SP conn, name: ", SPConn.GetName(), " netId is ", SPConn.GetNetID())
-				SPConn = nil
+		if IndexNodeConn != nil {
+			if IndexNodeConn.GetName() == c.(*cf.ClientConn).GetName() {
+				utils.DebugLog("lost SP conn, name: ", IndexNodeConn.GetName(), " netId is ", IndexNodeConn.GetNetID())
+				IndexNodeConn = nil
 				select {
 				case OfflineChan <- &Offline{
-					IsSp: true,
+					IsIndexNode: true,
 				}:
 				default:
 					break

@@ -19,11 +19,11 @@ func CheckAndSendRetryMessage(dTask *task.DownloadTask) {
 	}
 	if f, ok := task.DownloadFileMap.Load(dTask.FileHash); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
-		peers.SendMessageToSPServer(requests.ReqDownloadFileWrongData(fInfo, dTask), header.ReqDownloadFileWrong)
+		peers.SendMessageToIndexNodeServer(requests.ReqDownloadFileWrongData(fInfo, dTask), header.ReqDownloadFileWrong)
 	}
 }
 
-// RspFileStorageInfo SP-PP , PP-P
+// RspFileStorageInfo IndexNode-PP , PP-P
 func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 	// PP check whether itself is the storage PP, if not transfer
 	utils.Log("get，RspDownloadFileWrong")

@@ -30,10 +30,10 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 		utils.ErrorLog("Error when saving PP List", err)
 	}
 
-	shouldRegisterToSP := setting.IsAuto && !setting.IsLoginToSP &&
+	shouldRegisterToSP := setting.IsAuto && !setting.IsLoginToIndexNode &&
 		(setting.State == types.PP_ACTIVE)
 
 	if shouldRegisterToSP {
-		peers.RegisterToSP(true)
+		peers.RegisterToIndexNode(true)
 	}
 }

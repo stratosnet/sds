@@ -14,7 +14,7 @@ import (
 // GetWalletOz queries current ozone balance
 func GetWalletOz(walletAddr string) error {
 	utils.Logf("Querying current ozone balance of the wallet: %v", walletAddr)
-	peers.SendMessageToSPServer(requests.ReqGetWalletOzData(walletAddr), header.ReqGetWalletOz)
+	peers.SendMessageToIndexNodeServer(requests.ReqGetWalletOzData(walletAddr), header.ReqGetWalletOz)
 	return nil
 }
 

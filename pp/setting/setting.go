@@ -89,41 +89,41 @@ type AppVersion struct {
 	Show      string `toml:"show"`
 }
 
-type SPBaseInfo struct {
+type IndexNodeBaseInfo struct {
 	P2PAddress     string `toml:"p2p_address"`
 	P2PPublicKey   string `toml:"p2p_public_key"`
 	NetworkAddress string `toml:"network_address"`
 }
 
 type config struct {
-	Version              AppVersion   `toml:"version"`
-	DownloadPathMinLen   int          `toml:"download_path_min_len"`
-	Port                 string       `toml:"port"`
-	NetworkAddress       string       `toml:"network_address"`
-	Debug                bool         `toml:"debug"`
-	PPListDir            string       `toml:"pp_list_dir"`
-	AccountDir           string       `toml:"account_dir"`
-	StorehousePath       string       `toml:"storehouse_path"`
-	DownloadPath         string       `toml:"download_path"`
-	P2PAddress           string       `toml:"p2p_address"`
-	P2PPassword          string       `toml:"p2p_password"`
-	WalletAddress        string       `toml:"wallet_address"`
-	WalletPassword       string       `toml:"wallet_password"`
-	AutoRun              bool         `toml:"auto_run"`  // is auto login
-	Internal             bool         `toml:"internal"`  // is internal net
-	IsWallet             bool         `toml:"is_wallet"` // is wallet
-	IsLimitDownloadSpeed bool         `toml:"is_limit_download_speed"`
-	LimitDownloadSpeed   uint64       `toml:"limit_download_speed"`
-	IsLimitUploadSpeed   bool         `toml:"is_limit_upload_speed"`
-	LimitUploadSpeed     uint64       `toml:"limit_upload_speed"`
-	ChainId              string       `toml:"chain_id"`
-	Token                string       `toml:"token"`
-	StratosChainUrl      string       `toml:"stratos_chain_url"`
-	RestPort             string       `toml:"rest_port"`
-	InternalPort         string       `toml:"internal_port"`
-	TrafficLogInterval   uint64       `toml:"traffic_log_interval"`
-	MaxConnection        int          `toml:"max_connection"`
-	SPList               []SPBaseInfo `toml:"sp_list"`
+	Version              AppVersion          `toml:"version"`
+	DownloadPathMinLen   int                 `toml:"download_path_min_len"`
+	Port                 string              `toml:"port"`
+	NetworkAddress       string              `toml:"network_address"`
+	Debug                bool                `toml:"debug"`
+	PPListDir            string              `toml:"pp_list_dir"`
+	AccountDir           string              `toml:"account_dir"`
+	StorehousePath       string              `toml:"storehouse_path"`
+	DownloadPath         string              `toml:"download_path"`
+	P2PAddress           string              `toml:"p2p_address"`
+	P2PPassword          string              `toml:"p2p_password"`
+	WalletAddress        string              `toml:"wallet_address"`
+	WalletPassword       string              `toml:"wallet_password"`
+	AutoRun              bool                `toml:"auto_run"`  // is auto login
+	Internal             bool                `toml:"internal"`  // is internal net
+	IsWallet             bool                `toml:"is_wallet"` // is wallet
+	IsLimitDownloadSpeed bool                `toml:"is_limit_download_speed"`
+	LimitDownloadSpeed   uint64              `toml:"limit_download_speed"`
+	IsLimitUploadSpeed   bool                `toml:"is_limit_upload_speed"`
+	LimitUploadSpeed     uint64              `toml:"limit_upload_speed"`
+	ChainId              string              `toml:"chain_id"`
+	Token                string              `toml:"token"`
+	StratosChainUrl      string              `toml:"stratos_chain_url"`
+	RestPort             string              `toml:"rest_port"`
+	InternalPort         string              `toml:"internal_port"`
+	TrafficLogInterval   uint64              `toml:"traffic_log_interval"`
+	MaxConnection        int                 `toml:"max_connection"`
+	IndexNodeList        []IndexNodeBaseInfo `toml:"sp_list"`
 }
 
 func SetupRoot(root string) {
@@ -169,13 +169,13 @@ func LoadConfig(configPath string) error {
 	// todo: we shouldn't call stratoschain package to setup a global variable
 	stratoschain.Url = Config.StratosChainUrl
 
-	// Initialize SPMap
-	for _, sp := range Config.SPList {
+	// Initialize IndexNodeMap
+	for _, sp := range Config.IndexNodeList {
 		key := sp.P2PAddress
 		if key == "" {
 			key = "unknown"
 		}
-		SPMap.Store(key, sp)
+		IndexNodeMap.Store(key, sp)
 	}
 
 	return nil
@@ -303,7 +303,7 @@ func defaultConfig() *config {
 		RestPort:             "",
 		InternalPort:         "",
 		TrafficLogInterval:   10,
-		SPList:               []SPBaseInfo{{NetworkAddress: "127.0.0.1:8888"}},
+		IndexNodeList:        []IndexNodeBaseInfo{{NetworkAddress: "127.0.0.1:8888"}},
 	}
 }
 

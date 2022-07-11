@@ -16,7 +16,7 @@ import (
 // FindMyFileList
 func FindMyFileList(fileName, dir, reqID, keyword string, fileType int, isUp bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(requests.FindMyFileListData(fileName, dir, reqID, keyword, protos.FileSortType(fileType), isUp), header.ReqFindMyFileList)
+		peers.SendMessageDirectToIndexNodeOrViaPP(requests.FindMyFileListData(fileName, dir, reqID, keyword, protos.FileSortType(fileType), isUp), header.ReqFindMyFileList)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -26,7 +26,7 @@ func FindMyFileList(fileName, dir, reqID, keyword string, fileType int, isUp boo
 // ReqFindMyFileList ReqFindMyFileList
 func ReqFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("+++++++++++++++++++++++++++++++++++++++++++++++++++")
-	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToIndexNodeServer(core.MessageFromContext(ctx))
 }
 
 // RspFindMyFileList

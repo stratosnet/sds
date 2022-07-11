@@ -41,13 +41,13 @@ func Activate(amount, fee, gas int64) error {
 		}
 	}
 	var logstring string
-	if client.SPConn != nil {
-		logstring = fmt.Sprintf("Sending activate message to SP: %s, from: %s", client.SPConn.GetName(), activateReq.PpInfo.P2PAddress)
+	if client.IndexNodeConn != nil {
+		logstring = fmt.Sprintf("Sending activate message to SP: %s, from: %s", client.IndexNodeConn.GetName(), activateReq.PpInfo.P2PAddress)
 	} else {
 		logstring = fmt.Sprintf("Sending activate message to SP: %s, from: %s", "[no connected sp]", activateReq.PpInfo.P2PAddress)
 	}
 	utils.Log(logstring)
-	peers.SendMessageToSPServer(activateReq, header.ReqActivatePP)
+	peers.SendMessageToIndexNodeServer(activateReq, header.ReqActivatePP)
 	return nil
 }
 
@@ -98,7 +98,7 @@ func RspActivated(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("This PP node is now active")
 
 	// if autorun = true, bond pp to sp
-	if setting.IsAuto && !setting.IsLoginToSP {
-		peers.RegisterToSP(true)
+	if setting.IsAuto && !setting.IsLoginToIndexNode {
+		peers.RegisterToIndexNode(true)
 	}
 }

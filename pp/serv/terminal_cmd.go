@@ -161,7 +161,7 @@ func (api *terminalCmd) UpdateStake(param []string) (CmdResult, error) {
 }
 
 func (api *terminalCmd) Status(param []string) (CmdResult, error) {
-	peers.GetPPStatusFromSP()
+	peers.GetPPStatusFromIndexNode()
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 

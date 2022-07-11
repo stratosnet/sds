@@ -24,11 +24,11 @@ func TestVerifySignature(t *testing.T) {
 
 func TestVerifySignatureMissingSPInfo(t *testing.T) {
 	reqBody, sliceHash, data := setup(t)
-	setting.SPMap.Delete(reqBody.SpP2pAddress)
+	setting.IndexNodeMap.Delete(reqBody.IndexNodeP2pAddress)
 
 	success := verifySignature(reqBody, sliceHash, data)
 	if success {
-		t.Fatal("Verify should have been false because SP info is missing in setting.SPMap")
+		t.Fatal("Verify should have been false because SP info is missing in setting.IndexNodeMap")
 	}
 }
 
@@ -46,14 +46,14 @@ func setup(t *testing.T) (*StreamReqBody, string, []byte) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	setting.SPMap.Store(spP2pAddrString, setting.SPBaseInfo{P2PPublicKey: spP2pPubKeyString})
+	setting.IndexNodeMap.Store(spP2pAddrString, setting.IndexNodeBaseInfo{P2PPublicKey: spP2pPubKeyString})
 
 	data := []byte("some kind of data")
 	reqBody := &StreamReqBody{
-		FileHash:     hex.EncodeToString(crypto.Keccak256(data)),
-		P2PAddress:   "d4c3b2a1",
-		SpP2pAddress: spP2pAddrString,
-		Sign:         nil,
+		FileHash:            hex.EncodeToString(crypto.Keccak256(data)),
+		P2PAddress:          "d4c3b2a1",
+		IndexNodeP2pAddress: spP2pAddrString,
+		Sign:                nil,
 	}
 	sliceHash := utils.CalcSliceHash(data, reqBody.FileHash, reqBody.SliceInfo.SliceNumber)
 

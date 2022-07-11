@@ -22,7 +22,7 @@ func Deactivate(fee, gas int64) error {
 		return err
 	}
 	utils.Log("Sending deactivate message to SP! " + deactivateReq.P2PAddress)
-	peers.SendMessageToSPServer(deactivateReq, header.ReqDeactivatePP)
+	peers.SendMessageToIndexNodeServer(deactivateReq, header.ReqDeactivatePP)
 	return nil
 }
 

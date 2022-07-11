@@ -9,7 +9,7 @@ import (
 // RegisterEventHandle
 func RegisterEventHandle() {
 	core.Register(header.RspGetPPList, RspGetPPList)
-	core.Register(header.RspGetSPList, RspGetSPList)
+	core.Register(header.RspGetIndexNodeList, RspGetIndexNodeList)
 	core.Register(header.RspGetPPStatus, RspGetPPStatus)
 
 	core.Register(header.RspGetWalletOz, RspGetWalletOz)
@@ -67,8 +67,8 @@ func RegisterEventHandle() {
 	core.Register(header.ReqGetShareFile, ReqGetShareFile)
 	core.Register(header.RspGetShareFile, RspGetShareFile)
 
-	core.Register(header.ReqSpLatencyCheck, ReqHBLatencyCheckSpList)
-	core.Register(header.RspLatencyCheck, RspHBLatencyCheckSpList)
+	core.Register(header.ReqIndexNodeLatencyCheck, ReqHBLatencyCheckIndexNodeList)
+	core.Register(header.RspLatencyCheck, RspHBLatencyCheckIndexNodeList)
 	core.Register(header.ReqDeleteFile, ReqDeleteFile)
 	core.Register(header.RspDeleteFile, RspDeleteFile)
 	core.Register(header.RspBadVersion, RspBadVersion)

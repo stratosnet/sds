@@ -18,11 +18,11 @@ func ReportNodeStatus() {
 }
 
 func doReportNodeStatus(status *protos.ReqReportNodeStatus) {
-	utils.DebugLog("Sending RNS message to SP! " + status.String())
-	SendMessageToSPServer(status, header.ReqReportNodeStatus)
+	utils.DebugLog("Sending RNS message to Index Node! " + status.String())
+	SendMessageToIndexNodeServer(status, header.ReqReportNodeStatus)
 	// if current reachable is too less, try refresh the list
 	_, total, _ := peerList.GetPPList()
 	if total > 0 && total <= 2 {
-		GetPPListFromSP()
+		GetPPListFromIndexNode()
 	}
 }

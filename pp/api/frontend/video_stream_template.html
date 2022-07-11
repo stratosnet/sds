@@ -29,7 +29,7 @@
     const fileHash = "[Hash of the file to be streamed]";
     const ownerWalletAddress = "[wallet address of the owner]";
     let streamInfo;
-    httpGetAsync(`http://${url}:${internalPort}/streamVideoStorageInfo/${ownerWalletAddress}/${fileHash}`, function(responseText) {
+    httpGetAsync(`http://${url}:${internalPort}/streamVideoStorageInfo/${ownerWalletAddress}/${fileHash}`, function (responseText) {
         streamInfo = JSON.parse(responseText);
         playVideo();
     })
@@ -47,7 +47,7 @@
                 p2pAddress: streamInfo.FileInfo.p2p_address,
                 restAddress: sliceInfo.storage_pp_info.rest_address,
                 sign: streamInfo.FileInfo.sign,
-                spP2pAddress: streamInfo.FileInfo.sp_p2p_address,
+                indexNodeP2pAddress: streamInfo.FileInfo.index_node_p2p_address,
                 savePath: streamInfo.FileInfo.save_path,
                 sliceInfo
             })
@@ -66,10 +66,9 @@
         return streamInfo.SegmentToSliceInfo[videoSegment]
     }
 
-    function httpGetAsync(theUrl, callback)
-    {
+    function httpGetAsync(theUrl, callback) {
         const xmlHttp = new XMLHttpRequest();
-        xmlHttp.onreadystatechange = function() {
+        xmlHttp.onreadystatechange = function () {
             if (xmlHttp.readyState === 4 && xmlHttp.status === 200)
                 callback(xmlHttp.responseText);
         }

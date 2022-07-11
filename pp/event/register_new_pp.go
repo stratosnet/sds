@@ -13,10 +13,10 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// RegisterNewPP P-SP P register to become PP
+// RegisterNewPP P-IndexNode P register to become PP
 func RegisterNewPP() {
 	if setting.CheckLogin() {
-		peers.SendMessageToSPServer(requests.ReqRegisterNewPPData(), header.ReqRegisterNewPP)
+		peers.SendMessageToIndexNodeServer(requests.ReqRegisterNewPPData(), header.ReqRegisterNewPP)
 	}
 }
 

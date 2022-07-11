@@ -16,10 +16,10 @@ func StartPP(registerFn func()) {
 	//todo: register func call shouldn't be in peers package
 	registerFn()
 	go StartListenServer(setting.Config.Port)
-	GetSPList()
+	GetIndexNodeList()
 	GetPPStatusInitPPList()
-	//go SendLatencyCheckMessageToSPList()
-	StartStatusReportToSP()
+	//go SendLatencyCheckMessageToIndexNodeList()
+	StartStatusReportToIndexNode()
 	ListenOffline()
 }
 
@@ -28,30 +28,30 @@ func InitPeer(registerFn func()) {
 	utils.DebugLog("InitPeer")
 	//todo: register func call shouldn't be in peers package
 	registerFn()
-	GetSPList()
+	GetIndexNodeList()
 	GetPPStatusInitPPList()
-	//go SendLatencyCheckMessageToSPList()
+	//go SendLatencyCheckMessageToIndexNodeList()
 	go ListenOffline()
 }
 
-func RegisterToSP(toSP bool) {
-	if toSP {
-		SendMessageToSPServer(requests.ReqRegisterData(), header.ReqRegister)
-		utils.Log("SendMessage(conn, req, header.ReqRegister) to SP")
+func RegisterToIndexNode(toIndexNode bool) {
+	if toIndexNode {
+		SendMessageToIndexNodeServer(requests.ReqRegisterData(), header.ReqRegister)
+		utils.Log("SendMessage(conn, req, header.ReqRegister) to Index Node")
 	} else {
 		SendMessage(client.PPConn, requests.ReqRegisterData(), header.ReqRegister)
-		utils.Log("SendMessage(conn, req, header.ReqRegister) to PP")
+		utils.Log("SendMessage(conn, req, header.ReqRegister) to Index Node")
 	}
 }
 
 func StartMining() {
 	if setting.CheckLogin() {
-		if setting.IsPP && !setting.IsLoginToSP {
-			utils.DebugLog("Bond to SP and start mining")
-			SendMessageToSPServer(requests.ReqRegisterData(), header.ReqRegister)
+		if setting.IsPP && !setting.IsLoginToIndexNode {
+			utils.DebugLog("Bond to Index Node and start mining")
+			SendMessageToIndexNodeServer(requests.ReqRegisterData(), header.ReqRegister)
 		} else if setting.IsPP && !setting.IsStartMining {
-			utils.DebugLog("Sending ReqMining message to SP")
-			SendMessageToSPServer(requests.ReqMiningData(), header.ReqMining)
+			utils.DebugLog("Sending ReqMining message to Index Node")
+			SendMessageToIndexNodeServer(requests.ReqMiningData(), header.ReqMining)
 		} else if setting.IsStartMining {
 			utils.Log("mining already started")
 		} else {

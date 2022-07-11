@@ -380,7 +380,7 @@ func (cc *ClientConn) Start() {
 	var (
 		myClock = clock.NewClock()
 		//handler               = core.GetHandlerFunc(header.ReqHeart)
-		spLatencyCheckHandler = core.GetHandlerFunc(header.ReqSpLatencyCheck)
+		spLatencyCheckHandler = core.GetHandlerFunc(header.ReqIndexNodeLatencyCheck)
 
 		spLatencyCheckJobFunc = func() {
 			if !isSpLatencyChecked && spLatencyCheckHandler != nil {

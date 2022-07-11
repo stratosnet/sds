@@ -16,35 +16,35 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-type OptimalSp struct {
-	NetworkAddr        string
-	SpResponseTimeCost int64
+type OptimalIndexNode struct {
+	NetworkAddr               string
+	IndexNodeResponseTimeCost int64
 }
 
 type LatencyCheckRspSummary struct {
-	optSp OptimalSp
-	mtx   sync.Mutex
+	optIndexNode OptimalIndexNode
+	mtx          sync.Mutex
 }
 
 var (
 	summary = &LatencyCheckRspSummary{}
 )
 
-func ReqHBLatencyCheckSpList(ctx context.Context, conn core.WriteCloser) {
-	if client.GetConnectionName(conn) != client.GetConnectionName(client.SPConn) {
+func ReqHBLatencyCheckIndexNodeList(ctx context.Context, conn core.WriteCloser) {
+	if client.GetConnectionName(conn) != client.GetConnectionName(client.IndexNodeConn) {
 		//utils.DebugLogf("====== not sending latency check %v ======", client.GetConnectionName(conn))
 		return
 	}
 	//utils.DebugLogf("====== sending latency check %v ======", client.GetConnectionName(conn))
-	peers.ClearBufferedSpConns()
-	// clear optSp before ping sp list
-	summary.optSp = OptimalSp{}
-	go peers.SendLatencyCheckMessageToSPList()
+	peers.ClearBufferedIndexNodeConns()
+	// clear optIndexNode before ping index node list
+	summary.optIndexNode = OptimalIndexNode{}
+	go peers.SendLatencyCheckMessageToIndexNodeList()
 	myClockLatency := clock.NewClock()
-	myClockLatency.AddJobRepeat(time.Second*utils.LatencyCheckSpListTimeout, 1, connectAndRegisterToOptSp)
+	myClockLatency.AddJobRepeat(time.Second*utils.LatencyCheckIndexNodeListTimeout, 1, connectAndRegisterToOptIndexNode)
 }
 
-func RspHBLatencyCheckSpList(ctx context.Context, _ core.WriteCloser) {
+func RspHBLatencyCheckIndexNodeList(ctx context.Context, _ core.WriteCloser) {
 	utils.DebugLog("get Heartbeat RSP")
 	rspTime := time.Now().UnixNano()
 	var response protos.RspLatencyCheck
@@ -56,10 +56,10 @@ func RspHBLatencyCheckSpList(ctx context.Context, _ core.WriteCloser) {
 		utils.ErrorLog("invalid response of heartbeat")
 		return
 	}
-	go updateOptimalSp(rspTime, &response, &summary.optSp)
+	go updateOptimalIndexNode(rspTime, &response, &summary.optIndexNode)
 }
 
-func updateOptimalSp(rspTime int64, rsp *protos.RspLatencyCheck, optSp *OptimalSp) {
+func updateOptimalIndexNode(rspTime int64, rsp *protos.RspLatencyCheck, optIndexNode *OptimalIndexNode) {
 	summary.mtx.Lock()
 	if rsp.P2PAddressPp != setting.Config.P2PAddress || len(rsp.P2PAddressPp) == 0 {
 		// invalid response containing unknown PP p2pAddr
@@ -74,34 +74,34 @@ func updateOptimalSp(rspTime int64, rsp *protos.RspLatencyCheck, optSp *OptimalS
 	if timeCost <= 0 {
 		return
 	}
-	if len(optSp.NetworkAddr) == 0 || timeCost < optSp.SpResponseTimeCost {
-		// update new sp
-		optSp.NetworkAddr = rsp.NetworkAddressSp
-		optSp.SpResponseTimeCost = timeCost
-		utils.DebugLogf("New optimal SP is %v", optSp)
+	if len(optIndexNode.NetworkAddr) == 0 || timeCost < optIndexNode.IndexNodeResponseTimeCost {
+		// update new index node
+		optIndexNode.NetworkAddr = rsp.NetworkAddressIndexNode
+		optIndexNode.IndexNodeResponseTimeCost = timeCost
+		utils.DebugLogf("New optimal Index Node is %v", optIndexNode)
 	}
 	summary.mtx.Unlock()
 }
 
-func connectAndRegisterToOptSp() {
+func connectAndRegisterToOptIndexNode() {
 	summary.mtx.Lock()
-	// clear buffered spConn
-	spConnsToClose := peers.GetBufferedSpConns()
-	utils.DebugLogf("closing %v spConns", len(spConnsToClose))
-	for _, spConn := range spConnsToClose {
-		if spConn.GetName() == client.SPConn.GetName() {
-			utils.DebugLogf("spConn %v in connection, not closing it", spConn.GetName())
+	// clear buffered IndexNodeConn
+	indexNodeConnsToClose := peers.GetBufferedIndexNodeConns()
+	utils.DebugLogf("closing %v indexNodeConns", len(indexNodeConnsToClose))
+	for _, indexNodeConn := range indexNodeConnsToClose {
+		if indexNodeConn.GetName() == client.IndexNodeConn.GetName() {
+			utils.DebugLogf("indexNodeConn %v in connection, not closing it", indexNodeConn.GetName())
 			continue
 		}
-		utils.DebugLogf("closing spConn %v", spConn.GetName())
-		spConn.Close()
+		utils.DebugLogf("closing indexNodeConn %v", indexNodeConn.GetName())
+		indexNodeConn.Close()
 	}
-	// clear optSp before ping sp list
-	if len(summary.optSp.NetworkAddr) == 0 {
-		utils.ErrorLog("Optimal Sp isn't found")
+	// clear optIndexNode before ping index node list
+	if len(summary.optIndexNode.NetworkAddr) == 0 {
+		utils.ErrorLog("Optimal Index Node isn't found")
 		summary.mtx.Unlock()
 		return
 	}
-	peers.ConfirmOptSP(summary.optSp.NetworkAddr)
+	peers.ConfirmOptIndexNode(summary.optIndexNode.NetworkAddr)
 	summary.mtx.Unlock()
 }
