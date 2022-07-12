@@ -19,17 +19,17 @@ func getAllFile(w http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		return
 	}
-	var directory string
+	var pageId uint64
 	var fileName string
 	fileType := 0
 	isUp := true
 	var keyword string
-	if data["directory"] != nil {
-		directory = data["directory"].(string)
-	} else {
-		directory = ""
-	}
 
+	if data["pageId"] != nil {
+		pageId = data["pageId"].(uint64)
+	} else {
+		pageId = 0
+	}
 	if data["fileName"] != nil {
 		fileName = data["fileName"].(string)
 	} else {
@@ -49,6 +49,6 @@ func getAllFile(w http.ResponseWriter, request *http.Request) {
 		keyword = ""
 	}
 	if setting.CheckLogin() {
-		event.FindMyFileList(fileName, directory, uuid.New().String(), keyword, fileType, isUp, w)
+		event.FindFileList(fileName, setting.WalletAddress, pageId, uuid.New().String(), keyword, fileType, isUp, w)
 	}
 }

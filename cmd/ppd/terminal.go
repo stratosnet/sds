@@ -36,7 +36,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"put <filepath>                             			upload file, need to consume ozone\n" +
 		"putstream <filepath>                       			upload video file for streaming, need to consume ozone (alpha version, encode format config impossible)\n" +
 		"list <filename>                            			query uploaded file by self\n" +
-		"list                                       			query all files\n" +
+		"list <page id>                             			query all files owned by the wallet, paginated\n" +
 		"delete <filehash>                          			delete file\n" +
 		"get <sdm://account/filehash> <saveAs>			        download file, need to consume ozone\n" +
 		"	e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe\n" +
