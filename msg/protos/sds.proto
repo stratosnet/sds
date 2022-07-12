@@ -738,6 +738,7 @@ message ReqShareLink {
   string p2p_address = 1;
   string wallet_address = 2;
   string req_id = 3;
+  uint64 page_id = 4;
 }
 
 message RspShareLink {
@@ -746,6 +747,8 @@ message RspShareLink {
   string p2p_address = 3;
   string wallet_address = 4; //
   Result result = 5;
+  uint64 total_file_number = 6;
+  uint64 page_id = 7;
 }
 
 message ReqShareFile {

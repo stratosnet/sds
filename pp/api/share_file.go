@@ -48,5 +48,5 @@ func shareFile(w http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	event.GetReqShareFile(uuid.New().String(), fileHash, pathHash, shareTime, isPrivate, w)
+	event.GetReqShareFile(uuid.New().String(), fileHash, pathHash, setting.WalletAddress, shareTime, isPrivate, w)
 }

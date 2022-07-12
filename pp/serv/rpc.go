@@ -217,7 +217,7 @@ func (api *rpcApi) RequestDownload(param rpc_api.ParamReqDownloadFile) rpc_api.R
 	wallet := param.WalletAddr
 
 	// request for downloading file
-	req, reqid := requests.RequestDownloadFile(fileHash, wallet)
+	req, reqid := requests.RequestDownloadFile(fileHash, wallet, "", nil)
 	peers.SendMessageDirectToSPOrViaPP(req, header.ReqFileStorageInfo)
 	key := fileHash + reqid
 
@@ -263,7 +263,7 @@ func (api *rpcApi) RequestDownload(param rpc_api.ParamReqDownloadFile) rpc_api.R
 func (api *rpcApi) DownloadData(param rpc_api.ParamDownloadData) rpc_api.Result {
 	key := param.FileHash + param.ReqId
 
-	// last piece was done, tell the called of driver to move on
+	// previous piece was done, tell the caller of remote file driver to move on
 	file.SetDownloadSliceDone(key)
 
 	// wait for result: DOWNLOAD_OK or DL_OK_ASK_INFO
@@ -366,6 +366,164 @@ func (api *rpcApi) RequestList(param rpc_api.ParamReqFileList) rpc_api.FileListR
 				return *result
 			}
 		}
+	}
+
+	return *result
+}
+
+// RequestShare
+func (api *rpcApi) RequestShare(param rpc_api.ParamReqShareFile) rpc_api.FileShareResult {
+
+	reqId := uuid.New().String()
+	parentCtx := context.Background()
+	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
+
+	event.GetReqShareFile(reqId, param.FileHash, "", param.WalletAddr, param.Duration, param.PrivateFlag, nil)
+
+	// wait for result, SUCCESS or some failure
+	var result *rpc_api.FileShareResult
+	var found bool
+
+	for {
+		select {
+		case <-ctx.Done():
+			result = &rpc_api.FileShareResult{Return: rpc_api.TIME_OUT}
+			return *result
+		default:
+			result, found = file.GetFileShareResult(param.WalletAddr+reqId)
+			if result != nil && found {
+				return *result
+			}
+		}
+	}
+
+	return *result
+}
+
+// RequestListShare
+func (api *rpcApi) RequestListShare(param rpc_api.ParamReqListShared) rpc_api.FileShareResult {
+
+	reqId := uuid.New().String()
+	parentCtx := context.Background()
+	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
+
+	event.GetAllShareLink(reqId, param.WalletAddr, param.PageId, nil)
+
+	// wait for result, SUCCESS or some failure
+	var result *rpc_api.FileShareResult
+	var found bool
+
+	for {
+		select {
+		case <-ctx.Done():
+			result = &rpc_api.FileShareResult{Return: rpc_api.TIME_OUT}
+			return *result
+		default:
+			result, found = file.GetFileShareResult(param.WalletAddr+reqId)
+			if result != nil && found {
+				return *result
+			}
+		}
+	}
+
+	return *result
+}
+
+// RequestStopShare
+func (api *rpcApi) RequestStopShare(param rpc_api.ParamReqStopShare) rpc_api.FileShareResult {
+
+	reqId := uuid.New().String()
+	parentCtx := context.Background()
+	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
+
+	event.DeleteShare(param.ShareId, reqId, param.WalletAddr, nil)
+
+	// wait for result, SUCCESS or some failure
+	var result *rpc_api.FileShareResult
+	var found bool
+
+	for {
+		select {
+		case <-ctx.Done():
+			result = &rpc_api.FileShareResult{Return: rpc_api.TIME_OUT}
+			return *result
+		default:
+			result, found = file.GetFileShareResult(param.WalletAddr+reqId)
+			if result != nil && found {
+				return *result
+			}
+		}
+	}
+
+	return *result
+}
+
+// RequestGetShared
+func (api *rpcApi) RequestGetShared(param rpc_api.ParamReqGetShared) rpc_api.Result {
+
+	reqId := uuid.New().String()
+	parentCtx := context.Background()
+	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
+	key := param.WalletAddr + reqId
+
+	event.GetShareFile(param.ShareLink, "", "", reqId, param.WalletAddr, nil)
+
+	// the application gives FileShareResult type of result
+	var res *rpc_api.FileShareResult
+
+	// only in case of "shared file dl started", jump to next step. Otherwise, return.
+	found := false
+	for !found {
+		select {
+		case <-ctx.Done():
+			return rpc_api.Result{Return: rpc_api.TIME_OUT}
+		default:
+			res, found = file.GetFileShareResult(param.WalletAddr + reqId)
+			if found {
+				// the result is read, but it's nil
+				if res == nil {
+					return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+				}
+				// if shared download has started, wait for the rsp of file storage info
+				if res.Return != rpc_api.SHARED_DL_START {
+					return rpc_api.Result{Return: res.Return}
+				}
+			}
+		}
+	}
+
+	// file hash should be given in the result message
+	fileHash := res.FileInfo[0].FileHash
+	if fileHash == "" {
+		return rpc_api.Result{Return: rpc_api.WRONG_FILE_INFO}
+	}
+
+	// start from here, the control flow follows that of download file
+	key = fileHash + reqId
+
+	var result *rpc_api.Result
+	ctx, _ = context.WithTimeout(parentCtx, WAIT_TIMEOUT)
+
+	found = false
+	for !found {
+		select {
+		case <-ctx.Done():
+			file.CleanFileHash(key)
+			return rpc_api.Result{Return: rpc_api.TIME_OUT}
+		default:
+			result, found = file.GetRemoteFileEvent(key)
+		}
+	}
+
+	// one piece to be sent to client
+	if result.Return == rpc_api.DOWNLOAD_OK {
+		rawData := file.GetDownloadFileData(key)
+		encoded := b64.StdEncoding.EncodeToString(rawData)
+		result.FileData = encoded
+		result.ReqId = reqId
+	} else {
+		// end of the session
+		file.CleanFileHash(key)
 	}
 
 	return *result

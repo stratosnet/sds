@@ -1,10 +1,10 @@
 package api
 
 import (
-	"github.com/stratosnet/sds/pp/event"
 	"net/http"
-
 	"github.com/google/uuid"
+	"github.com/stratosnet/sds/pp/event"
+	"github.com/stratosnet/sds/pp/setting"
 )
 
 func getAllShareLink(w http.ResponseWriter, request *http.Request) {
@@ -12,5 +12,5 @@ func getAllShareLink(w http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		return
 	}
-	event.GetAllShareLink(uuid.New().String(), w)
+	event.GetAllShareLink(uuid.New().String(), setting.WalletAddress, 0, w)
 }
