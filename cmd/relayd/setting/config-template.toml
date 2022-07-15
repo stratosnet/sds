@@ -27,3 +27,7 @@ token = "ustos"
 [blockchain_info.transactions]
 fee = 30000
 gas = 20000000
+
+[keys]
+wallet_path = "config/st1pzdlyeslat4kw8j9paf4e0j0lz7eaczjtj7v7s.json"
+wallet_password = "aaa"
