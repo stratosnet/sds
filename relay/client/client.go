@@ -7,13 +7,18 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
+	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
+	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	setting "github.com/stratosnet/sds/cmd/relayd/config"
-	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/relay/sds"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/relay/stratoschain/handlers"
@@ -27,7 +32,6 @@ type MultiClient struct {
 	cancel                context.CancelFunc
 	Ctx                   context.Context
 	once                  *sync.Once
-	sdsClientConn         *cf.ClientConn
 	sdsWebsocketConn      *websocket.Conn
 	stratosWebsocketUrl   string
 	stratosEventsChannels *sync.Map
@@ -68,9 +72,6 @@ func (m *MultiClient) Start() error {
 func (m *MultiClient) Stop() {
 	m.once.Do(func() {
 		m.cancel()
-		if m.sdsClientConn != nil {
-			m.sdsClientConn.ClientClose()
-		}
 		if m.sdsWebsocketConn != nil {
 			_ = m.sdsWebsocketConn.Close()
 		}
@@ -107,12 +108,10 @@ func (m *MultiClient) connectToSDS() {
 		}
 	}()
 
-	sdsClientUrl := setting.Config.SDS.NetworkAddress + ":" + setting.Config.SDS.ClientPort
 	sdsWebsocketUrl := setting.Config.SDS.NetworkAddress + ":" + setting.Config.SDS.WebsocketPort
 
 	// Connect to SDS SP node in a loop
-	i := 0
-	for ; i < setting.Config.SDS.ConnectionRetries.Max; i++ {
+	for i := 0; i < setting.Config.SDS.ConnectionRetries.Max; i++ {
 		if m.Ctx.Err() != nil {
 			return
 		}
@@ -121,19 +120,12 @@ func (m *MultiClient) connectToSDS() {
 			time.Sleep(time.Millisecond * time.Duration(setting.Config.SDS.ConnectionRetries.SleepDuration))
 		}
 
-		// Client to send messages to SDS SP node
-		sdsClient := sds.NewClient(sdsClientUrl)
-		if sdsClient == nil {
-			continue
-		}
-		m.sdsClientConn = sdsClient
-
 		// Client to subscribe to events from SDS SP node
 		fullSdsWebsocketUrl := "ws://" + sdsWebsocketUrl + "/websocket"
 		sdsTopics := []string{sds.TypeBroadcast}
 		ws := sds.DialWebsocket(fullSdsWebsocketUrl, sdsTopics)
 		if ws == nil {
-			break
+			continue
 		}
 		m.sdsWebsocketConn = ws
 
@@ -145,11 +137,7 @@ func (m *MultiClient) connectToSDS() {
 	}
 
 	// This is reached when we couldn't establish the connection to the SP node
-	if i == setting.Config.SDS.ConnectionRetries.Max {
-		utils.ErrorLog("Couldn't connect to SDS SP node after many tries. Relayd will shutdown")
-	} else {
-		utils.ErrorLog("Couldn't subscribe to SDS events through websockets. Relayd will shutdown")
-	}
+	utils.ErrorLog("Couldn't connect to SDS SP node after many tries. Relayd will shutdown")
 	m.cancel()
 }
 
@@ -264,9 +252,20 @@ func (m *MultiClient) txBroadcasterLoop() {
 	var unsignedMsgs []*relaytypes.UnsignedMsg
 	broadcastTx := func() {
 		utils.Logf("Tx broadcaster loop will try to broadcast %v msgs %v", len(unsignedMsgs), countMsgsByType(unsignedMsgs))
-		txBytes, err := stratoschain.BuildTxBytes(setting.Config.BlockchainInfo.Token, setting.Config.BlockchainInfo.ChainId, "",
+
+		var unsignedSdkMsgs []sdktypes.Msg
+		protoConfig, txBuilder := createTxConfigAndTxBuilder()
+		for _, unsignedMsg := range unsignedMsgs {
+			unsignedSdkMsgs = append(unsignedSdkMsgs, unsignedMsg.Msg.(legacytx.LegacyMsg))
+		}
+		txBuilder, err := setMsgInfoToTxBuilder(txBuilder, unsignedSdkMsgs, setting.Config.BlockchainInfo.Transactions.Fee, setting.Config.BlockchainInfo.Transactions.Gas)
+		if err != nil {
+			utils.ErrorLog("couldn't set tx builder", err)
+			return
+		}
+		txBytes, err := stratoschain.BuildTxBytesNew(protoConfig, txBuilder, setting.Config.BlockchainInfo.Token, setting.Config.BlockchainInfo.ChainId, "",
 			flags.BroadcastBlock, unsignedMsgs, setting.Config.BlockchainInfo.Transactions.Fee,
-			setting.Config.BlockchainInfo.Transactions.Gas)
+			setting.Config.BlockchainInfo.Transactions.Gas, int64(0))
 		unsignedMsgs = nil // Clearing msg list
 		if err != nil {
 			utils.ErrorLog("couldn't build tx bytes", err)
@@ -342,7 +341,7 @@ func (m *MultiClient) stratosSubscriptionReaderLoop(subscription websocketSubscr
 func (m *MultiClient) SubscribeToStratosChain(msgType string) error {
 	handler, ok := handlers.Handlers[msgType]
 	if !ok {
-		return errors.Errorf("Cannot subscribe to message [%v] in stratos-chain: missing handler function")
+		return errors.Errorf("Cannot subscribe to message [%v] in stratos-chain: missing handler function", msgType)
 	}
 
 	query := fmt.Sprintf("message.action='%v'", msgType)
@@ -381,10 +380,6 @@ func (m *MultiClient) SubscribeToStratosChainEvents() error {
 	return nil
 }
 
-func (m *MultiClient) GetSdsClientConn() *cf.ClientConn {
-	return m.sdsClientConn
-}
-
 func (m *MultiClient) GetSdsWebsocketConn() *websocket.Conn {
 	return m.sdsWebsocketConn
 }
@@ -403,4 +398,23 @@ func countMsgsByType(unsignedMsgs []*relaytypes.UnsignedMsg) string {
 		countString += fmt.Sprintf("%v: %v", msgType, count)
 	}
 	return "[" + countString + "]"
+}
+
+func setMsgInfoToTxBuilder(txBuilder client.TxBuilder, txMsg []sdktypes.Msg, fee int64, gas int64) (client.TxBuilder, error) {
+	err := txBuilder.SetMsgs(txMsg...)
+	if err != nil {
+		return nil, err
+	}
+
+	txBuilder.SetFeeAmount(sdktypes.NewCoins(sdktypes.NewInt64Coin(setting.Config.BlockchainInfo.Token, fee)))
+	//txBuilder.SetFeeGranter(tx.FeeGranter())
+	txBuilder.SetGasLimit(uint64(gas))
+	txBuilder.SetMemo("")
+	return txBuilder, nil
+}
+
+func createTxConfigAndTxBuilder() (client.TxConfig, client.TxBuilder) {
+	protoConfig := authtx.NewTxConfig(relay.ProtoCdc, []signingtypes.SignMode{signingtypes.SignMode_SIGN_MODE_DIRECT})
+	txBuilder := protoConfig.NewTxBuilder()
+	return protoConfig, txBuilder
 }

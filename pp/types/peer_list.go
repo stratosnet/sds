@@ -272,7 +272,7 @@ func (peerList *PeerList) DeletePPByNetworkAddress(networkAddress string) {
 	}
 	pp := peerList.GetPPByNetworkAddress(networkAddress)
 	if pp == nil {
-		utils.DebugLogf("Cannot delete PP %v from local PP list: PP doesn't exist")
+		utils.DebugLogf("Cannot delete PP %v from local PP list: PP doesn't exist", networkAddress)
 		return
 	}
 

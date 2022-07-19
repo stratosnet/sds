@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/stratosnet/sds/utils/crypto/sha3"
 	"github.com/stratosnet/stratos-chain/types"
-	"github.com/tendermint/tendermint/libs/bech32"
 )
 
 // Lengths of hashes and addresses in bytes.
@@ -145,6 +145,14 @@ func (a Address) ToBech(hrp string) (string, error) {
 	return bech32.ConvertAndEncode(hrp, a.Bytes())
 }
 
+func (a Address) WalletAddressToBech() (string, error) {
+	return a.ToBech(types.AccountAddressPrefix)
+}
+
+func (a Address) P2pAddressToBech() (string, error) {
+	return a.ToBech(types.SdsNodeP2PAddressPrefix)
+}
+
 func WalletAddressFromBech(str string) (Address, error) {
 	addr, err := sdktypes.GetFromBech32(str, types.StratosBech32Prefix)
 	if err != nil {
@@ -170,10 +178,6 @@ func P2pAddressFromBech(str string) (Address, error) {
 		return Address{}, err
 	}
 	return BytesToAddress(bz), nil
-}
-
-func P2pAddressToBech(p2pAddr Address) (string, error) {
-	return p2pAddr.ToBech(types.SdsNodeP2PAddressPrefix)
 }
 
 // Bytes2Hex returns the hexadecimal encoding of d.

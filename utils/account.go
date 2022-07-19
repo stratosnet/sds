@@ -10,19 +10,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/crypto/keys"
-	"github.com/cosmos/go-bip39"
-	"github.com/pborman/uuid"
-	"github.com/stratosnet/sds/utils/crypto"
-	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	"github.com/stratosnet/sds/utils/types"
-	"github.com/vmihailenco/msgpack"
-	"golang.org/x/crypto/pbkdf2"
-	"golang.org/x/crypto/scrypt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/cosmos/cosmos-sdk/crypto/hd"
+	"github.com/cosmos/go-bip39"
+	"github.com/pborman/uuid"
+	"github.com/stratosnet/sds/utils/crypto"
+	"github.com/stratosnet/sds/utils/crypto/ed25519"
+	"github.com/stratosnet/sds/utils/crypto/secp256k1"
+	"github.com/stratosnet/sds/utils/types"
+	"github.com/vmihailenco/msgpack"
+	"golang.org/x/crypto/pbkdf2"
+	"golang.org/x/crypto/scrypt"
 )
 
 const (
@@ -72,7 +74,7 @@ type hdKeyBytes struct {
 
 // CreateWallet creates a new stratos-chain wallet with the given nickname and password, and saves the key data into the dir folder
 func CreateWallet(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPath string) (types.Address, error) {
-	privateKey, err := keys.SecpDeriveKey(mnemonic, bip39Passphrase, hdPath)
+	privateKey, err := hd.Secp256k1.Derive()(mnemonic, bip39Passphrase, hdPath)
 	if err != nil {
 		return types.Address{}, err
 	}
@@ -125,7 +127,7 @@ func newKeyFromBytes(privateKey []byte, isWallet bool) *AccountKey {
 		PrivateKey: privateKey,
 	}
 	if isWallet {
-		key.Address = crypto.PrivKeyToAddress(privateKey)
+		key.Address = secp256k1.PrivKeyToAddress(privateKey)
 	} else {
 		key.Address = ed25519.PrivKeyBytesToAddress(privateKey)
 	}
@@ -227,7 +229,7 @@ func DecryptKey(keyjson []byte, auth string) (*AccountKey, error) {
 	return &AccountKey{
 		Id:         uuid.UUID(keyId),
 		Name:       k.Name,
-		Address:    crypto.PrivKeyToAddress(hdKeyBytesObject.PrivKey),
+		Address:    secp256k1.PrivKeyToAddress(hdKeyBytesObject.PrivKey),
 		HdPath:     string(hdKeyBytesObject.HdPath),
 		Mnemonic:   string(hdKeyBytesObject.Mnemonic),
 		Passphrase: string(hdKeyBytesObject.Passphrase),

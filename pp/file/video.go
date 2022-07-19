@@ -128,8 +128,15 @@ func LoadHlsInfo(fileHash, sliceHash, savePath string) *HlsInfo {
 	return &hlsInfo
 }
 
+func DeleteTmpHlsFolder(fileHash string) {
+	err := os.RemoveAll(GetVideoTmpFolder(fileHash))
+	if err != nil {
+		utils.DebugLog("Delete tmp folder err", err)
+	}
+}
+
 func GetVideoTmpFolder(fileHash string) string {
-	return filepath.Join(setting.GetRootPath(), TEMP_FOLDER, fileHash)
+	return filepath.Join(setting.GetRootPath(), TEMP_FOLDER, "hls_"+fileHash)
 }
 
 func GetDumpySliceData(fileHash string, sliceNumber uint64) []byte {

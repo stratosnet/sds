@@ -43,7 +43,7 @@ func importWallet(w http.ResponseWriter, request *http.Request) {
 		return
 	}
 	setting.WalletPrivateKey = key.PrivateKey
-	setting.WalletPublicKey = secp256k1.PrivKeyToPubKey(key.PrivateKey)
+	setting.WalletPublicKey = secp256k1.PrivKeyToPubKey(key.PrivateKey).Bytes()
 	setting.WalletAddress, err = key.Address.ToBech(types.StratosBech32Prefix)
 	if err != nil {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "failed to convert wallet address to bech32 string").ToBytes())

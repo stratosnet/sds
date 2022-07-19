@@ -30,7 +30,6 @@ func (n *Node) nodeKey() string {
 }
 
 // Less of rbtree
-//
 func (n *Node) Less(than rbtree.Item) bool {
 	return utils.CalcCRC32([]byte(n.ID)) < utils.CalcCRC32([]byte(than.(*Node).ID))
 }
@@ -169,6 +168,7 @@ func (r *HashRing) SetOnline(ID string) {
 	}
 }
 
+// RandomGetNodes return random nodes from the hashring
 func (r *HashRing) RandomGetNodes(num int) []*Node {
 
 	if r.NodeOkCount <= 0 {
@@ -202,15 +202,14 @@ func (r *HashRing) RandomGetNodes(num int) []*Node {
 	return nodes
 }
 
-// GetNode
-// @params key
+// GetNode calculates an index from the given key, and returns a node selected using this index
 func (r *HashRing) GetNode(key string) (uint32, string) {
 	keyIndex := r.CalcIndex(key)
 	return r.GetNodeByIndex(keyIndex)
 }
 
-// GetNodeExcludedNodeIDs get node and exclude given NodeIDs. If setOffline is true, the excluded nodes will become offline.
-// @params key
+// GetNodeExcludedNodeIDs calculates an index from the given key, and returns a node selected using this index.
+// The nodes with IDs specified by NodeIDs will be excluded. If setOffline is true, the excluded nodes will become offline.
 func (r *HashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string, setOffline bool) (uint32, string) {
 	if len(NodeIDs) <= 0 {
 		return r.GetNode(key)
@@ -256,7 +255,6 @@ func (r *HashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string, setOffli
 }
 
 // GetNodeUpDownNodes get upstream of downstream of node
-// @params
 func (r *HashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
 	online, ok := r.NodeStatus.Load(NodeID)
 	if NodeID == "" || !ok || !online.(bool) || r.NodeCount <= 0 {
@@ -290,7 +288,6 @@ func (r *HashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
 }
 
 // GetNodeByIndex
-// @params keyIndex
 func (r *HashRing) GetNodeByIndex(keyIndex uint32) (uint32, string) {
 
 	if r.VRing.Len() <= 0 {

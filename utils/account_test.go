@@ -5,21 +5,23 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	"github.com/stratosnet/sds/utils/crypto/secp256k1"
+	utilsecp256k1 "github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/stratosnet/sds/utils/types"
 	stchaintypes "github.com/stratosnet/stratos-chain/types"
-	"github.com/tendermint/go-amino"
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
-	cryptoamino "github.com/tendermint/tendermint/crypto/encoding/amino"
-	"github.com/tendermint/tendermint/libs/bech32"
+	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/privval"
 )
 
-var cdc = amino.NewCodec()
+var cdc = codec.NewLegacyAmino()
 
 func init() {
-	cryptoamino.RegisterAmino(cdc)
+	cryptocodec.RegisterCrypto(cdc)
 }
 
 func TestCreateWallet(t *testing.T) {
@@ -30,12 +32,12 @@ func TestCreateWallet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	addr, err := CreateWallet("keys", "", password, stchaintypes.StratosBech32Prefix, mnemonic, "passphrase", "44'/606'/0'/0/44")
+	addr, err := CreateWallet("keys", "", password, stchaintypes.StratosBech32Prefix, mnemonic, "", "m/44'/606'/0'/0/0")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	bechAddr, err := addr.ToBech(stchaintypes.StratosBech32Prefix)
+	bechAddr, err := addr.WalletAddressToBech()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -49,9 +51,8 @@ func TestCreateWallet(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	privKey := secp256k1.PrivKeyBytesToTendermint(key.PrivateKey)
-	pubKey := privKey.PubKey()
-	bechPub, err := stchaintypes.Bech32ifyPubKey(stchaintypes.Bech32PubKeyTypeAccPub, pubKey)
+	sdkPubkey := utilsecp256k1.PrivKeyToPubKey(key.PrivateKey)
+	bechPub, err := bech32.ConvertAndEncode(stchaintypes.AccountPubKeyPrefix, sdkPubkey.Bytes())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -67,7 +68,7 @@ func TestCreateP2PKey(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	bechAddr, err := types.P2pAddressToBech(addr)
+	bechAddr, err := addr.P2pAddressToBech()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -82,32 +83,32 @@ func TestCreateP2PKey(t *testing.T) {
 	}
 
 	pubKey := ed25519.PrivKeyBytesToPubKey(key.PrivateKey)
-	bechPub, err := stchaintypes.Bech32ifyPubKey(stchaintypes.Bech32PubKeyTypeAccPub, pubKey)
+	bechPub, err := bech32.ConvertAndEncode(stchaintypes.SdsNodeP2PPubkeyPrefix, pubKey.Bytes())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	fmt.Printf("Address: %v  PublicKey: %v", bechAddr, bechPub)
+	fmt.Printf("Address: %v  PublicKey: %v\n", bechAddr, bechPub)
 }
 
 func TestDecryptP2PKeyJson(t *testing.T) {
 	t.SkipNow() // Comment this line out to run the method and decrypt a P2PKey JSON file
-	key, err := DecryptKey([]byte("put the content of the P2P key JSON file here"), "aaa")
+	key, err := DecryptKey([]byte("put the content of the P2PKey JSON file here"), "aaa")
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	pubKey := ed25519.PrivKeyBytesToPubKey(key.PrivateKey)
-	bechPub, err := stchaintypes.Bech32ifyPubKey(stchaintypes.Bech32PubKeyTypeSdsP2PPub, pubKey)
+	bechPub, err := bech32.ConvertAndEncode(stchaintypes.SdsNodeP2PPubkeyPrefix, pubKey.Bytes())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	bechAddr, err := bech32.ConvertAndEncode(stchaintypes.SdsNodeP2PAddressPrefix, pubKey.Address().Bytes())
+	bechAddr, err := types.BytesToAddress(pubKey.Address().Bytes()).P2pAddressToBech()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	fmt.Printf("Address: %v  PublicKey: %v", bechAddr, bechPub)
+	fmt.Printf("Address: %v  PublicKey: %v\n", bechAddr, bechPub)
 }
 
 func TestDecryptWalletJson(t *testing.T) {
@@ -117,45 +118,55 @@ func TestDecryptWalletJson(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	tmPrivKey := secp256k1.PrivKeyBytesToTendermint(key.PrivateKey)
-	tmPubKey := tmPrivKey.PubKey()
+	sdkPrivKey := utilsecp256k1.PrivKeyToSdkPrivKey(key.PrivateKey)
+	sdkPubKey := sdkPrivKey.PubKey()
 
-	bechPub, err := stchaintypes.Bech32ifyPubKey(stchaintypes.Bech32PubKeyTypeAccPub, tmPubKey)
+	bechPub, err := bech32.ConvertAndEncode(stchaintypes.AccountPubKeyPrefix, sdkPubKey.Bytes())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	bechAddr, err := bech32.ConvertAndEncode(stchaintypes.StratosBech32Prefix, tmPubKey.Address().Bytes())
+	bechAddr, err := types.BytesToAddress(sdkPubKey.Address().Bytes()).WalletAddressToBech()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	fmt.Printf("Address: %v  PublicKey: %v  HdPath: %v", bechAddr, bechPub, key.HdPath)
+	fmt.Printf("Address: %v  PublicKey: %v  HdPath: %v  Mnemonic: %v\n", bechAddr, bechPub, key.HdPath, key.Mnemonic)
 }
 
 func TestDecryptPrivValidatorKeyJson(t *testing.T) {
 	t.SkipNow() // Comment this line out to run the method and decrypt a priv_validator_key JSON file (SP node validator key)
 	p2pKey := privval.FilePVKey{}
-	err := cdc.UnmarshalJSON([]byte("put the content of the priv_validator_key.json file here"), &p2pKey)
+	err := tmjson.Unmarshal([]byte("put the content of the priv_validator_key.json file here"), &p2pKey)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	p2pKeyTm, success := p2pKey.PrivKey.(tmed25519.PrivKeyEd25519)
+	p2pKeyTm, success := p2pKey.PrivKey.(tmed25519.PrivKey)
 	if !success {
 		t.Fatal("couldn't convert validator private key to tendermint ed25519")
 	}
 	pubKey := p2pKeyTm.PubKey()
 
-	bechPub, err := stchaintypes.Bech32ifyPubKey(stchaintypes.Bech32PubKeyTypeSdsP2PPub, pubKey)
+	bechPub, err := bech32.ConvertAndEncode(stchaintypes.SdsNodeP2PPubkeyPrefix, pubKey.Bytes())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	bechAddr, err := bech32.ConvertAndEncode(stchaintypes.SdsNodeP2PAddressPrefix, pubKey.Address().Bytes())
+	sdkPubKey := ed25519.PubKeyBytesToSdkPubKey(pubKey.Bytes())
+	apk, err := codectypes.NewAnyWithValue(sdkPubKey)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	pubKeyJson, err := codec.ProtoMarshalJSON(apk, nil)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	fmt.Printf("Address: %v  PublicKey: %v", bechAddr, bechPub)
+	bechAddr, err := types.BytesToAddress(pubKey.Address().Bytes()).P2pAddressToBech()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	fmt.Printf("Address: %v  PublicKey: %v  PublicKeyJson: %v\n", bechAddr, bechPub, string(pubKeyJson))
 }

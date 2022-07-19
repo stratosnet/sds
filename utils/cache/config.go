@@ -6,12 +6,12 @@ import (
 
 // Redis Config
 type Config struct {
-	Engine   string `yaml:"Engine"`
-	Host     string `yaml:"Host"`
-	Port     string `yaml:"Port"`
-	Pass     string `yaml:"Pass"`
-	DB       int    `yaml:"DB"`
-	LifeTime int64  `yaml:"LifeTime"`
+	Engine   string `toml:"engine"`
+	Host     string `toml:"host"`
+	Port     string `toml:"port"`
+	Pass     string `toml:"pass"`
+	DB       int    `toml:"db"`
+	LifeTime int64  `toml:"life_time"`
 }
 
 // Cache
