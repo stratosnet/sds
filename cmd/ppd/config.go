@@ -96,7 +96,7 @@ func loadConfig(cmd *cobra.Command) error {
 	}
 
 	if _, err := os.Stat(configPath); err != nil {
-		configPath = filepath.Join(homePath, configPath)
+		//configPath = filepath.Join(homePath, configPath)
 		if _, err := os.Stat(configPath); err != nil {
 			return errors.Wrap(err, "not able to load config file, generate one with `ppd config`")
 		}
@@ -190,8 +190,8 @@ func SetupWallet() error {
 		return errors.New("couldn't read the input, not saving by default")
 	}
 	if strings.ToLower(save) == "yes" || strings.ToLower(save) == "y" {
-		setting.SetConfig("WalletAddress", walletKeyAddressString)
-		setting.SetConfig("WalletPassword", password)
+		setting.SetConfig("wallet_address", walletKeyAddressString)
+		setting.SetConfig("wallet_password", password)
 	}
 
 	return nil
