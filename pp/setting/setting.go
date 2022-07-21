@@ -199,8 +199,8 @@ func GetSign(str string) []byte {
 
 // SetConfig SetConfig
 func SetConfig(key, value string) bool {
-
-	if !utils.CheckStructField(key, Config) {
+	found, isString := utils.CheckStructField(key, Config)
+	if !found {
 		utils.Log("configuration not found")
 		return false
 	}
@@ -222,18 +222,22 @@ func SetConfig(key, value string) bool {
 	contentStrs := strings.Split(string(contents), "\n")
 	newString := ""
 	change := false
-	keyStr := key + ":"
 	for _, str := range contentStrs {
 		ss := strings.Split(str, " ")
-		if len(ss) > 0 && ss[0] == keyStr {
-			if keyStr == "download_path:" {
+		if len(ss) > 0 && ss[0] == key {
+			if key == "download_path" {
 				if ostype == "windows" {
 					value = value + `\`
 				} else {
 					value = value + `/`
 				}
 			}
-			ns := key + ": " + value
+			ns := ""
+			if isString {
+				ns = key + " = '" + value + "'"
+			} else {
+				ns = key + " = " + value
+			}
 			newString += ns
 			newString += "\n"
 			change = true
