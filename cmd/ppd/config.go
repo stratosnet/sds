@@ -96,7 +96,7 @@ func loadConfig(cmd *cobra.Command) error {
 	}
 
 	if _, err := os.Stat(configPath); err != nil {
-		configPath = filepath.Join(homePath, configPath)
+		//configPath = filepath.Join(homePath, configPath)
 		if _, err := os.Stat(configPath); err != nil {
 			return errors.Wrap(err, "not able to load config file, generate one with `ppd config`")
 		}
