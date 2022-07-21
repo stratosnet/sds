@@ -36,7 +36,7 @@ func CreateWallet(password, name, mnemonic, hdPath string) string {
 		return ""
 	}
 	if setting.WalletAddress != "" {
-		setting.SetConfig("WalletAddress", setting.WalletAddress)
+		setting.SetConfig("wallet_address", setting.WalletAddress)
 	}
 	getPublicKey(filepath.Join(setting.Config.AccountDir, setting.WalletAddress+".json"), password)
 	utils.Log("Create account success ,", setting.WalletAddress)
@@ -124,8 +124,8 @@ func Login(walletAddress, password string) error {
 		}
 		utils.Log(info.Name())
 		if getPublicKey(filepath.Join(setting.Config.AccountDir, fileName), password) {
-			setting.SetConfig("WalletAddress", walletAddress)
-			setting.SetConfig("WalletPassword", password)
+			setting.SetConfig("wallet_address", walletAddress)
+			setting.SetConfig("wallet_password", password)
 			setting.WalletAddress = walletAddress
 			peers.InitPeer(event.RegisterEventHandle)
 			return nil

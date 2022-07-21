@@ -226,7 +226,7 @@ func SetConfig(key, value string) bool {
 	for _, str := range contentStrs {
 		ss := strings.Split(str, " ")
 		if len(ss) > 0 && ss[0] == keyStr {
-			if keyStr == "DownloadPath:" {
+			if keyStr == "download_path:" {
 				if ostype == "windows" {
 					value = value + `\`
 				} else {
@@ -297,7 +297,7 @@ func defaultConfig() *config {
 		LimitDownloadSpeed:   0,
 		IsLimitUploadSpeed:   false,
 		LimitUploadSpeed:     0,
-		ChainId:              "tropos-3",
+		ChainId:              "tropos-4",
 		Token:                "ustos",
 		StratosChainUrl:      "http://127.0.0.1:1317",
 		RestPort:             "",

@@ -239,8 +239,8 @@ func CheckStructField(field string, structName interface{}) bool {
 	}
 	fieldNum := t.NumField()
 	for i := 0; i < fieldNum; i++ {
-		tagName := t.Field(i).Name
-		if tagName == field {
+		tomlStr := t.Field(i).Tag.Get("toml")
+		if tomlStr == field {
 			//DebugLog("include field: " + field)
 			return true
 		}

@@ -190,8 +190,8 @@ func SetupWallet() error {
 		return errors.New("couldn't read the input, not saving by default")
 	}
 	if strings.ToLower(save) == "yes" || strings.ToLower(save) == "y" {
-		setting.SetConfig("WalletAddress", walletKeyAddressString)
-		setting.SetConfig("WalletPassword", password)
+		setting.SetConfig("wallet_address", walletKeyAddressString)
+		setting.SetConfig("wallet_password", password)
 	}
 
 	return nil

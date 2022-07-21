@@ -97,8 +97,8 @@ func SetupP2PKey() error {
 		}
 		setting.Config.P2PAddress = p2pKeyAddressString
 		setting.Config.P2PPassword = password
-		setting.SetConfig("P2PAddress", p2pKeyAddressString)
-		setting.SetConfig("P2PPassword", password)
+		setting.SetConfig("p2p_address", p2pKeyAddressString)
+		setting.SetConfig("p2p_password", password)
 	}
 
 	p2pKeyFile, err := ioutil.ReadFile(filepath.Join(setting.Config.AccountDir, setting.Config.P2PAddress+".json"))
