@@ -2,7 +2,10 @@ package peers
 
 import (
 	"time"
+	"strconv"
 
+	"github.com/golang/protobuf/proto"
+	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
@@ -35,6 +38,10 @@ func InitPPList() {
 			RegisterToSP(true)
 		}
 	}
+}
+
+func StartPpLatencyCheck() {
+	ppPeerClock.AddJobRepeat(time.Second*setting.PpLatencyCheckInterval, 0, LatencyOfNextPp)
 }
 
 func StartStatusReportToSP() {
@@ -96,7 +103,47 @@ func SavePPList(target *protos.RspGetPPList) error {
 	return peerList.SavePPList(target)
 }
 
+//GetPPByP2pAddress
+func GetPPByP2pAddress(p2pAddr string) *types.PeerInfo {
+	return peerList.GetPPByP2pAddress(p2pAddr)
+}
+
 //UpdatePP will update one pp info to local list
 func UpdatePP(pp *types.PeerInfo) {
 	peerList.UpdatePP(pp)
+}
+
+//LantencyOfNextPp
+func LatencyOfNextPp() {
+	list, _, _ := peerList.GetPPList()
+	for _, peer := range list {
+		if peer.Latency == 0 {
+			StartLatencyCheckToPp(peer.NetworkAddress)
+		}
+	}
+}
+
+// StartLatencyCheckToPp
+func StartLatencyCheckToPp(NetworkAddr string) error {
+	start := time.Now().UnixNano()
+	pb := &protos.ReqLatencyCheck {
+		HbType:       protos.HeartbeatType_LATENCY_CHECK_PP,
+		PingTime:     strconv.FormatInt(start, 10),
+	}
+	data, err := proto.Marshal(pb)
+	if err != nil {
+		return err
+	}
+
+	msg := &msg.RelayMsgBuf{
+		MSGHead: header.MakeMessageHeader(1, uint16(setting.Config.Version.AppVer), uint32(len(data)), header.ReqLatencyCheck, int64(0)),
+		MSGData: data,
+	}
+
+	if client.ConnMap[NetworkAddr] != nil {
+		client.ConnMap[NetworkAddr].Write(msg)
+	} else {
+		utils.DebugLog("new conn, connect and transfer")
+	}
+	return nil
 }

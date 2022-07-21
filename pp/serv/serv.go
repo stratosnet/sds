@@ -1,6 +1,9 @@
 package serv
 
 import (
+	"errors"
+	"strconv"
+
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
@@ -17,6 +20,12 @@ func Start() {
 
 	err = startIPC()
 
+	if err != nil {
+		utils.ErrorLog(err)
+		return
+	}
+
+	err = startMonitor()
 	if err != nil {
 		utils.ErrorLog(err)
 		return
@@ -48,6 +57,35 @@ func startIPC() error {
 
 	//TODO bring this back later once we have a proper quit mechanism
 	//defer ipc.stop()
+
+	return nil
+}
+
+func startMonitor() error {
+	monitorServer := newHTTPServer(rpc.DefaultHTTPTimeouts)
+
+	port, err := strconv.Atoi(setting.Config.MonitorPort)
+	if err != nil {
+		return errors.New("wrong configuration for monitor port")
+	}
+
+	if err := monitorServer.setListenAddr("0.0.0.0", port); err != nil {
+		return err
+	}
+
+	var config = wsConfig{
+		Origins: []string{},
+		Modules: []string{},
+		prefix:  "",
+	}
+
+	if err := monitorServer.enableWS(monitorAPI(), config); err != nil {
+		return err
+	}
+
+	if err := monitorServer.start(); err != nil {
+		return err
+	}
 
 	return nil
 }
