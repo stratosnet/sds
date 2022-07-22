@@ -45,6 +45,7 @@ func RegisterEventHandle() {
 	core.Register(header.RspTransferDownload, RspTransferDownload)
 	core.Register(header.RspTransferDownloadResult, RspTransferDownloadResult)
 	core.Register(header.RspReportBackupSliceResult, RspReportBackupSliceResult)
+	core.Register(header.RspFileBackupStatus, RspBackupStatus)
 	//core.Register(header.RspReportTransferResult, RspReportTransferResult)
 
 	core.Register(header.RspDownloadSliceWrong, RspDownloadSliceWrong)

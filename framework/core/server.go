@@ -6,10 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/utils"
-
-	"github.com/alex023/clock"
 )
 
 var (
@@ -36,6 +35,7 @@ type options struct {
 	maxConnections int
 	maxflow        int
 	minAppVersion  uint16
+	p2pAddress     string
 }
 
 // ServerOption
@@ -43,34 +43,17 @@ type ServerOption func(*options)
 
 // Server
 type Server struct {
-	opts             options
-	ctx              context.Context
-	cancel           context.CancelFunc
-	conns            *connPool
-	wg               *sync.WaitGroup
-	mu               sync.Mutex // lock
-	lis              map[net.Listener]bool
-	interv           time.Duration
-	goroutine        int64
-	goAtom           *utils.AtomicInt64
-	allFlow          int64 //including read flow & write flow
-	allAtom          *utils.AtomicInt64
-	readFlow         int64 //not used for now
-	readAtom         *utils.AtomicInt64
-	writeFlow        int64 //not used for now
-	writeAtom        *utils.AtomicInt64
-	secondReadFlowA  int64 // will be reset to 0 every second by logFunc() job
-	secondReadAtomA  *utils.AtomicInt64
-	secondWriteFlowA int64 // will be reset to 0 every second by logFunc() job
-	secondWriteAtomA *utils.AtomicInt64
-	secondReadFlowB  int64 //for monitor use, will be refreshed to the value of secondReadFlowA before secondReadFlowA is reset to 0 every second by logFunc() job
-	secondReadAtomB  *utils.AtomicInt64
-	secondWriteFlowB int64 //for monitor use, will be refreshed to the value of secondWriteFlowA before secondWriteFlowA is reset to 0 every second by logFunc() job
-	secondWriteAtomB *utils.AtomicInt64
-	inbound          int64              // for traffic log
-	inboundAtomic    *utils.AtomicInt64 // for traffic log
-	outbound         int64              // for traffic log
-	outboundAtomic   *utils.AtomicInt64 // for traffic log
+	opts       options
+	ctx        context.Context
+	cancel     context.CancelFunc
+	conns      *connPool
+	wg         *sync.WaitGroup
+	mu         sync.Mutex // lock
+	lis        map[net.Listener]bool
+	interv     time.Duration
+	goroutine  int64
+	goAtom     *utils.AtomicInt64
+	volRecOpts volRecOpts
 }
 
 // Mylog
@@ -91,28 +74,58 @@ func CreateServer(opt ...ServerOption) *Server {
 	GlobalTaskPool = makeTaskPool(0)
 
 	s := &Server{
-		opts:             opts,
-		conns:            newConnPool(),
-		wg:               &sync.WaitGroup{},
-		lis:              make(map[net.Listener]bool),
-		goAtom:           utils.CreateAtomicInt64(0),
-		allAtom:          utils.CreateAtomicInt64(0),
-		readAtom:         utils.CreateAtomicInt64(0),
-		writeAtom:        utils.CreateAtomicInt64(0),
-		secondReadAtomA:  utils.CreateAtomicInt64(0),
-		secondWriteAtomA: utils.CreateAtomicInt64(0),
-		secondReadAtomB:  utils.CreateAtomicInt64(0),
-		secondWriteAtomB: utils.CreateAtomicInt64(0),
-		inboundAtomic:    utils.CreateAtomicInt64(0),
-		outboundAtomic:   utils.CreateAtomicInt64(0),
+		opts:   opts,
+		conns:  newConnPool(),
+		wg:     &sync.WaitGroup{},
+		lis:    make(map[net.Listener]bool),
+		goAtom: utils.CreateAtomicInt64(0),
 	}
 	s.ctx, s.cancel = context.WithCancel(context.Background())
 	return s
 }
 
+func (s *Server) SetVolRecOptions(opt ...ServerVolRecOption) {
+	var opts volRecOpts
+	for _, o := range opt {
+		o(&opts)
+	}
+	s.volRecOpts = opts
+}
+
 // ConnsSize
 func (s *Server) ConnsSize() int {
 	return int(s.conns.Count())
+}
+
+func (s *Server) AddVolumeLogJob(logAll bool, logRead bool, logWrite bool, logInbound bool, logOutbound bool) {
+	var (
+		logFunc = func() {
+			// utils.Log("connsSize:", s.ConnsSize(), "routine num:", s.goroutine, "allread:", fmt.Sprintf("%.4f", float64(s.readFlow)/1024/1024), "MB", "allwrite:", fmt.Sprintf("%.4f", float64(s.writeFlow)/1024/1024), "MB", "all:", fmt.Sprintf("%.4f", float64(s.allFlow)/1024/1024), "MB",
+			// "read/s:", fmt.Sprintf("%.4f", float64(s.secondReadFlow)/1024/1024), "MB", "write/s:", fmt.Sprintf("%.4f", float64(s.secondWriteFlow)/1024/1024), "MB")
+			if logAll {
+				s.volRecOpts.allFlow = s.volRecOpts.allAtom.GetNewAndSetAtomic(0)
+			}
+			if logRead {
+				s.volRecOpts.secondReadFlowB = s.volRecOpts.secondReadAtomB.GetNewAndSetAtomic(s.volRecOpts.secondReadFlowA)
+				s.volRecOpts.secondReadFlowA = s.volRecOpts.secondReadAtomA.GetNewAndSetAtomic(0)
+			}
+			if logWrite {
+				s.volRecOpts.secondWriteFlowB = s.volRecOpts.secondWriteAtomB.GetAndSetAtomic(s.volRecOpts.secondWriteFlowA)
+				s.volRecOpts.secondWriteFlowA = s.volRecOpts.secondWriteAtomA.GetNewAndSetAtomic(0)
+			}
+			if logInbound {
+				s.volRecOpts.inbound = s.volRecOpts.inboundAtomic.GetNewAndSetAtomic(0)
+			}
+			if logOutbound {
+				s.volRecOpts.outbound = s.volRecOpts.outboundAtomic.GetNewAndSetAtomic(0)
+			}
+		}
+	)
+	//Assign the value of secondRead/WriteFlowA to secondRead/WriteFlowB for monitor use, then reset secondRead/WriteFlowA to 0
+	if logAll || logRead || logWrite || logInbound || logOutbound {
+		var myClock = clock.NewClock()
+		myClock.AddJobRepeat(time.Second*1, 0, logFunc)
+	}
 }
 
 // Start
@@ -136,21 +149,12 @@ func (s *Server) Start(l net.Listener) error {
 	}()
 
 	Mylog(s.opts.logOpen, "server start, net", l.Addr().Network(), "addr", l.Addr().String(), "\n")
-	var (
-		myClock = clock.NewClock()
-		logFunc = func() {
-			// utils.Log("connsSize:", s.ConnsSize(), "routine num:", s.goroutine, "allread:", fmt.Sprintf("%.4f", float64(s.readFlow)/1024/1024), "MB", "allwrite:", fmt.Sprintf("%.4f", float64(s.writeFlow)/1024/1024), "MB", "all:", fmt.Sprintf("%.4f", float64(s.allFlow)/1024/1024), "MB",
-			// "read/s:", fmt.Sprintf("%.4f", float64(s.secondReadFlow)/1024/1024), "MB", "write/s:", fmt.Sprintf("%.4f", float64(s.secondWriteFlow)/1024/1024), "MB")
-			s.inbound = s.inboundAtomic.AddAndGetNew(s.secondReadFlowA)
-			s.outbound = s.outboundAtomic.AddAndGetNew(s.secondWriteFlowA)
-			s.secondReadFlowB = s.secondReadAtomB.GetNewAndSetAtomic(s.secondReadFlowA)
-			s.secondWriteFlowB = s.secondWriteAtomB.GetAndSetAtomic(s.secondWriteFlowA)
-			s.secondReadFlowA = s.secondReadAtomA.GetNewAndSetAtomic(0)
-			s.secondWriteFlowA = s.secondWriteAtomA.GetNewAndSetAtomic(0)
-		}
-	)
-	//Assign the value of secondRead/WriteFlowA to secondRead/WriteFlowB for monitor use, then reset secondRead/WriteFlowA to 0
-	myClock.AddJobRepeat(time.Second*1, 0, logFunc)
+
+	onStartLog := s.volRecOpts.onStartLog
+	if onStartLog != nil {
+		onStartLog(s)
+	}
+
 	var tempDelay time.Duration
 	for {
 		spbConn, err := l.Accept()
@@ -314,6 +318,18 @@ func MinAppVersionOption(minAppVersion uint16) ServerOption {
 	}
 }
 
+func OnStartLogOption(cb func(*Server)) ServerVolRecOption {
+	return func(o *volRecOpts) {
+		o.onStartLog = cb
+	}
+}
+
+func P2pAddressOption(p2pAddress string) ServerOption {
+	return func(o *options) {
+		o.p2pAddress = p2pAddress
+	}
+}
+
 // Unicast
 func (s *Server) Unicast(netid int64, msg *msg.RelayMsgBuf) error {
 	v, ok := s.conns.Load(netid)
@@ -337,32 +353,32 @@ func (s *Server) Broadcast(msg *msg.RelayMsgBuf) {
 
 // unused
 func (s *Server) GetWriteFlow() int64 {
-	return s.writeFlow
+	return s.volRecOpts.writeFlow
 }
 
 // unused
 func (s *Server) GetReadFlow() int64 {
-	return s.readFlow
+	return s.volRecOpts.readFlow
 }
 
 // GetSecondReadFlow
 func (s *Server) GetSecondReadFlow() int64 {
-	return s.secondReadFlowB
+	return s.volRecOpts.secondReadFlowB
 }
 
 // GetSecondWriteFlow
 func (s *Server) GetSecondWriteFlow() int64 {
-	return s.secondWriteFlowB
+	return s.volRecOpts.secondWriteFlowB
 }
 
 func (s *Server) GetInboundAndReset() int64 {
-	ret := s.inbound
-	s.inbound = s.inboundAtomic.GetNewAndSetAtomic(0)
+	ret := s.volRecOpts.inbound
+	s.volRecOpts.inbound = s.volRecOpts.inboundAtomic.GetNewAndSetAtomic(0)
 	return ret
 }
 
 func (s *Server) GetOutboundAndReset() int64 {
-	ret := s.outbound
-	s.outbound = s.outboundAtomic.GetNewAndSetAtomic(0)
+	ret := s.volRecOpts.outbound
+	s.volRecOpts.outbound = s.volRecOpts.outboundAtomic.GetNewAndSetAtomic(0)
 	return ret
 }

@@ -59,6 +59,7 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 			}
 			utils.DebugLog("DownloadFileSlice(&target)", target)
 		} else {
+			task.DeleteDownloadTask(target.FileHash, target.WalletAddress)
 			utils.Log("failed to download，", target.Result.Msg)
 		}
 	}

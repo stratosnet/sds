@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	Version     = "v0.7.0"
-	APP_VER     = 7
-	MIN_APP_VER = 7
+	Version     = "v0.8.0"
+	APP_VER     = 8
+	MIN_APP_VER = 8
 	HD_PATH     = "m/44'/606'/0'/0/0"
 
 	// REPORTDHTIME 1 hour
@@ -40,6 +40,8 @@ const (
 
 	FILE_SLICE_DOWNLOAD_BATCH_SIZE         = 20
 	UPDATE_LATEST_STATUS_REPORT_BATCH_SIZE = 20
+
+	DEFAULT_MAX_CONNECTION = 1000
 )
 
 var (
@@ -82,45 +84,46 @@ var (
 )
 
 type AppVersion struct {
-	AppVer    uint16 `yaml:"AppVer"`
-	MinAppVer uint16 `yaml:"MinAppVer"`
-	Show      string `yaml:"Show"`
+	AppVer    uint16 `toml:"app_ver"`
+	MinAppVer uint16 `toml:"min_app_ver"`
+	Show      string `toml:"show"`
 }
 
 type SPBaseInfo struct {
-	P2PAddress     string `yaml:"P2PAddress"`
-	P2PPublicKey   string `yaml:"P2PPublicKey"`
-	NetworkAddress string `yaml:"NetworkAddress"`
+	P2PAddress     string `toml:"p2p_address"`
+	P2PPublicKey   string `toml:"p2p_public_key"`
+	NetworkAddress string `toml:"network_address"`
 }
 
 type config struct {
-	Version              AppVersion   `yaml:"Version"`
-	DownloadPathMinLen   int          `yaml:"downloadpathminlen"`
-	Port                 string       `yaml:"Port"`
-	NetworkAddress       string       `yaml:"NetworkAddress"`
-	Debug                bool         `yaml:"Debug"`
-	PPListDir            string       `yaml:"PPListDir"`
-	AccountDir           string       `yaml:"AccountDir"`
-	StorehousePath       string       `yaml:"StorehousePath"`
-	DownloadPath         string       `yaml:"DownloadPath"`
-	P2PAddress           string       `yaml:"P2PAddress"`
-	P2PPassword          string       `yaml:"P2PPassword"`
-	WalletAddress        string       `yaml:"WalletAddress"`
-	WalletPassword       string       `yaml:"WalletPassword"`
-	AutoRun              bool         `yaml:"AutoRun"`  // is auto login
-	Internal             bool         `yaml:"Internal"` // is internal net
-	IsWallet             bool         `yaml:"IsWallet"` // is wallet
-	IsLimitDownloadSpeed bool         `yaml:"IsLimitDownloadSpeed"`
-	LimitDownloadSpeed   uint64       `yaml:"LimitDownloadSpeed"`
-	IsLimitUploadSpeed   bool         `yaml:"IsLimitUploadSpeed"`
-	LimitUploadSpeed     uint64       `yaml:"LimitUploadSpeed"`
-	ChainId              string       `yaml:"ChainId"`
-	Token                string       `yaml:"Token"`
-	StratosChainUrl      string       `yaml:"StratosChainUrl"`
-	RestPort             string       `yaml:"RestPort"`
-	InternalPort         string       `yaml:"InternalPort"`
-	TrafficLogInterval   uint64       `yaml:"TrafficLogInterval"`
-	SPList               []SPBaseInfo `yaml:"SPList"`
+	Version              AppVersion   `toml:"version"`
+	DownloadPathMinLen   int          `toml:"download_path_min_len"`
+	Port                 string       `toml:"port"`
+	NetworkAddress       string       `toml:"network_address"`
+	Debug                bool         `toml:"debug"`
+	PPListDir            string       `toml:"pp_list_dir"`
+	AccountDir           string       `toml:"account_dir"`
+	StorehousePath       string       `toml:"storehouse_path"`
+	DownloadPath         string       `toml:"download_path"`
+	P2PAddress           string       `toml:"p2p_address"`
+	P2PPassword          string       `toml:"p2p_password"`
+	WalletAddress        string       `toml:"wallet_address"`
+	WalletPassword       string       `toml:"wallet_password"`
+	AutoRun              bool         `toml:"auto_run"`  // is auto login
+	Internal             bool         `toml:"internal"`  // is internal net
+	IsWallet             bool         `toml:"is_wallet"` // is wallet
+	IsLimitDownloadSpeed bool         `toml:"is_limit_download_speed"`
+	LimitDownloadSpeed   uint64       `toml:"limit_download_speed"`
+	IsLimitUploadSpeed   bool         `toml:"is_limit_upload_speed"`
+	LimitUploadSpeed     uint64       `toml:"limit_upload_speed"`
+	ChainId              string       `toml:"chain_id"`
+	Token                string       `toml:"token"`
+	StratosChainUrl      string       `toml:"stratos_chain_url"`
+	RestPort             string       `toml:"rest_port"`
+	InternalPort         string       `toml:"internal_port"`
+	TrafficLogInterval   uint64       `toml:"traffic_log_interval"`
+	MaxConnection        int          `toml:"max_connection"`
+	SPList               []SPBaseInfo `toml:"sp_list"`
 }
 
 func SetupRoot(root string) {
@@ -139,7 +142,7 @@ func LoadConfig(configPath string) error {
 		utils.Log("The config at location", configPath, "does not exist")
 		return err
 	}
-	err := utils.LoadYamlConfig(Config, configPath)
+	err := utils.LoadTomlConfig(Config, configPath)
 	if err != nil {
 		return err
 	}
@@ -196,8 +199,8 @@ func GetSign(str string) []byte {
 
 // SetConfig SetConfig
 func SetConfig(key, value string) bool {
-
-	if !utils.CheckStructField(key, Config) {
+	found, isString := utils.CheckStructField(key, Config)
+	if !found {
 		utils.Log("configuration not found")
 		return false
 	}
@@ -219,18 +222,22 @@ func SetConfig(key, value string) bool {
 	contentStrs := strings.Split(string(contents), "\n")
 	newString := ""
 	change := false
-	keyStr := key + ":"
 	for _, str := range contentStrs {
 		ss := strings.Split(str, " ")
-		if len(ss) > 0 && ss[0] == keyStr {
-			if keyStr == "DownloadPath:" {
+		if len(ss) > 0 && ss[0] == key {
+			if key == "download_path" {
 				if ostype == "windows" {
 					value = value + `\`
 				} else {
 					value = value + `/`
 				}
 			}
-			ns := key + ": " + value
+			ns := ""
+			if isString {
+				ns = key + " = '" + value + "'"
+			} else {
+				ns = key + " = " + value
+			}
 			newString += ns
 			newString += "\n"
 			change = true
@@ -294,7 +301,7 @@ func defaultConfig() *config {
 		LimitDownloadSpeed:   0,
 		IsLimitUploadSpeed:   false,
 		LimitUploadSpeed:     0,
-		ChainId:              "tropos-3",
+		ChainId:              "tropos-4",
 		Token:                "ustos",
 		StratosChainUrl:      "http://127.0.0.1:1317",
 		RestPort:             "",
@@ -307,7 +314,7 @@ func defaultConfig() *config {
 func GenDefaultConfig(filePath string) error {
 	cfg := defaultConfig()
 
-	return utils.WriteConfig(cfg, filePath)
+	return utils.WriteTomlConfig(cfg, filePath)
 }
 
 func formalizePath(config2 *config) (err error) {

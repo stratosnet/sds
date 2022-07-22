@@ -15,6 +15,7 @@ func StartPP(registerFn func()) {
 	peerList.Init(setting.NetworkAddress, filepath.Join(setting.Config.PPListDir, "pp-list"))
 	//todo: register func call shouldn't be in peers package
 	registerFn()
+	go StartListenServer(setting.Config.Port)
 	GetSPList()
 	GetPPStatusInitPPList()
 	//go SendLatencyCheckMessageToSPList()

@@ -228,24 +228,25 @@ func ECCVerifyBytes(text, signature, publicKey []byte) bool {
 }
 
 // CheckStructField
-func CheckStructField(field string, structName interface{}) bool {
+func CheckStructField(field string, structName interface{}) (found bool, isString bool) {
 	t := reflect.TypeOf(structName)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
 	if t.Kind() != reflect.Struct {
 		ErrorLog("Check type error not Struct")
-		return false
+		return false, false
 	}
 	fieldNum := t.NumField()
 	for i := 0; i < fieldNum; i++ {
-		tagName := t.Field(i).Name
-		if tagName == field {
+		tomlStr := t.Field(i).Tag.Get("toml")
+		if tomlStr == field {
 			//DebugLog("include field: " + field)
-			return true
+			typeStr := t.Field(i).Type.String()
+			return true, typeStr == "string"
 		}
 	}
-	return false
+	return false, false
 }
 
 // IntToString

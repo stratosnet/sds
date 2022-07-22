@@ -3,7 +3,6 @@ package event
 import (
 	"context"
 	"strings"
-	"time"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
@@ -26,8 +25,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 		if strings.Contains(target.Result.Msg, "Please register first") {
 			return
 		}
-		utils.Log("failed to query node status, retrying in 10 seconds...")
-		peers.ScheduleReloadPPStatus(time.Second * 10)
+		utils.Log("failed to query node status, please retry later")
 		return
 	}
 

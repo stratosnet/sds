@@ -1,0 +1,35 @@
+download_path_min_len = 88
+port = '9084'
+network_address = '127.0.0.1'
+debug = true
+pp_list_dir = "./peers"
+account_dir = "./accounts"
+storehouse_path = "./storage"
+download_path = "./download"
+p2p_address = 'stsds1ttpyyh9p7udalhwcz7sh5f5zfzuhpm0h3c0hzc'
+p2p_password = 'aaa'
+wallet_address = 'st15msq9mkpjhpugdr22cuqq0uxrtp74tccm8v3ym'
+wallet_password = 'aaa'
+auto_run = true
+internal = false
+is_wallet = true
+is_limit_download_speed = false
+limit_download_speed = 100
+is_limit_upload_speed = false
+limit_upload_speed = 100
+chain_id = 'testchain_1-1'
+token = 'ustos'
+stratos_chain_url = 'http://127.0.0.1:1317'
+rest_port = '18094'
+internal_port = '9608'
+traffic_log_interval = 10
+max_connection = 1000
+[version]
+app_ver = 7
+min_app_ver = 7
+show = 'v0.7.0'
+
+[[sp_list]]
+p2p_address = ""
+p2p_public_key = ""
+network_address = "0.0.0.0:8888"

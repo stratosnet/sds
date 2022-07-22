@@ -32,7 +32,6 @@ func (n *WeightedNode) nodeKey() string {
 }
 
 // Less of rbtree
-//
 func (n *WeightedNode) Less(than rbtree.Item) bool {
 	return utils.CalcCRC32([]byte(n.ID)) < utils.CalcCRC32([]byte(than.(*WeightedNode).ID))
 }
@@ -174,6 +173,7 @@ func (r *WeightedHashRing) SetOnline(ID string) {
 	}
 }
 
+// RandomGetNodes return random nodes from the hashring
 func (r *WeightedHashRing) RandomGetNodes(num int) []*WeightedNode {
 
 	if r.NodeOkCount <= 0 {
@@ -207,17 +207,16 @@ func (r *WeightedHashRing) RandomGetNodes(num int) []*WeightedNode {
 	return nodes
 }
 
-// GetNode
-// @params key
+// GetNode calculates an index from the given key, and returns a node selected using this index
 func (r *WeightedHashRing) GetNode(key string) (uint32, string) {
 	keyIndex := r.CalcIndex(key)
 	//utils.DebugLogf("calc key index is %v", keyIndex)
 	return r.GetNodeByIndex(keyIndex)
 }
 
-// GetNodeMissNodeID get node excluded given NodeIDs
-// @params key
-func (r *WeightedHashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string) (uint32, string) {
+// GetNodeExcludedNodeIDs calculates an index from the given key, and returns a node selected using this index.
+// The nodes with IDs specified by NodeIDs will be excluded. If setOffline is true, the excluded nodes will become offline.
+func (r *WeightedHashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string, setOffline bool) (uint32, string) {
 
 	if len(NodeIDs) <= 0 {
 		return r.GetNode(key)
@@ -227,11 +226,21 @@ func (r *WeightedHashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string) 
 		return 0, ""
 	}
 
+	var temporaryOffline []string
 	for _, id := range NodeIDs {
-		r.SetOffline(id)
+		if r.IsOnline(id) {
+			temporaryOffline = append(temporaryOffline, id)
+			r.SetOffline(id)
+		}
 	}
 
 	index, id := r.GetNode(key)
+
+	if !setOffline {
+		for _, offlineId := range temporaryOffline {
+			r.SetOnline(offlineId)
+		}
+	}
 	return index, id
 
 	//tmpRing := New(r.NumberOfVirtual)
@@ -253,7 +262,6 @@ func (r *WeightedHashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string) 
 }
 
 // GetNodeUpDownNodes get upstream of downstream of node
-// @params
 func (r *WeightedHashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
 	online, ok := r.NodeStatus.Load(NodeID)
 	if NodeID == "" || !ok || !online.(bool) || r.NodeCount <= 0 {
@@ -287,7 +295,6 @@ func (r *WeightedHashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
 }
 
 // GetNodeByIndex
-// @params keyIndex
 func (r *WeightedHashRing) GetNodeByIndex(keyIndex uint32) (uint32, string) {
 
 	if r.VRing.Len() <= 0 {

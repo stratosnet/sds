@@ -65,6 +65,11 @@ func (m *AutoCleanMap) Delete(key interface{}) {
 	}
 }
 
+func (m *AutoCleanMap) HashKey(key interface{}) bool {
+	_, ok := m.myMap.Load(key)
+	return ok
+}
+
 func (m *AutoCleanMap) pushDelete(wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {

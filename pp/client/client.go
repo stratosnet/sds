@@ -2,6 +2,7 @@ package client
 
 import (
 	"net"
+	"strconv"
 	"sync"
 
 	"github.com/stratosnet/sds/framework/client/cf"
@@ -16,8 +17,6 @@ type Offline struct {
 	IsSp           bool
 	NetworkAddress string
 }
-
-var minAppVersion uint32
 
 // OfflineChan OfflineChan
 var OfflineChan = make(chan *Offline, 2)
@@ -34,7 +33,7 @@ var UpConnMap = &sync.Map{}
 // DownloadConnMap  download connection between  P-PP
 var DownloadConnMap = &sync.Map{}
 
-// ConnMap PP connection map
+// ConnMap client connection map
 var ConnMap = make(map[string]*cf.ClientConn)
 
 // NewClient
@@ -89,21 +88,25 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 		}
 
 	})
-	onMessage := cf.OnMessageOption(func(msg msg.RelayMsgBuf, c core.WriteCloser) {
-	})
-	heartClose := cf.HeartCloseOption(!heartbeat)
-	bufferSize := cf.BufferSizeOption(100)
-	minAppVer := cf.MinAppVersionOption(setting.Config.Version.MinAppVer)
-	logOpen := cf.LogOpenOption(true)
+
+	serverPort, err := strconv.ParseUint(setting.Config.Port, 10, 16)
+	if err != nil {
+		utils.ErrorLogf("Invalid port number in config [%v]: %v", setting.Config.Port, err.Error())
+		return nil
+	}
+	serverPortOpt := cf.ServerPortOption(uint16(serverPort))
+
 	options := []cf.ClientOption{
 		onConnect,
 		onError,
 		onClose,
-		onMessage,
-		bufferSize,
-		heartClose,
-		logOpen,
-		minAppVer,
+		cf.OnMessageOption(func(msg msg.RelayMsgBuf, c core.WriteCloser) {}),
+		cf.BufferSizeOption(100),
+		cf.HeartCloseOption(!heartbeat),
+		cf.LogOpenOption(true),
+		cf.MinAppVersionOption(setting.Config.Version.MinAppVer),
+		cf.P2pAddressOption(setting.P2PAddress),
+		serverPortOpt,
 	}
 	conn := cf.CreateClientConn(0, c, options...)
 	conn.Start()

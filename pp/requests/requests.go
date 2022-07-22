@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/shirou/gopsutil/cpu"
@@ -20,10 +21,10 @@ import (
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/relay"
+	//"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/utils"
-	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/libs/bech32"
+	//tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
+	utiled25519 "github.com/stratosnet/sds/utils/crypto/ed25519"
 )
 
 func ReqRegisterData() *protos.ReqRegister {
@@ -251,7 +252,7 @@ func RspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 	return rspDownloadSlice
 }
 
-func ReqUploadFileSliceData(task *task.UploadSliceTask, target *protos.RspUploadFile) *protos.ReqUploadFileSlice {
+func ReqUploadFileSliceData(task *task.UploadSliceTask, sign []byte) *protos.ReqUploadFileSlice {
 	return &protos.ReqUploadFileSlice{
 		TaskId:        task.TaskID,
 		FileCrc:       task.FileCRC,
@@ -263,7 +264,7 @@ func ReqUploadFileSliceData(task *task.UploadSliceTask, target *protos.RspUpload
 		WalletAddress: setting.WalletAddress,
 		SliceSize:     task.SliceTotalSize,
 		SpP2PAddress:  task.SpP2pAddress,
-		Sign:          target.Sign,
+		Sign:          sign,
 	}
 }
 
@@ -443,13 +444,14 @@ func ReqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
 	}
 }
 
-func ReqFileStorageInfoData(path, savePath, reqID, walletAddr string, isVideoStream bool, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
+func ReqFileStorageInfoData(path, savePath, reqID, walletAddr, saveAs string, isVideoStream bool, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
 	return &protos.ReqFileStorageInfo{
 		FileIndexes: &protos.FileIndexes{
 			P2PAddress:    setting.P2PAddress,
 			WalletAddress: walletAddr,
 			FilePath:      path,
 			SavePath:      savePath,
+			SaveAs:        saveAs,
 		},
 		Sign:          setting.GetSign(walletAddr + setting.P2PAddress + path + header.ReqFileStorageInfo),
 		ReqId:         reqID,
@@ -617,13 +619,14 @@ func ReqDeleteShareData(reqID, shareID string) *protos.ReqDeleteShare {
 	}
 }
 
-func ReqGetShareFileData(keyword, sharePassword, reqID string) *protos.ReqGetShareFile {
+func ReqGetShareFileData(keyword, sharePassword, saveAs, reqID string) *protos.ReqGetShareFile {
 	return &protos.ReqGetShareFile{
 		Keyword:       keyword,
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		ReqId:         reqID,
 		SharePassword: sharePassword,
+		SaveAs:        saveAs,
 	}
 }
 
@@ -730,13 +733,7 @@ func VerifySpSignature(spP2PAddress string, message, sign []byte) bool {
 		return false
 	}
 
-	p2pPubKey := tmed25519.PubKeyEd25519{}
-	err = relay.Cdc.UnmarshalBinaryBare(pubKeyRaw, &p2pPubKey)
+	p2pPubKey := utiled25519.PubKeyBytesToPubKey(pubKeyRaw)
 
-	if err != nil {
-		utils.ErrorLog("Error when trying to read P2P pubKey ed25519 binary", err)
-		return false
-	}
-
-	return ed25519.Verify(p2pPubKey[:], message, sign)
+	return ed25519.Verify(p2pPubKey.Bytes(), message, sign)
 }

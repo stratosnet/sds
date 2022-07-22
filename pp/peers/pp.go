@@ -10,6 +10,13 @@ import (
 )
 
 //todo: pp server should be move out of peers package
+const (
+	PP_LOG_ALL      = false
+	PP_LOG_READ     = true
+	PP_LOG_WRITE    = true
+	PP_LOG_INBOUND  = true
+	PP_LOG_OUTBOUND = true
+)
 
 // PPServer
 type PPServer struct {
@@ -56,8 +63,33 @@ func NewServer() *PPServer {
 		netID := conn.(*core.ServerConn).GetNetID()
 		peerList.PPDisconnectedNetId(netID)
 	})
-	bufferSize := core.BufferSizeOption(10000)
-	return &PPServer{
-		core.CreateServer(onConnectOption, onErrorOption, onCloseOption, bufferSize, core.LogOpenOption(true), core.MinAppVersionOption(setting.Config.Version.MinAppVer)),
+
+	maxConnection := setting.DEFAULT_MAX_CONNECTION
+	if setting.Config.MaxConnection > maxConnection {
+		maxConnection = setting.Config.MaxConnection
 	}
+	ppServer := &PPServer{core.CreateServer(
+		onConnectOption,
+		onErrorOption,
+		onCloseOption,
+		core.BufferSizeOption(10000),
+		core.LogOpenOption(true),
+		core.MinAppVersionOption(setting.Config.Version.MinAppVer),
+		core.P2pAddressOption(setting.P2PAddress),
+		core.MaxConnectionsOption(maxConnection)),
+	}
+
+	ppServer.SetVolRecOptions(
+		core.LogAllOption(PP_LOG_ALL),
+		core.LogReadOption(PP_LOG_READ),
+		core.OnWriteOption(PP_LOG_WRITE),
+		core.LogInboundOption(PP_LOG_INBOUND),
+		core.LogOutboundOption(PP_LOG_OUTBOUND),
+		core.OnStartLogOption(func(s *core.Server) {
+			utils.Log("on start volume log")
+			s.AddVolumeLogJob(PP_LOG_ALL, PP_LOG_READ, PP_LOG_WRITE, PP_LOG_INBOUND, PP_LOG_OUTBOUND)
+		}),
+	)
+
+	return ppServer
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/pelletier/go-toml/v2"
 	"gopkg.in/yaml.v2"
 )
 
@@ -49,4 +50,26 @@ func WriteConfig(data interface{}, filePath string) error {
 		MyLogger.ErrorLog("Error while Marshaling.", err)
 	}
 	return ioutil.WriteFile(filePath, yamlData, 0644)
+}
+
+// LoadTomlConfig
+func LoadTomlConfig(s interface{}, path string) error {
+	file, err := ioutil.ReadFile(path)
+	if err != nil {
+		MyLogger.ErrorLog(err)
+		return err
+	}
+	if err = toml.Unmarshal(file, s); err != nil {
+		MyLogger.ErrorLog(err)
+		return err
+	}
+	return nil
+}
+
+func WriteTomlConfig(data interface{}, filePath string) error {
+	tomlData, err := toml.Marshal(data)
+	if err != nil {
+		MyLogger.ErrorLog("Error while Marshaling.", err)
+	}
+	return ioutil.WriteFile(filePath, tomlData, 0644)
 }

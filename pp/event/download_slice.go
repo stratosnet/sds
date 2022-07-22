@@ -33,6 +33,15 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	reqId := requests.GetReqIdFromMessage(ctx)
 	if requests.UnmarshalData(ctx, &target) {
 		rsp := requests.RspDownloadSliceData(&target)
+
+		if task.DownloadSliceTaskMap.HashKey(target.TaskId + target.SliceInfo.SliceHash) {
+			rsp.Data = nil
+			rsp.Result.State = protos.ResultState_RES_FAIL
+			rsp.Result.Msg = "duplicate request for the same slice in the same download task"
+			peers.SendResponseMessageWithReqId(conn, rsp, header.RspDownloadSlice, reqId)
+			return
+		}
+
 		if target.Sign == nil || !verifyDownloadSliceSign(&target, rsp) {
 			rsp.Data = nil
 			rsp.Result.State = protos.ResultState_RES_FAIL
@@ -51,6 +60,8 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 
 		SendReportDownloadResult(rsp, true)
 		splitSendDownloadSliceData(rsp, conn, reqId)
+
+		task.DownloadSliceTaskMap.Store(target.TaskId+target.SliceInfo.SliceHash, true)
 	}
 }
 
@@ -237,13 +248,14 @@ func DownloadFileSlice(target *protos.RspFileStorageInfo) {
 		TotalSize:      int64(fileSize),
 		DownloadedSize: 0,
 	}
-	task.DownloadSpeedOfProgress.Store(target.FileHash, sp)
 	if !file.CheckFileExisting(target.FileHash, target.FileName, target.SavePath, target.EncryptionTag) {
+		task.DownloadSpeedOfProgress.Store(target.FileHash, sp)
 		for _, rsp := range target.SliceInfo {
 			utils.DebugLog("taskid ======= ", rsp.TaskId)
 			if file.CheckSliceExisting(target.FileHash, target.FileName, rsp.SliceStorageInfo.SliceHash, target.SavePath) {
 				utils.Log("slice exist already,", rsp.SliceStorageInfo.SliceHash)
 				task.DownloadProgress(target.FileHash, rsp.SliceStorageInfo.SliceSize)
+				task.CleanDownloadTask(target.FileHash, rsp.SliceStorageInfo.SliceHash, target.WalletAddress)
 				setDownloadSliceSuccess(rsp.SliceStorageInfo.SliceHash, dTask)
 			} else {
 				utils.DebugLog("request download data")
@@ -253,6 +265,7 @@ func DownloadFileSlice(target *protos.RspFileStorageInfo) {
 		}
 	} else {
 		utils.ErrorLog("file exists already!")
+		task.DeleteDownloadTask(target.FileHash, target.WalletAddress)
 	}
 }
 

@@ -79,6 +79,10 @@ func GetFileData(filePath string, offset *protos.SliceOffset) []byte {
 	return data
 }
 
+func GetSliceDataFromTmp(fileHash, sliceHash string) []byte {
+	return GetWholeFileData(getTmpSlicePath(fileHash, sliceHash))
+}
+
 // GetSliceData
 func GetSliceData(sliceHash string) []byte {
 	return GetWholeFileData(getSlicePath(sliceHash))
@@ -103,6 +107,36 @@ func GetSliceSize(sliceHash string) int64 {
 		return 0
 	}
 
+}
+
+func SaveTmpSliceData(fileHash, sliceHash string, data []byte) bool {
+	wmutex.Lock()
+	defer wmutex.Unlock()
+	tmpFileFolderPath := getTmpFileFolderPath(fileHash)
+	folderPath := filepath.Join(tmpFileFolderPath)
+	exist, err := PathExists(folderPath)
+	if err != nil {
+		utils.ErrorLog(err)
+		return false
+	}
+	if !exist {
+		if err = os.MkdirAll(folderPath, os.ModePerm); err != nil {
+			utils.ErrorLog(err)
+			return false
+		}
+	}
+	fileMg, err := os.OpenFile(getTmpSlicePath(fileHash, sliceHash), os.O_CREATE|os.O_RDWR, 0777)
+	defer fileMg.Close()
+	if err != nil {
+		utils.ErrorLog("error initialize file")
+		return false
+	}
+	_, err = fileMg.Write(data)
+	if err != nil {
+		utils.ErrorLog("error save file")
+		return false
+	}
+	return true
 }
 
 // SaveSliceData
@@ -280,6 +314,13 @@ func DeleteDirectory(fileHash string) {
 
 }
 
+func DeleteTmpFileSlices(fileHash string) {
+	err := os.RemoveAll(filepath.Join(setting.GetRootPath(), TEMP_FOLDER, fileHash))
+	if err != nil {
+		utils.DebugLog("Delete tmp folder err", err)
+	}
+}
+
 // CheckFilePathEx
 func CheckFilePathEx(fileHash, fileName, savePath string) bool {
 	filePath := ""
@@ -295,4 +336,12 @@ func CheckFilePathEx(fileHash, fileName, savePath string) bool {
 		return false
 	}
 	return true
+}
+
+func getTmpSlicePath(fileHash, sliceHash string) string {
+	return filepath.Join(getTmpFileFolderPath(fileHash), sliceHash)
+}
+
+func getTmpFileFolderPath(fileHash string) string {
+	return filepath.Join(setting.GetRootPath(), TEMP_FOLDER, fileHash)
 }

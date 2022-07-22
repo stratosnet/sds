@@ -206,9 +206,11 @@ ls
 
 ### Download a File
 ```bash
-get sdm://WALLET_ADDRESS/FILE_HASH
+get sdm://WALLET_ADDRESS/FILE_HASH SAVE_AS
 ```
-> Every file uploaded to SDS is attributed a unique file hash. You can view the file hash for each of your files when you list your uploaded files.
+
+Every file uploaded to SDS is attributed a unique file hash. You can view the file hash for each of your files when your list your uploaded files.   
+You can use an optional parameter `SAVE_AS` to rename the file after downloading
 
 ### Delete a File
 ```bash

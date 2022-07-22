@@ -137,6 +137,8 @@ const (
 	RspTransferDownloadResult  = "RspTdlR"
 	ReqReportBackupSliceResult = "ReqRBSR"
 	RspReportBackupSliceResult = "RspRBSR"
+	ReqFileBackupStatus        = "ReqFBSt"
+	RspFileBackupStatus        = "RspFBSt"
 
 	//TODO change to report to SP
 	ReqReportTaskBP = "ReqRTBP" // report to BP
@@ -166,19 +168,7 @@ const (
 	RspBadVersion = "RspBdVer"
 )
 
-// DecodeHeader
-func DecodeHeader(packet []byte) MessageHead {
-	var msgH = MessageHead{
-		Tag:     utils.BytesToInt16(packet[:2]),
-		Len:     utils.BytesToUInt32(packet[2:6]),
-		Cmd:     packet[6:14],
-		Version: utils.BytesToUint16(packet[14:]),
-	}
-	return msgH
-}
-
-// NewDecodeHeader
-func NewDecodeHeader(packet []byte, msgH *MessageHead) {
+func DecodeHeader(packet []byte, msgH *MessageHead) {
 	msgH.Tag = utils.BytesToInt16(packet[:2])
 	msgH.Len = utils.BytesToUInt32(packet[2:6])
 	msgH.Cmd = packet[6:14]

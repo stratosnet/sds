@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stratosnet/sds/utils/crypto/secp256k1"
-	"github.com/stratosnet/sds/utils/crypto/sha3"
-	"github.com/stratosnet/sds/utils/types"
 	"math/big"
 	"reflect"
+
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/stratosnet/sds/utils/crypto/sha3"
+	"github.com/stratosnet/sds/utils/types"
 )
 
 var (
@@ -42,23 +43,7 @@ func Keccak256Hash(data ...[]byte) (h types.Hash) {
 
 // S256 returns an instance of the secp256k1 curve.
 func S256() elliptic.Curve {
-	return secp256k1.S256()
-}
-
-// PubKeyToAddress calculates the wallet address from the user's private key
-func PrivKeyToAddress(privKey []byte) types.Address {
-	tmPrivKey := secp256k1.PrivKeyBytesToTendermint(privKey)
-	tmPubKey := tmPrivKey.PubKey()
-	return types.BytesToAddress(tmPubKey.Address())
-}
-
-// PubKeyToAddress calculates the wallet address from the user's public key
-func PubKeyToAddress(pubKey []byte) (types.Address, error) {
-	tmPubKey, err := secp256k1.PubKeyBytesToTendermint(pubKey)
-	if err != nil {
-		return types.Address{}, err
-	}
-	return types.BytesToAddress(tmPubKey.Address()), nil
+	return btcec.S256()
 }
 
 // ToECDSAUnsafe blindly converts a binary blob to a private key. It should almost
