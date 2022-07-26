@@ -287,7 +287,6 @@ func (cc *ClientConn) handshake() error {
 	core.HandshakeChanMap.Store(strconv.FormatUint(uint64(channelId), 10), handshakeChan)
 	defer func() {
 		core.HandshakeChanMap.Delete(cc.GetRemoteAddr())
-		close(handshakeChan)
 	}()
 
 	// Write the connection type as first message
