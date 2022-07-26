@@ -261,7 +261,7 @@ func (sc *ServerConn) handshake() (error, bool) {
 		select {
 		case clientChan <- buffer:
 			return nil, true
-		case <-time.After(time.Second):
+		case <-time.After(utils.HandshakeTimeOut * time.Second):
 			return errors.New("Timed out when writing to client channel"), false
 		}
 	default:

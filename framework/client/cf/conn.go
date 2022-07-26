@@ -287,7 +287,6 @@ func (cc *ClientConn) handshake() error {
 	core.HandshakeChanMap.Store(strconv.FormatUint(uint64(channelId), 10), handshakeChan)
 	defer func() {
 		core.HandshakeChanMap.Delete(cc.GetRemoteAddr())
-		close(handshakeChan)
 	}()
 
 	// Write the connection type as first message
@@ -317,7 +316,7 @@ func (cc *ClientConn) handshake() error {
 		if len(tmpKeyMsg) < tmed25519.PubKeySize+tmed25519.SignatureSize {
 			return errors.Errorf("Handshake message too small (%v bytes)", len(tmpKeyMsg))
 		}
-	case <-time.After(time.Second):
+	case <-time.After(utils.HandshakeTimeOut * time.Second):
 		return errors.New("Timed out when reading from server channel")
 	}
 
