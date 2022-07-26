@@ -1,13 +1,15 @@
 package serv
 
 import (
-	"crypto/sha256"
-	b64 "encoding/base64"
 	"context"
+	b64 "encoding/base64"
 	"encoding/hex"
-	"sync"
 	"encoding/json"
+	"sync"
 	"time"
+
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/google/uuid"
 	"github.com/stratosnet/sds/msg/header"
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
@@ -17,33 +19,30 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/stratosnet/stratos-chain/types"
-	"github.com/tendermint/tendermint/libs/bech32"
 )
 
 const (
-	// the length of request shall be shorter than 5242880 bytes
+	// FILE_DATA_SAFE_SIZE the length of request shall be shorter than 5242880 bytes
 	// this equals 3932160 bytes after
 	FILE_DATA_SAFE_SIZE = 3500000
 
-	// timeout for waiting result from external source, in seconds
+	// WAIT_TIMEOUT timeout for waiting result from external source, in seconds
 	WAIT_TIMEOUT time.Duration = 5 * time.Second
 )
 
 var (
 	// key: fileHash value: file
-	FileOffset = make(map[string]*FileFetchOffset)
+	FileOffset      = make(map[string]*FileFetchOffset)
 	FileOffsetMutex sync.Mutex
 )
 
 type FileFetchOffset struct {
-	RemoteRequested    uint64
-	ResourceNodeAsked  uint64
+	RemoteRequested   uint64
+	ResourceNodeAsked uint64
 }
 
 type rpcApi struct {
-
 }
 
 func RpcApi() *rpcApi {
@@ -77,9 +76,9 @@ func ResultHook(r *rpc_api.Result, fileHash string) *rpc_api.Result {
 
 			e := start + FILE_DATA_SAFE_SIZE
 			nr := &rpc_api.Result {
-				Return: r.Return,
+				Return:      r.Return,
 				OffsetStart: &start,
-				OffsetEnd: &e,
+				OffsetEnd:   &e,
 			}
 			return nr
 		}
@@ -92,30 +91,28 @@ func (api *rpcApi) RequestUpload(param rpc_api.ParamReqUploadFile) rpc_api.Resul
 	fileSize := param.FileSize
 	fileHash := param.FileHash
 	walletAddr := param.WalletAddr
-	pubkey := param.WalletPubkey
+	pubkeybech := param.WalletPubkey
 	signature := param.Signature
 
-	size:= fileSize
+	size := fileSize
 
 	// the input for signature is hashed by SHA256
-	hs := sha256.Sum256([]byte(fileHash + walletAddr))
 	ds, _ := hex.DecodeString(signature)
 
 	// decode public key
-	pubPref, pubkey64, err := bech32.DecodeAndConvert(pubkey)
-	if pubPref != types.AccountPubKeyPrefix || err != nil {
+	pubkey, err := sdk.GetFromBech32(pubkeybech, types.SdsNodeP2PPubkeyPrefix)
+	if err != nil {
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
-	pk, e := b64.StdEncoding.DecodeString(string(pubkey64))
-	if e != nil {
+	pk := secp256k1.PubKey{
+		Key: pubkey,
+	}
+	msg := []byte(fileHash + walletAddr)
+	if !pk.VerifySignature(msg, ds) {
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
-	if !secp256k1.VerifySignature(pk, hs[:], ds) {
-		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
-	}
-
 	// start to upload file
-	p := requests.RequestUploadFile(fileName, fileHash, uint64(size),  "rpc", walletAddr, false)
+	p := requests.RequestUploadFile(fileName, fileHash, uint64(size), "rpc", walletAddr, false)
 	peers.SendMessageToSPServer(p, header.ReqUploadFile)
 
 	var result *rpc_api.Result
@@ -164,9 +161,9 @@ func (api *rpcApi) UploadData(param rpc_api.ParamUploadData) rpc_api.Result {
 			start := fo.RemoteRequested
 			end := fo.RemoteRequested + FILE_DATA_SAFE_SIZE
 			nr := rpc_api.Result{
-				Return: rpc_api.UPLOAD_DATA,
+				Return:      rpc_api.UPLOAD_DATA,
 				OffsetStart: &start,
-				OffsetEnd: &end,
+				OffsetEnd:   &end,
 			}
 
 			FileOffsetMutex.Lock()
@@ -175,9 +172,9 @@ func (api *rpcApi) UploadData(param rpc_api.ParamUploadData) rpc_api.Result {
 			return nr
 		} else {
 			nr := rpc_api.Result{
-				Return: rpc_api.UPLOAD_DATA,
+				Return:      rpc_api.UPLOAD_DATA,
 				OffsetStart: &fo.RemoteRequested,
-				OffsetEnd: &fo.ResourceNodeAsked,
+				OffsetEnd:   &fo.ResourceNodeAsked,
 			}
 
 			FileOffsetMutex.Lock()
@@ -212,7 +209,6 @@ func (api *rpcApi) UploadData(param rpc_api.ParamUploadData) rpc_api.Result {
 
 // RequestDownload
 func (api *rpcApi) RequestDownload(param rpc_api.ParamReqDownloadFile) rpc_api.Result {
-
 	fileHash := param.FileHash
 	wallet := param.WalletAddr
 
@@ -290,7 +286,6 @@ func (api *rpcApi) DownloadData(param rpc_api.ParamDownloadData) rpc_api.Result 
 	case <-event:
 	}
 
-
 	if result.Return == rpc_api.DOWNLOAD_OK {
 		rawData := file.GetDownloadFileData(key)
 		encoded := b64.StdEncoding.EncodeToString(rawData)
@@ -342,7 +337,7 @@ func (api *rpcApi) DownloadedFileInfo(param rpc_api.ParamDownloadFileInfo) rpc_a
 	return *result
 }
 
-// RequestFileList
+// RequestList
 func (api *rpcApi) RequestList(param rpc_api.ParamReqFileList) rpc_api.FileListResult {
 
 	reqId := uuid.New().String()

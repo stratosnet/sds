@@ -1,25 +1,24 @@
 package main
 
 import (
-	"fmt"
-	"os"
 	"bytes"
-	"io/ioutil"
 	"encoding/base64"
 	"encoding/hex"
-	"path/filepath"
 	"encoding/json"
-	"crypto/sha256"
+	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/spf13/cobra"
-	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/api/rpc"
+	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto/secp256k1"
-	"github.com/stratosnet/stratos-chain/types"
-	"github.com/tendermint/tendermint/libs/bech32"
+	"github.com/stratosnet/sds/utils/types"
 )
 
 const (
@@ -27,11 +26,11 @@ const (
 )
 
 var (
-	WalletPrivateKey []byte
+	WalletPrivateKey secp256k1.PrivKey
 	WalletPublicKey  string
 	WalletAddress    string
 
-	Url              string
+	Url string
 )
 
 type jsonrpcMessage struct {
@@ -56,7 +55,7 @@ func findWallet(folder string) string {
 		if m, _ := filepath.Match("st1*", file); !info.IsDir() && filepath.Ext(path) == ".json" && m {
 			// only catch the first wallet file
 			if files == nil {
-				files = append(files, file[:len(file) - len(filepath.Ext(file))])
+				files = append(files, file[:len(file)-len(filepath.Ext(file))])
 			}
 		}
 		return nil
@@ -86,17 +85,17 @@ func readWalletKeys(wallet string) bool {
 		utils.ErrorLog("getPublicKey ioutil.ReadFile", err)
 		return false
 	}
-	key, err := utils.DecryptKey(keyjson, "aaa")
 
+	key, err := utils.DecryptKey(keyjson, "aaa")
 	if utils.CheckError(err) {
 		utils.ErrorLog("getPublicKey DecryptKey", err)
 		return false
 	}
-	WalletPrivateKey = key.PrivateKey
-
-	rawPubkey := secp256k1.PrivKeyToPubKeyCompressed(key.PrivateKey)
-	pubkey64 := base64.StdEncoding.EncodeToString(rawPubkey)
-	WalletPublicKey, err = bech32.ConvertAndEncode(types.AccountPubKeyPrefix, []byte(pubkey64))
+	WalletPrivateKey = secp256k1.PrivKey{
+		Key: key.PrivateKey,
+	}
+	pubkey := types.BytesToPubKey(WalletPrivateKey.PubKey().Bytes())
+	WalletPublicKey, err = pubkey.ToBech()
 	if err != nil {
 		utils.DebugLog(err)
 		return false
@@ -106,13 +105,13 @@ func readWalletKeys(wallet string) bool {
 }
 
 func wrapJsonRpc(method string, param []byte) []byte {
-    // compose json-rpc request
-	request := &jsonrpcMessage {
+	// compose json-rpc request
+	request := &jsonrpcMessage{
 		Version: "2.0",
-			ID:  1,
-		 Method: method,
-		 Params: json.RawMessage(param),
-	 }
+		ID:      1,
+		Method:  method,
+		Params:  json.RawMessage(param),
+	}
 	r, e := json.Marshal(request)
 	if e != nil {
 		utils.DebugLog("json marshal error", e)
@@ -137,23 +136,22 @@ func reqUploadMsg(fileName, hash string) []byte {
 	}
 
 	// signature
-	hs := sha256.Sum256([]byte(hash + WalletAddress))
-	sign, err := secp256k1.Sign(hs[:], WalletPrivateKey)
+	msg := hash + WalletAddress
+	sign, err := WalletPrivateKey.Sign([]byte(msg))
 	if err != nil {
-		utils.DebugLog("failed to sign, error:", err)
 		return nil
 	}
-	signature := sign[:len(sign)-1]
+	fmt.Printf("length of sign is: %d \n", len(sign))
 
 	// param
 	var params = []rpc.ParamReqUploadFile{}
-	params = append(params, rpc.ParamReqUploadFile {
-		FileName      : fileName,
-		FileSize      : int(info.Size()),
-		FileHash      : hash,
-		WalletAddr    : WalletAddress,
-		WalletPubkey  : WalletPublicKey,
-		Signature     : hex.EncodeToString(signature),
+	params = append(params, rpc.ParamReqUploadFile{
+		FileName:     fileName,
+		FileSize:     int(info.Size()),
+		FileHash:     hash,
+		WalletAddr:   WalletAddress,
+		WalletPubkey: WalletPublicKey,
+		Signature:    hex.EncodeToString(sign),
 	})
 
 	pm, e := json.Marshal(params)
@@ -162,15 +160,14 @@ func reqUploadMsg(fileName, hash string) []byte {
 		return nil
 	}
 
-	// 
 	return wrapJsonRpc("user_requestUpload", pm)
 }
 
 func uploadDataMsg(hash, data string) []byte {
 	var pa = []rpc.ParamUploadData{}
-	pa = append(pa, rpc.ParamUploadData {
-		FileHash      : hash,
-		Data          : data,
+	pa = append(pa, rpc.ParamUploadData{
+		FileHash: hash,
+		Data:     data,
 	})
 	pm, e := json.Marshal(pa)
 	if e != nil {
@@ -180,20 +177,19 @@ func uploadDataMsg(hash, data string) []byte {
 	return wrapJsonRpc("user_uploadData", pm)
 }
 
-
 // put
 func put(cmd *cobra.Command, args []string) error {
 	// args[0] is the first param, instead of the subcommand "put"
 	fileName := args[0]
 	hash := file.GetFileHash(args[0], "")
 
-    // compose request file upload params
+	// compose request file upload params
 	r := reqUploadMsg(args[0], hash)
 	if r == nil {
 		return nil
 	}
 
-    // http request-respond
+	// http request-respond
 	body := httpRequest(r)
 	if body == nil {
 		utils.DebugLog("http no response")
@@ -218,9 +214,9 @@ func put(cmd *cobra.Command, args []string) error {
 	// Handle result:1 sending the content
 	for res.Return == rpc.UPLOAD_DATA {
 		// get the data from the file
-		so := &protos.SliceOffset {
+		so := &protos.SliceOffset{
 			SliceOffsetStart: *res.OffsetStart,
-			SliceOffsetEnd: *res.OffsetEnd,
+			SliceOffsetEnd:   *res.OffsetEnd,
 		}
 		rawData := file.GetFileData(fileName, so)
 		encoded := base64.StdEncoding.EncodeToString(rawData)
@@ -231,7 +227,7 @@ func put(cmd *cobra.Command, args []string) error {
 			utils.DebugLog("json marshal error")
 			return nil
 		}
-		
+
 		// Handle rsp
 		err = json.Unmarshal(body, &rsp)
 		if err != nil {
@@ -243,7 +239,6 @@ func put(cmd *cobra.Command, args []string) error {
 			utils.DebugLog("unmarshal failed")
 			return nil
 		}
-				fmt.Println("D")
 	}
 	return nil
 }
@@ -260,8 +255,8 @@ func reqDownloadMsg(hash string) []byte {
 
 	// param
 	var params = []rpc.ParamReqDownloadFile{}
-	params = append(params, rpc.ParamReqDownloadFile {
-		FileHash: hash,
+	params = append(params, rpc.ParamReqDownloadFile{
+		FileHash:   hash,
 		WalletAddr: WalletAddress,
 	})
 
@@ -279,9 +274,9 @@ func reqDownloadMsg(hash string) []byte {
 func downloadDataMsg(hash, reqid string) []byte {
 	// param
 	var params = []rpc.ParamDownloadData{}
-	params = append(params, rpc.ParamDownloadData {
+	params = append(params, rpc.ParamDownloadData{
 		FileHash: hash,
-		ReqId: reqid,
+		ReqId:    reqid,
 	})
 
 	pm, e := json.Marshal(params)
@@ -295,13 +290,13 @@ func downloadDataMsg(hash, reqid string) []byte {
 }
 
 // downloadedFileInfoMsg
-func downloadedFileInfoMsg(fileHash string, fileSize uint64, reqid string) []byte  {
+func downloadedFileInfoMsg(fileHash string, fileSize uint64, reqid string) []byte {
 	// param
 	var params = []rpc.ParamDownloadFileInfo{}
-	params = append(params, rpc.ParamDownloadFileInfo {
+	params = append(params, rpc.ParamDownloadFileInfo{
 		FileHash: fileHash,
 		FileSize: fileSize,
-		ReqId: reqid,
+		ReqId:    reqid,
 	})
 
 	pm, e := json.Marshal(params)
@@ -337,7 +332,7 @@ func get(cmd *cobra.Command, args []string) error {
 	var rsp jsonrpcMessage
 	err := json.Unmarshal(body, &rsp)
 	if err != nil {
-	  return nil
+		return nil
 	}
 
 	var res rpc.Result
@@ -355,12 +350,12 @@ func get(cmd *cobra.Command, args []string) error {
 		if res.Return == rpc.DL_OK_ASK_INFO {
 			r = downloadedFileInfoMsg(fileHash, fileSize, res.ReqId)
 			fmt.Println("There are", pieceCount, "pieces received.")
-		}else {
+		} else {
 			start := *res.OffsetStart
 			end := *res.OffsetEnd
 			fileSize = fileSize + (end - start)
 			decoded, _ := base64.StdEncoding.DecodeString(res.FileData)
-			if len(decoded) != int(end - start) {
+			if len(decoded) != int(end-start) {
 				utils.DebugLog("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 				utils.DebugLog("Wrong size:", strconv.Itoa(len(decoded)), " ", strconv.Itoa(int(end-start)))
 				return nil
@@ -402,9 +397,9 @@ func reqListMsg(page uint64) []byte {
 
 	// param
 	var params = []rpc.ParamReqFileList{}
-	params = append(params, rpc.ParamReqFileList {
+	params = append(params, rpc.ParamReqFileList{
 		WalletAddr: WalletAddress,
-		PageId: page,
+		PageId:     page,
 	})
 
 	pm, e := json.Marshal(params)
@@ -418,11 +413,11 @@ func reqListMsg(page uint64) []byte {
 }
 
 // printFileList
-func printFileList(res rpc.FileListResult){
+func printFileList(res rpc.FileListResult) {
 	if res.Return == rpc.SUCCESS {
 		fmt.Printf("\n%-20s %-41s %-9s %-8s\n", "File Name", "File Hash", "File Size", "Create Time")
 		fmt.Printf("_____________________________________________________________________________________\n")
-		for i:= range res.FileInfo {
+		for i := range res.FileInfo {
 			f := res.FileInfo[i]
 			fmt.Printf("%-20s %-25s %10d %8d\n", f.FileName, f.FileHash, f.FileSize, f.CreateTime)
 		}
@@ -458,13 +453,13 @@ func list(cmd *cobra.Command, args []string) error {
 	var rsp jsonrpcMessage
 	err := json.Unmarshal(body, &rsp)
 	if err != nil {
-	  return nil
+		return nil
 	}
 
 	var res rpc.FileListResult
 	err = json.Unmarshal(rsp.Result, &res)
 	if err != nil {
-	  return nil
+		return nil
 	}
 
 	printFileList(res)
@@ -483,7 +478,7 @@ func reqGetOzoneMsg() []byte {
 
 	// param
 	var params = []rpc.ParamReqGetOzone{}
-	params = append(params, rpc.ParamReqGetOzone {
+	params = append(params, rpc.ParamReqGetOzone{
 		WalletAddr: WalletAddress,
 	})
 
@@ -515,7 +510,7 @@ func getozone(cmd *cobra.Command, args []string) error {
 	var rsp jsonrpcMessage
 	err := json.Unmarshal(body, &rsp)
 	if err != nil {
-	  return nil
+		return nil
 	}
 
 	var res rpc.GetOzoneResult
@@ -528,11 +523,11 @@ func getozone(cmd *cobra.Command, args []string) error {
 }
 
 // printSharedFileList
-func printSharedFileList(res rpc.FileShareResult){
+func printSharedFileList(res rpc.FileShareResult) {
 	if res.Return == rpc.SUCCESS {
 		fmt.Printf("\n%-20s %-41s %-9s %-8s  %-8s   %-15s  %-15s\n", "File Name", "File Hash", "File Size", "Link Time", "Link Exp", "Share ID", "Share Link")
 		fmt.Printf("________________________________________________________________________________________________________________________________________\n")
-		for i:= range res.FileInfo {
+		for i := range res.FileInfo {
 			f := res.FileInfo[i]
 			fmt.Printf("%-20s %-25s %10d %8d %8d %-15s %-15s\n", f.FileName, f.FileHash, f.FileSize, f.LinkTime, f.LinkTimeExp, f.ShareId, f.ShareLink)
 		}
@@ -553,9 +548,9 @@ func reqListShareMsg(page uint64) []byte {
 
 	// param
 	var params = []rpc.ParamReqListShared{}
-	params = append(params, rpc.ParamReqListShared {
-		WalletAddr    : WalletAddress,
-		PageId        : page,
+	params = append(params, rpc.ParamReqListShared{
+		WalletAddr: WalletAddress,
+		PageId:     page,
 	})
 
 	pm, e := json.Marshal(params)
@@ -569,7 +564,7 @@ func reqListShareMsg(page uint64) []byte {
 }
 
 // listshared
-func listshare(cmd *cobra.Command, args[]string) error {
+func listshare(cmd *cobra.Command, args []string) error {
 	var page uint64
 	var e error
 	page = 0
@@ -594,12 +589,12 @@ func listshare(cmd *cobra.Command, args[]string) error {
 	var rsp jsonrpcMessage
 	err := json.Unmarshal(body, &rsp)
 	if err != nil {
-	  return err
+		return err
 	}
 	var res rpc.FileShareResult
 	err = json.Unmarshal(rsp.Result, &res)
 	if err != nil {
-	  return nil
+		return nil
 	}
 	printSharedFileList(res)
 	return nil
@@ -616,9 +611,9 @@ func reqShareMsg(hash string) []byte {
 
 	// param
 	var params = []rpc.ParamReqShareFile{}
-	params = append(params, rpc.ParamReqShareFile {
-		FileHash      : hash,
-		WalletAddr    : WalletAddress,
+	params = append(params, rpc.ParamReqShareFile{
+		FileHash:   hash,
+		WalletAddr: WalletAddress,
 	})
 
 	pm, e := json.Marshal(params)
@@ -632,7 +627,7 @@ func reqShareMsg(hash string) []byte {
 }
 
 // share
-func share(cmd *cobra.Command, args[]string) error {
+func share(cmd *cobra.Command, args []string) error {
 	// check input
 	if len(args) != 1 {
 		utils.DebugLog("file hash is not provided")
@@ -654,12 +649,12 @@ func share(cmd *cobra.Command, args[]string) error {
 	var rsp jsonrpcMessage
 	err := json.Unmarshal(body, &rsp)
 	if err != nil {
-	  return err
+		return err
 	}
 	var res rpc.FileShareResult
 	err = json.Unmarshal(rsp.Result, &res)
 	if err != nil {
-	  return nil
+		return nil
 	}
 
 	return nil
@@ -676,9 +671,9 @@ func reqStopShareMsg(shareId string) []byte {
 
 	// param
 	var params = []rpc.ParamReqStopShare{}
-	params = append(params, rpc.ParamReqStopShare {
-		WalletAddr    : WalletAddress,
-		ShareId       : shareId,
+	params = append(params, rpc.ParamReqStopShare{
+		WalletAddr: WalletAddress,
+		ShareId:    shareId,
 	})
 
 	pm, e := json.Marshal(params)
@@ -692,7 +687,7 @@ func reqStopShareMsg(shareId string) []byte {
 }
 
 // stopshare
-func stopshare(cmd *cobra.Command, args[]string) error {
+func stopshare(cmd *cobra.Command, args []string) error {
 
 	// compose request
 	r := reqStopShareMsg(args[0])
@@ -709,12 +704,12 @@ func stopshare(cmd *cobra.Command, args[]string) error {
 	var rsp jsonrpcMessage
 	err := json.Unmarshal(body, &rsp)
 	if err != nil {
-	  return err
+		return err
 	}
 	var res rpc.FileShareResult
 	err = json.Unmarshal(rsp.Result, &res)
 	if err != nil {
-	  return nil
+		return nil
 	}
 
 	return nil
@@ -731,9 +726,9 @@ func reqGetSharedMsg(shareLink string) []byte {
 
 	// param
 	var params = []rpc.ParamReqGetShared{}
-	params = append(params, rpc.ParamReqGetShared {
-		WalletAddr    : WalletAddress,
-		ShareLink     : shareLink,
+	params = append(params, rpc.ParamReqGetShared{
+		WalletAddr: WalletAddress,
+		ShareLink:  shareLink,
 	})
 
 	pm, e := json.Marshal(params)
@@ -747,7 +742,7 @@ func reqGetSharedMsg(shareLink string) []byte {
 }
 
 // getshared
-func getshared(cmd *cobra.Command, args[]string) error {
+func getshared(cmd *cobra.Command, args []string) error {
 
 	// compose request
 	r := reqGetSharedMsg(args[0])
@@ -766,12 +761,12 @@ func getshared(cmd *cobra.Command, args[]string) error {
 	var rsp jsonrpcMessage
 	err := json.Unmarshal(body, &rsp)
 	if err != nil {
-	  return err
+		return err
 	}
 	var res rpc.Result
 	err = json.Unmarshal(rsp.Result, &res)
 	if err != nil {
-	  return nil
+		return nil
 	}
 
 	var fileSize uint64 = 0
@@ -782,12 +777,12 @@ func getshared(cmd *cobra.Command, args[]string) error {
 		if res.Return == rpc.DL_OK_ASK_INFO {
 			r = downloadedFileInfoMsg(fileHash, fileSize, res.ReqId)
 			fmt.Println("There are", pieceCount, "pieces received.")
-		}else {
+		} else {
 			start := *res.OffsetStart
 			end := *res.OffsetEnd
 			fileSize = fileSize + (end - start)
 			decoded, _ := base64.StdEncoding.DecodeString(res.FileData)
-			if len(decoded) != int(end - start) {
+			if len(decoded) != int(end-start) {
 				utils.DebugLog("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 				utils.DebugLog("Wrong size:", strconv.Itoa(len(decoded)), " ", strconv.Itoa(int(end-start)))
 				return nil
@@ -870,59 +865,59 @@ func rootPreRunE(cmd *cobra.Command, args []string) error {
 // main
 func main() {
 	rootCmd := &cobra.Command{
-		Use:     "rpc_client",
-		Short:   "rpc client for test purpose",
+		Use:               "rpc_client",
+		Short:             "rpc client for test purpose",
 		PersistentPreRunE: rootPreRunE,
 	}
 	rootCmd.PersistentFlags().StringP("url", "u", DEFAULT_URL, "url to the RPC server, e.g. http://3.24.59.6:8235")
 	rootCmd.PersistentFlags().StringP("wallet", "w", "", "wallet address to be used (default: the first wallet in folder ./account/)")
 
 	putCmd := &cobra.Command{
-		Use:     "put",
-		Short:   "upload a file",
-		RunE:    put,
+		Use:   "put",
+		Short: "upload a file",
+		RunE:  put,
 	}
 
 	getCmd := &cobra.Command{
-		Use:     "get",
-		Short:   "download a file",
-		RunE:    get,
+		Use:   "get",
+		Short: "download a file",
+		RunE:  get,
 	}
 
 	listCmd := &cobra.Command{
-		Use:     "list",
-		Short:   "list files",
-		RunE:    list,
+		Use:   "list",
+		Short: "list files",
+		RunE:  list,
 	}
 
 	shareCmd := &cobra.Command{
-		Use:     "share",
-		Short:   "share a file from uploaded files",
-		RunE:    share,
+		Use:   "share",
+		Short: "share a file from uploaded files",
+		RunE:  share,
 	}
 
 	listsharedCmd := &cobra.Command{
-		Use:     "listshared",
-		Short:   "list shared files",
-		RunE:    listshare,
+		Use:   "listshared",
+		Short: "list shared files",
+		RunE:  listshare,
 	}
 
 	stopsharedCmd := &cobra.Command{
-		Use:     "stopshare",
-		Short:   "stop sharing a file",
-		RunE:    stopshare,
+		Use:   "stopshare",
+		Short: "stop sharing a file",
+		RunE:  stopshare,
 	}
 
 	getsharedCmd := &cobra.Command{
-		Use:     "getshared",
-		Short:   "download a shared file",
-		RunE:    getshared,
+		Use:   "getshared",
+		Short: "download a shared file",
+		RunE:  getshared,
 	}
 
 	getozoneCmd := &cobra.Command{
-		Use:     "getozone",
-		Short:   "get the ozone of the wallet",
-		RunE:    getozone,
+		Use:   "getozone",
+		Short: "get the ozone of the wallet",
+		RunE:  getozone,
 	}
 
 	rootCmd.AddCommand(putCmd)
