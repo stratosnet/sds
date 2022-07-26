@@ -316,7 +316,7 @@ func (cc *ClientConn) handshake() error {
 		if len(tmpKeyMsg) < tmed25519.PubKeySize+tmed25519.SignatureSize {
 			return errors.Errorf("Handshake message too small (%v bytes)", len(tmpKeyMsg))
 		}
-	case <-time.After(time.Second):
+	case <-time.After(utils.HandshakeTimeOut * time.Second):
 		return errors.New("Timed out when reading from server channel")
 	}
 
