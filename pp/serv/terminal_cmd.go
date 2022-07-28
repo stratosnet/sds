@@ -132,6 +132,10 @@ func (api *terminalCmd) UpdateStake(param []string) (CmdResult, error) {
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be an integer")
 	}
+	if stakeDelta < int64(setting.DEFAULT_MIN_UNSUSPEND_STAKE) {
+		return CmdResult{Msg: ""}, errors.New("the minimum value to update stake is " + strconv.FormatInt(setting.DEFAULT_MIN_UNSUSPEND_STAKE, 10))
+	}
+
 	fee, err := strconv.ParseInt(param[1], 10, 64)
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be an integer")
