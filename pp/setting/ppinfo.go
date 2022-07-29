@@ -14,6 +14,8 @@ var IsLoginToSP = false
 
 var State uint32 = ppTypes.PP_INACTIVE
 
+var OnlineTime int64  = 0
+
 var IsStartMining = false // Is the node currently mining
 
 var IsAuto = false

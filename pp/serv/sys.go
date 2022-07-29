@@ -108,6 +108,9 @@ func dumpTrafficLog() {
 	}
 
 	utils.DumpTraffic(string(bDumpInfo))
+
+	trafficInfo.TimeStamp = time.Now().String()[:19]
+	TrafficInfoToMonitorClient(trafficInfo)
 }
 
 func StopDumpTrafficLog() {

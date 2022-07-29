@@ -8,6 +8,7 @@ import (
 
 	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/peers"
@@ -36,12 +37,29 @@ func ReqHBLatencyCheckSpList(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	//utils.DebugLogf("====== sending latency check %v ======", client.GetConnectionName(conn))
+
 	peers.ClearBufferedSpConns()
 	// clear optSp before ping sp list
 	summary.optSp = OptimalSp{}
 	go peers.SendLatencyCheckMessageToSPList()
 	myClockLatency := clock.NewClock()
 	myClockLatency.AddJobRepeat(time.Second*utils.LatencyCheckSpListTimeout, 1, connectAndRegisterToOptSp)
+}
+
+// Request latency measurement from a pp and to a pp
+func ReqLatencyCheckToPp(ctx context.Context, conn core.WriteCloser) {
+	var target protos.ReqLatencyCheck
+	if !requests.UnmarshalData(ctx, &target) {
+		utils.ErrorLog("unmarshal error")
+		return
+	}
+	response := &protos.RspLatencyCheck{
+		HbType:          target.HbType,
+		P2PAddressPp:    setting.Config.P2PAddress,
+		PingTime:        target.PingTime,
+	}
+	peers.SendMessage(conn, response, header.RspLatencyCheck)
+	return
 }
 
 func RspHBLatencyCheckSpList(ctx context.Context, _ core.WriteCloser) {
@@ -52,11 +70,17 @@ func RspHBLatencyCheckSpList(ctx context.Context, _ core.WriteCloser) {
 		utils.ErrorLog("unmarshal error")
 		return
 	}
-	if response.HbType != protos.HeartbeatType_LATENCY_CHECK {
-		utils.ErrorLog("invalid response of heartbeat")
-		return
+	if response.HbType == protos.HeartbeatType_LATENCY_CHECK_PP {
+		start, _ := strconv.ParseInt(response.PingTime, 10, 64)
+		peer := peers.GetPPByP2pAddress(response.P2PAddressPp)
+		if peer == nil {
+			return
+		}
+		peer.Latency = rspTime - start
+		peers.UpdatePP(peer)
+	}else if response.HbType == protos.HeartbeatType_LATENCY_CHECK {
+		go updateOptimalSp(rspTime, &response, &summary.optSp)
 	}
-	go updateOptimalSp(rspTime, &response, &summary.optSp)
 }
 
 func updateOptimalSp(rspTime int64, rsp *protos.RspLatencyCheck, optSp *OptimalSp) {

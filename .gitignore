@@ -20,6 +20,7 @@ target/
 *.log
 application/sp/spServer
 cmd/relayd/relayd
+cmd/relayd/tmp
 example/network/account
 example/network/[a-zA-Z0-9]
 example/network/tmp

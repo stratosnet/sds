@@ -59,6 +59,7 @@ func NewHdInfo(hdTotal uint64, hdFree uint64, hdUsed uint64, hdUsedPercent float
 type TrafficInfo struct {
 	TrafficInbound  uint64 `json:"traffic_inbound"`
 	TrafficOutbound uint64 `json:"traffic_outbound"`
+	TimeStamp       string `json:"time_stamp",omitempty`
 }
 
 func NewTrafficInfo(trafficInbound uint64, trafficOutbound uint64) TrafficInfo {

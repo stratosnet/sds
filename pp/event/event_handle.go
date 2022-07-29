@@ -68,6 +68,7 @@ func RegisterEventHandle() {
 	core.Register(header.RspGetShareFile, RspGetShareFile)
 
 	core.Register(header.ReqSpLatencyCheck, ReqHBLatencyCheckSpList)
+	core.Register(header.ReqLatencyCheck, ReqLatencyCheckToPp)
 	core.Register(header.RspLatencyCheck, RspHBLatencyCheckSpList)
 	core.Register(header.ReqDeleteFile, ReqDeleteFile)
 	core.Register(header.RspDeleteFile, RspDeleteFile)

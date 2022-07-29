@@ -19,6 +19,7 @@ func StartPP(registerFn func()) {
 	GetSPList()
 	GetPPStatusInitPPList()
 	//go SendLatencyCheckMessageToSPList()
+	StartPpLatencyCheck()
 	StartStatusReportToSP()
 	ListenOffline()
 }
