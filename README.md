@@ -13,7 +13,7 @@ Here, we provide a concise quickstart guide to help set up and run a SDS resourc
 ```bash
 git clone https://github.com/stratosnet/sds.git
 cd sds
-git checkout v0.8.0
+git checkout v0.8.1
 make build
 ```
 Then you will find the executable binary `ppd` under `./target`
@@ -47,7 +47,7 @@ First, make sure or change the SDS version section in the `configs/config.toml` 
 [version]
 app_ver = 8
 min_app_ver = 8
-show = 'v0.8.0'
+show = 'v0.8.1'
 ```
 
 To connect to the Stratos-chain Tropos testnet, make the following changes:
