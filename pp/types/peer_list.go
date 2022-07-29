@@ -26,6 +26,8 @@ type PeerInfo struct {
 
 	DiscoveryTime      int64 // When was this peer discovered for the first time
 	LastConnectionTime int64 // When was the last time we connected with this peer
+	Latency            int64 // The latency in ms
+	ConnetionType      string // the network for pp server listen on, 'tcp' or 'tcp4' or 'tcp6'
 	NetId              int64 // The ID of the current connection with this node, if it exists.
 	Status             int
 }
@@ -134,7 +136,9 @@ func (peerList *PeerList) savePPListToFile() error {
 			pp.NetworkAddress,
 			strconv.FormatInt(pp.DiscoveryTime, 10),
 			strconv.FormatInt(pp.LastConnectionTime, 10),
+			strconv.FormatInt(pp.Latency, 10),
 		}
+
 		err = writer.Write(line)
 		if err != nil {
 			utils.ErrorLog("error when writing local ppList to csv:", err)
@@ -210,6 +214,7 @@ func (peerList *PeerList) SavePPList(target *protos.RspGetPPList) error {
 				WalletAddress:      info.WalletAddress,
 				DiscoveryTime:      time.Now().Unix(),
 				LastConnectionTime: 0,
+				Latency:            0,
 				NetId:              0,
 				Status:             PEER_NOT_CONNECTED,
 			}

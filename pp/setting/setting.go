@@ -20,6 +20,7 @@ const (
 	APP_VER     = 8
 	MIN_APP_VER = 8
 	HD_PATH     = "m/44'/606'/0'/0/0"
+	PP_SERVER_TYPE = "tcp4"
 
 	// REPORTDHTIME 1 hour
 	REPORTDHTIME = 60 * 60
@@ -27,6 +28,7 @@ const (
 	NodeReportIntervalSec   = 300 // in seconds
 	NodeReportCheckInterval = 500 // in num of heights
 	WeightDeductionInterval = 200 // interval for weight deduction in heights
+	PpLatencyCheckInterval  = 60 // interval for checking the latency to next PP
 
 	// MAXDATA max slice size
 	MAXDATA = 1024 * 1024 * 3
@@ -83,6 +85,9 @@ var (
 
 	// UpChan
 	UpChan = make(chan string, 100)
+
+	// traffic log path
+	TrafficLogPath string
 )
 
 type AppVersion struct {
@@ -123,6 +128,7 @@ type config struct {
 	StratosChainUrl      string       `toml:"stratos_chain_url"`
 	RestPort             string       `toml:"rest_port"`
 	InternalPort         string       `toml:"internal_port"`
+	MonitorPort          string       `toml:"monitor_port"`
 	TrafficLogInterval   uint64       `toml:"traffic_log_interval"`
 	MaxConnection        int          `toml:"max_connection"`
 	SPList               []SPBaseInfo `toml:"sp_list"`

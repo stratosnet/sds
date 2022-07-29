@@ -80,6 +80,47 @@ func DumpTraffic(v ...interface{}) {
 	TrafficLogger.logDepth(Info, 3, v...)
 }
 
+func GetLastLinesFromTrafficLog(path string, n uint64) []string {
+
+	file, err := os.Open(path)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	line := ""
+	lines := []string{}
+	var cursor int64 = 0
+	stat, _ := file.Stat()
+	filesize := stat.Size()
+	var i uint64
+	for i = 0; i < n; i++ {
+		for {
+			cursor -= 1
+			file.Seek(cursor, io.SeekEnd)
+
+			char := make([]byte, 1)
+			file.Read(char)
+
+			if cursor != -1 && (char[0] == 10 || char[0] == 13) {
+				break
+			}
+
+			line = fmt.Sprintf("%s%s", string(char), line)
+
+			if cursor == -filesize {
+				break
+			}
+		}
+		lines = append(lines, line)
+		if cursor == -filesize {
+			break
+		}
+	}
+
+	return lines
+}
+
 func init() {
 	clear := "\033[0m"
 	level2String[Detail] = "\033[0;32m[Detail]" + clear

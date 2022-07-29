@@ -3,6 +3,7 @@ package event
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
@@ -58,10 +59,15 @@ func formatRspGetPPStatus(response protos.RspGetPPStatus) {
 	switch response.State {
 	case int32(protos.PPState_OFFLINE):
 		state = protos.PPState_OFFLINE.String()
+		setting.OnlineTime = 0
 	case int32(protos.PPState_ONLINE):
 		state = protos.PPState_ONLINE.String()
+		if setting.OnlineTime == 0 {
+			setting.OnlineTime = time.Now().Unix()
+		}
 	case int32(protos.PPState_SUSPEND):
 		state = protos.PPState_SUSPEND.String()
+		setting.OnlineTime = 0
 	default:
 		state = "Unknown"
 	}
