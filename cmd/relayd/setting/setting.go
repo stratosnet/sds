@@ -4,6 +4,9 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
+var Config *config
+var HomePath string
+
 type connectionRetries struct {
 	Max           int `toml:"max"`
 	SleepDuration int `toml:"sleep_duration"`
@@ -45,14 +48,18 @@ type Version struct {
 	MinAppVer uint16 `toml:"min_app_ver"`
 }
 
+type keysConfig struct {
+	WalletPath     string `toml:"wallet_path"`
+	WalletPassword string `toml:"wallet_password"`
+}
+
 type config struct {
 	BlockchainInfo blockchainInfoConfig `toml:"blockchain_info"`
+	Keys           keysConfig           `toml:"keys"`
 	SDS            sds                  `toml:"sds"`
 	StratosChain   stratoschain         `toml:"stratos_chain"`
 	Version        Version              `toml:"version"`
 }
-
-var Config *config
 
 func LoadConfig(path string) error {
 	Config = new(config)

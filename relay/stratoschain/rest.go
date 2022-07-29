@@ -27,7 +27,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/pkg/errors"
-	setting "github.com/stratosnet/sds/cmd/relayd/config"
+	"github.com/stratosnet/sds/cmd/relayd/setting"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/relay/stratoschain/handlers"

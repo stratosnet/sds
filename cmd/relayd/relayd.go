@@ -1,43 +1,40 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 
-	setting "github.com/stratosnet/sds/cmd/relayd/config"
+	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/relay/client"
 	"github.com/stratosnet/sds/utils"
 )
 
-func main() {
-	dir, err := os.Getwd()
+func startRunE(cmd *cobra.Command, _ []string) error {
+	spHomePath, err := cmd.Flags().GetString(SP_HOME)
 	if err != nil {
-		fmt.Println("error loading the working directory", err)
-		return
+		utils.ErrorLog("failed to get 'sp-home' path for the relayd process")
+		return err
 	}
-	_ = utils.NewDefaultLogger(filepath.Join(dir, "./tmp/logs/stdout.log"), true, true)
-	if len(os.Args) < 2 {
-		utils.Log("Not enough arguments. Please specify the config file to use")
-		return
+	spHomePath, err = utils.Absolute(spHomePath)
+	if err != nil {
+		utils.ErrorLog("cannot convert sp-home path to absolute path")
+		return err
 	}
 
-	err = setting.LoadConfig(os.Args[1])
+	multiClient, err := client.NewClient(spHomePath)
 	if err != nil {
-		utils.ErrorLog("Error loading the config file", err)
-		return
+		utils.ErrorLog("cannot create new relay client")
+		return err
 	}
 
-	multiClient := client.NewClient()
 	defer multiClient.Stop()
 	defer os.Exit(1)
 
 	err = multiClient.Start()
 	if err != nil {
 		utils.ErrorLog("Shutting down. Could not start relay client", err)
-		return
+		return err
 	}
 
 	quit := make(chan os.Signal, 1)
@@ -53,9 +50,9 @@ func main() {
 		select {
 		case <-quit:
 			utils.Log("Quit signal detected. Shutting down...")
-			return
+			return nil
 		case <-multiClient.Ctx.Done():
-			return
+			return nil
 		}
 	}
 }
