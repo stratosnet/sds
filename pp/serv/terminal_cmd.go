@@ -402,3 +402,8 @@ func (api *terminalCmd) CancelGet(param []string) (CmdResult, error) {
 	event.DownloadSliceCancel(param[0], "", nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
+
+func (api *terminalCmd) MonitorToken(param []string) (CmdResult, error) {
+	utils.Log("Monitor token is:", GetCurrentToken())
+	return CmdResult{Msg: DefaultMsg}, nil
+}

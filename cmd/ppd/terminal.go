@@ -47,6 +47,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"ver                                        			version\n" +
 		"monitor                                    			show monitor\n" +
 		"stopmonitor                                			stop monitor\n" +
+		"monitortoken                                   		show token for pp monitor service" +
 		"config  <key> <value>                      			set config key value\n" +
 		"getoz <walletAddress> ->password           			get current ozone balance\n" +
 		"status			                                        get current resource node status\n"
@@ -191,7 +192,9 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	cancelget := func(line string, param []string) bool {
 		return callRpc(c, "cancelGet", param)
 	}
-
+	monitortoken := func(line string, param []string) bool {
+		return callRpc(c, "monitorToken", param)
+	}
 	//TODO move to pp api later
 	//if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
 	//	serv.Login(setting.Config.WalletAddress, setting.Config.WalletPassword)
@@ -261,6 +264,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("pauseget", pauseget, true)
 	console.Mystdin.RegisterProcessFunc("pauseput", pauseput, true)
 	console.Mystdin.RegisterProcessFunc("cancelget", cancelget, true)
+	console.Mystdin.RegisterProcessFunc("monitortoken", monitortoken, true)
 
 	if isExec {
 		if len(args) > 0 {
