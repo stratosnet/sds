@@ -41,6 +41,7 @@ func nodePreRunE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	setting.MonitorInitialToken = serv.CreateInitialToken()
 	setting.TrafficLogPath = filepath.Join(setting.GetRootPath(), "./tmp/logs/traffic_dump.log")
 	trafficLogger := utils.NewTrafficLogger(setting.TrafficLogPath, false, true)
 	trafficLogger.SetLogLevel(utils.Info)

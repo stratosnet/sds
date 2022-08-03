@@ -1,104 +1,120 @@
 package main
 
 import (
-    "flag"
-    "fmt"
-    "log"
-    "net/url"
-    "os"
-    "os/signal"
-    "time"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"log"
+	"net/url"
+	"os"
+	"os/signal"
+	"time"
 
-    "github.com/gorilla/websocket"
+	"github.com/gorilla/websocket"
 )
 
 var addr = flag.String("addr", "localhost:5678", "http service address")
+var test_step int64
+var subid string
+
+type jsonrpcMessage struct {
+	Version string          `json:"jsonrpc,omitempty"`
+	ID      int             `json:"id,omitempty"`
+	Method  string          `json:"method,omitempty"`
+	Params  json.RawMessage `json:"params,omitempty"`
+	Result  json.RawMessage `json:"result,omitempty"`
+}
 
 func main() {
-    flag.Parse()
-    log.SetFlags(0)
+	if len(os.Args) != 2 {
+		return
+	}
+	flag.Parse()
+	log.SetFlags(0)
+	test_step = 0
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
 
-    interrupt := make(chan os.Signal, 1)
-    signal.Notify(interrupt, os.Interrupt)
+	u := url.URL{Scheme: "ws", Host: *addr, Path: "/"}
+	log.Printf("connecting to %s", u.String())
 
-    u := url.URL{Scheme: "ws", Host: *addr, Path: "/"}
-    log.Printf("connecting to %s", u.String())
+	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		log.Fatal("dial:", err)
+	}
+	defer c.Close()
 
-    c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
-    if err != nil {
-        log.Fatal("dial:", err)
-    }
-    defer c.Close()
+	done := make(chan struct{})
 
-    done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for {
+			_, message, err := c.ReadMessage()
+			if err != nil {
+				log.Println("read:", err)
+				return
+			}
+			log.Printf("<-- %s", message)
+			if test_step == 1 {
+				var rsp jsonrpcMessage
+				// Handle rsp
+				if err = json.Unmarshal(message, &rsp); err == nil {
+					var res string
+					err = json.Unmarshal(rsp.Result, &res)
+					subid = res
+					test_step++
+				}
+			}
+		}
+	}()
 
-    go func() {
-        defer close(done)
-        for {
-            _, message, err := c.ReadMessage()
-            if err != nil {
-                log.Println("read:", err)
-                return
-            }
-            log.Printf("<-- %s", message)
-        }
-    }()
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
 
-    ticker := time.NewTicker(5 * time.Second)
-    defer ticker.Stop()
-	i := 0
 	j := ""
 
-    for {
-        select {
-        case <-done:
-            return
-        case t := <-ticker.C:
-            fmt.Println(t.String())
-			switch i {
+	for {
+		select {
+		case <-done:
+			return
+		case <-ticker.C:
+			switch test_step {
 			case 0:
-				j = string("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"monitor_subscribe\",\"params\":[\"subscription\"]}")
-			case 1:
-				j = string("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"monitor_getTrafficData\",\"params\":[{\"lines\":1}]}")
+				j = string("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"monitor_subscribe\",\"params\":[\"subscription\", \"" + os.Args[1] + "\"]}")
 			case 2:
-				j = string("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"monitor_getDiskUsage\"}")
+				j = string("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"monitor_getTrafficData\",\"params\":[{\"subid\":\"" + subid + "\",\"lines\":1}]}")
 			case 3:
-				j = string("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"monitor_getPeerList\"}")
+				j = string("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"monitor_getDiskUsage\",\"params\":[{\"subid\":\"" + subid + "\"}]}")
+			case 4:
+				j = string("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"monitor_getPeerList\",\"params\":[{\"subid\":\"" + subid + "\"}]}")
 			default:
-				j = ""				
+				j = ""
 			}
-			i++
-            //j := string("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"monitor_getTrafficData\"}")
-            //j := string("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"monitor_getDiskUsage\"}")
-            //j := string("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"monitor_getPeerList\"}")
-            if j != "" {
+			test_step++
+			if j != "" {
 				fmt.Println("-->", j)
-			    err := c.WriteMessage(websocket.TextMessage, []byte(j))
+				err := c.WriteMessage(websocket.TextMessage, []byte(j))
 				if err != nil {
 					log.Println("write:", err)
 					return
 				}
 			}
 
-        case <-interrupt:
-            log.Println("interrupt")
+		case <-interrupt:
+			log.Println("interrupt")
 
-            // Cleanly close the connection by sending a close message and then
-            // waiting (with timeout) for the server to close the connection.
-            err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-            if err != nil {
-                log.Println("write close:", err)
-                return
-            }
-            select {
-            case <-done:
-            case <-time.After(time.Second):
-            }
-            return
-        }
-    }
+			// Cleanly close the connection by sending a close message and then
+			// waiting (with timeout) for the server to close the connection.
+			err := c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			if err != nil {
+				log.Println("write close:", err)
+				return
+			}
+			select {
+			case <-done:
+			case <-time.After(time.Second):
+			}
+			return
+		}
+	}
 }
-
-
-
-
