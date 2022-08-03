@@ -67,7 +67,7 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 	}
 
 	task.VideoCacheTaskMap.Delete(fileHash)
-	task.DownloadFileMap.Delete(fileHash)
+	task.DownloadFileMap.Delete(fileHash + task.LOCAL_REQID)
 	streamInfo, err := getStreamInfo(fileHash, ownerWalletAddress, setting.WalletAddress, w)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
@@ -86,7 +86,7 @@ func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	task.DownloadFileMap.Delete(fileHash)
+	task.DownloadFileMap.Delete(fileHash + task.LOCAL_REQID)
 	streamInfo, err := getStreamInfo(fileHash, ownerWalletAddress, setting.WalletAddress, w)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
@@ -145,7 +145,7 @@ func streamVideoHttp(w http.ResponseWriter, req *http.Request) {
 
 func redirectToResourceNode(fileHash, sliceHash, restAddress, walletAddress string, w http.ResponseWriter, req *http.Request) {
 	var targetAddress string
-	if dlTask, ok := task.DownloadTaskMap.Load(fileHash + walletAddress); ok {
+	if dlTask, ok := task.DownloadTaskMap.Load(fileHash + walletAddress + task.LOCAL_REQID); ok {
 		//self is the resource PP and has task info
 		downloadTask := dlTask.(*task.DownloadTask)
 		targetAddress = downloadTask.SliceInfo[sliceHash].StoragePpInfo.RestAddress
@@ -159,7 +159,7 @@ func redirectToResourceNode(fileHash, sliceHash, restAddress, walletAddress stri
 }
 
 func clearStreamTask(w http.ResponseWriter, req *http.Request) {
-	event.ClearFileInfoAndDownloadTask(parseFileHash(req.URL), w)
+	event.ClearFileInfoAndDownloadTask(parseFileHash(req.URL), task.LOCAL_REQID, w)
 }
 
 func GetVideoSlice(w http.ResponseWriter, req *http.Request) {
@@ -176,7 +176,7 @@ func GetVideoSlice(w http.ResponseWriter, req *http.Request) {
 
 	utils.DebugLog("The request body is ", body)
 
-	if dlTask, ok := task.DownloadTaskMap.Load(body.FileHash + setting.WalletAddress); ok {
+	if dlTask, ok := task.DownloadTaskMap.Load(body.FileHash + setting.WalletAddress + task.LOCAL_REQID); ok {
 		utils.DebugLog("Found task info ", body)
 		downloadTask := dlTask.(*task.DownloadTask)
 		ppInfo := downloadTask.SliceInfo[sliceHash].StoragePpInfo
@@ -243,7 +243,7 @@ func getStreamInfo(fileHash, ownerWalletAddress, walletAddress string, w http.Re
 	var fInfo *protos.RspFileStorageInfo
 	start := time.Now().Unix()
 	for {
-		if f, ok := task.DownloadFileMap.Load(fileHash); ok {
+		if f, ok := task.DownloadFileMap.Load(fileHash + task.LOCAL_REQID); ok {
 			fInfo = f.(*protos.RspFileStorageInfo)
 			utils.DebugLog("Received file storage info from sp ", fInfo)
 			break

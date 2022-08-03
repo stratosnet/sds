@@ -7,17 +7,20 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/api/rpc"
+	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
+	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/datamesh"
 )
 
 // GetAllShareLink GetShareLink
-func GetAllShareLink(reqID string, w http.ResponseWriter) {
+func GetAllShareLink(reqID, walletAddr string, page uint64, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(requests.ReqShareLinkData(reqID), header.ReqShareLink)
+		peers.SendMessageDirectToSPOrViaPP(requests.ReqShareLinkData(reqID, walletAddr, page), header.ReqShareLink)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -25,9 +28,9 @@ func GetAllShareLink(reqID string, w http.ResponseWriter) {
 }
 
 // GetReqShareFile GetReqShareFile
-func GetReqShareFile(reqID, fileHash, pathHash string, shareTime int64, isPrivate bool, w http.ResponseWriter) {
+func GetReqShareFile(reqID, fileHash, pathHash, walletAddr string, shareTime int64, isPrivate bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(requests.ReqShareFileData(reqID, fileHash, pathHash, isPrivate, shareTime), header.ReqShareFile)
+		peers.SendMessageDirectToSPOrViaPP(requests.ReqShareFileData(reqID, fileHash, pathHash, walletAddr, isPrivate, shareTime), header.ReqShareFile)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -35,9 +38,9 @@ func GetReqShareFile(reqID, fileHash, pathHash string, shareTime int64, isPrivat
 }
 
 // DeleteShare DeleteShare
-func DeleteShare(shareID, reqID string, w http.ResponseWriter) {
+func DeleteShare(shareID, reqID, walletAddress string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(requests.ReqDeleteShareData(reqID, shareID), header.ReqDeleteShare)
+		peers.SendMessageDirectToSPOrViaPP(requests.ReqDeleteShareData(reqID, shareID, walletAddress), header.ReqDeleteShare)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -55,27 +58,54 @@ func ReqShareLink(ctx context.Context, conn core.WriteCloser) {
 func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("RspShareLink(ctx context.Context, conn core.WriteCloser) {RspShareLink(ctx context.Context, conn core.WriteCloser) {")
 	var target protos.RspShareLink
-	if requests.UnmarshalData(ctx, &target) {
-		if target.P2PAddress == setting.P2PAddress {
-			if target.Result.State == protos.ResultState_RES_SUCCESS {
-				for _, info := range target.ShareInfo {
-					utils.Log("_______________________________")
-					utils.Log("file_name:", info.Name)
-					utils.Log("file_hash:", info.FileHash)
-					utils.Log("file_size:", info.FileSize)
-					utils.Log("link_time:", info.LinkTime)
-					utils.Log("link_time_exp:", info.LinkTimeExp)
-					utils.Log("ShareId:", info.ShareId)
-					utils.Log("ShareLink:", info.ShareLink)
-				}
-			} else {
-				utils.ErrorLog("all share failed:", target.Result.Msg)
-			}
-			putData(target.ReqId, HTTPShareLink, &target)
-		} else {
-			peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
-		}
+	rpcResult := &rpc.FileShareResult{}
+
+	if !requests.UnmarshalData(ctx, &target) {
+		return
 	}
+
+	// serv the RPC user when the ReqId is not empty
+	if target.ReqId != "" {
+		defer file.SetFileShareResult(target.WalletAddress+target.ReqId, rpcResult)
+	}
+
+	if target.P2PAddress != setting.P2PAddress {
+		peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
+		rpcResult.Return = rpc.WRONG_PP_ADDRESS
+		return
+	}
+
+	if target.Result.State == protos.ResultState_RES_SUCCESS {
+		var fileInfos = make([]rpc.FileInfo, 0)
+		for _, info := range target.ShareInfo {
+			utils.Log("_______________________________")
+			utils.Log("file_name:", info.Name)
+			utils.Log("file_hash:", info.FileHash)
+			utils.Log("file_size:", info.FileSize)
+			utils.Log("link_time:", info.LinkTime)
+			utils.Log("link_time_exp:", info.LinkTimeExp)
+			utils.Log("ShareId:", info.ShareId)
+			utils.Log("ShareLink:", info.ShareLink)
+			fileInfos = append(fileInfos, rpc.FileInfo {
+				FileHash: info.FileHash,
+				FileSize: info.FileSize,
+				FileName: info.Name,
+				LinkTime: info.LinkTime,
+				LinkTimeExp: info.LinkTimeExp,
+				ShareId: info.ShareId,
+				ShareLink: info.ShareLink,
+			})
+		}
+		rpcResult.Return = rpc.SUCCESS
+		rpcResult.FileInfo = fileInfos
+		rpcResult.TotalNumber = target.TotalFileNumber
+		rpcResult.PageId = target.PageId
+	} else {
+		utils.ErrorLog("all share failed:", target.Result.Msg)
+		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE
+	}
+	putData(target.ReqId, HTTPShareLink, &target)
+	return
 }
 
 // ReqShareFile
@@ -87,20 +117,36 @@ func ReqShareFile(ctx context.Context, conn core.WriteCloser) {
 // RspShareFile
 func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspShareFile
-	if requests.UnmarshalData(ctx, &target) {
-		if target.P2PAddress == setting.P2PAddress {
-			if target.Result.State == protos.ResultState_RES_SUCCESS {
-				utils.Log("ShareId", target.ShareId)
-				utils.Log("ShareLink", target.ShareLink)
-				utils.Log("SharePassword", target.SharePassword)
-			} else {
-				utils.ErrorLog("share file failed:", target.Result.Msg)
-			}
-			putData(target.ReqId, HTTPShareFile, &target)
-		} else {
-			peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
-		}
+	rpcResult := &rpc.FileShareResult{}
+
+	if !requests.UnmarshalData(ctx, &target) {
+		return
 	}
+
+	if target.ReqId != "" {
+		defer file.SetFileShareResult(target.WalletAddress+target.ReqId, rpcResult)
+	}
+
+	if target.P2PAddress != setting.P2PAddress {
+		peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
+		rpcResult.Return = rpc.WRONG_PP_ADDRESS
+		return
+	}
+
+	if target.Result.State == protos.ResultState_RES_SUCCESS {
+		utils.Log("ShareId", target.ShareId)
+		utils.Log("ShareLink", target.ShareLink)
+		utils.Log("SharePassword", target.SharePassword)
+		rpcResult.Return = rpc.SUCCESS
+		rpcResult.ShareId = target.ShareId
+		rpcResult.ShareLink = target.ShareLink
+	} else {
+		utils.ErrorLog("share file failed:", target.Result.Msg)
+		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE
+	}
+
+	putData(target.ReqId, HTTPShareFile, &target)
+	return
 }
 
 // ReqDeleteShare
@@ -112,26 +158,38 @@ func ReqDeleteShare(ctx context.Context, conn core.WriteCloser) {
 // RspDeleteShare
 func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeleteShare
-	if requests.UnmarshalData(ctx, &target) {
-		if target.P2PAddress == setting.P2PAddress {
-			if target.Result.State == protos.ResultState_RES_SUCCESS {
-				utils.Log("cancel share success:", target.ShareId)
-			} else {
-				utils.ErrorLog("cancel share failed:", target.Result.Msg)
-			}
-			putData(target.ReqId, HTTPDeleteShare, &target)
-		} else {
-			peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
-		}
+	rpcResult := &rpc.FileShareResult{}
+
+	if !requests.UnmarshalData(ctx, &target) {
+		return
 	}
 
+	if target.ReqId != "" {
+		defer file.SetFileShareResult(target.WalletAddress+target.ReqId, rpcResult)
+	}
+
+	if target.P2PAddress != setting.P2PAddress {
+		peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
+		rpcResult.Return = rpc.WRONG_PP_ADDRESS
+		return
+	}
+
+	if target.Result.State == protos.ResultState_RES_SUCCESS {
+		utils.Log("cancel share success:", target.ShareId)
+		rpcResult.Return = rpc.SUCCESS
+	} else {
+		utils.ErrorLog("cancel share failed:", target.Result.Msg)
+		rpcResult.Return = rpc.GENERIC_ERR
+	}
+	putData(target.ReqId, HTTPDeleteShare, &target)
+	return
 }
 
 // GetShareFile
-func GetShareFile(keyword, sharePassword, saveAs, reqID string, w http.ResponseWriter) {
+func GetShareFile(keyword, sharePassword, saveAs, reqID, walletAddr string, w http.ResponseWriter) {
 	utils.DebugLog("GetShareFile for file ", keyword)
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(requests.ReqGetShareFileData(keyword, sharePassword, saveAs, reqID), header.ReqGetShareFile)
+		peers.SendMessageDirectToSPOrViaPP(requests.ReqGetShareFileData(keyword, sharePassword, saveAs, reqID, walletAddr), header.ReqGetShareFile)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -148,17 +206,25 @@ func ReqGetShareFile(ctx context.Context, conn core.WriteCloser) {
 // RspGetShareFile
 func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	var target protos.RspGetShareFile
+	rpcResult := &rpc.FileShareResult{}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
 
+	rpcRequested := target.ShareRequest.ReqId != task.LOCAL_REQID
+	if rpcRequested {
+		defer file.SetFileShareResult(target.ShareRequest.WalletAddress + target.ShareRequest.ReqId, rpcResult)
+	}
+
 	if target.ShareRequest.P2PAddress != setting.P2PAddress {
 		peers.TransferSendMessageToPPServByP2pAddress(target.ShareRequest.P2PAddress, core.MessageFromContext(ctx))
+		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return
 	}
 
 	utils.Log("get RspGetShareFile", target.Result.State, target.Result.Msg)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		rpcResult.Return = rpc.GENERIC_ERR
 		return
 	}
 
@@ -174,7 +240,21 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			Owner: fileInfo.OwnerWalletAddress,
 			Hash:  fileInfo.FileHash,
 		}.String()
-		peers.SendMessageDirectToSPOrViaPP(requests.ReqFileStorageInfoData(filePath, "", "", setting.WalletAddress,
-			saveAs, false, target.ShareRequest), header.ReqFileStorageInfo)
+
+		var req *protos.ReqFileStorageInfo
+		// notify rpc server starting file downloading
+		if rpcRequested {
+			f := rpc.FileInfo{FileHash: fileInfo.FileHash}
+			rpcResult.Return = rpc.SHARED_DL_START
+			rpcResult.FileInfo = append(rpcResult.FileInfo, f)
+			file.SetFileShareResult(target.ShareRequest.WalletAddress + target.ShareRequest.ReqId, rpcResult)
+			req, _ = requests.RequestDownloadFile(fileInfo.FileHash, fileInfo.OwnerWalletAddress, target.ShareRequest.ReqId,
+				target.ShareRequest)
+		} else {
+			req = requests.ReqFileStorageInfoData(filePath, "", target.ShareRequest.ReqId, target.ShareRequest.WalletAddress,
+				saveAs, false, target.ShareRequest)
+		}
+		peers.SendMessageDirectToSPOrViaPP(req, header.ReqFileStorageInfo)
 	}
+	return
 }
