@@ -128,6 +128,7 @@ type config struct {
 	StratosChainUrl      string       `toml:"stratos_chain_url"`
 	RestPort             string       `toml:"rest_port"`
 	InternalPort         string       `toml:"internal_port"`
+	RpcPort              string       `toml:"rpc_port"`
 	MonitorPort          string       `toml:"monitor_port"`
 	TrafficLogInterval   uint64       `toml:"traffic_log_interval"`
 	MaxConnection        int          `toml:"max_connection"`

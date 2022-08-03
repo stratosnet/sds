@@ -12,6 +12,7 @@ import (
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
+	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -60,7 +61,7 @@ func (api *terminalCmd) Getoz(param []string) (CmdResult, error) {
 			utils.ErrorLog("getPublicKey DecryptKey", err)
 			return CmdResult{Msg: ""}, err
 		}
-		if err := event.GetWalletOz(param[0]); err != nil {
+		if err := event.GetWalletOz(param[0], task.LOCAL_REQID); err != nil {
 			return CmdResult{Msg: ""}, err
 		}
 		return CmdResult{Msg: DefaultMsg}, nil
@@ -249,10 +250,14 @@ func (api *terminalCmd) BackupStatus(param []string) (CmdResult, error) {
 
 func (api *terminalCmd) List(param []string) (CmdResult, error) {
 	if len(param) == 0 {
-		event.FindMyFileList("", "", "", "", 0, true, nil)
-
-	} else {
-		event.FindMyFileList(param[0], "", "", "", 0, true, nil)
+		event.FindFileList("", setting.WalletAddress, 0, "", "", 0, true, nil)
+	}else {
+		pageId, err := strconv.ParseUint(param[0], 10, 64)
+		if err == nil {
+			event.FindFileList("", setting.WalletAddress, pageId, "", "", 0, true, nil)
+		}else {
+			event.FindFileList(param[0], setting.WalletAddress, 0, "", "", 0, true, nil)
+		}
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
 }
@@ -265,7 +270,7 @@ func (api *terminalCmd) Download(param []string) (CmdResult, error) {
 	if len(param) == 2 {
 		saveAs = param[1]
 	}
-	event.GetFileStorageInfo(param[0], "", "", setting.WalletAddress, saveAs, false, nil)
+	event.GetFileStorageInfo(param[0], "", task.LOCAL_REQID, setting.WalletAddress, saveAs, false, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -323,7 +328,7 @@ func (api *terminalCmd) SharePath(param []string) (CmdResult, error) {
 	// if len(str1) == setting.FILEHASHLEN { //
 	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
-	event.GetReqShareFile("", "", param[0], int64(time), isPrivate, nil)
+	event.GetReqShareFile("", "", param[0], setting.WalletAddress, int64(time), isPrivate, nil)
 	// }
 	return CmdResult{Msg: DefaultMsg}, nil
 }
@@ -345,7 +350,7 @@ func (api *terminalCmd) ShareFile(param []string) (CmdResult, error) {
 	if private == 1 {
 		isPrivate = true
 	}
-	event.GetReqShareFile("", param[0], "", int64(time), isPrivate, nil)
+	event.GetReqShareFile("", param[0], "", setting.WalletAddress,int64(time), isPrivate, nil)
 	// if len(str1) == setting.FILEHASHLEN { //
 	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
@@ -354,7 +359,16 @@ func (api *terminalCmd) ShareFile(param []string) (CmdResult, error) {
 }
 
 func (api *terminalCmd) AllShare(param []string) (CmdResult, error) {
-	event.GetAllShareLink("", nil)
+	if len(param) < 1 {
+		event.GetAllShareLink("", setting.WalletAddress, 0, nil)
+	}else {
+		page, err := strconv.ParseUint(param[0], 10, 64)
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.New("invalid page id.")
+		}
+		event.GetAllShareLink("", setting.WalletAddress, page, nil)
+	}
+
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -362,7 +376,7 @@ func (api *terminalCmd) CancelShare(param []string) (CmdResult, error) {
 	if len(param) < 1 {
 		return CmdResult{Msg: ""}, errors.New("input share id")
 	}
-	event.DeleteShare(param[0], "", nil)
+	event.DeleteShare(param[0], "", setting.WalletAddress, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -371,9 +385,9 @@ func (api *terminalCmd) GetShareFile(param []string) (CmdResult, error) {
 		return CmdResult{Msg: ""}, errors.New("input share link and retrieval secret key(if any)")
 	}
 	if len(param) < 2 {
-		event.GetShareFile(param[0], "", "", "", nil)
+		event.GetShareFile(param[0], "", "", task.LOCAL_REQID, setting.WalletAddress, nil)
 	} else {
-		event.GetShareFile(param[0], param[1], "", "", nil)
+		event.GetShareFile(param[0], param[1], "", task.LOCAL_REQID, setting.WalletAddress, nil)
 	}
 
 	return CmdResult{Msg: DefaultMsg}, nil

@@ -18,6 +18,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/pp/api/rpc"
 )
 
 // ProgressMap required by API
@@ -194,6 +195,9 @@ func UploadSpeedOfProgress(ctx context.Context, conn core.WriteCloser) {
 				task.UploadProgressMap.Delete(target.FileHash)
 				task.CleanUpConnMap(target.FileHash)
 				ScheduleReqBackupStatus(target.FileHash)
+				if file.IsFileRpcRemote(target.FileHash) {
+					file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: rpc.SUCCESS})
+				}
 			}
 		} else {
 			utils.DebugLog("paused!!")

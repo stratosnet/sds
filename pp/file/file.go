@@ -19,7 +19,6 @@ var wmutex sync.RWMutex
 
 // key(fileHash) : value(file path)
 var fileMap = make(map[string]string)
-
 var infoMutex sync.Mutex
 
 // GetFileInfo
@@ -158,9 +157,14 @@ func SaveSliceData(data []byte, sliceHash string, offset uint64) bool {
 }
 
 // SaveFileData
-func SaveFileData(data []byte, offset int64, sliceHash, fileName, fileHash, savePath string) bool {
+func SaveFileData(data []byte, offset int64, sliceHash, fileName, fileHash, savePath, fileReqId string) bool {
 
 	utils.DebugLog("sliceHash", sliceHash)
+
+	if IsFileRpcRemote(fileHash + fileReqId) {
+		// write to rpc
+		return SaveRemoteFileData(fileHash + fileReqId, data, uint64(offset))
+	}
 	wmutex.Lock()
 	if fileName == "" {
 		fileName = fileHash
@@ -188,7 +192,11 @@ func SaveFileData(data []byte, offset int64, sliceHash, fileName, fileHash, save
 }
 
 // SaveDownloadProgress
-func SaveDownloadProgress(sliceHash, fileName, fileHash, savePath string) {
+func SaveDownloadProgress(sliceHash, fileName, fileHash, savePath, fileReqId string) {
+	if IsFileRpcRemote(fileHash + fileReqId) {
+		return
+	}
+
 	wmutex.Lock()
 	csvFile, err := os.OpenFile(GetDownloadCsvPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
 	defer csvFile.Close()
@@ -242,8 +250,14 @@ func RecordDownloadCSV(target *protos.RspFileStorageInfo) {
 }
 
 // CheckFileExisting
-func CheckFileExisting(fileHash, fileName, savePath, encryptionTag string) bool {
+func CheckFileExisting(fileHash, fileName, savePath, encryptionTag, fileReqId string) bool {
 	utils.DebugLog("CheckFileExisting: file Hash", fileHash)
+
+	// check if the target path is remote, return false for "not match"
+	if IsFileRpcRemote(fileHash + fileReqId) {
+		return false
+	}
+
 	filePath := ""
 	if savePath == "" {
 		filePath = filepath.Join(setting.Config.DownloadPath, fileName)
@@ -251,7 +265,7 @@ func CheckFileExisting(fileHash, fileName, savePath, encryptionTag string) bool 
 		filePath = filepath.Join(setting.Config.DownloadPath, savePath, fileName)
 	}
 	// if setting.IsWindows {
-	// 	filePath = filepath.FromSlash(filePath)
+	//	filePath = filepath.FromSlash(filePath)
 	// }
 	utils.DebugLog("filePath", filePath)
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0777)
@@ -272,8 +286,13 @@ func CheckFileExisting(fileHash, fileName, savePath, encryptionTag string) bool 
 }
 
 // CheckSliceExisting
-func CheckSliceExisting(fileHash, fileName, sliceHash, savePath string) bool {
+func CheckSliceExisting(fileHash, fileName, sliceHash, savePath, fileReqId string) bool {
 	utils.DebugLog("CheckSliceExisting sliceHash", sliceHash)
+
+	if IsFileRpcRemote(fileHash + fileReqId) {
+		return false
+	}
+
 	csvFile, err := os.OpenFile(GetDownloadCsvPath(fileHash, fileName, savePath), os.O_RDONLY, 0777)
 	defer csvFile.Close()
 	if err != nil {
