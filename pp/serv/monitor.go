@@ -100,15 +100,17 @@ func (api *monitorApi) GetTrafficData(param ParamTrafficInfo) *TrafficDataResult
 	for i = 0; i < param.Lines; i++ {
 		line = lines[i]
 		date := line[17:36]
-		_, content, found := strings.Cut(line, "{")
-		if !found {
+		content := strings.SplitN(line, "{", 2)
+		if len(content) < 2 {
 			return &TrafficDataResult{Return: "-1"}
 		}
 
-		content = "{" + content
+		c := "{" + content[1]
 
 		var t TrafficDumpInfo
-		json.Unmarshal([]byte(content), &t)
+		if err := json.Unmarshal([]byte(c), &t); err != nil {
+			return &TrafficDataResult{Return: "-1"}
+		}
 
 		t.TrafficInfo.TimeStamp = date
 		ts = append(ts, t.TrafficInfo)
