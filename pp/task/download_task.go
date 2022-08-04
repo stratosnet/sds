@@ -8,17 +8,19 @@ import (
 	"strings"
 	"sync"
 	"time"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/utils"
 )
 
-// DownloadTaskMap PP (downloader) download file task map   make(map[string]*DownloadTask)
+const LOCAL_REQID string = "local"
+
+// DownloadTaskMap PP passway download task map   make(map[string]*DownloadTask)
 var DownloadTaskMap = utils.NewAutoCleanMap(5 * time.Minute)
 
 // DownloadSliceTaskMap resource node download slice task map
@@ -32,6 +34,9 @@ var DownloadFileMap = utils.NewAutoCleanMap(5 * time.Minute)
 
 // DownloadSpeedOfProgress DownloadSpeedOfProgress
 var DownloadSpeedOfProgress = &sync.Map{}
+
+// key: slice reqid, value: session id (file reqid)
+var SliceSessionMap = &sync.Map{}
 
 // DownloadSP download progress
 type DownloadSP struct {
@@ -135,11 +140,17 @@ func AddDownloadTask(target *protos.RspFileStorageInfo) {
 		FailedPPNodes: make(map[string]*protos.PPBaseInfo),
 		SliceCount:    len(target.SliceInfo),
 	}
-	DownloadTaskMap.Store((target.FileHash + target.WalletAddress), dTask)
+	DownloadTaskMap.Store((target.FileHash + target.WalletAddress + target.ReqId), dTask)
 }
 
-func GetDownloadTask(fileHash, walletAddress string) (*DownloadTask, bool) {
-	task, ok := DownloadTaskMap.Load(fileHash + walletAddress)
+func GetDownloadTaskWithSliceReqId(fileHash, walletAddress, sliceReqId string) (*DownloadTask, bool) {
+	sid, ok := SliceSessionMap.Load(sliceReqId)
+	if !ok {
+		utils.DebugLog("Can't find who created slice request", sliceReqId)
+		return nil, false
+	}
+	
+	task, ok := DownloadTaskMap.Load(fileHash + walletAddress + sid.(string))
 	if !ok {
 		return nil, false
 	}
@@ -151,40 +162,54 @@ func GetDownloadTask(fileHash, walletAddress string) (*DownloadTask, bool) {
 	return dTask, true
 }
 
-func CheckDownloadTask(fileHash, walletAddress string) bool {
-	return DownloadTaskMap.HashKey(fileHash + walletAddress)
+func GetDownloadTask(fileHash, walletAddress, fileReqId string) (*DownloadTask, bool) {
+	task, ok := DownloadTaskMap.Load(fileHash + walletAddress + fileReqId)
+	if !ok {
+		return nil, false
+	}
+	dTask, ok := task.(*DownloadTask)
+	if !ok {
+		utils.ErrorLog("failed to parse the download task for the file ", fileHash)
+		return nil, false
+	}
+	return dTask, true
+}
+
+func CheckDownloadTask(fileHash, walletAddress, fileReqId string) bool {
+	return DownloadTaskMap.HashKey(fileHash + walletAddress + fileReqId)
 }
 
 // CleanDownloadTask
-func CleanDownloadTask(fileHash, sliceHash, walletAddress string) {
-	if dlTask, ok := DownloadTaskMap.Load(fileHash + walletAddress); ok {
+func CleanDownloadTask(fileHash, sliceHash, walletAddress, fileReqId string) {
+	if dlTask, ok := DownloadTaskMap.Load(fileHash + walletAddress + fileReqId); ok {
 
 		downloadTask := dlTask.(*DownloadTask)
 		delete(downloadTask.SliceInfo, sliceHash)
-		utils.DebugLog("PP reported, clean slice task")
+		utils.DebugLogf("PP reported, clean slice task")
+
 		if len(downloadTask.SliceInfo) > 0 {
 			return
 		}
 		utils.DebugLog("PP reported, clean all slice task")
-		DeleteDownloadTask(fileHash, walletAddress)
+		DownloadTaskMap.Delete(fileHash + walletAddress + fileReqId)
 	}
 }
 
-func DeleteDownloadTask(fileHash, walletAddress string) {
-	DownloadTaskMap.Delete(fileHash + walletAddress)
+func DeleteDownloadTask(fileHash, walletAddress, fileReqId string) {
+	DownloadTaskMap.Delete(fileHash + walletAddress + fileReqId)
 }
 
 // CleanDownloadFileAndConnMap
-func CleanDownloadFileAndConnMap(fileHash string) {
-	DownloadSpeedOfProgress.Delete(fileHash)
-	if f, ok := DownloadFileMap.Load(fileHash); ok {
+func CleanDownloadFileAndConnMap(fileHash, fileReqId string) {
+	DownloadSpeedOfProgress.Delete(fileHash + fileReqId)
+	if f, ok := DownloadFileMap.Load(fileHash + fileReqId); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
 		for _, slice := range fInfo.SliceInfo {
-			DownloadSliceProgress.Delete(slice.SliceStorageInfo.SliceHash)
-			client.DownloadConnMap.Delete(fileHash + slice.StoragePpInfo.P2PAddress)
+			DownloadSliceProgress.Delete(slice.SliceStorageInfo.SliceHash + fileReqId)
+			client.DownloadConnMap.Delete(fileHash + slice.StoragePpInfo.P2PAddress + fileReqId)
 		}
 	}
-	DownloadFileMap.Delete(fileHash)
+	DownloadFileMap.Delete(fileHash + fileReqId)
 }
 
 // CancelDownloadTask
@@ -218,16 +243,16 @@ func GetDownloadSlice(target *protos.ReqDownloadSlice) *DownloadSliceData {
 // SaveDownloadFile
 func SaveDownloadFile(target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo) bool {
 	if fInfo.IsVideoStream {
-		return file.SaveFileData(target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, target.SliceInfo.SliceHash, fInfo.FileHash, fInfo.SavePath)
+		return file.SaveFileData(target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, target.SliceInfo.SliceHash, fInfo.FileHash, fInfo.SavePath, fInfo.ReqId)
 	} else {
-		utils.DebugLog("sliceHash", target.SliceInfo.SliceHash)
-		return file.SaveFileData(target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, fInfo.SavePath)
+		return file.SaveFileData(target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, fInfo.SavePath, fInfo.ReqId)
 	}
 }
 
+// checkAgain only used by local file downloading session
 func checkAgain(fileHash string) {
 	reCount--
-	if f, ok := DownloadFileMap.Load(fileHash); ok {
+	if f, ok := DownloadFileMap.Load(fileHash + LOCAL_REQID); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
 		fName := fInfo.FileName
 		if fName == "" {
@@ -235,8 +260,8 @@ func checkAgain(fileHash string) {
 		}
 		filePath := file.GetDownloadTmpPath(fileHash, fName, fInfo.SavePath)
 		if CheckFileOver(fileHash, filePath) {
-			DownloadFileMap.Delete(fileHash)
-			DownloadSpeedOfProgress.Delete(fileHash)
+			DownloadFileMap.Delete(fileHash + LOCAL_REQID)
+			DownloadSpeedOfProgress.Delete(fileHash + LOCAL_REQID)
 			utils.Log("————————————————————————————————————download finished————————————————————————————————————")
 			DoneDownload(fileHash, fName, fInfo.SavePath)
 		} else {
@@ -248,7 +273,7 @@ func checkAgain(fileHash string) {
 	}
 }
 
-// DoneDownload
+// DoneDownload only used by local file downloading session
 func DoneDownload(fileHash, fileName, savePath string) {
 	filePath := file.GetDownloadTmpPath(fileHash, fileName, savePath)
 	newFilePath := filePath[:len(filePath)-4]
@@ -328,14 +353,14 @@ func DoneDownload(fileHash, fileName, savePath string) {
 // CheckFileOver check finished
 func CheckFileOver(fileHash, filePath string) bool {
 	utils.DebugLog("CheckFileOver")
-	if s, ok := DownloadSpeedOfProgress.Load(fileHash); ok {
+
+	if s, ok := DownloadSpeedOfProgress.Load(fileHash + LOCAL_REQID); ok {
 		sp := s.(*DownloadSP)
 		info := file.GetFileInfo(filePath)
 		if info == nil {
 			return false
 		}
-		utils.DebugLog("info", info.Size())
-		utils.DebugLog("sp.RawSize", sp.RawSize)
+
 		// TODO calculate fileHash to check if download is finished
 		if info.Size() == sp.RawSize {
 			utils.DebugLog("ok!")
@@ -349,9 +374,9 @@ func CheckFileOver(fileHash, filePath string) bool {
 // CheckDownloadOver check download finished
 func CheckDownloadOver(fileHash string) (bool, float32) {
 	utils.DebugLog("CheckDownloadOver")
-	if f, ok := DownloadFileMap.Load(fileHash); ok {
+	if f, ok := DownloadFileMap.Load(fileHash + LOCAL_REQID); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
-		if s, ok := DownloadSpeedOfProgress.Load(fileHash); ok {
+		if s, ok := DownloadSpeedOfProgress.Load(fileHash + LOCAL_REQID); ok {
 			sp := s.(*DownloadSP)
 			if sp.DownloadedSize >= sp.TotalSize {
 				fName := fInfo.FileName
@@ -361,7 +386,7 @@ func CheckDownloadOver(fileHash string) (bool, float32) {
 				filePath := file.GetDownloadTmpPath(fileHash, fName, fInfo.SavePath)
 				if CheckFileOver(fileHash, filePath) {
 					DoneDownload(fileHash, fName, fInfo.SavePath)
-					CleanDownloadFileAndConnMap(fileHash)
+					CleanDownloadFileAndConnMap(fileHash, LOCAL_REQID)
 					return true, 1.0
 				}
 				reCount = 5
@@ -378,17 +403,32 @@ func CheckDownloadOver(fileHash string) (bool, float32) {
 
 }
 
+func CheckRemoteDownloadOver(fileHash, fileReqId string) {
+
+	key := fileHash + fileReqId
+	size := file.GetRemoteFileInfo(key)
+	utils.DebugLog("size:", string(size))
+	file.SetRemoteFileResult(key, rpc.Result{Return:rpc.SUCCESS})
+	CleanDownloadFileAndConnMap(fileHash, fileReqId)
+}
+
 // DownloadProgress
-func DownloadProgress(fileHash string, size uint64) {
-	if s, ok := DownloadSpeedOfProgress.Load(fileHash); ok {
+func DownloadProgress(fileHash, fileReqId string, size uint64) {
+	if s, ok := DownloadSpeedOfProgress.Load(fileHash + fileReqId); ok {
 		sp := s.(*DownloadSP)
 		sp.DownloadedSize += int64(size)
 		p := float32(sp.DownloadedSize) / float32(sp.TotalSize) * 100
 		utils.Logf("downloaded：%.2f %% \n", p)
 		setting.DownloadProgressMap.Store(fileHash, p)
 		setting.ShowProgress(p)
+
+		// all bytes downloaded
 		if sp.DownloadedSize >= sp.TotalSize {
-			go CheckDownloadOver(fileHash)
+			if file.IsFileRpcRemote(fileHash + fileReqId) {
+				CheckRemoteDownloadOver(fileHash, fileReqId)
+			} else {
+				go CheckDownloadOver(fileHash)
+			}
 		}
 	}
 }

@@ -17,7 +17,7 @@ func deleteShare(w http.ResponseWriter, request *http.Request) {
 	shareID := ""
 	if data["shareID"] != nil {
 		shareID = data["shareID"].(string)
-		event.DeleteShare(shareID, uuid.New().String(), w)
+		event.DeleteShare(shareID, uuid.New().String(), setting.WalletAddress, w)
 	} else {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "shareID is required").ToBytes())
 	}

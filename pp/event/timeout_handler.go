@@ -19,7 +19,7 @@ func (handler *DownloadTimeoutHandler) Handle(message *msg.RelayMsgBuf) {
 
 	}
 
-	dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress)
+	dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress, task.LOCAL_REQID)
 	if !ok {
 		return
 	}
