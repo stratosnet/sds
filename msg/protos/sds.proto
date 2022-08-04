@@ -114,6 +114,10 @@ message ReqUploadSlicesWrong {
 
 message RspUploadSlicesWrong {
   Result result = 1;
+  string file_hash = 2;
+  UploadType upload_type = 3;
+  string task_id = 4;
+  repeated SliceNumAddr slices = 5;
 }
 
 message UploadSpeedOfProgress {

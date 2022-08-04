@@ -79,21 +79,27 @@ func CreateUploadFileTask(fileHash, taskId string, slices []*protos.SliceNumAddr
 	}
 
 	for _, slice := range slices {
-		if _, ok := task.Slices[slice.PpInfo.P2PAddress]; !ok {
-			task.Slices[slice.PpInfo.P2PAddress] = &SlicesPerDestination{
-				PpInfo:  slice.PpInfo,
-				Started: false,
-			}
-		}
-		slicesPerDestination := task.Slices[slice.PpInfo.P2PAddress]
-		slicesPerDestination.Slices = append(slicesPerDestination.Slices, &SliceWithStatus{
-			SliceNumber: slice.SliceNumber,
-			SliceOffset: slice.SliceOffset,
-			Status:      SLICE_STATUS_NOT_STARTED,
-		})
+		task.addNewSlice(slice)
 	}
 
 	return task
+}
+
+func (u *UploadFileTask) addNewSlice(slice *protos.SliceNumAddr) {
+	slicesPerDestination := u.Slices[slice.PpInfo.P2PAddress]
+	if slicesPerDestination == nil {
+		slicesPerDestination = &SlicesPerDestination{
+			PpInfo:  slice.PpInfo,
+			Started: false,
+		}
+		u.Slices[slice.PpInfo.P2PAddress] = slicesPerDestination
+	}
+
+	slicesPerDestination.Slices = append(slicesPerDestination.Slices, &SliceWithStatus{
+		SliceNumber: slice.SliceNumber,
+		SliceOffset: slice.SliceOffset,
+		Status:      SLICE_STATUS_NOT_STARTED,
+	})
 }
 
 func (u *UploadFileTask) IsFinished() bool {
@@ -141,18 +147,20 @@ func (u *UploadFileTask) SliceFailuresToReport() ([]*protos.SliceNumAddr, []bool
 			}
 		}
 
-		if errorPresent {
-			// There was an error sending slices to this destination, so all associated failed and not started slices will receive a new destination PP
-			for _, slice := range slicesPerDestination.Slices {
-				if slice.Status == SLICE_STATUS_FAILED || slice.Status == SLICE_STATUS_NOT_STARTED {
-					slicesToReDownload = append(slicesToReDownload, &protos.SliceNumAddr{
-						SliceNumber: slice.SliceNumber,
-						SliceOffset: slice.SliceOffset,
-						PpInfo:      slicesPerDestination.PpInfo,
-					})
-					slice.Status = SLICE_STATUS_WAITING_FOR_SP
-					failedSlices = append(failedSlices, slice.Status == SLICE_STATUS_FAILED)
-				}
+		if !errorPresent {
+			continue
+		}
+
+		// There was an error sending slices to this destination, so all associated failed and not started slices will receive a new destination PP
+		for _, slice := range slicesPerDestination.Slices {
+			if slice.Status == SLICE_STATUS_FAILED || slice.Status == SLICE_STATUS_NOT_STARTED {
+				slicesToReDownload = append(slicesToReDownload, &protos.SliceNumAddr{
+					SliceNumber: slice.SliceNumber,
+					SliceOffset: slice.SliceOffset,
+					PpInfo:      slicesPerDestination.PpInfo,
+				})
+				slice.Status = SLICE_STATUS_WAITING_FOR_SP
+				failedSlices = append(failedSlices, slice.Status == SLICE_STATUS_FAILED)
 			}
 		}
 	}
@@ -188,6 +196,39 @@ func (u *UploadFileTask) NextDestination() *SlicesPerDestination {
 	}
 
 	return nil
+}
+
+func (u *UploadFileTask) UpdateSliceDestinations(newDestinations []*protos.SliceNumAddr) {
+	u.Mutex.Lock()
+	defer u.Mutex.Unlock()
+
+	// Get original destination for each slice
+	originalDestinations := make(map[uint64]string)
+	for p2pAddress, destination := range u.Slices {
+		for _, slice := range destination.Slices {
+			originalDestinations[slice.SliceNumber] = p2pAddress
+		}
+	}
+
+	// Update slice destinations
+	for _, newDestination := range newDestinations {
+		originalP2pAddress, ok := originalDestinations[newDestination.SliceNumber]
+		if !ok {
+			continue
+		}
+
+		slicesOriginalDestination := u.Slices[originalP2pAddress]
+		if slicesOriginalDestination == nil {
+			continue
+		}
+		for _, slice := range slicesOriginalDestination.Slices {
+			if slice.SliceNumber == newDestination.SliceNumber {
+				slice.Status = SLICE_STATUS_FINISHED
+				u.addNewSlice(newDestination)
+				break
+			}
+		}
+	}
 }
 
 func (s *SliceWithStatus) SetError(err error, fatal bool, uploadTask *UploadFileTask) {

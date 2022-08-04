@@ -25,7 +25,6 @@ import (
 // ProgressMap required by API
 var ProgressMap = &sync.Map{}
 
-// ReqUploadFileSlice
 func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqUploadFileSlice
 	if requests.UnmarshalData(ctx, &target) {
@@ -65,7 +64,6 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-// RspUploadFileSlice
 func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get RspUploadFileSlice")
 	var target protos.RspUploadFileSlice
@@ -86,10 +84,31 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	continueUpload(target.FileHash, target.TaskId)
 }
 
-// RspUploadFileSlice
-func RspUploadSlicesWrong(ctx context.Context, conn core.WriteCloser) {
-	// start slice downloads again
+// RspUploadSlicesWrong updates the destination of slices for an ongoing upload
+func RspUploadSlicesWrong(ctx context.Context, _ core.WriteCloser) {
+	var target protos.RspUploadSlicesWrong
+	if !requests.UnmarshalData(ctx, &target) {
+		return
+	}
 
+	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		utils.Log("RspUploadSlicesWrong ResultState_RES_FAIL: ", target.Result.Msg)
+		// TODO: cancel upload
+		return
+	}
+
+	if len(target.Slices) == 0 {
+		utils.ErrorLogf("No new slices in RspUploadSlicesWrong for file %v. Cannot update slice destinations")
+		return
+	}
+
+	value, ok := task.UploadFileTaskMap.Load(target.FileHash)
+	if !ok {
+		utils.ErrorLogf("File upload task cannot be found for file %v", target.FileHash)
+		return
+	}
+	uploadTask := value.(*task.UploadFileTask)
+	uploadTask.UpdateSliceDestinations(target.Slices)
 }
 
 // RspReportUploadSliceResult  SP-P OR SP-PP
@@ -107,7 +126,6 @@ func RspReportUploadSliceResult(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-// UploadFileSlice
 func UploadFileSlice(tk *task.UploadSliceTask, sign []byte) error {
 	tkDataLen := len(tk.Data)
 	fileHash := tk.FileHash
