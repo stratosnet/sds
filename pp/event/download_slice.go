@@ -110,7 +110,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 
 	if target.SliceSize <= 0 || (target.Result.State == protos.ResultState_RES_FAIL && target.Result.Msg == LOSE_SLICE_MSG) {
 		utils.DebugLog("slice was not found, will send msg to sp for retry, sliceHash: ", target.SliceInfo.SliceHash)
-		setDownloadSliceFail(target.SliceInfo.SliceHash, dTask)
+		setDownloadSliceFail(target.SliceInfo.SliceHash, target.TaskId, target.IsVideoCaching, dTask)
 		return
 	}
 
@@ -283,7 +283,7 @@ func DownloadFileSlice(target *protos.RspFileStorageInfo) {
 
 func SendReqDownloadSlice(fileHash string, sliceInfo *protos.DownloadSliceInfo, req *protos.ReqDownloadSlice, fileReqId string) {
 	utils.DebugLog("req = ", req)
-	
+
 	networkAddress := sliceInfo.StoragePpInfo.NetworkAddress
 	key := fileHash + sliceInfo.StoragePpInfo.P2PAddress + fileReqId
 
@@ -309,7 +309,7 @@ func SendReqDownloadSlice(fileHash string, sliceInfo *protos.DownloadSliceInfo, 
 	if conn == nil {
 		utils.ErrorLog("Fail to create connection with " + networkAddress)
 		if dTask, ok := task.GetDownloadTask(fileHash, req.WalletAddress, fileReqId); ok {
-			setDownloadSliceFail(sliceInfo.SliceStorageInfo.SliceHash, dTask)
+			setDownloadSliceFail(sliceInfo.SliceStorageInfo.SliceHash, req.TaskId, req.IsVideoCaching, dTask)
 		}
 		return
 	}
@@ -410,7 +410,10 @@ func setDownloadSliceSuccess(sliceHash string, dTask *task.DownloadTask) {
 	CheckAndSendRetryMessage(dTask)
 }
 
-func setDownloadSliceFail(sliceHash string, dTask *task.DownloadTask) {
+func setDownloadSliceFail(sliceHash, taskId string, isVideoCaching bool, dTask *task.DownloadTask) {
 	dTask.AddFailedSlice(sliceHash)
+	if isVideoCaching {
+		videoCacheKeep(dTask.FileHash, taskId)
+	}
 	CheckAndSendRetryMessage(dTask)
 }

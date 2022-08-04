@@ -21,6 +21,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
+
 	//"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/datamesh"
@@ -74,7 +75,13 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
 		return
 	}
-	event.GetVideoSlices(streamInfo.FileInfo)
+	dTask, ok := task.GetDownloadTask(fileHash, setting.WalletAddress, task.LOCAL_REQID)
+	if !ok {
+		w.WriteHeader(setting.FAILCode)
+		w.Write(httpserv.NewErrorJson(setting.FAILCode, "Failed to retrieve download task info").ToBytes())
+		return
+	}
+	event.GetVideoSlices(streamInfo.FileInfo, dTask)
 	ret, _ := json.Marshal(streamInfo)
 	w.Write(ret)
 }

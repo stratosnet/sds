@@ -28,11 +28,7 @@ func (handler *DownloadTimeoutHandler) Handle(message *msg.RelayMsgBuf) {
 		return
 	}
 
-	setDownloadSliceFail(target.SliceInfo.SliceHash, dTask)
-
-	if target.IsVideoCaching {
-		videoCacheKeep(target.FileHash, target.TaskId)
-	}
+	setDownloadSliceFail(target.SliceInfo.SliceHash, target.TaskId, target.IsVideoCaching, dTask)
 }
 
 func (handler *DownloadTimeoutHandler) GetDuration() time.Duration {
