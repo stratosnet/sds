@@ -133,7 +133,7 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, reqID, ownerW
 
 	p2pFileString := GetUploadFileSignMessage(setting.WalletAddress, setting.P2PAddress, ownerWalletAddress, fileHash, header.ReqUploadFile)
 
-	file.SaveRemoteFileHash(fileHash, "rpc:" + fileName, fileSize)
+	file.SaveRemoteFileHash(fileHash, "rpc:"+fileName, fileSize)
 
 	req := &protos.ReqUploadFile{
 		FileInfo: &protos.FileInfo{
@@ -165,7 +165,7 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, reqID, ownerW
 	}
 
 	// info
-	p := &task.UpProgress{
+	p := &task.UploadProgress{
 		Total:     int64(fileSize),
 		HasUpload: 0,
 	}
@@ -232,7 +232,7 @@ func RequestUploadFileData(paths, storagePath, reqID, ownerWalletAddress string,
 	}
 
 	// info
-	p := &task.UpProgress{
+	p := &task.UploadProgress{
 		Total:     info.Size(),
 		HasUpload: 0,
 	}
@@ -252,7 +252,7 @@ func RequestDownloadFile(fileHash, walletAddr, reqId string, shareRequest *proto
 	}
 
 	// download file uses fileHash + fileReqId as the key
-	file.SaveRemoteFileHash(fileHash + fileReqId, "rpc:", 0)
+	file.SaveRemoteFileHash(fileHash+fileReqId, "rpc:", 0)
 
 	// path: mesh network address
 	sdmPath := "sdm://" + walletAddr + "/" + fileHash
@@ -343,8 +343,35 @@ func ReqUploadFileSliceData(task *task.UploadSliceTask, sign []byte) *protos.Req
 	}
 }
 
-func ReqReportUploadSliceResultData(target *protos.RspUploadFileSlice) *protos.ReportUploadSliceResult {
+func RspUploadFileSliceData(target *protos.ReqUploadFileSlice) *protos.RspUploadFileSlice {
+	return &protos.RspUploadFileSlice{
+		TaskId:        target.TaskId,
+		FileHash:      target.FileHash,
+		SliceHash:     target.SliceInfo.SliceHash,
+		P2PAddress:    target.P2PAddress,
+		WalletAddress: target.WalletAddress,
+		SliceNumAddr:  target.SliceNumAddr,
+		SliceSize:     target.SliceSize,
+		Result: &protos.Result{
+			State: protos.ResultState_RES_SUCCESS,
+		},
+		SpP2PAddress: target.SpP2PAddress,
+	}
+}
 
+func ReqUploadSlicesWrong(uploadTask *task.UploadFileTask, slicesToDownload []*protos.SliceNumAddr, failedSlices []bool) *protos.ReqUploadSlicesWrong {
+	return &protos.ReqUploadSlicesWrong{
+		FileHash:             uploadTask.FileHash,
+		TaskId:               uploadTask.TaskID,
+		UploadType:           uploadTask.Type,
+		MyAddress:            setting.GetPPInfo(),
+		ExistingDestinations: uploadTask.GetDestinations(),
+		Slices:               slicesToDownload,
+		FailedSlices:         failedSlices,
+	}
+}
+
+func ReqReportUploadSliceResultData(target *protos.RspUploadFileSlice) *protos.ReportUploadSliceResult {
 	utils.DebugLog("reqReportUploadSliceResultData____________________", target.SliceSize)
 	return &protos.ReportUploadSliceResult{
 		TaskId:        target.TaskId,
@@ -360,6 +387,7 @@ func ReqReportUploadSliceResultData(target *protos.RspUploadFileSlice) *protos.R
 		SpP2PAddress:  target.SpP2PAddress,
 	}
 }
+
 func ReqReportUploadSliceResultDataPP(target *protos.ReqUploadFileSlice) *protos.ReportUploadSliceResult {
 	utils.DebugLog("____________________", target.SliceSize)
 	return &protos.ReportUploadSliceResult{
@@ -374,22 +402,6 @@ func ReqReportUploadSliceResultDataPP(target *protos.ReqUploadFileSlice) *protos
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		SpP2PAddress:  target.SpP2PAddress,
-	}
-}
-
-func RspUploadFileSliceData(target *protos.ReqUploadFileSlice) *protos.RspUploadFileSlice {
-	return &protos.RspUploadFileSlice{
-		TaskId:        target.TaskId,
-		FileHash:      target.FileHash,
-		SliceHash:     target.SliceInfo.SliceHash,
-		P2PAddress:    target.P2PAddress,
-		WalletAddress: target.WalletAddress,
-		SliceNumAddr:  target.SliceNumAddr,
-		SliceSize:     target.SliceSize,
-		Result: &protos.Result{
-			State: protos.ResultState_RES_SUCCESS,
-		},
-		SpP2PAddress: target.SpP2PAddress,
 	}
 }
 
@@ -687,7 +699,7 @@ func ReqShareFileData(reqID, fileHash, pathHash, walletAddr string, isPrivate bo
 	}
 }
 
-func ReqDeleteShareData(reqID, shareID,walletAddr string) *protos.ReqDeleteShare {
+func ReqDeleteShareData(reqID, shareID, walletAddr string) *protos.ReqDeleteShare {
 	return &protos.ReqDeleteShare{
 		ReqId:         reqID,
 		P2PAddress:    setting.P2PAddress,

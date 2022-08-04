@@ -1,8 +1,8 @@
 package peers
 
 import (
-	"time"
 	"strconv"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/msg"
@@ -64,11 +64,12 @@ func ConnectToGatewayPP(pplist []*types.PeerInfo) bool {
 			peerList.DeletePPByNetworkAddress(ppInfo.NetworkAddress)
 			continue
 		}
-		client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
-		if client.PPConn != nil {
+		ppConn, err := client.NewClient(ppInfo.NetworkAddress, true)
+		if ppConn != nil {
+			client.PPConn = ppConn
 			return true
 		}
-		utils.DebugLog("failed to conn PP，delete:", ppInfo)
+		utils.DebugLogf("failed to connect to PP %v: %v", ppInfo, utils.FormatError(err))
 		peerList.DeletePPByNetworkAddress(ppInfo.NetworkAddress)
 	}
 	return false
@@ -126,9 +127,9 @@ func LatencyOfNextPp() {
 // StartLatencyCheckToPp
 func StartLatencyCheckToPp(NetworkAddr string) error {
 	start := time.Now().UnixNano()
-	pb := &protos.ReqLatencyCheck {
-		HbType:       protos.HeartbeatType_LATENCY_CHECK_PP,
-		PingTime:     strconv.FormatInt(start, 10),
+	pb := &protos.ReqLatencyCheck{
+		HbType:   protos.HeartbeatType_LATENCY_CHECK_PP,
+		PingTime: strconv.FormatInt(start, 10),
 	}
 	data, err := proto.Marshal(pb)
 	if err != nil {

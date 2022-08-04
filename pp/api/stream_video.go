@@ -235,7 +235,7 @@ func parseSliceHash(reqURL *url.URL) string {
 }
 
 func getStreamInfo(fileHash, ownerWalletAddress, walletAddress string, w http.ResponseWriter) (*StreamInfo, error) {
-	filePath := datamesh.DataMashId{
+	filePath := datamesh.DataMeshId{
 		Owner: ownerWalletAddress,
 		Hash:  fileHash,
 	}.String()

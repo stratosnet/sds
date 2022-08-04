@@ -12,6 +12,7 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
@@ -20,7 +21,6 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
-	"github.com/stratosnet/sds/pp/api/rpc"
 )
 
 //var m *sync.WaitGroup
@@ -134,7 +134,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 
 		if file.IsFileRpcRemote(target.FileHash) {
 			file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: target.Result.Msg})
-		}else {
+		} else {
 			file.ClearFileMap(target.FileHash)
 		}
 
@@ -148,7 +148,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		task.UploadProgressMap.Delete(target.FileHash)
 
 		if file.IsFileRpcRemote(target.FileHash) {
-			file.SetRemoteFileResult(target.FileHash, rpc.Result{Return:rpc.SUCCESS})
+			file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: rpc.SUCCESS})
 		}
 	}
 	if isCover {
@@ -194,47 +194,39 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 		})
 		totalSize += int64(sliceHashAddr.GetSliceSize())
 	}
-	taskING := &task.UpFileIng{
-		UPING:    0,
-		Slices:   sliceAddrList,
+	uploadTask := &task.UploadFileTask{
+		Slices:   nil,
 		FileHash: target.FileHash,
 		TaskID:   target.TaskId,
 		UpChan:   make(chan bool, task.MAXSLICE),
 	}
 	task.CleanUpConnMap(target.FileHash)
-	task.UpIngMap.Store(target.FileHash, taskING)
+	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
 
-	p := &task.UpProgress{
+	p := &task.UploadProgress{
 		Total:     totalSize,
 		HasUpload: 0,
 	}
 	task.UploadProgressMap.Store(target.FileHash, p)
 
 	for _, pp := range target.PpList {
-		uploadTask := task.GetReuploadSliceTask(pp, target.FileHash, target.TaskId, target.SpP2PAddress)
-		if uploadTask != nil {
-			UploadFileSlice(uploadTask, target.Sign)
+		uploadSliceTask := task.GetReuploadSliceTask(pp, target.FileHash, target.TaskId, target.SpP2PAddress)
+		if uploadSliceTask != nil {
+			UploadFileSlice(uploadSliceTask, target.Sign)
 		}
 	}
 	utils.DebugLog("all slices of the task have begun uploading")
-	close(taskING.UpChan)
-	task.UpIngMap.Delete(target.FileHash)
+	close(uploadTask.UpChan)
+	task.UploadFileTaskMap.Delete(target.FileHash)
 }
 
-// startUploadTask
 func startUploadTask(target *protos.RspUploadFile) {
-	// // create upload task
-	slices := target.PpList
-	taskING := &task.UpFileIng{
-		UPING:    0,
-		Slices:   slices,
-		FileHash: target.FileHash,
-		TaskID:   target.TaskId,
-		UpChan:   make(chan bool, task.MAXSLICE),
-		FileCRC:  utils.CalcFileCRC32(file.GetFilePath(target.FileHash)),
-	}
+	// Create upload task
+	uploadTask := task.CreateUploadFileTask(target.FileHash, target.TaskId, target.PpList)
 	task.CleanUpConnMap(target.FileHash)
-	task.UpIngMap.Store(target.FileHash, taskING)
+	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
+
+	// Video Hls transformation and upload progress update
 	var streamTotalSize int64
 	var hlsInfo file.HlsInfo
 	if target.IsVideoStream {
@@ -248,90 +240,117 @@ func startUploadTask(target *protos.RspUploadFile) {
 		}
 	}
 	if prg, ok := task.UploadProgressMap.Load(target.FileHash); ok {
-		progress := prg.(*task.UpProgress)
+		progress := prg.(*task.UploadProgress)
 		if target.IsVideoStream {
 			jsonStr, _ := json.Marshal(hlsInfo)
 			progress.Total = streamTotalSize + int64(len(jsonStr))
 		}
 		progress.HasUpload = (target.TotalSlice - int64(len(target.PpList))) * 32 * 1024 * 1024
 	}
-	go sendUploadFileSlice(target)
+
+	// Start uploading
+	startUploadingFileSlices(target)
 }
 
-func up(ING *task.UpFileIng, target *protos.RspUploadFile) {
-	for {
-		select {
-		case goon := <-ING.UpChan:
-			if !goon {
-				continue
-			}
-
-			if len(ING.Slices) == 0 {
-				utils.DebugLog("all slices of the task have begun uploading")
-				if _, ok := <-ING.UpChan; ok {
-					close(ING.UpChan)
-				}
-				task.UpIngMap.Delete(target.FileHash)
-
-				if target.IsVideoStream {
-					file.DeleteTmpHlsFolder(target.FileHash)
-				}
-
-				return
-			}
-			pp := ING.Slices[0]
-			utils.DebugLog("start upload!!!!!", pp.SliceNumber)
-			uploadTask := task.GetUploadSliceTask(pp, ING.FileHash, ING.TaskID, target.SpP2PAddress,
-				target.IsVideoStream, target.IsEncrypted, ING.FileCRC)
-			if uploadTask == nil {
-				continue
-			}
-
-			UploadFileSlice(uploadTask, target.Sign)
-			ING.Slices = append(ING.Slices[:0], ING.Slices[0+1:]...)
-		}
-	}
-}
-
-func sendUploadFileSlice(target *protos.RspUploadFile) {
-	ing, ok := task.UpIngMap.Load(target.FileHash)
+func startUploadingFileSlices(target *protos.RspUploadFile) {
+	value, ok := task.UploadFileTaskMap.Load(target.FileHash)
 	if !ok {
-		utils.DebugLog("all slices of the task have begun uploading")
+		utils.ErrorLogf("File upload task cannot be found for file %v", target.FileHash)
 		return
 	}
-	ING := ing.(*task.UpFileIng)
-	if len(ING.Slices) > task.MAXSLICE {
-		go up(ING, target)
-		for i := 0; i < task.MAXSLICE; i++ {
-			ING.UpChan <- true
-		}
+	fileTask := value.(*task.UploadFileTask)
 
-	} else {
-		for _, pp := range ING.Slices {
-			uploadTask := task.GetUploadSliceTask(pp, target.FileHash, target.TaskId, target.SpP2PAddress,
-				target.IsVideoStream, target.IsEncrypted, ING.FileCRC)
-			if uploadTask != nil {
-				UploadFileSlice(uploadTask, target.Sign)
+	// Send signals to start slice uploads
+	go func() {
+		numberOfDestinations := len(fileTask.Slices)
+		if numberOfDestinations > task.MAXSLICE {
+			numberOfDestinations = task.MAXSLICE
+		}
+		for i := 0; i < numberOfDestinations; i++ {
+			fileTask.UpChan <- true
+		}
+	}()
+
+	err := waitForUploadFinished(fileTask, target)
+	if err != nil {
+		// TODO: send upload failed to SP
+		utils.ErrorLog(utils.FormatError(err))
+		return
+	}
+
+	_, ok = <-fileTask.UpChan
+	if ok {
+		close(fileTask.UpChan)
+	}
+	task.UploadFileTaskMap.Delete(target.FileHash)
+
+	if target.IsVideoStream {
+		file.DeleteTmpHlsFolder(target.FileHash)
+	}
+}
+
+func waitForUploadFinished(uploadTask *task.UploadFileTask, target *protos.RspUploadFile) error {
+	for {
+		// Wait until a new destination can be uploaded, or until some time has passed
+		select {
+		case keepGoing := <-uploadTask.UpChan:
+			if !keepGoing {
+				continue
 			}
+		case <-time.After(task.UPLOAD_TIMER_INTERVAL * time.Second):
 		}
-		utils.DebugLog("all slices of the task have begun uploading")
-		_, ok := <-ING.UpChan
-		if ok {
-			close(ING.UpChan)
-		}
-		task.UpIngMap.Delete(target.FileHash)
 
-		if target.IsVideoStream {
-			file.DeleteTmpHlsFolder(target.FileHash)
+		if uploadTask.IsFinished() {
+			return nil
+		}
+
+		if err := uploadTask.IsFatal(); err != nil {
+			return err
+		}
+
+		// Report slice failures to SP to get assigned new slice destinations
+		slicesToReDownload, failedSlices := uploadTask.SliceFailuresToReport()
+		if len(slicesToReDownload) > 0 {
+			peers.SendMessageToSPServer(requests.ReqUploadSlicesWrong(uploadTask, slicesToReDownload, failedSlices), header.ReqUploadSlicesWrong)
+		}
+
+		// Start uploading to next destination
+		nextDestination := uploadTask.NextDestination()
+		if nextDestination != nil {
+			go uploadSlicesToDestination(uploadTask, target, nextDestination)
 		}
 	}
 }
 
-func uploadKeep(fileHash, taskID string) {
-	utils.DebugLogf("uploadKeep  fileHash = %v  taskID = %v", fileHash, taskID)
-	if ing, ok := task.UpIngMap.Load(fileHash); ok {
-		ING := ing.(*task.UpFileIng)
-		ING.UpChan <- true
+func uploadSlicesToDestination(uploadTask *task.UploadFileTask, target *protos.RspUploadFile, destination *task.SlicesPerDestination) {
+	for _, slice := range destination.Slices {
+		protoSlice := &protos.SliceNumAddr{
+			SliceNumber: slice.SliceNumber,
+			SliceOffset: slice.SliceOffset,
+			PpInfo:      destination.PpInfo,
+		}
+		uploadSliceTask, err := task.CreateUploadSliceTask(protoSlice, uploadTask.FileHash, uploadTask.TaskID, target.SpP2PAddress,
+			target.IsVideoStream, target.IsEncrypted, uploadTask.FileCRC)
+		if err != nil {
+			slice.SetError(err, true, uploadTask)
+			return
+		}
+
+		utils.DebugLogf("starting to upload slice %v for file %v", slice.SliceNumber, target.FileHash)
+		err = UploadFileSlice(uploadSliceTask, target.Sign)
+		if err != nil {
+			slice.SetError(err, false, uploadTask)
+			return
+		}
+		slice.SetStatus(task.SLICE_STATUS_FINISHED, uploadTask)
+	}
+}
+
+func continueUpload(fileHash, taskID string) {
+	utils.DebugLogf("continueUpload  fileHash = %v  taskID = %v", fileHash, taskID)
+	if value, ok := task.UploadFileTaskMap.Load(fileHash); ok {
+		uploadTask := value.(*task.UploadFileTask)
+		uploadTask.UpChan <- true
 	}
 }
 
@@ -346,6 +365,6 @@ func UploadPause(fileHash, reqID string, w http.ResponseWriter) {
 		return true
 	})
 	task.CleanUpConnMap(fileHash)
-	task.UpIngMap.Delete(fileHash)
+	task.UploadFileTaskMap.Delete(fileHash)
 	task.UploadProgressMap.Delete(fileHash)
 }

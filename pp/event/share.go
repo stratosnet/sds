@@ -11,8 +11,8 @@ import (
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
-	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/datamesh"
 )
@@ -86,14 +86,14 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 			utils.Log("link_time_exp:", info.LinkTimeExp)
 			utils.Log("ShareId:", info.ShareId)
 			utils.Log("ShareLink:", info.ShareLink)
-			fileInfos = append(fileInfos, rpc.FileInfo {
-				FileHash: info.FileHash,
-				FileSize: info.FileSize,
-				FileName: info.Name,
-				LinkTime: info.LinkTime,
+			fileInfos = append(fileInfos, rpc.FileInfo{
+				FileHash:    info.FileHash,
+				FileSize:    info.FileSize,
+				FileName:    info.Name,
+				LinkTime:    info.LinkTime,
 				LinkTimeExp: info.LinkTimeExp,
-				ShareId: info.ShareId,
-				ShareLink: info.ShareLink,
+				ShareId:     info.ShareId,
+				ShareLink:   info.ShareLink,
 			})
 		}
 		rpcResult.Return = rpc.SUCCESS
@@ -213,7 +213,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 
 	rpcRequested := target.ShareRequest.ReqId != task.LOCAL_REQID
 	if rpcRequested {
-		defer file.SetFileShareResult(target.ShareRequest.WalletAddress + target.ShareRequest.ReqId, rpcResult)
+		defer file.SetFileShareResult(target.ShareRequest.WalletAddress+target.ShareRequest.ReqId, rpcResult)
 	}
 
 	if target.ShareRequest.P2PAddress != setting.P2PAddress {
@@ -236,7 +236,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 		if idx == 0 {
 			saveAs = target.ShareRequest.SaveAs
 		}
-		filePath := datamesh.DataMashId{
+		filePath := datamesh.DataMeshId{
 			Owner: fileInfo.OwnerWalletAddress,
 			Hash:  fileInfo.FileHash,
 		}.String()
@@ -247,7 +247,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			f := rpc.FileInfo{FileHash: fileInfo.FileHash}
 			rpcResult.Return = rpc.SHARED_DL_START
 			rpcResult.FileInfo = append(rpcResult.FileInfo, f)
-			file.SetFileShareResult(target.ShareRequest.WalletAddress + target.ShareRequest.ReqId, rpcResult)
+			file.SetFileShareResult(target.ShareRequest.WalletAddress+target.ShareRequest.ReqId, rpcResult)
 			req, _ = requests.RequestDownloadFile(fileInfo.FileHash, fileInfo.OwnerWalletAddress, target.ShareRequest.ReqId,
 				target.ShareRequest)
 		} else {

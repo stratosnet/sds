@@ -70,13 +70,18 @@ func SendMessageToSPServer(pb proto.Message, cmd string) {
 // TransferSendMessageToPPServ
 func TransferSendMessageToPPServ(addr string, msgBuf *msg.RelayMsgBuf) {
 	if client.ConnMap[addr] != nil {
-
-		client.ConnMap[addr].Write(msgBuf)
+		_ = client.ConnMap[addr].Write(msgBuf)
 		utils.DebugLog("conn exist, transfer")
-	} else {
-		utils.DebugLog("new conn, connect and transfer")
-		client.NewClient(addr, false).Write(msgBuf)
+		return
 	}
+
+	utils.DebugLog("new conn, connect and transfer")
+	newClient, err := client.NewClient(addr, false)
+	if err != nil {
+		utils.ErrorLogf("cannot transfer message to client [%v]", addr, utils.FormatError(err))
+		return
+	}
+	_ = newClient.Write(msgBuf)
 }
 
 func TransferSendMessageToPPServByP2pAddress(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
@@ -152,8 +157,12 @@ func checkSingleSpLatency(server string, heartbeat bool) {
 	}
 	utils.DebugLog("[SP_LATENCY_CHECK] SendHeartbeat(", server, ", req, header.ReqHeartbeat)")
 	var spConn *cf.ClientConn
+	var err error
 	if client.GetConnectionName(client.SPConn) != server {
-		spConn = client.NewClient(server, heartbeat)
+		spConn, err = client.NewClient(server, heartbeat)
+		if err != nil {
+			utils.DebugLogf("failed to connect to server %v: %v", server, utils.FormatError(err))
+		}
 	} else {
 		utils.DebugLog("Checking latency for working SP ", server)
 		spConn = client.SPConn

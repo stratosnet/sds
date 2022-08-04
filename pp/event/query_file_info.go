@@ -1,4 +1,5 @@
 package event
+
 // Author j
 import (
 	"context"
@@ -231,7 +232,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
 			utils.Log("download starts: ")
 			task.CleanDownloadFileAndConnMap(target.FileHash, target.ReqId)
-			task.DownloadFileMap.Store(target.FileHash + target.ReqId, &target)
+			task.DownloadFileMap.Store(target.FileHash+target.ReqId, &target)
 			task.AddDownloadTask(&target)
 			if target.IsVideoStream {
 				return
@@ -239,7 +240,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 			DownloadFileSlice(&target)
 			utils.DebugLog("DownloadFileSlice(&target)", target)
 		} else {
-			file.SetRemoteFileResult(target.FileHash + target.ReqId, rpc.Result{Return:rpc.FILE_REQ_FAILURE})
+			file.SetRemoteFileResult(target.FileHash+target.ReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
 			utils.Log("failed to download，", target.Result.Msg)
 		}
 	}
@@ -252,7 +253,7 @@ func CheckDownloadPath(path string) bool {
 		utils.DebugLog("invalid path length")
 		return false
 	}
-	if path[:6] != datamesh.DATA_MASH_PREFIX {
+	if path[:6] != datamesh.DATA_MESH_PREFIX {
 		return false
 	}
 	if path[47:48] != "/" {
