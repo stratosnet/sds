@@ -1,4 +1,5 @@
 package event
+
 // Author j
 import (
 	"context"
@@ -139,7 +140,7 @@ func GetVideoSlices(fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask) 
 					SendReqDownloadSlice(fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
 				}
 			} else {
-				task.CleanDownloadTask(fInfo.FileHash, sliceInfo.SliceStorageInfo.SliceHash, setting.WalletAddress)
+				task.CleanDownloadTask(fInfo.FileHash, sliceInfo.SliceStorageInfo.SliceHash, setting.WalletAddress, task.LOCAL_REQID)
 				setDownloadSliceSuccess(sliceInfo.SliceStorageInfo.SliceHash, dTask)
 			}
 		}
@@ -172,7 +173,7 @@ func cacheSlice(videoCacheTask *task.VideoCacheTask, fInfo *protos.RspFileStorag
 			utils.DebugLog("start Download!!!!!", sliceInfo.SliceNumber)
 			if file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceInfo.SliceStorageInfo.SliceHash, fInfo.SavePath, fInfo.ReqId) {
 				utils.DebugLog("slice exist already ", sliceInfo.SliceNumber)
-				task.CleanDownloadTask(fInfo.FileHash, sliceInfo.SliceStorageInfo.SliceHash, setting.WalletAddress)
+				task.CleanDownloadTask(fInfo.FileHash, sliceInfo.SliceStorageInfo.SliceHash, setting.WalletAddress, task.LOCAL_REQID)
 				setDownloadSliceSuccess(sliceInfo.SliceStorageInfo.SliceHash, dTask)
 				videoCacheTask.DownloadCh <- true
 			} else {
@@ -236,7 +237,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
 			utils.Log("download starts: ")
 			task.CleanDownloadFileAndConnMap(target.FileHash, target.ReqId)
-			task.DownloadFileMap.Store(target.FileHash + target.ReqId, &target)
+			task.DownloadFileMap.Store(target.FileHash+target.ReqId, &target)
 			task.AddDownloadTask(&target)
 			if target.IsVideoStream {
 				return
@@ -244,7 +245,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 			DownloadFileSlice(&target)
 			utils.DebugLog("DownloadFileSlice(&target)", target)
 		} else {
-			file.SetRemoteFileResult(target.FileHash + target.ReqId, rpc.Result{Return:rpc.FILE_REQ_FAILURE})
+			file.SetRemoteFileResult(target.FileHash+target.ReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
 			utils.Log("failed to download，", target.Result.Msg)
 		}
 	}

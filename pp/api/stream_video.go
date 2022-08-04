@@ -75,7 +75,7 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
 		return
 	}
-	dTask, ok := task.GetDownloadTask(fileHash, setting.WalletAddress)
+	dTask, ok := task.GetDownloadTask(fileHash, setting.WalletAddress, task.LOCAL_REQID)
 	if !ok {
 		w.WriteHeader(setting.FAILCode)
 		w.Write(httpserv.NewErrorJson(setting.FAILCode, "Failed to retrieve download task info").ToBytes())
