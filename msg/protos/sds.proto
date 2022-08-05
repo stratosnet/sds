@@ -107,9 +107,10 @@ message ReqUploadSlicesWrong {
   string task_id = 2;
   UploadType upload_type = 3;
   PPBaseInfo my_address = 4;
-  repeated PPBaseInfo existing_destinations = 5;
-  repeated SliceNumAddr slices = 6;
-  repeated bool failed_slices = 7;
+  string     sp_p2p_address = 5;
+  repeated PPBaseInfo excluded_destinations = 6;
+  repeated SliceHashAddr slices = 7;
+  repeated bool failed_slices = 8;
 }
 
 message RspUploadSlicesWrong {
@@ -117,7 +118,7 @@ message RspUploadSlicesWrong {
   string file_hash = 2;
   UploadType upload_type = 3;
   string task_id = 4;
-  repeated SliceNumAddr slices = 5;
+  repeated SliceHashAddr slices = 5;
 }
 
 message UploadSpeedOfProgress {

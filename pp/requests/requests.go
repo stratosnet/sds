@@ -359,13 +359,14 @@ func RspUploadFileSliceData(target *protos.ReqUploadFileSlice) *protos.RspUpload
 	}
 }
 
-func ReqUploadSlicesWrong(uploadTask *task.UploadFileTask, slicesToDownload []*protos.SliceNumAddr, failedSlices []bool) *protos.ReqUploadSlicesWrong {
+func ReqUploadSlicesWrong(uploadTask *task.UploadFileTask, spP2pAddress string, slicesToDownload []*protos.SliceHashAddr, failedSlices []bool) *protos.ReqUploadSlicesWrong {
 	return &protos.ReqUploadSlicesWrong{
 		FileHash:             uploadTask.FileHash,
 		TaskId:               uploadTask.TaskID,
 		UploadType:           uploadTask.Type,
 		MyAddress:            setting.GetPPInfo(),
-		ExistingDestinations: uploadTask.GetDestinations(),
+		SpP2PAddress:         spP2pAddress,
+		ExcludedDestinations: uploadTask.GetExcludedDestinations(),
 		Slices:               slicesToDownload,
 		FailedSlices:         failedSlices,
 	}
