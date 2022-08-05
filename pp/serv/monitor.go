@@ -151,14 +151,14 @@ func (api *monitorApi) GetTrafficData(param ParamTrafficInfo) (*TrafficDataResul
 
 		content := strings.SplitN(line, "{", 2)
 		if len(content) < 2 {
-			return &TrafficDataResult{Return: "-1"}
+			return &TrafficDataResult{Return: "-1"}, nil
 		}
 
 		c := "{" + content[1]
 
 		var t TrafficDumpInfo
 		if err := json.Unmarshal([]byte(c), &t); err != nil {
-			return &TrafficDataResult{Return: "-1"}
+			return &TrafficDataResult{Return: "-1"}, nil
 		}
 
 		t.TrafficInfo.TimeStamp = date
