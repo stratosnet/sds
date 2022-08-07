@@ -11,8 +11,8 @@ import (
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -251,11 +251,11 @@ func (api *terminalCmd) BackupStatus(param []string) (CmdResult, error) {
 func (api *terminalCmd) List(param []string) (CmdResult, error) {
 	if len(param) == 0 {
 		event.FindFileList("", setting.WalletAddress, 0, "", "", 0, true, nil)
-	}else {
+	} else {
 		pageId, err := strconv.ParseUint(param[0], 10, 64)
 		if err == nil {
 			event.FindFileList("", setting.WalletAddress, pageId, "", "", 0, true, nil)
-		}else {
+		} else {
 			event.FindFileList(param[0], setting.WalletAddress, 0, "", "", 0, true, nil)
 		}
 	}
@@ -350,7 +350,7 @@ func (api *terminalCmd) ShareFile(param []string) (CmdResult, error) {
 	if private == 1 {
 		isPrivate = true
 	}
-	event.GetReqShareFile("", param[0], "", setting.WalletAddress,int64(time), isPrivate, nil)
+	event.GetReqShareFile("", param[0], "", setting.WalletAddress, int64(time), isPrivate, nil)
 	// if len(str1) == setting.FILEHASHLEN { //
 	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
@@ -361,7 +361,7 @@ func (api *terminalCmd) ShareFile(param []string) (CmdResult, error) {
 func (api *terminalCmd) AllShare(param []string) (CmdResult, error) {
 	if len(param) < 1 {
 		event.GetAllShareLink("", setting.WalletAddress, 0, nil)
-	}else {
+	} else {
 		page, err := strconv.ParseUint(param[0], 10, 64)
 		if err != nil {
 			return CmdResult{Msg: ""}, errors.New("invalid page id.")
@@ -414,5 +414,10 @@ func (api *terminalCmd) CancelGet(param []string) (CmdResult, error) {
 		return CmdResult{Msg: ""}, errors.New("input file hash of the cancel")
 	}
 	event.DownloadSliceCancel(param[0], "", nil)
+	return CmdResult{Msg: DefaultMsg}, nil
+}
+
+func (api *terminalCmd) MonitorToken(param []string) (CmdResult, error) {
+	utils.Log("Monitor token is:", GetCurrentToken())
 	return CmdResult{Msg: DefaultMsg}, nil
 }

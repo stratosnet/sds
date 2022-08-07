@@ -6,8 +6,10 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
@@ -45,7 +47,19 @@ type OnlineStateResult struct {
 }
 
 type ParamTrafficInfo struct {
+	SubId string `json:"subid"`
 	Lines uint64 `json:"lines"`
+}
+type ParamGetDiskUsage struct {
+	SubId string `json:"subid"`
+}
+
+type ParamGetPeerList struct {
+	SubId string `json:"subid"`
+}
+
+type ParamGetOnLineState struct {
+	SubId string `json:"subid"`
 }
 
 type monitorApi struct {
@@ -66,32 +80,66 @@ func monitorAPI() []rpc.API {
 	}
 }
 
+// key: rpc.Subscription, value: chan TranfficInfo
 var subscriptions = &sync.Map{}
+
+// key: rpc.Subscription.ID (string), value: struct{} (nothing)
+var subscribedIds = &sync.Map{}
 
 // subscribeTrafficInfo subscribe the channel to receive the traffic info from the generator
 func subscribeTrafficInfo(s rpc.Subscription, c chan TrafficInfo) {
-	utils.DebugLog("Subscribed TI")
+	var e struct{}
+	subscribedIds.Store(string(s.ID), e)
 	subscriptions.Store(s, c)
 }
 
 // unsubscribeTrafficInfo unsubscribe the channel listening to the traffic info
 func unsubscribeTrafficInfo(s rpc.Subscription) {
-	utils.DebugLog("UN-subscribed TI")
+	subscribedIds.Delete(s.ID)
 	subscriptions.Delete(s)
 }
 
 // TrafficInfoToMonitorClient traffic info generator calls this to feed the notifiers to the subscribed clients
 func TrafficInfoToMonitorClient(t TrafficInfo) {
-	utils.DebugLog("Sending TI to clients:")
 	subscriptions.Range(func(k, v interface{}) bool {
-		utils.DebugLog("-->")
 		v.(chan TrafficInfo) <- t
 		return true
 	})
 }
 
+// CreateInitialToken the initial token is used to generate all following tokens
+func CreateInitialToken() string {
+	epoch := strconv.FormatInt(time.Now().Unix(), 10)
+	return utils.CalcHash([]byte(epoch + setting.P2PAddress))
+}
+
+// calculateToken
+func calculateToken(time int64) string {
+	t := strconv.FormatInt(time, 10)
+	return utils.CalcHash([]byte(t + setting.MonitorInitialToken))
+}
+
+// GetCurrentToken
+func GetCurrentToken() string {
+	return calculateToken(time.Now().Unix() / 3600)
+}
+
+// verifyToken verify if the input token matches the generated token
+func verifyToken(token string) bool {
+	t := time.Now().Unix() / 3600
+	if calculateToken(t) == token {
+		return true
+	} else if calculateToken(t-1) == token {
+		return true
+	}
+	return false
+}
+
 // GetTrafficData fetch the traffic data from the file
-func (api *monitorApi) GetTrafficData(param ParamTrafficInfo) *TrafficDataResult {
+func (api *monitorApi) GetTrafficData(param ParamTrafficInfo) (*TrafficDataResult, error) {
+	if _, found := subscribedIds.Load(param.SubId); !found {
+		return nil, errors.New("client hasn't subscribed to the service")
+	}
 	lines := utils.GetLastLinesFromTrafficLog(setting.TrafficLogPath, param.Lines)
 
 	var ts []TrafficInfo
@@ -100,27 +148,32 @@ func (api *monitorApi) GetTrafficData(param ParamTrafficInfo) *TrafficDataResult
 	for i = 0; i < param.Lines; i++ {
 		line = lines[i]
 		date := line[17:36]
+
 		content := strings.SplitN(line, "{", 2)
 		if len(content) < 2 {
-			return &TrafficDataResult{Return: "-1"}
+			return &TrafficDataResult{Return: "-1"}, nil
 		}
 
 		c := "{" + content[1]
 
 		var t TrafficDumpInfo
 		if err := json.Unmarshal([]byte(c), &t); err != nil {
-			return &TrafficDataResult{Return: "-1"}
+			return &TrafficDataResult{Return: "-1"}, nil
 		}
 
 		t.TrafficInfo.TimeStamp = date
 		ts = append(ts, t.TrafficInfo)
 	}
 
-	return &TrafficDataResult{Return: "0", TraffInfo: ts}
+	return &TrafficDataResult{Return: "0", TraffInfo: ts}, nil
 }
 
 // GetDiskUsage the size of files in setting.Config.StorehousePath, not the disk usage of the computer
-func (api *monitorApi) GetDiskUsage() *DiskUsageResult {
+func (api *monitorApi) GetDiskUsage(param ParamGetDiskUsage) (*DiskUsageResult, error) {
+	if _, found := subscribedIds.Load(param.SubId); !found {
+		return nil, errors.New("client hasn't subscribed to the service")
+	}
+
 	var size int64
 	filepath.Walk(setting.Config.StorehousePath, func(_ string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -132,11 +185,15 @@ func (api *monitorApi) GetDiskUsage() *DiskUsageResult {
 		return err
 	})
 
-	return &DiskUsageResult{Return: "0", DataHost: size}
+	return &DiskUsageResult{Return: "0", DataHost: size}, nil
 }
 
 // GetPeerList the peer pp list
-func (api *monitorApi) GetPeerList() *PeerListResult {
+func (api *monitorApi) GetPeerList(param ParamGetPeerList) (*PeerListResult, error) {
+	if _, found := subscribedIds.Load(param.SubId); !found {
+		return nil, errors.New("client hasn't subscribed to the service")
+	}
+
 	pl, t := peers.GetPPList()
 	var peer PeerInfo
 	var peers []PeerInfo
@@ -155,11 +212,11 @@ func (api *monitorApi) GetPeerList() *PeerListResult {
 		Return:   "0",
 		Total:    t,
 		PeerList: peers,
-	}
+	}, nil
 }
 
 // GetOnlineState if the pp node is online
-func (api *monitorApi) GetOnlineState() *OnlineStateResult {
+func (api *monitorApi) GetOnlineState(param ParamGetOnLineState) *OnlineStateResult {
 	if setting.OnlineTime == 0 {
 	}
 	return &OnlineStateResult{
@@ -170,7 +227,10 @@ func (api *monitorApi) GetOnlineState() *OnlineStateResult {
 }
 
 // Subscription client calls the method monitor_subscribe with this function as the parameter
-func (api *monitorApi) Subscription(ctx context.Context) (*rpc.Subscription, error) {
+func (api *monitorApi) Subscription(ctx context.Context, token string) (*rpc.Subscription, error) {
+	if !verifyToken(token) {
+		return nil, errors.New("failed token check")
+	}
 	notifier, supported := rpc.NotifierFromContext(ctx)
 	if !supported {
 		return &rpc.Subscription{}, rpc.ErrNotificationsUnsupported

@@ -14,7 +14,7 @@ var IsLoginToSP = false
 
 var State uint32 = ppTypes.PP_INACTIVE
 
-var OnlineTime int64  = 0
+var OnlineTime int64 = 0
 
 var IsStartMining = false // Is the node currently mining
 
@@ -38,6 +38,8 @@ var P2PPublicKey []byte
 var P2PPrivateKey []byte
 
 var SPMap = &sync.Map{}
+
+var MonitorInitialToken string
 
 func GetNetworkID() types.NetworkID {
 	return types.NetworkID{
