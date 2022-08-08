@@ -14,6 +14,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+	"github.com/stratosnet/sds/metrics"
 	message "github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -389,7 +390,7 @@ func (sc *ServerConn) Close() {
 
 		close(sc.sendCh)
 		close(sc.handlerCh)
-
+		metrics.ConnNumbers.WithLabelValues("server").Dec()
 		sc.belong.wg.Done()
 		sc.belong.goroutine = sc.belong.goAtom.DecrementAndGetNew()
 	})
@@ -490,6 +491,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					// } else {
 					handler := GetHandlerFunc(utils.ByteToString(msgH.Cmd))
 					if handler != nil {
+						metrics.Events.WithLabelValues(utils.ByteToString(msgH.Cmd)).Inc()
 						sc.handlerCh <- MsgHandler{message.RelayMsgBuf{}, handler}
 					}
 					// }
@@ -550,6 +552,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 						msgBuf = nil
 						continue
 					}
+					metrics.Events.WithLabelValues(utils.ByteToString(msgH.Cmd)).Inc()
 					handlerCh <- MsgHandler{*msg, handler}
 					msgH.Len = 0
 					i = 0
