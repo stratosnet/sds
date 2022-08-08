@@ -39,6 +39,17 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 			return
 		}
 
+		if target.SliceNumAddr.PpInfo.P2PAddress != setting.P2PAddress {
+			rsp := &protos.RspUploadFileSlice{
+				Result: &protos.Result{
+					State: protos.ResultState_RES_FAIL,
+					Msg:   "mismatch between p2p address in the request and node p2p address.",
+				},
+			}
+			peers.SendMessage(conn, rsp, header.RspUploadFileSlice)
+			return
+		}
+
 		peers.SendMessage(conn, requests.UploadSpeedOfProgressData(target.FileHash, uint64(len(target.Data))), header.UploadSpeedOfProgress)
 		if !task.SaveUploadFile(&target) {
 			// save failed, not handing yet
