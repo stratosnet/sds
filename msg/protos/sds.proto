@@ -121,6 +121,10 @@ message ReportUploadSliceResult {
   string     p2p_address = 9;
   string     wallet_address = 10;
   string     sp_p2p_address = 11;
+  int64      start_time = 12;
+  int64      end_time = 13;
+  string     opponent_p2p_address = 14;
+
 }
 
 message RspReportUploadSliceResult {
@@ -275,6 +279,9 @@ message ReqReportDownloadResult {
   bytes  sign = 8;
   string task_id = 9;
   string sp_p2p_address = 10;
+  int64  start_time = 11;
+  int64  end_time = 12;
+  string opponent_p2p_address = 13;
 }
 
 message RspReportDownloadResult {
