@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"github.com/stratosnet/sds/metrics"
 	"net"
 	"strings"
@@ -158,8 +159,17 @@ func (s *Server) Start(l net.Listener) error {
 	}
 
 	var tempDelay time.Duration
+	// WL: QB-1310: DEBUG
+	var counter uint64 = 0
+	// WL: DEBUG END
 	for {
 		spbConn, err := l.Accept()
+		// WL: QB-1310: DEBUG
+		counter++
+		if counter%100 == 0 {
+			fmt.Println("Connections:", counter)
+		}
+		// WL: DEBUG END
 		if err != nil {
 			if ne, ok := err.(net.Error); ok && ne.Temporary() {
 				if tempDelay == 0 {

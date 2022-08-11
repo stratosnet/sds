@@ -361,12 +361,14 @@ func (cc *ClientConn) handshake() error {
 // Start client starts readLoop, writeLoop, handleLoop
 func (cc *ClientConn) Start() {
 	metrics.ConnNumbers.WithLabelValues("client").Inc()
-	err := cc.handshake()
-	if err != nil {
-		utils.ErrorLog("client conn handshake error", cc.spbConn.LocalAddr(), "->", cc.spbConn.RemoteAddr(), err)
-		cc.ClientClose()
-		return
-	}
+	// WL: QB-1310: DEBUG: comment out handshake for simplicity
+	//err := cc.handshake()
+	//if err != nil {
+	//	utils.ErrorLog("client conn handshake error", cc.spbConn.LocalAddr(), "->", cc.spbConn.RemoteAddr(), err)
+	//	cc.ClientClose()
+	//	return
+	//}
+	// WL: DEBUG END
 
 	Mylog(cc.opts.logOpen, fmt.Sprintf("client conn start %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
 	onConnect := cc.opts.onConnect
@@ -562,7 +564,10 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf) (err error) {
 	)
 	sendCh = c.sendCh
 	msgH := make([]byte, utils.MsgHeaderLen)
-	reqId, _ := utils.NextSnowFakeId()
+	// WL: QB-1310: DEBUG: content of the message is not important for the test
+	//reqId, _ := utils.NextSnowFakeId()
+	reqId := int64(rand.Uint64())
+	// WL: DEBUG END
 	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, msgH)
 	// msgData := make([]byte, utils.MessageBeatLen)
 	// copy((*msgData)[0:], msgH)
@@ -638,31 +643,34 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 		default:
 			// Mylog(cc.opts.logOpen,"client read ok", msgH.Len)
 			if msgH.Len == 0 {
-				headerBytes, n, err := core.ReadEncryptedHeaderAndBody(spbConn, cc.sharedKey, utils.MessageBeatLen)
-				cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
-				if err != nil {
-					if err == io.EOF {
-						return
-					}
-					utils.ErrorLog("client read err", err)
-					return
-				}
-
-				header.DecodeHeader(headerBytes, &msgH)
-				headerBytes = nil
-
-				if msgH.Version < cc.opts.minAppVer {
-					utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
-					continue
-				}
-
-				// Mylog(cc.opts.logOpen,"client msg size", msgH.Cmd)
-				if msgH.Len == 0 {
-					handler := core.GetHandlerFunc(utils.ByteToString(msgH.Cmd))
-					if handler != nil {
-						handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
-					}
-				}
+				// WL: QB-1310: DEBUG: don't need to handle messages
+				core.ReadRawMsg(spbConn)
+				//headerBytes, n, err := core.ReadEncryptedHeaderAndBody(spbConn, cc.sharedKey, utils.MessageBeatLen)
+				//cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
+				//if err != nil {
+				//	if err == io.EOF {
+				//		return
+				//	}
+				//	utils.ErrorLog("client read err", err)
+				//	return
+				//}
+				//
+				//header.DecodeHeader(headerBytes, &msgH)
+				//headerBytes = nil
+				//
+				//if msgH.Version < cc.opts.minAppVer {
+				//	utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
+				//	continue
+				//}
+				//
+				//// Mylog(cc.opts.logOpen,"client msg size", msgH.Cmd)
+				//if msgH.Len == 0 {
+				//	handler := core.GetHandlerFunc(utils.ByteToString(msgH.Cmd))
+				//	if handler != nil {
+				//		handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
+				//	}
+				//}
+				// WL: DEBUG END
 			} else {
 				// start to process the msg if there is more than just the header to read
 				nonce, dataLen, n, err := core.ReadEncryptedHeader(spbConn)
@@ -814,52 +822,58 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 }
 
 func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
-	var lr utils.LimitRate
-	var onereadlen = 1024
-	var n int
+	// WL: QB-1310: DEBUG: write raw message
+	//var lr utils.LimitRate
+	//var onereadlen = 1024
+	//var n int
 	// Mylog(cc.opts.logOpen, "write header", packet.MSGData[:16])
 	// Mylog(cc.opts.logOpen, "write body", packet.MSGData[16:])
-	cmd := utils.ByteToString(packet.MSGHead.Cmd)
+	//cmd := utils.ByteToString(packet.MSGHead.Cmd)
 
 	// Encrypt and write message header
-	encryptedHeader, err := core.EncryptAndPack(cc.sharedKey, packet.MSGData[:utils.MsgHeaderLen])
-	if err != nil {
-		return errors.Wrap(err, "client cannot encrypt header")
-	}
+	//encryptedHeader, err := core.EncryptAndPack(cc.sharedKey, packet.MSGData[:utils.MsgHeaderLen])
+	//if err != nil {
+	//	return errors.Wrap(err, "client cannot encrypt header")
+	//}
 	//_ = cc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
-	if err = core.WriteFull(cc.spbConn, encryptedHeader); err != nil {
+	//if err = core.WriteFull(cc.spbConn, encryptedHeader); err != nil {
+	//	return errors.Wrap(err, "client write err")
+	//}
+	if err := core.WriteFull(cc.spbConn, packet.MSGHead.Cmd); err != nil {
 		return errors.Wrap(err, "client write err")
 	}
-	cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(len(encryptedHeader)))
+
+	//cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(len(encryptedHeader)))
 
 	// Encrypt and write message data
-	encryptedData, err := core.EncryptAndPack(cc.sharedKey, packet.MSGData[utils.MsgHeaderLen:])
-	if err != nil {
-		return errors.Wrap(err, "server cannot encrypt msg")
-	}
-	for i := 0; i < len(encryptedData); i = i + n {
-		// Mylog(cc.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
-		if len(encryptedData)-i < 1024 {
-			onereadlen = len(encryptedData) - i
-			// Mylog(cc.opts.logOpen,"onereadlen:", onereadlen)
-		}
-		//_ = cc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
-		n, err = cc.spbConn.Write(encryptedData[i : i+onereadlen])
-		cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(n))
-		// Mylog(cc.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
-		// Mylog(cc.opts.logOpen,"i+onereadlen:", i+onereadlen)
-		if err != nil {
-			return errors.Wrap(err, "client write err")
-		}
-		if cmd == header.ReqUploadFileSlice {
-			if isLimitUploadSpeed {
-				if limitUploadSpeed > 0 {
-					lr.SetRate(limitUploadSpeed)
-					lr.Limit()
-				}
-			}
-		}
-	}
+	//encryptedData, err := core.EncryptAndPack(cc.sharedKey, packet.MSGData[utils.MsgHeaderLen:])
+	//if err != nil {
+	//	return errors.Wrap(err, "server cannot encrypt msg")
+	//}
+	//for i := 0; i < len(encryptedData); i = i + n {
+	//	// Mylog(cc.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
+	//	if len(encryptedData)-i < 1024 {
+	//		onereadlen = len(encryptedData) - i
+	//		// Mylog(cc.opts.logOpen,"onereadlen:", onereadlen)
+	//	}
+	//	//_ = cc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
+	//	n, err = cc.spbConn.Write(encryptedData[i : i+onereadlen])
+	//	cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(n))
+	//	// Mylog(cc.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
+	//	// Mylog(cc.opts.logOpen,"i+onereadlen:", i+onereadlen)
+	//	if err != nil {
+	//		return errors.Wrap(err, "client write err")
+	//	}
+	//	if cmd == header.ReqUploadFileSlice {
+	//		if isLimitUploadSpeed {
+	//			if limitUploadSpeed > 0 {
+	//				lr.SetRate(limitUploadSpeed)
+	//				lr.Limit()
+	//			}
+	//		}
+	//	}
+	//}
+	// WL: DEBUG END
 	cmem.Free(packet.Alloc)
 	return nil
 }

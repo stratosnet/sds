@@ -94,3 +94,12 @@ func ReadEncryptedHeaderAndBody(c net.Conn, privKey []byte, maxBodySize int) (pl
 	plaintext, err = encryption.DecryptAES(privKey, buffer, nonce)
 	return plaintext, bytesRead, err
 }
+
+// WL: QB-1310: DEBUG
+func ReadRawMsg(c net.Conn) (plaintext []byte, err error) {
+	buffer := make([]byte, 8)
+	_, err = io.ReadFull(c, buffer)
+	return buffer, err
+}
+
+// WL: DEBUG END
