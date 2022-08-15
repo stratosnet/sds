@@ -83,7 +83,6 @@ func (r *HashRing) AddNode(node *Node) {
 	r.Lock()
 
 	defer r.Unlock()
-
 	var numberOfNode uint32 = 1
 	if r.NumberOfVirtual > 0 {
 		numberOfNode = r.NumberOfVirtual
@@ -132,7 +131,6 @@ func (r *HashRing) RemoveNode(nodeID string) bool {
 	r.NRing.Delete(node)
 
 	r.NodeCount--
-
 	return true
 }
 
@@ -155,6 +153,7 @@ func (r *HashRing) SetOffline(ID string) {
 	if online, ok := r.NodeStatus.Load(ID); ok && online.(bool) {
 		r.NodeStatus.Store(ID, false)
 		r.NodeOkCount--
+
 	}
 }
 

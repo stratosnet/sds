@@ -16,6 +16,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/utils/cmem"
@@ -359,6 +360,7 @@ func (cc *ClientConn) handshake() error {
 
 // Start client starts readLoop, writeLoop, handleLoop
 func (cc *ClientConn) Start() {
+	metrics.ConnNumbers.WithLabelValues("client").Inc()
 	err := cc.handshake()
 	if err != nil {
 		utils.ErrorLog("client conn handshake error", cc.spbConn.LocalAddr(), "->", cc.spbConn.RemoteAddr(), err)
@@ -428,6 +430,7 @@ func (cc *ClientConn) ClientClose() {
 
 		// close net.Conn
 		cc.spbConn.Close()
+		metrics.ConnNumbers.WithLabelValues("client").Dec()
 
 		// cancel readLoop, writeLoop and handleLoop go-routines.
 		cc.mu.Lock()

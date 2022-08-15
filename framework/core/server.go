@@ -2,7 +2,9 @@ package core
 
 import (
 	"context"
+	"github.com/stratosnet/sds/metrics"
 	"net"
+	"strings"
 	"sync"
 	"time"
 
@@ -197,6 +199,8 @@ func (s *Server) Start(l net.Listener) error {
 		netid := netID.GetOldAndIncrement()
 		sc := CreateServerConn(netid, s, spbConn)
 		sc.SetConnName(sc.spbConn.RemoteAddr().String())
+		metrics.ConnReconnection.WithLabelValues(strings.Split(sc.GetName(), ":")[0]).Inc()
+		metrics.ConnNumbers.WithLabelValues("server").Inc()
 
 		// s.mu.Lock()
 		// if s.sched != nil {
