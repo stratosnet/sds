@@ -38,6 +38,7 @@ const (
 
 	MAXSLICE              = 50 // max number of slices that can upload concurrently for a single file
 	UPLOAD_TIMER_INTERVAL = 10 // seconds
+	MAX_UPLOAD_RETRY      = 5
 )
 
 // UploadFileTask represents a file upload task that is in progress
@@ -53,6 +54,8 @@ type UploadFileTask struct {
 	Type          protos.UploadType
 
 	ConcurrentUploads int
+	FatalError        error
+	RetryCount        int
 	UpChan            chan bool
 	Mutex             sync.RWMutex
 }
@@ -84,6 +87,7 @@ func CreateUploadFileTask(fileHash, taskId, spP2pAddress string, isEncrypted, is
 		TaskID:            taskId,
 		Type:              uploadType,
 		ConcurrentUploads: 0,
+		RetryCount:        0,
 		UpChan:            make(chan bool, MAXSLICE),
 		Mutex:             sync.RWMutex{},
 	}
@@ -147,6 +151,9 @@ func (u *UploadFileTask) IsFatal() error {
 	u.Mutex.RLock()
 	defer u.Mutex.RUnlock()
 
+	if u.FatalError != nil {
+		return u.FatalError
+	}
 	for _, slicesPerDestination := range u.Slices {
 		for _, slice := range slicesPerDestination.Slices {
 			if slice.Fatal {
@@ -194,6 +201,10 @@ func (u *UploadFileTask) SliceFailuresToReport() ([]*protos.SliceHashAddr, []boo
 	}
 
 	return slicesToReDownload, failedSlices
+}
+
+func (u *UploadFileTask) CanRetry() bool {
+	return u.RetryCount < MAX_UPLOAD_RETRY
 }
 
 func (u *UploadFileTask) GetExcludedDestinations() []*protos.PPBaseInfo {

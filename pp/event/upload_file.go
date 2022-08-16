@@ -4,6 +4,7 @@ package event
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -261,8 +262,7 @@ func startUploadingFileSlices(fileHash string) {
 
 	err := waitForUploadFinished(fileTask)
 	if err != nil {
-		// TODO: send upload failed to SP to cancel upload/backup task
-		utils.ErrorLog(utils.FormatError(err))
+		utils.ErrorLog("File upload task will be cancelled: ", utils.FormatError(err))
 		return
 	}
 
@@ -298,6 +298,9 @@ func waitForUploadFinished(uploadTask *task.UploadFileTask) error {
 		// Report slice failures to SP to get assigned new slice destinations
 		slicesToReDownload, failedSlices := uploadTask.SliceFailuresToReport()
 		if len(slicesToReDownload) > 0 {
+			if !uploadTask.CanRetry() {
+				return errors.New("max upload retry count reached")
+			}
 			peers.SendMessageToSPServer(requests.ReqUploadSlicesWrong(uploadTask, uploadTask.SpP2pAddress, slicesToReDownload, failedSlices), header.ReqUploadSlicesWrong)
 		}
 

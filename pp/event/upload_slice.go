@@ -97,9 +97,16 @@ func RspUploadSlicesWrong(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
+	value, ok := task.UploadFileTaskMap.Load(target.FileHash)
+	if !ok {
+		utils.ErrorLogf("File upload task cannot be found for file %v", target.FileHash)
+		return
+	}
+	uploadTask := value.(*task.UploadFileTask)
+
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.ErrorLog("RspUploadSlicesWrong failure:", target.Result.Msg)
-		// TODO: cancel upload
+		uploadTask.FatalError = errors.New(target.Result.Msg)
 		return
 	}
 
@@ -108,13 +115,8 @@ func RspUploadSlicesWrong(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	value, ok := task.UploadFileTaskMap.Load(target.FileHash)
-	if !ok {
-		utils.ErrorLogf("File upload task cannot be found for file %v", target.FileHash)
-		return
-	}
-	uploadTask := value.(*task.UploadFileTask)
 	uploadTask.UpdateSliceDestinations(target.Slices)
+	uploadTask.RetryCount++
 
 	// Start upload for all new destinations
 	uploadTask.SignalNewDestinations()
