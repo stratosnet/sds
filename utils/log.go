@@ -91,7 +91,7 @@ func NewTrafficLogger(filePath string, enableStd, enableFile bool) *CombinedLogg
 //Log calls default logger and output info log
 func DumpTraffic(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	TrafficLogger.LogDepth(Info, 3, v...)
+	TrafficLogger.LogDepth(Info, 4, v...)
 }
 
 func GetLastLinesFromTrafficLog(path string, n uint64) []string {
@@ -187,7 +187,7 @@ func (l *Logger) Log(level LogLevel, v ...interface{}) {
 	if l.enabled {
 		l.logger.SetPrefix(l.GetLevelString(level))
 		//l.stdLogger.Println(v...)
-		l.logger.Output(2, fmt.Sprintln(v...))
+		l.logger.Output(3, fmt.Sprintln(v...))
 	}
 }
 
@@ -223,7 +223,7 @@ func (l *CombinedLogger) LogDepth(level LogLevel, calldepth int, v ...interface{
 
 func (l *CombinedLogger) ErrorLog(v ...interface{}) {
 	//l.Log(Error, v...)
-	l.LogDepth(Error, 3, v...)
+	l.LogDepth(Error, 4, v...)
 }
 
 func SetRpcLogger(rpc io.Writer) {
@@ -248,52 +248,52 @@ func ClearRpcLogger() {
 //Log calls default logger and output info log
 func Log(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	MyLogger.LogDepth(Info, 3, v...)
+	MyLogger.LogDepth(Info, 4, v...)
 }
 
 func Logf(template string, v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	MyLogger.LogDepth(Info, 3, fmt.Sprintf(template, v...))
+	MyLogger.LogDepth(Info, 4, fmt.Sprintf(template, v...))
 }
 
 //ErrorLog call default logger and output error log
 func ErrorLog(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	MyLogger.LogDepth(Error, 3, v...)
+	MyLogger.LogDepth(Error, 4, v...)
 }
 
 func WarnLog(v ...interface{}) {
-	MyLogger.LogDepth(Warn, 3, v...)
+	MyLogger.LogDepth(Warn, 4, v...)
 }
 
 //ErrorLogf call default logger and output error log
 func ErrorLogf(template string, v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	MyLogger.LogDepth(Error, 3, fmt.Errorf(template, v...))
+	MyLogger.LogDepth(Error, 4, fmt.Errorf(template, v...))
 }
 
 //DebugLog calls default logger and output debug log
 func DebugLog(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	MyLogger.LogDepth(Debug, 3, v...)
+	MyLogger.LogDepth(Debug, 4, v...)
 }
 
 //DebugLog calls default logger and output debug log
 func DebugLogf(template string, v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	MyLogger.LogDepth(Debug, 3, fmt.Sprintf(template, v...))
+	MyLogger.LogDepth(Debug, 4, fmt.Sprintf(template, v...))
 }
 
 //DetailLog calls default logger and output detail log
 func DetailLog(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	MyLogger.LogDepth(Detail, 3, v...)
+	MyLogger.LogDepth(Detail, 4, v...)
 }
 
 //DetailLog calls default logger and output detail log
 func DetailLogf(template string, v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	MyLogger.LogDepth(Detail, 3, fmt.Sprintf(template, v...))
+	MyLogger.LogDepth(Detail, 4, fmt.Sprintf(template, v...))
 }
 
 // CheckError  TODO This is a bad way to call error log, as you cannot know where this method is called in your error log

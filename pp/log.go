@@ -9,7 +9,7 @@ import (
 )
 
 func logDepthWithContext(context context.Context, level utils.LogLevel, calldepth int, v ...interface{}) {
-	utils.MyLogger.LogDepth(level, 3, v...)
+	utils.MyLogger.LogDepth(level, calldepth+1, v...)
 
 	if context == nil {
 		return
@@ -50,25 +50,25 @@ func CreateReqIdAndRegisterRpcLogger(ctx context.Context) context.Context {
 }
 
 func Log(ctx context.Context, v ...interface{}) {
-	logDepthWithContext(ctx, utils.Info, 3, v...)
+	logDepthWithContext(ctx, utils.Info, 4, v...)
 }
 
 func Logf(ctx context.Context, template string, v ...interface{}) {
-	logDepthWithContext(ctx, utils.Info, 3, fmt.Sprintf(template, v...))
+	logDepthWithContext(ctx, utils.Info, 4, fmt.Sprintf(template, v...))
 }
 
 func ErrorLog(ctx context.Context, v ...interface{}) {
-	logDepthWithContext(ctx, utils.Error, 3, v...)
+	logDepthWithContext(ctx, utils.Error, 4, v...)
 }
 
 func ErrorLogf(ctx context.Context, template string, v ...interface{}) {
-	logDepthWithContext(ctx, utils.Error, 3, fmt.Errorf(template, v...))
+	logDepthWithContext(ctx, utils.Error, 4, fmt.Errorf(template, v...))
 }
 
 func DebugLog(ctx context.Context, v ...interface{}) {
-	logDepthWithContext(ctx, utils.Debug, 3, v...)
+	logDepthWithContext(ctx, utils.Debug, 4, v...)
 }
 
 func DebugLogf(ctx context.Context, template string, v ...interface{}) {
-	logDepthWithContext(ctx, utils.Debug, 3, fmt.Sprintf(template, v...))
+	logDepthWithContext(ctx, utils.Debug, 4, fmt.Sprintf(template, v...))
 }
