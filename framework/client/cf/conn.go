@@ -543,11 +543,11 @@ func (cc *ClientConn) reconnect() {
 // }
 
 // Write
-func (cc *ClientConn) Write(message *msg.RelayMsgBuf) error {
-	return asyncWrite(cc, message)
+func (cc *ClientConn) Write(message *msg.RelayMsgBuf, ctx context.Context) error {
+	return asyncWrite(cc, message, ctx)
 }
 
-func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf) (err error) {
+func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err error) {
 	if c == nil {
 		return errors.New("nil client connection")
 	}
@@ -562,7 +562,11 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf) (err error) {
 	)
 	sendCh = c.sendCh
 	msgH := make([]byte, utils.MsgHeaderLen)
-	reqId, _ := utils.NextSnowFakeId()
+	reqId := core.GetReqIdFromContext(ctx)
+	if reqId == 0 {
+		reqId, _ = utils.NextSnowFakeId()
+		core.InheritRpcLoggerFromParentReqId(ctx, reqId)
+	}
 	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, msgH)
 	// msgData := make([]byte, utils.MessageBeatLen)
 	// copy((*msgData)[0:], msgH)
@@ -898,7 +902,8 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 		case msgHandler := <-handlerCh:
 			msg, handler := msgHandler.message, msgHandler.handler
 			core.TimoutMap.DeleteByRspMsg(&msg)
-			handler(core.CreateContextWithNetID(core.CreateContextWithMessage(ctx, &msg), netID), c)
+			ctxWithParentReqId := core.CreateContextWithParentReqId(ctx, msg.MSGHead.ReqId)
+			handler(core.CreateContextWithNetID(core.CreateContextWithMessage(ctxWithParentReqId, &msg), netID), c)
 		}
 	}
 }

@@ -1,11 +1,13 @@
 package setting
 
 import (
-	"github.com/stratosnet/sds/utils"
+	"context"
+
+	"github.com/stratosnet/sds/pp"
 )
 
 // ShowProgress
-func ShowProgress(p float32) {
+func ShowProgressWithContext(ctx context.Context, p float32) {
 	f := int(p)
 	m := int(100 - p)
 	str := ""
@@ -15,5 +17,5 @@ func ShowProgress(p float32) {
 	for i := 0; i < m; i++ {
 		str += "-"
 	}
-	utils.Log(str)
+	pp.Log(ctx, str)
 }

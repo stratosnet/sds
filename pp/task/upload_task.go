@@ -1,6 +1,7 @@
 package task
 
 import (
+	"context"
 	"encoding/json"
 	"math/rand"
 	"strings"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
@@ -65,19 +67,19 @@ func CleanUpConnMap(fileHash string) {
 }
 
 // GetUploadSliceTask
-func GetUploadSliceTask(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string, isVideoStream, isEncrypted bool, fileCRC uint32) *UploadSliceTask {
+func GetUploadSliceTask(ctx context.Context, ppNode *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string, isVideoStream, isEncrypted bool, fileCRC uint32) *UploadSliceTask {
 	if isVideoStream {
-		return GetUploadSliceTaskStream(pp, fileHash, taskID, spP2pAddress, fileCRC)
+		return GetUploadSliceTaskStream(ctx, ppNode, fileHash, taskID, spP2pAddress, fileCRC)
 	} else {
-		return GetUploadSliceTaskFile(pp, fileHash, taskID, spP2pAddress, isEncrypted, fileCRC)
+		return GetUploadSliceTaskFile(ctx, ppNode, fileHash, taskID, spP2pAddress, isEncrypted, fileCRC)
 	}
 }
 
-func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string, isEncrypted bool, fileCRC uint32) *UploadSliceTask {
+func GetUploadSliceTaskFile(ctx context.Context, ppNode *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string, isEncrypted bool, fileCRC uint32) *UploadSliceTask {
 
-	utils.DebugLogf("sliceNumber %v  offsetStart = %v  offsetEnd = %v", pp.SliceNumber, pp.SliceOffset.SliceOffsetStart, pp.SliceOffset.SliceOffsetEnd)
-	startOffset := pp.SliceOffset.SliceOffsetStart
-	endOffset := pp.SliceOffset.SliceOffsetEnd
+	pp.DebugLogf(ctx, "sliceNumber %v  offsetStart = %v  offsetEnd = %v", ppNode.SliceNumber, ppNode.SliceOffset.SliceOffsetStart, ppNode.SliceOffset.SliceOffsetEnd)
+	startOffset := ppNode.SliceOffset.SliceOffsetStart
+	endOffset := ppNode.SliceOffset.SliceOffsetEnd
 
 	var fileSize uint64
 	var filePath string
@@ -88,7 +90,7 @@ func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddr
 		filePath = file.GetFilePath(fileHash)
 		fileInfo := file.GetFileInfo(filePath)
 		if fileInfo == nil {
-			utils.ErrorLog("wrong file path")
+			pp.ErrorLog(ctx, "wrong file path")
 			return nil
 		}
 		fileSize = uint64(fileInfo.Size())
@@ -118,12 +120,12 @@ func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddr
 		var err error
 		data, err = encryptSliceData(rawData)
 		if err != nil {
-			utils.ErrorLog("Couldn't encrypt slice data", err)
+			pp.ErrorLog(ctx, "Couldn't encrypt slice data", err)
 			return nil
 		}
 	}
 	dataSize := uint64(len(data))
-	sliceHash := utils.CalcSliceHash(data, fileHash, pp.SliceNumber)
+	sliceHash := utils.CalcSliceHash(data, fileHash, ppNode.SliceNumber)
 
 	sl := &protos.SliceOffsetInfo{
 		SliceHash: sliceHash,
@@ -136,45 +138,45 @@ func GetUploadSliceTaskFile(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddr
 	tk := &UploadSliceTask{
 		TaskID:          taskID,
 		FileHash:        fileHash,
-		SliceNumAddr:    pp,
+		SliceNumAddr:    ppNode,
 		SliceOffsetInfo: sl,
 		FileCRC:         fileCRC,
 		Data:            data,
 		SliceTotalSize:  dataSize,
 		SpP2pAddress:    spP2pAddress,
 	}
-	file.SaveTmpSliceData(fileHash, sliceHash, data)
+	file.SaveTmpSliceData(ctx, fileHash, sliceHash, data)
 	return tk
 }
 
-func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string, fileCRC uint32) *UploadSliceTask {
+func GetUploadSliceTaskStream(ctx context.Context, ppNode *protos.SliceNumAddr, fileHash, taskID, spP2pAddress string, fileCRC uint32) *UploadSliceTask {
 	videoFolder := file.GetVideoTmpFolder(fileHash)
 	videoSliceInfo := file.HlsInfoMap[fileHash]
 	var data []byte
 	var sliceTotalSize uint64
 
-	if pp.SliceNumber == 1 {
+	if ppNode.SliceNumber == 1 {
 		jsonStr, _ := json.Marshal(videoSliceInfo)
 		data = jsonStr
 		sliceTotalSize = uint64(len(data))
-	} else if pp.SliceNumber < videoSliceInfo.StartSliceNumber {
-		data = file.GetDumpySliceData(fileHash, pp.SliceNumber)
+	} else if ppNode.SliceNumber < videoSliceInfo.StartSliceNumber {
+		data = file.GetDumpySliceData(fileHash, ppNode.SliceNumber)
 		sliceTotalSize = uint64(len(data))
 	} else {
 		var sliceName string
-		sliceName = videoSliceInfo.SliceToSegment[pp.SliceNumber]
+		sliceName = videoSliceInfo.SliceToSegment[ppNode.SliceNumber]
 		slicePath := videoFolder + "/" + sliceName
 		if file.GetFileInfo(slicePath) == nil {
-			utils.ErrorLog("wrong file path")
+			pp.ErrorLog(ctx, "wrong file path")
 			return nil
 		}
 		data = file.GetWholeFileData(slicePath)
 		sliceTotalSize = uint64(file.GetFileInfo(slicePath).Size())
 	}
 
-	utils.DebugLog("sliceNumber", pp.SliceNumber)
+	pp.DebugLog(ctx, "sliceNumber", ppNode.SliceNumber)
 
-	sliceHash := utils.CalcSliceHash(data, fileHash, pp.SliceNumber)
+	sliceHash := utils.CalcSliceHash(data, fileHash, ppNode.SliceNumber)
 	offset := &protos.SliceOffset{
 		SliceOffsetStart: uint64(0),
 		SliceOffsetEnd:   sliceTotalSize,
@@ -184,11 +186,11 @@ func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAd
 		SliceOffset: offset,
 	}
 	SliceNumAddr := &protos.SliceNumAddr{
-		SliceNumber: pp.SliceNumber,
+		SliceNumber: ppNode.SliceNumber,
 		SliceOffset: offset,
-		PpInfo:      pp.PpInfo,
+		PpInfo:      ppNode.PpInfo,
 	}
-	pp.SliceOffset = offset
+	ppNode.SliceOffset = offset
 	tk := &UploadSliceTask{
 		TaskID:          taskID,
 		FileHash:        fileHash,
@@ -199,19 +201,19 @@ func GetUploadSliceTaskStream(pp *protos.SliceNumAddr, fileHash, taskID, spP2pAd
 		SliceTotalSize:  sliceTotalSize,
 		SpP2pAddress:    spP2pAddress,
 	}
-	file.SaveTmpSliceData(fileHash, sliceHash, data)
+	file.SaveTmpSliceData(ctx, fileHash, sliceHash, data)
 	return tk
 }
 
-func GetReuploadSliceTask(pp *protos.SliceHashAddr, fileHash, taskID, spP2pAddress string) *UploadSliceTask {
+func GetReuploadSliceTask(ppNode *protos.SliceHashAddr, fileHash, taskID, spP2pAddress string) *UploadSliceTask {
 	utils.DebugLogf("  fileHash %s sliceNumber %v, sliceHash %s",
-		fileHash, pp.SliceNumber, pp.SliceHash)
+		fileHash, ppNode.SliceNumber, ppNode.SliceHash)
 
-	rawData := file.GetSliceDataFromTmp(fileHash, pp.SliceHash)
+	rawData := file.GetSliceDataFromTmp(fileHash, ppNode.SliceHash)
 
 	if rawData == nil {
 		utils.ErrorLogf("Failed to find the file slice in temp folder for fileHash %s sliceNumber %v, sliceHash %s",
-			fileHash, pp.SliceNumber, pp.SliceHash)
+			fileHash, ppNode.SliceNumber, ppNode.SliceHash)
 		return nil
 	}
 
@@ -219,7 +221,7 @@ func GetReuploadSliceTask(pp *protos.SliceHashAddr, fileHash, taskID, spP2pAddre
 	dataSize := uint64(len(data))
 
 	sl := &protos.SliceOffsetInfo{
-		SliceHash: pp.SliceHash,
+		SliceHash: ppNode.SliceHash,
 		SliceOffset: &protos.SliceOffset{
 			SliceOffsetStart: 0,
 			SliceOffsetEnd:   dataSize,
@@ -230,9 +232,9 @@ func GetReuploadSliceTask(pp *protos.SliceHashAddr, fileHash, taskID, spP2pAddre
 		TaskID:   taskID,
 		FileHash: fileHash,
 		SliceNumAddr: &protos.SliceNumAddr{
-			SliceNumber: pp.SliceNumber,
-			SliceOffset: pp.SliceOffset,
-			PpInfo:      pp.PpInfo,
+			SliceNumber: ppNode.SliceNumber,
+			SliceOffset: ppNode.SliceOffset,
+			PpInfo:      ppNode.PpInfo,
 		},
 		SliceOffsetInfo: sl,
 		Data:            data,

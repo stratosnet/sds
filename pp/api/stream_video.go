@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"crypto/ed25519"
 	"encoding/json"
 	"fmt"
@@ -81,7 +82,7 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 		w.Write(httpserv.NewErrorJson(setting.FAILCode, "Failed to retrieve download task info").ToBytes())
 		return
 	}
-	event.GetVideoSlices(streamInfo.FileInfo, dTask)
+	event.GetVideoSlices(context.Background(), streamInfo.FileInfo, dTask)
 	ret, _ := json.Marshal(streamInfo)
 	w.Write(ret)
 }
@@ -246,7 +247,7 @@ func getStreamInfo(fileHash, ownerWalletAddress, walletAddress string, w http.Re
 		Owner: ownerWalletAddress,
 		Hash:  fileHash,
 	}.String()
-	event.GetFileStorageInfo(filePath, setting.VIDEOPATH, uuid.New().String(), walletAddress, "", true, w)
+	event.GetFileStorageInfo(context.Background(), filePath, setting.VIDEOPATH, uuid.New().String(), walletAddress, "", true, w)
 	var fInfo *protos.RspFileStorageInfo
 	start := time.Now().Unix()
 	for {
