@@ -590,11 +590,16 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 	OuterFor:
 		for {
 			select {
-			case packet = <-sendCh:
+			case packet, ok := <-sendCh:
+				// selected, not received: break from the loop
+				if !ok {
+					break OuterFor
+				}
+				// drain pending messages
 				if packet != nil {
 					if err := sc.writePacket(packet); err != nil {
 						utils.ErrorLog(err)
-						return
+						break OuterFor
 					}
 					packet = nil
 				}
