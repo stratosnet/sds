@@ -596,6 +596,7 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 		return
 	}
 
+	m.MSGHead.ReqId = reqId
 	core.TimoutMap.Store(reqId, m)
 
 	return

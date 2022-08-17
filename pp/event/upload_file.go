@@ -309,8 +309,8 @@ func sendUploadFileSlice(ctx context.Context, target *protos.RspUploadFile) {
 		}
 
 	} else {
-		for _, pp := range ING.Slices {
-			uploadTask := task.GetUploadSliceTask(ctx, pp, target.FileHash, target.TaskId, target.SpP2PAddress,
+		for _, ppNode := range ING.Slices {
+			uploadTask := task.GetUploadSliceTask(ctx, ppNode, target.FileHash, target.TaskId, target.SpP2PAddress,
 				target.IsVideoStream, target.IsEncrypted, ING.FileCRC)
 			if uploadTask != nil {
 				UploadFileSlice(ctx, uploadTask, target.Sign)
