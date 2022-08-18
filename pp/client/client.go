@@ -106,7 +106,7 @@ func NewClient(server string, heartbeat bool) (*cf.ClientConn, error) {
 		cf.P2pAddressOption(setting.P2PAddress),
 		serverPortOpt,
 	}
-	utils.Logf("successfully connected to %v", server)
+	utils.Logf("attempting to connect to %v", server)
 	conn := cf.CreateClientConn(0, c, options...)
 	conn.Start()
 	ConnMap[server] = conn

@@ -192,7 +192,7 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 	for _, slice := range target.PpList {
 		totalSize += int64(slice.GetSliceSize())
 	}
-	uploadTask := task.CreateUploadFileTask(target.FileHash, target.TaskId, target.SpP2PAddress, false, false, target.PpList, protos.UploadType_BACKUP)
+	uploadTask := task.CreateUploadFileTask(target.FileHash, target.TaskId, target.SpP2PAddress, false, false, target.Sign, target.PpList, protos.UploadType_BACKUP)
 	task.CleanUpConnMap(target.FileHash)
 	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
 
@@ -219,7 +219,7 @@ func startUploadTask(target *protos.RspUploadFile) {
 	}
 
 	// Create upload task
-	uploadTask := task.CreateUploadFileTask(target.FileHash, target.TaskId, target.SpP2PAddress, target.IsEncrypted, target.IsVideoStream, slices, protos.UploadType_NEW_UPLOAD)
+	uploadTask := task.CreateUploadFileTask(target.FileHash, target.TaskId, target.SpP2PAddress, target.IsEncrypted, target.IsVideoStream, target.Sign, slices, protos.UploadType_NEW_UPLOAD)
 	task.CleanUpConnMap(target.FileHash)
 	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
 
@@ -317,6 +317,10 @@ func uploadSlicesToDestination(uploadTask *task.UploadFileTask, destination *tas
 		uploadTask.UpChan <- true
 	}()
 	for _, slice := range destination.Slices {
+		if uploadTask.FatalError != nil {
+			return
+		}
+
 		var uploadSliceTask *task.UploadSliceTask
 		var err error
 		switch uploadTask.Type {

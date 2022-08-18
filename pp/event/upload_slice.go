@@ -208,7 +208,7 @@ func sendSlice(pb proto.Message, fileHash, p2pAddress, networkAddress string) er
 		utils.DebugLog("SendMessage(conn, pb, header.ReqUploadFileSlice) ", conn)
 		client.UpConnMap.Store(key, conn)
 	} else {
-		utils.ErrorLog("Fail to send upload slice request to" + networkAddress)
+		utils.ErrorLog("Fail to send upload slice request to " + networkAddress)
 	}
 	return err
 }

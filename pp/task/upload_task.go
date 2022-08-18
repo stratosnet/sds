@@ -76,12 +76,13 @@ type SliceWithStatus struct {
 	Status      int
 }
 
-func CreateUploadFileTask(fileHash, taskId, spP2pAddress string, isEncrypted, isVideoStream bool, slices []*protos.SliceHashAddr, uploadType protos.UploadType) *UploadFileTask {
+func CreateUploadFileTask(fileHash, taskId, spP2pAddress string, isEncrypted, isVideoStream bool, signature []byte, slices []*protos.SliceHashAddr, uploadType protos.UploadType) *UploadFileTask {
 	task := &UploadFileTask{
 		FileCRC:           utils.CalcFileCRC32(file.GetFilePath(fileHash)),
 		FileHash:          fileHash,
 		IsEncrypted:       isEncrypted,
 		IsVideoStream:     isVideoStream,
+		Sign:              signature,
 		Slices:            make(map[string]*SlicesPerDestination),
 		SpP2pAddress:      spP2pAddress,
 		TaskID:            taskId,
@@ -194,8 +195,8 @@ func (u *UploadFileTask) SliceFailuresToReport() ([]*protos.SliceHashAddr, []boo
 					SliceSize:   slice.SliceSize,
 					PpInfo:      slicesPerDestination.PpInfo,
 				})
-				slice.Status = SLICE_STATUS_WAITING_FOR_SP
 				failedSlices = append(failedSlices, slice.Status == SLICE_STATUS_FAILED)
+				slice.Status = SLICE_STATUS_WAITING_FOR_SP
 			}
 		}
 	}
@@ -214,7 +215,7 @@ func (u *UploadFileTask) GetExcludedDestinations() []*protos.PPBaseInfo {
 	var destinations []*protos.PPBaseInfo
 	for _, destination := range u.Slices {
 		for _, slice := range destination.Slices {
-			if slice.Status == SLICE_STATUS_FAILED || slice.Status == SLICE_STATUS_REPLACED {
+			if slice.Status == SLICE_STATUS_FAILED || slice.Status == SLICE_STATUS_WAITING_FOR_SP || slice.Status == SLICE_STATUS_REPLACED {
 				destinations = append(destinations, destination.PpInfo)
 				break
 			}
