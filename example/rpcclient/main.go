@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/api/rpc"
@@ -26,8 +25,8 @@ const (
 )
 
 var (
-	WalletPrivateKey secp256k1.PrivKey
-	WalletPublicKey  string
+	WalletPrivateKey types.AccPrivKey
+	WalletPublicKey  types.AccPubKey
 	WalletAddress    string
 
 	Url string
@@ -91,16 +90,8 @@ func readWalletKeys(wallet string) bool {
 		utils.ErrorLog("getPublicKey DecryptKey", err)
 		return false
 	}
-	WalletPrivateKey = secp256k1.PrivKey{
-		Key: key.PrivateKey,
-	}
-	pubkey := types.BytesToPubKey(WalletPrivateKey.PubKey().Bytes())
-	WalletPublicKey, err = pubkey.ToBech()
-	if err != nil {
-		utils.DebugLog(err)
-		return false
-	}
-
+	WalletPrivateKey = types.BytesToAccPriveKey(key.PrivateKey)
+	WalletPublicKey = WalletPrivateKey.PubKeyFromPrivKey()
 	return true
 }
 
@@ -136,13 +127,14 @@ func reqUploadMsg(fileName, hash string) []byte {
 	}
 
 	// signature
-	msg := hash + WalletAddress
-	sign, err := WalletPrivateKey.Sign([]byte(msg))
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress)))
 	if err != nil {
 		return nil
 	}
-	fmt.Printf("length of sign is: %d \n", len(sign))
-
+	wpk, err := WalletPublicKey.ToBech()
+	if err != nil {
+		return nil
+	}
 	// param
 	var params = []rpc.ParamReqUploadFile{}
 	params = append(params, rpc.ParamReqUploadFile{
@@ -150,7 +142,7 @@ func reqUploadMsg(fileName, hash string) []byte {
 		FileSize:     int(info.Size()),
 		FileHash:     hash,
 		WalletAddr:   WalletAddress,
-		WalletPubkey: WalletPublicKey,
+		WalletPubkey: wpk,
 		Signature:    hex.EncodeToString(sign),
 	})
 

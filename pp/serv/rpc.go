@@ -3,13 +3,9 @@ package serv
 import (
 	"context"
 	b64 "encoding/base64"
-	"encoding/hex"
-	"encoding/json"
 	"sync"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/google/uuid"
 	"github.com/stratosnet/sds/msg/header"
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
@@ -19,7 +15,7 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/stratos-chain/types"
+	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
 const (
@@ -91,28 +87,21 @@ func (api *rpcApi) RequestUpload(param rpc_api.ParamReqUploadFile) rpc_api.Resul
 	fileSize := param.FileSize
 	fileHash := param.FileHash
 	walletAddr := param.WalletAddr
-	pubkeybech := param.WalletPubkey
+	pubkey := param.WalletPubkey
 	signature := param.Signature
-
 	size := fileSize
 
-	// the input for signature is hashed by SHA256
-	ds, _ := hex.DecodeString(signature)
+	// verify if wallet and public key match
+	if utiltypes.VerifyWalletAddr(pubkey, walletAddr) != 0 {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+	// verify the signature
+	if !utiltypes.VerifyWalletSign(pubkey, signature, utils.GetFileUploadWalletSignMessage(fileHash, walletAddr)) {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
 
-	// decode public key
-	pubkey, err := sdk.GetFromBech32(pubkeybech, types.SdsNodeP2PPubkeyPrefix)
-	if err != nil {
-		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
-	}
-	pk := secp256k1.PubKey{
-		Key: pubkey,
-	}
-	msg := []byte(fileHash + walletAddr)
-	if !pk.VerifySignature(msg, ds) {
-		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
-	}
 	// start to upload file
-	p := requests.RequestUploadFile(fileName, fileHash, uint64(size), "rpc", walletAddr, false)
+	p := requests.RequestUploadFile(fileName, fileHash, uint64(size), "rpc", walletAddr, pubkey, signature, false)
 	peers.SendMessageToSPServer(context.Background(), p, header.ReqUploadFile)
 
 	var result *rpc_api.Result
@@ -132,12 +121,8 @@ func (api *rpcApi) RequestUpload(param rpc_api.ParamReqUploadFile) rpc_api.Resul
 
 	select {
 	case <-time.After(WAIT_TIMEOUT):
-		utils.DebugLog("TO QUIT TIMEOUT")
 		return rpc_api.Result{Return: rpc_api.TIME_OUT}
 	case <-done:
-		mj, _ := json.Marshal(&result)
-		utils.DebugLog("Marshal result:", string(mj))
-
 		return *result
 	}
 }
