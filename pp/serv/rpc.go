@@ -67,7 +67,7 @@ func ResultHook(r *rpc_api.Result, fileHash string) *rpc_api.Result {
 		start := *r.OffsetStart
 		end := *r.OffsetEnd
 		// have to cut the requested data block into smaller pieces when the size is greater than the limit
-		if end - start > FILE_DATA_SAFE_SIZE {
+		if end-start > FILE_DATA_SAFE_SIZE {
 			f := &FileFetchOffset{RemoteRequested: start + FILE_DATA_SAFE_SIZE, ResourceNodeAsked: end}
 
 			FileOffsetMutex.Lock()
@@ -75,7 +75,7 @@ func ResultHook(r *rpc_api.Result, fileHash string) *rpc_api.Result {
 			FileOffsetMutex.Unlock()
 
 			e := start + FILE_DATA_SAFE_SIZE
-			nr := &rpc_api.Result {
+			nr := &rpc_api.Result{
 				Return:      r.Return,
 				OffsetStart: &start,
 				OffsetEnd:   &e,
@@ -113,7 +113,7 @@ func (api *rpcApi) RequestUpload(param rpc_api.ParamReqUploadFile) rpc_api.Resul
 	}
 	// start to upload file
 	p := requests.RequestUploadFile(fileName, fileHash, uint64(size), "rpc", walletAddr, false)
-	peers.SendMessageToSPServer(p, header.ReqUploadFile)
+	peers.SendMessageToSPServer(context.Background(), p, header.ReqUploadFile)
 
 	var result *rpc_api.Result
 	var found bool
@@ -157,7 +157,7 @@ func (api *rpcApi) UploadData(param rpc_api.ParamUploadData) rpc_api.Result {
 	fo, found := FileOffset[fileHash]
 	FileOffsetMutex.Unlock()
 	if found {
-		if fo.ResourceNodeAsked - fo.RemoteRequested > FILE_DATA_SAFE_SIZE {
+		if fo.ResourceNodeAsked-fo.RemoteRequested > FILE_DATA_SAFE_SIZE {
 			start := fo.RemoteRequested
 			end := fo.RemoteRequested + FILE_DATA_SAFE_SIZE
 			nr := rpc_api.Result{
@@ -214,7 +214,7 @@ func (api *rpcApi) RequestDownload(param rpc_api.ParamReqDownloadFile) rpc_api.R
 
 	// request for downloading file
 	req, reqid := requests.RequestDownloadFile(fileHash, wallet, "", nil)
-	peers.SendMessageDirectToSPOrViaPP(req, header.ReqFileStorageInfo)
+	peers.SendMessageDirectToSPOrViaPP(context.Background(), req, header.ReqFileStorageInfo)
 	key := fileHash + reqid
 
 	// wait for the result
@@ -290,9 +290,9 @@ func (api *rpcApi) DownloadData(param rpc_api.ParamDownloadData) rpc_api.Result 
 		rawData := file.GetDownloadFileData(key)
 		encoded := b64.StdEncoding.EncodeToString(rawData)
 		result.FileData = encoded
-	}else if result.Return == rpc_api.DL_OK_ASK_INFO {
+	} else if result.Return == rpc_api.DL_OK_ASK_INFO {
 		// finished download, and ask the file info to verify downloaded file
-	}else {
+	} else {
 		// end of the session
 		file.CleanFileHash(key)
 	}
@@ -344,7 +344,7 @@ func (api *rpcApi) RequestList(param rpc_api.ParamReqFileList) rpc_api.FileListR
 	parentCtx := context.Background()
 	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
 
-	event.FindFileList("", param.WalletAddr, param.PageId, reqId, "", 0, true, nil)
+	event.FindFileList(context.Background(), "", param.WalletAddr, param.PageId, reqId, "", 0, true, nil)
 
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileListResult
@@ -356,7 +356,7 @@ func (api *rpcApi) RequestList(param rpc_api.ParamReqFileList) rpc_api.FileListR
 			result = &rpc_api.FileListResult{Return: rpc_api.TIME_OUT}
 			return *result
 		default:
-			result, found = file.GetFileListResult(param.WalletAddr+reqId)
+			result, found = file.GetFileListResult(param.WalletAddr + reqId)
 			if result != nil && found {
 				return *result
 			}
@@ -373,7 +373,7 @@ func (api *rpcApi) RequestShare(param rpc_api.ParamReqShareFile) rpc_api.FileSha
 	parentCtx := context.Background()
 	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
 
-	event.GetReqShareFile(reqId, param.FileHash, "", param.WalletAddr, param.Duration, param.PrivateFlag, nil)
+	event.GetReqShareFile(context.Background(), reqId, param.FileHash, "", param.WalletAddr, param.Duration, param.PrivateFlag, nil)
 
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileShareResult
@@ -385,7 +385,7 @@ func (api *rpcApi) RequestShare(param rpc_api.ParamReqShareFile) rpc_api.FileSha
 			result = &rpc_api.FileShareResult{Return: rpc_api.TIME_OUT}
 			return *result
 		default:
-			result, found = file.GetFileShareResult(param.WalletAddr+reqId)
+			result, found = file.GetFileShareResult(param.WalletAddr + reqId)
 			if result != nil && found {
 				return *result
 			}
@@ -402,7 +402,7 @@ func (api *rpcApi) RequestListShare(param rpc_api.ParamReqListShared) rpc_api.Fi
 	parentCtx := context.Background()
 	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
 
-	event.GetAllShareLink(reqId, param.WalletAddr, param.PageId, nil)
+	event.GetAllShareLink(context.Background(), reqId, param.WalletAddr, param.PageId, nil)
 
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileShareResult
@@ -414,7 +414,7 @@ func (api *rpcApi) RequestListShare(param rpc_api.ParamReqListShared) rpc_api.Fi
 			result = &rpc_api.FileShareResult{Return: rpc_api.TIME_OUT}
 			return *result
 		default:
-			result, found = file.GetFileShareResult(param.WalletAddr+reqId)
+			result, found = file.GetFileShareResult(param.WalletAddr + reqId)
 			if result != nil && found {
 				return *result
 			}
@@ -431,7 +431,7 @@ func (api *rpcApi) RequestStopShare(param rpc_api.ParamReqStopShare) rpc_api.Fil
 	parentCtx := context.Background()
 	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
 
-	event.DeleteShare(param.ShareId, reqId, param.WalletAddr, nil)
+	event.DeleteShare(context.Background(), param.ShareId, reqId, param.WalletAddr, nil)
 
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileShareResult
@@ -443,7 +443,7 @@ func (api *rpcApi) RequestStopShare(param rpc_api.ParamReqStopShare) rpc_api.Fil
 			result = &rpc_api.FileShareResult{Return: rpc_api.TIME_OUT}
 			return *result
 		default:
-			result, found = file.GetFileShareResult(param.WalletAddr+reqId)
+			result, found = file.GetFileShareResult(param.WalletAddr + reqId)
 			if result != nil && found {
 				return *result
 			}
@@ -461,7 +461,7 @@ func (api *rpcApi) RequestGetShared(param rpc_api.ParamReqGetShared) rpc_api.Res
 	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
 	key := param.WalletAddr + reqId
 
-	event.GetShareFile(param.ShareLink, "", "", reqId, param.WalletAddr, nil)
+	event.GetShareFile(context.Background(), param.ShareLink, "", "", reqId, param.WalletAddr, nil)
 
 	// the application gives FileShareResult type of result
 	var res *rpc_api.FileShareResult
@@ -529,7 +529,7 @@ func (api *rpcApi) RequestGetOzone(param rpc_api.ParamReqGetOzone) rpc_api.GetOz
 	reqId := uuid.New().String()
 	parentCtx := context.Background()
 	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
-	err := event.GetWalletOz(param.WalletAddr, reqId)
+	err := event.GetWalletOz(context.Background(), param.WalletAddr, reqId)
 	if err != nil {
 		return rpc_api.GetOzoneResult{Return: rpc_api.TIME_OUT}
 	}

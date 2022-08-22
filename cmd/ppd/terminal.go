@@ -3,13 +3,21 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	"time"
 
+	"github.com/alex023/clock"
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
+)
+
+const (
+	verboseFlag = "verbose"
 )
 
 func run(cmd *cobra.Command, args []string, isExec bool) {
@@ -226,6 +234,16 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	//	}()
 	//}
 
+	nc := make(chan serv.LogMsg)
+	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription")
+	if err != nil {
+		utils.ErrorLog("can't subscribe:", err)
+		return
+	}
+	defer destroySub(c, sub)
+
+	go printLogNotification(nc)
+
 	console.Mystdin.RegisterProcessFunc("help", help, true)
 	console.Mystdin.RegisterProcessFunc("h", help, true)
 	console.Mystdin.RegisterProcessFunc("wallets", wallets, false)
@@ -246,8 +264,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("backupStatus", backupStatus, true)
 	console.Mystdin.RegisterProcessFunc("d", download, true)
 	console.Mystdin.RegisterProcessFunc("get", download, true)
-	console.Mystdin.RegisterProcessFunc("list", list, false)
-	console.Mystdin.RegisterProcessFunc("ls", list, false)
+	console.Mystdin.RegisterProcessFunc("list", list, true)
+	console.Mystdin.RegisterProcessFunc("ls", list, true)
 	console.Mystdin.RegisterProcessFunc("delete", deleteFn, true)
 	console.Mystdin.RegisterProcessFunc("rm", deleteFn, true)
 	console.Mystdin.RegisterProcessFunc("ver", ver, false)
@@ -267,21 +285,37 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("monitortoken", monitortoken, true)
 
 	if isExec {
+		exit := false
 		if len(args) > 0 {
-			console.Mystdin.RunCmd(args[0], args[1:], true)
+			exit = console.Mystdin.RunCmd(args[0], args[1:], true)
+		}
+
+		if exit {
+			return
+		}
+
+		verbose, err := cmd.Flags().GetBool(verboseFlag)
+		if err != nil || !verbose {
+			return
+		}
+
+		printExitMsg()
+		clock.NewClock().AddJobRepeat(10*time.Second, 0, printExitMsg)
+
+		// disable input buffering
+		exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
+		// do not display entered characters on the screen
+		exec.Command("stty", "-F", "/dev/tty", "-echo").Run()
+
+		var b = make([]byte, 1)
+		for {
+			os.Stdin.Read(b)
+			if b[0] == ']' {
+				break
+			}
 		}
 		return
 	}
-
-	nc := make(chan serv.LogMsg)
-	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription")
-	if err != nil {
-		utils.ErrorLog("can't subscribe:", err)
-		return
-	}
-	defer destroySub(c, sub)
-
-	go printLogNotification(nc)
 
 	fmt.Println(helpStr)
 	console.Mystdin.Run()
@@ -320,4 +354,8 @@ func destroySub(c *rpc.Client, sub *rpc.ClientSubscription) {
 	var cleanResult interface{}
 	sub.Unsubscribe()
 	c.Call(&cleanResult, "sdslog_cleanUp")
+}
+
+func printExitMsg() {
+	fmt.Println("Press the right bracket ']' to exit")
 }

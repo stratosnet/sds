@@ -194,7 +194,7 @@ func (api *monitorApi) GetPeerList(param ParamGetPeerList) (*PeerListResult, err
 		return nil, errors.New("client hasn't subscribed to the service")
 	}
 
-	pl, t := peers.GetPPList()
+	pl, t := peers.GetPPList(context.Background())
 	var peer PeerInfo
 	var peers []PeerInfo
 	var i int64

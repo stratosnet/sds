@@ -15,14 +15,13 @@ type MessageHead struct {
 }
 
 // MakeMessageHeader
-func MakeMessageHeader(tag int16, version uint16, length uint32, cmd string, reqId int64) MessageHead {
+func MakeMessageHeader(tag int16, version uint16, length uint32, cmd string) MessageHead {
 	var cmdByte = []byte(cmd)[:8]
 	return MessageHead{
 		Tag:     tag,
 		Len:     length,
 		Cmd:     cmdByte,
 		Version: version,
-		ReqId:   reqId,
 	}
 }
 

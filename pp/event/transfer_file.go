@@ -203,7 +203,7 @@ func ReqFileSliceBackupNotice(ctx context.Context, conn core.WriteCloser) {
 	}
 	task.AddTransferTask(target.TaskId, target.SliceStorageInfo.SliceHash, tTask)
 
-	peers.TransferSendMessageToPPServ(target.PpInfo.NetworkAddress, requests.ReqTransferDownloadData(&target, setting.P2PAddress))
+	peers.TransferSendMessageToPPServ(ctx, target.PpInfo.NetworkAddress, requests.ReqTransferDownloadData(&target, setting.P2PAddress))
 }
 
 // ReqTransferDownload
@@ -214,7 +214,7 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	peers.UpdatePP(&types.PeerInfo{
+	peers.UpdatePP(ctx, &types.PeerInfo{
 		NetworkAddress: target.NewPp.NetworkAddress,
 		P2pAddress:     target.NewPp.P2PAddress,
 		RestAddress:    target.NewPp.RestAddress,
@@ -241,11 +241,11 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	dataEnd := setting.MAXDATA
 	for {
 		if dataEnd >= (sliceDataLen + 1) {
-			peers.SendMessage(conn, requests.RspTransferDownload(sliceData[dataStart:], target.TaskId, sliceHash,
+			peers.SendMessage(ctx, conn, requests.RspTransferDownload(sliceData[dataStart:], target.TaskId, sliceHash,
 				target.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 			return
 		}
-		peers.SendMessage(conn, requests.RspTransferDownload(sliceData[dataStart:dataEnd], target.TaskId, sliceHash,
+		peers.SendMessage(ctx, conn, requests.RspTransferDownload(sliceData[dataStart:dataEnd], target.TaskId, sliceHash,
 			target.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 		dataStart += setting.MAXDATA
 		dataEnd += setting.MAXDATA
@@ -260,8 +260,8 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	if task.SaveTransferData(&target) {
-		SendReportBackupSliceResult(target.TaskId, target.SliceHash, target.SpP2PAddress, true, false)
-		peers.SendMessage(conn, requests.RspTransferDownloadResultData(target.TaskId, target.SliceHash, target.SpP2PAddress), header.RspTransferDownloadResult)
+		SendReportBackupSliceResult(ctx, target.TaskId, target.SliceHash, target.SpP2PAddress, true, false)
+		peers.SendMessage(ctx, conn, requests.RspTransferDownloadResultData(target.TaskId, target.SliceHash, target.SpP2PAddress), header.RspTransferDownloadResult)
 	}
 }
 
@@ -275,7 +275,7 @@ func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
 
 	isSuccessful := target.Result.State == protos.ResultState_RES_SUCCESS
 	if !isSuccessful {
-		SendReportBackupSliceResult(target.TaskId, target.SliceHash, target.SpP2PAddress, isSuccessful, false)
+		SendReportBackupSliceResult(ctx, target.TaskId, target.SliceHash, target.SpP2PAddress, isSuccessful, false)
 		return
 	}
 
@@ -288,10 +288,10 @@ func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
 			utils.ErrorLog("Fail to delete original slice ", err)
 		}
 	}
-	SendReportBackupSliceResult(target.TaskId, target.SliceHash, target.SpP2PAddress, isSuccessful, deleteOrigin)
+	SendReportBackupSliceResult(ctx, target.TaskId, target.SliceHash, target.SpP2PAddress, isSuccessful, deleteOrigin)
 }
 
-func SendReportBackupSliceResult(taskId, sliceHash, spP2pAddress string, result bool, originDeleted bool) {
+func SendReportBackupSliceResult(ctx context.Context, taskId, sliceHash, spP2pAddress string, result bool, originDeleted bool) {
 	tTask, ok := task.GetTransferTask(taskId, sliceHash)
 	if !ok {
 		return
@@ -309,7 +309,7 @@ func SendReportBackupSliceResult(taskId, sliceHash, spP2pAddress string, result 
 		SpP2PAddress:  spP2pAddress,
 	}
 
-	peers.SendMessageToSPServer(req, header.ReqReportBackupSliceResult)
+	peers.SendMessageToSPServer(ctx, req, header.ReqReportBackupSliceResult)
 }
 
 // RspReportBackupSliceResult

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -28,7 +29,7 @@ type uploadFileResult struct {
 }
 
 func uploadFile(w http.ResponseWriter, request *http.Request) {
-
+	ctx := context.Background()
 	// check differently for sp
 	if !setting.CheckLogin() {
 		_, _ = w.Write(httpserv.NewJson(nil, setting.FAILCode, "login first").ToBytes())
@@ -80,8 +81,8 @@ func uploadFile(w http.ResponseWriter, request *http.Request) {
 		}
 
 		if isFile {
-			f := requests.RequestUploadFileData(path, sdPath, "", setting.WalletAddress, false, false, false)
-			go peers.SendMessageToSPServer(f, header.ReqUploadFile)
+			f := requests.RequestUploadFileData(ctx, path, sdPath, "", setting.WalletAddress, false, false, false)
+			go peers.SendMessageToSPServer(ctx, f, header.ReqUploadFile)
 			taskID := uuid.New().String()
 			r := &uploadFileResult{
 				FailInfo: "",
@@ -131,7 +132,7 @@ func uploadFile(w http.ResponseWriter, request *http.Request) {
 					lastPaths = sdPath + "/" + lastPaths
 				}
 
-				f := requests.RequestUploadFileData(pathstring, lastPaths, "", setting.WalletAddress, false, false, false)
+				f := requests.RequestUploadFileData(ctx, pathstring, lastPaths, "", setting.WalletAddress, false, false, false)
 				utils.DebugLog("lastPaths>>>>", lastPaths)
 				utils.DebugLog("storagePath+relativePath", lastPaths, pathstring)
 				taskID := uuid.New().String()
@@ -152,7 +153,7 @@ func uploadFile(w http.ResponseWriter, request *http.Request) {
 				})
 				setting.UploadTaskIDMap.Store(r.TaskID, f.FileInfo.FileHash)
 				resultArr = append(resultArr, r)
-				go peers.SendMessageToSPServer(f, header.ReqUploadFile)
+				go peers.SendMessageToSPServer(ctx, f, header.ReqUploadFile)
 				utils.DebugLog("result>>>>>>>>>>>>>>", resultArr)
 
 			default:

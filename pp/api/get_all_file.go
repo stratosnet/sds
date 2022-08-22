@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/stratosnet/sds/pp/event"
@@ -49,6 +50,6 @@ func getAllFile(w http.ResponseWriter, request *http.Request) {
 		keyword = ""
 	}
 	if setting.CheckLogin() {
-		event.FindFileList(fileName, setting.WalletAddress, pageId, uuid.New().String(), keyword, fileType, isUp, w)
+		event.FindFileList(context.Background(), fileName, setting.WalletAddress, pageId, uuid.New().String(), keyword, fileType, isUp, w)
 	}
 }
