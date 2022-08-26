@@ -1,12 +1,13 @@
 package peers
 
 import (
+	"context"
 	"net"
 
 	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
 )
 
 //todo: pp server should be move out of peers package
@@ -36,32 +37,32 @@ func SetPPServer(pp *PPServer) {
 }
 
 // StartListenServer
-func StartListenServer(port string) {
-	netListen, err := net.Listen("tcp4", ":"+port)
+func StartListenServer(ctx context.Context, port string) {
+	netListen, err := net.Listen(setting.PP_SERVER_TYPE, ":"+port)
 	if err != nil {
-		utils.ErrorLog("StartListenServer", err)
+		pp.ErrorLog(ctx, "StartListenServer", err)
 	}
-	spbServer := NewServer()
+	spbServer := NewServer(ctx)
 	ppServ = spbServer
-	utils.Log("StartListenServer!!! ", port)
+	pp.Log(ctx, "StartListenServer!!! ", port)
 	err = spbServer.Start(netListen)
 	if err != nil {
-		utils.ErrorLog("StartListenServer Error", err)
+		pp.ErrorLog(ctx, "StartListenServer Error", err)
 	}
 }
 
 // NewServer returns a server.
-func NewServer() *PPServer {
+func NewServer(ctx context.Context) *PPServer {
 	onConnectOption := core.OnConnectOption(func(conn core.WriteCloser) bool {
-		utils.Log("on connect")
+		pp.Log(ctx, "on connect")
 		return true
 	})
 	onErrorOption := core.OnErrorOption(func(conn core.WriteCloser) {
-		utils.Log("on error")
+		pp.Log(ctx, "on error")
 	})
 	onCloseOption := core.OnCloseOption(func(conn core.WriteCloser) {
 		netID := conn.(*core.ServerConn).GetNetID()
-		peerList.PPDisconnectedNetId(netID)
+		peerList.PPDisconnectedNetId(ctx, netID)
 	})
 
 	maxConnection := setting.DEFAULT_MAX_CONNECTION
@@ -86,7 +87,7 @@ func NewServer() *PPServer {
 		core.LogInboundOption(PP_LOG_INBOUND),
 		core.LogOutboundOption(PP_LOG_OUTBOUND),
 		core.OnStartLogOption(func(s *core.Server) {
-			utils.Log("on start volume log")
+			pp.Log(ctx, "on start volume log")
 			s.AddVolumeLogJob(PP_LOG_ALL, PP_LOG_READ, PP_LOG_WRITE, PP_LOG_INBOUND, PP_LOG_OUTBOUND)
 		}),
 	)

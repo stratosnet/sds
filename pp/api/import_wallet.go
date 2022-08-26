@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"path/filepath"
 
@@ -76,5 +77,5 @@ func importWallet(w http.ResponseWriter, request *http.Request) {
 		},
 	}
 	w.Write(httpserv.NewJson(data1, setting.SUCCESSCode, "successfully import wallet").ToBytes())
-	serv.Login(setting.WalletAddress, password)
+	serv.Login(context.Background(), setting.WalletAddress, password)
 }

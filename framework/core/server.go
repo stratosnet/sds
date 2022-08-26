@@ -3,8 +3,11 @@ package core
 import (
 	"context"
 	"net"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/stratosnet/sds/metrics"
 
 	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/msg"
@@ -197,6 +200,8 @@ func (s *Server) Start(l net.Listener) error {
 		netid := netID.GetOldAndIncrement()
 		sc := CreateServerConn(netid, s, spbConn)
 		sc.SetConnName(sc.spbConn.RemoteAddr().String())
+		metrics.ConnReconnection.WithLabelValues(strings.Split(sc.GetName(), ":")[0]).Inc()
+		metrics.ConnNumbers.WithLabelValues("server").Inc()
 
 		// s.mu.Lock()
 		// if s.sched != nil {
@@ -331,10 +336,10 @@ func P2pAddressOption(p2pAddress string) ServerOption {
 }
 
 // Unicast
-func (s *Server) Unicast(netid int64, msg *msg.RelayMsgBuf) error {
+func (s *Server) Unicast(ctx context.Context, netid int64, msg *msg.RelayMsgBuf) error {
 	v, ok := s.conns.Load(netid)
 	if ok {
-		return v.Write(msg)
+		return v.Write(msg, ctx)
 	}
 	Mylog(s.opts.logOpen, "conn id not found", msg)
 	return nil
@@ -343,7 +348,7 @@ func (s *Server) Unicast(netid int64, msg *msg.RelayMsgBuf) error {
 // Broadcast
 func (s *Server) Broadcast(msg *msg.RelayMsgBuf) {
 	s.conns.Range(func(id int64, conn *ServerConn) bool {
-		if err := conn.Write(msg); err != nil {
+		if err := conn.Write(msg, context.Background()); err != nil {
 			Mylog(s.opts.logOpen, "broadcast error:", err, "conn id:", id)
 			return false
 		}

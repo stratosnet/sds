@@ -23,8 +23,11 @@ const (
 	wsPingWriteTimeout = 5 * time.Second
 	wsPongTimeout      = 30 * time.Second
 	wsMessageSizeLimit = 15 * 1024 * 1024
+	wsNotifDeadline    = 10 * time.Second
 )
 
+var conns []*websocket.Conn
+var mutex sync.Mutex
 var wsBufferPool = new(sync.Pool)
 
 // WebsocketHandler returns a handler that serves JSON-RPC to WebSocket connections.

@@ -8,6 +8,7 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
@@ -16,9 +17,9 @@ import (
 )
 
 // DeleteFile
-func DeleteFile(fileHash, reqID string, w http.ResponseWriter) {
+func DeleteFile(ctx context.Context, fileHash, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(requests.ReqDeleteFileData(fileHash, reqID), header.ReqDeleteFile)
+		peers.SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteFileData(fileHash, reqID), header.ReqDeleteFile)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -27,7 +28,7 @@ func DeleteFile(fileHash, reqID string, w http.ResponseWriter) {
 
 // ReqDeleteFile
 func ReqDeleteFile(ctx context.Context, conn core.WriteCloser) {
-	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
 // RspDeleteFile
@@ -36,13 +37,13 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 	if requests.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
-				utils.Log("delete success ", target.Result.Msg)
+				pp.Log(ctx, "delete success ", target.Result.Msg)
 			} else {
-				utils.Log("delete failed ", target.Result.Msg)
+				pp.Log(ctx, "delete failed ", target.Result.Msg)
 			}
 			putData(target.ReqId, HTTPDeleteFile, &target)
 		} else {
-			peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
+			peers.TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -73,5 +74,5 @@ func ReqDeleteSlice(ctx context.Context, conn core.WriteCloser) {
 
 // RspDeleteSlice RspDeleteSlice
 func RspDeleteSlice(ctx context.Context, conn core.WriteCloser) {
-	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }

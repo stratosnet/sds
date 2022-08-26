@@ -15,14 +15,13 @@ type MessageHead struct {
 }
 
 // MakeMessageHeader
-func MakeMessageHeader(tag int16, version uint16, length uint32, cmd string, reqId int64) MessageHead {
+func MakeMessageHeader(tag int16, version uint16, length uint32, cmd string) MessageHead {
 	var cmdByte = []byte(cmd)[:8]
 	return MessageHead{
 		Tag:     tag,
 		Len:     length,
 		Cmd:     cmdByte,
 		Version: version,
-		ReqId:   reqId,
 	}
 }
 
@@ -85,6 +84,8 @@ const (
 	RspUploadFile              = "RspUpl"
 	ReqUploadFileSlice         = "ReqUpLFS"
 	RspUploadFileSlice         = "RspUpLFS"
+	ReqUploadSlicesWrong       = "ReqUSW"
+	RspUploadSlicesWrong       = "RspUSW"
 	ReqReportUploadSliceResult = "ReqUFR"
 	RspReportUploadSliceResult = "RspUFR"
 	UploadSpeedOfProgress      = "USOP"
@@ -153,11 +154,10 @@ const (
 	RspGetShareFile = "RspGSF"
 
 	// heartbeat
-	ReqLatencyCheck = "ReqLatencyCheck"
-	RspLatencyCheck = "RspLatencyCheck"
+	ReqLatencyCheck = "ReqLaten"
+	RspLatencyCheck = "RspLaten"
 	// test sp latency
-	ReqSpLatencyCheck = "ReqSpLatencyCheck"
-
+	ReqSpLatencyCheck = "ReqSpLat"
 	// report node status
 	ReqReportNodeStatus = "ReqRNS"
 	RspReportNodeStatus = "RspRNS"

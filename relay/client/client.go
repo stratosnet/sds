@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
@@ -16,7 +19,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
-	setting "github.com/stratosnet/sds/cmd/relayd/config"
+	"github.com/stratosnet/sds/cmd/relayd/setting"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/relay/sds"
@@ -24,6 +27,8 @@ import (
 	"github.com/stratosnet/sds/relay/stratoschain/handlers"
 	relaytypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/crypto/secp256k1"
+	"github.com/stratosnet/sds/utils/types"
 	tmHttp "github.com/tendermint/tendermint/rpc/client/http"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 )
@@ -36,6 +41,8 @@ type MultiClient struct {
 	stratosWebsocketUrl   string
 	stratosEventsChannels *sync.Map
 	txBroadcasterChan     chan relaytypes.UnsignedMsg
+	WalletAddress         string
+	WalletPrivateKey      cryptotypes.PrivKey
 	wg                    *sync.WaitGroup
 }
 
@@ -45,16 +52,39 @@ type websocketSubscription struct {
 	query   string
 }
 
-func NewClient() *MultiClient {
+func NewClient(spHomePath string) (*MultiClient, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	client := &MultiClient{
+	newClient := &MultiClient{
 		cancel:                cancel,
 		Ctx:                   ctx,
 		once:                  &sync.Once{},
 		stratosEventsChannels: &sync.Map{},
 		wg:                    &sync.WaitGroup{},
 	}
-	return client
+
+	err := newClient.loadKeys(spHomePath)
+	return newClient, err
+}
+
+func (m *MultiClient) loadKeys(spHomePath string) error {
+	walletJson, err := ioutil.ReadFile(filepath.Join(spHomePath, setting.Config.Keys.WalletPath))
+	if err != nil {
+		return err
+	}
+
+	walletKey, err := utils.DecryptKey(walletJson, setting.Config.Keys.WalletPassword)
+	if err != nil {
+		return err
+	}
+
+	m.WalletPrivateKey = secp256k1.PrivKeyToSdkPrivKey(walletKey.PrivateKey)
+	m.WalletAddress, err = types.BytesToAddress(m.WalletPrivateKey.PubKey().Address()).WalletAddressToBech()
+	if err != nil {
+		return err
+	}
+
+	utils.DebugLogf("verified wallet key successfully! walletAddr is %v", m.WalletAddress)
+	return nil
 }
 
 func (m *MultiClient) Start() error {
@@ -290,6 +320,12 @@ func (m *MultiClient) txBroadcasterLoop() {
 			}
 			if msg.Msg.Type() != "slashing_resource_node" { // Not printing slashing messages, since SP can slash up to 500 PPs at once, polluting the logs
 				utils.DebugLogf("Received a new msg of type [%v] to broadcast! ", msg.Msg.Type())
+			}
+			for i := range msg.SignatureKeys {
+				// For messages coming from SP, add the wallet private key that was loaded on start-up
+				if len(msg.SignatureKeys[i].PrivateKey) == 0 && msg.SignatureKeys[i].Address == m.WalletAddress {
+					msg.SignatureKeys[i].PrivateKey = m.WalletPrivateKey.Bytes()
+				}
 			}
 			unsignedMsgs = append(unsignedMsgs, &msg)
 			if len(unsignedMsgs) >= setting.Config.StratosChain.Broadcast.MaxMsgPerTx {

@@ -1,61 +1,64 @@
 package peers
 
 import (
+	"context"
 	"path/filepath"
 
 	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
 
-func StartPP(registerFn func()) {
+func StartPP(ctx context.Context, registerFn func()) {
 	GetNetworkAddress()
 	peerList.Init(setting.NetworkAddress, filepath.Join(setting.Config.PPListDir, "pp-list"))
 	//todo: register func call shouldn't be in peers package
 	registerFn()
-	go StartListenServer(setting.Config.Port)
-	GetSPList()
-	GetPPStatusInitPPList()
+	go StartListenServer(ctx, setting.Config.Port)
+	GetSPList(ctx)()
+	GetPPStatusInitPPList(ctx)()
 	//go SendLatencyCheckMessageToSPList()
-	StartStatusReportToSP()
-	ListenOffline()
+	StartPpLatencyCheck(ctx)
+	StartStatusReportToSP(ctx)
+	ListenOffline(ctx)
 }
 
-func InitPeer(registerFn func()) {
+func InitPeer(ctx context.Context, registerFn func()) {
 	// TODO: To make sure this InitPeer method is correctly called and work as expected
 	utils.DebugLog("InitPeer")
 	//todo: register func call shouldn't be in peers package
 	registerFn()
-	GetSPList()
-	GetPPStatusInitPPList()
+	GetSPList(ctx)()
+	GetPPStatusInitPPList(ctx)()
 	//go SendLatencyCheckMessageToSPList()
-	go ListenOffline()
+	go ListenOffline(ctx)
 }
 
-func RegisterToSP(toSP bool) {
+func RegisterToSP(ctx context.Context, toSP bool) {
 	if toSP {
-		SendMessageToSPServer(requests.ReqRegisterData(), header.ReqRegister)
-		utils.Log("SendMessage(conn, req, header.ReqRegister) to SP")
+		SendMessageToSPServer(ctx, requests.ReqRegisterData(), header.ReqRegister)
+		pp.Log(ctx, "SendMessage(conn, req, header.ReqRegister) to SP")
 	} else {
-		SendMessage(client.PPConn, requests.ReqRegisterData(), header.ReqRegister)
-		utils.Log("SendMessage(conn, req, header.ReqRegister) to PP")
+		SendMessage(ctx, client.PPConn, requests.ReqRegisterData(), header.ReqRegister)
+		pp.Log(ctx, "SendMessage(conn, req, header.ReqRegister) to PP")
 	}
 }
 
-func StartMining() {
+func StartMining(ctx context.Context) {
 	if setting.CheckLogin() {
 		if setting.IsPP && !setting.IsLoginToSP {
-			utils.DebugLog("Bond to SP and start mining")
-			SendMessageToSPServer(requests.ReqRegisterData(), header.ReqRegister)
+			pp.DebugLog(ctx, "Bond to SP and start mining")
+			SendMessageToSPServer(ctx, requests.ReqRegisterData(), header.ReqRegister)
 		} else if setting.IsPP && !setting.IsStartMining {
 			utils.DebugLog("Sending ReqMining message to SP")
-			SendMessageToSPServer(requests.ReqMiningData(), header.ReqMining)
+			SendMessageToSPServer(ctx, requests.ReqMiningData(), header.ReqMining)
 		} else if setting.IsStartMining {
-			utils.Log("mining already started")
+			pp.Log(ctx, "mining already started")
 		} else {
-			utils.Log("register as miner first")
+			pp.Log(ctx, "register as miner first")
 		}
 	}
 }

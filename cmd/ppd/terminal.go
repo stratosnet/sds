@@ -3,13 +3,21 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	"time"
 
+	"github.com/alex023/clock"
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
+)
+
+const (
+	verboseFlag = "verbose"
 )
 
 func run(cmd *cobra.Command, args []string, isExec bool) {
@@ -36,7 +44,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"put <filepath>                             			upload file, need to consume ozone\n" +
 		"putstream <filepath>                       			upload video file for streaming, need to consume ozone (alpha version, encode format config impossible)\n" +
 		"list <filename>                            			query uploaded file by self\n" +
-		"list                                       			query all files\n" +
+		"list <page id>                             			query all files owned by the wallet, paginated\n" +
 		"delete <filehash>                          			delete file\n" +
 		"get <sdm://account/filehash> <saveAs>			        download file, need to consume ozone\n" +
 		"	e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe\n" +
@@ -47,6 +55,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"ver                                        			version\n" +
 		"monitor                                    			show monitor\n" +
 		"stopmonitor                                			stop monitor\n" +
+		"monitortoken                                   		show token for pp monitor service" +
 		"config  <key> <value>                      			set config key value\n" +
 		"getoz <walletAddress> ->password           			get current ozone balance\n" +
 		"status			                                        get current resource node status\n"
@@ -191,7 +200,9 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	cancelget := func(line string, param []string) bool {
 		return callRpc(c, "cancelGet", param)
 	}
-
+	monitortoken := func(line string, param []string) bool {
+		return callRpc(c, "monitorToken", param)
+	}
 	//TODO move to pp api later
 	//if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
 	//	serv.Login(setting.Config.WalletAddress, setting.Config.WalletPassword)
@@ -223,6 +234,16 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	//	}()
 	//}
 
+	nc := make(chan serv.LogMsg)
+	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription")
+	if err != nil {
+		utils.ErrorLog("can't subscribe:", err)
+		return
+	}
+	defer destroySub(c, sub)
+
+	go printLogNotification(nc)
+
 	console.Mystdin.RegisterProcessFunc("help", help, true)
 	console.Mystdin.RegisterProcessFunc("h", help, true)
 	console.Mystdin.RegisterProcessFunc("wallets", wallets, false)
@@ -243,8 +264,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("backupStatus", backupStatus, true)
 	console.Mystdin.RegisterProcessFunc("d", download, true)
 	console.Mystdin.RegisterProcessFunc("get", download, true)
-	console.Mystdin.RegisterProcessFunc("list", list, false)
-	console.Mystdin.RegisterProcessFunc("ls", list, false)
+	console.Mystdin.RegisterProcessFunc("list", list, true)
+	console.Mystdin.RegisterProcessFunc("ls", list, true)
 	console.Mystdin.RegisterProcessFunc("delete", deleteFn, true)
 	console.Mystdin.RegisterProcessFunc("rm", deleteFn, true)
 	console.Mystdin.RegisterProcessFunc("ver", ver, false)
@@ -261,23 +282,40 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("pauseget", pauseget, true)
 	console.Mystdin.RegisterProcessFunc("pauseput", pauseput, true)
 	console.Mystdin.RegisterProcessFunc("cancelget", cancelget, true)
+	console.Mystdin.RegisterProcessFunc("monitortoken", monitortoken, true)
 
 	if isExec {
+		exit := false
 		if len(args) > 0 {
-			console.Mystdin.RunCmd(args[0], args[1:], true)
+			exit = console.Mystdin.RunCmd(args[0], args[1:], true)
+		}
+
+		if exit {
+			return
+		}
+
+		verbose, err := cmd.Flags().GetBool(verboseFlag)
+		if err != nil || !verbose {
+			return
+		}
+
+		printExitMsg()
+		clock.NewClock().AddJobRepeat(10*time.Second, 0, printExitMsg)
+
+		// disable input buffering
+		exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
+		// do not display entered characters on the screen
+		exec.Command("stty", "-F", "/dev/tty", "-echo").Run()
+
+		var b = make([]byte, 1)
+		for {
+			os.Stdin.Read(b)
+			if b[0] == ']' {
+				break
+			}
 		}
 		return
 	}
-
-	nc := make(chan serv.LogMsg)
-	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription")
-	if err != nil {
-		utils.ErrorLog("can't subscribe:", err)
-		return
-	}
-	defer destroySub(c, sub)
-
-	go printLogNotification(nc)
 
 	fmt.Println(helpStr)
 	console.Mystdin.Run()
@@ -316,4 +354,8 @@ func destroySub(c *rpc.Client, sub *rpc.ClientSubscription) {
 	var cleanResult interface{}
 	sub.Unsubscribe()
 	c.Call(&cleanResult, "sdslog_cleanUp")
+}
+
+func printExitMsg() {
+	fmt.Println("Press the right bracket ']' to exit")
 }

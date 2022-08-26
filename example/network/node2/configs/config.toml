@@ -22,12 +22,14 @@ token = 'ustos'
 stratos_chain_url = 'http://127.0.0.1:1317'
 rest_port = '18092'
 internal_port = ''
+rpc_port = '8235'
+monitor_port = '5688'
 traffic_log_interval = 10
 max_connection = 1000
 [version]
-app_ver = 7
-min_app_ver = 7
-show = 'v0.7.0'
+app_ver = 8
+min_app_ver = 8
+show = 'v0.8.1'
 
 [[sp_list]]
 p2p_address = ""

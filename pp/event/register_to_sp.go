@@ -6,6 +6,7 @@ import (
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
@@ -18,7 +19,7 @@ import (
 func ReqRegister(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqRegister
 	if requests.UnmarshalData(ctx, &target) {
-		peers.UpdatePP(&types.PeerInfo{
+		peers.UpdatePP(ctx, &types.PeerInfo{
 			NetworkAddress: target.Address.NetworkAddress,
 			P2pAddress:     target.Address.P2PAddress,
 			RestAddress:    target.Address.RestAddress,
@@ -26,7 +27,7 @@ func ReqRegister(ctx context.Context, conn core.WriteCloser) {
 			NetId:          core.NetIDFromContext(ctx),
 			Status:         types.PEER_CONNECTED,
 		})
-		peers.TransferSendMessageToSPServer(requests.ReqRegisterDataTR(&target))
+		peers.TransferSendMessageToSPServer(ctx, requests.ReqRegisterDataTR(&target))
 
 		// IPProt := strings.Split(target.Address.NetworkAddress, ":")
 		// ip := ""
@@ -55,68 +56,68 @@ func ReqRegister(ctx context.Context, conn core.WriteCloser) {
 
 // RspRegister  PP -> SP, SP -> PP, PP -> P
 func RspRegister(ctx context.Context, conn core.WriteCloser) {
-	utils.Log("get RspRegister", conn)
+	pp.Log(ctx, "get RspRegister", conn)
 	var target protos.RspRegister
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-	utils.Log("target.RspRegister", target.P2PAddress)
+	pp.Log(ctx, "target.RspRegister", target.P2PAddress)
 	if target.P2PAddress != setting.P2PAddress {
-		utils.Log("transfer RspRegister to: ", target.P2PAddress)
-		peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
+		pp.Log(ctx, "transfer RspRegister to: ", target.P2PAddress)
+		peers.TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		return
 	}
 
-	utils.Log("get RspRegister ", target.Result.State, target.Result.Msg)
+	pp.Log(ctx, "get RspRegister ", target.Result.State, target.Result.Msg)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		//setting.P2PAddress = ""
 		//setting.WalletAddress = ""
-		utils.Log("Register failed", target.Result.Msg)
+		pp.Log(ctx, "Register failed", target.Result.Msg)
 		return
 	}
 
-	utils.Log("Register successful", target.Result.Msg)
+	pp.Log(ctx, "Register successful", target.Result.Msg)
 	setting.IsLoad = true
 	setting.IsLoginToSP = true
-	utils.DebugLog("@@@@@@@@@@@@@@@@@@@@@@@@@@@@", client.GetConnectionName(conn))
+	pp.DebugLog(ctx, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@", client.GetConnectionName(conn))
 	setting.IsPP = target.IsPP
 	if !setting.IsPP {
-		reportDHInfoToPP()
+		reportDHInfoToPP(ctx)
 	}
 	if setting.IsPP && !setting.IsStartMining {
-		peers.StartMining()
+		peers.StartMining(ctx)
 	}
 }
 
 // RspMining RspMining
 func RspMining(ctx context.Context, conn core.WriteCloser) {
-	utils.DebugLog("get RspMining", conn)
+	pp.DebugLog(ctx, "get RspMining", conn)
 	var target protos.RspMining
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
 
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
-		utils.Log(target.Result.Msg)
+		pp.Log(ctx, target.Result.Msg)
 		return
 	}
 
-	utils.Log("start mining")
+	pp.Log(ctx, "start mining")
 	if peers.GetPPServer() == nil {
-		go peers.StartListenServer(setting.Config.Port)
+		go peers.StartListenServer(ctx, setting.Config.Port)
 	}
 	setting.IsStartMining = true
 
-	newConnection, err := peers.ConnectToSP()
+	newConnection, err := peers.ConnectToSP(ctx)
 	if err != nil {
 		utils.ErrorLog(err)
 		return
 	}
 	if newConnection {
-		peers.RegisterToSP(true)
+		peers.RegisterToSP(ctx, true)
 	}
 
-	utils.DebugLog("Start reporting node status to SP")
+	pp.DebugLog(ctx, "Start reporting node status to SP")
 	// trigger 1 stat report immediately
-	peers.ReportNodeStatus()
+	peers.ReportNodeStatus(ctx)()
 }

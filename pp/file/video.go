@@ -2,7 +2,9 @@ package file
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"io/ioutil"
@@ -13,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
@@ -45,7 +48,7 @@ func GetVideoDuration(path string) (uint64, error) {
 	return uint64(math.Ceil(length)), nil
 }
 
-func VideoToHls(fileHash string) bool {
+func VideoToHls(ctx context.Context, fileHash string) bool {
 	filePath := GetFilePath(fileHash)
 	videoTmpFolder := GetVideoTmpFolder(fileHash)
 	if _, err := os.Stat(videoTmpFolder); os.IsNotExist(err) {
@@ -62,7 +65,7 @@ func VideoToHls(fileHash string) bool {
 	scanner.Split(bufio.ScanLines)
 	for scanner.Scan() {
 		m := scanner.Text()
-		utils.Log(m)
+		pp.Log(ctx, m)
 	}
 	transformCmd.Wait()
 	return true
@@ -74,14 +77,12 @@ func GetHlsInfo(fileHash string, maxSliceCount uint64) (*HlsInfo, error) {
 
 	files, err := ioutil.ReadDir(videoTmpFolder)
 	if err != nil {
-		utils.ErrorLog(err)
 		return nil, err
 	}
 
 	sliceCount := len(files) - 1
 	if sliceCount > int(maxSliceCount)-1 {
-		utils.ErrorLog("Number of HLS slices exceeds number of arranged slices")
-		return nil, err
+		return nil, errors.New("number of HLS slices exceeds number of arranged slices")
 	}
 
 	startSliceNumber := maxSliceCount - uint64(sliceCount)
@@ -128,10 +129,10 @@ func LoadHlsInfo(fileHash, sliceHash, savePath string) *HlsInfo {
 	return &hlsInfo
 }
 
-func DeleteTmpHlsFolder(fileHash string) {
+func DeleteTmpHlsFolder(ctx context.Context, fileHash string) {
 	err := os.RemoveAll(GetVideoTmpFolder(fileHash))
 	if err != nil {
-		utils.DebugLog("Delete tmp folder err", err)
+		pp.DebugLog(ctx, "Delete tmp folder err", err)
 	}
 }
 

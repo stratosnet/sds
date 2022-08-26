@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"crypto/ed25519"
 	"encoding/json"
 	"fmt"
@@ -21,6 +22,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
+
 	//"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/datamesh"
@@ -54,6 +56,7 @@ type SliceInfo struct {
 }
 
 func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
+	ctx := context.Background()
 	ownerWalletAddress, fileHash, err := parseFilePath(req.RequestURI)
 	if err != nil {
 		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
@@ -67,27 +70,34 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 	}
 
 	task.VideoCacheTaskMap.Delete(fileHash)
-	task.DownloadFileMap.Delete(fileHash)
-	streamInfo, err := getStreamInfo(fileHash, ownerWalletAddress, setting.WalletAddress, w)
+	task.DownloadFileMap.Delete(fileHash + task.LOCAL_REQID)
+	streamInfo, err := getStreamInfo(ctx, fileHash, ownerWalletAddress, setting.WalletAddress, w)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
 		return
 	}
-	event.GetVideoSlices(streamInfo.FileInfo)
+	dTask, ok := task.GetDownloadTask(fileHash, setting.WalletAddress, task.LOCAL_REQID)
+	if !ok {
+		w.WriteHeader(setting.FAILCode)
+		w.Write(httpserv.NewErrorJson(setting.FAILCode, "Failed to retrieve download task info").ToBytes())
+		return
+	}
+	event.GetVideoSlices(ctx, streamInfo.FileInfo, dTask)
 	ret, _ := json.Marshal(streamInfo)
 	w.Write(ret)
 }
 
 func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
+	ctx := context.Background()
 	ownerWalletAddress, fileHash, err := parseFilePath(req.RequestURI)
 	if err != nil {
 		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
 		return
 	}
 
-	task.DownloadFileMap.Delete(fileHash)
-	streamInfo, err := getStreamInfo(fileHash, ownerWalletAddress, setting.WalletAddress, w)
+	task.DownloadFileMap.Delete(fileHash + task.LOCAL_REQID)
+	streamInfo, err := getStreamInfo(ctx, fileHash, ownerWalletAddress, setting.WalletAddress, w)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
@@ -99,6 +109,7 @@ func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 }
 
 func streamVideoP2P(w http.ResponseWriter, req *http.Request) {
+	ctx := context.Background()
 	sliceHash := parseSliceHash(req.URL)
 
 	body, err := verifyStreamReqBody(req)
@@ -125,7 +136,7 @@ func streamVideoP2P(w http.ResponseWriter, req *http.Request) {
 		WalletAddress: setting.WalletAddress,
 	}
 
-	event.GetVideoSlice(body.SliceInfo, fInfo, w)
+	event.GetVideoSlice(ctx, body.SliceInfo, fInfo, w)
 }
 
 func streamVideoHttp(w http.ResponseWriter, req *http.Request) {
@@ -145,7 +156,7 @@ func streamVideoHttp(w http.ResponseWriter, req *http.Request) {
 
 func redirectToResourceNode(fileHash, sliceHash, restAddress, walletAddress string, w http.ResponseWriter, req *http.Request) {
 	var targetAddress string
-	if dlTask, ok := task.DownloadTaskMap.Load(fileHash + walletAddress); ok {
+	if dlTask, ok := task.DownloadTaskMap.Load(fileHash + walletAddress + task.LOCAL_REQID); ok {
 		//self is the resource PP and has task info
 		downloadTask := dlTask.(*task.DownloadTask)
 		targetAddress = downloadTask.SliceInfo[sliceHash].StoragePpInfo.RestAddress
@@ -159,7 +170,7 @@ func redirectToResourceNode(fileHash, sliceHash, restAddress, walletAddress stri
 }
 
 func clearStreamTask(w http.ResponseWriter, req *http.Request) {
-	event.ClearFileInfoAndDownloadTask(parseFileHash(req.URL), w)
+	event.ClearFileInfoAndDownloadTask(parseFileHash(req.URL), task.LOCAL_REQID, w)
 }
 
 func GetVideoSlice(w http.ResponseWriter, req *http.Request) {
@@ -176,7 +187,7 @@ func GetVideoSlice(w http.ResponseWriter, req *http.Request) {
 
 	utils.DebugLog("The request body is ", body)
 
-	if dlTask, ok := task.DownloadTaskMap.Load(body.FileHash + setting.WalletAddress); ok {
+	if dlTask, ok := task.DownloadTaskMap.Load(body.FileHash + setting.WalletAddress + task.LOCAL_REQID); ok {
 		utils.DebugLog("Found task info ", body)
 		downloadTask := dlTask.(*task.DownloadTask)
 		ppInfo := downloadTask.SliceInfo[sliceHash].StoragePpInfo
@@ -234,16 +245,16 @@ func parseSliceHash(reqURL *url.URL) string {
 	return reqPath[strings.LastIndex(reqPath, "/")+1:]
 }
 
-func getStreamInfo(fileHash, ownerWalletAddress, walletAddress string, w http.ResponseWriter) (*StreamInfo, error) {
-	filePath := datamesh.DataMashId{
+func getStreamInfo(ctx context.Context, fileHash, ownerWalletAddress, walletAddress string, w http.ResponseWriter) (*StreamInfo, error) {
+	filePath := datamesh.DataMeshId{
 		Owner: ownerWalletAddress,
 		Hash:  fileHash,
 	}.String()
-	event.GetFileStorageInfo(filePath, setting.VIDEOPATH, uuid.New().String(), walletAddress, "", true, w)
+	event.GetFileStorageInfo(ctx, filePath, setting.VIDEOPATH, uuid.New().String(), walletAddress, "", true, w)
 	var fInfo *protos.RspFileStorageInfo
 	start := time.Now().Unix()
 	for {
-		if f, ok := task.DownloadFileMap.Load(fileHash); ok {
+		if f, ok := task.DownloadFileMap.Load(fileHash + task.LOCAL_REQID); ok {
 			fInfo = f.(*protos.RspFileStorageInfo)
 			utils.DebugLog("Received file storage info from sp ", fInfo)
 			break
@@ -258,10 +269,10 @@ func getStreamInfo(fileHash, ownerWalletAddress, walletAddress string, w http.Re
 		}
 	}
 
-	hlsInfo := event.GetHlsInfo(fInfo)
+	hlsInfo := event.GetHlsInfo(ctx, fInfo)
 	segmentToSliceInfo := make(map[string]*protos.DownloadSliceInfo, 0)
 	for segment := range hlsInfo.SegmentToSlice {
-		segmentInfo := event.GetVideoSliceInfo(segment, fInfo)
+		segmentInfo := event.GetVideoSliceInfo(ctx, segment, fInfo)
 		segmentToSliceInfo[segment] = segmentInfo
 	}
 	StreamInfo := &StreamInfo{

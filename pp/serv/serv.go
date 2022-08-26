@@ -1,6 +1,10 @@
 package serv
 
 import (
+	"context"
+	"errors"
+	"strconv"
+
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
@@ -8,21 +12,38 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
+const (
+	DefaultHTTPHost = "0.0.0.0" // Default host: INADDR_ANY
+	DefaultHTTPPort = 8235      // Default TCP port for the HTTP RPC server
+)
+
 func Start() {
-	err := GetWalletAddress()
+	ctx := context.Background()
+	err := GetWalletAddress(ctx)
 	if err != nil {
 		utils.ErrorLog(err)
 		return
 	}
 
 	err = startIPC()
-
 	if err != nil {
 		utils.ErrorLog(err)
 		return
 	}
 
-	peers.StartPP(event.RegisterEventHandle)
+	err = startHttpRPC()
+	if err != nil {
+		utils.ErrorLog(err)
+		return
+	}
+
+	err = startMonitor()
+	if err != nil {
+		utils.ErrorLog(err)
+		return
+	}
+
+	peers.StartPP(ctx, event.RegisterEventHandle)
 }
 
 func startIPC() error {
@@ -48,6 +69,64 @@ func startIPC() error {
 
 	//TODO bring this back later once we have a proper quit mechanism
 	//defer ipc.stop()
+
+	return nil
+}
+
+func startHttpRPC() error {
+	rpcServer := newHTTPServer(rpc.DefaultHTTPTimeouts)
+
+	port, err := strconv.Atoi(setting.Config.RpcPort)
+	if err != nil {
+		port = DefaultHTTPPort
+	}
+
+	if err := rpcServer.setListenAddr(DefaultHTTPHost, port); err != nil {
+		return err
+	}
+
+	var config = httpConfig{
+		CorsAllowedOrigins: []string{""},
+		Vhosts:             []string{"localhost"},
+		Modules:            nil,
+	}
+
+	if err := rpcServer.enableRPC(apis(), config); err != nil {
+		return err
+	}
+
+	if err := rpcServer.start(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func startMonitor() error {
+	monitorServer := newHTTPServer(rpc.DefaultHTTPTimeouts)
+
+	port, err := strconv.Atoi(setting.Config.MonitorPort)
+	if err != nil {
+		return errors.New("wrong configuration for monitor port")
+	}
+
+	if err := monitorServer.setListenAddr("0.0.0.0", port); err != nil {
+		return err
+	}
+
+	var config = wsConfig{
+		Origins: []string{},
+		Modules: []string{},
+		prefix:  "",
+	}
+
+	if err := monitorServer.enableWS(monitorAPI(), config); err != nil {
+		return err
+	}
+
+	if err := monitorServer.start(); err != nil {
+		return err
+	}
 
 	return nil
 }

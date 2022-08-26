@@ -12,7 +12,7 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/pkg/errors"
-	setting "github.com/stratosnet/sds/cmd/relayd/config"
+	"github.com/stratosnet/sds/cmd/relayd/setting"
 	"github.com/stratosnet/sds/msg/protos"
 	relayTypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils"

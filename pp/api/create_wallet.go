@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -87,6 +88,6 @@ func createWallet(w http.ResponseWriter, request *http.Request) {
 	}
 	utils.DebugLog("add", data1)
 	setting.WalletAddress = walletAddressString
-	serv.Login(setting.WalletAddress, password)
+	serv.Login(context.Background(), setting.WalletAddress, password)
 	w.Write(httpserv.NewJson(data1, setting.SUCCESSCode, "create wallet successfully").ToBytes())
 }

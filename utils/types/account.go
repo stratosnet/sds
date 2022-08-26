@@ -8,6 +8,7 @@ import (
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
+	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/stratosnet/sds/utils/crypto/sha3"
 	"github.com/stratosnet/stratos-chain/types"
 )
@@ -18,6 +19,10 @@ const (
 	HashLength = 32
 	// AddressLength
 	AddressLength = 20
+	// PublicKeyLength
+	PublicKeyLength = 33
+	// PrivateKeyLength
+	PrivateKeyLength = 32
 )
 
 // Address
@@ -25,6 +30,12 @@ type Address [AddressLength]byte
 
 // Hash represents the 32 byte Keccak256 hash of arbitrary data.
 type Hash [HashLength]byte
+
+// Public key
+type PubKey [PublicKeyLength]byte
+
+// Private key
+type PrivKey [PrivateKeyLength]byte
 
 // BytesToAddress returns Address with value b.
 // If b is larger than len(h), b will be cropped from the left.
@@ -40,6 +51,22 @@ func BytesToHash(b []byte) Hash {
 	var h Hash
 	h.SetBytes(b)
 	return h
+}
+
+// BytesToPubKey sets b to PubKey.
+// If b is larger than len(h), b will be cropped from the left.
+func BytesToPubKey(b []byte) PubKey {
+	var p PubKey
+	p.SetBytes(b)
+	return p
+}
+
+// BytesToPrivKey sets b to PrivKey.
+// If b is larger than len(h), b will be cropped from the left.
+func BytesToPriveKey(b []byte) PrivKey {
+	var p PrivKey
+	p.SetBytes(b)
+	return p
 }
 
 // Bytes gets the byte representation of the underlying hash.
@@ -153,6 +180,10 @@ func (a Address) P2pAddressToBech() (string, error) {
 	return a.ToBech(types.SdsNodeP2PAddressPrefix)
 }
 
+func (a Address) P2pPublicKeyToBech() (string, error) {
+	return a.ToBech(types.SdsNodeP2PPubkeyPrefix)
+}
+
 func WalletAddressFromBech(str string) (Address, error) {
 	addr, err := sdktypes.GetFromBech32(str, types.StratosBech32Prefix)
 	if err != nil {
@@ -247,4 +278,51 @@ func isHex(str string) bool {
 		}
 	}
 	return true
+}
+
+// Bytes gets the byte representation of the underlying hash.
+func (p PubKey) Bytes() []byte { return p[:] }
+
+// SetBytes sets the hash to the value of b.
+// If b is larger than len(h), b will be cropped from the left.
+func (p *PubKey) SetBytes(b []byte) {
+	if len(b) > len(p) {
+		b = b[len(b)-PublicKeyLength:]
+	}
+
+	copy(p[PublicKeyLength-len(b):], b)
+}
+
+func (p *PubKey) ToBech() (string, error) {
+	return bech32.ConvertAndEncode(types.SdsNodeP2PPubkeyPrefix, p.Bytes())
+}
+
+func PubKeyFromBech(str string) (PubKey, error) {
+	pubkey, err := sdktypes.GetFromBech32(str, types.StratosBech32Prefix)
+	if err != nil {
+		return PubKey{}, err
+	}
+	err = sdktypes.VerifyAddressFormat(pubkey)
+	if err != nil {
+		return PubKey{}, err
+	}
+	return BytesToPubKey(pubkey), err
+}
+
+// Bytes gets the byte representation of the underlying hash.
+func (p PrivKey) Bytes() []byte { return p[:] }
+
+// SetBytes sets the hash to the value of b.
+// If b is larger than len(h), b will be cropped from the left.
+func (p *PrivKey) SetBytes(b []byte) {
+	if len(b) > len(p) {
+		b = b[len(b)-PrivateKeyLength:]
+	}
+
+	copy(p[PrivateKeyLength-len(b):], b)
+}
+
+// generate a PubKey from PrivKey
+func PubKeyFromPrivKey(priv PrivKey) PubKey {
+	return BytesToPubKey(hd.Secp256k1.Generate()(priv.Bytes()).PubKey().Bytes())
 }

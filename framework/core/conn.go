@@ -14,6 +14,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+	"github.com/stratosnet/sds/metrics"
 	message "github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -33,7 +34,7 @@ type MsgHandler struct {
 
 // WriteCloser
 type WriteCloser interface {
-	Write(*message.RelayMsgBuf) error
+	Write(*message.RelayMsgBuf, context.Context) error
 	Close()
 }
 
@@ -306,11 +307,11 @@ func (sc *ServerConn) Start() {
 /**
 error is caught at application layer, if it's utils.ErrWouldBlock，sleep and then continue write
 */
-func (sc *ServerConn) Write(message *message.RelayMsgBuf) error {
-	return asyncWrite(sc, message)
+func (sc *ServerConn) Write(message *message.RelayMsgBuf, ctx context.Context) error {
+	return asyncWrite(sc, message, ctx)
 }
 
-func asyncWrite(c interface{}, m *message.RelayMsgBuf) (err error) {
+func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err error) {
 	defer func() {
 		if p := recover(); p != nil {
 			err = utils.ErrServerClosed
@@ -322,7 +323,8 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf) (err error) {
 	)
 	sendCh = c.(*ServerConn).sendCh
 	msgH := make([]byte, utils.MsgHeaderLen)
-	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), m.MSGHead.ReqId, msgH)
+	reqId := GetReqIdFromContext(ctx)
+	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, msgH)
 	// msgData := make([]byte, utils.MessageBeatLen)
 	// copy(msgData[0:], msgH)
 	// copy(msgData[utils.MsgHeaderLen:], m.MSGData)
@@ -389,7 +391,7 @@ func (sc *ServerConn) Close() {
 
 		close(sc.sendCh)
 		close(sc.handlerCh)
-
+		metrics.ConnNumbers.WithLabelValues("server").Dec()
 		sc.belong.wg.Done()
 		sc.belong.goroutine = sc.belong.goAtom.DecrementAndGetNew()
 	})
@@ -408,9 +410,9 @@ func (sc *ServerConn) SendBadVersionMsg(version uint16, cmd string) {
 	}
 
 	err = sc.Write(&message.RelayMsgBuf{
-		MSGHead: header.MakeMessageHeader(1, sc.minAppVer, uint32(len(data)), header.RspBadVersion, utils.ZeroId()),
+		MSGHead: header.MakeMessageHeader(1, sc.minAppVer, uint32(len(data)), header.RspBadVersion),
 		MSGData: data,
-	})
+	}, context.Background())
 	if err != nil {
 		utils.ErrorLog(err)
 	}
@@ -490,6 +492,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					// } else {
 					handler := GetHandlerFunc(utils.ByteToString(msgH.Cmd))
 					if handler != nil {
+						metrics.Events.WithLabelValues(utils.ByteToString(msgH.Cmd)).Inc()
 						sc.handlerCh <- MsgHandler{message.RelayMsgBuf{}, handler}
 					}
 					// }
@@ -550,6 +553,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 						msgBuf = nil
 						continue
 					}
+					metrics.Events.WithLabelValues(utils.ByteToString(msgH.Cmd)).Inc()
 					handlerCh <- MsgHandler{*msg, handler}
 					msgH.Len = 0
 					i = 0
@@ -718,8 +722,9 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 			if handler != nil {
 				// if askForWorker {
 				err = GlobalTaskPool.Job(netID, func() {
-					// Mylog(s.opts.logOpen,"handler(CreateContextWithNetID(CreateContextWithMessage(ctx, msg), netID), c )", netID)
-					handler(CreateContextWithNetID(CreateContextWithMessage(ctx, &msg), netID), c)
+					ctxWithReqId := CreateContextWithReqId(ctx, msg.MSGHead.ReqId)
+					// Mylog(s.opts.logOpen,"handler(CreateContextWithNetID(CreateContextWithMessage(ctxWithReqId, msg), netID), c )", netID)
+					handler(CreateContextWithNetID(CreateContextWithMessage(ctxWithReqId, &msg), netID), c)
 				})
 				if err != nil {
 					utils.ErrorLog(err)

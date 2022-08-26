@@ -32,7 +32,7 @@ func (l rpcWriter) Write(p []byte) (n int, err error) {
 }
 
 func (s *rpcLogService) CleanUp() {
-	utils.MyLogger.ClearRpcLogger()
+	utils.ClearRpcLogger()
 }
 
 func (s *rpcLogService) LogSubscription(ctx context.Context) (*rpc.Subscription, error) {
@@ -42,7 +42,7 @@ func (s *rpcLogService) LogSubscription(ctx context.Context) (*rpc.Subscription,
 	}
 
 	subscription := notifier.CreateSubscription()
-	utils.MyLogger.SetRpcLogger(rpcWriter{
+	utils.SetRpcLogger(rpcWriter{
 		notifier:     notifier,
 		subscription: subscription,
 	})

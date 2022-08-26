@@ -3,12 +3,13 @@ package sql
 import (
 	"database/sql"
 	"errors"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/cache"
-	"github.com/stratosnet/sds/utils/database/rows"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/cache"
+	"github.com/stratosnet/sds/utils/database/rows"
 )
 
 // @version 0.0.1
@@ -16,7 +17,7 @@ import (
 // Executor Database Driver
 type Executor struct {
 	db    *sql.DB
-	Log   *utils.Logger
+	Log   *utils.CombinedLogger
 	cache cache.Cache
 	Debug bool
 }

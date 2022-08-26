@@ -6,23 +6,23 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay/stratoschain"
-	"github.com/stratosnet/sds/utils"
 )
 
 // Deactivate Request that an active PP node becomes inactive
-func Deactivate(fee, gas int64) error {
+func Deactivate(ctx context.Context, fee, gas int64) error {
 	deactivateReq, err := reqDeactivateData(fee, gas)
 	if err != nil {
-		utils.ErrorLog("Couldn't build PP deactivate request: " + err.Error())
+		pp.ErrorLog(ctx, "Couldn't build PP deactivate request: "+err.Error())
 		return err
 	}
-	utils.Log("Sending deactivate message to SP! " + deactivateReq.P2PAddress)
-	peers.SendMessageToSPServer(deactivateReq, header.ReqDeactivatePP)
+	pp.Log(ctx, "Sending deactivate message to SP! "+deactivateReq.P2PAddress)
+	peers.SendMessageToSPServer(ctx, deactivateReq, header.ReqDeactivatePP)
 	return nil
 }
 
@@ -34,7 +34,7 @@ func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	utils.Log("get RspDeactivatePP", target.Result.State, target.Result.Msg)
+	pp.Log(ctx, "get RspDeactivatePP", target.Result.State, target.Result.Msg)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		return
 	}
@@ -42,20 +42,20 @@ func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 	setting.State = target.ActivationState
 
 	if target.ActivationState == types.PP_INACTIVE {
-		utils.Log("Current node is already inactive")
+		pp.Log(ctx, "Current node is already inactive")
 		return
 	}
 
 	err := stratoschain.BroadcastTxBytes(target.Tx)
 	if err != nil {
-		utils.ErrorLog("The deactivation transaction couldn't be broadcast", err)
+		pp.ErrorLog(ctx, "The deactivation transaction couldn't be broadcast", err)
 	} else {
-		utils.Log("The deactivation transaction was broadcast")
+		pp.Log(ctx, "The deactivation transaction was broadcast")
 	}
 }
 
 // RspDeactivated. Response when this PP node was successfully deactivated
 func RspDeactivated(ctx context.Context, conn core.WriteCloser) {
 	setting.State = types.PP_INACTIVE
-	utils.Log("This PP node is now inactive")
+	pp.Log(ctx, "This PP node is now inactive")
 }

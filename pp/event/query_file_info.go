@@ -10,6 +10,8 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
+	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
@@ -22,25 +24,25 @@ import (
 )
 
 // GetFileStorageInfo p to pp
-func GetFileStorageInfo(path, savePath, reqID, walletAddr, saveAs string, isVideoStream bool, w http.ResponseWriter) {
+func GetFileStorageInfo(ctx context.Context, path, savePath, reqID, walletAddr, saveAs string, isVideoStream bool, w http.ResponseWriter) {
 	if !setting.CheckLogin() {
 		notLogin(w)
 		return
 	}
 
 	if !CheckDownloadPath(path) {
-		utils.ErrorLog("please input correct download link, eg: sdm://address/fileHash|filename(optional)")
+		pp.ErrorLog(ctx, "please input correct download link, eg: sdm://address/fileHash|filename(optional)")
 		if w != nil {
 			w.Write(httpserv.NewJson(nil, setting.FAILCode, "please input correct download link, eg:  sdm://address/fileHash|filename(optional)").ToBytes())
 		}
 		return
 	}
 
-	utils.DebugLog("path:", path)
+	pp.DebugLog(ctx, "path:", path)
 	walletAddress := path[6:47]
 	fileHash := path[48:88]
 
-	if ok := task.CheckDownloadTask(fileHash, walletAddress); ok {
+	if ok := task.CheckDownloadTask(fileHash, walletAddress, task.LOCAL_REQID); ok {
 		msg := "The previous download task hasn't finished, please check back later"
 		utils.ErrorLog(msg)
 		if w != nil {
@@ -50,19 +52,19 @@ func GetFileStorageInfo(path, savePath, reqID, walletAddr, saveAs string, isVide
 	}
 
 	req := requests.ReqFileStorageInfoData(path, savePath, reqID, walletAddr, saveAs, isVideoStream, nil)
-	peers.SendMessageDirectToSPOrViaPP(req, header.ReqFileStorageInfo)
+	peers.SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 }
 
-func ClearFileInfoAndDownloadTask(fileHash string, w http.ResponseWriter) {
+func ClearFileInfoAndDownloadTask(fileHash string, fileReqId string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		task.DownloadFileMap.Delete(fileHash)
-		task.DeleteDownloadTask(fileHash, setting.WalletAddress)
+		task.DownloadFileMap.Delete(fileHash + fileReqId)
+		task.DeleteDownloadTask(fileHash, setting.WalletAddress, "")
 		req := &protos.ReqClearDownloadTask{
 			WalletAddress: setting.WalletAddress,
 			FileHash:      fileHash,
 			P2PAddress:    setting.P2PAddress,
 		}
-		peers.SendMessage(client.PPConn, req, header.ReqClearDownloadTask)
+		peers.SendMessage(context.Background(), client.PPConn, req, header.ReqClearDownloadTask)
 		w.Write([]byte("ok"))
 	} else {
 		notLogin(w)
@@ -72,23 +74,23 @@ func ClearFileInfoAndDownloadTask(fileHash string, w http.ResponseWriter) {
 func ReqClearDownloadTask(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqClearDownloadTask
 	if requests.UnmarshalData(ctx, &target) {
-		task.DeleteDownloadTask(target.WalletAddress, target.WalletAddress)
+		task.DeleteDownloadTask(target.WalletAddress, target.WalletAddress, "")
 	}
 }
 
-func GetVideoSliceInfo(sliceName string, fInfo *protos.RspFileStorageInfo) *protos.DownloadSliceInfo {
+func GetVideoSliceInfo(ctx context.Context, sliceName string, fInfo *protos.RspFileStorageInfo) *protos.DownloadSliceInfo {
 	var sliceNumber uint64
-	hlsInfo := GetHlsInfo(fInfo)
+	hlsInfo := GetHlsInfo(ctx, fInfo)
 	sliceNumber = hlsInfo.SegmentToSlice[sliceName]
 	sliceInfo := GetSliceInfoBySliceNumber(fInfo, sliceNumber)
 	return sliceInfo
 }
 
-func GetVideoSlice(sliceInfo *protos.DownloadSliceInfo, fInfo *protos.RspFileStorageInfo, w http.ResponseWriter) {
+func GetVideoSlice(ctx context.Context, sliceInfo *protos.DownloadSliceInfo, fInfo *protos.RspFileStorageInfo, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		utils.DebugLog("taskid ======= ", sliceInfo.TaskId)
 		sliceHash := sliceInfo.SliceStorageInfo.SliceHash
-		if file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceHash, fInfo.SavePath) {
+		if file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceHash, fInfo.SavePath, fInfo.ReqId) {
 			utils.Log("slice exist already,", sliceHash)
 			slicePath := file.GetDownloadTmpPath(fInfo.FileHash, sliceHash, fInfo.SavePath)
 			video, _ := ioutil.ReadFile(slicePath)
@@ -96,7 +98,7 @@ func GetVideoSlice(sliceInfo *protos.DownloadSliceInfo, fInfo *protos.RspFileSto
 		} else {
 			req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
 			utils.Log("Send request for downloading slice: ", sliceInfo.SliceStorageInfo.SliceHash)
-			SendReqDownloadSlice(fInfo.FileHash, sliceInfo, req)
+			SendReqDownloadSlice(ctx, fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
 			if err := storeResponseWriter(req.ReqId, w); err != nil {
 				w.WriteHeader(setting.FAILCode)
 				w.Write(httpserv.NewErrorJson(setting.FAILCode, "Get video segment time out").ToBytes())
@@ -107,7 +109,7 @@ func GetVideoSlice(sliceInfo *protos.DownloadSliceInfo, fInfo *protos.RspFileSto
 	}
 }
 
-func GetVideoSlices(fInfo *protos.RspFileStorageInfo) {
+func GetVideoSlices(ctx context.Context, fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask) {
 	slices := make([]*protos.DownloadSliceInfo, len(fInfo.SliceInfo))
 
 	// reverse order to download start from last slice
@@ -125,19 +127,22 @@ func GetVideoSlices(fInfo *protos.RspFileStorageInfo) {
 	task.VideoCacheTaskMap.Store(fInfo.FileHash, videoCacheTask)
 
 	if len(videoCacheTask.Slices) > setting.STREAM_CACHE_MAXSLICE {
-		go cacheSlice(videoCacheTask, fInfo)
+		go cacheSlice(ctx, videoCacheTask, fInfo, dTask)
 		for i := 0; i < setting.STREAM_CACHE_MAXSLICE; i++ {
 			videoCacheTask.DownloadCh <- true
 		}
 	} else {
 		for _, sliceInfo := range videoCacheTask.Slices {
-			if !file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceInfo.SliceStorageInfo.SliceHash, fInfo.SavePath) {
+			if !file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceInfo.SliceStorageInfo.SliceHash, fInfo.SavePath, fInfo.ReqId) {
 
 				req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
 				req.IsVideoCaching = true
 				if req != nil {
-					SendReqDownloadSlice(fInfo.FileHash, sliceInfo, req)
+					SendReqDownloadSlice(ctx, fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
 				}
+			} else {
+				task.CleanDownloadTask(ctx, fInfo.FileHash, sliceInfo.SliceStorageInfo.SliceHash, setting.WalletAddress, task.LOCAL_REQID)
+				setDownloadSliceSuccess(ctx, sliceInfo.SliceStorageInfo.SliceHash, dTask)
 			}
 		}
 		utils.DebugLog("all slices of the task have begun downloading")
@@ -149,7 +154,7 @@ func GetVideoSlices(fInfo *protos.RspFileStorageInfo) {
 	}
 }
 
-func cacheSlice(videoCacheTask *task.VideoCacheTask, fInfo *protos.RspFileStorageInfo) {
+func cacheSlice(ctx context.Context, videoCacheTask *task.VideoCacheTask, fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask) {
 	for {
 		select {
 		case goon := <-videoCacheTask.DownloadCh:
@@ -167,13 +172,15 @@ func cacheSlice(videoCacheTask *task.VideoCacheTask, fInfo *protos.RspFileStorag
 			}
 			sliceInfo := videoCacheTask.Slices[0]
 			utils.DebugLog("start Download!!!!!", sliceInfo.SliceNumber)
-			if file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceInfo.SliceStorageInfo.SliceHash, fInfo.SavePath) {
+			if file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceInfo.SliceStorageInfo.SliceHash, fInfo.SavePath, fInfo.ReqId) {
 				utils.DebugLog("slice exist already ", sliceInfo.SliceNumber)
+				task.CleanDownloadTask(ctx, fInfo.FileHash, sliceInfo.SliceStorageInfo.SliceHash, setting.WalletAddress, task.LOCAL_REQID)
+				setDownloadSliceSuccess(ctx, sliceInfo.SliceStorageInfo.SliceHash, dTask)
 				videoCacheTask.DownloadCh <- true
 			} else {
 				req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
 				req.IsVideoCaching = true
-				SendReqDownloadSlice(fInfo.FileHash, sliceInfo, req)
+				SendReqDownloadSlice(ctx, fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
 			}
 
 			videoCacheTask.Slices = append(videoCacheTask.Slices[:0], videoCacheTask.Slices[0+1:]...)
@@ -181,16 +188,16 @@ func cacheSlice(videoCacheTask *task.VideoCacheTask, fInfo *protos.RspFileStorag
 	}
 }
 
-func GetHlsInfo(fInfo *protos.RspFileStorageInfo) *file.HlsInfo {
+func GetHlsInfo(ctx context.Context, fInfo *protos.RspFileStorageInfo) *file.HlsInfo {
 	sliceInfo := GetSliceInfoBySliceNumber(fInfo, uint64(1))
 	sliceHash := sliceInfo.SliceStorageInfo.SliceHash
-	if !file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceHash, fInfo.SavePath) {
+	if !file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceHash, fInfo.SavePath, fInfo.ReqId) {
 		req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
-		SendReqDownloadSlice(fInfo.FileHash, sliceInfo, req)
+		SendReqDownloadSlice(ctx, fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
 
 		start := time.Now().Unix()
 		for {
-			if file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceHash, fInfo.SavePath) {
+			if file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceHash, fInfo.SavePath, fInfo.ReqId) {
 				return file.LoadHlsInfo(fInfo.FileHash, sliceHash, fInfo.SavePath)
 			} else {
 				select {
@@ -218,28 +225,29 @@ func GetSliceInfoBySliceNumber(fInfo *protos.RspFileStorageInfo, sliceNumber uin
 // ReqFileStorageInfo  P-PP , PP-SP
 func ReqFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("pp get ReqFileStorageInfo directly transfer to SP")
-	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
 // RspFileStorageInfo SP-PP , PP-P
 func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	// PP check whether itself is the storage PP, if not transfer
-	utils.Log("get，RspFileStorageInfo")
+	pp.Log(ctx, "get，RspFileStorageInfo")
 	var target protos.RspFileStorageInfo
 	if requests.UnmarshalData(ctx, &target) {
-		utils.DebugLog("file hash", target.FileHash)
+		pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, target.ReqId)
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
-			utils.Log("download starts: ")
-			task.CleanDownloadFileAndConnMap(target.FileHash)
-			task.DownloadFileMap.Store(target.FileHash, &target)
+			pp.Log(ctx, "download starts: ")
+			task.CleanDownloadFileAndConnMap(target.FileHash, target.ReqId)
+			task.DownloadFileMap.Store(target.FileHash+target.ReqId, &target)
 			task.AddDownloadTask(&target)
 			if target.IsVideoStream {
 				return
 			}
-			DownloadFileSlice(&target)
-			utils.DebugLog("DownloadFileSlice(&target)", target)
+			DownloadFileSlice(ctx, &target)
+			pp.DebugLog(ctx, "DownloadFileSlice(&target)", target)
 		} else {
-			utils.Log("failed to download，", target.Result.Msg)
+			file.SetRemoteFileResult(target.FileHash+target.ReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
+			pp.Log(ctx, "failed to download，", target.Result.Msg)
 		}
 	}
 }
@@ -251,7 +259,7 @@ func CheckDownloadPath(path string) bool {
 		utils.DebugLog("invalid path length")
 		return false
 	}
-	if path[:6] != datamesh.DATA_MASH_PREFIX {
+	if path[:6] != datamesh.DATA_MESH_PREFIX {
 		return false
 	}
 	if path[47:48] != "/" {

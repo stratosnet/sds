@@ -22,6 +22,11 @@ enum DownloadWrongType {
     OVERTIME = 1;
 }
 
+enum UploadType {
+    NEW_UPLOAD = 0;
+    BACKUP = 1;
+}
+
 enum FileSortType {
     DEF  = 0;  // default
     TIME = 1;  // time
@@ -36,6 +41,7 @@ enum MsgType {
 enum HeartbeatType {
     REGULAR_HEARTBEAT = 0;
     LATENCY_CHECK = 1;
+    LATENCY_CHECK_PP = 2;
 }
 
 message PPBaseInfo {

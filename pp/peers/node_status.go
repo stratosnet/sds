@@ -1,28 +1,32 @@
 package peers
 
 import (
+	"context"
+
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/utils"
 )
 
 // ReportNodeStatus
-func ReportNodeStatus() {
-	if setting.IsStartMining && setting.State == types.PP_ACTIVE {
-		status := requests.ReqNodeStatusData()
-		go doReportNodeStatus(status)
+func ReportNodeStatus(ctx context.Context) func() {
+	return func() {
+		if setting.IsStartMining && setting.State == types.PP_ACTIVE {
+			status := requests.ReqNodeStatusData()
+			go doReportNodeStatus(ctx, status)
+		}
 	}
 }
 
-func doReportNodeStatus(status *protos.ReqReportNodeStatus) {
-	utils.DebugLog("Sending RNS message to SP! " + status.String())
-	SendMessageToSPServer(status, header.ReqReportNodeStatus)
+func doReportNodeStatus(ctx context.Context, status *protos.ReqReportNodeStatus) {
+	pp.DebugLog(ctx, "Sending RNS message to SP! "+status.String())
+	SendMessageToSPServer(ctx, status, header.ReqReportNodeStatus)
 	// if current reachable is too less, try refresh the list
-	_, total, _ := peerList.GetPPList()
+	_, total, _ := peerList.GetPPList(ctx)
 	if total > 0 && total <= 2 {
-		GetPPListFromSP()
+		GetPPListFromSP(ctx)
 	}
 }
