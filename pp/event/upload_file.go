@@ -271,7 +271,7 @@ func startUploadingFileSlices(ctx context.Context, fileHash string) {
 	task.UploadFileTaskMap.Delete(fileHash)
 
 	if fileTask.IsVideoStream {
-		file.DeleteTmpHlsFolder(fileHash)
+		file.DeleteTmpHlsFolder(ctx, fileHash)
 	}
 }
 
@@ -327,9 +327,9 @@ func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileT
 		var err error
 		switch uploadTask.Type {
 		case protos.UploadType_NEW_UPLOAD:
-			uploadSliceTask, err = task.CreateUploadSliceTask(slice, destination.PpInfo, uploadTask)
+			uploadSliceTask, err = task.CreateUploadSliceTask(ctx, slice, destination.PpInfo, uploadTask)
 		case protos.UploadType_BACKUP:
-			uploadSliceTask, err = task.GetReuploadSliceTask(slice, destination.PpInfo, uploadTask)
+			uploadSliceTask, err = task.GetReuploadSliceTask(ctx, slice, destination.PpInfo, uploadTask)
 		}
 		if err != nil {
 			slice.SetError(err, true, uploadTask)

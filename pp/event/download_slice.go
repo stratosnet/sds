@@ -21,7 +21,6 @@ import (
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/encryption"
 	"github.com/stratosnet/sds/utils/encryption/hdkey"
-	"net/http"
 )
 
 const (
@@ -311,7 +310,7 @@ func SendReqDownloadSlice(ctx context.Context, fileHash string, sliceInfo *proto
 
 	conn, err := client.NewClient(networkAddress, false)
 	if err != nil {
-		utils.ErrorLogf(ctx, "Failed to create connection with %v: %v", networkAddress, utils.FormatError(err))
+		pp.ErrorLogf(ctx, "Failed to create connection with %v: %v", networkAddress, utils.FormatError(err))
 		if dTask, ok := task.GetDownloadTask(fileHash, req.WalletAddress, fileReqId); ok {
 			setDownloadSliceFail(ctx, sliceInfo.SliceStorageInfo.SliceHash, req.TaskId, req.IsVideoCaching, dTask)
 		}

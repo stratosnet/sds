@@ -132,9 +132,9 @@ func RspReportUploadSliceResult(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	if target.Result.State == protos.ResultState_RES_SUCCESS {
-		pp.DebugLog(ctx,"ResultState_RES_SUCCESS, sliceNumber，storageAddress，walletAddress", target.SliceNumAddr.SliceNumber, target.SliceNumAddr.PpInfo.NetworkAddress, target.SliceNumAddr.PpInfo.P2PAddress)
+		pp.DebugLog(ctx, "ResultState_RES_SUCCESS, sliceNumber，storageAddress，walletAddress", target.SliceNumAddr.SliceNumber, target.SliceNumAddr.PpInfo.NetworkAddress, target.SliceNumAddr.PpInfo.P2PAddress)
 	} else {
-		pp.Log(ctx,"ResultState_RES_FAIL : ", target.Result.Msg)
+		pp.Log(ctx, "ResultState_RES_FAIL : ", target.Result.Msg)
 	}
 }
 
@@ -177,7 +177,7 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask, sign []byte)
 			dataStart += setting.MAXDATA
 			dataEnd += setting.MAXDATA
 		} else {
-			utils.DebugLogf("Uploading slice data %v-%v (total %v)", dataStart, tkDataLen, newTask.SliceTotalSize)
+			pp.DebugLogf(ctx, "Uploading slice data %v-%v (total %v)", dataStart, tkDataLen, newTask.SliceTotalSize)
 			newTask.Data = tk.Data[dataStart:]
 			return sendSlice(ctx, requests.ReqUploadFileSliceData(newTask, sign), fileHash, storageP2pAddress, storageNetworkAddress)
 		}
@@ -230,7 +230,7 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 	progress.HasUpload += int64(target.SliceSize)
 	p := float32(progress.HasUpload) / float32(progress.Total) * 100
 	pp.Logf(ctx, "fileHash: %v  uploaded：%.2f %% ", target.FileHash, p)
-	setting.ShowProgress(p)
+	setting.ShowProgress(ctx, p)
 	ProgressMap.Store(target.FileHash, p)
 	if progress.HasUpload >= progress.Total {
 		task.UploadProgressMap.Delete(target.FileHash)

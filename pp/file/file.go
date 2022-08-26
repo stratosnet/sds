@@ -111,7 +111,7 @@ func GetSliceSize(sliceHash string) int64 {
 
 }
 
-func SaveTmpSliceData(ctx context.Context, fileHash, sliceHash string, data []byte) error {
+func SaveTmpSliceData(fileHash, sliceHash string, data []byte) error {
 	wmutex.Lock()
 	defer wmutex.Unlock()
 

@@ -7,7 +7,7 @@ import (
 )
 
 // ShowProgress
-func ShowProgressWithContext(ctx context.Context, p float32) {
+func ShowProgress(ctx context.Context, p float32) {
 	f := int(p)
 	m := int(100 - p)
 	str := ""

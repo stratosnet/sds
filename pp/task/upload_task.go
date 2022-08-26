@@ -396,7 +396,7 @@ func CreateUploadSliceTaskFile(ctx context.Context, slice *SliceWithStatus, ppIn
 		SpP2pAddress:    uploadTask.SpP2pAddress,
 	}
 
-	err := file.SaveTmpSliceData(ctx, uploadTask.FileHash, sliceHash, data)
+	err := file.SaveTmpSliceData(uploadTask.FileHash, sliceHash, data)
 	if err != nil {
 		return nil, err
 	}
@@ -455,15 +455,15 @@ func CreateUploadSliceTaskStream(ctx context.Context, slice *SliceWithStatus, pp
 		SpP2pAddress:    uploadTask.SpP2pAddress,
 	}
 
-	err := file.SaveTmpSliceData(ctx, uploadTask.FileHash, sliceHash, data)
+	err := file.SaveTmpSliceData(uploadTask.FileHash, sliceHash, data)
 	if err != nil {
 		return nil, err
 	}
 	return tk, nil
 }
 
-func GetReuploadSliceTask(slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
-	utils.DebugLogf("  fileHash %s sliceNumber %v, sliceHash %s",
+func GetReuploadSliceTask(ctx context.Context, slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
+	pp.DebugLogf(ctx, "  fileHash %s sliceNumber %v, sliceHash %s",
 		uploadTask.FileHash, slice.SliceNumber, slice.SliceHash)
 
 	rawData := file.GetSliceDataFromTmp(uploadTask.FileHash, slice.SliceHash)
