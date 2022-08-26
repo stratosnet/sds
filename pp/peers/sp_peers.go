@@ -8,6 +8,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 
@@ -23,54 +24,51 @@ import (
 var bufferedSpConns = make([]*cf.ClientConn, 0)
 
 // SendMessage
-func SendMessage(conn core.WriteCloser, pb proto.Message, cmd string) error {
-	return SendResponseMessageWithReqId(conn, pb, cmd, int64(0))
-}
-
-func SendResponseMessageWithReqId(conn core.WriteCloser, pb proto.Message, cmd string, reqId int64) error {
+func SendMessage(ctx context.Context, conn core.WriteCloser, pb proto.Message, cmd string) error {
 	data, err := proto.Marshal(pb)
 
 	if err != nil {
-		utils.ErrorLog("error decoding")
+		pp.ErrorLog(ctx, "error decoding")
 		return errors.New("error decoding")
 	}
 	msg := &msg.RelayMsgBuf{
-		MSGHead: header.MakeMessageHeader(1, uint16(setting.Config.Version.AppVer), uint32(len(data)), cmd, reqId),
+		MSGHead: header.MakeMessageHeader(1, uint16(setting.Config.Version.AppVer), uint32(len(data)), cmd),
 		MSGData: data,
 	}
 	switch conn.(type) {
 	case *core.ServerConn:
-		return conn.(*core.ServerConn).Write(msg)
+		return conn.(*core.ServerConn).Write(msg, ctx)
 	case *cf.ClientConn:
-		return conn.(*cf.ClientConn).Write(msg)
+		return conn.(*cf.ClientConn).Write(msg, ctx)
 	default:
 		return errors.New("unknown connection type")
 	}
 }
 
-func SendMessageDirectToSPOrViaPP(pb proto.Message, cmd string) {
+func SendMessageDirectToSPOrViaPP(ctx context.Context, pb proto.Message, cmd string) {
 	if client.SPConn != nil {
-		SendMessage(client.SPConn, pb, cmd)
+		SendMessage(ctx, client.SPConn, pb, cmd)
 	} else {
-		SendMessage(client.PPConn, pb, cmd)
+		SendMessage(ctx, client.PPConn, pb, cmd)
 	}
 }
 
 // SendMessageToSPServer SendMessageToSPServer
-func SendMessageToSPServer(pb proto.Message, cmd string) {
-	_, err := ConnectToSP()
+func SendMessageToSPServer(ctx context.Context, pb proto.Message, cmd string) {
+	_, err := ConnectToSP(ctx)
 	if err != nil {
 		utils.ErrorLog(err)
 		return
 	}
 
-	SendMessage(client.SPConn, pb, cmd)
+	SendMessage(ctx, client.SPConn, pb, cmd)
 }
 
 // TransferSendMessageToPPServ
-func TransferSendMessageToPPServ(addr string, msgBuf *msg.RelayMsgBuf) {
+func TransferSendMessageToPPServ(ctx context.Context, addr string, msgBuf *msg.RelayMsgBuf) {
+	newCtx := core.CreateContextWithParentReqIdAsReqId(ctx)
 	if client.ConnMap[addr] != nil {
-		_ = client.ConnMap[addr].Write(msgBuf)
+		_ = client.ConnMap[addr].Write(msgBuf, newCtx)
 		utils.DebugLog("conn exist, transfer")
 		return
 	}
@@ -81,64 +79,68 @@ func TransferSendMessageToPPServ(addr string, msgBuf *msg.RelayMsgBuf) {
 		utils.ErrorLogf("cannot transfer message to client [%v]", addr, utils.FormatError(err))
 		return
 	}
-	_ = newClient.Write(msgBuf)
+	_ = newClient.Write(msgBuf, newCtx)
 }
 
-func TransferSendMessageToPPServByP2pAddress(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
-	ppInfo := peerList.GetPPByP2pAddress(p2pAddress)
+func TransferSendMessageToPPServByP2pAddress(ctx context.Context, p2pAddress string, msgBuf *msg.RelayMsgBuf) {
+	ppInfo := peerList.GetPPByP2pAddress(ctx, p2pAddress)
 	if ppInfo == nil {
 		utils.ErrorLogf("PP %v missing from local ppList. Cannot transfer message due to missing network address", p2pAddress)
 		return
 	}
-	TransferSendMessageToPPServ(ppInfo.NetworkAddress, msgBuf)
+	TransferSendMessageToPPServ(ctx, ppInfo.NetworkAddress, msgBuf)
 }
 
 // transferSendMessageToSPServer
-func TransferSendMessageToSPServer(msg *msg.RelayMsgBuf) {
-	_, err := ConnectToSP()
+func TransferSendMessageToSPServer(ctx context.Context, msg *msg.RelayMsgBuf) {
+	_, err := ConnectToSP(ctx)
 	if err != nil {
 		utils.ErrorLog(err)
 		return
 	}
 
-	client.SPConn.Write(msg)
+	client.SPConn.Write(msg, ctx)
 }
 
 // ReqTransferSendSP
 func ReqTransferSendSP(ctx context.Context, conn core.WriteCloser) {
-	TransferSendMessageToSPServer(core.MessageFromContext(ctx))
+	TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
 // transferSendMessageToClient
-func TransferSendMessageToClient(p2pAddress string, msgBuf *msg.RelayMsgBuf) {
-	pp := peerList.GetPPByP2pAddress(p2pAddress)
-	if pp != nil && pp.Status == types.PEER_CONNECTED {
-		utils.Log("transfer to netid = ", pp.NetId)
-		GetPPServer().Unicast(pp.NetId, msgBuf)
+func TransferSendMessageToClient(ctx context.Context, p2pAddress string, msgBuf *msg.RelayMsgBuf) {
+	ppNode := peerList.GetPPByP2pAddress(ctx, p2pAddress)
+	if ppNode != nil && ppNode.Status == types.PEER_CONNECTED {
+		pp.Log(ctx, "transfer to netid = ", ppNode.NetId)
+		GetPPServer().Unicast(ctx, ppNode.NetId, msgBuf)
 	} else {
-		utils.DebugLog("waller ===== ", p2pAddress)
+		pp.DebugLog(ctx, "waller ===== ", p2pAddress)
 	}
 }
 
 // GetMyNodeStatusFromSP P node get node status
-func GetPPStatusFromSP() {
-	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetPPStatus)")
-	SendMessageToSPServer(requests.ReqGetPPStatusData(false), header.ReqGetPPStatus)
+func GetPPStatusFromSP(ctx context.Context) {
+	pp.DebugLog(ctx, "SendMessage(client.SPConn, req, header.ReqGetPPStatus)")
+	SendMessageToSPServer(ctx, requests.ReqGetPPStatusData(false), header.ReqGetPPStatus)
 }
 
 // GetMyNodeStatusFromSP P node get node status
-func GetPPStatusInitPPList() {
-	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetPPStatus)")
-	SendMessageToSPServer(requests.ReqGetPPStatusData(true), header.ReqGetPPStatus)
+func GetPPStatusInitPPList(ctx context.Context) func() {
+	return func() {
+		pp.DebugLog(ctx, "SendMessage(client.SPConn, req, header.ReqGetPPStatus)")
+		SendMessageToSPServer(ctx, requests.ReqGetPPStatusData(true), header.ReqGetPPStatus)
+	}
 }
 
 // GetSPList node get spList
-func GetSPList() {
-	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetSPList)")
-	SendMessageToSPServer(requests.ReqGetSPlistData(), header.ReqGetSPList)
+func GetSPList(ctx context.Context) func() {
+	return func() {
+		pp.DebugLog(ctx, "SendMessage(client.SPConn, req, header.ReqGetSPList)")
+		SendMessageToSPServer(ctx, requests.ReqGetSPlistData(), header.ReqGetSPList)
+	}
 }
 
-func SendLatencyCheckMessageToSPList() {
+func SendLatencyCheckMessageToSPList(ctx context.Context) {
 	utils.DebugLogf("[SP_LATENCY_CHECK] SendHeartbeatToSPList, num of SPs: %v", len(setting.Config.SPList))
 	if len(setting.Config.SPList) < 2 {
 		utils.ErrorLog("there are not enough SP nodes in the config file")
@@ -146,11 +148,11 @@ func SendLatencyCheckMessageToSPList() {
 	}
 	for i := 0; i < len(setting.Config.SPList); i++ {
 		selectedSP := setting.Config.SPList[i]
-		checkSingleSpLatency(selectedSP.NetworkAddress, false)
+		checkSingleSpLatency(ctx, selectedSP.NetworkAddress, false)
 	}
 }
 
-func checkSingleSpLatency(server string, heartbeat bool) {
+func checkSingleSpLatency(ctx context.Context, server string, heartbeat bool) {
 	if client.SPConn == nil {
 		utils.DebugLog("SP latency check skipped until connection to SP is recovered")
 		return
@@ -176,7 +178,7 @@ func checkSingleSpLatency(server string, heartbeat bool) {
 			NetworkAddressSp: server,
 			PingTime:         strconv.FormatInt(start, 10),
 		}
-		SendMessage(spConn, pb, header.ReqLatencyCheck)
+		SendMessage(ctx, spConn, pb, header.ReqLatencyCheck)
 		if client.GetConnectionName(client.SPConn) != server {
 			bufferedSpConns = append(bufferedSpConns, spConn)
 		}
@@ -191,12 +193,12 @@ func ClearBufferedSpConns() {
 	bufferedSpConns = make([]*cf.ClientConn, 0)
 }
 
-func ScheduleReloadSPlist(future time.Duration) {
+func ScheduleReloadSPlist(ctx context.Context, future time.Duration) {
 	utils.DebugLog("scheduled to get sp-list after: ", future.Seconds(), "second")
-	ppPeerClock.AddJobWithInterval(future, GetSPList)
+	ppPeerClock.AddJobWithInterval(future, GetSPList(ctx))
 }
 
-func ScheduleReloadPPStatus(future time.Duration) {
+func ScheduleReloadPPStatus(ctx context.Context, future time.Duration) {
 	utils.DebugLog("scheduled to get pp status from sp after: ", future.Seconds(), "second")
-	ppPeerClock.AddJobWithInterval(future, GetPPStatusInitPPList)
+	ppPeerClock.AddJobWithInterval(future, GetPPStatusInitPPList(ctx))
 }

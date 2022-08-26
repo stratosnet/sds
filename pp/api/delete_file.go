@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/stratosnet/sds/pp/event"
@@ -19,7 +20,7 @@ func deleteFile(w http.ResponseWriter, request *http.Request) {
 	//path := ""
 	if data["fileHash"] != nil {
 		fileHash = data["fileHash"].(string)
-		event.DeleteFile(fileHash, uuid.New().String(), w)
+		event.DeleteFile(context.Background(), fileHash, uuid.New().String(), w)
 	}
 
 	//if data["path"] != nil {

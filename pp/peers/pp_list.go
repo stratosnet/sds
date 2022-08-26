@@ -1,6 +1,7 @@
 package peers
 
 import (
+	"context"
 	"strconv"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
@@ -25,43 +27,43 @@ const (
 )
 
 // InitPPList
-func InitPPList() {
-	pplist, _, _ := peerList.GetPPList()
+func InitPPList(ctx context.Context) {
+	pplist, _, _ := peerList.GetPPList(ctx)
 	if len(pplist) == 0 {
-		GetPPListFromSP()
+		GetPPListFromSP(ctx)
 	} else {
-		if success := ConnectToGatewayPP(pplist); !success {
-			GetPPListFromSP()
+		if success := ConnectToGatewayPP(ctx, pplist); !success {
+			GetPPListFromSP(ctx)
 			return
 		}
 		if setting.IsAuto && setting.State == types.PP_ACTIVE && !setting.IsLoginToSP {
-			RegisterToSP(true)
+			RegisterToSP(ctx, true)
 		}
 	}
 }
 
-func StartPpLatencyCheck() {
-	ppPeerClock.AddJobRepeat(time.Second*setting.PpLatencyCheckInterval, 0, LatencyOfNextPp)
+func StartPpLatencyCheck(ctx context.Context) {
+	ppPeerClock.AddJobRepeat(time.Second*setting.PpLatencyCheckInterval, 0, LatencyOfNextPp(ctx))
 }
 
-func StartStatusReportToSP() {
+func StartStatusReportToSP(ctx context.Context) {
 	utils.DebugLog("Status will be reported to SP while mining")
 	// trigger first report at time-0 immediately
-	ReportNodeStatus()
+	ReportNodeStatus(ctx)()
 	// trigger consecutive reports with interval
-	ppPeerClock.AddJobRepeat(time.Second*setting.NodeReportIntervalSec, 0, ReportNodeStatus)
+	ppPeerClock.AddJobRepeat(time.Second*setting.NodeReportIntervalSec, 0, ReportNodeStatus(ctx))
 }
 
 // GetPPListFromSP node get ppList from sp
-func GetPPListFromSP() {
-	utils.DebugLog("SendMessage(client.SPConn, req, header.ReqGetPPList)")
-	SendMessageToSPServer(requests.ReqGetPPlistData(), header.ReqGetPPList)
+func GetPPListFromSP(ctx context.Context) {
+	pp.DebugLog(ctx, "SendMessage(client.SPConn, req, header.ReqGetPPList)")
+	SendMessageToSPServer(ctx, requests.ReqGetPPlistData(), header.ReqGetPPList)
 }
 
-func ConnectToGatewayPP(pplist []*types.PeerInfo) bool {
+func ConnectToGatewayPP(ctx context.Context, pplist []*types.PeerInfo) bool {
 	for _, ppInfo := range pplist {
 		if ppInfo.NetworkAddress == setting.NetworkAddress {
-			peerList.DeletePPByNetworkAddress(ppInfo.NetworkAddress)
+			peerList.DeletePPByNetworkAddress(ctx, ppInfo.NetworkAddress)
 			continue
 		}
 		ppConn, err := client.NewClient(ppInfo.NetworkAddress, true)
@@ -69,8 +71,8 @@ func ConnectToGatewayPP(pplist []*types.PeerInfo) bool {
 			client.PPConn = ppConn
 			return true
 		}
-		utils.DebugLogf("failed to connect to PP %v: %v", ppInfo, utils.FormatError(err))
-		peerList.DeletePPByNetworkAddress(ppInfo.NetworkAddress)
+		pp.DebugLogf(ctx, "failed to connect to PP %v: %v", ppInfo, utils.FormatError(err))
+		peerList.DeletePPByNetworkAddress(ctx, ppInfo.NetworkAddress)
 	}
 	return false
 }
@@ -94,38 +96,40 @@ func ConnectToGatewayPP(pplist []*types.PeerInfo) bool {
 //}
 
 //GetPPList will just get the list from
-func GetPPList() (list []*types.PeerInfo, total int64) {
-	list, total, _ = peerList.GetPPList()
+func GetPPList(ctx context.Context) (list []*types.PeerInfo, total int64) {
+	list, total, _ = peerList.GetPPList(ctx)
 	return
 }
 
 //SavePPList will save the target list to local list
-func SavePPList(target *protos.RspGetPPList) error {
-	return peerList.SavePPList(target)
+func SavePPList(ctx context.Context, target *protos.RspGetPPList) error {
+	return peerList.SavePPList(ctx, target)
 }
 
 //GetPPByP2pAddress
-func GetPPByP2pAddress(p2pAddr string) *types.PeerInfo {
-	return peerList.GetPPByP2pAddress(p2pAddr)
+func GetPPByP2pAddress(ctx context.Context, p2pAddr string) *types.PeerInfo {
+	return peerList.GetPPByP2pAddress(ctx, p2pAddr)
 }
 
 //UpdatePP will update one pp info to local list
-func UpdatePP(pp *types.PeerInfo) {
-	peerList.UpdatePP(pp)
+func UpdatePP(ctx context.Context, pp *types.PeerInfo) {
+	peerList.UpdatePP(ctx, pp)
 }
 
 //LantencyOfNextPp
-func LatencyOfNextPp() {
-	list, _, _ := peerList.GetPPList()
-	for _, peer := range list {
-		if peer.Latency == 0 {
-			StartLatencyCheckToPp(peer.NetworkAddress)
+func LatencyOfNextPp(ctx context.Context) func() {
+	return func() {
+		list, _, _ := peerList.GetPPList(ctx)
+		for _, peer := range list {
+			if peer.Latency == 0 {
+				StartLatencyCheckToPp(ctx, peer.NetworkAddress)
+			}
 		}
 	}
 }
 
 // StartLatencyCheckToPp
-func StartLatencyCheckToPp(NetworkAddr string) error {
+func StartLatencyCheckToPp(ctx context.Context, NetworkAddr string) error {
 	start := time.Now().UnixNano()
 	pb := &protos.ReqLatencyCheck{
 		HbType:   protos.HeartbeatType_LATENCY_CHECK_PP,
@@ -137,14 +141,14 @@ func StartLatencyCheckToPp(NetworkAddr string) error {
 	}
 
 	msg := &msg.RelayMsgBuf{
-		MSGHead: header.MakeMessageHeader(1, uint16(setting.Config.Version.AppVer), uint32(len(data)), header.ReqLatencyCheck, int64(0)),
+		MSGHead: header.MakeMessageHeader(1, uint16(setting.Config.Version.AppVer), uint32(len(data)), header.ReqLatencyCheck),
 		MSGData: data,
 	}
 
 	if client.ConnMap[NetworkAddr] != nil {
-		client.ConnMap[NetworkAddr].Write(msg)
+		client.ConnMap[NetworkAddr].Write(msg, ctx)
 	} else {
-		utils.DebugLog("new conn, connect and transfer")
+		pp.DebugLog(ctx, "new conn, connect and transfer")
 	}
 	return nil
 }

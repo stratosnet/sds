@@ -13,6 +13,7 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
@@ -29,6 +30,7 @@ var isCover bool
 
 // RequestUploadCoverImage RequestUploadCoverImage
 func RequestUploadCoverImage(pathStr, reqID string, w http.ResponseWriter) {
+	ctx := context.Background()
 	isCover = true
 	tmpString, err := utils.ImageCommpress(pathStr)
 	utils.DebugLog("reqID", reqID)
@@ -39,14 +41,14 @@ func RequestUploadCoverImage(pathStr, reqID string, w http.ResponseWriter) {
 		}
 		return
 	}
-	p := requests.RequestUploadFileData(tmpString, "", reqID, setting.WalletAddress, true, false, false)
-	peers.SendMessageToSPServer(p, header.ReqUploadFile)
+	p := requests.RequestUploadFileData(ctx, tmpString, "", reqID, setting.WalletAddress, true, false, false)
+	peers.SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 	storeResponseWriter(reqID, w)
 }
 
 // RequestUploadFile request to SP for upload file
-func RequestUploadFile(path, reqID string, isEncrypted bool, _ http.ResponseWriter) {
-	utils.DebugLog("______________path", path)
+func RequestUploadFile(ctx context.Context, path, reqID string, isEncrypted bool, _ http.ResponseWriter) {
+	pp.DebugLog(ctx, "______________path", path)
 	if !setting.CheckLogin() {
 		return
 	}
@@ -57,83 +59,83 @@ func RequestUploadFile(path, reqID string, isEncrypted bool, _ http.ResponseWrit
 		return
 	}
 	if isFile {
-		p := requests.RequestUploadFileData(path, "", reqID, setting.WalletAddress, false, false, isEncrypted)
-		peers.SendMessageToSPServer(p, header.ReqUploadFile)
+		p := requests.RequestUploadFileData(ctx, path, "", reqID, setting.WalletAddress, false, false, isEncrypted)
+		peers.SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 		return
 	}
 
 	// is directory
-	utils.DebugLog("this is a directory, not file")
+	pp.DebugLog(ctx, "this is a directory, not file")
 	file.GetAllFiles(path)
 	for {
 		select {
 		case pathString := <-setting.UpChan:
-			utils.DebugLog("path string == ", pathString)
-			p := requests.RequestUploadFileData(pathString, "", reqID, setting.WalletAddress, false, false, isEncrypted)
-			peers.SendMessageToSPServer(p, header.ReqUploadFile)
+			pp.DebugLog(ctx, "path string == ", pathString)
+			p := requests.RequestUploadFileData(ctx, pathString, "", reqID, setting.WalletAddress, false, false, isEncrypted)
+			peers.SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 		default:
 			return
 		}
 	}
 }
 
-func RequestUploadStream(path, reqID string, _ http.ResponseWriter) {
-	utils.DebugLog("______________path", path)
+func RequestUploadStream(ctx context.Context, path, reqID string, _ http.ResponseWriter) {
+	pp.DebugLog(ctx, "______________path", path)
 	if !setting.CheckLogin() {
 		return
 	}
 	isFile, err := file.IsFile(path)
 	if err != nil {
-		utils.ErrorLog(err)
+		pp.ErrorLog(ctx, err)
 		return
 	}
 	if isFile {
-		p := requests.RequestUploadFileData(path, "", reqID, setting.WalletAddress, false, true, false)
+		p := requests.RequestUploadFileData(ctx, path, "", reqID, setting.WalletAddress, false, true, false)
 		if p != nil {
-			peers.SendMessageToSPServer(p, header.ReqUploadFile)
+			peers.SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 		}
 		return
 	} else {
-		utils.ErrorLog("the provided path indicates a directory, not a file")
+		pp.ErrorLog(ctx, "the provided path indicates a directory, not a file")
 		return
 	}
 }
 
-func ScheduleReqBackupStatus(fileHash string) {
+func ScheduleReqBackupStatus(ctx context.Context, fileHash string) {
 	time.AfterFunc(5*time.Minute, func() {
-		ReqBackupStatus(fileHash)
+		ReqBackupStatus(ctx, fileHash)
 	})
 }
 
-func ReqBackupStatus(fileHash string) {
+func ReqBackupStatus(ctx context.Context, fileHash string) {
 	p := &protos.ReqBackupStatus{
 		FileHash:      fileHash,
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 	}
-	peers.SendMessageToSPServer(p, header.ReqFileBackupStatus)
+	peers.SendMessageToSPServer(ctx, p, header.ReqFileBackupStatus)
 }
 
 // RspUploadFile response of upload file event
 func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
-	utils.DebugLog("get RspUploadFile")
+	pp.DebugLog(ctx, "get RspUploadFile")
 	target := &protos.RspUploadFile{}
 	if !requests.UnmarshalData(ctx, target) {
-		utils.ErrorLog("unmarshal error")
+		pp.ErrorLog(ctx, "unmarshal error")
 		return
 	}
 
 	// upload file to PP based on the PP info provided by SP
 	if target.Result == nil {
-		utils.ErrorLog("target.Result is nil")
+		pp.ErrorLog(ctx, "target.Result is nil")
 		return
 	}
 
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		if strings.Contains(target.Result.Msg, "Same file with the name") {
-			utils.Log(target.Result.Msg)
+			pp.Log(ctx, target.Result.Msg)
 		} else {
-			utils.Log("upload failed: ", target.Result.Msg)
+			pp.Log(ctx, "upload failed: ", target.Result.Msg)
 		}
 
 		if file.IsFileRpcRemote(target.FileHash) {
@@ -145,9 +147,9 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 	}
 
 	if len(target.PpList) != 0 {
-		go startUploadTask(target)
+		go startUploadTask(ctx, target)
 	} else {
-		utils.Log("file upload successful！  fileHash", target.FileHash)
+		pp.Log(ctx, "file upload successful！  fileHash", target.FileHash)
 		var p float32 = 100
 		ProgressMap.Store(target.FileHash, p)
 		task.UploadProgressMap.Delete(target.FileHash)
@@ -157,37 +159,37 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		}
 	}
 	if isCover {
-		utils.DebugLog("is_cover", target.ReqId)
+		pp.DebugLog(ctx, "is_cover", target.ReqId)
 		putData(target.ReqId, HTTPUploadFile, target)
 	}
 }
 
 func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
-	utils.DebugLog("get RspBackupStatus")
+	pp.DebugLog(ctx, "get RspBackupStatus")
 	target := &protos.RspBackupStatus{}
 	if !requests.UnmarshalData(ctx, target) {
-		utils.ErrorLog("unmarshal error")
+		pp.ErrorLog(ctx, "unmarshal error")
 		return
 	}
 
 	if target.Result.State == protos.ResultState_RES_FAIL {
-		utils.Log("Backup status check failed", target.Result.Msg)
+		pp.Log(ctx, "Backup status check failed", target.Result.Msg)
 		return
 	}
 
-	utils.Logf("Backup status for file %s: the number of replica is %d", target.FileHash, target.Replicas)
+	pp.Logf(ctx, "Backup status for file %s: the number of replica is %d", target.FileHash, target.Replicas)
 	if target.DeleteOriginTmp {
-		utils.Logf("Backup is finished for file %s, delete all the temporary slices", target.FileHash)
-		file.DeleteTmpFileSlices(target.FileHash)
+		pp.Logf(ctx, "Backup is finished for file %s, delete all the temporary slices", target.FileHash)
+		file.DeleteTmpFileSlices(ctx, target.FileHash)
 		return
 	}
 
 	if len(target.PpList) == 0 {
-		ScheduleReqBackupStatus(target.FileHash)
+		ScheduleReqBackupStatus(ctx, target.FileHash)
 		return
 	}
 
-	utils.Logf("Start re-uploading slices for the file  %s", target.FileHash)
+	pp.Logf(ctx, "Start re-uploading slices for the file  %s", target.FileHash)
 	totalSize := int64(0)
 	for _, slice := range target.PpList {
 		totalSize += int64(slice.GetSliceSize())
@@ -203,10 +205,10 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 	task.UploadProgressMap.Store(target.FileHash, p)
 
 	// Start uploading
-	startUploadingFileSlices(target.FileHash)
+	startUploadingFileSlices(ctx, target.FileHash)
 }
 
-func startUploadTask(target *protos.RspUploadFile) {
+func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
 	var slices []*protos.SliceHashAddr
 	for _, slice := range target.PpList {
 		slices = append(slices, &protos.SliceHashAddr{
@@ -227,9 +229,9 @@ func startUploadTask(target *protos.RspUploadFile) {
 	var streamTotalSize int64
 	var hlsInfo file.HlsInfo
 	if target.IsVideoStream {
-		file.VideoToHls(target.FileHash)
+		file.VideoToHls(ctx, target.FileHash)
 		if hlsInfo, err := file.GetHlsInfo(target.FileHash, uint64(len(target.PpList))); err != nil {
-			utils.ErrorLog("Hls transformation failed: ", err)
+			pp.ErrorLog(ctx, "Hls transformation failed: ", err)
 			return
 		} else {
 			streamTotalSize = hlsInfo.TotalSize
@@ -246,13 +248,13 @@ func startUploadTask(target *protos.RspUploadFile) {
 	}
 
 	// Start uploading
-	startUploadingFileSlices(target.FileHash)
+	startUploadingFileSlices(ctx, target.FileHash)
 }
 
-func startUploadingFileSlices(fileHash string) {
+func startUploadingFileSlices(ctx context.Context, fileHash string) {
 	value, ok := task.UploadFileTaskMap.Load(fileHash)
 	if !ok {
-		utils.ErrorLogf("File upload task cannot be found for file %v", fileHash)
+		pp.ErrorLogf(ctx, "File upload task cannot be found for file %v", fileHash)
 		return
 	}
 	fileTask := value.(*task.UploadFileTask)
@@ -260,9 +262,9 @@ func startUploadingFileSlices(fileHash string) {
 	// Send signals to start slice uploads
 	fileTask.SignalNewDestinations()
 
-	err := waitForUploadFinished(fileTask)
+	err := waitForUploadFinished(ctx, fileTask)
 	if err != nil {
-		utils.ErrorLog("File upload task will be cancelled: ", utils.FormatError(err))
+		pp.ErrorLog(ctx, "File upload task will be cancelled: ", utils.FormatError(err))
 		return
 	}
 
@@ -273,7 +275,7 @@ func startUploadingFileSlices(fileHash string) {
 	}
 }
 
-func waitForUploadFinished(uploadTask *task.UploadFileTask) error {
+func waitForUploadFinished(ctx context.Context, uploadTask *task.UploadFileTask) error {
 	for {
 		// Wait until a new destination can be uploaded to, or until some time has passed
 		select {
@@ -301,18 +303,18 @@ func waitForUploadFinished(uploadTask *task.UploadFileTask) error {
 			if !uploadTask.CanRetry() {
 				return errors.New("max upload retry count reached")
 			}
-			peers.SendMessageToSPServer(requests.ReqUploadSlicesWrong(uploadTask, uploadTask.SpP2pAddress, slicesToReDownload, failedSlices), header.ReqUploadSlicesWrong)
+			peers.SendMessageToSPServer(ctx, requests.ReqUploadSlicesWrong(uploadTask, uploadTask.SpP2pAddress, slicesToReDownload, failedSlices), header.ReqUploadSlicesWrong)
 		}
 
 		// Start uploading to next destination
 		nextDestination := uploadTask.NextDestination()
 		if nextDestination != nil {
-			go uploadSlicesToDestination(uploadTask, nextDestination)
+			go uploadSlicesToDestination(ctx, uploadTask, nextDestination)
 		}
 	}
 }
 
-func uploadSlicesToDestination(uploadTask *task.UploadFileTask, destination *task.SlicesPerDestination) {
+func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileTask, destination *task.SlicesPerDestination) {
 	defer func() {
 		uploadTask.UpChan <- true
 	}()
@@ -334,8 +336,8 @@ func uploadSlicesToDestination(uploadTask *task.UploadFileTask, destination *tas
 			return
 		}
 
-		utils.DebugLogf("starting to upload slice %v for file %v", slice.SliceNumber, uploadTask.FileHash)
-		err = UploadFileSlice(uploadSliceTask, uploadTask.Sign)
+		pp.DebugLogf(ctx, "starting to upload slice %v for file %v", slice.SliceNumber, uploadTask.FileHash)
+		err = UploadFileSlice(ctx, uploadSliceTask, uploadTask.Sign)
 		if err != nil {
 			slice.SetError(err, false, uploadTask)
 			return
@@ -345,12 +347,12 @@ func uploadSlicesToDestination(uploadTask *task.UploadFileTask, destination *tas
 }
 
 // UploadPause
-func UploadPause(fileHash, reqID string, w http.ResponseWriter) {
+func UploadPause(ctx context.Context, fileHash, reqID string, w http.ResponseWriter) {
 	client.UpConnMap.Range(func(k, v interface{}) bool {
 		if strings.HasPrefix(k.(string), fileHash) {
 			conn := v.(*cf.ClientConn)
 			conn.ClientClose()
-			utils.DebugLog("UploadPause", conn)
+			pp.DebugLog(ctx, "UploadPause", conn)
 		}
 		return true
 	})

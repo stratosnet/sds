@@ -25,7 +25,7 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	err := peers.SavePPList(&target)
+	err := peers.SavePPList(ctx, &target)
 	if err != nil {
 		utils.ErrorLog("Error when saving PP List", err)
 	}
@@ -34,6 +34,6 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 		(setting.State == types.PP_ACTIVE)
 
 	if shouldRegisterToSP {
-		peers.RegisterToSP(true)
+		peers.RegisterToSP(ctx, true)
 	}
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
@@ -58,7 +59,7 @@ func ReqRegisterDataTR(target *protos.ReqRegister) *msg.RelayMsgBuf {
 		utils.ErrorLog(err)
 	}
 	return &msg.RelayMsgBuf{
-		MSGHead: PPMsgHeaderWithoutReqId(data, header.ReqRegister),
+		MSGHead: PPMsgHeader(data, header.ReqRegister),
 		MSGData: data,
 	}
 }
@@ -174,20 +175,20 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, reqID, ownerW
 }
 
 // RequestUploadFileData RequestUploadFileData, ownerWalletAddress can be either pp node's walletAddr or file owner's walletAddr
-func RequestUploadFileData(paths, storagePath, reqID, ownerWalletAddress string, isCover, isVideoStream, isEncrypted bool) *protos.ReqUploadFile {
+func RequestUploadFileData(ctx context.Context, paths, storagePath, reqID, ownerWalletAddress string, isCover, isVideoStream, isEncrypted bool) *protos.ReqUploadFile {
 	info := file.GetFileInfo(paths)
 	if info == nil {
-		utils.ErrorLog("wrong filePath")
+		pp.ErrorLog(ctx, "wrong filePath")
 		return nil
 	}
 	fileName := info.Name()
-	utils.Log("fileName~~~~~~~~~~~~~~~~~~~~~~~~", fileName)
+	pp.Log(ctx, "fileName~~~~~~~~~~~~~~~~~~~~~~~~", fileName)
 	encryptionTag := ""
 	if isEncrypted {
 		encryptionTag = utils.GetRandomString(8)
 	}
 	fileHash := file.GetFileHash(paths, encryptionTag)
-	utils.Log("fileHash~~~~~~~~~~~~~~~~~~~~~~", fileHash)
+	pp.Log(ctx, "fileHash~~~~~~~~~~~~~~~~~~~~~~", fileHash)
 
 	p2pFileString := GetUploadFileSignMessage(setting.WalletAddress, setting.P2PAddress, ownerWalletAddress, fileHash, header.ReqUploadFile)
 
@@ -218,16 +219,16 @@ func RequestUploadFileData(paths, storagePath, reqID, ownerWalletAddress string,
 	if isVideoStream {
 		duration, err := file.GetVideoDuration(paths)
 		if err != nil {
-			utils.ErrorLog("Failed to get the length of the video: ", err)
+			pp.ErrorLog(ctx, "Failed to get the length of the video: ", err)
 			return nil
 		}
 		req.FileInfo.Duration = duration
 	}
 	p2pFileHash := []byte(p2pFileString)
-	utils.DebugLogf("setting.WalletAddress + fileHash : %v", hex.EncodeToString(p2pFileHash))
+	pp.DebugLogf(ctx, "setting.WalletAddress + fileHash : %v", hex.EncodeToString(p2pFileHash))
 
 	if !ed25519.Verify(setting.P2PPublicKey, p2pFileHash, req.Sign) {
-		utils.ErrorLog("ed25519 verification failed")
+		pp.ErrorLog(ctx, "ed25519 verification failed")
 		return nil
 	}
 
@@ -505,7 +506,7 @@ func ReqTransferDownloadData(notice *protos.ReqFileSliceBackupNotice, newPpP2pAd
 		utils.ErrorLog(err)
 	}
 	return &msg.RelayMsgBuf{
-		MSGHead: PPMsgHeaderWithoutReqId(data, header.ReqTransferDownload),
+		MSGHead: PPMsgHeader(data, header.ReqTransferDownload),
 		MSGData: data,
 	}
 }
@@ -528,7 +529,7 @@ func ReqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
 		utils.ErrorLog(err)
 	}
 	return &msg.RelayMsgBuf{
-		MSGHead: PPMsgHeaderWithoutReqId(data, header.ReqReportTaskBP),
+		MSGHead: PPMsgHeader(data, header.ReqReportTaskBP),
 		MSGData: data,
 	}
 }
@@ -644,7 +645,7 @@ func RspDownloadSliceWrong(target *protos.RspDownloadSliceWrong) *msg.RelayMsgBu
 		utils.ErrorLog(err)
 	}
 	return &msg.RelayMsgBuf{
-		MSGHead: PPMsgHeaderWithoutReqId(data, header.ReqDownloadSlice),
+		MSGHead: PPMsgHeader(data, header.ReqDownloadSlice),
 		MSGData: data,
 	}
 }
@@ -778,13 +779,13 @@ func ReqNodeStatusData() *protos.ReqReportNodeStatus {
 }
 
 // PPMsgHeader
-func PPMsgHeaderWithoutReqId(data []byte, head string) header.MessageHead {
-	return header.MakeMessageHeader(1, uint16(setting.Config.Version.AppVer), uint32(len(data)), head, utils.ZeroId())
+func PPMsgHeader(data []byte, head string) header.MessageHead {
+	return header.MakeMessageHeader(1, uint16(setting.Config.Version.AppVer), uint32(len(data)), head)
 }
 
 func UnmarshalData(ctx context.Context, target interface{}) bool {
 	msgBuf := core.MessageFromContext(ctx)
-	utils.DebugLogf("Received message type = %v msgBuf len = %v", reflect.TypeOf(target), len(msgBuf.MSGData))
+	pp.DebugLogf(ctx, "Received message type = %v msgBuf len = %v", reflect.TypeOf(target), len(msgBuf.MSGData))
 	return UnmarshalMessageData(msgBuf.MSGData, target)
 }
 

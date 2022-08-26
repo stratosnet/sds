@@ -1,6 +1,7 @@
 package task
 
 import (
+	"context"
 	"encoding/json"
 	"math/rand"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
@@ -313,16 +315,16 @@ func CleanUpConnMap(fileHash string) {
 	})
 }
 
-func CreateUploadSliceTask(slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
+func CreateUploadSliceTask(ctx context.Context, slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
 	if uploadTask.IsVideoStream {
-		return CreateUploadSliceTaskStream(slice, ppInfo, uploadTask)
+		return CreateUploadSliceTaskStream(ctx, slice, ppInfo, uploadTask)
 	} else {
-		return CreateUploadSliceTaskFile(slice, ppInfo, uploadTask)
+		return CreateUploadSliceTaskFile(ctx, slice, ppInfo, uploadTask)
 	}
 }
 
-func CreateUploadSliceTaskFile(slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
-	utils.DebugLogf("sliceNumber %v  offsetStart = %v  offsetEnd = %v", slice.SliceNumber, slice.SliceOffset.SliceOffsetStart, slice.SliceOffset.SliceOffsetEnd)
+func CreateUploadSliceTaskFile(ctx context.Context, slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
+	pp.DebugLogf(ctx, "sliceNumber %v  offsetStart = %v  offsetEnd = %v", slice.SliceNumber, slice.SliceOffset.SliceOffsetStart, slice.SliceOffset.SliceOffsetEnd)
 	startOffset := slice.SliceOffset.SliceOffsetStart
 	endOffset := slice.SliceOffset.SliceOffsetEnd
 
@@ -394,14 +396,14 @@ func CreateUploadSliceTaskFile(slice *SliceWithStatus, ppInfo *protos.PPBaseInfo
 		SpP2pAddress:    uploadTask.SpP2pAddress,
 	}
 
-	err := file.SaveTmpSliceData(uploadTask.FileHash, sliceHash, data)
+	err := file.SaveTmpSliceData(ctx, uploadTask.FileHash, sliceHash, data)
 	if err != nil {
 		return nil, err
 	}
 	return tk, nil
 }
 
-func CreateUploadSliceTaskStream(slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
+func CreateUploadSliceTaskStream(ctx context.Context, slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
 	videoFolder := file.GetVideoTmpFolder(uploadTask.FileHash)
 	videoSliceInfo := file.HlsInfoMap[uploadTask.FileHash]
 	var data []byte
@@ -425,7 +427,7 @@ func CreateUploadSliceTaskStream(slice *SliceWithStatus, ppInfo *protos.PPBaseIn
 		sliceTotalSize = uint64(file.GetFileInfo(slicePath).Size())
 	}
 
-	utils.DebugLog("sliceNumber", slice.SliceNumber)
+	pp.DebugLog(ctx, "sliceNumber", slice.SliceNumber)
 
 	sliceHash := utils.CalcSliceHash(data, uploadTask.FileHash, slice.SliceNumber)
 	offset := &protos.SliceOffset{
@@ -453,7 +455,7 @@ func CreateUploadSliceTaskStream(slice *SliceWithStatus, ppInfo *protos.PPBaseIn
 		SpP2pAddress:    uploadTask.SpP2pAddress,
 	}
 
-	err := file.SaveTmpSliceData(uploadTask.FileHash, sliceHash, data)
+	err := file.SaveTmpSliceData(ctx, uploadTask.FileHash, sliceHash, data)
 	if err != nil {
 		return nil, err
 	}

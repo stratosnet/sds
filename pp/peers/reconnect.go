@@ -1,12 +1,14 @@
 package peers
 
 import (
+	"context"
 	"math"
 	"math/rand"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
@@ -24,7 +26,7 @@ var (
 	retry               = 0
 )
 
-func ListenOffline() {
+func ListenOffline(ctx context.Context) {
 	for {
 		select {
 		case offline := <-client.OfflineChan:
@@ -32,39 +34,41 @@ func ListenOffline() {
 				if setting.IsPP {
 					utils.DebugLogf("SP %v is offline", offline.NetworkAddress)
 					setting.IsStartMining = false
-					reloadConnectSP()
-					GetSPList()
+					reloadConnectSP(ctx)()
+					GetSPList(ctx)()
 				}
 			} else {
-				peerList.PPDisconnected("", offline.NetworkAddress)
-				InitPPList()
+				peerList.PPDisconnected(ctx, "", offline.NetworkAddress)
+				InitPPList(ctx)
 			}
 		}
 	}
 }
 
-func reloadConnectSP() {
-	newConnection, err := ConnectToSP()
-	if newConnection {
-		RegisterToSP(true)
-		retry = 0
-		if setting.IsStartMining {
-			StartMining()
+func reloadConnectSP(ctx context.Context) func() {
+	return func() {
+		newConnection, err := ConnectToSP(ctx)
+		if newConnection {
+			RegisterToSP(ctx, true)
+			retry = 0
+			if setting.IsStartMining {
+				StartMining(ctx)
+			}
 		}
-	}
 
-	if err != nil {
-		//calc next reload interval
-		reloadSpInterval := minReloadSpInterval * int(math.Ceil(math.Pow(10, float64(retry))))
-		reloadSpInterval = int(math.Min(float64(reloadSpInterval), float64(maxReloadSpInterval)))
-		utils.Logf("couldn't connect to SP node. Retrying in %v seconds...", reloadSpInterval)
-		retry += 1
-		ppPeerClock.AddJobWithInterval(time.Duration(reloadSpInterval)*time.Second, reloadConnectSP)
+		if err != nil {
+			//calc next reload interval
+			reloadSpInterval := minReloadSpInterval * int(math.Ceil(math.Pow(10, float64(retry))))
+			reloadSpInterval = int(math.Min(float64(reloadSpInterval), float64(maxReloadSpInterval)))
+			pp.Logf(ctx, "couldn't connect to SP node. Retrying in %v seconds...", reloadSpInterval)
+			retry += 1
+			ppPeerClock.AddJobWithInterval(time.Duration(reloadSpInterval)*time.Second, reloadConnectSP(ctx))
+		}
 	}
 }
 
 // ConnectToSP Checks if there is a connection to an SP node. If it doesn't, it attempts to create one with a random SP node.
-func ConnectToSP() (newConnection bool, err error) {
+func ConnectToSP(ctx context.Context) (newConnection bool, err error) {
 	if client.SPConn != nil {
 		return false, nil
 	}
@@ -73,7 +77,7 @@ func ConnectToSP() (newConnection bool, err error) {
 	}
 
 	if optSpNetworkAddr, err := GetOptSPAndClear(); err == nil {
-		utils.DebugLog("reconnect to detected optimal SP ", optSpNetworkAddr)
+		pp.DebugLog(ctx, "reconnect to detected optimal SP ", optSpNetworkAddr)
 		client.SPConn, _ = client.NewClient(optSpNetworkAddr, false)
 		if client.SPConn != nil {
 			return true, nil
@@ -93,10 +97,10 @@ func ConnectToSP() (newConnection bool, err error) {
 }
 
 // ConnectToOptSP connect if there is a detected optimal SP node.
-func ConfirmOptSP(spNetworkAddr string) {
-	utils.DebugLog("current sp ", client.SPConn.GetName(), " to be altered to new optimal SP ", spNetworkAddr)
+func ConfirmOptSP(ctx context.Context, spNetworkAddr string) {
+	pp.DebugLog(ctx, "current sp ", client.SPConn.GetName(), " to be altered to new optimal SP ", spNetworkAddr)
 	if client.SPConn.GetName() == spNetworkAddr {
-		utils.DebugLog("optimal SP already in connection, won't change SP")
+		pp.DebugLog(ctx, "optimal SP already in connection, won't change SP")
 		return
 	}
 	setOptSP(spNetworkAddr)

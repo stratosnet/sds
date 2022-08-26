@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/stratosnet/sds/pp/event"
@@ -33,5 +34,5 @@ func getShareFile(w http.ResponseWriter, request *http.Request) {
 		saveAs = data["saveAs"].(string)
 	}
 
-	event.GetShareFile(keyword, sharePassword, saveAs, uuid.New().String(), setting.WalletAddress, w)
+	event.GetShareFile(context.Background(), keyword, sharePassword, saveAs, uuid.New().String(), setting.WalletAddress, w)
 }

@@ -22,7 +22,7 @@ func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get GetSPList RSP", target.SpList)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.Log("failed to get any indexing nodes, reloading")
-		peers.ScheduleReloadSPlist(time.Second * 3)
+		peers.ScheduleReloadSPlist(ctx, time.Second*3)
 		return
 	}
 

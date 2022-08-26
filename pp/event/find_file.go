@@ -7,6 +7,7 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/peers"
@@ -16,9 +17,10 @@ import (
 )
 
 // FindMyFileList
-func FindFileList(fileName string, walletAddr string, pageId uint64, reqID, keyword string, fileType int, isUp bool, w http.ResponseWriter) {
+func FindFileList(ctx context.Context, fileName string, walletAddr string, pageId uint64, reqID, keyword string, fileType int, isUp bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(requests.FindFileListData(fileName, walletAddr, pageId, reqID, keyword, protos.FileSortType(fileType), isUp), header.ReqFindMyFileList)
+		peers.SendMessageDirectToSPOrViaPP(ctx, requests.FindFileListData(fileName, walletAddr, pageId, reqID, keyword,
+			protos.FileSortType(fileType), isUp), header.ReqFindMyFileList)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -28,12 +30,12 @@ func FindFileList(fileName string, walletAddr string, pageId uint64, reqID, keyw
 // ReqFindMyFileList ReqFindMyFileList
 func ReqFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("+++++++++++++++++++++++++++++++++++++++++++++++++++")
-	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
+	peers.TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
 // RspFindMyFileList
 func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
-	utils.DebugLog("get RspFindMyFileList")
+	pp.DebugLog(ctx, "get RspFindMyFileList")
 	var target protos.RspFindMyFileList
 	rpcResult := &rpc.FileListResult{}
 
@@ -48,7 +50,7 @@ func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	if target.P2PAddress != setting.P2PAddress {
-		peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
+		peers.TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return
 	}
@@ -61,7 +63,7 @@ func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	if len(target.FileInfo) == 0 {
-		utils.Log("There are no files stored")
+		pp.Log(ctx, "There are no files stored")
 		rpcResult.Return = rpc.SUCCESS
 		rpcResult.TotalNumber = target.TotalFileNumber
 		rpcResult.PageId = target.PageId
@@ -70,25 +72,25 @@ func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 
 	var fileInfos = make([]rpc.FileInfo, 0)
 	for _, info := range target.FileInfo {
-		utils.Log("_______________________________")
+		pp.Log(ctx, "_______________________________")
 		if info.IsDirectory {
-			utils.Log("Directory name:", info.FileName)
-			utils.Log("Directory hash:", info.FileHash)
+			pp.Log(ctx, "Directory name:", info.FileName)
+			pp.Log(ctx, "Directory hash:", info.FileHash)
 		} else {
-			utils.Log("File name:", info.FileName)
-			utils.Log("File hash:", info.FileHash)
+			pp.Log(ctx, "File name:", info.FileName)
+			pp.Log(ctx, "File hash:", info.FileHash)
 		}
-		utils.Log("CreateTime :", info.CreateTime)
+		pp.Log(ctx, "CreateTime :", info.CreateTime)
 		fileInfos = append(fileInfos, rpc.FileInfo{
-			FileHash: info.FileHash,
-			FileSize: info.FileSize,
-			FileName: info.FileName,
+			FileHash:   info.FileHash,
+			FileSize:   info.FileSize,
+			FileName:   info.FileName,
 			CreateTime: info.CreateTime,
 		})
 	}
 
-	utils.Log("===============================")
-	utils.Logf("Total: %d  Page: %d", target.TotalFileNumber, target.PageId)
+	pp.Log(ctx, "===============================")
+	pp.Logf(ctx, "Total: %d  Page: %d", target.TotalFileNumber, target.PageId)
 
 	rpcResult.Return = rpc.SUCCESS
 	rpcResult.TotalNumber = target.TotalFileNumber

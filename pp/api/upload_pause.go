@@ -1,11 +1,13 @@
 package api
 
 import (
+	"context"
+	"net/http"
+
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
-	"net/http"
 
 	"github.com/google/uuid"
 )
@@ -29,7 +31,7 @@ func upPause(w http.ResponseWriter, request *http.Request) {
 			}
 			list = append(list, l)
 			if val, ok := setting.UploadTaskIDMap.Load(f.(string)); ok {
-				go event.UploadPause(val.(string), uuid.New().String(), w)
+				go event.UploadPause(context.Background(), val.(string), uuid.New().String(), w)
 			}
 		}
 		result := make(map[string][]*pause, 0)
