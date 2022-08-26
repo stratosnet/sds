@@ -84,6 +84,8 @@ const (
 	RspUploadFile              = "RspUpl"
 	ReqUploadFileSlice         = "ReqUpLFS"
 	RspUploadFileSlice         = "RspUpLFS"
+	ReqUploadSlicesWrong       = "ReqUSW"
+	RspUploadSlicesWrong       = "RspUSW"
 	ReqReportUploadSliceResult = "ReqUFR"
 	RspReportUploadSliceResult = "RspUFR"
 	UploadSpeedOfProgress      = "USOP"

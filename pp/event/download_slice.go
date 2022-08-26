@@ -308,16 +308,16 @@ func SendReqDownloadSlice(ctx context.Context, fileHash string, sliceInfo *proto
 		}
 	}
 
-	conn := client.NewClient(networkAddress, false)
-	if conn == nil {
-		pp.ErrorLog(ctx, "Fail to create connection with "+networkAddress)
+	conn, err := client.NewClient(networkAddress, false)
+	if err != nil {
+		pp.ErrorLogf(ctx, "Failed to create connection with %v: %v", networkAddress, utils.FormatError(err))
 		if dTask, ok := task.GetDownloadTask(fileHash, req.WalletAddress, fileReqId); ok {
 			setDownloadSliceFail(ctx, sliceInfo.SliceStorageInfo.SliceHash, req.TaskId, req.IsVideoCaching, dTask)
 		}
 		return
 	}
 
-	err := peers.SendMessage(ctx, conn, req, header.ReqDownloadSlice)
+	err = peers.SendMessage(ctx, conn, req, header.ReqDownloadSlice)
 	if err == nil {
 		pp.DebugLog(ctx, "Send download slice request to ", networkAddress)
 		client.DownloadConnMap.Store(key, conn)

@@ -237,7 +237,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 		if idx == 0 {
 			saveAs = target.ShareRequest.SaveAs
 		}
-		filePath := datamesh.DataMashId{
+		filePath := datamesh.DataMeshId{
 			Owner: fileInfo.OwnerWalletAddress,
 			Hash:  fileInfo.FileHash,
 		}.String()

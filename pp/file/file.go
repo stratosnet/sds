@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
@@ -110,34 +111,34 @@ func GetSliceSize(sliceHash string) int64 {
 
 }
 
-func SaveTmpSliceData(ctx context.Context, fileHash, sliceHash string, data []byte) bool {
+func SaveTmpSliceData(fileHash, sliceHash string, data []byte) error {
 	wmutex.Lock()
 	defer wmutex.Unlock()
+
 	tmpFileFolderPath := getTmpFileFolderPath(fileHash)
 	folderPath := filepath.Join(tmpFileFolderPath)
 	exist, err := PathExists(folderPath)
 	if err != nil {
-		pp.ErrorLog(ctx, err)
-		return false
+		return err
 	}
 	if !exist {
 		if err = os.MkdirAll(folderPath, os.ModePerm); err != nil {
-			pp.ErrorLog(ctx, err)
-			return false
+			return err
 		}
 	}
+
 	fileMg, err := os.OpenFile(getTmpSlicePath(fileHash, sliceHash), os.O_CREATE|os.O_RDWR, 0777)
 	defer fileMg.Close()
 	if err != nil {
-		pp.ErrorLog(ctx, "error initialize file")
-		return false
+		return errors.Wrap(err, "error initializing file")
 	}
+
 	_, err = fileMg.Write(data)
 	if err != nil {
-		pp.ErrorLog(ctx, "error save file")
-		return false
+		return errors.Wrap(err, "error saving file")
 	}
-	return true
+
+	return nil
 }
 
 // SaveSliceData

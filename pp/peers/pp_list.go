@@ -66,11 +66,12 @@ func ConnectToGatewayPP(ctx context.Context, pplist []*types.PeerInfo) bool {
 			peerList.DeletePPByNetworkAddress(ctx, ppInfo.NetworkAddress)
 			continue
 		}
-		client.PPConn = client.NewClient(ppInfo.NetworkAddress, true)
-		if client.PPConn != nil {
+		ppConn, err := client.NewClient(ppInfo.NetworkAddress, true)
+		if ppConn != nil {
+			client.PPConn = ppConn
 			return true
 		}
-		pp.DebugLog(ctx, "failed to conn PP，delete:", ppInfo)
+		pp.DebugLogf(ctx, "failed to connect to PP %v: %v", ppInfo, utils.FormatError(err))
 		peerList.DeletePPByNetworkAddress(ctx, ppInfo.NetworkAddress)
 	}
 	return false

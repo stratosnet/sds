@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
@@ -37,18 +38,16 @@ var DownloadConnMap = &sync.Map{}
 var ConnMap = make(map[string]*cf.ClientConn)
 
 // NewClient
-func NewClient(server string, heartbeat bool) *cf.ClientConn {
-
+func NewClient(server string, heartbeat bool) (*cf.ClientConn, error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp4", server)
 	if err != nil {
-		utils.ErrorLogf("resolve TCP address error: %v", err)
+		return nil, errors.Wrap(err, "resolve TCP address error")
 	}
 	c, err := net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
-		utils.DebugLog(server, "connect failed", err)
-		return nil
+		return nil, err
 	}
-	utils.Log("connect success")
+
 	onConnect := cf.OnConnectOption(func(c core.WriteCloser) bool {
 		utils.DebugLog("on connect")
 		return true
@@ -91,8 +90,7 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 
 	serverPort, err := strconv.ParseUint(setting.Config.Port, 10, 16)
 	if err != nil {
-		utils.ErrorLogf("Invalid port number in config [%v]: %v", setting.Config.Port, err.Error())
-		return nil
+		return nil, errors.Wrapf(err, "Invalid port number in config [%v]", setting.Config.Port)
 	}
 	serverPortOpt := cf.ServerPortOption(uint16(serverPort))
 
@@ -108,10 +106,12 @@ func NewClient(server string, heartbeat bool) *cf.ClientConn {
 		cf.P2pAddressOption(setting.P2PAddress),
 		serverPortOpt,
 	}
+	utils.Logf("attempting to connect to %v", server)
 	conn := cf.CreateClientConn(0, c, options...)
 	conn.Start()
 	ConnMap[server] = conn
-	return conn
+
+	return conn, nil
 }
 
 func GetConnectionName(conn core.WriteCloser) string {

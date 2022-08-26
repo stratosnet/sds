@@ -36,7 +36,7 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 		OwnerWalletAddress: data["ownerWalletAddress"].(string),
 		SaveAs:             data["saveAs"].(string),
 	}
-	path := datamesh.DataMashId{
+	path := datamesh.DataMeshId{
 		Owner: p.OwnerWalletAddress,
 		Hash:  p.FileHash,
 	}.String()

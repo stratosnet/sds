@@ -166,7 +166,7 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, reqID, ownerW
 	}
 
 	// info
-	p := &task.UpProgress{
+	p := &task.UploadProgress{
 		Total:     int64(fileSize),
 		HasUpload: 0,
 	}
@@ -233,7 +233,7 @@ func RequestUploadFileData(ctx context.Context, paths, storagePath, reqID, owner
 	}
 
 	// info
-	p := &task.UpProgress{
+	p := &task.UploadProgress{
 		Total:     info.Size(),
 		HasUpload: 0,
 	}
@@ -344,8 +344,36 @@ func ReqUploadFileSliceData(task *task.UploadSliceTask, sign []byte) *protos.Req
 	}
 }
 
-func ReqReportUploadSliceResultData(target *protos.RspUploadFileSlice) *protos.ReportUploadSliceResult {
+func RspUploadFileSliceData(target *protos.ReqUploadFileSlice) *protos.RspUploadFileSlice {
+	return &protos.RspUploadFileSlice{
+		TaskId:        target.TaskId,
+		FileHash:      target.FileHash,
+		SliceHash:     target.SliceInfo.SliceHash,
+		P2PAddress:    target.P2PAddress,
+		WalletAddress: target.WalletAddress,
+		SliceNumAddr:  target.SliceNumAddr,
+		SliceSize:     target.SliceSize,
+		Result: &protos.Result{
+			State: protos.ResultState_RES_SUCCESS,
+		},
+		SpP2PAddress: target.SpP2PAddress,
+	}
+}
 
+func ReqUploadSlicesWrong(uploadTask *task.UploadFileTask, spP2pAddress string, slicesToDownload []*protos.SliceHashAddr, failedSlices []bool) *protos.ReqUploadSlicesWrong {
+	return &protos.ReqUploadSlicesWrong{
+		FileHash:             uploadTask.FileHash,
+		TaskId:               uploadTask.TaskID,
+		UploadType:           uploadTask.Type,
+		MyAddress:            setting.GetPPInfo(),
+		SpP2PAddress:         spP2pAddress,
+		ExcludedDestinations: uploadTask.GetExcludedDestinations(),
+		Slices:               slicesToDownload,
+		FailedSlices:         failedSlices,
+	}
+}
+
+func ReqReportUploadSliceResultData(target *protos.RspUploadFileSlice) *protos.ReportUploadSliceResult {
 	utils.DebugLog("reqReportUploadSliceResultData____________________", target.SliceSize)
 	return &protos.ReportUploadSliceResult{
 		TaskId:        target.TaskId,
@@ -361,6 +389,7 @@ func ReqReportUploadSliceResultData(target *protos.RspUploadFileSlice) *protos.R
 		SpP2PAddress:  target.SpP2PAddress,
 	}
 }
+
 func ReqReportUploadSliceResultDataPP(target *protos.ReqUploadFileSlice) *protos.ReportUploadSliceResult {
 	utils.DebugLog("____________________", target.SliceSize)
 	return &protos.ReportUploadSliceResult{
@@ -375,22 +404,6 @@ func ReqReportUploadSliceResultDataPP(target *protos.ReqUploadFileSlice) *protos
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		SpP2PAddress:  target.SpP2PAddress,
-	}
-}
-
-func RspUploadFileSliceData(target *protos.ReqUploadFileSlice) *protos.RspUploadFileSlice {
-	return &protos.RspUploadFileSlice{
-		TaskId:        target.TaskId,
-		FileHash:      target.FileHash,
-		SliceHash:     target.SliceInfo.SliceHash,
-		P2PAddress:    target.P2PAddress,
-		WalletAddress: target.WalletAddress,
-		SliceNumAddr:  target.SliceNumAddr,
-		SliceSize:     target.SliceSize,
-		Result: &protos.Result{
-			State: protos.ResultState_RES_SUCCESS,
-		},
-		SpP2PAddress: target.SpP2PAddress,
 	}
 }
 

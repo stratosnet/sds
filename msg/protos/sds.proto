@@ -13,7 +13,6 @@ import "sds_comm.proto";
 
 message ReqGetPPList {
   PPBaseInfo my_address = 1;
-
 }
 
 message RspGetPPList{
@@ -103,6 +102,24 @@ message RspUploadFileSlice {
   string       sp_p2p_address = 9;
 }
 
+message ReqUploadSlicesWrong {
+  string file_hash = 1;
+  string task_id = 2;
+  UploadType upload_type = 3;
+  PPBaseInfo my_address = 4;
+  string     sp_p2p_address = 5;
+  repeated PPBaseInfo excluded_destinations = 6;
+  repeated SliceHashAddr slices = 7;
+  repeated bool failed_slices = 8;
+}
+
+message RspUploadSlicesWrong {
+  Result result = 1;
+  string file_hash = 2;
+  UploadType upload_type = 3;
+  string task_id = 4;
+  repeated SliceHashAddr slices = 5;
+}
 
 message UploadSpeedOfProgress {
   string file_hash = 1; //

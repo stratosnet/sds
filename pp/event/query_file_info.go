@@ -259,7 +259,7 @@ func CheckDownloadPath(path string) bool {
 		utils.DebugLog("invalid path length")
 		return false
 	}
-	if path[:6] != datamesh.DATA_MASH_PREFIX {
+	if path[:6] != datamesh.DATA_MESH_PREFIX {
 		return false
 	}
 	if path[47:48] != "/" {

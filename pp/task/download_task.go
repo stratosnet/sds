@@ -423,7 +423,7 @@ func DownloadProgress(ctx context.Context, fileHash, fileReqId string, size uint
 		p := float32(sp.DownloadedSize) / float32(sp.TotalSize) * 100
 		pp.Logf(ctx, "downloaded：%.2f %% \n", p)
 		setting.DownloadProgressMap.Store(fileHash, p)
-		setting.ShowProgressWithContext(ctx, p)
+		setting.ShowProgress(ctx, p)
 
 		// all bytes downloaded
 		if sp.DownloadedSize >= sp.TotalSize {

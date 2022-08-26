@@ -22,6 +22,11 @@ enum DownloadWrongType {
     OVERTIME = 1;
 }
 
+enum UploadType {
+    NEW_UPLOAD = 0;
+    BACKUP = 1;
+}
+
 enum FileSortType {
     DEF  = 0;  // default
     TIME = 1;  // time
