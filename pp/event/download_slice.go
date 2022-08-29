@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
@@ -56,9 +58,11 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 			peers.SendResponseMessageWithReqId(conn, rsp, header.RspDownloadSlice, reqId)
 			return
 		}
-
-		SendReportDownloadResult(rsp, true)
+		sendStartTime := time.Now().Unix()
 		splitSendDownloadSliceData(rsp, conn, reqId)
+		sendEndTime := time.Now().Unix()
+		sendTimeCost := sendEndTime - sendStartTime
+		SendReportDownloadResult(rsp, sendTimeCost, true)
 
 		task.DownloadSliceTaskMap.Store(target.TaskId+target.SliceInfo.SliceHash, true)
 	}
@@ -83,7 +87,7 @@ func splitSendDownloadSliceData(rsp *protos.RspDownloadSlice, conn core.WriteClo
 			offsetEnd += setting.MAXDATA
 		} else {
 			peers.SendResponseMessageWithReqId(conn, requests.RspDownloadSliceDataSplit(rsp, dataStart, 0, offsetStart, 0,
-			rsp.SliceInfo.SliceOffset.SliceOffsetStart, rsp.SliceInfo.SliceOffset.SliceOffsetEnd, true), header.RspDownloadSlice, reqId)
+				rsp.SliceInfo.SliceOffset.SliceOffsetStart, rsp.SliceInfo.SliceOffset.SliceOffsetEnd, true), header.RspDownloadSlice, reqId)
 			return
 		}
 	}
@@ -119,7 +123,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	if f, ok := task.DownloadFileMap.Load(target.FileHash+sid.(string)); ok {
+	if f, ok := task.DownloadFileMap.Load(target.FileHash + sid.(string)); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
 		utils.DebugLog("get a slice -------")
 		utils.DebugLog("SliceHash", target.SliceInfo.SliceHash)
@@ -135,7 +139,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 			task.DownloadProgress(target.FileHash, sid.(string), uint64(len(target.Data)))
 		}
 	} else {
-		utils.DebugLog("DownloadFileMap doesn't have entry with file hash", target.FileHash);
+		utils.DebugLog("DownloadFileMap doesn't have entry with file hash", target.FileHash)
 	}
 }
 
@@ -150,17 +154,17 @@ func receiveSliceAndProgress(target *protos.RspDownloadSlice, fInfo *protos.RspF
 				task.DownloadSliceProgress.Delete(target.SliceInfo.SliceHash + fInfo.ReqId)
 				receivedSlice(target, fInfo, dTask)
 			} else {
-				task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash + fInfo.ReqId, alreadySize)
+				task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash+fInfo.ReqId, alreadySize)
 			}
 		} else {
 			// if data is sent at once
 			if target.SliceSize == dataLen {
 				receivedSlice(target, fInfo, dTask)
 			} else {
-				task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash + fInfo.ReqId, dataLen)
+				task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash+fInfo.ReqId, dataLen)
 			}
 		}
-	}else {
+	} else {
 		utils.DebugLog("Download failed: not able to write to the target file.")
 		file.CloseDownloadSession(fInfo.FileHash + fInfo.ReqId)
 		task.CleanDownloadFileAndConnMap(fInfo.FileHash, fInfo.ReqId)
@@ -205,12 +209,13 @@ func receiveSliceAndProgressEncrypted(target *protos.RspDownloadSlice, fInfo *pr
 			dataToStore = make([]byte, target.SliceSize)
 			copy(dataToStore[encryptedOffset.SliceOffsetStart:encryptedOffset.SliceOffsetEnd], dataToDecrypt)
 		}
-		task.DownloadEncryptedSlices.Store(target.SliceInfo.SliceHash + fInfo.ReqId, dataToStore)
-		task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash + fInfo.ReqId, dataToDecryptSize)
+		task.DownloadEncryptedSlices.Store(target.SliceInfo.SliceHash+fInfo.ReqId, dataToStore)
+		task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash+fInfo.ReqId, dataToDecryptSize)
 	}
 }
 
 func receivedSlice(target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask) {
+	receiveTimeStart := time.Now().Unix()
 	file.SaveDownloadProgress(target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, target.SavePath, fInfo.ReqId)
 	task.CleanDownloadTask(target.FileHash, target.SliceInfo.SliceHash, target.WalletAddress, fInfo.ReqId)
 	target.Result = &protos.Result{
@@ -222,7 +227,9 @@ func receivedSlice(target *protos.RspDownloadSlice, fInfo *protos.RspFileStorage
 		videoCacheKeep(fInfo.FileHash, target.TaskId)
 	}
 	setDownloadSliceSuccess(target.SliceInfo.SliceHash, dTask)
-	SendReportDownloadResult(target, false)
+	receiveTimeEnd := time.Now().Unix()
+	receiveCostTime := receiveTimeEnd - receiveTimeStart
+	SendReportDownloadResult(target, receiveCostTime, false)
 }
 
 func videoCacheKeep(fileHash, taskID string) {
@@ -234,14 +241,14 @@ func videoCacheKeep(fileHash, taskID string) {
 }
 
 // ReportDownloadResult  PP-SP OR StoragePP-SP
-func SendReportDownloadResult(target *protos.RspDownloadSlice, isPP bool) {
+func SendReportDownloadResult(target *protos.RspDownloadSlice, costTime int64, isPP bool) {
 	utils.DebugLog("ReportDownloadResult report result target.fileHash = ", target.FileHash)
-	peers.SendMessageDirectToSPOrViaPP(requests.ReqReportDownloadResultData(target, isPP), header.ReqReportDownloadResult)
+	peers.SendMessageDirectToSPOrViaPP(requests.ReqReportDownloadResultData(target, costTime, isPP), header.ReqReportDownloadResult)
 }
 
 // ReportDownloadResult  P-SP OR PP-SP
 func SendReportStreamingResult(target *protos.RspDownloadSlice, isPP bool) {
-	peers.SendMessageToSPServer(requests.ReqReportDownloadResultData(target, isPP), header.ReqReportDownloadResult)
+	peers.SendMessageToSPServer(requests.ReqReportStreamResultData(target, isPP), header.ReqReportDownloadResult)
 }
 
 // DownloadFileSlice
@@ -260,7 +267,7 @@ func DownloadFileSlice(target *protos.RspFileStorageInfo) {
 		DownloadedSize: 0,
 	}
 	if !file.CheckFileExisting(target.FileHash, target.FileName, target.SavePath, target.EncryptionTag, target.ReqId) {
-		task.DownloadSpeedOfProgress.Store(target.FileHash + target.ReqId, sp)
+		task.DownloadSpeedOfProgress.Store(target.FileHash+target.ReqId, sp)
 		for _, rsp := range target.SliceInfo {
 			utils.DebugLog("taskid ======= ", rsp.TaskId)
 			if file.CheckSliceExisting(target.FileHash, target.FileName, rsp.SliceStorageInfo.SliceHash, target.SavePath, target.ReqId) {
@@ -275,7 +282,7 @@ func DownloadFileSlice(target *protos.RspFileStorageInfo) {
 				SendReqDownloadSlice(target.FileHash, rsp, req, target.ReqId)
 			}
 		}
-  	} else {
+	} else {
 		utils.ErrorLog("file exists already!")
 		task.DeleteDownloadTask(target.FileHash, target.WalletAddress, target.ReqId)
 	}

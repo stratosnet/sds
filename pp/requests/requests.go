@@ -133,7 +133,7 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, reqID, ownerW
 
 	p2pFileString := GetUploadFileSignMessage(setting.WalletAddress, setting.P2PAddress, ownerWalletAddress, fileHash, header.ReqUploadFile)
 
-	file.SaveRemoteFileHash(fileHash, "rpc:" + fileName, fileSize)
+	file.SaveRemoteFileHash(fileHash, "rpc:"+fileName, fileSize)
 
 	req := &protos.ReqUploadFile{
 		FileInfo: &protos.FileInfo{
@@ -252,7 +252,7 @@ func RequestDownloadFile(fileHash, walletAddr, reqId string, shareRequest *proto
 	}
 
 	// download file uses fileHash + fileReqId as the key
-	file.SaveRemoteFileHash(fileHash + fileReqId, "rpc:", 0)
+	file.SaveRemoteFileHash(fileHash+fileReqId, "rpc:", 0)
 
 	// path: mesh network address
 	sdmPath := "sdm://" + walletAddr + "/" + fileHash
@@ -264,20 +264,21 @@ func RequestDownloadFile(fileHash, walletAddr, reqId string, shareRequest *proto
 func RspDownloadSliceData(target *protos.ReqDownloadSlice) *protos.RspDownloadSlice {
 	slice := task.GetDownloadSlice(target)
 	return &protos.RspDownloadSlice{
-		P2PAddress:     target.P2PAddress,
-		WalletAddress:  target.WalletAddress,
-		SliceInfo:      target.SliceInfo,
-		FileCrc:        slice.FileCrc,
-		FileHash:       target.FileHash,
-		TaskId:         target.TaskId,
-		Data:           slice.Data,
-		SliceSize:      uint64(len(slice.Data)),
-		SavePath:       target.SavePath,
-		Result:         &protos.Result{State: protos.ResultState_RES_SUCCESS, Msg: ""},
-		ReqId:          target.ReqId,
-		IsEncrypted:    target.IsEncrypted,
-		SpP2PAddress:   target.SpP2PAddress,
-		IsVideoCaching: target.IsVideoCaching,
+		P2PAddress:        target.P2PAddress,
+		WalletAddress:     target.WalletAddress,
+		SliceInfo:         target.SliceInfo,
+		FileCrc:           slice.FileCrc,
+		FileHash:          target.FileHash,
+		TaskId:            target.TaskId,
+		Data:              slice.Data,
+		SliceSize:         uint64(len(slice.Data)),
+		SavePath:          target.SavePath,
+		Result:            &protos.Result{State: protos.ResultState_RES_SUCCESS, Msg: ""},
+		ReqId:             target.ReqId,
+		IsEncrypted:       target.IsEncrypted,
+		SpP2PAddress:      target.SpP2PAddress,
+		IsVideoCaching:    target.IsVideoCaching,
+		StorageP2PAddress: setting.P2PAddress,
 	}
 }
 
@@ -393,7 +394,55 @@ func RspUploadFileSliceData(target *protos.ReqUploadFileSlice) *protos.RspUpload
 	}
 }
 
-func ReqReportDownloadResultData(target *protos.RspDownloadSlice, isPP bool) *protos.ReqReportDownloadResult {
+func ReqReportDownloadResultData(target *protos.RspDownloadSlice, costTime int64, isPP bool) *protos.ReqReportDownloadResult {
+
+	utils.DebugLog("#################################################################", target.SliceInfo.SliceHash)
+	repReq := &protos.ReqReportDownloadResult{
+		IsPP:                    isPP,
+		DownloaderP2PAddress:    target.P2PAddress,
+		DownloaderWalletAddress: target.WalletAddress,
+		MyP2PAddress:            setting.P2PAddress,
+		MyWalletAddress:         setting.WalletAddress,
+		FileHash:                target.FileHash,
+		Sign:                    setting.GetSign(setting.P2PAddress + target.FileHash),
+		TaskId:                  target.TaskId,
+		SpP2PAddress:            target.SpP2PAddress,
+		CostTime:                costTime,
+	}
+	if isPP {
+		utils.Log("PP ReportDownloadResult ")
+
+		if dlTask, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress); ok {
+			downloadTask := dlTask.(*task.DownloadTask)
+			utils.DebugLog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^downloadTask", downloadTask)
+			if sInfo, ok := downloadTask.SliceInfo[target.SliceInfo.SliceHash]; ok {
+				repReq.SliceInfo = sInfo
+				repReq.SliceInfo.VisitResult = true
+			} else {
+				utils.DebugLog("ReportDownloadResult failed~~~~~~~~~~~~~~~~~~~~~~~~~~")
+			}
+
+		} else {
+			repReq.SliceInfo = &protos.DownloadSliceInfo{
+				SliceStorageInfo: &protos.SliceStorageInfo{
+					SliceHash: target.SliceInfo.SliceHash,
+					SliceSize: target.SliceSize,
+				},
+			}
+		}
+		repReq.OpponentP2PAddress = target.P2PAddress
+	} else {
+		repReq.SliceInfo = &protos.DownloadSliceInfo{
+			SliceStorageInfo: &protos.SliceStorageInfo{
+				SliceHash: target.SliceInfo.SliceHash,
+				SliceSize: target.SliceSize,
+			},
+		}
+		repReq.OpponentP2PAddress = target.StorageP2PAddress
+	}
+	return repReq
+}
+func ReqReportStreamResultData(target *protos.RspDownloadSlice, isPP bool) *protos.ReqReportDownloadResult {
 
 	utils.DebugLog("#################################################################", target.SliceInfo.SliceHash)
 	repReq := &protos.ReqReportDownloadResult{
@@ -428,6 +477,7 @@ func ReqReportDownloadResultData(target *protos.RspDownloadSlice, isPP bool) *pr
 				},
 			}
 		}
+		repReq.OpponentP2PAddress = target.P2PAddress
 	} else {
 		repReq.SliceInfo = &protos.DownloadSliceInfo{
 			SliceStorageInfo: &protos.SliceStorageInfo{
@@ -435,6 +485,7 @@ func ReqReportDownloadResultData(target *protos.RspDownloadSlice, isPP bool) *pr
 				SliceSize: target.SliceSize,
 			},
 		}
+		repReq.OpponentP2PAddress = target.StorageP2PAddress
 	}
 	return repReq
 }
@@ -449,12 +500,13 @@ func ReqDownloadSliceData(target *protos.RspFileStorageInfo, rsp *protos.Downloa
 			SliceHash:   rsp.SliceStorageInfo.SliceHash,
 			SliceOffset: rsp.SliceOffset,
 		},
-		SavePath:     target.SavePath,
-		ReqId:        uuid.New().String(),
-		IsEncrypted:  target.EncryptionTag != "",
-		SliceNumber:  rsp.SliceNumber,
-		Sign:         target.Sign,
-		SpP2PAddress: target.SpP2PAddress,
+		SavePath:          target.SavePath,
+		ReqId:             uuid.New().String(),
+		IsEncrypted:       target.EncryptionTag != "",
+		SliceNumber:       rsp.SliceNumber,
+		Sign:              target.Sign,
+		SpP2PAddress:      target.SpP2PAddress,
+		StorageP2PAddress: rsp.StoragePpInfo.P2PAddress,
 	}
 }
 
@@ -687,7 +739,7 @@ func ReqShareFileData(reqID, fileHash, pathHash, walletAddr string, isPrivate bo
 	}
 }
 
-func ReqDeleteShareData(reqID, shareID,walletAddr string) *protos.ReqDeleteShare {
+func ReqDeleteShareData(reqID, shareID, walletAddr string) *protos.ReqDeleteShare {
 	return &protos.ReqDeleteShare{
 		ReqId:         reqID,
 		P2PAddress:    setting.P2PAddress,
