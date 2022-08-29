@@ -138,9 +138,8 @@ message ReportUploadSliceResult {
   string     p2p_address = 9;
   string     wallet_address = 10;
   string     sp_p2p_address = 11;
-  int64      start_time = 12;
-  int64      end_time = 13;
-  string     opponent_p2p_address = 14;
+  int64      cost_time = 12;
+  string     opponent_p2p_address = 13;
 
 }
 

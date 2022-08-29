@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/client/cf"
@@ -57,9 +58,10 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 			peers.SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
 			return
 		}
-
-		SendReportDownloadResult(ctx, rsp, true)
+		start := time.Now().Unix()
 		splitSendDownloadSliceData(ctx, rsp, conn)
+		end := time.Now().Unix()
+		SendReportDownloadResult(ctx, rsp, end-start, true)
 
 		task.DownloadSliceTaskMap.Store(target.TaskId+target.SliceInfo.SliceHash, true)
 	}
@@ -214,6 +216,7 @@ func receiveSliceAndProgressEncrypted(ctx context.Context, target *protos.RspDow
 }
 
 func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask) {
+	start := time.Now().Unix()
 	file.SaveDownloadProgress(ctx, target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, target.SavePath, fInfo.ReqId)
 	task.CleanDownloadTask(ctx, target.FileHash, target.SliceInfo.SliceHash, target.WalletAddress, fInfo.ReqId)
 	target.Result = &protos.Result{
@@ -225,7 +228,8 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 		videoCacheKeep(fInfo.FileHash, target.TaskId)
 	}
 	setDownloadSliceSuccess(ctx, target.SliceInfo.SliceHash, dTask)
-	SendReportDownloadResult(ctx, target, false)
+	end := time.Now().Unix()
+	SendReportDownloadResult(ctx, target, end-start, false)
 }
 
 func videoCacheKeep(fileHash, taskID string) {
@@ -237,14 +241,14 @@ func videoCacheKeep(fileHash, taskID string) {
 }
 
 // ReportDownloadResult  PP-SP OR StoragePP-SP
-func SendReportDownloadResult(ctx context.Context, target *protos.RspDownloadSlice, isPP bool) {
+func SendReportDownloadResult(ctx context.Context, target *protos.RspDownloadSlice, costTime int64, isPP bool) {
 	pp.DebugLog(ctx, "ReportDownloadResult report result target.fileHash = ", target.FileHash)
-	peers.SendMessageDirectToSPOrViaPP(ctx, requests.ReqReportDownloadResultData(target, isPP), header.ReqReportDownloadResult)
+	peers.SendMessageDirectToSPOrViaPP(ctx, requests.ReqReportDownloadResultData(target, costTime, isPP), header.ReqReportDownloadResult)
 }
 
 // ReportDownloadResult  P-SP OR PP-SP
 func SendReportStreamingResult(target *protos.RspDownloadSlice, isPP bool) {
-	peers.SendMessageToSPServer(context.Background(), requests.ReqReportDownloadResultData(target, isPP), header.ReqReportDownloadResult)
+	peers.SendMessageToSPServer(context.Background(), requests.ReqReportStreamResultData(target, isPP), header.ReqReportDownloadResult)
 }
 
 // DownloadFileSlice
