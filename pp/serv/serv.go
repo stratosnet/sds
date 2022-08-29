@@ -1,6 +1,7 @@
 package serv
 
 import (
+	"context"
 	"errors"
 	"strconv"
 
@@ -12,12 +13,13 @@ import (
 )
 
 const (
-	DefaultHTTPHost    = "0.0.0.0"   // Default host: INADDR_ANY
-	DefaultHTTPPort    = 8235        // Default TCP port for the HTTP RPC server
+	DefaultHTTPHost = "0.0.0.0" // Default host: INADDR_ANY
+	DefaultHTTPPort = 8235      // Default TCP port for the HTTP RPC server
 )
 
 func Start() {
-	err := GetWalletAddress()
+	ctx := context.Background()
+	err := GetWalletAddress(ctx)
 	if err != nil {
 		utils.ErrorLog(err)
 		return
@@ -41,7 +43,7 @@ func Start() {
 		return
 	}
 
-	peers.StartPP(event.RegisterEventHandle)
+	peers.StartPP(ctx, event.RegisterEventHandle)
 }
 
 func startIPC() error {
@@ -94,7 +96,7 @@ func startHttpRPC() error {
 	}
 
 	if err := rpcServer.start(); err != nil {
-  		return err
+		return err
 	}
 
 	return nil

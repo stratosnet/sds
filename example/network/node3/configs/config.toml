@@ -27,9 +27,9 @@ monitor_port = '5698'
 traffic_log_interval = 10
 max_connection = 1000
 [version]
-app_ver = 7
-min_app_ver = 7
-show = 'v0.7.0'
+app_ver = 8
+min_app_ver = 8
+show = 'v0.8.1'
 
 [[sp_list]]
 p2p_address = ""

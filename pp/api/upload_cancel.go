@@ -1,10 +1,12 @@
 package api
 
 import (
+	"context"
+	"net/http"
+
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils/httpserv"
-	"net/http"
 
 	"github.com/google/uuid"
 )
@@ -28,7 +30,7 @@ func upCancel(w http.ResponseWriter, request *http.Request) {
 			}
 			list = append(list, l)
 			if val, ok := setting.UploadTaskIDMap.Load(l.TaskID); ok {
-				go event.UploadPause(val.(string), uuid.New().String(), w)
+				go event.UploadPause(context.Background(), val.(string), uuid.New().String(), w)
 			}
 			setting.UploadTaskIDMap.Delete(l.TaskID)
 			delete(setting.UpMap, l.TaskID)

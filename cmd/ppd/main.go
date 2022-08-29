@@ -25,7 +25,7 @@ func main() {
 
 	err := rootCmd.Execute()
 	if err != nil {
-		utils.ErrorLog(err)
+		fmt.Println(err.Error())
 	}
 	return
 }
@@ -72,6 +72,7 @@ func getTerminalCmd() *cobra.Command {
 		PreRunE: terminalPreRunE,
 		Run:     execute,
 	}
+	execCmd.Flags().BoolP(verboseFlag, "v", false, "output logs")
 	cmd.AddCommand(execCmd)
 	return cmd
 }

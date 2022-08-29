@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -35,13 +36,13 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 		OwnerWalletAddress: data["ownerWalletAddress"].(string),
 		SaveAs:             data["saveAs"].(string),
 	}
-	path := datamesh.DataMashId{
+	path := datamesh.DataMeshId{
 		Owner: p.OwnerWalletAddress,
 		Hash:  p.FileHash,
 	}.String()
 	downTaskID := uuid.New().String()
 
-	event.GetFileStorageInfo(path, "", downTaskID, setting.WalletAddress, p.SaveAs, false, w)
+	event.GetFileStorageInfo(context.Background(), path, "", downTaskID, setting.WalletAddress, p.SaveAs, false, w)
 
 	type df struct {
 		TaskID             string `json:"taskID"`
