@@ -377,36 +377,38 @@ func ReqUploadSlicesWrong(uploadTask *task.UploadFileTask, spP2pAddress string, 
 func ReqReportUploadSliceResultData(target *protos.RspUploadFileSlice, costTime int64) *protos.ReportUploadSliceResult {
 	utils.DebugLog("reqReportUploadSliceResultData____________________", target.SliceSize)
 	return &protos.ReportUploadSliceResult{
-		TaskId:        target.TaskId,
-		SliceNumAddr:  target.SliceNumAddr,
-		SliceHash:     target.SliceHash,
-		IsPP:          false,
-		UploadSuccess: true,
-		FileHash:      target.FileHash,
-		SliceSize:     target.SliceSize,
-		Sign:          setting.GetSign(setting.P2PAddress + target.FileHash),
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		SpP2PAddress:  target.SpP2PAddress,
-		CostTime:      costTime,
+		TaskId:             target.TaskId,
+		SliceNumAddr:       target.SliceNumAddr,
+		SliceHash:          target.SliceHash,
+		IsPP:               false,
+		UploadSuccess:      true,
+		FileHash:           target.FileHash,
+		SliceSize:          target.SliceSize,
+		Sign:               setting.GetSign(setting.P2PAddress + target.FileHash),
+		P2PAddress:         setting.P2PAddress,
+		WalletAddress:      setting.WalletAddress,
+		SpP2PAddress:       target.SpP2PAddress,
+		CostTime:           costTime,
+		OpponentP2PAddress: target.SliceNumAddr.PpInfo.P2PAddress,
 	}
 }
 
 func ReqReportUploadSliceResultDataPP(target *protos.ReqUploadFileSlice, costTime int64) *protos.ReportUploadSliceResult {
 	utils.DebugLog("____________________", target.SliceSize)
 	return &protos.ReportUploadSliceResult{
-		TaskId:        target.TaskId,
-		SliceNumAddr:  target.SliceNumAddr,
-		SliceHash:     target.SliceInfo.SliceHash,
-		IsPP:          true,
-		UploadSuccess: true,
-		FileHash:      target.FileHash,
-		SliceSize:     target.SliceSize,
-		Sign:          setting.GetSign(setting.P2PAddress + target.FileHash),
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
-		SpP2PAddress:  target.SpP2PAddress,
-		CostTime:      costTime,
+		TaskId:             target.TaskId,
+		SliceNumAddr:       target.SliceNumAddr,
+		SliceHash:          target.SliceInfo.SliceHash,
+		IsPP:               true,
+		UploadSuccess:      true,
+		FileHash:           target.FileHash,
+		SliceSize:          target.SliceSize,
+		Sign:               setting.GetSign(setting.P2PAddress + target.FileHash),
+		P2PAddress:         setting.P2PAddress,
+		WalletAddress:      setting.WalletAddress,
+		SpP2PAddress:       target.SpP2PAddress,
+		CostTime:           costTime,
+		OpponentP2PAddress: target.P2PAddress,
 	}
 }
 
