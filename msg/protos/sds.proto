@@ -88,6 +88,7 @@ message ReqUploadFileSlice {
   uint64          slice_size = 9; //
   string          sp_p2p_address = 10;
   bytes           sign = 11;
+  int64           cost_time = 12;
 }
 
 message RspUploadFileSlice {

@@ -3,7 +3,9 @@ package event
 // Author j
 import (
 	"context"
+	"strconv"
 	"sync"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
@@ -41,7 +43,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		peers.SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
 		return
 	}
-
+	start := time.Now()
 	if target.SliceNumAddr.PpInfo.P2PAddress != setting.P2PAddress {
 		rsp := &protos.RspUploadFileSlice{
 			Result: &protos.Result{
@@ -60,7 +62,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		utils.ErrorLog("SaveUploadFile failed")
 		return
 	}
-
+	end := time.Now()
 	utils.DebugLogf("ReqUploadFileSlice saving slice %v  current_size %v  total_size %v", target.SliceInfo.SliceHash, file.GetSliceSize(target.SliceInfo.SliceHash), target.SliceSize)
 	if file.GetSliceSize(target.SliceInfo.SliceHash) == int64(target.SliceSize) {
 		utils.DebugLog("the slice upload finished", target.SliceInfo.SliceHash)
@@ -68,7 +70,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		if utils.CalcSliceHash(file.GetSliceData(target.SliceInfo.SliceHash), target.FileHash, target.SliceNumAddr.SliceNumber) == target.SliceInfo.SliceHash {
 			peers.SendMessage(ctx, conn, requests.RspUploadFileSliceData(&target), header.RspUploadFileSlice)
 			// report upload result to SP
-			peers.SendMessageToSPServer(ctx, requests.ReqReportUploadSliceResultDataPP(&target), header.ReqReportUploadSliceResult)
+			peers.SendMessageToSPServer(ctx, requests.ReqReportUploadSliceResultDataPP(&target, end.Sub(start).Milliseconds()), header.ReqReportUploadSliceResult)
 			utils.DebugLog("storage PP report to SP upload task finished: ", target.SliceInfo.SliceHash)
 		} else {
 			utils.ErrorLog("newly stored sliceHash is not equal to target sliceHash!")
@@ -88,7 +90,15 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	peers.SendMessageToSPServer(ctx, requests.ReqReportUploadSliceResultData(&target), header.ReqReportUploadSliceResult)
+	costTimeKey := target.TaskId + strconv.FormatUint(target.SliceNumAddr.SliceNumber, 10)
+	value, ok := task.UploadTaskSliceCostTimeMap.Load(costTimeKey)
+	if !ok {
+		pp.ErrorLogf(ctx, "File upload task cannot be found for file %v", target.FileHash)
+		return
+	}
+	costTime := value.(int64)
+	peers.SendMessageToSPServer(ctx, requests.ReqReportUploadSliceResultData(&target, costTime), header.ReqReportUploadSliceResult)
+	task.UploadTaskSliceCostTimeMap.Delete(costTimeKey)
 }
 
 // RspUploadSlicesWrong updates the destination of slices for an ongoing upload

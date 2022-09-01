@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -337,11 +338,16 @@ func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileT
 		}
 
 		pp.DebugLogf(ctx, "starting to upload slice %v for file %v", slice.SliceNumber, uploadTask.FileHash)
+		start := time.Now()
 		err = UploadFileSlice(ctx, uploadSliceTask, uploadTask.Sign)
 		if err != nil {
 			slice.SetError(err, false, uploadTask)
 			return
 		}
+		end := time.Now()
+		costTime := end.Sub(start)
+		// store time cost for slice uploading
+		task.UploadTaskSliceCostTimeMap.Store(uploadTask.TaskID+strconv.FormatUint(slice.SliceNumber, 10), costTime.Milliseconds())
 		slice.SetStatus(task.SLICE_STATUS_FINISHED, uploadTask)
 	}
 }

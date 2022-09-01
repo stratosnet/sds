@@ -58,10 +58,10 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 			peers.SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
 			return
 		}
-		start := time.Now().Unix()
+		start := time.Now()
 		splitSendDownloadSliceData(ctx, rsp, conn)
-		end := time.Now().Unix()
-		SendReportDownloadResult(ctx, rsp, end-start, true)
+		end := time.Now()
+		SendReportDownloadResult(ctx, rsp, end.Sub(start).Milliseconds(), true)
 
 		task.DownloadSliceTaskMap.Store(target.TaskId+target.SliceInfo.SliceHash, true)
 	}
@@ -216,7 +216,7 @@ func receiveSliceAndProgressEncrypted(ctx context.Context, target *protos.RspDow
 }
 
 func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask) {
-	start := time.Now().Unix()
+	start := time.Now()
 	file.SaveDownloadProgress(ctx, target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, target.SavePath, fInfo.ReqId)
 	task.CleanDownloadTask(ctx, target.FileHash, target.SliceInfo.SliceHash, target.WalletAddress, fInfo.ReqId)
 	target.Result = &protos.Result{
@@ -228,8 +228,8 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 		videoCacheKeep(fInfo.FileHash, target.TaskId)
 	}
 	setDownloadSliceSuccess(ctx, target.SliceInfo.SliceHash, dTask)
-	end := time.Now().Unix()
-	SendReportDownloadResult(ctx, target, end-start, false)
+	end := time.Now()
+	SendReportDownloadResult(ctx, target, end.Sub(start).Milliseconds(), false)
 }
 
 func videoCacheKeep(fileHash, taskID string) {

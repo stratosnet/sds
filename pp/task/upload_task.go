@@ -76,6 +76,7 @@ type SliceWithStatus struct {
 	SliceOffset *protos.SliceOffset
 	SliceSize   uint64
 	Status      int
+	CostTime    int64
 }
 
 func CreateUploadFileTask(fileHash, taskId, spP2pAddress string, isEncrypted, isVideoStream bool, signature []byte, slices []*protos.SliceHashAddr, uploadType protos.UploadType) *UploadFileTask {
@@ -293,6 +294,8 @@ func (s *SliceWithStatus) SetStatus(status int, uploadTask *UploadFileTask) {
 
 	s.Status = status
 }
+
+var UploadTaskSliceCostTimeMap = &sync.Map{} // map[taskId+sliceHash]int64
 
 // UploadFileTaskMap Map of file upload tasks that are in progress.
 var UploadFileTaskMap = &sync.Map{} // map[string]*UploadFileTask

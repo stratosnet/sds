@@ -374,7 +374,7 @@ func ReqUploadSlicesWrong(uploadTask *task.UploadFileTask, spP2pAddress string, 
 	}
 }
 
-func ReqReportUploadSliceResultData(target *protos.RspUploadFileSlice) *protos.ReportUploadSliceResult {
+func ReqReportUploadSliceResultData(target *protos.RspUploadFileSlice, costTime int64) *protos.ReportUploadSliceResult {
 	utils.DebugLog("reqReportUploadSliceResultData____________________", target.SliceSize)
 	return &protos.ReportUploadSliceResult{
 		TaskId:        target.TaskId,
@@ -388,10 +388,11 @@ func ReqReportUploadSliceResultData(target *protos.RspUploadFileSlice) *protos.R
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		SpP2PAddress:  target.SpP2PAddress,
+		CostTime:      costTime,
 	}
 }
 
-func ReqReportUploadSliceResultDataPP(target *protos.ReqUploadFileSlice) *protos.ReportUploadSliceResult {
+func ReqReportUploadSliceResultDataPP(target *protos.ReqUploadFileSlice, costTime int64) *protos.ReportUploadSliceResult {
 	utils.DebugLog("____________________", target.SliceSize)
 	return &protos.ReportUploadSliceResult{
 		TaskId:        target.TaskId,
@@ -405,6 +406,7 @@ func ReqReportUploadSliceResultDataPP(target *protos.ReqUploadFileSlice) *protos
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		SpP2PAddress:  target.SpP2PAddress,
+		CostTime:      costTime,
 	}
 }
 
