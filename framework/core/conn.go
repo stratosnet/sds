@@ -324,7 +324,7 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err
 	sendCh = c.(*ServerConn).sendCh
 	msgH := make([]byte, utils.MsgHeaderLen)
 	reqId := GetReqIdFromContext(ctx)
-	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, msgH)
+	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, int64(0), msgH)
 	// msgData := make([]byte, utils.MessageBeatLen)
 	// copy(msgData[0:], msgH)
 	// copy(msgData[utils.MsgHeaderLen:], m.MSGData)
@@ -460,6 +460,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 			Mylog(sc.belong.opts.logOpen, "read receiving cancel signal from server")
 			return
 		default:
+			recvStart := time.Now().UnixMilli()
 			_ = spbConn.SetDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
 			Mylog(sc.belong.opts.logOpen, "server read ok", msgH.Len)
 			if msgH.Len == 0 {
@@ -475,7 +476,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				}
 				header.DecodeHeader(headerBytes, &msgH)
 				headerBytes = nil
-
+				msgH.RecvStart = recvStart
 				if msgH.Version < sc.minAppVer {
 					sc.SendBadVersionMsg(msgH.Version, utils.ByteToString(msgH.Cmd))
 					return
@@ -723,8 +724,9 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 				// if askForWorker {
 				err = GlobalTaskPool.Job(netID, func() {
 					ctxWithReqId := CreateContextWithReqId(ctx, msg.MSGHead.ReqId)
+					ctxWithRecvStart := CreateContextWithRecvStartTime(ctxWithReqId, msg.MSGHead.RecvStart)
 					// Mylog(s.opts.logOpen,"handler(CreateContextWithNetID(CreateContextWithMessage(ctxWithReqId, msg), netID), c )", netID)
-					handler(CreateContextWithNetID(CreateContextWithMessage(ctxWithReqId, &msg), netID), c)
+					handler(CreateContextWithNetID(CreateContextWithMessage(ctxWithRecvStart, &msg), netID), c)
 				})
 				if err != nil {
 					utils.ErrorLog(err)

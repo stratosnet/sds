@@ -30,6 +30,12 @@ import (
 	"github.com/alex023/clock"
 )
 
+type ctxkey string
+
+const (
+	recvStartTime ctxkey = "recvStartTime"
+)
+
 var (
 	limitDownloadSpeed   uint64
 	limitUploadSpeed     uint64
@@ -567,7 +573,7 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 		reqId, _ = utils.NextSnowFakeId()
 		core.InheritRpcLoggerFromParentReqId(ctx, reqId)
 	}
-	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, msgH)
+	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, int64(0), msgH)
 	// msgData := make([]byte, utils.MessageBeatLen)
 	// copy((*msgData)[0:], msgH)
 	// copy((*msgData)[utils.MsgHeaderLen:], m.MSGData)
@@ -641,6 +647,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			Mylog(cc.opts.logOpen, "receiving cancel signal from conn")
 			return
 		default:
+			recvStart := time.Now().UnixMilli()
 			// Mylog(cc.opts.logOpen,"client read ok", msgH.Len)
 			if msgH.Len == 0 {
 				headerBytes, n, err := core.ReadEncryptedHeaderAndBody(spbConn, cc.sharedKey, utils.MessageBeatLen)
@@ -655,7 +662,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 
 				header.DecodeHeader(headerBytes, &msgH)
 				headerBytes = nil
-
+				msgH.RecvStart = recvStart
 				if msgH.Version < cc.opts.minAppVer {
 					utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
 					continue
@@ -669,6 +676,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					}
 				}
 			} else {
+				msgH.RecvStart = recvStart
 				// start to process the msg if there is more than just the header to read
 				nonce, dataLen, n, err := core.ReadEncryptedHeader(spbConn)
 				cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
@@ -904,7 +912,8 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			msg, handler := msgHandler.message, msgHandler.handler
 			core.TimoutMap.DeleteByRspMsg(&msg)
 			ctxWithParentReqId := core.CreateContextWithParentReqId(ctx, msg.MSGHead.ReqId)
-			handler(core.CreateContextWithNetID(core.CreateContextWithMessage(ctxWithParentReqId, &msg), netID), c)
+			ctxWithRecvStart := core.CreateContextWithRecvStartTime(ctxWithParentReqId, msg.MSGHead.RecvStart)
+			handler(core.CreateContextWithNetID(core.CreateContextWithMessage(ctxWithRecvStart, &msg), netID), c)
 		}
 	}
 }

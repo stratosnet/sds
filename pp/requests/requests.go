@@ -342,6 +342,7 @@ func ReqUploadFileSliceData(task *task.UploadSliceTask, sign []byte) *protos.Req
 		SliceSize:     task.SliceTotalSize,
 		SpP2PAddress:  task.SpP2pAddress,
 		Sign:          sign,
+		StartTime:     time.Now().UnixMilli(),
 	}
 }
 
@@ -357,7 +358,8 @@ func RspUploadFileSliceData(target *protos.ReqUploadFileSlice) *protos.RspUpload
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
-		SpP2PAddress: target.SpP2PAddress,
+		SpP2PAddress:      target.SpP2PAddress,
+		UploaderStartTime: target.StartTime,
 	}
 }
 

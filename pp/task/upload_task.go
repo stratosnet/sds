@@ -295,8 +295,6 @@ func (s *SliceWithStatus) SetStatus(status int, uploadTask *UploadFileTask) {
 	s.Status = status
 }
 
-var UploadTaskSliceCostTimeMap = &sync.Map{} // map[taskId+sliceHash]int64
-
 // UploadFileTaskMap Map of file upload tasks that are in progress.
 var UploadFileTaskMap = &sync.Map{} // map[string]*UploadFileTask
 

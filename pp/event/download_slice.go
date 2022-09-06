@@ -94,7 +94,8 @@ func splitSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlic
 
 // RspDownloadSlice storagePP-PP
 func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
-	pp.DebugLog(ctx, "get RspDownloadSlice")
+	costTime := core.GetRecvCostTimeFromContext(ctx)
+	pp.DebugLog(ctx, "get RspDownloadSlice, cost time: ", costTime)
 	var target protos.RspDownloadSlice
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -130,9 +131,9 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 		pp.DebugLog(ctx, "length", len(target.Data))
 		pp.DebugLog(ctx, "sliceSize", target.SliceSize)
 		if fInfo.EncryptionTag != "" {
-			receiveSliceAndProgressEncrypted(ctx, &target, fInfo, dTask)
+			receiveSliceAndProgressEncrypted(ctx, &target, fInfo, dTask, costTime)
 		} else {
-			receiveSliceAndProgress(ctx, &target, fInfo, dTask)
+			receiveSliceAndProgress(ctx, &target, fInfo, dTask, costTime)
 		}
 		if !fInfo.IsVideoStream {
 			task.DownloadProgress(ctx, target.FileHash, sid.(string), uint64(len(target.Data)))
@@ -143,7 +144,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 }
 
 func receiveSliceAndProgress(ctx context.Context, target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo,
-	dTask *task.DownloadTask) {
+	dTask *task.DownloadTask, costTime int64) {
 	if task.SaveDownloadFile(ctx, target, fInfo) {
 		dataLen := uint64(len(target.Data))
 		if s, ok := task.DownloadSliceProgress.Load(target.SliceInfo.SliceHash + fInfo.ReqId); ok {
@@ -152,14 +153,14 @@ func receiveSliceAndProgress(ctx context.Context, target *protos.RspDownloadSlic
 			if alreadySize == target.SliceSize {
 				pp.DebugLog(ctx, "slice download finished", target.SliceInfo.SliceHash)
 				task.DownloadSliceProgress.Delete(target.SliceInfo.SliceHash + fInfo.ReqId)
-				receivedSlice(ctx, target, fInfo, dTask)
+				receivedSlice(ctx, target, fInfo, dTask, costTime)
 			} else {
 				task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash+fInfo.ReqId, alreadySize)
 			}
 		} else {
 			// if data is sent at once
 			if target.SliceSize == dataLen {
-				receivedSlice(ctx, target, fInfo, dTask)
+				receivedSlice(ctx, target, fInfo, dTask, costTime)
 			} else {
 				task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash+fInfo.ReqId, dataLen)
 			}
@@ -172,7 +173,7 @@ func receiveSliceAndProgress(ctx context.Context, target *protos.RspDownloadSlic
 }
 
 func receiveSliceAndProgressEncrypted(ctx context.Context, target *protos.RspDownloadSlice,
-	fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask) {
+	fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask, costTime int64) {
 	dataToDecrypt := target.Data
 	dataToDecryptSize := uint64(len(dataToDecrypt))
 	encryptedOffset := target.SliceInfo.EncryptedSliceOffset
@@ -201,7 +202,7 @@ func receiveSliceAndProgressEncrypted(ctx context.Context, target *protos.RspDow
 			pp.DebugLog(ctx, "slice download finished", target.SliceInfo.SliceHash)
 			task.DownloadSliceProgress.Delete(target.SliceInfo.SliceHash + fInfo.ReqId)
 			task.DownloadEncryptedSlices.Delete(target.SliceInfo.SliceHash + fInfo.ReqId)
-			receivedSlice(ctx, target, fInfo, dTask)
+			receivedSlice(ctx, target, fInfo, dTask, costTime)
 		}
 	} else {
 		// Store partial slice data to memory
@@ -215,8 +216,7 @@ func receiveSliceAndProgressEncrypted(ctx context.Context, target *protos.RspDow
 	}
 }
 
-func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask) {
-	start := time.Now()
+func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask, costTime int64) {
 	file.SaveDownloadProgress(ctx, target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, target.SavePath, fInfo.ReqId)
 	task.CleanDownloadTask(ctx, target.FileHash, target.SliceInfo.SliceHash, target.WalletAddress, fInfo.ReqId)
 	target.Result = &protos.Result{
@@ -228,8 +228,7 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 		videoCacheKeep(fInfo.FileHash, target.TaskId)
 	}
 	setDownloadSliceSuccess(ctx, target.SliceInfo.SliceHash, dTask)
-	end := time.Now()
-	SendReportDownloadResult(ctx, target, end.Sub(start).Milliseconds(), false)
+	SendReportDownloadResult(ctx, target, costTime, false)
 }
 
 func videoCacheKeep(fileHash, taskID string) {

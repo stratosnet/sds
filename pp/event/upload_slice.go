@@ -3,7 +3,6 @@ package event
 // Author j
 import (
 	"context"
-	"strconv"
 	"sync"
 	"time"
 
@@ -28,6 +27,8 @@ import (
 var ProgressMap = &sync.Map{}
 
 func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
+	costTime := core.GetRecvCostTimeFromContext(ctx)
+
 	var target protos.ReqUploadFileSlice
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -43,7 +44,6 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		peers.SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
 		return
 	}
-	start := time.Now()
 	if target.SliceNumAddr.PpInfo.P2PAddress != setting.P2PAddress {
 		rsp := &protos.RspUploadFileSlice{
 			Result: &protos.Result{
@@ -62,7 +62,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		utils.ErrorLog("SaveUploadFile failed")
 		return
 	}
-	end := time.Now()
+
 	utils.DebugLogf("ReqUploadFileSlice saving slice %v  current_size %v  total_size %v", target.SliceInfo.SliceHash, file.GetSliceSize(target.SliceInfo.SliceHash), target.SliceSize)
 	if file.GetSliceSize(target.SliceInfo.SliceHash) == int64(target.SliceSize) {
 		utils.DebugLog("the slice upload finished", target.SliceInfo.SliceHash)
@@ -70,7 +70,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		if utils.CalcSliceHash(file.GetSliceData(target.SliceInfo.SliceHash), target.FileHash, target.SliceNumAddr.SliceNumber) == target.SliceInfo.SliceHash {
 			peers.SendMessage(ctx, conn, requests.RspUploadFileSliceData(&target), header.RspUploadFileSlice)
 			// report upload result to SP
-			peers.SendMessageToSPServer(ctx, requests.ReqReportUploadSliceResultDataPP(&target, end.Sub(start).Milliseconds()), header.ReqReportUploadSliceResult)
+			peers.SendMessageToSPServer(ctx, requests.ReqReportUploadSliceResultDataPP(&target, costTime), header.ReqReportUploadSliceResult)
 			utils.DebugLog("storage PP report to SP upload task finished: ", target.SliceInfo.SliceHash)
 		} else {
 			utils.ErrorLog("newly stored sliceHash is not equal to target sliceHash!")
@@ -89,16 +89,18 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		pp.ErrorLog(ctx, "RspUploadFileSlice failure:", target.Result.Msg)
 		return
 	}
-
-	costTimeKey := target.TaskId + strconv.FormatUint(target.SliceNumAddr.SliceNumber, 10)
-	value, ok := task.UploadTaskSliceCostTimeMap.Load(costTimeKey)
-	if !ok {
-		pp.ErrorLogf(ctx, "File upload task cannot be found for file %v", target.FileHash)
-		return
-	}
-	costTime := value.(int64)
+	uploaderStartTime := target.UploaderStartTime
+	uploaderEndTime := time.Now().UnixMilli()
+	costTime := uploaderEndTime - uploaderStartTime
+	//costTimeKey := target.TaskId + strconv.FormatUint(target.SliceNumAddr.SliceNumber, 10)
+	//value, ok := task.UploadTaskSliceCostTimeMap.Load(costTimeKey)
+	//if !ok {
+	//	pp.ErrorLogf(ctx, "File upload task cannot be found for file %v", target.FileHash)
+	//	return
+	//}
+	//costTime := value.(int64)
+	//task.UploadTaskSliceCostTimeMap.Delete(costTimeKey)
 	peers.SendMessageToSPServer(ctx, requests.ReqReportUploadSliceResultData(&target, costTime), header.ReqReportUploadSliceResult)
-	task.UploadTaskSliceCostTimeMap.Delete(costTimeKey)
 }
 
 // RspUploadSlicesWrong updates the destination of slices for an ongoing upload
