@@ -30,12 +30,6 @@ import (
 	"github.com/alex023/clock"
 )
 
-type ctxkey string
-
-const (
-	recvStartTime ctxkey = "recvStartTime"
-)
-
 var (
 	limitDownloadSpeed   uint64
 	limitUploadSpeed     uint64
@@ -46,8 +40,9 @@ var (
 
 // MsgHandler
 type MsgHandler struct {
-	message msg.RelayMsgBuf
-	handler core.HandlerFunc
+	message   msg.RelayMsgBuf
+	handler   core.HandlerFunc
+	recvStart int64
 }
 
 type onConnectFunc func(core.WriteCloser) bool
@@ -392,7 +387,7 @@ func (cc *ClientConn) Start() {
 
 		spLatencyCheckJobFunc = func() {
 			if !isSpLatencyChecked && spLatencyCheckHandler != nil {
-				cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, spLatencyCheckHandler}
+				cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, spLatencyCheckHandler, time.Now().UnixMilli()}
 				isSpLatencyChecked = true
 			}
 		}
@@ -573,7 +568,7 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 		reqId, _ = utils.NextSnowFakeId()
 		core.InheritRpcLoggerFromParentReqId(ctx, reqId)
 	}
-	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, int64(0), msgH)
+	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, msgH)
 	// msgData := make([]byte, utils.MessageBeatLen)
 	// copy((*msgData)[0:], msgH)
 	// copy((*msgData)[utils.MsgHeaderLen:], m.MSGData)
@@ -662,7 +657,6 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 
 				header.DecodeHeader(headerBytes, &msgH)
 				headerBytes = nil
-				msgH.RecvStart = recvStart
 				if msgH.Version < cc.opts.minAppVer {
 					utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
 					continue
@@ -672,11 +666,10 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				if msgH.Len == 0 {
 					handler := core.GetHandlerFunc(utils.ByteToString(msgH.Cmd))
 					if handler != nil {
-						handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
+						handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler, recvStart}
 					}
 				}
 			} else {
-				msgH.RecvStart = recvStart
 				// start to process the msg if there is more than just the header to read
 				nonce, dataLen, n, err := core.ReadEncryptedHeader(spbConn)
 				cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
@@ -737,7 +730,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 						msgBuf = nil
 						continue
 					}
-					handlerCh <- MsgHandler{*message, handler}
+					handlerCh <- MsgHandler{*message, handler, recvStart}
 					msgH.Len = 0
 					msgBuf = nil
 					i = 0
@@ -909,10 +902,10 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			Mylog(cc.opts.logOpen, "receiving cancel signal from conn")
 			return
 		case msgHandler := <-handlerCh:
-			msg, handler := msgHandler.message, msgHandler.handler
+			msg, handler, recvStart := msgHandler.message, msgHandler.handler, msgHandler.recvStart
 			core.TimoutMap.DeleteByRspMsg(&msg)
 			ctxWithParentReqId := core.CreateContextWithParentReqId(ctx, msg.MSGHead.ReqId)
-			ctxWithRecvStart := core.CreateContextWithRecvStartTime(ctxWithParentReqId, msg.MSGHead.RecvStart)
+			ctxWithRecvStart := core.CreateContextWithRecvStartTime(ctxWithParentReqId, recvStart)
 			handler(core.CreateContextWithNetID(core.CreateContextWithMessage(ctxWithRecvStart, &msg), netID), c)
 		}
 	}

@@ -28,8 +28,9 @@ import (
 
 // MsgHandler
 type MsgHandler struct {
-	message message.RelayMsgBuf
-	handler HandlerFunc
+	message   message.RelayMsgBuf
+	handler   HandlerFunc
+	recvStart int64
 }
 
 // WriteCloser
@@ -324,7 +325,7 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err
 	sendCh = c.(*ServerConn).sendCh
 	msgH := make([]byte, utils.MsgHeaderLen)
 	reqId := GetReqIdFromContext(ctx)
-	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, int64(0), msgH)
+	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, msgH)
 	// msgData := make([]byte, utils.MessageBeatLen)
 	// copy(msgData[0:], msgH)
 	// copy(msgData[utils.MsgHeaderLen:], m.MSGData)
@@ -476,7 +477,6 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				}
 				header.DecodeHeader(headerBytes, &msgH)
 				headerBytes = nil
-				msgH.RecvStart = recvStart
 				if msgH.Version < sc.minAppVer {
 					sc.SendBadVersionMsg(msgH.Version, utils.ByteToString(msgH.Cmd))
 					return
@@ -494,7 +494,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					handler := GetHandlerFunc(utils.ByteToString(msgH.Cmd))
 					if handler != nil {
 						metrics.Events.WithLabelValues(utils.ByteToString(msgH.Cmd)).Inc()
-						sc.handlerCh <- MsgHandler{message.RelayMsgBuf{}, handler}
+						sc.handlerCh <- MsgHandler{message.RelayMsgBuf{}, handler, recvStart}
 					}
 					// }
 				}
@@ -555,7 +555,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 						continue
 					}
 					metrics.Events.WithLabelValues(utils.ByteToString(msgH.Cmd)).Inc()
-					handlerCh <- MsgHandler{*msg, handler}
+					handlerCh <- MsgHandler{*msg, handler, recvStart}
 					msgH.Len = 0
 					i = 0
 					msgBuf = nil
@@ -719,12 +719,12 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 			Mylog(sc.belong.opts.logOpen, "handle receiving cancel signal from server")
 			return
 		case msgHandler := <-handlerCh:
-			msg, handler := msgHandler.message, msgHandler.handler
+			msg, handler, recvStart := msgHandler.message, msgHandler.handler, msgHandler.recvStart
 			if handler != nil {
 				// if askForWorker {
 				err = GlobalTaskPool.Job(netID, func() {
 					ctxWithReqId := CreateContextWithReqId(ctx, msg.MSGHead.ReqId)
-					ctxWithRecvStart := CreateContextWithRecvStartTime(ctxWithReqId, msg.MSGHead.RecvStart)
+					ctxWithRecvStart := CreateContextWithRecvStartTime(ctxWithReqId, recvStart)
 					// Mylog(s.opts.logOpen,"handler(CreateContextWithNetID(CreateContextWithMessage(ctxWithReqId, msg), netID), c )", netID)
 					handler(CreateContextWithNetID(CreateContextWithMessage(ctxWithRecvStart, &msg), netID), c)
 				})
