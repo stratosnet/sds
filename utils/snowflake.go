@@ -121,7 +121,7 @@ func InitIdWorker() error {
 	return err
 }
 
-func NextSnowFakeId() (int64, error) {
+func NextSnowFlakeId() (int64, error) {
 	return MyIdWorker.NextId()
 }
 

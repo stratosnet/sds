@@ -325,6 +325,10 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err
 	sendCh = c.(*ServerConn).sendCh
 	msgH := make([]byte, utils.MsgHeaderLen)
 	reqId := GetReqIdFromContext(ctx)
+	if reqId == 0 {
+		reqId, _ = utils.NextSnowFlakeId()
+		InheritRpcLoggerFromParentReqId(ctx, reqId)
+	}
 	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, msgH)
 	// msgData := make([]byte, utils.MessageBeatLen)
 	// copy(msgData[0:], msgH)
