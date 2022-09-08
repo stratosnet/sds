@@ -568,8 +568,7 @@ message RspReportBackupSliceResult {
 message ReqBackupStatus {
   string task_id = 1;
   string file_hash = 2;
-  string p2p_address = 3;
-  string wallet_address = 4;
+  PPBaseInfo address = 3;
 }
 
 message RspBackupStatus {

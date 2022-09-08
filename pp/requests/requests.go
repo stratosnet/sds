@@ -145,12 +145,7 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, reqID, ownerW
 			EncryptionTag:      encryptionTag,
 			OwnerWalletAddress: ownerWalletAddress,
 		},
-		MyAddress: &protos.PPBaseInfo{
-			P2PAddress:     setting.P2PAddress,
-			WalletAddress:  setting.WalletAddress,
-			NetworkAddress: setting.NetworkAddress,
-			RestAddress:    setting.RestAddress,
-		},
+		MyAddress:     setting.GetPPInfo(),
 		Sign:          setting.GetSign(p2pFileString),
 		IsCover:       false,
 		ReqId:         reqID,

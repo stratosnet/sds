@@ -79,10 +79,9 @@ func (r *HashRing) CalcIndex(key string) uint32 {
 
 // AddNode
 func (r *HashRing) AddNode(node *Node) {
-
 	r.Lock()
-
 	defer r.Unlock()
+
 	var numberOfNode uint32 = 1
 	if r.NumberOfVirtual > 0 {
 		numberOfNode = r.NumberOfVirtual
