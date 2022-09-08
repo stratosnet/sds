@@ -4,6 +4,7 @@ package event
 import (
 	"context"
 	"fmt"
+	"github.com/stratosnet/sds/utils/types"
 	"net/http"
 
 	"github.com/golang/protobuf/proto"
@@ -42,7 +43,15 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 			return
 		}
 
-		if target.Sign == nil || !verifyDownloadSliceSign(&target, rsp) {
+		if target.PpNodeSign == nil || target.SpNodeSign == nil {
+			rsp.Data = nil
+			rsp.Result.State = protos.ResultState_RES_FAIL
+			rsp.Result.Msg = "empty signature"
+			peers.SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
+			return
+		}
+
+		if !verifyDownloadSliceSign(&target, rsp) {
 			rsp.Data = nil
 			rsp.Result.State = protos.ResultState_RES_FAIL
 			rsp.Result.Msg = "signature validation failed"
@@ -401,7 +410,30 @@ func decryptSliceData(dataToDecrypt []byte) ([]byte, error) {
 }
 
 func verifyDownloadSliceSign(target *protos.ReqDownloadSlice, rsp *protos.RspDownloadSlice) bool {
-	if !requests.VerifySpSignature(target.SpP2PAddress, []byte(target.P2PAddress+target.FileHash+header.ReqDownloadSlice), target.Sign) {
+	// verify pp address
+	if !types.VerifyP2pAddrBytes(target.PpP2PPubkey, target.P2PAddress) {
+		return false
+	}
+
+	// verify node signature from the pp
+	msg := utils.GetReqDownloadSlicePpNodeSignMessage(target.P2PAddress, setting.P2PAddress, target.SliceInfo.SliceHash, header.ReqDownloadSlice)
+	if !types.VerifyP2pSignBytes(target.PpP2PPubkey, target.PpNodeSign, msg) {
+		return false
+	}
+
+	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
+	if err != nil {
+		return false
+	}
+
+	// verify sp address
+	if !types.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
+		return false
+	}
+
+	// verify sp node signature
+	msg = utils.GetReqDownloadSliceSpNodeSignMessage(setting.P2PAddress, target.SpP2PAddress, target.SliceInfo.SliceHash, header.ReqDownloadSlice)
+	if !types.VerifyP2pSignBytes(spP2pPubkey, target.SpNodeSign, msg) {
 		return false
 	}
 

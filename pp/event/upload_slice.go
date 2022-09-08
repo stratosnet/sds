@@ -3,7 +3,6 @@ package event
 // Author j
 import (
 	"context"
-	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/stratosnet/sds/utils/types"
 	"sync"
 
@@ -265,23 +264,6 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 	}
 }
 
-func getSpPubkey(spP2pAddr string) ([]byte, error) {
-	// find the stored SP public key
-	val, ok := setting.SPMap.Load(spP2pAddr)
-	if !ok {
-		return nil, errors.New("couldn't find sp info by the given SP address")
-	}
-	spInfo, ok := val.(setting.SPBaseInfo)
-	if !ok {
-		return nil, errors.New("failed to parse SP info")
-	}
-	_, spP2pPubkey, err := bech32.DecodeAndConvert(spInfo.P2PPublicKey)
-	if err != nil {
-		return nil, errors.Wrap(err, "error decoding P2P pubKey from bech32")
-	}
-	return spP2pPubkey, nil
-}
-
 func verifyUploadSliceSign(target *protos.ReqUploadFileSlice) error {
 
 	// verify pp address
@@ -295,7 +277,7 @@ func verifyUploadSliceSign(target *protos.ReqUploadFileSlice) error {
 		return errors.New("failed verifying pp's node signature")
 	}
 
-	spP2pPubkey, err := getSpPubkey(target.SpP2PAddress)
+	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
 	if err != nil {
 		return errors.Wrap(err, "failed to get sp pubkey")
 	}
@@ -326,7 +308,7 @@ func verifyRspUploadSliceSign(target *protos.RspUploadFileSlice) error {
 		return errors.New("failed verifying pp's node signature")
 	}
 
-	spP2pPubkey, err := getSpPubkey(target.SpP2PAddress)
+	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
 	if err != nil {
 		return errors.Wrap(err, "failed to get sp pubkey")
 	}

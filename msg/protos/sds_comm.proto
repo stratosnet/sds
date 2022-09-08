@@ -118,6 +118,7 @@ message DownloadSliceInfo {
      bool visit_result = 5;
      string task_id= 6;
      SliceOffset slice_offset= 7;
+     bytes sp_node_sign = 8;
 }
 
 message SliceStorageInfo {
