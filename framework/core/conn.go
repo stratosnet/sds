@@ -663,6 +663,7 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 	if err != nil {
 		return errors.Wrap(err, "server cannot encrypt msg")
 	}
+	writeStart := time.Now().UnixMilli()
 	for i := 0; i < len(encryptedData); i = i + n {
 		// Mylog(s.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
 		if len(encryptedData)-i < 1024 {
@@ -680,6 +681,10 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 			// Mylog(s.opts.logOpen,"i", i)
 		}
 	}
+	costTime := time.Now().UnixMilli() - writeStart
+
+	CostTimeCh <- &WritePacketCostTime{ReqId: strconv.FormatInt(packet.MSGHead.ReqId, 10), CostTime: costTime}
+
 	cmem.Free(packet.Alloc)
 	return nil
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
 )
 
 //todo: pp server should be move out of peers package
@@ -93,4 +94,38 @@ func NewServer(ctx context.Context) *PPServer {
 	)
 
 	return ppServer
+}
+
+//type WritePacketCostTime struct {
+//	reqId 	 string
+//	costTime int64
+//}
+
+var (
+//CostTimeCh = make(chan *core.WritePacketCostTime)
+// Maps to record uploading stats
+//ReqIdMap = &sync.Map{} // K: reqId, V: {tkId+sliceNum, up/down}
+//UpSendCostTimeMap = &sync.Map{} // K: tkId+sliceNum, V: int64 (timecost)
+//UpSendPacketWgMap = &sync.Map{} // K: tkId+sliceNum, V: waitGroup
+//
+//UpRecvCostTimeMap = &sync.Map{} // K: tkId+sliceNum, V: int64 (timecost)
+//UpRecvPacketWgMap = &sync.Map{} // K: tkId+sliceNum, V: waitGroup
+//
+//DownSendCostTimeMap = &sync.Map{} // K: tkId+sliceNum, V: int64 (timecost)
+//DownSendPacketWgMap = &sync.Map{} // K: tkId+sliceNum, V: waitGroup
+//
+//DownRecvCostTimeMap = &sync.Map{} // K: tkId+sliceNum, V: int64 (timecost)
+//DownRecvPacketWgMap = &sync.Map{} // K: tkId+sliceNum, V: waitGroup
+)
+
+func ListenSendPacket(handler func(*core.WritePacketCostTime)) {
+	for {
+		select {
+		case entry := <-core.CostTimeCh:
+			if entry.CostTime > 0 && len(entry.ReqId) > 0 {
+				utils.DebugLogf("received report from WritePacket: %v", *entry)
+				handler(entry)
+			}
+		}
+	}
 }
