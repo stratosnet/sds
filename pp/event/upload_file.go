@@ -109,9 +109,8 @@ func ScheduleReqBackupStatus(ctx context.Context, fileHash string) {
 
 func ReqBackupStatus(ctx context.Context, fileHash string) {
 	p := &protos.ReqBackupStatus{
-		FileHash:      fileHash,
-		P2PAddress:    setting.P2PAddress,
-		WalletAddress: setting.WalletAddress,
+		FileHash: fileHash,
+		Address:  setting.GetPPInfo(),
 	}
 	peers.SendMessageToSPServer(ctx, p, header.ReqFileBackupStatus)
 }
