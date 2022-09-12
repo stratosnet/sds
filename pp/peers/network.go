@@ -29,6 +29,7 @@ func getExternal() string {
 		ip, err := consensus.ExternalIP()
 		if err != nil {
 			utils.ErrorLog("Cannot fetch external IP", err.Error())
+			return ""
 		}
 		externalIP = ip.String()
 	}
