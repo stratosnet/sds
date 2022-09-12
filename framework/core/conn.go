@@ -688,13 +688,13 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 		} else {
 			// Mylog(s.opts.logOpen,"i", i)
 		}
-		if cmd == header.RspDownloadSlice {
-			writeEnd := time.Now()
-			costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
-			report := WritePacketCostTime{ReqId: msgHeaderToTrack.ReqId, CostTime: costTime}
-			utils.DebugLogf("[core.conn | RspDownloadSlice] add cost time {%v} report to CostTimeCh", report)
-			CostTimeCh <- report
-		}
+	}
+	if cmd == header.RspDownloadSlice {
+		writeEnd := time.Now()
+		costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
+		report := WritePacketCostTime{ReqId: msgHeaderToTrack.ReqId, CostTime: costTime}
+		utils.DebugLogf("[core.conn | RspDownloadSlice] add cost time {%v} report to CostTimeCh", report)
+		CostTimeCh <- report
 	}
 	cmem.Free(packet.Alloc)
 	return nil

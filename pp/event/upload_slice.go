@@ -326,7 +326,7 @@ func HandleSendPacketCostTime(report core.WritePacketCostTime) {
 		if len(tkSlice.TkSliceUID) > 0 {
 			ReqIdMap.Delete(reqId)
 		}
-		utils.DebugLogf("HandleSendPacketCostTime, reqId=%v, costTime=%v, isUpload=%v", reqId)
+		utils.DebugLogf("HandleSendPacketCostTime, reqId=%v, isUpload=%v, newReport.costTime=%v, ", reqId, tkSlice.IsUpload, costTime)
 		if tkSlice.IsUpload {
 			handleUploadSend(tkSlice, costTime)
 		} else {

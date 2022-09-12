@@ -498,7 +498,9 @@ func handleDownloadSend(tkSlice TaskSlice, costTime int64) {
 	if isDownloadFinished {
 		if val, ok := downloadRspMap.Load(tkSlice.TkSliceUID); ok {
 			queuedReport := val.(QueuedDownloadReportToSP)
+			// report download slice result
 			SendReportDownloadResult(queuedReport.context, queuedReport.response, newCostTimeStat.TotalCostTime, true)
+			// set task status as finished
 			task.DownloadSliceTaskMap.Store(tkSlice.TkSliceUID, true)
 			downloadRspMap.Delete(tkSlice.TkSliceUID)
 		}
