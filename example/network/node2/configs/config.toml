@@ -35,4 +35,3 @@ show = 'v0.8.1'
 p2p_address = ""
 p2p_public_key = ""
 network_address = "0.0.0.0:8888"
-
