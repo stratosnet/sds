@@ -18,7 +18,6 @@ require (
 	github.com/cosmos/cosmos-sdk v0.45.4
 	github.com/cosmos/go-bip39 v1.0.0
 	github.com/deckarep/golang-set v1.8.0
-	github.com/ethereum/go-ethereum v1.10.16
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang/protobuf v1.5.2
@@ -34,6 +33,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.1
 	github.com/peterh/liner v1.2.1
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v1.12.1
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.4.0
@@ -72,6 +72,7 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/dvsekhvalnov/jose2go v0.0.0-20200901110807-248326c1351b // indirect
+	github.com/ethereum/go-ethereum v1.10.16 // indirect
 	github.com/fogleman/gg v1.2.1-0.20190220221249-0403632d5b90 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-kit/kit v0.12.0 // indirect
@@ -115,7 +116,6 @@ require (
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_golang v1.12.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
@@ -136,7 +136,6 @@ require (
 	github.com/tendermint/tm-db v0.6.7 // indirect
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/tklauser/numcpus v0.3.0 // indirect
-	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
 	github.com/zondax/hid v0.9.0 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	golang.org/x/exp v0.0.0-20200331195152-e8c3332aa8e5 // indirect
