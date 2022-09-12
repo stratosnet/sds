@@ -202,3 +202,9 @@ func ScheduleReloadPPStatus(ctx context.Context, future time.Duration) {
 	utils.DebugLog("scheduled to get pp status from sp after: ", future.Seconds(), "second")
 	ppPeerClock.AddJobWithInterval(future, GetPPStatusInitPPList(ctx))
 }
+
+func AlterReqId(ctx context.Context) (int64, context.Context) {
+	genReqId, _ := utils.NextSnowFlakeId()
+	utils.DebugLog("ReqId in context changed to: %v", strconv.FormatInt(genReqId, 10))
+	return genReqId, core.CreateContextWithReqId(ctx, genReqId)
+}

@@ -579,6 +579,7 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 	memory := &msg.RelayMsgBuf{
 		MSGHead: m.MSGHead,
 	}
+	memory.MSGHead.ReqId = reqId
 	memory.Alloc = cmem.Alloc(uintptr(m.MSGHead.Len + utils.MsgHeaderLen))
 	memory.MSGData = (*[1 << 30]byte)(unsafe.Pointer(memory.Alloc))[:m.MSGHead.Len+utils.MsgHeaderLen]
 	(*reflect.SliceHeader)(unsafe.Pointer(&memory.MSGData)).Cap = int(m.MSGHead.Len + utils.MsgHeaderLen)
@@ -820,6 +821,10 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 }
 
 func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
+	utils.DebugLogf("packet.MSGHead.ReqId in writePacket: %v", packet.MSGHead.ReqId)
+	msgHeaderToTrack := &header.MessageHead{}
+	header.DecodeHeader(packet.MSGData[:utils.MsgHeaderLen], msgHeaderToTrack)
+	utils.DebugLogf("msgHeaderToTrack/reqId in writePacket: %v", msgHeaderToTrack)
 	var lr utils.LimitRate
 	var onereadlen = 1024
 	var n int
@@ -843,6 +848,7 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 	if err != nil {
 		return errors.Wrap(err, "server cannot encrypt msg")
 	}
+	writeStart := time.Now()
 	for i := 0; i < len(encryptedData); i = i + n {
 		// Mylog(cc.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
 		if len(encryptedData)-i < 1024 {
@@ -865,6 +871,13 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 				}
 			}
 		}
+	}
+	if cmd == header.ReqUploadFileSlice {
+		writeEnd := time.Now()
+		costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
+		report := core.WritePacketCostTime{ReqId: msgHeaderToTrack.ReqId, CostTime: costTime}
+		utils.DebugLogf("[cf.conn | ReqUploadFileSlice] add cost time {%v} report to CostTimeCh", report)
+		core.CostTimeCh <- report
 	}
 	cmem.Free(packet.Alloc)
 	return nil

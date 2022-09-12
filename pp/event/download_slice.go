@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/client/cf"
@@ -31,9 +30,15 @@ const (
 )
 
 var (
+	downloadRspMap      = &sync.Map{} // K: tkId+sliceHash, V: *QueuedDownloadReportToSP
 	downSendCostTimeMap = &sync.Map{} // K: tkId+sliceHash, V: CostTimeStat{TotalCostTime, MiniSliceToCount}
 	downRecvCostTimeMap = &sync.Map{} // K: tkId+sliceHash, V: CostTimeStat{TotalCostTime, MiniSliceToCount}
 )
+
+type QueuedDownloadReportToSP struct {
+	context  context.Context
+	response *protos.RspDownloadSlice
+}
 
 // ReqDownloadSlice download slice PP-storagePP
 func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
@@ -66,12 +71,12 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 			peers.SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
 			return
 		}
-		start := time.Now()
-		splitSendDownloadSliceData(ctx, rsp, conn)
-		end := time.Now()
-		SendReportDownloadResult(ctx, rsp, end.Sub(start).Milliseconds(), true)
 
-		task.DownloadSliceTaskMap.Store(target.TaskId+target.SliceInfo.SliceHash, true)
+		splitSendDownloadSliceData(ctx, rsp, conn)
+
+		//SendReportDownloadResult(ctx, rsp, end.Sub(start).Milliseconds(), true)
+
+		//task.DownloadSliceTaskMap.Store(target.TaskId+target.SliceInfo.SliceHash, true)
 	}
 }
 
@@ -84,18 +89,22 @@ func splitSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlic
 	offsetStart := rsp.SliceInfo.SliceOffset.SliceOffsetStart
 	offsetEnd := rsp.SliceInfo.SliceOffset.SliceOffsetStart + dataEnd
 
+	tkSliceUID := rsp.TaskId + rsp.SliceInfo.SliceHash
 	var ctStat = CostTimeStat{}
 	if val, ok := downSendCostTimeMap.Load(rsp.TaskId + rsp.SliceInfo.SliceHash); ok {
 		ctStat = val.(CostTimeStat)
 	}
+	// save rsp for further report to SP
+	downloadRspMap.Store(tkSliceUID, QueuedDownloadReportToSP{
+		context:  ctx,
+		response: rsp,
+	})
 
-	tkSliceUID := rsp.TaskId + rsp.SliceInfo.SliceHash
 	for {
 		utils.DebugLog("_____________________________")
 		utils.DebugLog(dataStart, dataEnd, offsetStart, offsetEnd)
 
-		genReqId, _ := utils.NextSnowFlakeId()
-		core.InheritRpcLoggerFromParentReqId(ctx, genReqId)
+		genReqId, newCtx := peers.AlterReqId(ctx)
 		utils.DebugLog("reqID-"+strconv.FormatUint(dataStart, 10)+" =========", strconv.FormatInt(core.GetReqIdFromContext(ctx), 10))
 		tkSlice := TaskSlice{
 			TkSliceUID: tkSliceUID,
@@ -108,16 +117,16 @@ func splitSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlic
 		utils.DebugLogf("downSendPacketWgMap.Store <== K:%v, V:%v]", tkSliceUID, ctStat)
 
 		if dataEnd < dataLen {
-			utils.DebugLog("reqID-"+strconv.FormatUint(dataStart, 10)+" =========", strconv.FormatInt(core.GetReqIdFromContext(ctx), 10))
-			peers.SendMessage(ctx, conn, requests.RspDownloadSliceDataSplit(rsp, dataStart, dataEnd, offsetStart, offsetEnd,
+			utils.DebugLog("reqID-"+strconv.FormatUint(dataStart, 10)+" =========", strconv.FormatInt(core.GetReqIdFromContext(newCtx), 10))
+			peers.SendMessage(newCtx, conn, requests.RspDownloadSliceDataSplit(rsp, dataStart, dataEnd, offsetStart, offsetEnd,
 				rsp.SliceInfo.SliceOffset.SliceOffsetStart, rsp.SliceInfo.SliceOffset.SliceOffsetEnd, false), header.RspDownloadSlice)
 			dataStart += setting.MAXDATA
 			dataEnd += setting.MAXDATA
 			offsetStart += setting.MAXDATA
 			offsetEnd += setting.MAXDATA
 		} else {
-			utils.DebugLog("reqID-"+strconv.FormatUint(dataStart, 10)+" =========", strconv.FormatInt(core.GetReqIdFromContext(ctx), 10))
-			peers.SendMessage(ctx, conn, requests.RspDownloadSliceDataSplit(rsp, dataStart, 0, offsetStart, 0,
+			utils.DebugLog("reqID-"+strconv.FormatUint(dataStart, 10)+" =========", strconv.FormatInt(core.GetReqIdFromContext(newCtx), 10))
+			peers.SendMessage(newCtx, conn, requests.RspDownloadSliceDataSplit(rsp, dataStart, 0, offsetStart, 0,
 				rsp.SliceInfo.SliceOffset.SliceOffsetStart, rsp.SliceInfo.SliceOffset.SliceOffsetEnd, true), header.RspDownloadSlice)
 			return
 		}
@@ -473,15 +482,25 @@ func setDownloadSliceFail(ctx context.Context, sliceHash, taskId string, isVideo
 
 func handleDownloadSend(tkSlice TaskSlice, costTime int64) {
 	var newCostTimeStat = CostTimeStat{}
+	isDownloadFinished := false
 
 	if val, ok := downSendCostTimeMap.Load(tkSlice.TkSliceUID); ok {
 		oriCostTimeStat := val.(CostTimeStat)
 		newCostTimeStat.TotalCostTime = costTime + oriCostTimeStat.TotalCostTime
-		newCostTimeStat.MiniSliceToCount = newCostTimeStat.MiniSliceToCount - 1
+		newCostTimeStat.MiniSliceToCount = oriCostTimeStat.MiniSliceToCount - 1
 		// not counting if CostTimeStat not found from upSendCostTimeMap
-		totalCostTime := newCostTimeStat.TotalCostTime
 		if newCostTimeStat.MiniSliceToCount >= 0 {
-			downSendCostTimeMap.Store(tkSlice.TkSliceUID, totalCostTime)
+			downSendCostTimeMap.Store(tkSlice.TkSliceUID, newCostTimeStat)
+		}
+		// return isDownloadFinished
+		isDownloadFinished = newCostTimeStat.MiniSliceToCount == 0
+	}
+	if isDownloadFinished {
+		if val, ok := downloadRspMap.Load(tkSlice.TkSliceUID); ok {
+			queuedReport := val.(QueuedDownloadReportToSP)
+			SendReportDownloadResult(queuedReport.context, queuedReport.response, newCostTimeStat.TotalCostTime, true)
+			task.DownloadSliceTaskMap.Store(tkSlice.TkSliceUID, true)
+			downloadRspMap.Delete(tkSlice.TkSliceUID)
 		}
 	}
 }

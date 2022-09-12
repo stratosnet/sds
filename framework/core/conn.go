@@ -340,11 +340,13 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err
 	memory := &message.RelayMsgBuf{
 		MSGHead: m.MSGHead,
 	}
+	memory.MSGHead.ReqId = reqId
 	memory.Alloc = cmem.Alloc(uintptr(m.MSGHead.Len + utils.MsgHeaderLen))
 	memory.MSGData = (*[1 << 30]byte)(unsafe.Pointer(memory.Alloc))[:m.MSGHead.Len+utils.MsgHeaderLen]
 	(*reflect.SliceHeader)(unsafe.Pointer(&memory.MSGData)).Cap = int(m.MSGHead.Len + utils.MsgHeaderLen)
 	copy(memory.MSGData[0:], msgH)
 	copy(memory.MSGData[utils.MsgHeaderLen:], m.MSGData)
+	utils.DebugLogf("reqId in memory(before sendCh): %v", memory.MSGHead.ReqId)
 	select {
 	case sendCh <- memory:
 		err = nil
@@ -605,6 +607,7 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 					break OuterFor
 				}
 				// drain pending messages
+				utils.DebugLogf("reqId in writeLoop: %v", packet.MSGHead.ReqId)
 				if packet != nil {
 					if err := sc.writePacket(packet); err != nil {
 						utils.ErrorLog(err)
@@ -632,6 +635,7 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 			return
 		case packet = <-sendCh:
 			if packet != nil {
+				utils.DebugLogf("reqId in writeLoop: %v", packet.MSGHead.ReqId)
 				if err := sc.writePacket(packet); err != nil {
 					utils.ErrorLog(err)
 					return
@@ -643,10 +647,14 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 }
 
 func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
+	utils.DebugLogf("packet.MSGHead.ReqId in writePacket: %v", packet.MSGHead.ReqId)
+	msgHeaderToTrack := &header.MessageHead{}
+	header.DecodeHeader(packet.MSGData[:utils.MsgHeaderLen], msgHeaderToTrack)
+	utils.DebugLogf("msgHeaderToTrack/reqId in writePacket: %v", msgHeaderToTrack)
 	var onereadlen = 1024
 	var n int
 	// Mylog(s.opts.logOpen,"msgLen", len(packet.MSGData))
-
+	cmd := utils.ByteToString(packet.MSGHead.Cmd)
 	// Encrypt and write message header
 	encryptedHeader, err := EncryptAndPack(sc.sharedKey, packet.MSGData[:utils.MsgHeaderLen])
 	if err != nil {
@@ -663,7 +671,7 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 	if err != nil {
 		return errors.Wrap(err, "server cannot encrypt msg")
 	}
-	writeStart := time.Now().UnixMilli()
+	writeStart := time.Now()
 	for i := 0; i < len(encryptedData); i = i + n {
 		// Mylog(s.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
 		if len(encryptedData)-i < 1024 {
@@ -680,11 +688,14 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 		} else {
 			// Mylog(s.opts.logOpen,"i", i)
 		}
+		if cmd == header.RspDownloadSlice {
+			writeEnd := time.Now()
+			costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
+			report := WritePacketCostTime{ReqId: msgHeaderToTrack.ReqId, CostTime: costTime}
+			utils.DebugLogf("[core.conn | RspDownloadSlice] add cost time {%v} report to CostTimeCh", report)
+			CostTimeCh <- report
+		}
 	}
-	costTime := time.Now().UnixMilli() - writeStart
-
-	CostTimeCh <- &WritePacketCostTime{ReqId: strconv.FormatInt(packet.MSGHead.ReqId, 10), CostTime: costTime}
-
 	cmem.Free(packet.Alloc)
 	return nil
 }

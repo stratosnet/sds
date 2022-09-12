@@ -88,7 +88,6 @@ message ReqUploadFileSlice {
   uint64          slice_size = 9; //
   string          sp_p2p_address = 10;
   bytes           sign = 11;
-  int64           start_time = 12;
 }
 
 message RspUploadFileSlice {
@@ -101,7 +100,6 @@ message RspUploadFileSlice {
   uint64       slice_size = 7; //
   string       task_id = 8; //
   string       sp_p2p_address = 9;
-  int64        uploader_start_time = 10;
 }
 
 message ReqUploadSlicesWrong {

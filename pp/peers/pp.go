@@ -118,12 +118,12 @@ var (
 //DownRecvPacketWgMap = &sync.Map{} // K: tkId+sliceNum, V: waitGroup
 )
 
-func ListenSendPacket(handler func(*core.WritePacketCostTime)) {
+func ListenSendPacket(handler func(core.WritePacketCostTime)) {
 	for {
 		select {
-		case entry := <-core.CostTimeCh:
-			if entry.CostTime > 0 && len(entry.ReqId) > 0 {
-				utils.DebugLogf("received report from WritePacket: %v", *entry)
+		case entry, ok := <-core.CostTimeCh:
+			if ok && entry.CostTime > 0 && entry.ReqId > 0 {
+				utils.DebugLogf("received report from WritePacket: %v", entry)
 				handler(entry)
 			}
 		}
