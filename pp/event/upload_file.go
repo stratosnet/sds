@@ -23,6 +23,7 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
+	"github.com/stratosnet/sds/utils/types"
 )
 
 //var m *sync.WaitGroup
@@ -41,7 +42,7 @@ func RequestUploadCoverImage(pathStr, reqID string, w http.ResponseWriter) {
 		}
 		return
 	}
-	p := requests.RequestUploadFileData(ctx, tmpString, "", reqID, setting.WalletAddress, true, false, false)
+	p := requests.RequestUploadFileData(ctx, tmpString, "", reqID, true, false, false)
 	peers.SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 	storeResponseWriter(reqID, w)
 }
@@ -59,7 +60,7 @@ func RequestUploadFile(ctx context.Context, path, reqID string, isEncrypted bool
 		return
 	}
 	if isFile {
-		p := requests.RequestUploadFileData(ctx, path, "", reqID, setting.WalletAddress, false, false, isEncrypted)
+		p := requests.RequestUploadFileData(ctx, path, "", reqID, false, false, isEncrypted)
 		peers.SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 		return
 	}
@@ -71,7 +72,7 @@ func RequestUploadFile(ctx context.Context, path, reqID string, isEncrypted bool
 		select {
 		case pathString := <-setting.UpChan:
 			pp.DebugLog(ctx, "path string == ", pathString)
-			p := requests.RequestUploadFileData(ctx, pathString, "", reqID, setting.WalletAddress, false, false, isEncrypted)
+			p := requests.RequestUploadFileData(ctx, pathString, "", reqID, false, false, isEncrypted)
 			peers.SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 		default:
 			return
@@ -90,7 +91,7 @@ func RequestUploadStream(ctx context.Context, path, reqID string, _ http.Respons
 		return
 	}
 	if isFile {
-		p := requests.RequestUploadFileData(ctx, path, "", reqID, setting.WalletAddress, false, true, false)
+		p := requests.RequestUploadFileData(ctx, path, "", reqID, false, true, false)
 		if p != nil {
 			peers.SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 		}
@@ -142,6 +143,37 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		} else {
 			file.ClearFileMap(target.FileHash)
 		}
+		return
+	}
+
+	// verify if wallet matches public key
+	if types.VerifyWalletAddrBytes(target.WalletPubkey, target.OwnerWalletAddress) != 0 {
+		pp.ErrorLog(ctx, "wallet key validation failed", target.WalletPubkey, target.OwnerWalletAddress)
+		return
+	}
+
+	// verify wallet signature
+	if !types.VerifyWalletSignBytes(target.WalletPubkey, target.WalletSign, utils.GetFileUploadWalletSignMessage(target.FileHash, target.OwnerWalletAddress)) {
+		pp.ErrorLog(ctx, "wallet sign failed")
+		return
+	}
+
+	spP2pPubkey, err := getSpPubkey(target.SpP2PAddress)
+	if err != nil {
+		pp.ErrorLog(ctx, "failed to get sp pubkey")
+		return
+	}
+
+	// verify sp address
+	if !types.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
+		pp.ErrorLog(ctx, "failed verifying sp's p2p address")
+		return
+	}
+
+	// verify sp node signature
+	msg := utils.GetRspUploadFileSpNodeSignMessage(setting.P2PAddress, target.SpP2PAddress, target.FileHash, header.RspUploadFile)
+	if !types.VerifyP2pSignBytes(spP2pPubkey, target.NodeSign, msg) {
+		pp.ErrorLog(ctx, "failed verifying sp's node signature")
 		return
 	}
 
@@ -216,11 +248,13 @@ func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
 			SliceSize:   slice.SliceOffset.SliceOffsetEnd - slice.SliceOffset.SliceOffsetStart,
 			SliceOffset: slice.SliceOffset,
 			PpInfo:      slice.PpInfo,
+			SpNodeSign:  slice.SpNodeSign,
 		})
 	}
 
 	// Create upload task
-	uploadTask := task.CreateUploadFileTask(target.FileHash, target.TaskId, target.SpP2PAddress, target.IsEncrypted, target.IsVideoStream, target.Sign, slices, protos.UploadType_NEW_UPLOAD)
+	uploadTask := task.CreateUploadFileTask(target.FileHash, target.TaskId, target.SpP2PAddress, target.IsEncrypted, target.IsVideoStream, target.NodeSign, slices, protos.UploadType_NEW_UPLOAD)
+
 	task.CleanUpConnMap(target.FileHash)
 	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
 
@@ -336,7 +370,7 @@ func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileT
 		}
 
 		pp.DebugLogf(ctx, "starting to upload slice %v for file %v", slice.SliceNumber, uploadTask.FileHash)
-		err = UploadFileSlice(ctx, uploadSliceTask, uploadTask.Sign)
+		err = UploadFileSlice(ctx, uploadSliceTask)
 		if err != nil {
 			slice.SetError(err, false, uploadTask)
 			return

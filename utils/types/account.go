@@ -1,16 +1,21 @@
 package types
 
 import (
+	"bytes"
+	ed25519crypto "crypto/ed25519"
 	"encoding/hex"
 	"fmt"
+	"github.com/tendermint/tendermint/crypto"
 	"math/big"
 	"strings"
 
+	"github.com/cosmos/cosmos-sdk/crypto/hd"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/stratosnet/sds/utils/crypto/sha3"
 	"github.com/stratosnet/stratos-chain/types"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 )
 
 // Lengths of hashes and addresses in bytes.
@@ -19,10 +24,14 @@ const (
 	HashLength = 32
 	// AddressLength
 	AddressLength = 20
-	// PublicKeyLength
-	PublicKeyLength = 33
-	// PrivateKeyLength
-	PrivateKeyLength = 32
+	// AccPublicKeyLength
+	AccPublicKeyLength = 33
+	// AccPrivateKeyLength
+	AccPrivateKeyLength = 32
+	// P2pPublicKeyLength
+	P2pPublicKeyLength = 32
+	// P2pPrivateKeyLength
+	P2pPrivateKeyLength = 64
 )
 
 // Address
@@ -31,11 +40,17 @@ type Address [AddressLength]byte
 // Hash represents the 32 byte Keccak256 hash of arbitrary data.
 type Hash [HashLength]byte
 
-// Public key
-type PubKey [PublicKeyLength]byte
+// AccPubKey account(wallet) public key
+type AccPubKey [AccPublicKeyLength]byte
 
-// Private key
-type PrivKey [PrivateKeyLength]byte
+// AccPrivKey account(wallet) private key
+type AccPrivKey [AccPrivateKeyLength]byte
+
+// P2pPubKey P2P address public key
+type P2pPubKey [P2pPublicKeyLength]byte
+
+// P2pPrivKey P2P address private key
+type P2pPrivKey [P2pPrivateKeyLength]byte
 
 // BytesToAddress returns Address with value b.
 // If b is larger than len(h), b will be cropped from the left.
@@ -55,16 +70,32 @@ func BytesToHash(b []byte) Hash {
 
 // BytesToPubKey sets b to PubKey.
 // If b is larger than len(h), b will be cropped from the left.
-func BytesToPubKey(b []byte) PubKey {
-	var p PubKey
+func BytesToAccPubKey(b []byte) AccPubKey {
+	var p AccPubKey
 	p.SetBytes(b)
 	return p
 }
 
-// BytesToPrivKey sets b to PrivKey.
+// BytesToAccPriveKey sets b to PrivKey.
 // If b is larger than len(h), b will be cropped from the left.
-func BytesToPriveKey(b []byte) PrivKey {
-	var p PrivKey
+func BytesToAccPriveKey(b []byte) AccPrivKey {
+	var p AccPrivKey
+	p.SetBytes(b)
+	return p
+}
+
+// BytesToP2pPubKey sets b to P2pPubKey
+// If b is larger than len(h), b will be cropped from the left.
+func BytesToP2pPubKey(b []byte) P2pPubKey {
+	var p P2pPubKey
+	p.SetBytes(b)
+	return p
+}
+
+// BytesToAccPriveKey sets b to P2pPrivKey.
+// If b is larger than len(h), b will be cropped from the left.
+func BytesToP2pPrivKey(b []byte) P2pPrivKey {
+	var p P2pPrivKey
 	p.SetBytes(b)
 	return p
 }
@@ -184,8 +215,12 @@ func (a Address) P2pPublicKeyToBech() (string, error) {
 	return a.ToBech(types.SdsNodeP2PPubkeyPrefix)
 }
 
+func (a Address) Compare(b Address) int {
+	return bytes.Compare(a.Bytes(), b.Bytes())
+}
+
 func WalletAddressFromBech(str string) (Address, error) {
-	addr, err := sdktypes.GetFromBech32(str, types.StratosBech32Prefix)
+	addr, err := sdktypes.GetFromBech32(str, types.AccountAddressPrefix)
 	if err != nil {
 		return Address{}, err
 	}
@@ -281,48 +316,167 @@ func isHex(str string) bool {
 }
 
 // Bytes gets the byte representation of the underlying hash.
-func (p PubKey) Bytes() []byte { return p[:] }
+func (p AccPubKey) Bytes() []byte { return p[:] }
 
 // SetBytes sets the hash to the value of b.
 // If b is larger than len(h), b will be cropped from the left.
-func (p *PubKey) SetBytes(b []byte) {
+func (p *AccPubKey) SetBytes(b []byte) {
 	if len(b) > len(p) {
-		b = b[len(b)-PublicKeyLength:]
+		b = b[len(b)-AccPublicKeyLength:]
 	}
-
-	copy(p[PublicKeyLength-len(b):], b)
+	copy(p[AccPublicKeyLength-len(b):], b)
 }
 
-func (p *PubKey) ToBech() (string, error) {
-	return bech32.ConvertAndEncode(types.SdsNodeP2PPubkeyPrefix, p.Bytes())
+func (p AccPubKey) ToBech() (string, error) {
+	return bech32.ConvertAndEncode(types.AccountPubKeyPrefix, p.Bytes())
 }
 
-func PubKeyFromBech(str string) (PubKey, error) {
-	pubkey, err := sdktypes.GetFromBech32(str, types.StratosBech32Prefix)
+// Address generate a wallet address from account public key
+func (p AccPubKey) Address() Address {
+	pk := secp256k1.PubKey{Key: p.Bytes()}
+	return BytesToAddress(pk.Address().Bytes())
+}
+
+// WalletPubkeyFromBech create an AccPubKey from Bech of wallet pubkey
+func WalletPubkeyFromBech(str string) (AccPubKey, error) {
+	pubkey, err := sdktypes.GetFromBech32(str, types.AccountPubKeyPrefix)
 	if err != nil {
-		return PubKey{}, err
+		fmt.Println(err)
+		return AccPubKey{}, err
 	}
 	err = sdktypes.VerifyAddressFormat(pubkey)
 	if err != nil {
-		return PubKey{}, err
+		return AccPubKey{}, err
 	}
-	return BytesToPubKey(pubkey), err
+	return BytesToAccPubKey(pubkey), err
+}
+
+// VerifyWalletAddr verify the wallet address and public key match
+func VerifyWalletAddr(walletPubkey, walletAddr string) int {
+	pk, err := WalletPubkeyFromBech(walletPubkey)
+	if err != nil {
+		return -1
+	}
+	address := pk.Address()
+	address2, err := WalletAddressFromBech(walletAddr)
+	if err != nil {
+		return -1
+	}
+	return address.Compare(address2)
+}
+
+// VerifyWalletAddrBytes []byte version of VerifyWalletKey() for the pubkey format
+func VerifyWalletAddrBytes(walletPubkey []byte, walletAddr string) int {
+	pk := BytesToAccPubKey(walletPubkey)
+	address := pk.Address()
+	address2, err := WalletAddressFromBech(walletAddr)
+	if err != nil {
+		return -1
+	}
+	return address.Compare(address2)
+}
+
+// VerifyWalletSign verify the signature by wallet key
+func VerifyWalletSign(walletPubkey, signature, message string) bool {
+	ds, err := hex.DecodeString(signature)
+	if err != nil {
+		return false
+	}
+	pk, err := WalletPubkeyFromBech(walletPubkey)
+	if err != nil {
+		return false
+	}
+	pubkey := secp256k1.PubKey{Key: pk.Bytes()}
+	return pubkey.VerifySignature([]byte(message), ds)
+}
+
+// VerifyWalletSignBytes []byte version of VerifyWalletKey() for pubkey and signature format
+func VerifyWalletSignBytes(walletPubkey []byte, signature []byte, message string) bool {
+	pubkey := secp256k1.PubKey{Key: walletPubkey}
+	return pubkey.VerifySignature([]byte(message), signature)
 }
 
 // Bytes gets the byte representation of the underlying hash.
-func (p PrivKey) Bytes() []byte { return p[:] }
+func (p AccPrivKey) Bytes() []byte { return p[:] }
 
 // SetBytes sets the hash to the value of b.
 // If b is larger than len(h), b will be cropped from the left.
-func (p *PrivKey) SetBytes(b []byte) {
+func (p *AccPrivKey) SetBytes(b []byte) {
 	if len(b) > len(p) {
-		b = b[len(b)-PrivateKeyLength:]
+		b = b[len(b)-AccPrivateKeyLength:]
 	}
-
-	copy(p[PrivateKeyLength-len(b):], b)
+	copy(p[AccPrivateKeyLength-len(b):], b)
 }
 
-// generate a PubKey from PrivKey
-func PubKeyFromPrivKey(priv PrivKey) PubKey {
-	return BytesToPubKey(hd.Secp256k1.Generate()(priv.Bytes()).PubKey().Bytes())
+// Sign secp256k1 sign since account(wallet) uses secp256k1 key pair
+func (p AccPrivKey) Sign(b []byte) ([]byte, error) {
+	pk := secp256k1.PrivKey{Key: p.Bytes()}
+	return pk.Sign(b)
+}
+
+// PubKeyFromPrivKey generate a AccPubKey from the AccPrivKey
+func (p AccPrivKey) PubKeyFromPrivKey() AccPubKey {
+	return BytesToAccPubKey(hd.Secp256k1.Generate()(p.Bytes()).PubKey().Bytes())
+}
+
+// VerifyP2pAddrBytes verify whether P2P address matches public key
+func VerifyP2pAddrBytes(p2pPubkey []byte, p2pAddr string) bool {
+	pk := BytesToP2pPubKey(p2pPubkey)
+	address := pk.Address()
+	address2, err := P2pAddressFromBech(p2pAddr)
+	if err != nil {
+		return false
+	}
+	return (address.Compare(address2) == 0)
+}
+
+// VerifyP2pSignBytes verify the signature made by P2P key
+func VerifyP2pSignBytes(p2pPubkey []byte, signature []byte, message string) bool {
+	pk := ed25519.PubKey(p2pPubkey)
+	return pk.VerifySignature([]byte(message), signature)
+}
+
+// Bytes gets the byte representation of the underlying hash.
+func (p P2pPubKey) Bytes() []byte { return p[:] }
+
+// SetBytes sets the hash to the value of b.
+// If b is larger than len(h), b will be cropped from the left.
+func (p *P2pPubKey) SetBytes(b []byte) {
+	if len(b) > len(p) {
+		b = b[len(b)-P2pPublicKeyLength:]
+	}
+	copy(p[P2pPublicKeyLength-len(b):], b)
+}
+
+// ToBech the Bech format string
+func (p P2pPubKey) ToBech() (string, error) {
+	return bech32.ConvertAndEncode(types.SdsNodeP2PPubkeyPrefix, p.Bytes())
+}
+
+// Address generate a P2P address from P2P public key
+func (p P2pPubKey) Address() Address {
+	pk := ed25519.PubKey(p.Bytes()).Address()
+	return BytesToAddress(pk)
+}
+
+// Bytes gets the byte representation of the underlying hash.
+func (p P2pPrivKey) Bytes() []byte { return p[:] }
+
+// SetBytes sets the hash to the value of b.
+// If b is larger than len(h), b will be cropped from the left.
+func (p *P2pPrivKey) SetBytes(b []byte) {
+	if len(b) > len(p) {
+		b = b[len(b)-P2pPrivateKeyLength:]
+	}
+	copy(p[P2pPrivateKeyLength-len(b):], b)
+}
+
+// Sign p2p address uses ed25519 algo
+func (p P2pPrivKey) Sign(b []byte) []byte {
+	return ed25519crypto.Sign(p.Bytes(), b)
+}
+
+// PubKey generate a P2pPubKey from a P2pPrivKey
+func (p P2pPrivKey) PubKey() P2pPubKey {
+	return BytesToP2pPubKey(crypto.PrivKey(ed25519.PrivKey(p.Bytes())).PubKey().Bytes())
 }
