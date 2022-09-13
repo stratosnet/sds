@@ -821,10 +821,8 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 }
 
 func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
-	utils.DebugLogf("packet.MSGHead.ReqId in writePacket: %v", packet.MSGHead.ReqId)
 	msgHeaderToTrack := &header.MessageHead{}
 	header.DecodeHeader(packet.MSGData[:utils.MsgHeaderLen], msgHeaderToTrack)
-	utils.DebugLogf("msgHeaderToTrack/reqId in writePacket: %v", msgHeaderToTrack)
 	var lr utils.LimitRate
 	var onereadlen = 1024
 	var n int
@@ -876,7 +874,7 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 		writeEnd := time.Now()
 		costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
 		report := core.WritePacketCostTime{ReqId: msgHeaderToTrack.ReqId, CostTime: costTime}
-		utils.DebugLogf("[cf.conn | ReqUploadFileSlice] add cost time {%v} report to CostTimeCh", report)
+		utils.DetailLogf("[cf.conn | ReqUploadFileSlice] add cost time {%v} report to CostTimeCh", report)
 		core.CostTimeCh <- report
 	}
 	cmem.Free(packet.Alloc)
