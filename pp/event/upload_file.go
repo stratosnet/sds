@@ -158,7 +158,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	spP2pPubkey, err := getSpPubkey(target.SpP2PAddress)
+	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
 	if err != nil {
 		pp.ErrorLog(ctx, "failed to get sp pubkey")
 		return

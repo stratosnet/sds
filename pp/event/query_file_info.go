@@ -3,6 +3,7 @@ package event
 // Author j
 import (
 	"context"
+	"github.com/stratosnet/sds/utils/types"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -23,14 +24,19 @@ import (
 	"github.com/stratosnet/sds/utils/httpserv"
 )
 
-// GetFileStorageInfo p to pp
-func GetFileStorageInfo(ctx context.Context, path, savePath, reqID, walletAddr, saveAs string, isVideoStream bool, w http.ResponseWriter) {
+// GetFileStorageInfo p to pp. The downloader is assumed the default wallet of this node, if this function is invoked.
+func GetFileStorageInfo(ctx context.Context, path, savePath, reqID, saveAs string, isVideoStream bool, w http.ResponseWriter) {
+	utils.DebugLog("GetFileStorageInfo")
 	if !setting.CheckLogin() {
 		notLogin(w)
 		return
 	}
-
-	if !CheckDownloadPath(path) {
+	if len(path) < setting.Config.DownloadPathMinLen {
+		utils.DebugLog("invalid path length")
+		return
+	}
+	_, walletAddress, fileHash, _, err := datamesh.ParseFileHandle(path)
+	if err != nil {
 		pp.ErrorLog(ctx, "please input correct download link, eg: sdm://address/fileHash|filename(optional)")
 		if w != nil {
 			w.Write(httpserv.NewJson(nil, setting.FAILCode, "please input correct download link, eg:  sdm://address/fileHash|filename(optional)").ToBytes())
@@ -39,8 +45,6 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, reqID, walletAddr, 
 	}
 
 	pp.DebugLog(ctx, "path:", path)
-	walletAddress := path[6:47]
-	fileHash := path[48:88]
 
 	if ok := task.CheckDownloadTask(fileHash, walletAddress, task.LOCAL_REQID); ok {
 		msg := "The previous download task hasn't finished, please check back later"
@@ -51,7 +55,14 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, reqID, walletAddr, 
 		return
 	}
 
-	req := requests.ReqFileStorageInfoData(path, savePath, reqID, walletAddr, saveAs, isVideoStream, nil)
+	// sign the wallet signature by wallet private key
+	wsignMsg := utils.GetFileUploadWalletSignMessage(fileHash, setting.WalletAddress)
+	wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	if err != nil {
+		return
+	}
+
+	req := requests.ReqFileStorageInfoData(path, savePath, reqID, saveAs, setting.WalletAddress, wsign, setting.WalletPublicKey, isVideoStream, nil)
 	peers.SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 }
 
@@ -233,37 +244,51 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	// PP check whether itself is the storage PP, if not transfer
 	pp.Log(ctx, "get，RspFileStorageInfo")
 	var target protos.RspFileStorageInfo
-	if requests.UnmarshalData(ctx, &target) {
-		pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, target.ReqId)
-		if target.Result.State == protos.ResultState_RES_SUCCESS {
-			pp.Log(ctx, "download starts: ")
-			task.CleanDownloadFileAndConnMap(target.FileHash, target.ReqId)
-			task.DownloadFileMap.Store(target.FileHash+target.ReqId, &target)
-			task.AddDownloadTask(&target)
-			if target.IsVideoStream {
-				return
-			}
-			DownloadFileSlice(ctx, &target)
-			pp.DebugLog(ctx, "DownloadFileSlice(&target)", target)
-		} else {
-			file.SetRemoteFileResult(target.FileHash+target.ReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
-			pp.Log(ctx, "failed to download，", target.Result.Msg)
+	if !requests.UnmarshalData(ctx, &target) {
+		return
+	}
+
+	// get sp's p2p pubkey
+	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
+	if err != nil {
+		return
+	}
+
+	// verify sp address
+	if !types.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
+		return
+	}
+
+	// verify sp node signature
+	msg := utils.GetRspFileStorageInfoNodeSignMessage(target.P2PAddress, target.SpP2PAddress, target.FileHash, header.RspFileStorageInfo)
+	if !types.VerifyP2pSignBytes(spP2pPubkey, target.NodeSign, msg) {
+		return
+	}
+
+	pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, target.ReqId)
+	if target.Result.State == protos.ResultState_RES_SUCCESS {
+		pp.Log(ctx, "download starts: ")
+		task.CleanDownloadFileAndConnMap(target.FileHash, target.ReqId)
+		task.DownloadFileMap.Store(target.FileHash+target.ReqId, &target)
+		task.AddDownloadTask(&target)
+		if target.IsVideoStream {
+			return
 		}
+		DownloadFileSlice(ctx, &target)
+		pp.DebugLog(ctx, "DownloadFileSlice(&target)", target)
+	} else {
+		file.SetRemoteFileResult(target.FileHash+target.ReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
+		pp.Log(ctx, "failed to download，", target.Result.Msg)
 	}
 }
 
 // CheckDownloadPath
 func CheckDownloadPath(path string) bool {
 
-	if len(path) < setting.Config.DownloadPathMinLen {
-		utils.DebugLog("invalid path length")
+	_, _, _, _, err := datamesh.ParseFileHandle(path)
+	if err != nil {
 		return false
 	}
-	if path[:6] != datamesh.DATA_MESH_PREFIX {
-		return false
-	}
-	if path[47:48] != "/" {
-		return false
-	}
+
 	return true
 }

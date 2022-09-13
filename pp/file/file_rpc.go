@@ -1,15 +1,15 @@
 package file
 
 import (
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/api/rpc"
 	"io"
 	"strings"
 	"sync"
 	"time"
-	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/api/rpc"
 )
 
-const WAIT_TIMEOUT time.Duration = 3
+const WAIT_TIMEOUT time.Duration = 5
 
 var (
 	reFileMutex sync.Mutex
@@ -44,8 +44,8 @@ var (
 )
 
 type pipe struct {
-	reader   *io.PipeReader
-	writer   *io.PipeWriter
+	reader *io.PipeReader
+	writer *io.PipeWriter
 }
 
 // IsFileRpcRemote
@@ -65,10 +65,10 @@ func GetRemoteFileData(hash string, offset *protos.SliceOffset) []byte {
 	}
 
 	// compose event, as well notify the remote user
-	r := &rpc.Result {
-		Return: rpc.UPLOAD_DATA,
+	r := &rpc.Result{
+		Return:      rpc.UPLOAD_DATA,
 		OffsetStart: &offset.SliceOffsetStart,
-		OffsetEnd: &offset.SliceOffsetEnd,
+		OffsetEnd:   &offset.SliceOffsetEnd,
 	}
 
 	// send event and open the pipe for coming data
@@ -81,7 +81,7 @@ func GetRemoteFileData(hash string, offset *protos.SliceOffset) []byte {
 	reFileMutex.Unlock()
 
 	// read on the pipe
-	data := make([]byte, offset.SliceOffsetEnd - offset.SliceOffsetStart)
+	data := make([]byte, offset.SliceOffsetEnd-offset.SliceOffsetStart)
 	var cursor []byte
 	var read uint64
 	var done = make(chan bool)
@@ -97,7 +97,7 @@ func GetRemoteFileData(hash string, offset *protos.SliceOffset) []byte {
 			}
 			read = read + uint64(n)
 			cursor = data[read:]
-			if read >= offset.SliceOffsetEnd - offset.SliceOffsetStart {
+			if read >= offset.SliceOffsetEnd-offset.SliceOffsetStart {
 				done <- true
 				return
 			}
@@ -110,7 +110,7 @@ func GetRemoteFileData(hash string, offset *protos.SliceOffset) []byte {
 	case s := <-done:
 		if s {
 			return []byte(data)
-		}else {
+		} else {
 			return nil
 		}
 	}
@@ -149,13 +149,13 @@ func SaveRemoteFileData(key string, data []byte, offset uint64) bool {
 	defer wmutex.Unlock()
 	// 1. send the event rpc.DOWNLOAD_OK
 	offsetend := offset + uint64(len(data))
-	result := rpc.Result {
-		Return: rpc.DOWNLOAD_OK,
+	result := rpc.Result{
+		Return:      rpc.DOWNLOAD_OK,
 		OffsetStart: &offset,
-		OffsetEnd: &offsetend,
+		OffsetEnd:   &offsetend,
 	}
 
-    downDataMutex.Lock()
+	downDataMutex.Lock()
 	SetRemoteFileResult(key, result)
 
 	// 2. download file data -> map
@@ -167,7 +167,7 @@ func SaveRemoteFileData(key string, data []byte, offset uint64) bool {
 }
 
 // GetRemoteFileSize
-func GetRemoteFileSize(hash string) uint64{
+func GetRemoteFileSize(hash string) uint64 {
 	if f, ok := rpcFileInfoMap.Load(hash); ok {
 		return f.(uint64)
 	}
@@ -206,7 +206,7 @@ func GetRemoteFileEvent(key string) (*rpc.Result, bool) {
 	result, loaded := rpcFileEvent.LoadAndDelete(key)
 	if result != nil && loaded {
 		return result.(*rpc.Result), loaded
-	}else {
+	} else {
 		return nil, loaded
 	}
 }
@@ -248,7 +248,7 @@ func GetRemoteFileInfo(hash string) uint64 {
 	for {
 		fileSize = GetRemoteFileSize(hash)
 		if fileSize != 0 {
-			break;
+			break
 		}
 	}
 	return fileSize
@@ -278,7 +278,6 @@ func GetFileListResult(key string) (*rpc.FileListResult, bool) {
 	}
 	return nil, loaded
 }
-
 
 // SetFileListResult
 func SetFileListResult(key string, result *rpc.FileListResult) {
@@ -318,4 +317,3 @@ func SetQueryOzoneResult(key string, result *rpc.GetOzoneResult) {
 		rpcOzone.Store(key, result)
 	}
 }
-

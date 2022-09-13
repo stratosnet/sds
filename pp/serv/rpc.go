@@ -3,6 +3,8 @@ package serv
 import (
 	"context"
 	b64 "encoding/base64"
+	"encoding/hex"
+	"github.com/stratosnet/sds/utils/datamesh"
 	"sync"
 	"time"
 
@@ -194,11 +196,40 @@ func (api *rpcApi) UploadData(param rpc_api.ParamUploadData) rpc_api.Result {
 
 // RequestDownload
 func (api *rpcApi) RequestDownload(param rpc_api.ParamReqDownloadFile) rpc_api.Result {
-	fileHash := param.FileHash
+	_, _, fileHash, _, err := datamesh.ParseFileHandle(param.FileHandle)
+	if err != nil {
+		return rpc_api.Result{Return: rpc_api.WRONG_INPUT}
+	}
+
 	wallet := param.WalletAddr
+	pubkey := param.WalletPubkey
+	signature := param.Signature
+
+	// wallet pubkey and wallet signature will be carried in sds messages in []byte format
+	wpk, err := utiltypes.WalletPubkeyFromBech(pubkey)
+	if err != nil {
+		utils.ErrorLog("wrong wallet pubkey")
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+	wsig, err := hex.DecodeString(signature)
+	if err != nil {
+		utils.ErrorLog("wrong signature")
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
+	// verify if wallet and public key match
+	if utiltypes.VerifyWalletAddrBytes(wpk.Bytes(), wallet) != 0 {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
+	// verify the signature
+	wsigMsg := utils.GetFileDownloadWalletSignMessage(fileHash, wallet)
+	if !utiltypes.VerifyWalletSignBytes(wpk.Bytes(), wsig, wsigMsg) {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
 
 	// request for downloading file
-	req, reqid := requests.RequestDownloadFile(fileHash, wallet, "", nil)
+	req, reqid := requests.RequestDownloadFile(fileHash, param.FileHandle, wallet, "", wsig, wpk.Bytes(), nil)
 	peers.SendMessageDirectToSPOrViaPP(context.Background(), req, header.ReqFileStorageInfo)
 	key := fileHash + reqid
 
@@ -441,12 +472,39 @@ func (api *rpcApi) RequestStopShare(param rpc_api.ParamReqStopShare) rpc_api.Fil
 // RequestGetShared
 func (api *rpcApi) RequestGetShared(param rpc_api.ParamReqGetShared) rpc_api.Result {
 
+	wallet := param.WalletAddr
+	pubkey := param.WalletPubkey
+	signature := param.Signature
+
+	// wallet pubkey and wallet signature will be carried in sds messages in []byte format
+	wpk, err := utiltypes.WalletPubkeyFromBech(pubkey)
+	if err != nil {
+		utils.ErrorLog("wrong wallet pubkey")
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+	wsig, err := hex.DecodeString(signature)
+	if err != nil {
+		utils.ErrorLog("wrong signature")
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
+	// verify if wallet and public key match
+	if utiltypes.VerifyWalletAddrBytes(wpk.Bytes(), wallet) != 0 {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
+	// verify the signature
+	wsigMsg := utils.GetFileDownloadShareWalletSignMessage(param.FileHash, wallet)
+	if !utiltypes.VerifyWalletSignBytes(wpk.Bytes(), wsig, wsigMsg) {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
 	reqId := uuid.New().String()
 	parentCtx := context.Background()
 	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
 	key := param.WalletAddr + reqId
 
-	event.GetShareFile(context.Background(), param.ShareLink, "", "", reqId, param.WalletAddr, nil)
+	event.GetShareFile(ctx, param.ShareLink, "", "", reqId, param.WalletAddr, wpk.Bytes(), wsig, nil)
 
 	// the application gives FileShareResult type of result
 	var res *rpc_api.FileShareResult

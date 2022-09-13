@@ -45,16 +45,16 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 				pp.Log(ctx, "download has stopped")
 				return
 			}
-			for _, rsp := range target.SliceInfo {
-				pp.DebugLog(ctx, "taskid ======= ", rsp.TaskId)
-				if file.CheckSliceExisting(target.FileHash, target.FileName, rsp.SliceStorageInfo.SliceHash, target.SavePath, target.ReqId) {
-					pp.Log(ctx, "slice exist already,", rsp.SliceStorageInfo.SliceHash)
-					setDownloadSliceSuccess(ctx, rsp.SliceStorageInfo.SliceHash, dTask)
-					task.DownloadProgress(ctx, target.FileHash, target.ReqId, rsp.SliceStorageInfo.SliceSize)
+			for _, slice := range target.SliceInfo {
+				pp.DebugLog(ctx, "taskid ======= ", slice.TaskId)
+				if file.CheckSliceExisting(target.FileHash, target.FileName, slice.SliceStorageInfo.SliceHash, target.SavePath, target.ReqId) {
+					pp.Log(ctx, "slice exist already,", slice.SliceStorageInfo.SliceHash)
+					setDownloadSliceSuccess(ctx, slice.SliceStorageInfo.SliceHash, dTask)
+					task.DownloadProgress(ctx, target.FileHash, target.ReqId, slice.SliceStorageInfo.SliceSize)
 				} else {
 					pp.DebugLog(ctx, "request download data")
-					req := requests.ReqDownloadSliceData(&target, rsp)
-					SendReqDownloadSlice(ctx, target.FileHash, rsp, req, target.ReqId)
+					req := requests.ReqDownloadSliceData(&target, slice)
+					SendReqDownloadSlice(ctx, target.FileHash, slice, req, target.ReqId)
 				}
 			}
 			pp.DebugLog(ctx, "DownloadFileSlice(&target)", target)

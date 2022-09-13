@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/stratosnet/sds/utils/datamesh"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -237,7 +238,7 @@ func put(cmd *cobra.Command, args []string) error {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // getParams
-func reqDownloadMsg(hash string) []byte {
+func reqDownloadMsg(hash, sdmPath string) []byte {
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {
@@ -245,11 +246,23 @@ func reqDownloadMsg(hash string) []byte {
 		return nil
 	}
 
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress)))
+	if err != nil {
+		return nil
+	}
+	wpk, err := WalletPublicKey.ToBech()
+	if err != nil {
+		return nil
+	}
+
 	// param
 	var params = []rpc.ParamReqDownloadFile{}
 	params = append(params, rpc.ParamReqDownloadFile{
-		FileHash:   hash,
-		WalletAddr: WalletAddress,
+		FileHandle:   sdmPath,
+		WalletAddr:   WalletAddress,
+		WalletPubkey: wpk,
+		Signature:    hex.EncodeToString(sign),
 	})
 
 	pm, e := json.Marshal(params)
@@ -305,10 +318,15 @@ func downloadedFileInfoMsg(fileHash string, fileSize uint64, reqid string) []byt
 func get(cmd *cobra.Command, args []string) error {
 
 	// args[0] is the fileHash
-	fileHash := args[0]
+	sdmPath := args[0]
+	_, _, fileHash, _, err := datamesh.ParseFileHandle(sdmPath)
+	if err != nil {
+		utils.DebugLog("sdm format error")
+		return nil
+	}
 
 	// compose "request file download" request
-	r := reqDownloadMsg(fileHash)
+	r := reqDownloadMsg(fileHash, sdmPath)
 	if r == nil {
 		return nil
 	}
@@ -322,7 +340,7 @@ func get(cmd *cobra.Command, args []string) error {
 
 	// handle rsp
 	var rsp jsonrpcMessage
-	err := json.Unmarshal(body, &rsp)
+	err = json.Unmarshal(body, &rsp)
 	if err != nil {
 		return nil
 	}
@@ -708,7 +726,7 @@ func stopshare(cmd *cobra.Command, args []string) error {
 }
 
 // reqGetSharedMsg
-func reqGetSharedMsg(shareLink string) []byte {
+func reqGetSharedMsg(shareLink, fileHash string) []byte {
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {
@@ -716,11 +734,24 @@ func reqGetSharedMsg(shareLink string) []byte {
 		return nil
 	}
 
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileDownloadShareWalletSignMessage(fileHash, WalletAddress)))
+	if err != nil {
+		return nil
+	}
+	wpk, err := WalletPublicKey.ToBech()
+	if err != nil {
+		return nil
+	}
+
 	// param
 	var params = []rpc.ParamReqGetShared{}
 	params = append(params, rpc.ParamReqGetShared{
-		WalletAddr: WalletAddress,
-		ShareLink:  shareLink,
+		FileHash:     fileHash,
+		WalletAddr:   WalletAddress,
+		ShareLink:    shareLink,
+		WalletPubkey: wpk,
+		Signature:    hex.EncodeToString(sign),
 	})
 
 	pm, e := json.Marshal(params)
@@ -736,12 +767,12 @@ func reqGetSharedMsg(shareLink string) []byte {
 // getshared
 func getshared(cmd *cobra.Command, args []string) error {
 
+	fileHash := args[1]
 	// compose request
-	r := reqGetSharedMsg(args[0])
+	r := reqGetSharedMsg(args[0], fileHash)
 	if r == nil {
 		return nil
 	}
-	fileHash := args[1]
 
 	// http request-respond
 	body := httpRequest(r)

@@ -71,7 +71,7 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 
 	task.VideoCacheTaskMap.Delete(fileHash)
 	task.DownloadFileMap.Delete(fileHash + task.LOCAL_REQID)
-	streamInfo, err := getStreamInfo(ctx, fileHash, ownerWalletAddress, setting.WalletAddress, w)
+	streamInfo, err := getStreamInfo(ctx, fileHash, ownerWalletAddress, w)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
@@ -97,7 +97,7 @@ func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 	}
 
 	task.DownloadFileMap.Delete(fileHash + task.LOCAL_REQID)
-	streamInfo, err := getStreamInfo(ctx, fileHash, ownerWalletAddress, setting.WalletAddress, w)
+	streamInfo, err := getStreamInfo(ctx, fileHash, ownerWalletAddress, w)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
@@ -131,7 +131,7 @@ func streamVideoP2P(w http.ResponseWriter, req *http.Request) {
 		FileHash:      body.FileHash,
 		SavePath:      body.SavePath,
 		FileName:      body.FileName,
-		Sign:          body.Sign,
+		NodeSign:      body.Sign,
 		SpP2PAddress:  body.SpP2pAddress,
 		WalletAddress: setting.WalletAddress,
 	}
@@ -245,12 +245,12 @@ func parseSliceHash(reqURL *url.URL) string {
 	return reqPath[strings.LastIndex(reqPath, "/")+1:]
 }
 
-func getStreamInfo(ctx context.Context, fileHash, ownerWalletAddress, walletAddress string, w http.ResponseWriter) (*StreamInfo, error) {
+func getStreamInfo(ctx context.Context, fileHash, ownerWalletAddress string, w http.ResponseWriter) (*StreamInfo, error) {
 	filePath := datamesh.DataMeshId{
 		Owner: ownerWalletAddress,
 		Hash:  fileHash,
 	}.String()
-	event.GetFileStorageInfo(ctx, filePath, setting.VIDEOPATH, uuid.New().String(), walletAddress, "", true, w)
+	event.GetFileStorageInfo(ctx, filePath, setting.VIDEOPATH, uuid.New().String(), "", true, w)
 	var fInfo *protos.RspFileStorageInfo
 	start := time.Now().Unix()
 	for {
