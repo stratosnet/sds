@@ -515,6 +515,17 @@ func ReqTransferDownloadData(notice *protos.ReqFileSliceBackupNotice, newPpP2pAd
 	}
 }
 
+func ReqTransferDownloadWrongData(notice *protos.ReqFileSliceBackupNotice, newPpP2pAddress string) *protos.ReqTransferDownloadWrong {
+	return &protos.ReqTransferDownloadWrong{
+		TaskId:           notice.TaskId,
+		NewPp:            &protos.PPBaseInfo{P2PAddress: newPpP2pAddress},
+		OriginalPp:       notice.PpInfo,
+		SliceStorageInfo: notice.SliceStorageInfo,
+		FileHash:         notice.FileHash,
+		Sign:             notice.Sign,
+	}
+}
+
 //TODO: Change to BP to SP
 func ReqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
 	utils.DebugLog("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~reqReportTaskBPDatareqReportTaskBPData  taskID ==", taskID, "traffic == ", traffic)

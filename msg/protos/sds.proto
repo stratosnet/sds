@@ -618,6 +618,15 @@ message RspTransferDownloadResult {
   string slice_hash = 4;
 }
 
+message ReqTransferDownloadWrong {
+  string            task_id = 1;
+  PPBaseInfo        new_pp = 2;
+  PPBaseInfo        original_pp = 3;
+  SliceStorageInfo  slice_storage_info = 4;
+  string            file_hash = 5;
+  string            sp_p2p_address = 6;
+  bytes             sign = 7;
+}
 
 // sp - pp get storage info
 message ReqGetHDInfo {
