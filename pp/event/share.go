@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"github.com/stratosnet/sds/utils/types"
 	"net/http"
 
 	"github.com/stratosnet/sds/framework/core"
@@ -187,10 +188,10 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 }
 
 // GetShareFile
-func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, reqID, walletAddr string, w http.ResponseWriter) {
+func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, reqID, walletAddr string, walletPubkey, walletSign []byte, w http.ResponseWriter) {
 	pp.DebugLog(ctx, "GetShareFile for file ", keyword)
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(ctx, requests.ReqGetShareFileData(keyword, sharePassword, saveAs, reqID, walletAddr), header.ReqGetShareFile)
+		peers.SendMessageDirectToSPOrViaPP(ctx, requests.ReqGetShareFileData(keyword, sharePassword, saveAs, reqID, walletAddr, walletPubkey, walletSign), header.ReqGetShareFile)
 		storeResponseWriter(reqID, w)
 	} else {
 		notLogin(w)
@@ -249,11 +250,14 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			rpcResult.Return = rpc.SHARED_DL_START
 			rpcResult.FileInfo = append(rpcResult.FileInfo, f)
 			file.SetFileShareResult(target.ShareRequest.WalletAddress+target.ShareRequest.ReqId, rpcResult)
-			req, _ = requests.RequestDownloadFile(fileInfo.FileHash, fileInfo.OwnerWalletAddress, target.ShareRequest.ReqId,
-				target.ShareRequest)
+			req, _ = requests.RequestDownloadFile(fileInfo.FileHash, filePath, target.ShareRequest.WalletAddress, target.ShareRequest.ReqId, target.ShareRequest.WalletSign, target.ShareRequest.WalletPubkey, target.ShareRequest)
 		} else {
-			req = requests.ReqFileStorageInfoData(filePath, "", target.ShareRequest.ReqId, target.ShareRequest.WalletAddress,
-				saveAs, false, target.ShareRequest)
+			sig := utils.GetFileDownloadShareWalletSignMessage(fileInfo.FileHash, setting.WalletAddress)
+			sign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(sig))
+			if err != nil {
+				return
+			}
+			req = requests.ReqFileStorageInfoData(filePath, "", target.ShareRequest.ReqId, saveAs, setting.WalletAddress, sign, setting.WalletPublicKey, false, target.ShareRequest)
 		}
 		peers.SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 	}

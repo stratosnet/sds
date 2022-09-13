@@ -54,10 +54,12 @@ message RspMining {
 message ReqUploadFile {
   FileInfo file_info = 1;
   PPBaseInfo my_address = 2;
-  bytes sign = 3;
-  string req_id = 4;
-  bool is_cover = 5;
-  bool is_video_stream = 6;
+  bytes node_sign = 3;
+  bytes wallet_sign = 4;
+  bytes wallet_pubkey = 5;
+  string req_id = 6;
+  bool is_cover = 7;
+  bool is_video_stream = 8;
 }
 
 message RspUploadFile {
@@ -73,7 +75,9 @@ message RspUploadFile {
   uint64 video_slice_duration = 10;
   bool   is_encrypted = 11;
   string sp_p2p_address = 12;
-  bytes  sign = 13;
+  bytes  node_sign = 13;
+  bytes  wallet_sign = 14;
+  bytes  wallet_pubkey = 15;
 }
 
 message ReqUploadFileSlice {
@@ -87,7 +91,8 @@ message ReqUploadFileSlice {
   string          task_id = 8; //
   uint64          slice_size = 9; //
   string          sp_p2p_address = 10;
-  bytes           sign = 11;
+  bytes           pp_p2p_pubkey = 12; // used for verifying p2p_address
+  bytes           pp_node_sign = 13;
 }
 
 message RspUploadFileSlice {
@@ -95,11 +100,14 @@ message RspUploadFileSlice {
   SliceNumAddr slice_num_addr = 2; //
   string       file_hash = 3; //
   string       slice_hash = 4; //
-  string       p2p_address = 5;
+  string       p2p_address = 5; // src p2p_address
   string       wallet_address = 6; //
   uint64       slice_size = 7; //
   string       task_id = 8; //
   string       sp_p2p_address = 9;
+  bytes        sp_node_sign = 10;
+  bytes        pp_p2p_pubkey = 11;
+  bytes        pp_node_sign = 12;
 }
 
 message ReqUploadSlicesWrong {
@@ -133,11 +141,12 @@ message ReportUploadSliceResult {
   bool       upload_success = 4;
   bool       isPP = 5; //
   uint64     slice_size = 6; //
-  bytes      sign = 7;
+  bytes      pp_node_sign = 7;
   string     task_id = 8;
   string     p2p_address = 9;
   string     wallet_address = 10;
   string     sp_p2p_address = 11;
+  bytes      pp_p2p_pubkey = 12;
 }
 
 message RspReportUploadSliceResult {
@@ -180,28 +189,32 @@ message RspFindMyFileList {
 
 message ReqFileStorageInfo {
   FileIndexes     file_indexes = 1;
-  bytes           sign = 2;
-  string          req_id = 3;
-  bool            is_video_stream = 4;
-  ReqGetShareFile share_request = 5;
+  bytes           node_sign = 2;
+  bytes           wallet_sign = 3;
+  bytes           wallet_pubkey = 4;
+  string          req_id = 5;
+  bool            is_video_stream = 6;
+  ReqGetShareFile share_request = 7;
 }
 
 message RspFileStorageInfo {
   string visit_cer = 1;
   string p2p_address = 2;
   string wallet_address = 3;
-  repeated DownloadSliceInfo slice_info = 4;
-  string file_hash = 5;
-  string file_name = 6;
-  Result result = 7;
-  string req_id = 8;
-  string save_path = 9;
-  uint64 file_size = 10;
-  bool   is_video_stream = 11;
-  string rest_address = 12;
-  bytes  sign = 13; //sp signature
-  string sp_p2p_address = 14;
-  string encryption_tag = 15;
+  bytes  wallet_sign = 4;
+  bytes  wallet_pubkey = 5;
+  repeated DownloadSliceInfo slice_info = 6;
+  string file_hash = 7;
+  string file_name = 8;
+  Result result = 9;
+  string req_id = 10;
+  string save_path = 11;
+  uint64 file_size = 12;
+  bool   is_video_stream = 13;
+  string rest_address = 14;
+  bytes  node_sign = 15; //sp signature
+  string sp_p2p_address = 16;
+  string encryption_tag = 17;
 }
 
 message ReqDownloadFileWrong {
@@ -218,15 +231,19 @@ message ReqDownloadSlice {
   SliceOffsetInfo    slice_info = 1;
   string             p2p_address = 2;
   string             wallet_address = 3;
-  string             file_hash = 4;
-  string             task_id = 5;
-  string             save_path = 6;
-  string             req_id = 7;
-  bool               is_encrypted = 8;
-  string             sp_p2p_address = 9;
-  uint64             slice_number = 10;
-  bytes              sign = 11;
-  bool               is_video_caching = 12;
+  bytes              wallet_sign = 4;
+  bytes              wallet_pubkey = 5;
+  string             file_hash = 6;
+  string             task_id = 7;
+  string             save_path = 8;
+  string             req_id = 9;
+  bool               is_encrypted = 10;
+  string             sp_p2p_address = 11;
+  uint64             slice_number = 12;
+  bytes              pp_node_sign = 13;
+  bytes              pp_p2p_pubkey = 14;
+  bytes              sp_node_sign = 15;
+  bool               is_video_caching = 16;
 }
 
 message RspDownloadSlice {
@@ -236,16 +253,18 @@ message RspDownloadSlice {
   bytes  data = 4;
   string p2p_address = 5;
   string wallet_address = 6;
-  string task_id = 7;
-  uint64 slice_size = 8; // is the encrypted slice size if the file is encrypted
-  uint64 raw_slice_size = 9;
-  bool   needReport = 10; // used for passagePP whether the last slice
-  string save_path = 11;
-  Result result = 12;
-  string req_id = 13;
-  bool   is_encrypted = 14;
-  string sp_p2p_address = 15;
-  bool   is_video_caching = 16;
+  bytes  wallet_pubkey = 7;
+  bytes  wallet_sign = 8;
+  string task_id = 9;
+  uint64 slice_size = 10; // is the encrypted slice size if the file is encrypted
+  uint64 raw_slice_size = 11;
+  bool   needReport = 12; // used for passagePP whether the last slice
+  string save_path = 13;
+  Result result = 14;
+  string req_id = 15;
+  bool   is_encrypted = 16;
+  string sp_p2p_address = 17;
+  bool   is_video_caching = 18;
 }
 
 message ReqDownloadSliceWrong {
@@ -282,16 +301,18 @@ message RspDownloadSlicePause {
 }
 
 message ReqReportDownloadResult {
-  bool isPP = 1; // p doesn't need DownloadSliceInfo
+  bool isPP = 1;
   DownloadSliceInfo slice_info = 2;
   string file_hash = 3;
   string downloader_p2p_address = 4;
-  string downloader_wallet_address = 5;
-  string my_p2p_address = 6; // PP's P2P key address
-  string my_wallet_address = 7; // PP's wallet address
-  bytes  sign = 8;
-  string task_id = 9;
-  string sp_p2p_address = 10;
+  string wallet_address = 5;
+  bytes  wallet_pubkey = 6;
+  bytes  wallet_sign = 7;
+  string pp_p2p_address = 8; // PP's P2P key address
+  string pp_wallet_address = 9; // PP's wallet address
+  bytes  node_sign = 10;
+  string task_id = 11;
+  string sp_p2p_address = 12;
 }
 
 message RspReportDownloadResult {
@@ -568,8 +589,7 @@ message RspReportBackupSliceResult {
 message ReqBackupStatus {
   string task_id = 1;
   string file_hash = 2;
-  string p2p_address = 3;
-  string wallet_address = 4;
+  PPBaseInfo address = 3;
 }
 
 message RspBackupStatus {
@@ -610,6 +630,15 @@ message RspTransferDownloadResult {
   string slice_hash = 4;
 }
 
+message ReqTransferDownloadWrong {
+  string            task_id = 1;
+  PPBaseInfo        new_pp = 2;
+  PPBaseInfo        original_pp = 3;
+  SliceStorageInfo  slice_storage_info = 4;
+  string            file_hash = 5;
+  string            sp_p2p_address = 6;
+  bytes             sign = 7;
+}
 
 // sp - pp get storage info
 message ReqGetHDInfo {
@@ -807,10 +836,13 @@ message RspDeleteShare {
 message ReqGetShareFile {
   string keyword = 1; //
   string p2p_address = 2;
-  string wallet_address = 3; //
-  string req_id = 4;
-  string share_password = 5;//
-  string save_as = 6;
+  bytes  node_sign = 3;
+  string wallet_address = 4; //
+  bytes  wallet_pubkey = 5;
+  bytes  wallet_sign = 6;
+  string req_id = 7;
+  string share_password = 8;//
+  string save_as = 9;
 }
 
 

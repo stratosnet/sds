@@ -65,21 +65,22 @@ func SendMessageToSPServer(ctx context.Context, pb proto.Message, cmd string) {
 }
 
 // TransferSendMessageToPPServ
-func TransferSendMessageToPPServ(ctx context.Context, addr string, msgBuf *msg.RelayMsgBuf) {
+func TransferSendMessageToPPServ(ctx context.Context, addr string, msgBuf *msg.RelayMsgBuf) error {
 	newCtx := core.CreateContextWithParentReqIdAsReqId(ctx)
 	if client.ConnMap[addr] != nil {
-		_ = client.ConnMap[addr].Write(msgBuf, newCtx)
+		err := client.ConnMap[addr].Write(msgBuf, newCtx)
 		utils.DebugLog("conn exist, transfer")
-		return
+		return err
 	}
 
 	utils.DebugLog("new conn, connect and transfer")
 	newClient, err := client.NewClient(addr, false)
 	if err != nil {
 		utils.ErrorLogf("cannot transfer message to client [%v]", addr, utils.FormatError(err))
-		return
+		return err
 	}
-	_ = newClient.Write(msgBuf, newCtx)
+	err = newClient.Write(msgBuf, newCtx)
+	return err
 }
 
 func TransferSendMessageToPPServByP2pAddress(ctx context.Context, p2pAddress string, msgBuf *msg.RelayMsgBuf) {

@@ -55,7 +55,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"ver                                        			version\n" +
 		"monitor                                    			show monitor\n" +
 		"stopmonitor                                			stop monitor\n" +
-		"monitortoken                                   		show token for pp monitor service" +
+		"monitortoken                               			show token for pp monitor service\n" +
 		"config  <key> <value>                      			set config key value\n" +
 		"getoz <walletAddress> ->password           			get current ozone balance\n" +
 		"status			                                        get current resource node status\n"

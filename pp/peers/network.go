@@ -2,28 +2,38 @@ package peers
 
 import (
 	"net"
+	"time"
 
+	"github.com/glendc/go-external-ip"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
 
 // GetNetworkAddress
 func GetNetworkAddress() {
-
 	if setting.Config.Internal {
 		setting.NetworkAddress = getInternal() + ":" + setting.Config.Port
 		setting.RestAddress = getInternal() + ":" + setting.Config.RestPort
 	} else {
-		setting.NetworkAddress = getExternal() + ":" + setting.Config.Port
-		setting.RestAddress = getExternal() + ":" + setting.Config.RestPort
+		externalIP := getExternal()
+		setting.NetworkAddress = externalIP + ":" + setting.Config.Port
+		setting.RestAddress = externalIP + ":" + setting.Config.RestPort
 	}
-	// utils.Log("setting.NetworkAddress", setting.NetworkAddress)
-
+	utils.Log("setting.NetworkAddress", setting.NetworkAddress)
 }
 
 func getExternal() string {
-	utils.Log("setting.NetworkAddress", setting.Config.NetworkAddress)
-	return setting.Config.NetworkAddress
+	externalIP := setting.Config.NetworkAddress
+	if externalIP == "" {
+		consensus := externalip.DefaultConsensus(&externalip.ConsensusConfig{Timeout: 10 * time.Second}, nil)
+		ip, err := consensus.ExternalIP()
+		if err != nil {
+			utils.ErrorLog("Cannot fetch external IP", err.Error())
+			return ""
+		}
+		externalIP = ip.String()
+	}
+	return externalIP
 }
 
 func getInternal() string {

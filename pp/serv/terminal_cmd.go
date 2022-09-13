@@ -289,7 +289,7 @@ func (api *terminalCmd) Download(param []string) (CmdResult, error) {
 		saveAs = param[1]
 	}
 	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
-	event.GetFileStorageInfo(ctx, param[0], "", task.LOCAL_REQID, setting.WalletAddress, saveAs, false, nil)
+	event.GetFileStorageInfo(ctx, param[0], "", task.LOCAL_REQID, saveAs, false, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -410,9 +410,9 @@ func (api *terminalCmd) GetShareFile(param []string) (CmdResult, error) {
 		return CmdResult{Msg: ""}, errors.New("input share link and retrieval secret key(if any)")
 	}
 	if len(param) < 2 {
-		event.GetShareFile(ctx, param[0], "", "", task.LOCAL_REQID, setting.WalletAddress, nil)
+		event.GetShareFile(ctx, param[0], "", "", task.LOCAL_REQID, setting.WalletAddress, setting.WalletPublicKey, nil, nil)
 	} else {
-		event.GetShareFile(ctx, param[0], param[1], "", task.LOCAL_REQID, setting.WalletAddress, nil)
+		event.GetShareFile(ctx, param[0], param[1], "", task.LOCAL_REQID, setting.WalletAddress, setting.WalletPublicKey, nil, nil)
 	}
 
 	return CmdResult{Msg: DefaultMsg}, nil

@@ -77,6 +77,7 @@ message SliceNumAddr {
      uint64 slice_number = 1;
      SliceOffset slice_offset = 2;
      PPBaseInfo pp_info = 3;
+     bytes sp_node_sign = 4;
 }
 
 message SliceHashAddr {
@@ -85,6 +86,8 @@ message SliceHashAddr {
   uint64 slice_size = 3;
   SliceOffset slice_offset = 4;
   PPBaseInfo pp_info = 5;
+  string sp_p2p_address = 6;
+  bytes sp_node_sign = 7;
 }
 
 message SliceOffsetInfo {
@@ -115,6 +118,7 @@ message DownloadSliceInfo {
      bool visit_result = 5;
      string task_id= 6;
      SliceOffset slice_offset= 7;
+     bytes sp_node_sign = 8;
 }
 
 message SliceStorageInfo {
