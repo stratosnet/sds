@@ -305,6 +305,7 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 		totalCostTime += val.(int64)
 	}
 	SendReportDownloadResult(ctx, target, totalCostTime, false)
+	upRecvCostTimeMap.dataMap.Delete(tkSlice)
 }
 
 func videoCacheKeep(fileHash, taskID string) {
