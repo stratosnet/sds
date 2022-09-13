@@ -54,10 +54,12 @@ message RspMining {
 message ReqUploadFile {
   FileInfo file_info = 1;
   PPBaseInfo my_address = 2;
-  bytes sign = 3;
-  string req_id = 4;
-  bool is_cover = 5;
-  bool is_video_stream = 6;
+  bytes node_sign = 3;
+  bytes wallet_sign = 4;
+  bytes wallet_pubkey = 5;
+  string req_id = 6;
+  bool is_cover = 7;
+  bool is_video_stream = 8;
 }
 
 message RspUploadFile {
@@ -73,7 +75,9 @@ message RspUploadFile {
   uint64 video_slice_duration = 10;
   bool   is_encrypted = 11;
   string sp_p2p_address = 12;
-  bytes  sign = 13;
+  bytes  node_sign = 13;
+  bytes  wallet_sign = 14;
+  bytes  wallet_pubkey = 15;
 }
 
 message ReqUploadFileSlice {
@@ -87,7 +91,8 @@ message ReqUploadFileSlice {
   string          task_id = 8; //
   uint64          slice_size = 9; //
   string          sp_p2p_address = 10;
-  bytes           sign = 11;
+  bytes           pp_p2p_pubkey = 12; // used for verifying p2p_address
+  bytes           pp_node_sign = 13;
 }
 
 message RspUploadFileSlice {
@@ -95,11 +100,14 @@ message RspUploadFileSlice {
   SliceNumAddr slice_num_addr = 2; //
   string       file_hash = 3; //
   string       slice_hash = 4; //
-  string       p2p_address = 5;
+  string       p2p_address = 5; // src p2p_address
   string       wallet_address = 6; //
   uint64       slice_size = 7; //
   string       task_id = 8; //
   string       sp_p2p_address = 9;
+  bytes        sp_node_sign = 10;
+  bytes        pp_p2p_pubkey = 11;
+  bytes        pp_node_sign = 12;
 }
 
 message ReqUploadSlicesWrong {
@@ -133,11 +141,12 @@ message ReportUploadSliceResult {
   bool       upload_success = 4;
   bool       isPP = 5; //
   uint64     slice_size = 6; //
-  bytes      sign = 7;
+  bytes      pp_node_sign = 7;
   string     task_id = 8;
   string     p2p_address = 9;
   string     wallet_address = 10;
   string     sp_p2p_address = 11;
+  bytes      pp_p2p_pubkey = 12;
 }
 
 message RspReportUploadSliceResult {
@@ -568,8 +577,7 @@ message RspReportBackupSliceResult {
 message ReqBackupStatus {
   string task_id = 1;
   string file_hash = 2;
-  string p2p_address = 3;
-  string wallet_address = 4;
+  PPBaseInfo address = 3;
 }
 
 message RspBackupStatus {
