@@ -34,5 +34,5 @@ func getShareFile(w http.ResponseWriter, request *http.Request) {
 		saveAs = data["saveAs"].(string)
 	}
 
-	event.GetShareFile(context.Background(), keyword, sharePassword, saveAs, uuid.New().String(), setting.WalletAddress, w)
+	event.GetShareFile(context.Background(), keyword, sharePassword, saveAs, uuid.New().String(), setting.WalletAddress, setting.WalletPublicKey, nil, w)
 }

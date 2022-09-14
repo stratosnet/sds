@@ -203,7 +203,11 @@ func ReqFileSliceBackupNotice(ctx context.Context, conn core.WriteCloser) {
 	}
 	task.AddTransferTask(target.TaskId, target.SliceStorageInfo.SliceHash, tTask)
 
-	peers.TransferSendMessageToPPServ(ctx, target.PpInfo.NetworkAddress, requests.ReqTransferDownloadData(&target, setting.P2PAddress))
+	//if the connection returns error, send a ReqTransferDownloadWrong message to sp to report the failure
+	err := peers.TransferSendMessageToPPServ(ctx, target.PpInfo.NetworkAddress, requests.ReqTransferDownloadData(&target, setting.P2PAddress))
+	if err != nil {
+		peers.SendMessageToSPServer(ctx, requests.ReqTransferDownloadWrongData(&target, setting.P2PAddress), header.ReqTransferDownloadWrong)
+	}
 }
 
 // ReqTransferDownload

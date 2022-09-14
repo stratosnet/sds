@@ -21,6 +21,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/types"
 )
 
 var (
@@ -57,20 +58,31 @@ type CostTimeStat struct {
 	PacketCount   int64
 }
 
+// ReqUploadFileSlice storage PP receives a request with file data from the PP who initiated uploading
 func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
-	utils.DebugLog("ReqUploadFileSlice reqID =========", core.GetReqIdFromContext(ctx))
 	costTime := core.GetRecvCostTimeFromContext(ctx)
 
 	var target protos.ReqUploadFileSlice
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-
-	if target.Sign == nil || !verifyUploadSliceSign(&target) {
+	// check if signatures exist
+	if target.SliceNumAddr.SpNodeSign == nil || target.PpNodeSign == nil {
 		rsp := &protos.RspUploadFileSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
-				Msg:   "signature validation failed",
+				Msg:   "missing signature(s)",
+			},
+		}
+		peers.SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
+		return
+	}
+	// verify addresses and signatures
+	if err := verifyUploadSliceSign(&target); err != nil {
+		rsp := &protos.RspUploadFileSlice{
+			Result: &protos.Result{
+				State: protos.ResultState_RES_FAIL,
+				Msg:   err.Error(),
 			},
 		}
 		peers.SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
@@ -109,7 +121,6 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		utils.DebugLog("the slice upload finished", target.SliceInfo.SliceHash)
 		// respond to PP in case the size is correct but actually not success
 		if utils.CalcSliceHash(file.GetSliceData(target.SliceInfo.SliceHash), target.FileHash, target.SliceNumAddr.SliceNumber) == target.SliceInfo.SliceHash {
-			utils.DebugLog("RspUploadFileSliceData reqID =========", core.GetReqIdFromContext(ctx))
 			peers.SendMessage(ctx, conn, requests.RspUploadFileSliceData(&target), header.RspUploadFileSlice)
 			// report upload result to SP
 
@@ -127,9 +138,17 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 }
 
 func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
-	utils.DebugLog("RspUploadFileSlice reqID =========", core.GetReqIdFromContext(ctx))
 	var target protos.RspUploadFileSlice
 	if !requests.UnmarshalData(ctx, &target) {
+		return
+	}
+
+	// verify node signature from sp
+	if target.SpNodeSign == nil || target.PpNodeSign == nil {
+		return
+	}
+	if err := verifyRspUploadSliceSign(&target); err != nil {
+		utils.ErrorLog("RspUploadFileSlice", err.Error())
 		return
 	}
 
@@ -200,8 +219,7 @@ func RspReportUploadSliceResult(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask, sign []byte) error {
-	utils.DebugLog("reqID =========", core.GetReqIdFromContext(ctx))
+func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 	tkDataLen := len(tk.Data)
 	fileHash := tk.FileHash
 	storageP2pAddress := tk.SliceNumAddr.PpInfo.P2PAddress
@@ -226,12 +244,11 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask, sign []byte)
 		upSendCostTimeMap.dataMap.Store(tkSliceUID, ctStat)
 		upSendCostTimeMap.mux.Unlock()
 		utils.DebugLogf("upSendPacketWgMap.Store <== K:%v, V:%v]", tkSliceUID, ctStat)
-		return sendSlice(newCtx, requests.ReqUploadFileSliceData(tk, sign), fileHash, storageP2pAddress, storageNetworkAddress)
+		return sendSlice(newCtx, requests.ReqUploadFileSliceData(tk, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
 	}
 
 	dataStart := 0
 	dataEnd := setting.MAXDATA
-
 	for {
 		newTask := &task.UploadSliceTask{
 			TaskID:         tk.TaskID,
@@ -263,7 +280,7 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask, sign []byte)
 			newTask.Data = tk.Data[dataStart:dataEnd]
 
 			pp.DebugLogf(newCtx, "Uploading slice data %v-%v (total %v)", dataStart, dataEnd, newTask.SliceTotalSize)
-			err := sendSlice(newCtx, requests.ReqUploadFileSliceData(newTask, sign), fileHash, storageP2pAddress, storageNetworkAddress)
+			err := sendSlice(newCtx, requests.ReqUploadFileSliceData(newTask, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
 			if err != nil {
 				return err
 			}
@@ -272,7 +289,7 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask, sign []byte)
 		} else {
 			pp.DebugLogf(newCtx, "Uploading slice data %v-%v (total %v)", dataStart, tkDataLen, newTask.SliceTotalSize)
 			newTask.Data = tk.Data[dataStart:]
-			return sendSlice(newCtx, requests.ReqUploadFileSliceData(newTask, sign), fileHash, storageP2pAddress, storageNetworkAddress)
+			return sendSlice(newCtx, requests.ReqUploadFileSliceData(newTask, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
 		}
 	}
 }
@@ -335,9 +352,66 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 	}
 }
 
-func verifyUploadSliceSign(target *protos.ReqUploadFileSlice) bool {
-	return requests.VerifySpSignature(target.SpP2PAddress,
-		[]byte(target.P2PAddress+target.FileHash+header.ReqUploadFileSlice), target.Sign)
+func verifyUploadSliceSign(target *protos.ReqUploadFileSlice) error {
+
+	// verify pp address
+	if !types.VerifyP2pAddrBytes(target.PpP2PPubkey, target.P2PAddress) {
+		return errors.New("failed verifying pp's p2p address")
+	}
+
+	// verify node signature from the pp
+	msg := utils.GetReqUploadFileSlicePpNodeSignMessage(target.P2PAddress, setting.P2PAddress, header.ReqUploadFileSlice)
+	if !types.VerifyP2pSignBytes(target.PpP2PPubkey, target.PpNodeSign, msg) {
+		return errors.New("failed verifying pp's node signature")
+	}
+
+	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
+	if err != nil {
+		return errors.Wrap(err, "failed to get sp pubkey")
+	}
+
+	// verify sp address
+	if !types.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
+		return errors.New("failed verifying sp's p2p address")
+	}
+
+	// verify sp node signature
+	msg = utils.GetReqUploadFileSliceSpNodeSignMessage(setting.P2PAddress, target.SpP2PAddress, target.FileHash, header.ReqUploadFileSlice)
+	if !types.VerifyP2pSignBytes(spP2pPubkey, target.SliceNumAddr.SpNodeSign, msg) {
+		return errors.New("failed verifying sp's node signature")
+	}
+	return nil
+}
+
+func verifyRspUploadSliceSign(target *protos.RspUploadFileSlice) error {
+
+	// verify pp address
+	if !types.VerifyP2pAddrBytes(target.PpP2PPubkey, target.P2PAddress) {
+		return errors.New("failed verifying pp's p2p address")
+	}
+
+	// verify node signature from the pp
+	msg := utils.GetRspUploadFileSliceNodeSignMessage(target.P2PAddress, setting.P2PAddress, header.RspUploadFileSlice)
+	if !types.VerifyP2pSignBytes(target.PpP2PPubkey, target.PpNodeSign, msg) {
+		return errors.New("failed verifying pp's node signature")
+	}
+
+	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
+	if err != nil {
+		return errors.Wrap(err, "failed to get sp pubkey")
+	}
+
+	// verify sp address
+	if !types.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
+		return errors.New("failed verifying sp's p2p address")
+	}
+
+	// verify sp node signature
+	msg = utils.GetReqUploadFileSliceSpNodeSignMessage(target.P2PAddress, target.SpP2PAddress, target.FileHash, header.ReqUploadFileSlice)
+	if !types.VerifyP2pSignBytes(spP2pPubkey, target.SpNodeSign, msg) {
+		return errors.New("failed verifying sp's node signature")
+	}
+	return nil
 }
 
 func HandleSendPacketCostTime(report core.WritePacketCostTime) {

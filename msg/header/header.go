@@ -135,6 +135,8 @@ const (
 	ReqFileSliceBackupNotice   = "ReqFBNot"
 	ReqTransferDownload        = "ReqTdl"
 	RspTransferDownload        = "RspTdl"
+	ReqTransferDownloadWrong   = "ReqTDW"
+	RspTransferDownloadWrong   = "RspTDW"
 	RspTransferDownloadResult  = "RspTdlR"
 	ReqReportBackupSliceResult = "ReqRBSR"
 	RspReportBackupSliceResult = "RspRBSR"

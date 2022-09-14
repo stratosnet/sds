@@ -6,11 +6,12 @@ import (
 	cryptorand "crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
-	"github.com/google/uuid"
 	"math/rand"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 func init() {
@@ -120,28 +121,23 @@ func StrInSlices(slices []string, key string) bool {
 
 // GenerateRandomNumber generate (count) random numbers between (start) to (end).
 func GenerateRandomNumber(start int, end int, count int) []int {
-	if end < start || (end-start) < count {
+	spread := end - start
+	if end < start || spread < count || count == 0 {
 		return nil
 	}
 
-	// output numbers
-	nums := make([]int, 0)
-	for len(nums) < count {
-
-		num := rand.Intn(end-start) + start
-
-		// find duplicates
-		exist := false
-		for _, v := range nums {
-			if v == num {
-				exist = true
+	nums := make([]int, count)
+	taken := make(map[int]bool)
+	for i := 0; i < count; i++ {
+		num := 0
+		for {
+			num = rand.Intn(spread) + start
+			if !taken[num] {
 				break
 			}
 		}
-
-		if !exist {
-			nums = append(nums, num)
-		}
+		taken[num] = true
+		nums[i] = num
 	}
 
 	return nums

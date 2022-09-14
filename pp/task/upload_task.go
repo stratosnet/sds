@@ -76,6 +76,7 @@ type SliceWithStatus struct {
 	SliceOffset *protos.SliceOffset
 	SliceSize   uint64
 	Status      int
+	SpNodeSign  []byte
 	CostTime    int64
 }
 
@@ -119,6 +120,7 @@ func (u *UploadFileTask) addNewSlice(slice *protos.SliceHashAddr) {
 		SliceOffset: slice.SliceOffset,
 		SliceSize:   slice.SliceSize,
 		Status:      SLICE_STATUS_NOT_STARTED,
+		SpNodeSign:  slice.SpNodeSign,
 	})
 }
 
@@ -385,6 +387,7 @@ func CreateUploadSliceTaskFile(ctx context.Context, slice *SliceWithStatus, ppIn
 		SliceNumber: slice.SliceNumber,
 		SliceOffset: slice.SliceOffset,
 		PpInfo:      ppInfo,
+		SpNodeSign:  slice.SpNodeSign,
 	}
 	tk := &UploadSliceTask{
 		TaskID:          uploadTask.TaskID,
@@ -443,6 +446,7 @@ func CreateUploadSliceTaskStream(ctx context.Context, slice *SliceWithStatus, pp
 		SliceNumber: slice.SliceNumber,
 		SliceOffset: offset,
 		PpInfo:      ppInfo,
+		SpNodeSign:  slice.SpNodeSign,
 	}
 	slice.SliceOffset = offset
 	tk := &UploadSliceTask{
