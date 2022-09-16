@@ -3,7 +3,6 @@ package event
 // Author j
 import (
 	"context"
-	"github.com/stratosnet/sds/utils/types"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -22,6 +21,7 @@ import (
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/datamesh"
 	"github.com/stratosnet/sds/utils/httpserv"
+	"github.com/stratosnet/sds/utils/types"
 )
 
 // GetFileStorageInfo p to pp. The downloader is assumed the default wallet of this node, if this function is invoked.
@@ -56,7 +56,7 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, reqID, saveAs strin
 	}
 
 	// sign the wallet signature by wallet private key
-	wsignMsg := utils.GetFileUploadWalletSignMessage(fileHash, setting.WalletAddress)
+	wsignMsg := utils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress)
 	wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
 	if err != nil {
 		return
