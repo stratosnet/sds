@@ -3,6 +3,9 @@ package peers
 import (
 	"context"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/framework/core"
@@ -96,31 +99,22 @@ func NewServer(ctx context.Context) *PPServer {
 	return ppServer
 }
 
-//type WritePacketCostTime struct {
-//	reqId 	 string
-//	costTime int64
-//}
-
-var (
-//CostTimeCh = make(chan *core.WritePacketCostTime)
-// Maps to record uploading stats
-//ReqIdMap = &sync.Map{} // K: reqId, V: {tkId+sliceNum, up/down}
-//UpSendCostTimeMap = &sync.Map{} // K: tkId+sliceNum, V: int64 (timecost)
-//UpSendPacketWgMap = &sync.Map{} // K: tkId+sliceNum, V: waitGroup
-//
-//UpRecvCostTimeMap = &sync.Map{} // K: tkId+sliceNum, V: int64 (timecost)
-//UpRecvPacketWgMap = &sync.Map{} // K: tkId+sliceNum, V: waitGroup
-//
-//DownSendCostTimeMap = &sync.Map{} // K: tkId+sliceNum, V: int64 (timecost)
-//DownSendPacketWgMap = &sync.Map{} // K: tkId+sliceNum, V: waitGroup
-//
-//DownRecvCostTimeMap = &sync.Map{} // K: tkId+sliceNum, V: int64 (timecost)
-//DownRecvPacketWgMap = &sync.Map{} // K: tkId+sliceNum, V: waitGroup
-)
-
 func ListenSendPacket(handler func(core.WritePacketCostTime)) {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit,
+		syscall.SIGTERM,
+		syscall.SIGINT,
+		syscall.SIGQUIT,
+		syscall.SIGKILL,
+		syscall.SIGHUP,
+	)
+	defer os.Exit(1)
+
 	for {
 		select {
+		case <-quit:
+			utils.Log("Quit signal detected. Shutting down ListenSendPacket ...")
+			return
 		case entry, ok := <-core.CostTimeCh:
 			if ok && entry.CostTime > 0 && entry.ReqId > 0 {
 				utils.DebugLogf("received report from WritePacket: %v", entry)
