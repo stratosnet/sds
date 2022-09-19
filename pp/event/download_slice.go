@@ -33,21 +33,21 @@ const (
 var (
 	downloadRspMap      = &sync.Map{} // K: tkId+sliceHash, V: *QueuedDownloadReportToSP
 	downSendCostTimeMap = &downSendCostTime{
-		dataMap: &sync.Map{}, // K: tkId+sliceHash, V: CostTimeStat{TotalCostTime, PacketCount}
+		dataMap: make(map[string]*CostTimeStat), // K: tkId+sliceHash, V: CostTimeStat{TotalCostTime, PacketCount}
 		mux:     sync.Mutex{},
 	}
 	downRecvCostTimeMap = &downRecvCostTime{
-		dataMap: &sync.Map{}, // K: tkId+sliceHash, V: CostTimeStat{TotalCostTime, PacketCount}
+		dataMap: make(map[string]int64), // K: tkId+sliceHash, V: CostTimeStat{TotalCostTime, PacketCount}
 		mux:     sync.Mutex{},
 	}
 )
 
 type downSendCostTime struct {
-	dataMap *sync.Map // K: tkId+sliceHash, V: CostTimeStat{TotalCostTime, PacketCount}
+	dataMap map[string]*CostTimeStat // K: tkId+sliceHash, V: CostTimeStat{TotalCostTime, PacketCount}
 	mux     sync.Mutex
 }
 type downRecvCostTime struct {
-	dataMap *sync.Map // K: tkId+sliceHash, V: CostTimeStat{TotalCostTime, PacketCount}
+	dataMap map[string]int64 // K: tkId+sliceHash, V: CostTimeStat{TotalCostTime, PacketCount}
 	mux     sync.Mutex
 }
 
@@ -125,23 +125,7 @@ func splitSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlic
 		utils.DebugLog("_____________________________")
 		utils.DebugLog(dataStart, dataEnd, offsetStart, offsetEnd)
 
-		genReqId, newCtx := peers.CreateNewContextAlterReqId(ctx)
-		utils.DebugLog("reqID-"+strconv.FormatUint(dataStart, 10)+" =========", strconv.FormatInt(core.GetReqIdFromContext(ctx), 10))
-		tkSlice := TaskSlice{
-			TkSliceUID: tkSliceUID,
-			IsUpload:   false,
-		}
-		ReqIdMap.Store(genReqId, tkSlice)
-		utils.DebugLogf("ReqIdMap.Store <==(%v, %v)", genReqId, tkSlice)
-		downSendCostTimeMap.mux.Lock()
-		var ctStat = CostTimeStat{}
-		if val, ok := downSendCostTimeMap.dataMap.Load(rsp.TaskId + rsp.SliceInfo.SliceHash); ok {
-			ctStat = val.(CostTimeStat)
-		}
-		ctStat.PacketCount = ctStat.PacketCount + 1
-		downSendCostTimeMap.dataMap.Store(tkSliceUID, ctStat)
-		downSendCostTimeMap.mux.Unlock()
-		utils.DebugLogf("downSendPacketWgMap.Store <== K:%v, V:%v]", tkSliceUID, ctStat)
+		_, newCtx := prepareSendDownloadSliceData(ctx, rsp, tkSliceUID)
 
 		if dataEnd < dataLen {
 			utils.DebugLog("reqID-"+strconv.FormatUint(dataStart, 10)+" =========", strconv.FormatInt(core.GetReqIdFromContext(newCtx), 10))
@@ -158,6 +142,26 @@ func splitSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlic
 			return
 		}
 	}
+}
+
+func prepareSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlice, tkSliceUID string) (int64, context.Context) {
+	genReqId, newCtx := peers.CreateNewContextAlterReqId(ctx)
+	tkSlice := TaskSlice{
+		TkSliceUID: tkSliceUID,
+		IsUpload:   false,
+	}
+	ReqIdMap.Store(genReqId, tkSlice)
+	utils.DebugLogf("ReqIdMap.Store <==(%v, %v)", genReqId, tkSlice)
+	downSendCostTimeMap.mux.Lock()
+	defer downSendCostTimeMap.mux.Unlock()
+	var ctStat = CostTimeStat{}
+	if val, ok := downSendCostTimeMap.dataMap[rsp.TaskId+rsp.SliceInfo.SliceHash]; ok {
+		ctStat = *val
+	}
+	ctStat.PacketCount = ctStat.PacketCount + 1
+	downSendCostTimeMap.dataMap[tkSliceUID] = &ctStat
+	utils.DebugLogf("downSendPacketWgMap.Store <== K:%v, V:%v]", tkSliceUID, ctStat)
+	return genReqId, newCtx
 }
 
 // RspDownloadSlice storagePP-PP
@@ -196,11 +200,11 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	totalCostTime := costTime
 	tkSlice := target.TaskId + target.SliceInfo.SliceHash
 	downRecvCostTimeMap.mux.Lock()
-	if val, ok := upRecvCostTimeMap.dataMap.Load(tkSlice); ok {
-		totalCostTime += val.(int64)
+	defer downRecvCostTimeMap.mux.Unlock()
+	if val, ok := downRecvCostTimeMap.dataMap[tkSlice]; ok {
+		totalCostTime += val
 	}
-	upRecvCostTimeMap.dataMap.Store(tkSlice, totalCostTime)
-	downRecvCostTimeMap.mux.Unlock()
+	downRecvCostTimeMap.dataMap[tkSlice] = totalCostTime
 
 	if f, ok := task.DownloadFileMap.Load(target.FileHash + sid.(string)); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
@@ -310,11 +314,11 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 	// get total costTime
 	totalCostTime := int64(0)
 	tkSlice := target.TaskId + target.SliceInfo.SliceHash
-	if val, ok := upRecvCostTimeMap.dataMap.Load(tkSlice); ok {
-		totalCostTime += val.(int64)
+	if val, ok := downRecvCostTimeMap.dataMap[tkSlice]; ok {
+		totalCostTime += val
 	}
 	SendReportDownloadResult(ctx, target, totalCostTime, false)
-	upRecvCostTimeMap.dataMap.Delete(tkSlice)
+	delete(downRecvCostTimeMap.dataMap, tkSlice)
 }
 
 func videoCacheKeep(fileHash, taskID string) {
@@ -537,18 +541,19 @@ func handleDownloadSend(tkSlice TaskSlice, costTime int64) {
 	var newCostTimeStat = CostTimeStat{}
 	isDownloadFinished := false
 	downSendCostTimeMap.mux.Lock()
-	if val, ok := downSendCostTimeMap.dataMap.Load(tkSlice.TkSliceUID); ok {
-		oriCostTimeStat := val.(CostTimeStat)
+	defer downSendCostTimeMap.mux.Unlock()
+	if val, ok := downSendCostTimeMap.dataMap[tkSlice.TkSliceUID]; ok {
+		oriCostTimeStat := val
 		newCostTimeStat.TotalCostTime = costTime + oriCostTimeStat.TotalCostTime
 		newCostTimeStat.PacketCount = oriCostTimeStat.PacketCount - 1
 		// not counting if CostTimeStat not found from dataMap
 		if newCostTimeStat.PacketCount >= 0 {
-			downSendCostTimeMap.dataMap.Store(tkSlice.TkSliceUID, newCostTimeStat)
+			downSendCostTimeMap.dataMap[tkSlice.TkSliceUID] = &newCostTimeStat
 		}
 		// return isDownloadFinished
 		isDownloadFinished = newCostTimeStat.PacketCount == 0
 	}
-	downSendCostTimeMap.mux.Unlock()
+
 	if isDownloadFinished {
 		if val, ok := downloadRspMap.Load(tkSlice.TkSliceUID); ok {
 			queuedReport := val.(QueuedDownloadReportToSP)
