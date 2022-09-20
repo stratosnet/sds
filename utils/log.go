@@ -136,13 +136,13 @@ func GetLastLinesFromTrafficLog(path string, n uint64) []string {
 }
 
 func init() {
-	clear := "\033[0m"
-	level2String[Detail] = "\033[0;32m[Detail]" + clear
-	level2String[Debug] = "\033[0;36m[DEBUG]" + clear
-	level2String[Info] = "\033[0;34m[INFO]" + clear
-	level2String[Warn] = "\033[0;33m[WARN]" + clear
-	level2String[Error] = "\033[0;35m[ERROR]" + clear
-	level2String[Fatal] = "\033[0;31m[FATAL]" + clear
+	clear := " "
+	level2String[Detail] = "[DETAIL]" + clear
+	level2String[Debug] = "[DEBUG]" + clear
+	level2String[Info] = "[INFO]" + clear
+	level2String[Warn] = "[WARN]" + clear
+	level2String[Error] = "[ERROR]" + clear
+	level2String[Fatal] = "[FATAL]" + clear
 	//MyLogger = newLogger("./tmp/logs/stdout.log", true, true)
 }
 
