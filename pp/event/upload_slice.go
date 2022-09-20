@@ -31,11 +31,11 @@ var (
 	//// Maps to record uploading stats
 	ReqIdMap          = &sync.Map{} // K: reqId, V: TaskSlice{tkId+sliceNum, up/down}
 	upSendCostTimeMap = &upSendCostTime{
-		dataMap: utils.NewAutoCleanUnsafeMap(5 * time.Minute), // make(map[string]*CostTimeStat) // K: tkId+sliceNum, V: CostTimeStat{TotalCostTime, PacketCount}
+		dataMap: utils.NewAutoCleanUnsafeMap(30 * time.Minute), // make(map[string]*CostTimeStat) // K: tkId+sliceNum, V: CostTimeStat{TotalCostTime, PacketCount}
 		mux:     sync.Mutex{},
 	}
 	upRecvCostTimeMap = &upRecvCostTime{
-		dataMap: utils.NewAutoCleanUnsafeMap(5 * time.Minute), // make(map[string]int64), // K: tkId+sliceNum, V: TotalCostTime
+		dataMap: utils.NewAutoCleanUnsafeMap(30 * time.Minute), // make(map[string]int64), // K: tkId+sliceNum, V: TotalCostTime
 		mux:     sync.Mutex{},
 	}
 )
