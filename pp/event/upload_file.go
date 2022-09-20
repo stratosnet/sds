@@ -146,18 +146,6 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	// verify if wallet matches public key
-	if types.VerifyWalletAddrBytes(target.WalletPubkey, target.OwnerWalletAddress) != 0 {
-		pp.ErrorLog(ctx, "wallet key validation failed", target.WalletPubkey, target.OwnerWalletAddress)
-		return
-	}
-
-	// verify wallet signature
-	if !types.VerifyWalletSignBytes(target.WalletPubkey, target.WalletSign, utils.GetFileUploadWalletSignMessage(target.FileHash, target.OwnerWalletAddress)) {
-		pp.ErrorLog(ctx, "wallet sign failed")
-		return
-	}
-
 	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
 	if err != nil {
 		pp.ErrorLog(ctx, "failed to get sp pubkey")

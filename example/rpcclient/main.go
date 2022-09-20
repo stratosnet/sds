@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/stratosnet/sds/utils/datamesh"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -18,6 +17,7 @@ import (
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/datamesh"
 	"github.com/stratosnet/sds/utils/types"
 )
 
@@ -247,7 +247,7 @@ func reqDownloadMsg(hash, sdmPath string) []byte {
 	}
 
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress)))
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileDownloadWalletSignMessage(hash, WalletAddress)))
 	if err != nil {
 		return nil
 	}

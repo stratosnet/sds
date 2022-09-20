@@ -258,8 +258,6 @@ func RspDownloadSliceData(target *protos.ReqDownloadSlice) *protos.RspDownloadSl
 	return &protos.RspDownloadSlice{
 		P2PAddress:     target.P2PAddress,
 		WalletAddress:  target.WalletAddress,
-		WalletPubkey:   target.WalletPubkey,
-		WalletSign:     target.WalletSign,
 		SliceInfo:      target.SliceInfo,
 		FileCrc:        slice.FileCrc,
 		FileHash:       target.FileHash,
@@ -417,8 +415,6 @@ func ReqReportDownloadResultData(target *protos.RspDownloadSlice, isPP bool) *pr
 		IsPP:                 isPP,
 		DownloaderP2PAddress: target.P2PAddress,
 		WalletAddress:        target.WalletAddress,
-		WalletPubkey:         target.WalletPubkey,
-		WalletSign:           target.WalletSign,
 		PpP2PAddress:         setting.P2PAddress,
 		PpWalletAddress:      setting.WalletAddress,
 		FileHash:             target.FileHash,
