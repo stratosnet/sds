@@ -117,6 +117,7 @@ func (api *rpcApi) RequestUpload(param rpc_api.ParamReqUploadFile) rpc_api.Resul
 	case <-ctx.Done():
 		result := &rpc_api.Result{Return: rpc_api.TIME_OUT}
 		return *result
+	// since request for uploading a file has been invoked, wait for application's reply then return the result back to the rpc client
 	case result := <-file.SubscribeRemoteFileEvent(fileHash):
 		file.UnsubscribeRemoteFileEvent(fileHash)
 		if result != nil {
@@ -179,6 +180,7 @@ func (api *rpcApi) UploadData(param rpc_api.ParamUploadData) rpc_api.Result {
 	case <-ctx.Done():
 		result := &rpc_api.Result{Return: rpc_api.TIME_OUT}
 		return *result
+	// since a slice has been passed to the application, wait for application's reply then return the result back to the rpc client
 	case result := <-file.SubscribeRemoteFileEvent(fileHash):
 		file.UnsubscribeRemoteFileEvent(fileHash)
 		if result != nil {
@@ -239,6 +241,7 @@ func (api *rpcApi) RequestDownload(param rpc_api.ParamReqDownloadFile) rpc_api.R
 	case <-ctx.Done():
 		file.CleanFileHash(key)
 		result = &rpc_api.Result{Return: rpc_api.TIME_OUT}
+	// since downloading a file has been requested, wait for application's reply then return the result back to the rpc client
 	case result = <-file.SubscribeRemoteFileEvent(key):
 		file.UnsubscribeRemoteFileEvent(key)
 		// one piece to be sent to client
@@ -269,6 +272,7 @@ func (api *rpcApi) DownloadData(param rpc_api.ParamDownloadData) rpc_api.Result 
 	case <-ctx.Done():
 		file.CleanFileHash(key)
 		result = &rpc_api.Result{Return: rpc_api.TIME_OUT}
+	// told application that last piece has been done, wait here for the next piece or other event and send this back to rpc client
 	case result = <-file.SubscribeRemoteFileEvent(key):
 		file.UnsubscribeRemoteFileEvent(key)
 		if result == nil || !(result.Return == rpc_api.DOWNLOAD_OK || result.Return == rpc_api.DL_OK_ASK_INFO) {
@@ -298,6 +302,8 @@ func (api *rpcApi) DownloadedFileInfo(param rpc_api.ParamDownloadFileInfo) rpc_a
 	case <-ctx.Done():
 		file.CleanFileHash(key)
 		result = &rpc_api.Result{Return: rpc_api.TIME_OUT}
+	// the file info at the end has been sent to the application, wait to confirm the end of download process and send this
+	// back to rpc client.
 	case result = <-file.SubscribeRemoteFileEvent(key):
 		file.UnsubscribeRemoteFileEvent(key)
 	}
