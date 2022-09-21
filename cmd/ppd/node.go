@@ -3,7 +3,9 @@ package main
 import (
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -33,6 +35,27 @@ func nodePP(cmd *cobra.Command, args []string) error {
 	}
 
 	serv.Start()
+
+	closure := make(chan os.Signal, 1)
+	signal.Notify(closure,
+		syscall.SIGTERM,
+		syscall.SIGINT,
+		syscall.SIGQUIT,
+		syscall.SIGKILL,
+		syscall.SIGHUP,
+	)
+
+	for {
+		select {
+		case sig := <-closure:
+			utils.Logf("Quit signal detected: [%s]. Shutting down...", sig.String())
+			// stop ipcServer | rpcServer | monitorServer | PPServer
+			serv.GetBaseServer().Stop()
+			os.Exit(1)
+			return nil
+		}
+	}
+
 	return nil
 }
 

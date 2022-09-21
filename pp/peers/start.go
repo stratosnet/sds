@@ -23,7 +23,7 @@ func StartPP(ctx context.Context, registerFn func()) {
 	//go SendLatencyCheckMessageToSPList()
 	StartPpLatencyCheck(ctx)
 	StartStatusReportToSP(ctx)
-	ListenOffline(ctx)
+	go ListenOffline(ctx)
 }
 
 func InitPeer(ctx context.Context, registerFn func()) {
