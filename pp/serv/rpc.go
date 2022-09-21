@@ -4,7 +4,6 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"encoding/hex"
-	"github.com/stratosnet/sds/utils/datamesh"
 	"sync"
 	"time"
 
@@ -17,6 +16,7 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/datamesh"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
@@ -26,7 +26,10 @@ const (
 	FILE_DATA_SAFE_SIZE = 3500000
 
 	// WAIT_TIMEOUT timeout for waiting result from external source, in seconds
-	WAIT_TIMEOUT time.Duration = 5 * time.Second
+	WAIT_TIMEOUT time.Duration = 10 * time.Second
+
+	// INIT_WAIT_TIMEOUT timeout for waiting the initial request
+	INIT_WAIT_TIMEOUT time.Duration = 15 * time.Second
 )
 
 var (
@@ -106,26 +109,23 @@ func (api *rpcApi) RequestUpload(param rpc_api.ParamReqUploadFile) rpc_api.Resul
 	p := requests.RequestUploadFile(fileName, fileHash, uint64(size), "rpc", walletAddr, pubkey, signature, false)
 	peers.SendMessageToSPServer(context.Background(), p, header.ReqUploadFile)
 
-	var result *rpc_api.Result
-	var found bool
-	var done = make(chan bool)
-
-	go func() {
-		for {
-			result, found = file.GetRemoteFileEvent(fileHash)
-			if result != nil && found {
-				result = ResultHook(result, fileHash)
-				done <- true
-				return
-			}
-		}
-	}()
+	//var done = make(chan bool)
+	parentCtx := context.Background()
+	ctx, _ := context.WithTimeout(parentCtx, INIT_WAIT_TIMEOUT)
 
 	select {
-	case <-time.After(WAIT_TIMEOUT):
-		return rpc_api.Result{Return: rpc_api.TIME_OUT}
-	case <-done:
+	case <-ctx.Done():
+		result := &rpc_api.Result{Return: rpc_api.TIME_OUT}
 		return *result
+	case result := <-file.SubscribeRemoteFileEvent(fileHash):
+		file.UnsubscribeRemoteFileEvent(fileHash)
+		if result != nil {
+			result = ResultHook(result, fileHash)
+			return *result
+		} else {
+			result = &rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+			return *result
+		}
 	}
 }
 
@@ -172,25 +172,22 @@ func (api *rpcApi) UploadData(param rpc_api.ParamUploadData) rpc_api.Result {
 	}
 
 	// second part: let the server decide what will be the next step
-	var result *rpc_api.Result
-	var done = make(chan bool)
-
-	go func() {
-		for {
-			result, found = file.GetRemoteFileEvent(fileHash)
-			if found {
-				result = ResultHook(result, fileHash)
-				done <- true
-				return
-			}
-		}
-	}()
+	parentCtx := context.Background()
+	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
 
 	select {
-	case <-time.After(WAIT_TIMEOUT):
-		return rpc_api.Result{Return: rpc_api.TIME_OUT}
-	case <-done:
+	case <-ctx.Done():
+		result := &rpc_api.Result{Return: rpc_api.TIME_OUT}
 		return *result
+	case result := <-file.SubscribeRemoteFileEvent(fileHash):
+		file.UnsubscribeRemoteFileEvent(fileHash)
+		if result != nil {
+			result = ResultHook(result, fileHash)
+			return *result
+		} else {
+			result = &rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+			return *result
+		}
 	}
 }
 
@@ -234,38 +231,23 @@ func (api *rpcApi) RequestDownload(param rpc_api.ParamReqDownloadFile) rpc_api.R
 	key := fileHash + reqid
 
 	// wait for the result
-	var event = make(chan bool)
+	parentCtx := context.Background()
+	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
 	var result *rpc_api.Result
-	var found bool
-
-	go func() {
-		for {
-			result, found = file.GetRemoteFileEvent(key)
-			if found {
-				event <- true
-				break
-			}
-		}
-	}()
 
 	select {
-	case <-time.After(WAIT_TIMEOUT * 4):
-		// end of the session
+	case <-ctx.Done():
 		file.CleanFileHash(key)
-		return rpc_api.Result{Return: rpc_api.TIME_OUT}
-	case <-event:
-	}
-
-	// one piece to be sent to client
-	if result.Return == rpc_api.DOWNLOAD_OK {
-		rawData := file.GetDownloadFileData(key)
-		utils.DebugLog("Ready sending to Remote:")
-		encoded := b64.StdEncoding.EncodeToString(rawData)
-		result.FileData = encoded
-		result.ReqId = reqid
-	} else {
-		// end of the session
-		file.CleanFileHash(key)
+		result = &rpc_api.Result{Return: rpc_api.TIME_OUT}
+	case result = <-file.SubscribeRemoteFileEvent(key):
+		file.UnsubscribeRemoteFileEvent(key)
+		// one piece to be sent to client
+		if result != nil && result.Return == rpc_api.DOWNLOAD_OK {
+			result.ReqId = reqid
+		} else {
+			// end of the session
+			file.CleanFileHash(key)
+		}
 	}
 
 	return *result
@@ -279,42 +261,21 @@ func (api *rpcApi) DownloadData(param rpc_api.ParamDownloadData) rpc_api.Result 
 	file.SetDownloadSliceDone(key)
 
 	// wait for result: DOWNLOAD_OK or DL_OK_ASK_INFO
-	var event = make(chan bool)
+	parentCtx := context.Background()
+	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
 	var result *rpc_api.Result
-	var found bool
 
-	go func() {
-		for {
-			result, found = file.GetRemoteFileEvent(key)
-			if found {
-				event <- true
-				break
-			}
-		}
-	}()
-
-	// wait too long, failure of timeout
 	select {
-	case <-time.After(WAIT_TIMEOUT):
-		// end of the session
+	case <-ctx.Done():
 		file.CleanFileHash(key)
-		return rpc_api.Result{Return: rpc_api.TIME_OUT}
-	case <-event:
+		result = &rpc_api.Result{Return: rpc_api.TIME_OUT}
+	case result = <-file.SubscribeRemoteFileEvent(key):
+		file.UnsubscribeRemoteFileEvent(key)
+		if result == nil || !(result.Return == rpc_api.DOWNLOAD_OK || result.Return == rpc_api.DL_OK_ASK_INFO) {
+			file.CleanFileHash(key)
+		}
 	}
-
-	if result.Return == rpc_api.DOWNLOAD_OK {
-		rawData := file.GetDownloadFileData(key)
-		encoded := b64.StdEncoding.EncodeToString(rawData)
-		result.FileData = encoded
-	} else if result.Return == rpc_api.DL_OK_ASK_INFO {
-		// finished download, and ask the file info to verify downloaded file
-	} else {
-		// end of the session
-		file.CleanFileHash(key)
-	}
-
 	return *result
-
 }
 
 // DownloadedFileInfo
@@ -329,25 +290,16 @@ func (api *rpcApi) DownloadedFileInfo(param rpc_api.ParamDownloadFileInfo) rpc_a
 	file.SetRemoteFileInfo(key, fileSize)
 
 	// wait for result, SUCCESS or some failure
+	parentCtx := context.Background()
+	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
 	var result *rpc_api.Result
-	var found bool
-	var event = make(chan bool)
 
-	go func() {
-		for {
-			result, found = file.GetRemoteFileEvent(key)
-			if found {
-				event <- true
-				break
-			}
-		}
-	}()
-
-	// wait too long, failure of timeout
 	select {
-	case <-time.After(WAIT_TIMEOUT):
-		return rpc_api.Result{Return: rpc_api.TIME_OUT}
-	case <-event:
+	case <-ctx.Done():
+		file.CleanFileHash(key)
+		result = &rpc_api.Result{Return: rpc_api.TIME_OUT}
+	case result = <-file.SubscribeRemoteFileEvent(key):
+		file.UnsubscribeRemoteFileEvent(key)
 	}
 
 	return *result
@@ -542,22 +494,16 @@ func (api *rpcApi) RequestGetShared(param rpc_api.ParamReqGetShared) rpc_api.Res
 	var result *rpc_api.Result
 	ctx, _ = context.WithTimeout(parentCtx, WAIT_TIMEOUT)
 
-	found = false
-	for !found {
-		select {
-		case <-ctx.Done():
-			file.CleanFileHash(key)
-			return rpc_api.Result{Return: rpc_api.TIME_OUT}
-		default:
-			result, found = file.GetRemoteFileEvent(key)
-		}
+	select {
+	case <-ctx.Done():
+		file.CleanFileHash(key)
+		return rpc_api.Result{Return: rpc_api.TIME_OUT}
+	case result = <-file.SubscribeRemoteFileEvent(key):
+		file.UnsubscribeRemoteFileEvent(key)
 	}
 
 	// one piece to be sent to client
 	if result.Return == rpc_api.DOWNLOAD_OK {
-		rawData := file.GetDownloadFileData(key)
-		encoded := b64.StdEncoding.EncodeToString(rawData)
-		result.FileData = encoded
 		result.ReqId = reqId
 	} else {
 		// end of the session
