@@ -53,7 +53,8 @@ func Start() {
 		return
 	}
 
-	peers.StartPP(ctx, event.RegisterEventHandle)
+	ctxWithQuitChs := peers.InitQuitChs(ctx)
+	peers.StartPP(ctxWithQuitChs, event.RegisterEventHandle)
 }
 
 func startIPC() error {
@@ -159,7 +160,7 @@ func (bs *BaseServer) Stop() {
 	}
 	if ppServer := peers.GetPPServer(); ppServer != nil {
 		// send signal to close peers level goroutines
-		for _, ch := range peers.GetQuitChs() {
+		for _, ch := range peers.GetQuitChMap() {
 			ch <- true
 		}
 		ppServer.Stop()
