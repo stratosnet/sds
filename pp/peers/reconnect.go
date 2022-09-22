@@ -27,6 +27,9 @@ var (
 )
 
 func ListenOffline(ctx context.Context) {
+	qCh := make(chan bool, 1)
+	AppendQuitCh(qCh)
+	utils.DebugLogf("ListenOffline quit ch added")
 	for {
 		select {
 		case offline := <-client.OfflineChan:
@@ -41,6 +44,9 @@ func ListenOffline(ctx context.Context) {
 				peerList.PPDisconnected(ctx, "", offline.NetworkAddress)
 				InitPPList(ctx)
 			}
+		case <-qCh:
+			utils.Log("ListenOffline goroutine terminated")
+			return
 		}
 	}
 }

@@ -158,6 +158,10 @@ func (bs *BaseServer) Stop() {
 		bs.monitorServ.stop()
 	}
 	if ppServer := peers.GetPPServer(); ppServer != nil {
+		// send signal to close peers level goroutines
+		for _, ch := range peers.GetQuitChs() {
+			ch <- true
+		}
 		ppServer.Stop()
 	}
 }

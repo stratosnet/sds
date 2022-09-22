@@ -22,6 +22,7 @@ const (
 // PPServer
 type PPServer struct {
 	*core.Server
+	quitChs []chan bool
 }
 
 var ppServ *PPServer
@@ -30,6 +31,11 @@ var ppPeerClock = clock.NewClock()
 // GetPPServer
 func GetPPServer() *PPServer {
 	return ppServ
+}
+
+// GetPPServer
+func GetQuitChs() []chan bool {
+	return ppServ.quitChs
 }
 
 func SetPPServer(pp *PPServer) {
@@ -78,6 +84,7 @@ func NewServer(ctx context.Context) *PPServer {
 		core.MinAppVersionOption(setting.Config.Version.MinAppVer),
 		core.P2pAddressOption(setting.P2PAddress),
 		core.MaxConnectionsOption(maxConnection)),
+		make([]chan bool, 0),
 	}
 
 	ppServer.SetVolRecOptions(
@@ -93,4 +100,8 @@ func NewServer(ctx context.Context) *PPServer {
 	)
 
 	return ppServer
+}
+
+func AppendQuitCh(qCh chan bool) {
+	ppServ.quitChs = append(ppServ.quitChs, qCh)
 }
