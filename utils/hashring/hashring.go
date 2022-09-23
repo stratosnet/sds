@@ -18,15 +18,23 @@ import (
 
 // Node
 type Node struct {
-	ID   string
-	Host string
-	Rest string
-	Data *sync.Map
+	ID        string
+	Host      string
+	Rest      string
+	Data      *sync.Map
+	DiskUsage float64
 }
 
 // nodeKey
 func (n *Node) nodeKey() string {
 	return n.ID + "#" + n.Host
+}
+
+func (n *Node) SetDiskUsage(diskSize, freeDisk uint64) {
+	if diskSize <= 0 || freeDisk <= 0 {
+		n.DiskUsage = 1
+	}
+	n.DiskUsage = float64(diskSize-freeDisk) / float64(diskSize)
 }
 
 // Less of rbtree
@@ -350,6 +358,13 @@ func (r *HashRing) TraversalNRing() {
 		fmt.Printf("Node %d => %s\n", utils.CalcCRC32([]byte(item.(*Node).ID)), item.(*Node).ID)
 		return true
 	})
+}
+
+func (r *HashRing) UpdateNodeDiskUsage(ID string, diskSize, freeDisk uint64) {
+	node := r.Node(ID)
+	if node != nil {
+		node.SetDiskUsage(diskSize, freeDisk)
+	}
 }
 
 // NewHashRing
