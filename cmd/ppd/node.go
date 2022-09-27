@@ -51,7 +51,7 @@ func nodePP(cmd *cobra.Command, args []string) error {
 			utils.Logf("Quit signal detected: [%s]. Shutting down...", sig.String())
 			// stop ipcServer | rpcServer | monitorServer | PPServer
 			serv.GetBaseServer().Stop()
-			os.Exit(1)
+			//os.Exit(1)
 			return nil
 		}
 	}
