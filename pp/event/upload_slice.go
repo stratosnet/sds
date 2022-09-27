@@ -3,8 +3,9 @@ package event
 // Author j
 import (
 	"context"
-	"github.com/stratosnet/sds/utils/types"
+	"strconv"
 	"sync"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
@@ -21,13 +22,47 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/types"
 )
 
-// ProgressMap required by API
-var ProgressMap = &sync.Map{}
+var (
+	// ProgressMap required by API
+	ProgressMap = &sync.Map{}
+	//// Maps to record uploading stats
+	ReqIdMap          = &sync.Map{} // K: reqId, V: TaskSlice{tkId+sliceNum, up/down}
+	upSendCostTimeMap = &upSendCostTime{
+		dataMap: utils.NewAutoCleanUnsafeMap(30 * time.Minute), // make(map[string]*CostTimeStat) // K: tkId+sliceNum, V: CostTimeStat{TotalCostTime, PacketCount}
+		mux:     sync.Mutex{},
+	}
+	upRecvCostTimeMap = &upRecvCostTime{
+		dataMap: utils.NewAutoCleanUnsafeMap(30 * time.Minute), // make(map[string]int64), // K: tkId+sliceNum, V: TotalCostTime
+		mux:     sync.Mutex{},
+	}
+)
+
+type upSendCostTime struct {
+	dataMap *utils.AutoCleanUnsafeMap //map[string]*CostTimeStat // K: tkId+sliceNum, V: CostTimeStat{TotalCostTime, PacketCount}
+	mux     sync.Mutex
+}
+type upRecvCostTime struct {
+	dataMap *utils.AutoCleanUnsafeMap // map[string]int64 // K: tkId+sliceNum, V: TotalCostTime
+	mux     sync.Mutex
+}
+
+type TaskSlice struct {
+	TkSliceUID string
+	IsUpload   bool
+}
+
+type CostTimeStat struct {
+	TotalCostTime int64
+	PacketCount   int64
+}
 
 // ReqUploadFileSlice storage PP receives a request with file data from the PP who initiated uploading
 func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
+	costTime := core.GetRecvCostTimeFromContext(ctx)
+
 	var target protos.ReqUploadFileSlice
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -54,7 +89,6 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		peers.SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
 		return
 	}
-
 	if target.SliceNumAddr.PpInfo.P2PAddress != setting.P2PAddress {
 		rsp := &protos.RspUploadFileSlice{
 			Result: &protos.Result{
@@ -66,6 +100,15 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
+	// add up costTime
+	totalCostTime := costTime
+	tkSlice := target.TaskId + strconv.FormatUint(target.SliceNumAddr.SliceNumber, 10)
+	upRecvCostTimeMap.mux.Lock()
+	if val, ok := upRecvCostTimeMap.dataMap.Load(tkSlice); ok {
+		totalCostTime += val.(int64)
+	}
+	upRecvCostTimeMap.dataMap.Store(tkSlice, totalCostTime)
+	upRecvCostTimeMap.mux.Unlock()
 	peers.SendMessage(ctx, conn, requests.UploadSpeedOfProgressData(target.FileHash, uint64(len(target.Data))), header.UploadSpeedOfProgress)
 
 	if !task.SaveUploadFile(&target) {
@@ -81,7 +124,13 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		if utils.CalcSliceHash(file.GetSliceData(target.SliceInfo.SliceHash), target.FileHash, target.SliceNumAddr.SliceNumber) == target.SliceInfo.SliceHash {
 			peers.SendMessage(ctx, conn, requests.RspUploadFileSliceData(&target), header.RspUploadFileSlice)
 			// report upload result to SP
-			peers.SendMessageToSPServer(ctx, requests.ReqReportUploadSliceResultDataPP(&target), header.ReqReportUploadSliceResult)
+
+			_, newCtx := peers.CreateNewContextAlterReqId(ctx)
+			utils.DebugLog("ReqReportUploadSliceResultDataPP reqID =========", core.GetReqIdFromContext(newCtx))
+			peers.SendMessageToSPServer(newCtx, requests.ReqReportUploadSliceResultDataPP(&target, totalCostTime), header.ReqReportUploadSliceResult)
+			upRecvCostTimeMap.mux.Lock()
+			upRecvCostTimeMap.dataMap.Delete(tkSlice)
+			upRecvCostTimeMap.mux.Unlock()
 			utils.DebugLog("storage PP report to SP upload task finished: ", target.SliceInfo.SliceHash)
 		} else {
 			utils.ErrorLog("newly stored sliceHash is not equal to target sliceHash!")
@@ -109,8 +158,19 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		pp.ErrorLog(ctx, "RspUploadFileSlice failure:", target.Result.Msg)
 		return
 	}
-
-	peers.SendMessageToSPServer(ctx, requests.ReqReportUploadSliceResultData(&target), header.ReqReportUploadSliceResult)
+	tkSlice := target.TaskId + strconv.FormatUint(target.SliceNumAddr.SliceNumber, 10)
+	upSendCostTimeMap.mux.Lock()
+	defer upSendCostTimeMap.mux.Unlock()
+	if val, ok := upSendCostTimeMap.dataMap.Load(tkSlice); ok {
+		ctStat := val.(CostTimeStat)
+		utils.DebugLogf("ctStat is %v", ctStat)
+		if ctStat.PacketCount == 0 && ctStat.TotalCostTime > 0 {
+			peers.SendMessageToSPServer(ctx, requests.ReqReportUploadSliceResultData(&target, ctStat.TotalCostTime), header.ReqReportUploadSliceResult)
+			upSendCostTimeMap.dataMap.Delete(tkSlice)
+		}
+	} else {
+		utils.DebugLogf("tkSlice [%v] not found in RspUploadFileSlice", tkSlice)
+	}
 }
 
 // RspUploadSlicesWrong updates the destination of slices for an ongoing upload
@@ -166,9 +226,26 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 	storageP2pAddress := tk.SliceNumAddr.PpInfo.P2PAddress
 	storageNetworkAddress := tk.SliceNumAddr.PpInfo.NetworkAddress
 
+	utils.DebugLog("reqID-"+tk.TaskID+" =========", strconv.FormatInt(core.GetReqIdFromContext(ctx), 10))
+	tkSliceUID := tk.TaskID + strconv.FormatUint(tk.SliceNumAddr.SliceNumber, 10)
+	tkSlice := TaskSlice{
+		TkSliceUID: tkSliceUID,
+		IsUpload:   true,
+	}
+	var ctStat = CostTimeStat{}
+
 	if tkDataLen <= setting.MAXDATA {
 		tk.SliceOffsetInfo.SliceOffset.SliceOffsetStart = 0
-		return sendSlice(ctx, requests.ReqUploadFileSliceData(tk, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
+
+		genReqId, newCtx := peers.CreateNewContextAlterReqId(ctx)
+		ReqIdMap.Store(genReqId, tkSlice)
+		utils.DebugLogf("ReqIdMap.Store <==(%v, %v)", genReqId, tkSlice)
+		ctStat.PacketCount = ctStat.PacketCount + 1
+		upSendCostTimeMap.mux.Lock()
+		upSendCostTimeMap.dataMap.Store(tkSliceUID, ctStat)
+		upSendCostTimeMap.mux.Unlock()
+		utils.DebugLogf("upSendPacketWgMap.Store <== K:%v, V:%v]", tkSliceUID, ctStat)
+		return sendSlice(newCtx, requests.ReqUploadFileSliceData(tk, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
 	}
 
 	dataStart := 0
@@ -189,19 +266,32 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 			},
 			SpP2pAddress: tk.SpP2pAddress,
 		}
+		genReqId, newCtx := peers.CreateNewContextAlterReqId(ctx)
+		ReqIdMap.Store(genReqId, tkSlice)
+		utils.DebugLogf("ReqIdMap.Store <==(%v, %v)", genReqId, tkSlice)
+		upSendCostTimeMap.mux.Lock()
+
+		if val, ok := upSendCostTimeMap.dataMap.Load(tk.TaskID + strconv.FormatUint(tk.SliceNumAddr.SliceNumber, 10)); ok {
+			ctStat = val.(CostTimeStat)
+		}
+		ctStat.PacketCount = ctStat.PacketCount + 1
+		upSendCostTimeMap.dataMap.Store(tkSliceUID, ctStat)
+		upSendCostTimeMap.mux.Unlock()
+		utils.DebugLogf("upSendPacketMap.Store <== K:%v, V:%v]", tkSliceUID, ctStat)
 		if dataEnd < (tkDataLen + 1) {
 			newTask.Data = tk.Data[dataStart:dataEnd]
-			pp.DebugLogf(ctx, "Uploading slice data %v-%v (total %v)", dataStart, dataEnd, newTask.SliceTotalSize)
-			err := sendSlice(ctx, requests.ReqUploadFileSliceData(newTask, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
+
+			pp.DebugLogf(newCtx, "Uploading slice data %v-%v (total %v)", dataStart, dataEnd, newTask.SliceTotalSize)
+			err := sendSlice(newCtx, requests.ReqUploadFileSliceData(newTask, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
 			if err != nil {
 				return err
 			}
 			dataStart += setting.MAXDATA
 			dataEnd += setting.MAXDATA
 		} else {
-			pp.DebugLogf(ctx, "Uploading slice data %v-%v (total %v)", dataStart, tkDataLen, newTask.SliceTotalSize)
+			pp.DebugLogf(newCtx, "Uploading slice data %v-%v (total %v)", dataStart, tkDataLen, newTask.SliceTotalSize)
 			newTask.Data = tk.Data[dataStart:]
-			return sendSlice(ctx, requests.ReqUploadFileSliceData(newTask, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
+			return sendSlice(newCtx, requests.ReqUploadFileSliceData(newTask, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
 		}
 	}
 }
@@ -324,4 +414,44 @@ func verifyRspUploadSliceSign(target *protos.RspUploadFileSlice) error {
 		return errors.New("failed verifying sp's node signature")
 	}
 	return nil
+}
+
+func HandleSendPacketCostTime(report core.WritePacketCostTime) {
+	reqId := report.ReqId
+	costTime := report.CostTime
+
+	// get record by reqId
+	if val, ok := ReqIdMap.Load(reqId); ok {
+		utils.DebugLogf("get reqId[%v] from ReqIdMap, success", reqId)
+		tkSlice := val.(TaskSlice)
+		if len(tkSlice.TkSliceUID) > 0 {
+			ReqIdMap.Delete(reqId)
+		}
+		utils.DebugLogf("HandleSendPacketCostTime, reqId=%v, isUpload=%v, newReport.costTime=%v, ", reqId, tkSlice.IsUpload, costTime)
+		if tkSlice.IsUpload {
+			go handleUploadSend(tkSlice, costTime)
+		} else {
+			go handleDownloadSend(tkSlice, costTime)
+
+		}
+	}
+}
+
+func handleUploadSend(tkSlice TaskSlice, costTime int64) {
+	var newCostTimeStat = CostTimeStat{}
+	upSendCostTimeMap.mux.Lock()
+	defer upSendCostTimeMap.mux.Unlock()
+	if val, ok := upSendCostTimeMap.dataMap.Load(tkSlice.TkSliceUID); ok {
+		utils.DebugLogf("get TkSliceUID[%v] from dataMap, success", tkSlice.TkSliceUID)
+		oriCostTimeStat := val.(CostTimeStat)
+		newCostTimeStat.TotalCostTime = costTime + oriCostTimeStat.TotalCostTime
+		newCostTimeStat.PacketCount = oriCostTimeStat.PacketCount - 1
+		// not counting if CostTimeStat not found from dataMap
+		if newCostTimeStat.PacketCount >= 0 {
+			upSendCostTimeMap.dataMap.Store(tkSlice.TkSliceUID, newCostTimeStat)
+			utils.DebugLogf("newCostTimeStat is %v", newCostTimeStat)
+		}
+	} else {
+		utils.DebugLogf("get TkSliceUID[%v] from dataMap, fail", tkSlice.TkSliceUID)
+	}
 }

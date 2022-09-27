@@ -77,6 +77,7 @@ type SliceWithStatus struct {
 	SliceSize   uint64
 	Status      int
 	SpNodeSign  []byte
+	CostTime    int64
 }
 
 func CreateUploadFileTask(fileHash, taskId, spP2pAddress string, isEncrypted, isVideoStream bool, signature []byte, slices []*protos.SliceHashAddr, uploadType protos.UploadType) *UploadFileTask {

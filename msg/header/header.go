@@ -175,5 +175,5 @@ func DecodeHeader(packet []byte, msgH *MessageHead) {
 	msgH.Len = utils.BytesToUInt32(packet[2:6])
 	msgH.Cmd = packet[6:14]
 	msgH.ReqId = int64(utils.BytesToUInt64(packet[14:22]))
-	msgH.Version = utils.BytesToUint16(packet[22:])
+	msgH.Version = utils.BytesToUint16(packet[22:24])
 }

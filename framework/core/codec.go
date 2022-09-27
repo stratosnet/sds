@@ -3,6 +3,7 @@ package core
 //event register
 import (
 	"context"
+	"time"
 
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/utils"
@@ -16,6 +17,7 @@ const (
 	netIDCtxKey       ctxkey = "netid"
 	reqIDCtxKey       ctxkey = "reqId"
 	parentReqIDCtxKey ctxkey = "parentReqId"
+	recvStartKey      ctxkey = "recvStartTime"
 )
 
 var (
@@ -94,6 +96,24 @@ func GetReqIdFromContext(ctx context.Context) int64 {
 	return reqId
 }
 
+func GetRecvStartTimeFromContext(ctx context.Context) int64 {
+	if ctx == nil || ctx.Value(recvStartKey) == nil {
+		return 0
+	}
+
+	recvStart := ctx.Value(recvStartKey).(int64)
+	return recvStart
+}
+
+func GetRecvCostTimeFromContext(ctx context.Context) int64 {
+	if ctx == nil || ctx.Value(recvStartKey) == nil {
+		return 0
+	}
+	now := time.Now().UnixMilli()
+	recvStart := ctx.Value(recvStartKey).(int64)
+	return now - recvStart
+}
+
 func GetParentReqIdFromContext(ctx context.Context) int64 {
 	if ctx == nil || ctx.Value(parentReqIDCtxKey) == nil {
 		return 0
@@ -105,6 +125,10 @@ func GetParentReqIdFromContext(ctx context.Context) int64 {
 
 func CreateContextWithReqId(ctx context.Context, reqId int64) context.Context {
 	return context.WithValue(ctx, reqIDCtxKey, reqId)
+}
+
+func CreateContextWithRecvStartTime(ctx context.Context, recvStartTime int64) context.Context {
+	return context.WithValue(ctx, recvStartKey, recvStartTime)
 }
 
 func CreateContextWithParentReqId(ctx context.Context, reqId int64) context.Context {

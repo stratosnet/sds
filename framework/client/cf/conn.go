@@ -40,8 +40,9 @@ var (
 
 // MsgHandler
 type MsgHandler struct {
-	message msg.RelayMsgBuf
-	handler core.HandlerFunc
+	message   msg.RelayMsgBuf
+	handler   core.HandlerFunc
+	recvStart int64
 }
 
 type onConnectFunc func(core.WriteCloser) bool
@@ -386,7 +387,7 @@ func (cc *ClientConn) Start() {
 
 		spLatencyCheckJobFunc = func() {
 			if !isSpLatencyChecked && spLatencyCheckHandler != nil {
-				cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, spLatencyCheckHandler}
+				cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, spLatencyCheckHandler, time.Now().UnixMilli()}
 				isSpLatencyChecked = true
 			}
 		}
@@ -564,7 +565,7 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 	msgH := make([]byte, utils.MsgHeaderLen)
 	reqId := core.GetReqIdFromContext(ctx)
 	if reqId == 0 {
-		reqId, _ = utils.NextSnowFakeId()
+		reqId, _ = utils.NextSnowFlakeId()
 		core.InheritRpcLoggerFromParentReqId(ctx, reqId)
 	}
 	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, msgH)
@@ -578,6 +579,7 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 	memory := &msg.RelayMsgBuf{
 		MSGHead: m.MSGHead,
 	}
+	memory.MSGHead.ReqId = reqId
 	memory.Alloc = cmem.Alloc(uintptr(m.MSGHead.Len + utils.MsgHeaderLen))
 	memory.MSGData = (*[1 << 30]byte)(unsafe.Pointer(memory.Alloc))[:m.MSGHead.Len+utils.MsgHeaderLen]
 	(*reflect.SliceHeader)(unsafe.Pointer(&memory.MSGData)).Cap = int(m.MSGHead.Len + utils.MsgHeaderLen)
@@ -641,6 +643,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			Mylog(cc.opts.logOpen, "receiving cancel signal from conn")
 			return
 		default:
+			recvStart := time.Now().UnixMilli()
 			// Mylog(cc.opts.logOpen,"client read ok", msgH.Len)
 			if msgH.Len == 0 {
 				headerBytes, n, err := core.ReadEncryptedHeaderAndBody(spbConn, cc.sharedKey, utils.MessageBeatLen)
@@ -655,7 +658,6 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 
 				header.DecodeHeader(headerBytes, &msgH)
 				headerBytes = nil
-
 				if msgH.Version < cc.opts.minAppVer {
 					utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
 					continue
@@ -665,7 +667,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				if msgH.Len == 0 {
 					handler := core.GetHandlerFunc(utils.ByteToString(msgH.Cmd))
 					if handler != nil {
-						handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
+						handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler, recvStart}
 					}
 				}
 			} else {
@@ -729,7 +731,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 						msgBuf = nil
 						continue
 					}
-					handlerCh <- MsgHandler{*message, handler}
+					handlerCh <- MsgHandler{*message, handler, recvStart}
 					msgH.Len = 0
 					msgBuf = nil
 					i = 0
@@ -819,6 +821,8 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 }
 
 func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
+	msgHeaderToTrack := &header.MessageHead{}
+	header.DecodeHeader(packet.MSGData[:utils.MsgHeaderLen], msgHeaderToTrack)
 	var lr utils.LimitRate
 	var onereadlen = 1024
 	var n int
@@ -842,6 +846,7 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 	if err != nil {
 		return errors.Wrap(err, "server cannot encrypt msg")
 	}
+	writeStart := time.Now()
 	for i := 0; i < len(encryptedData); i = i + n {
 		// Mylog(cc.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
 		if len(encryptedData)-i < 1024 {
@@ -864,6 +869,13 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 				}
 			}
 		}
+	}
+	if cmd == header.ReqUploadFileSlice {
+		writeEnd := time.Now()
+		costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
+		report := core.WritePacketCostTime{ReqId: msgHeaderToTrack.ReqId, CostTime: costTime}
+		utils.DetailLogf("[cf.conn | ReqUploadFileSlice] add cost time {%v} report to CostTimeCh", report)
+		core.CostTimeCh <- report
 	}
 	cmem.Free(packet.Alloc)
 	return nil
@@ -901,10 +913,11 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			Mylog(cc.opts.logOpen, "receiving cancel signal from conn")
 			return
 		case msgHandler := <-handlerCh:
-			msg, handler := msgHandler.message, msgHandler.handler
+			msg, handler, recvStart := msgHandler.message, msgHandler.handler, msgHandler.recvStart
 			core.TimoutMap.DeleteByRspMsg(&msg)
 			ctxWithParentReqId := core.CreateContextWithParentReqId(ctx, msg.MSGHead.ReqId)
-			handler(core.CreateContextWithNetID(core.CreateContextWithMessage(ctxWithParentReqId, &msg), netID), c)
+			ctxWithRecvStart := core.CreateContextWithRecvStartTime(ctxWithParentReqId, recvStart)
+			handler(core.CreateContextWithNetID(core.CreateContextWithMessage(ctxWithRecvStart, &msg), netID), c)
 		}
 	}
 }

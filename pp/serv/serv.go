@@ -43,7 +43,9 @@ func Start() {
 		return
 	}
 
+	go peers.ListenSendPacket(event.HandleSendPacketCostTime)
 	peers.StartPP(ctx, event.RegisterEventHandle)
+
 }
 
 func startIPC() error {
