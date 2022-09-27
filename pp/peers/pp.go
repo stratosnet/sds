@@ -3,11 +3,15 @@ package peers
 import (
 	"context"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
 )
 
 //todo: pp server should be move out of peers package
@@ -93,4 +97,29 @@ func NewServer(ctx context.Context) *PPServer {
 	)
 
 	return ppServer
+}
+
+func ListenSendPacket(handler func(core.WritePacketCostTime)) {
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit,
+		syscall.SIGTERM,
+		syscall.SIGINT,
+		syscall.SIGQUIT,
+		syscall.SIGKILL,
+		syscall.SIGHUP,
+	)
+	defer os.Exit(1)
+
+	for {
+		select {
+		case <-quit:
+			utils.Log("Quit signal detected. Shutting down ListenSendPacket ...")
+			return
+		case entry, ok := <-core.CostTimeCh:
+			if ok && entry.CostTime > 0 && entry.ReqId > 0 {
+				utils.DebugLogf("received report from WritePacket: %v", entry)
+				handler(entry)
+			}
+		}
+	}
 }

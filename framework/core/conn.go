@@ -28,8 +28,9 @@ import (
 
 // MsgHandler
 type MsgHandler struct {
-	message message.RelayMsgBuf
-	handler HandlerFunc
+	message   message.RelayMsgBuf
+	handler   HandlerFunc
+	recvStart int64
 }
 
 // WriteCloser
@@ -324,6 +325,10 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err
 	sendCh = c.(*ServerConn).sendCh
 	msgH := make([]byte, utils.MsgHeaderLen)
 	reqId := GetReqIdFromContext(ctx)
+	if reqId == 0 {
+		reqId, _ = utils.NextSnowFlakeId()
+		InheritRpcLoggerFromParentReqId(ctx, reqId)
+	}
 	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, msgH)
 	// msgData := make([]byte, utils.MessageBeatLen)
 	// copy(msgData[0:], msgH)
@@ -335,6 +340,7 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err
 	memory := &message.RelayMsgBuf{
 		MSGHead: m.MSGHead,
 	}
+	memory.MSGHead.ReqId = reqId
 	memory.Alloc = cmem.Alloc(uintptr(m.MSGHead.Len + utils.MsgHeaderLen))
 	memory.MSGData = (*[1 << 30]byte)(unsafe.Pointer(memory.Alloc))[:m.MSGHead.Len+utils.MsgHeaderLen]
 	(*reflect.SliceHeader)(unsafe.Pointer(&memory.MSGData)).Cap = int(m.MSGHead.Len + utils.MsgHeaderLen)
@@ -460,6 +466,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 			Mylog(sc.belong.opts.logOpen, "read receiving cancel signal from server")
 			return
 		default:
+			recvStart := time.Now().UnixMilli()
 			_ = spbConn.SetDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
 			Mylog(sc.belong.opts.logOpen, "server read ok", msgH.Len)
 			if msgH.Len == 0 {
@@ -475,7 +482,6 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				}
 				header.DecodeHeader(headerBytes, &msgH)
 				headerBytes = nil
-
 				if msgH.Version < sc.minAppVer {
 					sc.SendBadVersionMsg(msgH.Version, utils.ByteToString(msgH.Cmd))
 					return
@@ -493,7 +499,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					handler := GetHandlerFunc(utils.ByteToString(msgH.Cmd))
 					if handler != nil {
 						metrics.Events.WithLabelValues(utils.ByteToString(msgH.Cmd)).Inc()
-						sc.handlerCh <- MsgHandler{message.RelayMsgBuf{}, handler}
+						sc.handlerCh <- MsgHandler{message.RelayMsgBuf{}, handler, recvStart}
 					}
 					// }
 				}
@@ -554,7 +560,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 						continue
 					}
 					metrics.Events.WithLabelValues(utils.ByteToString(msgH.Cmd)).Inc()
-					handlerCh <- MsgHandler{*msg, handler}
+					handlerCh <- MsgHandler{*msg, handler, recvStart}
 					msgH.Len = 0
 					i = 0
 					msgBuf = nil
@@ -638,10 +644,12 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 }
 
 func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
+	msgHeaderToTrack := &header.MessageHead{}
+	header.DecodeHeader(packet.MSGData[:utils.MsgHeaderLen], msgHeaderToTrack)
 	var onereadlen = 1024
 	var n int
 	// Mylog(s.opts.logOpen,"msgLen", len(packet.MSGData))
-
+	cmd := utils.ByteToString(packet.MSGHead.Cmd)
 	// Encrypt and write message header
 	encryptedHeader, err := EncryptAndPack(sc.sharedKey, packet.MSGData[:utils.MsgHeaderLen])
 	if err != nil {
@@ -658,6 +666,7 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 	if err != nil {
 		return errors.Wrap(err, "server cannot encrypt msg")
 	}
+	writeStart := time.Now()
 	for i := 0; i < len(encryptedData); i = i + n {
 		// Mylog(s.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
 		if len(encryptedData)-i < 1024 {
@@ -674,6 +683,13 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 		} else {
 			// Mylog(s.opts.logOpen,"i", i)
 		}
+	}
+	if cmd == header.RspDownloadSlice {
+		writeEnd := time.Now()
+		costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
+		report := WritePacketCostTime{ReqId: msgHeaderToTrack.ReqId, CostTime: costTime}
+		utils.DetailLogf("[core.conn | RspDownloadSlice] add cost time {%v} report to CostTimeCh", report)
+		CostTimeCh <- report
 	}
 	cmem.Free(packet.Alloc)
 	return nil
@@ -718,13 +734,14 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 			Mylog(sc.belong.opts.logOpen, "handle receiving cancel signal from server")
 			return
 		case msgHandler := <-handlerCh:
-			msg, handler := msgHandler.message, msgHandler.handler
+			msg, handler, recvStart := msgHandler.message, msgHandler.handler, msgHandler.recvStart
 			if handler != nil {
 				// if askForWorker {
 				err = GlobalTaskPool.Job(netID, func() {
 					ctxWithReqId := CreateContextWithReqId(ctx, msg.MSGHead.ReqId)
+					ctxWithRecvStart := CreateContextWithRecvStartTime(ctxWithReqId, recvStart)
 					// Mylog(s.opts.logOpen,"handler(CreateContextWithNetID(CreateContextWithMessage(ctxWithReqId, msg), netID), c )", netID)
-					handler(CreateContextWithNetID(CreateContextWithMessage(ctxWithReqId, &msg), netID), c)
+					handler(CreateContextWithNetID(CreateContextWithMessage(ctxWithRecvStart, &msg), netID), c)
 				})
 				if err != nil {
 					utils.ErrorLog(err)

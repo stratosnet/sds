@@ -79,3 +79,78 @@ func (m *AutoCleanMap) pushDelete(wg *sync.WaitGroup) {
 		}
 	}()
 }
+
+type AutoCleanUnsafeMap struct {
+	delay     time.Duration
+	unsafeMap map[interface{}]interface{}
+}
+
+type MyUnsafeValue struct {
+	value     interface{}
+	wg        *sync.WaitGroup
+	deletedCh chan bool
+}
+
+func NewAutoCleanUnsafeMap(delay time.Duration) *AutoCleanUnsafeMap {
+	return &AutoCleanUnsafeMap{
+		delay:     delay,
+		unsafeMap: make(map[interface{}]interface{}, 0),
+	}
+}
+
+func (m *AutoCleanUnsafeMap) Store(key, value interface{}) {
+	m.Delete(key)
+	wg := &sync.WaitGroup{}
+	deletedCh := make(chan bool, 1)
+	m.unsafeMap[key] = &MyUnsafeValue{
+		value:     value,
+		wg:        wg,
+		deletedCh: deletedCh,
+	}
+
+	m.pushDelete(wg)
+	go func() {
+		wg.Wait()
+		select {
+		case deleted := <-deletedCh:
+			if deleted {
+				return
+			}
+		default:
+		}
+		delete(m.unsafeMap, key)
+	}()
+}
+
+func (m *AutoCleanUnsafeMap) Load(key interface{}) (interface{}, bool) {
+	if value, ok := m.unsafeMap[key]; ok {
+		myValue := value.(*MyUnsafeValue)
+		m.pushDelete(myValue.wg)
+		return myValue.value, true
+	} else {
+		return nil, false
+	}
+}
+
+func (m *AutoCleanUnsafeMap) Delete(key interface{}) {
+	if value, ok := m.unsafeMap[key]; ok {
+		myValue := value.(*MyUnsafeValue)
+		delete(m.unsafeMap, key)
+		myValue.deletedCh <- true
+	}
+}
+
+func (m *AutoCleanUnsafeMap) HashKey(key interface{}) bool {
+	_, ok := m.unsafeMap[key]
+	return ok
+}
+
+func (m *AutoCleanUnsafeMap) pushDelete(wg *sync.WaitGroup) {
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		select {
+		case <-time.After(m.delay):
+		}
+	}()
+}

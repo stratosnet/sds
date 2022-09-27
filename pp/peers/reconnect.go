@@ -22,7 +22,7 @@ type OptimalSp struct {
 var (
 	optSp               = &OptimalSp{}
 	minReloadSpInterval = 3
-	maxReloadSpInterval = 600
+	maxReloadSpInterval = 900 //15 min
 	retry               = 0
 )
 
@@ -67,10 +67,13 @@ func reloadConnectSP(ctx context.Context) func() {
 
 		if err != nil {
 			//calc next reload interval
-			reloadSpInterval := minReloadSpInterval * int(math.Ceil(math.Pow(10, float64(retry))))
+			reloadSpInterval := minReloadSpInterval * int(math.Ceil(math.Pow(10, float64(retry)))) * 2
+			//prevent reloadSpInterval from overflowing after multiple retry
+			if reloadSpInterval < maxReloadSpInterval {
+				retry += 1
+			}
 			reloadSpInterval = int(math.Min(float64(reloadSpInterval), float64(maxReloadSpInterval)))
 			pp.Logf(ctx, "couldn't connect to SP node. Retrying in %v seconds...", reloadSpInterval)
-			retry += 1
 			ppPeerClock.AddJobWithInterval(time.Duration(reloadSpInterval)*time.Second, reloadConnectSP(ctx))
 		}
 	}

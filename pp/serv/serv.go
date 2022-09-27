@@ -54,7 +54,9 @@ func Start() {
 	}
 
 	ctxWithQuitChs := peers.InitQuitChs(ctx)
+	go peers.ListenSendPacket(event.HandleSendPacketCostTime)
 	peers.StartPP(ctxWithQuitChs, event.RegisterEventHandle)
+
 }
 
 func startIPC() error {

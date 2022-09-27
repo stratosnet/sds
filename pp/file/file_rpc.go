@@ -1,35 +1,40 @@
 package file
 
 import (
-	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/api/rpc"
+	"context"
+	b64 "encoding/base64"
 	"io"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/api/rpc"
 )
 
-const WAIT_TIMEOUT time.Duration = 5
+const WAIT_TIMEOUT time.Duration = 10 * time.Second
 
 var (
 	reFileMutex sync.Mutex
 
-	downDataMutex sync.Mutex
+	upSliceMutex sync.Mutex
+
+	eventMutex sync.Mutex
 
 	// key(fileHash + fileReqId) : value(fileSize)
 	rpcFileInfoMap = &sync.Map{}
 
-	// key(fileHash + fileReqId) : value(*rpc.Result)
-	rpcFileEvent = &sync.Map{}
+	// key(fileHash + fileReqId) : value(chan *rpc.Result)
+	rpcFileEventChan = &sync.Map{}
 
-	// key(fileHash) : value(pipe)
-	rpcUploadPipes = make(map[string]pipe)
+	// key(fileHash) : value(chan []byte)
+	rpcUploadDataChan = &sync.Map{}
 
 	// key(fileHash + file) : value(downloadReady)
 	rpcDownloadReady = &sync.Map{}
 
-	// key(fileHash) : value(download file data)
-	rpcDownloadData = &sync.Map{}
+	// key(fileHash + file) : value(chan uint64)
+	rpcDownloadFileInfo = &sync.Map{}
 
 	// gracefully close download session
 	rpcDownSessionClosing = &sync.Map{}
@@ -57,8 +62,23 @@ func IsFileRpcRemote(key string) bool {
 	return strings.Split(str, ":")[0] == "rpc"
 }
 
-// GetRemoteFileData
+// SubscribeGetRemoteFileData application subscribes to remote file data and waits for remote user's feedback
+func SubscribeGetRemoteFileData(key string) chan []byte {
+	event := make(chan []byte)
+	rpcUploadDataChan.Store(key, event)
+	return event
+}
+
+// UnsubscribeGetRemoteFileData unsubscribe after the application finishes receiving the slice of file data
+func UnsubscribeGetRemoteFileData(key string) {
+	rpcUploadDataChan.Delete(key)
+}
+
+// GetRemoteFileData application calls this func to fetch a (sub)slice of file data from remote user
 func GetRemoteFileData(hash string, offset *protos.SliceOffset) []byte {
+	upSliceMutex.Lock()
+	defer upSliceMutex.Unlock()
+
 	// input check
 	if offset == nil {
 		return nil
@@ -72,68 +92,46 @@ func GetRemoteFileData(hash string, offset *protos.SliceOffset) []byte {
 	}
 
 	// send event and open the pipe for coming data
-
-	reFileMutex.Lock()
-	rpcFileEvent.Store(hash, r)
-	var p pipe
-	p.reader, p.writer = io.Pipe()
-	rpcUploadPipes[hash] = p
-	reFileMutex.Unlock()
+	SetRemoteFileResult(hash, *r)
 
 	// read on the pipe
 	data := make([]byte, offset.SliceOffsetEnd-offset.SliceOffsetStart)
 	var cursor []byte
-	var read uint64
-	var done = make(chan bool)
+	var read uint64 = 0
 
 	cursor = data[:]
+	parentCtx := context.Background()
+	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
 
-	go func() {
-		for {
-			n, err := p.reader.Read(cursor)
-			if err != nil {
-				done <- false
-				return
-			}
-			read = read + uint64(n)
+OuterFor:
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case subSlice := <-SubscribeGetRemoteFileData(hash):
+			copy(cursor, subSlice)
+			// one piece to be sent to client
+			read = read + uint64(len(subSlice))
 			cursor = data[read:]
 			if read >= offset.SliceOffsetEnd-offset.SliceOffsetStart {
-				done <- true
-				return
+				UnsubscribeGetRemoteFileData(hash)
+				break OuterFor
 			}
 		}
-	}()
+	}
 
-	select {
-	case <-time.After(WAIT_TIMEOUT * time.Second):
-		return nil
-	case s := <-done:
-		if s {
-			return []byte(data)
-		} else {
-			return nil
-		}
+	return []byte(data)
+}
+
+// SendFileDataBack rpc server feeds file data from remote user to application
+func SendFileDataBack(hash string, content []byte) {
+	ch, found := rpcUploadDataChan.Load(hash)
+	if found {
+		ch.(chan []byte) <- content
 	}
 }
 
-// GetDownloadFileData
-func GetDownloadFileData(key string) []byte {
-	var data []byte
-
-	for {
-		downDataMutex.Lock()
-		d, found := rpcDownloadData.LoadAndDelete(key)
-		downDataMutex.Unlock()
-		if found && d != nil {
-			data = d.([]byte)
-			break
-		}
-	}
-
-	return data
-}
-
-// SaveRemoteFileData
+// SaveRemoteFileData application calls this func to send a slice of file data to remote user during download process
 func SaveRemoteFileData(key string, data []byte, offset uint64) bool {
 	if data == nil {
 		return false
@@ -153,16 +151,10 @@ func SaveRemoteFileData(key string, data []byte, offset uint64) bool {
 		Return:      rpc.DOWNLOAD_OK,
 		OffsetStart: &offset,
 		OffsetEnd:   &offsetend,
+		FileData:    b64.StdEncoding.EncodeToString(data),
 	}
 
-	downDataMutex.Lock()
 	SetRemoteFileResult(key, result)
-
-	// 2. download file data -> map
-	rpcDownloadData.Store(key, data)
-	downDataMutex.Unlock()
-
-	// 3. need to wait the reply from rpc comm confirmed
 	return WaitDownloadSliceDone(key)
 }
 
@@ -174,95 +166,119 @@ func GetRemoteFileSize(hash string) uint64 {
 	return 0
 }
 
-// SendFileDataBack the rpc handler writes data to slice upload task
-func SendFileDataBack(hash string, content []byte) {
-	reFileMutex.Lock()
-
-	if w, found := rpcUploadPipes[hash]; found && w.writer != nil {
-		rpcUploadPipes[hash].writer.Write(content)
-	}
-
-	reFileMutex.Unlock()
-}
-
-// SetRemoteFileResult a result is given to the remote client
-func SetRemoteFileResult(key string, result rpc.Result) {
-	rpcFileEvent.Store(key, &result)
-}
-
 // SaveRemoteFileHash
 func SaveRemoteFileHash(hash, fileName string, fileSize uint64) {
+	reFileMutex.Lock()
+	defer reFileMutex.Unlock()
+
 	fileMap[hash] = "rpc:" + fileName
 	rpcFileInfoMap.Store(hash, fileSize)
 }
 
-// SetRemoteFileInfo
-func SetRemoteFileInfo(hash string, size uint64) {
-	rpcFileInfoMap.Store(hash, size)
+// SubscribeRemoteFileEvent rpc server subscribes to events from application. Now, result of operation is the only event
+func SubscribeRemoteFileEvent(key string) chan *rpc.Result {
+	event := make(chan *rpc.Result)
+	eventMutex.Lock()
+	defer eventMutex.Unlock()
+	rpcFileEventChan.Store(key, event)
+	return event
 }
 
-// GetRemoteFileEvent
-func GetRemoteFileEvent(key string) (*rpc.Result, bool) {
-	result, loaded := rpcFileEvent.LoadAndDelete(key)
-	if result != nil && loaded {
-		return result.(*rpc.Result), loaded
-	} else {
-		return nil, loaded
+// UnsubscribeRemoteFileEvent rpc server unsubscribes to event from application. Now, result of operation is the only event
+func UnsubscribeRemoteFileEvent(key string) {
+	eventMutex.Lock()
+	defer eventMutex.Unlock()
+	rpcFileEventChan.Delete(key)
+}
+
+// SetRemoteFileResult application sends the result of previous operation to rpc server
+func SetRemoteFileResult(key string, result rpc.Result) {
+	eventMutex.Lock()
+	defer eventMutex.Unlock()
+	ch, found := rpcFileEventChan.Load(key)
+	if found {
+		ch.(chan *rpc.Result) <- &result
 	}
 }
 
-// SetDownloadSliceDone a result is given to the remote client
-func SetDownloadSliceDone(key string) {
-	rpcDownloadReady.Store(key, true)
+// SubscribeDownloadSliceDone
+func SubscribeDownloadSliceDone(key string) chan bool {
+	done := make(chan bool)
+	rpcDownloadReady.Store(key, done)
+	return done
 }
 
-// WaitDownloadSliceDone
+// UnsubscribeDownloadSliceDone
+func UnsubscribeDownloadSliceDone(key string) {
+	rpcDownloadReady.Delete(key)
+}
+
+// SetDownloadSliceDone rpc server tells the remote user has received last downloaded slice
+func SetDownloadSliceDone(key string) {
+	ch, found := rpcDownloadReady.Load(key)
+	if found {
+		ch.(chan bool) <- true
+	}
+}
+
+// WaitDownloadSliceDone application waits for remote user to tell that the downloaded slice received
 func WaitDownloadSliceDone(key string) bool {
-
-	rpcDownloadReady.Store(key, false)
-
-	var done = make(chan bool)
-	go func() {
-
-		for {
-			value, found := rpcDownloadReady.Load(key)
-			if found && value.(bool) {
-				done <- true
-				return
-			}
-		}
-	}()
+	var done bool
+	parentCtx := context.Background()
+	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
 
 	select {
-	case <-time.After(WAIT_TIMEOUT * time.Second):
+	case <-ctx.Done():
 		return false
-	case <-done:
-		return true
+	case done = <-SubscribeDownloadSliceDone(key):
+		UnsubscribeDownloadSliceDone(key)
+		return done
 	}
+}
+
+func SubscribeDownloadFileInfo(key string) chan uint64 {
+	fileSize := make(chan uint64)
+	rpcDownloadFileInfo.Store(key, fileSize)
+	return fileSize
+}
+
+// UnsubscribeDownloadFileInfo
+func UnsubscribeDownloadFileInfo(key string) {
+	rpcDownloadFileInfo.Delete(key)
 }
 
 // GetRemoteFileInfo
-func GetRemoteFileInfo(hash string) uint64 {
-	SetRemoteFileResult(hash, rpc.Result{Return: rpc.DL_OK_ASK_INFO})
+func GetRemoteFileInfo(key string) uint64 {
+	SetRemoteFileResult(key, rpc.Result{Return: rpc.DL_OK_ASK_INFO})
 	var fileSize uint64
-	for {
-		fileSize = GetRemoteFileSize(hash)
-		if fileSize != 0 {
-			break
-		}
+	parentCtx := context.Background()
+	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
+
+	select {
+	case <-ctx.Done():
+		return 0
+	case fileSize = <-SubscribeDownloadFileInfo(key):
+		UnsubscribeDownloadFileInfo(key)
 	}
 	return fileSize
+}
+
+// SetRemoteFileInfo
+func SetRemoteFileInfo(key string, size uint64) {
+	reFileMutex.Lock()
+	defer reFileMutex.Unlock()
+	ch, found := rpcDownloadFileInfo.Load(key)
+	if found {
+		ch.(chan uint64) <- size
+	}
 }
 
 // CleanFileHash
 func CleanFileHash(key string) {
 	reFileMutex.Lock()
+	defer reFileMutex.Unlock()
 	rpcFileInfoMap.Delete(key)
-	rpcFileEvent.Delete(key)
-	rpcDownloadReady.Delete(key)
-	rpcDownloadData.Delete(key)
 	ClearFileMap(key)
-	reFileMutex.Unlock()
 }
 
 // CloseDownloadSession
