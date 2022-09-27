@@ -27,6 +27,12 @@ var (
 )
 
 func ListenOffline(ctx context.Context) {
+	var qch chan bool
+	if v := ctx.Value(LISTEN_OFFLINE_QUIT_CH_KEY); v != nil {
+		qch = v.(chan bool)
+		utils.DebugLogf("ListenOffline quit ch found")
+	}
+
 	for {
 		select {
 		case offline := <-client.OfflineChan:
@@ -41,6 +47,9 @@ func ListenOffline(ctx context.Context) {
 				peerList.PPDisconnected(ctx, "", offline.NetworkAddress)
 				InitPPList(ctx)
 			}
+		case <-qch:
+			utils.Log("ListenOffline goroutine terminated")
+			return
 		}
 	}
 }

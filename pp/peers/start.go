@@ -12,6 +12,12 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
+var quitChMap = make(map[string]chan bool)
+
+const (
+	LISTEN_OFFLINE_QUIT_CH_KEY = "ListenOfflineQuitCh"
+)
+
 func StartPP(ctx context.Context, registerFn func()) {
 	GetNetworkAddress()
 	peerList.Init(setting.NetworkAddress, filepath.Join(setting.Config.PPListDir, "pp-list"))
@@ -23,7 +29,14 @@ func StartPP(ctx context.Context, registerFn func()) {
 	//go SendLatencyCheckMessageToSPList()
 	StartPpLatencyCheck(ctx)
 	StartStatusReportToSP(ctx)
-	ListenOffline(ctx)
+	go ListenOffline(ctx)
+}
+
+func InitQuitChs(ctx context.Context) context.Context {
+	quitChListenOffline := make(chan bool, 1)
+	ctx = context.WithValue(ctx, LISTEN_OFFLINE_QUIT_CH_KEY, quitChListenOffline)
+	quitChMap[LISTEN_OFFLINE_QUIT_CH_KEY] = quitChListenOffline
+	return ctx
 }
 
 func InitPeer(ctx context.Context, registerFn func()) {
@@ -61,4 +74,8 @@ func StartMining(ctx context.Context) {
 			pp.Log(ctx, "register as miner first")
 		}
 	}
+}
+
+func GetQuitChMap() map[string]chan bool {
+	return quitChMap
 }

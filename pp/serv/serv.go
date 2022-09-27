@@ -17,6 +17,16 @@ const (
 	DefaultHTTPPort = 8235      // Default TCP port for the HTTP RPC server
 )
 
+// base pp server
+type BaseServer struct {
+	//ppServ      *peers.PPServer // not enclosing ppServer to avoid import cycle
+	ipcServ     *ipcServer
+	httpRpcServ *httpServer
+	monitorServ *httpServer
+}
+
+var baseServer = &BaseServer{}
+
 func Start() {
 	ctx := context.Background()
 	err := GetWalletAddress(ctx)
@@ -43,8 +53,9 @@ func Start() {
 		return
 	}
 
+	ctxWithQuitChs := peers.InitQuitChs(ctx)
 	go peers.ListenSendPacket(event.HandleSendPacketCostTime)
-	peers.StartPP(ctx, event.RegisterEventHandle)
+	peers.StartPP(ctxWithQuitChs, event.RegisterEventHandle)
 
 }
 
@@ -68,7 +79,7 @@ func startIPC() error {
 	if err := ipc.start(rpcAPIs); err != nil {
 		return err
 	}
-
+	baseServer.ipcServ = ipc
 	//TODO bring this back later once we have a proper quit mechanism
 	//defer ipc.stop()
 
@@ -101,6 +112,7 @@ func startHttpRPC() error {
 		return err
 	}
 
+	baseServer.httpRpcServ = rpcServer
 	return nil
 }
 
@@ -129,6 +141,30 @@ func startMonitor() error {
 	if err := monitorServer.start(); err != nil {
 		return err
 	}
-
+	baseServer.monitorServ = monitorServer
 	return nil
+}
+
+func GetBaseServer() *BaseServer {
+	return baseServer
+}
+
+func (bs *BaseServer) Stop() {
+	utils.DebugLogf("BaseServer.Stop ... ")
+	if bs.ipcServ != nil {
+		bs.ipcServ.stop()
+	}
+	if bs.httpRpcServ != nil {
+		bs.httpRpcServ.stop()
+	}
+	if bs.monitorServ != nil {
+		bs.monitorServ.stop()
+	}
+	if ppServer := peers.GetPPServer(); ppServer != nil {
+		// send signal to close peers level goroutines
+		for _, ch := range peers.GetQuitChMap() {
+			ch <- true
+		}
+		ppServer.Stop()
+	}
 }
