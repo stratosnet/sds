@@ -338,7 +338,8 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err
 	// 	MSGData: msgData[0 : m.MSGHead.Len+utils.MsgHeaderLen],
 	// }
 	memory := &message.RelayMsgBuf{
-		MSGHead: m.MSGHead,
+		MSGHead:  m.MSGHead,
+		PacketId: GetPacketIdFromContext(ctx),
 	}
 	memory.MSGHead.ReqId = reqId
 	memory.Alloc = cmem.Alloc(uintptr(m.MSGHead.Len + utils.MsgHeaderLen))
@@ -644,8 +645,6 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 }
 
 func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
-	msgHeaderToTrack := &header.MessageHead{}
-	header.DecodeHeader(packet.MSGData[:utils.MsgHeaderLen], msgHeaderToTrack)
 	var onereadlen = 1024
 	var n int
 	// Mylog(s.opts.logOpen,"msgLen", len(packet.MSGData))
@@ -687,7 +686,7 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 	if cmd == header.RspDownloadSlice {
 		writeEnd := time.Now()
 		costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
-		report := WritePacketCostTime{ReqId: msgHeaderToTrack.ReqId, CostTime: costTime}
+		report := WritePacketCostTime{PacketId: packet.PacketId, CostTime: costTime}
 		utils.DetailLogf("[core.conn | RspDownloadSlice] add cost time {%v} report to CostTimeCh", report)
 		CostTimeCh <- report
 	}

@@ -16,6 +16,7 @@ const (
 	serverCtxKey      ctxkey = "server"
 	netIDCtxKey       ctxkey = "netid"
 	reqIDCtxKey       ctxkey = "reqId"
+	packetIDCtxKey    ctxkey = "packetId"
 	parentReqIDCtxKey ctxkey = "parentReqId"
 	recvStartKey      ctxkey = "recvStartTime"
 )
@@ -87,6 +88,15 @@ func InheritRpcLoggerFromParentReqId(ctx context.Context, reqId int64) {
 	}
 }
 
+func GetPacketIdFromContext(ctx context.Context) int64 {
+	if ctx == nil || ctx.Value(packetIDCtxKey) == nil {
+		return 0
+	}
+
+	packetId := ctx.Value(packetIDCtxKey).(int64)
+	return packetId
+}
+
 func GetReqIdFromContext(ctx context.Context) int64 {
 	if ctx == nil || ctx.Value(reqIDCtxKey) == nil {
 		return 0
@@ -125,6 +135,10 @@ func GetParentReqIdFromContext(ctx context.Context) int64 {
 
 func CreateContextWithReqId(ctx context.Context, reqId int64) context.Context {
 	return context.WithValue(ctx, reqIDCtxKey, reqId)
+}
+
+func CreateContextWithPacketId(ctx context.Context, packetId int64) context.Context {
+	return context.WithValue(ctx, packetIDCtxKey, packetId)
 }
 
 func CreateContextWithRecvStartTime(ctx context.Context, recvStartTime int64) context.Context {

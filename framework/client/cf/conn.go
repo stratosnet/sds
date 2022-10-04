@@ -577,7 +577,8 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 	// 	MSGData: (*msgData)[0 : m.MSGHead.Len+utils.MsgHeaderLen],
 	// }
 	memory := &msg.RelayMsgBuf{
-		MSGHead: m.MSGHead,
+		MSGHead:  m.MSGHead,
+		PacketId: core.GetPacketIdFromContext(ctx),
 	}
 	memory.MSGHead.ReqId = reqId
 	memory.Alloc = cmem.Alloc(uintptr(m.MSGHead.Len + utils.MsgHeaderLen))
@@ -821,8 +822,6 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 }
 
 func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
-	msgHeaderToTrack := &header.MessageHead{}
-	header.DecodeHeader(packet.MSGData[:utils.MsgHeaderLen], msgHeaderToTrack)
 	var lr utils.LimitRate
 	var onereadlen = 1024
 	var n int
@@ -873,7 +872,7 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 	if cmd == header.ReqUploadFileSlice {
 		writeEnd := time.Now()
 		costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
-		report := core.WritePacketCostTime{ReqId: msgHeaderToTrack.ReqId, CostTime: costTime}
+		report := core.WritePacketCostTime{PacketId: packet.PacketId, CostTime: costTime}
 		utils.DetailLogf("[cf.conn | ReqUploadFileSlice] add cost time {%v} report to CostTimeCh", report)
 		core.CostTimeCh <- report
 	}
