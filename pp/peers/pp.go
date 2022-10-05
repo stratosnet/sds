@@ -116,7 +116,7 @@ func ListenSendPacket(handler func(core.WritePacketCostTime)) {
 			utils.Log("Quit signal detected. Shutting down ListenSendPacket ...")
 			return
 		case entry, ok := <-core.CostTimeCh:
-			if ok && entry.CostTime > 0 && entry.ReqId > 0 {
+			if ok && entry.CostTime > 0 && entry.PacketId > 0 {
 				utils.DebugLogf("received report from WritePacket: %v", entry)
 				handler(entry)
 			}

@@ -7,7 +7,8 @@ type RelayMsgBuf struct {
 	// ConnID    int64
 	// NetAdress string
 	// WalletAddress string
-	MSGHead header.MessageHead
-	MSGData []byte
-	Alloc   *[]byte
+	PacketId int64
+	MSGHead  header.MessageHead
+	MSGData  []byte
+	Alloc    *[]byte
 }

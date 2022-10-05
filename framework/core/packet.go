@@ -1,7 +1,7 @@
 package core
 
 type WritePacketCostTime struct {
-	ReqId    int64
+	PacketId int64
 	CostTime int64
 }
 

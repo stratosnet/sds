@@ -204,9 +204,10 @@ func ScheduleReloadPPStatus(ctx context.Context, future time.Duration) {
 	ppPeerClock.AddJobWithInterval(future, GetPPStatusInitPPList(ctx))
 }
 
-func CreateNewContextAlterReqId(ctx context.Context) (int64, context.Context) {
+// CreateNewContextPacketId used for downloading / uploading speed tracking
+func CreateNewContextPacketId(ctx context.Context) (int64, context.Context) {
 	retCtx := ctx
-	genReqId, _ := utils.NextSnowFlakeId()
-	utils.DebugLogf("ReqId in new context changed to: %v", strconv.FormatInt(genReqId, 10))
-	return genReqId, core.CreateContextWithReqId(retCtx, genReqId)
+	packetId, _ := utils.NextSnowFlakeId()
+	utils.DebugLogf("PacketId in new context: %v", strconv.FormatInt(packetId, 10))
+	return packetId, core.CreateContextWithPacketId(retCtx, packetId)
 }

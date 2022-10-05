@@ -4,11 +4,12 @@ package event
 import (
 	"context"
 	"fmt"
-	"github.com/stratosnet/sds/utils/types"
 	"net/http"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/stratosnet/sds/utils/types"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/client/cf"
@@ -146,13 +147,13 @@ func splitSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlic
 }
 
 func prepareSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlice, tkSliceUID string) (int64, context.Context) {
-	genReqId, newCtx := peers.CreateNewContextAlterReqId(ctx)
+	packetId, newCtx := peers.CreateNewContextPacketId(ctx)
 	tkSlice := TaskSlice{
 		TkSliceUID: tkSliceUID,
 		IsUpload:   false,
 	}
-	ReqIdMap.Store(genReqId, tkSlice)
-	utils.DebugLogf("ReqIdMap.Store <==(%v, %v)", genReqId, tkSlice)
+	PacketIdMap.Store(packetId, tkSlice)
+	utils.DebugLogf("PacketIdMap.Store <==(%v, %v)", packetId, tkSlice)
 	downSendCostTimeMap.mux.Lock()
 	var ctStat = CostTimeStat{}
 	if val, ok := downSendCostTimeMap.dataMap.Load(rsp.TaskId + rsp.SliceInfo.SliceHash); ok {
@@ -162,7 +163,7 @@ func prepareSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSl
 	downSendCostTimeMap.dataMap.Store(tkSliceUID, ctStat)
 	downSendCostTimeMap.mux.Unlock()
 	utils.DebugLogf("downSendPacketWgMap.Store <== K:%v, V:%v]", tkSliceUID, ctStat)
-	return genReqId, newCtx
+	return packetId, newCtx
 }
 
 // RspDownloadSlice storagePP-PP
