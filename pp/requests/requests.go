@@ -271,6 +271,7 @@ func RspDownloadSliceData(target *protos.ReqDownloadSlice) *protos.RspDownloadSl
 		SpP2PAddress:      target.SpP2PAddress,
 		IsVideoCaching:    target.IsVideoCaching,
 		StorageP2PAddress: target.StorageP2PAddress,
+		SliceNumber:       target.SliceNumber,
 	}
 }
 
@@ -302,6 +303,7 @@ func RspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 		IsEncrypted:       rsp.IsEncrypted,
 		IsVideoCaching:    rsp.IsVideoCaching,
 		StorageP2PAddress: rsp.StorageP2PAddress,
+		SliceNumber:       rsp.SliceNumber,
 	}
 
 	if last {
@@ -444,6 +446,7 @@ func ReqReportDownloadResultData(target *protos.RspDownloadSlice, costTime int64
 
 		} else {
 			repReq.SliceInfo = &protos.DownloadSliceInfo{
+				SliceNumber: target.SliceNumber,
 				SliceStorageInfo: &protos.SliceStorageInfo{
 					SliceHash: target.SliceInfo.SliceHash,
 					SliceSize: target.SliceSize,
@@ -453,6 +456,7 @@ func ReqReportDownloadResultData(target *protos.RspDownloadSlice, costTime int64
 		repReq.OpponentP2PAddress = target.P2PAddress
 	} else {
 		repReq.SliceInfo = &protos.DownloadSliceInfo{
+			SliceNumber: target.SliceNumber,
 			SliceStorageInfo: &protos.SliceStorageInfo{
 				SliceHash: target.SliceInfo.SliceHash,
 				SliceSize: target.SliceSize,
@@ -581,6 +585,7 @@ func ReqTransferDownloadWrongData(notice *protos.ReqFileSliceBackupNotice, newPp
 		SliceStorageInfo: notice.SliceStorageInfo,
 		FileHash:         notice.FileHash,
 		Sign:             notice.Sign,
+		SpP2PAddress:     notice.SpP2PAddress,
 	}
 }
 

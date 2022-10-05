@@ -262,6 +262,7 @@ message RspDownloadSlice {
   string sp_p2p_address = 15;
   bool   is_video_caching = 16;
   string storage_p2p_address = 17;
+  uint64 slice_number = 18;
 }
 
 message ReqDownloadSliceWrong {
