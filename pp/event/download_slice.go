@@ -4,6 +4,7 @@ package event
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"sync"
@@ -322,8 +323,10 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 	if val, ok := downRecvCostTimeMap.dataMap.Load(tkSlice); ok {
 		totalCostTime += val.(int64)
 	}
-	SendReportDownloadResult(ctx, target, totalCostTime, false)
+	reportReq := SendReportDownloadResult(ctx, target, totalCostTime, false)
 	metrics.StoredSliceCount.WithLabelValues("download").Inc()
+	instantInboundSpeed := float64(target.SliceSize) / math.Max(float64(totalCostTime), 1)
+	metrics.InboundSpeed.WithLabelValues(reportReq.OpponentP2PAddress).Set(instantInboundSpeed)
 	downRecvCostTimeMap.dataMap.Delete(tkSlice)
 }
 
@@ -336,9 +339,11 @@ func videoCacheKeep(fileHash, taskID string) {
 }
 
 // ReportDownloadResult  PP-SP OR StoragePP-SP
-func SendReportDownloadResult(ctx context.Context, target *protos.RspDownloadSlice, costTime int64, isPP bool) {
+func SendReportDownloadResult(ctx context.Context, target *protos.RspDownloadSlice, costTime int64, isPP bool) *protos.ReqReportDownloadResult {
 	pp.DebugLog(ctx, "ReportDownloadResult report result target.fileHash = ", target.FileHash)
-	peers.SendMessageDirectToSPOrViaPP(ctx, requests.ReqReportDownloadResultData(target, costTime, isPP), header.ReqReportDownloadResult)
+	req := requests.ReqReportDownloadResultData(target, costTime, isPP)
+	peers.SendMessageDirectToSPOrViaPP(ctx, req, header.ReqReportDownloadResult)
+	return req
 }
 
 // ReportDownloadResult  P-SP OR PP-SP
@@ -563,7 +568,9 @@ func handleDownloadSend(tkSlice TaskSlice, costTime int64) {
 		if val, ok := downloadRspMap.Load(tkSlice.TkSliceUID); ok {
 			queuedReport := val.(QueuedDownloadReportToSP)
 			// report download slice result
-			SendReportDownloadResult(queuedReport.context, queuedReport.response, newCostTimeStat.TotalCostTime, true)
+			reportReq := SendReportDownloadResult(queuedReport.context, queuedReport.response, newCostTimeStat.TotalCostTime, true)
+			instantOutboundSpeed := float64(queuedReport.response.SliceSize) / math.Max(float64(newCostTimeStat.TotalCostTime), 1)
+			metrics.OutboundSpeed.WithLabelValues(reportReq.OpponentP2PAddress).Set(instantOutboundSpeed)
 			// set task status as finished
 			task.DownloadSliceTaskMap.Store(tkSlice.TkSliceUID, true)
 			downloadRspMap.Delete(tkSlice.TkSliceUID)
