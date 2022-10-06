@@ -9,6 +9,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/client"
@@ -100,7 +101,7 @@ func CreateUploadFileTask(fileHash, taskId, spP2pAddress string, isEncrypted, is
 	for _, slice := range slices {
 		task.addNewSlice(slice)
 	}
-
+	metrics.TaskCount.WithLabelValues("upload").Inc()
 	return task
 }
 

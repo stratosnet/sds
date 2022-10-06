@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
@@ -144,6 +145,7 @@ func AddDownloadTask(target *protos.RspFileStorageInfo) {
 		SliceCount:    len(target.SliceInfo),
 	}
 	DownloadTaskMap.Store((target.FileHash + target.WalletAddress + target.ReqId), dTask)
+	metrics.TaskCount.WithLabelValues("download").Inc()
 }
 
 func GetDownloadTaskWithSliceReqId(fileHash, walletAddress, sliceReqId string) (*DownloadTask, bool) {

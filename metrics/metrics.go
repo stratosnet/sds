@@ -56,4 +56,11 @@ var (
 			Help: ": count of stored slices",
 		},
 		[]string{"stored_slices_cnt"})
+
+	RpcReqCount = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pp_rpc_req_cnt",
+			Help: ": count of rpc requests",
+		},
+		[]string{"rpc_req_cnt"})
 )
