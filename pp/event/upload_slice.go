@@ -174,7 +174,7 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 			reportReq := requests.ReqReportUploadSliceResultData(&target, ctStat.TotalCostTime)
 			peers.SendMessageToSPServer(ctx, reportReq, header.ReqReportUploadSliceResult)
 			instantOutboundSpeed := float64(target.SliceSize) / math.Max(float64(ctStat.TotalCostTime), 1)
-			metrics.InboundSpeed.WithLabelValues(reportReq.OpponentP2PAddress).Set(instantOutboundSpeed)
+			metrics.OutboundSpeed.WithLabelValues(reportReq.OpponentP2PAddress).Set(instantOutboundSpeed)
 
 			upSendCostTimeMap.dataMap.Delete(tkSlice)
 		}
