@@ -32,21 +32,21 @@ var (
 	InboundSpeed = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "pp_inbound_speed",
-			Help: ": inbound speed summarized from slice related traffics",
+			Help: ": inbound speed from slice related traffic",
 		},
-		[]string{"in_speed"})
+		[]string{"opponent_p2p_address"})
 
 	OutboundSpeed = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "pp_outbound_speed",
-			Help: ": outbound speed summarized from slice related traffics",
+			Help: ": outbound speed from slice related traffic",
 		},
-		[]string{"out_speed"})
+		[]string{"opponent_p2p_address"})
 
 	TaskCount = promauto.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "pp_task_cnt",
-			Help: ": count of ongoing tasks",
+			Help: ": count of tasks",
 		},
 		[]string{"task_cnt"})
 

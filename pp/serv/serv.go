@@ -55,7 +55,6 @@ func Start() {
 	}
 
 	ctxWithQuitChs := peers.InitQuitChs(ctx)
-	metrics.Initialize("8765")
 	go peers.ListenSendPacket(event.HandleSendPacketCostTime)
 	peers.StartPP(ctxWithQuitChs, event.RegisterEventHandle)
 
@@ -125,6 +124,13 @@ func startMonitor() error {
 	if err != nil {
 		return errors.New("wrong configuration for monitor port")
 	}
+
+	_, err = strconv.Atoi(setting.Config.MetricsPort)
+	if err != nil {
+		return errors.New("wrong configuration for metrics port")
+	}
+
+	metrics.Initialize(setting.Config.MetricsPort)
 
 	if err := monitorServer.setListenAddr("0.0.0.0", port); err != nil {
 		return err
