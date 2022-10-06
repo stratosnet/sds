@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/utils/types"
 
 	"github.com/golang/protobuf/proto"
@@ -322,6 +323,7 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 		totalCostTime += val.(int64)
 	}
 	SendReportDownloadResult(ctx, target, totalCostTime, false)
+	metrics.StoredSliceCount.WithLabelValues("download").Inc()
 	downRecvCostTimeMap.dataMap.Delete(tkSlice)
 }
 

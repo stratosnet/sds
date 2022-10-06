@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
@@ -54,6 +55,7 @@ func Start() {
 	}
 
 	ctxWithQuitChs := peers.InitQuitChs(ctx)
+	metrics.Initialize("8765")
 	go peers.ListenSendPacket(event.HandleSendPacketCostTime)
 	peers.StartPP(ctxWithQuitChs, event.RegisterEventHandle)
 

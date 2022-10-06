@@ -6,6 +6,7 @@ import (
 	"crypto/ed25519"
 
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/file"
@@ -265,6 +266,7 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	}
 	if task.SaveTransferData(&target) {
 		SendReportBackupSliceResult(ctx, target.TaskId, target.SliceHash, target.SpP2PAddress, true, false)
+		metrics.StoredSliceCount.WithLabelValues("transfer").Inc()
 		peers.SendMessage(ctx, conn, requests.RspTransferDownloadResultData(target.TaskId, target.SliceHash, target.SpP2PAddress), header.RspTransferDownloadResult)
 	}
 }

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/utils"
 	"hash/fnv"
 	"unsafe"
@@ -50,12 +51,14 @@ func makeTask(index int, size int, close chan struct{}) *task {
 		closeChan:    close,
 	}
 	go t.start()
+	metrics.TaskCount.WithLabelValues("start").Inc()
 	return t
 }
 func (t *task) start() {
 	for {
 		select {
 		case <-t.closeChan:
+			metrics.TaskCount.WithLabelValues("end").Dec()
 			return
 		case fc := <-t.callbackChan:
 			fc()

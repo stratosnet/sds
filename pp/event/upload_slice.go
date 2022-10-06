@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
@@ -128,6 +129,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 			_, newCtx := peers.CreateNewContextPacketId(ctx)
 			utils.DebugLog("ReqReportUploadSliceResultDataPP reqID =========", core.GetReqIdFromContext(newCtx))
 			peers.SendMessageToSPServer(newCtx, requests.ReqReportUploadSliceResultDataPP(&target, totalCostTime), header.ReqReportUploadSliceResult)
+			metrics.StoredSliceCount.WithLabelValues("upload").Inc()
 			upRecvCostTimeMap.mux.Lock()
 			upRecvCostTimeMap.dataMap.Delete(tkSlice)
 			upRecvCostTimeMap.mux.Unlock()
