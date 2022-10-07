@@ -103,9 +103,9 @@ func (r *HashRing) AddNode(node *Node) {
 
 	if _, exists := r.Nodes.Load(node.ID); !exists {
 		r.NodeCount++
+		r.NodeStatus.Store(node.ID, false)
 	}
 	r.Nodes.Store(node.ID, node)
-	r.NodeStatus.Store(node.ID, false)
 
 	r.NRing.Insert(node)
 }
