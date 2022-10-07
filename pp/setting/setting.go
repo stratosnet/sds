@@ -16,10 +16,10 @@ import (
 )
 
 const (
-	Version     = "v0.8.1"
-	APP_VER     = 8
-	MIN_APP_VER = 8
-	HD_PATH     = "m/44'/606'/0'/0/0"
+	Version        = "v0.8.1"
+	APP_VER        = 8
+	MIN_APP_VER    = 8
+	HD_PATH        = "m/44'/606'/0'/0/0"
 	PP_SERVER_TYPE = "tcp4"
 
 	// REPORTDHTIME 1 hour
@@ -28,7 +28,7 @@ const (
 	NodeReportIntervalSec   = 300 // in seconds
 	NodeReportCheckInterval = 500 // in num of heights
 	WeightDeductionInterval = 200 // interval for weight deduction in heights
-	PpLatencyCheckInterval  = 60 // interval for checking the latency to next PP
+	PpLatencyCheckInterval  = 60  // interval for checking the latency to next PP
 
 	// MAXDATA max slice size
 	MAXDATA = 1024 * 1024 * 3
@@ -130,6 +130,7 @@ type config struct {
 	InternalPort         string       `toml:"internal_port"`
 	RpcPort              string       `toml:"rpc_port"`
 	MonitorPort          string       `toml:"monitor_port"`
+	MetricsPort          string       `toml:"metrics_port"`
 	TrafficLogInterval   uint64       `toml:"traffic_log_interval"`
 	MaxConnection        int          `toml:"max_connection"`
 	SPList               []SPBaseInfo `toml:"sp_list"`

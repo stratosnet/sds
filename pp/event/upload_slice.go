@@ -3,6 +3,7 @@ package event
 // Author j
 import (
 	"context"
+	"math"
 	"strconv"
 	"sync"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
@@ -127,7 +129,11 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 
 			_, newCtx := peers.CreateNewContextPacketId(ctx)
 			utils.DebugLog("ReqReportUploadSliceResultDataPP reqID =========", core.GetReqIdFromContext(newCtx))
-			peers.SendMessageToSPServer(newCtx, requests.ReqReportUploadSliceResultDataPP(&target, totalCostTime), header.ReqReportUploadSliceResult)
+			reportResultReq := requests.ReqReportUploadSliceResultDataPP(&target, totalCostTime)
+			peers.SendMessageToSPServer(newCtx, reportResultReq, header.ReqReportUploadSliceResult)
+			metrics.StoredSliceCount.WithLabelValues("upload").Inc()
+			instantInboundSpeed := float64(target.SliceSize) / math.Max(float64(totalCostTime), 1)
+			metrics.InboundSpeed.WithLabelValues(reportResultReq.OpponentP2PAddress).Set(instantInboundSpeed)
 			upRecvCostTimeMap.mux.Lock()
 			upRecvCostTimeMap.dataMap.Delete(tkSlice)
 			upRecvCostTimeMap.mux.Unlock()
@@ -165,7 +171,11 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		ctStat := val.(CostTimeStat)
 		utils.DebugLogf("ctStat is %v", ctStat)
 		if ctStat.PacketCount == 0 && ctStat.TotalCostTime > 0 {
-			peers.SendMessageToSPServer(ctx, requests.ReqReportUploadSliceResultData(&target, ctStat.TotalCostTime), header.ReqReportUploadSliceResult)
+			reportReq := requests.ReqReportUploadSliceResultData(&target, ctStat.TotalCostTime)
+			peers.SendMessageToSPServer(ctx, reportReq, header.ReqReportUploadSliceResult)
+			instantOutboundSpeed := float64(target.SliceSize) / math.Max(float64(ctStat.TotalCostTime), 1)
+			metrics.OutboundSpeed.WithLabelValues(reportReq.OpponentP2PAddress).Set(instantOutboundSpeed)
+
 			upSendCostTimeMap.dataMap.Delete(tkSlice)
 		}
 	} else {

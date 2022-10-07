@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/setting"
@@ -123,6 +124,13 @@ func startMonitor() error {
 	if err != nil {
 		return errors.New("wrong configuration for monitor port")
 	}
+
+	_, err = strconv.Atoi(setting.Config.MetricsPort)
+	if err != nil {
+		return errors.New("wrong configuration for metrics port")
+	}
+
+	metrics.Initialize(setting.Config.MetricsPort)
 
 	if err := monitorServer.setListenAddr("0.0.0.0", port); err != nil {
 		return err

@@ -24,6 +24,7 @@ rest_port = '18093'
 internal_port = ''
 rpc_port = '8335'
 monitor_port = '5698'
+metrics_port = '8767'
 traffic_log_interval = 10
 max_connection = 1000
 [version]

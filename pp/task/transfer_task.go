@@ -3,6 +3,7 @@ package task
 import (
 	"sync"
 
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/file"
 )
@@ -30,6 +31,7 @@ func CheckTransfer(target *protos.ReqFileSliceBackupNotice) bool {
 func AddTransferTask(taskId, sliceHash string, tTask TransferTask) {
 	rwmutex.Lock()
 	transferTaskMap[taskId+sliceHash] = tTask
+	metrics.TaskCount.WithLabelValues("transfer").Inc()
 	rwmutex.Unlock()
 }
 
