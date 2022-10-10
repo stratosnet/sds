@@ -101,6 +101,12 @@ type SPBaseInfo struct {
 	P2PPublicKey   string `toml:"p2p_public_key"`
 	NetworkAddress string `toml:"network_address"`
 }
+type MonitorConn struct {
+	TLS  bool   `toml:"tls"`
+	Cert string `toml:"cert"`
+	Key  string `toml:"key"`
+	Port string `toml:"port"`
+}
 
 type config struct {
 	Version              AppVersion   `toml:"version"`
@@ -129,8 +135,8 @@ type config struct {
 	RestPort             string       `toml:"rest_port"`
 	InternalPort         string       `toml:"internal_port"`
 	RpcPort              string       `toml:"rpc_port"`
-	MonitorPort          string       `toml:"monitor_port"`
 	MetricsPort          string       `toml:"metrics_port"`
+	Monitor              MonitorConn  `toml:"monitor"`
 	TrafficLogInterval   uint64       `toml:"traffic_log_interval"`
 	MaxConnection        int          `toml:"max_connection"`
 	SPList               []SPBaseInfo `toml:"sp_list"`

@@ -23,10 +23,16 @@ stratos_chain_url = 'http://127.0.0.1:1317'
 rest_port = '9201'
 internal_port = '9301'
 rpc_port = '9401'
-monitor_port = '9501'
 metrics_port = '9601'
 traffic_log_interval = 10
 max_connection = 1000
+
+[monitor]
+tls = false
+cert = ''
+key = ''
+port = '9501'
+
 [version]
 app_ver = 8
 min_app_ver = 8

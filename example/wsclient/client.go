@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -35,9 +37,22 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	u := url.URL{Scheme: "ws", Host: *addr, Path: "/"}
+	u := url.URL{Scheme: "wss", Host: *addr, Path: "/"}
 	log.Printf("connecting to %s", u.String())
 
+	cert, err := os.ReadFile("cert.pem")
+	if err != nil {
+		log.Fatal(err)
+	}
+	certPool := x509.NewCertPool()
+	if ok := certPool.AppendCertsFromPEM(cert); !ok {
+		log.Fatalf("unable to parse cert from %s", "cert.pem")
+	}
+	websocket.DefaultDialer.TLSClientConfig = &tls.Config{
+		MinVersion:               tls.VersionTLS13,
+		PreferServerCipherSuites: true,
+		RootCAs:                  certPool,
+	}
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		log.Fatal("dial:", err)
