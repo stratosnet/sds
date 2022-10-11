@@ -500,28 +500,33 @@ func decryptSliceData(dataToDecrypt []byte) ([]byte, error) {
 func verifyDownloadSliceSign(target *protos.ReqDownloadSlice, rsp *protos.RspDownloadSlice) bool {
 	// verify pp address
 	if !types.VerifyP2pAddrBytes(target.PpP2PPubkey, target.P2PAddress) {
+		utils.ErrorLogf("ppP2pPubkey validation failed, ppP2PAddress:[%v], ppP2PPubKey:[%v]", target.P2PAddress, target.PpP2PPubkey)
 		return false
 	}
 
 	// verify node signature from the pp
 	msg := utils.GetReqDownloadSlicePpNodeSignMessage(target.P2PAddress, setting.P2PAddress, target.SliceInfo.SliceHash, header.ReqDownloadSlice)
 	if !types.VerifyP2pSignBytes(target.PpP2PPubkey, target.PpNodeSign, msg) {
+		utils.ErrorLog("pp node signature validation failed, msg:", msg)
 		return false
 	}
 
 	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
 	if err != nil {
+		utils.ErrorLog("failed to find spP2pPubkey: ", err)
 		return false
 	}
 
 	// verify sp address
 	if !types.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
+		utils.ErrorLogf("spP2pPubkey validation failed, spP2PAddress:[%v], spP2PPubKey:[%v]", target.SpP2PAddress, spP2pPubkey)
 		return false
 	}
 
 	// verify sp node signature
 	msg = utils.GetReqDownloadSliceSpNodeSignMessage(setting.P2PAddress, target.SpP2PAddress, target.SliceInfo.SliceHash, header.ReqDownloadSlice)
 	if !types.VerifyP2pSignBytes(spP2pPubkey, target.SpNodeSign, msg) {
+		utils.ErrorLog("sp node signature validation failed, msg: ", msg)
 		return false
 	}
 

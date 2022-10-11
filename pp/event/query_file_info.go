@@ -48,7 +48,7 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, reqID, saveAs strin
 
 	if ok := task.CheckDownloadTask(fileHash, walletAddress, task.LOCAL_REQID); ok {
 		msg := "The previous download task hasn't finished, please check back later"
-		utils.ErrorLog(msg)
+		pp.ErrorLog(ctx, msg)
 		if w != nil {
 			w.Write(httpserv.NewJson(nil, setting.FAILCode, msg).ToBytes())
 		}

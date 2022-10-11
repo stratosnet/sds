@@ -11,6 +11,8 @@ import (
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/types"
 )
 
 func CheckAndSendRetryMessage(ctx context.Context, dTask *task.DownloadTask) {
@@ -29,6 +31,24 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 	pp.Log(ctx, "get，RspDownloadFileWrong")
 	var target protos.RspFileStorageInfo
 	if requests.UnmarshalData(ctx, &target) {
+
+		spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
+		if err != nil {
+			return
+		}
+
+		// verify sp address
+		if !types.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
+			return
+		}
+
+		// verify sp node signature
+		msg := utils.GetRspFileStorageInfoNodeSignMessage(target.P2PAddress, target.SpP2PAddress, target.FileHash, header.RspFileStorageInfo)
+		if !types.VerifyP2pSignBytes(spP2pPubkey, target.NodeSign, msg) {
+			pp.ErrorLog(ctx, "sp node signature validation failed, msg: ", msg)
+			return
+		}
+
 		pp.DebugLog(ctx, "file hash", target.FileHash)
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
 			pp.Log(ctx, "download starts: ")
@@ -54,6 +74,7 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 				} else {
 					pp.DebugLog(ctx, "request download data")
 					req := requests.ReqDownloadSliceData(&target, slice)
+					task.SliceSessionMap.Store(req.ReqId, target.ReqId)
 					SendReqDownloadSlice(ctx, target.FileHash, slice, req, target.ReqId)
 				}
 			}
