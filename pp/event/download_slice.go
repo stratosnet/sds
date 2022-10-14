@@ -353,8 +353,8 @@ func SendReportStreamingResult(target *protos.RspDownloadSlice, isPP bool) {
 
 // DownloadFileSlice
 func DownloadFileSlice(ctx context.Context, target *protos.RspFileStorageInfo) {
+	pp.DebugLog(ctx, "DownloadFileSlice(&target)", target)
 	fileSize := uint64(0)
-
 	dTask, _ := task.GetDownloadTask(target.FileHash, target.WalletAddress, target.ReqId)
 	for _, sliceInfo := range target.SliceInfo {
 		fileSize += sliceInfo.SliceStorageInfo.SliceSize
@@ -367,6 +367,7 @@ func DownloadFileSlice(ctx context.Context, target *protos.RspFileStorageInfo) {
 		DownloadedSize: 0,
 	}
 	if !file.CheckFileExisting(ctx, target.FileHash, target.FileName, target.SavePath, target.EncryptionTag, target.ReqId) {
+		pp.Log(ctx, "download starts: ")
 		task.DownloadSpeedOfProgress.Store(target.FileHash+target.ReqId, sp)
 		for _, rsp := range target.SliceInfo {
 			pp.DebugLog(ctx, "taskid ======= ", rsp.TaskId)
@@ -383,7 +384,7 @@ func DownloadFileSlice(ctx context.Context, target *protos.RspFileStorageInfo) {
 			}
 		}
 	} else {
-		utils.ErrorLog("file exists already!")
+		pp.Log(ctx, "file exists already!")
 		task.DeleteDownloadTask(target.FileHash, target.WalletAddress, target.ReqId)
 	}
 }
