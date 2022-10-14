@@ -248,6 +248,11 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
+	if target.Result.State == protos.ResultState_RES_FAIL {
+		pp.ErrorLog(ctx, "Received fail massage from sp: ", target.Result.Msg)
+		return
+	}
+
 	// get sp's p2p pubkey
 	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
 	if err != nil {
