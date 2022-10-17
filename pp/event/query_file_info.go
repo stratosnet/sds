@@ -272,7 +272,6 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 
 	pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, target.ReqId)
 	if target.Result.State == protos.ResultState_RES_SUCCESS {
-		pp.Log(ctx, "download starts: ")
 		task.CleanDownloadFileAndConnMap(target.FileHash, target.ReqId)
 		task.DownloadFileMap.Store(target.FileHash+target.ReqId, &target)
 		task.AddDownloadTask(&target)
@@ -280,7 +279,6 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 			return
 		}
 		DownloadFileSlice(ctx, &target)
-		pp.DebugLog(ctx, "DownloadFileSlice(&target)", target)
 	} else {
 		file.SetRemoteFileResult(target.FileHash+target.ReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
 		pp.Log(ctx, "failed to download，", target.Result.Msg)
