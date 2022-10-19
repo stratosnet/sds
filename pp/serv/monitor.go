@@ -34,6 +34,7 @@ type PeerInfo struct {
 	P2pAddress     string `json:"p2p_address"`
 	Status         int    `json:"status"`
 	Latency        int64  `json:"latency"`
+	Connection     string `json:"connection"`
 }
 
 type PeerList struct {
@@ -223,6 +224,7 @@ func getPeerList() ([]PeerInfo, int64) {
 			P2pAddress:     pl[i].P2pAddress,
 			Status:         pl[i].Status,
 			Latency:        pl[i].Latency,
+			Connection:     "tcp4",
 		}
 		peers = append(peers, peer)
 	}
