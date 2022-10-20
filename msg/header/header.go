@@ -167,7 +167,8 @@ const (
 	ReqTransferBLSSignature = "ReqTrBLS"
 	RspTransferBLSSignature = "RspTrBLS"
 
-	RspBadVersion = "RspBdVer"
+	RspBadVersion         = "RspBdVer"
+	RspSpUnderMaintenance = "RspMtnc"
 )
 
 func DecodeHeader(packet []byte, msgH *MessageHead) {
