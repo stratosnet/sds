@@ -109,6 +109,7 @@ func GetLastLinesFromTrafficLog(path string, n uint64) []string {
 	filesize := stat.Size()
 	var i uint64
 	for i = 0; i < n; i++ {
+		line = ""
 		for {
 			cursor -= 1
 			file.Seek(cursor, io.SeekEnd)
