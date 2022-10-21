@@ -58,13 +58,13 @@ type NodeDetails struct {
 }
 
 type MonitorResult struct {
-	Return      string       `json:"return"`
-	MessageType string       `json:"message_type"`
-	TrafficInfo *TrafficInfo `json:"traffic_info,omitempty"`
-	OnlineState *OnlineState `json:"online_state,omitempty"`
-	PeerList    *PeerList    `json:"peer_list,omitempty"`
-	DiskUsage   *DiskUsage   `json:"disk_usage,omitempty"`
-	NodeDetails *NodeDetails `json:"node_details,omitempty"`
+	Return      string         `json:"return"`
+	MessageType string         `json:"message_type"`
+	TrafficInfo *[]TrafficInfo `json:"traffic_info,omitempty"`
+	OnlineState *OnlineState   `json:"online_state,omitempty"`
+	PeerList    *PeerList      `json:"peer_list,omitempty"`
+	DiskUsage   *DiskUsage     `json:"disk_usage,omitempty"`
+	NodeDetails *NodeDetails   `json:"node_details,omitempty"`
 }
 
 type MonitorNotificationResult struct {
@@ -163,10 +163,12 @@ func (api *monitorApi) GetTrafficData(param ParamTrafficInfo) (*MonitorResult, e
 	lines := utils.GetLastLinesFromTrafficLog(setting.TrafficLogPath, param.Lines)
 
 	var ts []TrafficInfo
-	var i uint64
 	var line string
-	for i = 0; i < param.Lines; i++ {
-		line = lines[i]
+	for _, line = range lines {
+		if len(line) <= 26 {
+			return &MonitorResult{Return: "-1", MessageType: MSG_GET_TRAFFIC_DATA_RESPONSE}, nil
+		}
+
 		date := line[7:26]
 
 		content := strings.SplitN(line, "{", 2)
@@ -175,20 +177,20 @@ func (api *monitorApi) GetTrafficData(param ParamTrafficInfo) (*MonitorResult, e
 		}
 
 		c := "{" + content[1]
-
-		var t TrafficDumpInfo
-		if err := json.Unmarshal([]byte(c), &t); err != nil {
+		var trafficDumpInfo TrafficDumpInfo
+		err := json.Unmarshal([]byte(c), &trafficDumpInfo)
+		if err != nil {
 			return &MonitorResult{Return: "-1", MessageType: MSG_GET_TRAFFIC_DATA_RESPONSE}, nil
 		}
 
-		t.TrafficInfo.TimeStamp = date
-		ts = append(ts, t.TrafficInfo)
+		trafficDumpInfo.TrafficInfo.TimeStamp = date
+		ts = append(ts, trafficDumpInfo.TrafficInfo)
 	}
 	if ts == nil {
 		return &MonitorResult{Return: "-1", MessageType: MSG_GET_TRAFFIC_DATA_RESPONSE}, nil
 	}
 
-	return &MonitorResult{Return: "0", MessageType: MSG_GET_TRAFFIC_DATA_RESPONSE, TrafficInfo: &ts[0]}, nil
+	return &MonitorResult{Return: "0", MessageType: MSG_GET_TRAFFIC_DATA_RESPONSE, TrafficInfo: &ts}, nil
 }
 
 func getDiskUsage() int64 {
