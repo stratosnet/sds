@@ -69,6 +69,52 @@ func (PPState) EnumDescriptor() ([]byte, []int) {
 	return file_sds_proto_rawDescGZIP(), []int{0}
 }
 
+type SpMaintenanceType int32
+
+const (
+	SpMaintenanceType_CONSENSUS SpMaintenanceType = 0
+	SpMaintenanceType_OTHER     SpMaintenanceType = 1
+)
+
+// Enum value maps for SpMaintenanceType.
+var (
+	SpMaintenanceType_name = map[int32]string{
+		0: "CONSENSUS",
+		1: "OTHER",
+	}
+	SpMaintenanceType_value = map[string]int32{
+		"CONSENSUS": 0,
+		"OTHER":     1,
+	}
+)
+
+func (x SpMaintenanceType) Enum() *SpMaintenanceType {
+	p := new(SpMaintenanceType)
+	*p = x
+	return p
+}
+
+func (x SpMaintenanceType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SpMaintenanceType) Descriptor() protoreflect.EnumDescriptor {
+	return file_sds_proto_enumTypes[1].Descriptor()
+}
+
+func (SpMaintenanceType) Type() protoreflect.EnumType {
+	return &file_sds_proto_enumTypes[1]
+}
+
+func (x SpMaintenanceType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SpMaintenanceType.Descriptor instead.
+func (SpMaintenanceType) EnumDescriptor() ([]byte, []int) {
+	return file_sds_proto_rawDescGZIP(), []int{1}
+}
+
 type ReqGetPPList struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -8264,7 +8310,9 @@ type RspSpUnderMaintenance struct {
 	unknownFields protoimpl.UnknownFields
 
 	SpP2PAddress    string `protobuf:"bytes,1,opt,name=sp_p2p_address,json=spP2pAddress,proto3" json:"sp_p2p_address,omitempty"`
-	NeedReconnectSp int32  `protobuf:"varint,2,opt,name=need_reconnect_sp,json=needReconnectSp,proto3" json:"need_reconnect_sp,omitempty"`
+	MaintenanceType int32  `protobuf:"varint,2,opt,name=maintenance_type,json=maintenanceType,proto3" json:"maintenance_type,omitempty"`
+	Time            int64  `protobuf:"varint,3,opt,name=time,proto3" json:"time,omitempty"`
+	Sign            []byte `protobuf:"bytes,4,opt,name=sign,proto3" json:"sign,omitempty"`
 }
 
 func (x *RspSpUnderMaintenance) Reset() {
@@ -8306,11 +8354,25 @@ func (x *RspSpUnderMaintenance) GetSpP2PAddress() string {
 	return ""
 }
 
-func (x *RspSpUnderMaintenance) GetNeedReconnectSp() int32 {
+func (x *RspSpUnderMaintenance) GetMaintenanceType() int32 {
 	if x != nil {
-		return x.NeedReconnectSp
+		return x.MaintenanceType
 	}
 	return 0
+}
+
+func (x *RspSpUnderMaintenance) GetTime() int64 {
+	if x != nil {
+		return x.Time
+	}
+	return 0
+}
+
+func (x *RspSpUnderMaintenance) GetSign() []byte {
+	if x != nil {
+		return x.Sign
+	}
+	return nil
 }
 
 var File_sds_proto protoreflect.FileDescriptor
@@ -9528,20 +9590,25 @@ var file_sds_proto_rawDesc = []byte{
 	0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0e, 0x6d, 0x69, 0x6e,
 	0x69, 0x6d, 0x75, 0x6d, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x18, 0x0a, 0x07, 0x63,
 	0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f,
-	0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x22, 0x69, 0x0a, 0x15, 0x52, 0x73, 0x70, 0x53, 0x70, 0x55, 0x6e,
-	0x64, 0x65, 0x72, 0x4d, 0x61, 0x69, 0x6e, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x63, 0x65, 0x12, 0x24,
-	0x0a, 0x0e, 0x73, 0x70, 0x5f, 0x70, 0x32, 0x70, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x73, 0x70, 0x50, 0x32, 0x70, 0x41, 0x64, 0x64,
-	0x72, 0x65, 0x73, 0x73, 0x12, 0x2a, 0x0a, 0x11, 0x6e, 0x65, 0x65, 0x64, 0x5f, 0x72, 0x65, 0x63,
-	0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x5f, 0x73, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52,
-	0x0f, 0x6e, 0x65, 0x65, 0x64, 0x52, 0x65, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74, 0x53, 0x70,
-	0x2a, 0x2f, 0x0a, 0x07, 0x50, 0x50, 0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x0b, 0x0a, 0x07, 0x4f,
-	0x46, 0x46, 0x4c, 0x49, 0x4e, 0x45, 0x10, 0x00, 0x12, 0x0a, 0x0a, 0x06, 0x4f, 0x4e, 0x4c, 0x49,
-	0x4e, 0x45, 0x10, 0x01, 0x12, 0x0b, 0x0a, 0x07, 0x53, 0x55, 0x53, 0x50, 0x45, 0x4e, 0x44, 0x10,
-	0x02, 0x42, 0x26, 0x5a, 0x24, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
-	0x73, 0x74, 0x72, 0x61, 0x74, 0x6f, 0x73, 0x6e, 0x65, 0x74, 0x2f, 0x73, 0x64, 0x73, 0x2f, 0x6d,
-	0x73, 0x67, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x22, 0x90, 0x01, 0x0a, 0x15, 0x52, 0x73, 0x70, 0x53, 0x70, 0x55,
+	0x6e, 0x64, 0x65, 0x72, 0x4d, 0x61, 0x69, 0x6e, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x63, 0x65, 0x12,
+	0x24, 0x0a, 0x0e, 0x73, 0x70, 0x5f, 0x70, 0x32, 0x70, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73,
+	0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x73, 0x70, 0x50, 0x32, 0x70, 0x41, 0x64,
+	0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x29, 0x0a, 0x10, 0x6d, 0x61, 0x69, 0x6e, 0x74, 0x65, 0x6e,
+	0x61, 0x6e, 0x63, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52,
+	0x0f, 0x6d, 0x61, 0x69, 0x6e, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x63, 0x65, 0x54, 0x79, 0x70, 0x65,
+	0x12, 0x12, 0x0a, 0x04, 0x74, 0x69, 0x6d, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x04,
+	0x74, 0x69, 0x6d, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x73, 0x69, 0x67, 0x6e, 0x18, 0x04, 0x20, 0x01,
+	0x28, 0x0c, 0x52, 0x04, 0x73, 0x69, 0x67, 0x6e, 0x2a, 0x2f, 0x0a, 0x07, 0x50, 0x50, 0x53, 0x74,
+	0x61, 0x74, 0x65, 0x12, 0x0b, 0x0a, 0x07, 0x4f, 0x46, 0x46, 0x4c, 0x49, 0x4e, 0x45, 0x10, 0x00,
+	0x12, 0x0a, 0x0a, 0x06, 0x4f, 0x4e, 0x4c, 0x49, 0x4e, 0x45, 0x10, 0x01, 0x12, 0x0b, 0x0a, 0x07,
+	0x53, 0x55, 0x53, 0x50, 0x45, 0x4e, 0x44, 0x10, 0x02, 0x2a, 0x2d, 0x0a, 0x11, 0x53, 0x70, 0x4d,
+	0x61, 0x69, 0x6e, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x63, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12, 0x0d,
+	0x0a, 0x09, 0x43, 0x4f, 0x4e, 0x53, 0x45, 0x4e, 0x53, 0x55, 0x53, 0x10, 0x00, 0x12, 0x09, 0x0a,
+	0x05, 0x4f, 0x54, 0x48, 0x45, 0x52, 0x10, 0x01, 0x42, 0x26, 0x5a, 0x24, 0x67, 0x69, 0x74, 0x68,
+	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x74, 0x72, 0x61, 0x74, 0x6f, 0x73, 0x6e, 0x65,
+	0x74, 0x2f, 0x73, 0x64, 0x73, 0x2f, 0x6d, 0x73, 0x67, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -9556,239 +9623,240 @@ func file_sds_proto_rawDescGZIP() []byte {
 	return file_sds_proto_rawDescData
 }
 
-var file_sds_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_sds_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_sds_proto_msgTypes = make([]protoimpl.MessageInfo, 108)
 var file_sds_proto_goTypes = []interface{}{
 	(PPState)(0),                       // 0: protos.PPState
-	(*ReqGetPPList)(nil),               // 1: protos.ReqGetPPList
-	(*RspGetPPList)(nil),               // 2: protos.RspGetPPList
-	(*ReqGetSPList)(nil),               // 3: protos.ReqGetSPList
-	(*RspGetSPList)(nil),               // 4: protos.RspGetSPList
-	(*ReqRegister)(nil),                // 5: protos.ReqRegister
-	(*RspRegister)(nil),                // 6: protos.RspRegister
-	(*ReqMining)(nil),                  // 7: protos.ReqMining
-	(*RspMining)(nil),                  // 8: protos.RspMining
-	(*ReqUploadFile)(nil),              // 9: protos.ReqUploadFile
-	(*RspUploadFile)(nil),              // 10: protos.RspUploadFile
-	(*ReqUploadFileSlice)(nil),         // 11: protos.ReqUploadFileSlice
-	(*RspUploadFileSlice)(nil),         // 12: protos.RspUploadFileSlice
-	(*ReqUploadSlicesWrong)(nil),       // 13: protos.ReqUploadSlicesWrong
-	(*RspUploadSlicesWrong)(nil),       // 14: protos.RspUploadSlicesWrong
-	(*UploadSpeedOfProgress)(nil),      // 15: protos.UploadSpeedOfProgress
-	(*ReportUploadSliceResult)(nil),    // 16: protos.ReportUploadSliceResult
-	(*RspReportUploadSliceResult)(nil), // 17: protos.RspReportUploadSliceResult
-	(*Uploaded)(nil),                   // 18: protos.Uploaded
-	(*ReqFindMyFileList)(nil),          // 19: protos.ReqFindMyFileList
-	(*RspFindMyFileList)(nil),          // 20: protos.RspFindMyFileList
-	(*ReqFileStorageInfo)(nil),         // 21: protos.ReqFileStorageInfo
-	(*RspFileStorageInfo)(nil),         // 22: protos.RspFileStorageInfo
-	(*ReqDownloadFileWrong)(nil),       // 23: protos.ReqDownloadFileWrong
-	(*ReqDownloadSlice)(nil),           // 24: protos.ReqDownloadSlice
-	(*RspDownloadSlice)(nil),           // 25: protos.RspDownloadSlice
-	(*ReqDownloadSliceWrong)(nil),      // 26: protos.ReqDownloadSliceWrong
-	(*RspDownloadSliceWrong)(nil),      // 27: protos.RspDownloadSliceWrong
-	(*ReqDownloadSlicePause)(nil),      // 28: protos.ReqDownloadSlicePause
-	(*RspDownloadSlicePause)(nil),      // 29: protos.RspDownloadSlicePause
-	(*ReqReportDownloadResult)(nil),    // 30: protos.ReqReportDownloadResult
-	(*RspReportDownloadResult)(nil),    // 31: protos.RspReportDownloadResult
-	(*ReqReportTaskBP)(nil),            // 32: protos.ReqReportTaskBP
-	(*ReqRegisterNewPP)(nil),           // 33: protos.ReqRegisterNewPP
-	(*RspRegisterNewPP)(nil),           // 34: protos.RspRegisterNewPP
-	(*ReqActivatePP)(nil),              // 35: protos.ReqActivatePP
-	(*RspActivatePP)(nil),              // 36: protos.RspActivatePP
-	(*ReqActivatedPP)(nil),             // 37: protos.ReqActivatedPP
-	(*ReqActivatedSP)(nil),             // 38: protos.ReqActivatedSP
-	(*RspActivatedPP)(nil),             // 39: protos.RspActivatedPP
-	(*ReqUpdateStakePP)(nil),           // 40: protos.ReqUpdateStakePP
-	(*RspUpdateStakePP)(nil),           // 41: protos.RspUpdateStakePP
-	(*ReqUpdatedStakePP)(nil),          // 42: protos.ReqUpdatedStakePP
-	(*ReqUpdatedStakeSP)(nil),          // 43: protos.ReqUpdatedStakeSP
-	(*RspUpdatedStakePP)(nil),          // 44: protos.RspUpdatedStakePP
-	(*ReqDeactivatePP)(nil),            // 45: protos.ReqDeactivatePP
-	(*RspDeactivatePP)(nil),            // 46: protos.RspDeactivatePP
-	(*RspPPRegisteredToSP)(nil),        // 47: protos.RspPPRegisteredToSP
-	(*ReqUnbondingPP)(nil),             // 48: protos.ReqUnbondingPP
-	(*RspUnbondingPP)(nil),             // 49: protos.RspUnbondingPP
-	(*ReqDeactivatedPP)(nil),           // 50: protos.ReqDeactivatedPP
-	(*RspDeactivatedPP)(nil),           // 51: protos.RspDeactivatedPP
-	(*ReqUnbondingSP)(nil),             // 52: protos.ReqUnbondingSP
-	(*RspUnbondingSP)(nil),             // 53: protos.RspUnbondingSP
-	(*ReqDeactivatedSP)(nil),           // 54: protos.ReqDeactivatedSP
-	(*RspDeactivatedSP)(nil),           // 55: protos.RspDeactivatedSP
-	(*ReqPrepay)(nil),                  // 56: protos.ReqPrepay
-	(*RspPrepay)(nil),                  // 57: protos.RspPrepay
-	(*ReqPrepaid)(nil),                 // 58: protos.ReqPrepaid
-	(*RspPrepaid)(nil),                 // 59: protos.RspPrepaid
-	(*ReqDeleteFile)(nil),              // 60: protos.ReqDeleteFile
-	(*RspDeleteFile)(nil),              // 61: protos.RspDeleteFile
-	(*ReqFileSliceBackupNotice)(nil),   // 62: protos.ReqFileSliceBackupNotice
-	(*ReqReportBackupSliceResult)(nil), // 63: protos.ReqReportBackupSliceResult
-	(*RspReportBackupSliceResult)(nil), // 64: protos.RspReportBackupSliceResult
-	(*ReqBackupStatus)(nil),            // 65: protos.ReqBackupStatus
-	(*RspBackupStatus)(nil),            // 66: protos.RspBackupStatus
-	(*ReqTransferDownload)(nil),        // 67: protos.ReqTransferDownload
-	(*RspTransferDownload)(nil),        // 68: protos.RspTransferDownload
-	(*RspTransferDownloadResult)(nil),  // 69: protos.RspTransferDownloadResult
-	(*ReqTransferDownloadWrong)(nil),   // 70: protos.ReqTransferDownloadWrong
-	(*ReqGetHDInfo)(nil),               // 71: protos.ReqGetHDInfo
-	(*RspGetHDInfo)(nil),               // 72: protos.RspGetHDInfo
-	(*ReqDeleteSlice)(nil),             // 73: protos.ReqDeleteSlice
-	(*RspDeleteSlice)(nil),             // 74: protos.RspDeleteSlice
-	(*ReqLatencyCheck)(nil),            // 75: protos.ReqLatencyCheck
-	(*RspLatencyCheck)(nil),            // 76: protos.RspLatencyCheck
-	(*ReqBLSPublicKey)(nil),            // 77: protos.ReqBLSPublicKey
-	(*RspBPBLSPublicKey)(nil),          // 78: protos.RspBPBLSPublicKey
-	(*ReqBalance)(nil),                 // 79: protos.ReqBalance
-	(*RspBalance)(nil),                 // 80: protos.RspBalance
-	(*ReqTransaction)(nil),             // 81: protos.ReqTransaction
-	(*RspTransaction)(nil),             // 82: protos.RspTransaction
-	(*ReqBlockInfo)(nil),               // 83: protos.ReqBlockInfo
-	(*RspBlockInfo)(nil),               // 84: protos.RspBlockInfo
-	(*ReqBlockCheck)(nil),              // 85: protos.ReqBlockCheck
-	(*RspBlockCheck)(nil),              // 86: protos.RspBlockCheck
-	(*BlockCheckInfo)(nil),             // 87: protos.BlockCheckInfo
-	(*ReqDownloadTaskInfo)(nil),        // 88: protos.ReqDownloadTaskInfo
-	(*RspDownloadTaskInfo)(nil),        // 89: protos.RspDownloadTaskInfo
-	(*ReqClearDownloadTask)(nil),       // 90: protos.ReqClearDownloadTask
-	(*ReqShareLink)(nil),               // 91: protos.ReqShareLink
-	(*RspShareLink)(nil),               // 92: protos.RspShareLink
-	(*ReqShareFile)(nil),               // 93: protos.ReqShareFile
-	(*RspShareFile)(nil),               // 94: protos.RspShareFile
-	(*ReqDeleteShare)(nil),             // 95: protos.ReqDeleteShare
-	(*RspDeleteShare)(nil),             // 96: protos.RspDeleteShare
-	(*ReqGetShareFile)(nil),            // 97: protos.ReqGetShareFile
-	(*RspGetShareFile)(nil),            // 98: protos.RspGetShareFile
-	(*RelayMessage)(nil),               // 99: protos.RelayMessage
-	(*ReqTransferBLSSignature)(nil),    // 100: protos.ReqTransferBLSSignature
-	(*ReqReportNodeStatus)(nil),        // 101: protos.ReqReportNodeStatus
-	(*ReqGetPPStatus)(nil),             // 102: protos.ReqGetPPStatus
-	(*RspGetPPStatus)(nil),             // 103: protos.RspGetPPStatus
-	(*ReqGetWalletOz)(nil),             // 104: protos.ReqGetWalletOz
-	(*RspGetWalletOz)(nil),             // 105: protos.RspGetWalletOz
-	(*RspReportNodeStatus)(nil),        // 106: protos.RspReportNodeStatus
-	(*RspBadVersion)(nil),              // 107: protos.RspBadVersion
-	(*RspSpUnderMaintenance)(nil),      // 108: protos.RspSpUnderMaintenance
-	(*PPBaseInfo)(nil),                 // 109: protos.PPBaseInfo
-	(*Result)(nil),                     // 110: protos.Result
-	(*SPBaseInfo)(nil),                 // 111: protos.SPBaseInfo
-	(*FileInfo)(nil),                   // 112: protos.FileInfo
-	(*SliceNumAddr)(nil),               // 113: protos.SliceNumAddr
-	(*SliceOffsetInfo)(nil),            // 114: protos.SliceOffsetInfo
-	(UploadType)(0),                    // 115: protos.UploadType
-	(*SliceHashAddr)(nil),              // 116: protos.SliceHashAddr
-	(FileSortType)(0),                  // 117: protos.FileSortType
-	(*FileIndexes)(nil),                // 118: protos.FileIndexes
-	(*DownloadSliceInfo)(nil),          // 119: protos.DownloadSliceInfo
-	(DownloadWrongType)(0),             // 120: protos.DownloadWrongType
-	(*SliceStorageInfo)(nil),           // 121: protos.SliceStorageInfo
-	(HeartbeatType)(0),                 // 122: protos.HeartbeatType
-	(*ShareLinkInfo)(nil),              // 123: protos.ShareLinkInfo
-	(*CpuStat)(nil),                    // 124: protos.CpuStat
-	(*MemoryStat)(nil),                 // 125: protos.MemoryStat
-	(*DiskStat)(nil),                   // 126: protos.DiskStat
-	(*BandwidthStat)(nil),              // 127: protos.BandwidthStat
+	(SpMaintenanceType)(0),             // 1: protos.SpMaintenanceType
+	(*ReqGetPPList)(nil),               // 2: protos.ReqGetPPList
+	(*RspGetPPList)(nil),               // 3: protos.RspGetPPList
+	(*ReqGetSPList)(nil),               // 4: protos.ReqGetSPList
+	(*RspGetSPList)(nil),               // 5: protos.RspGetSPList
+	(*ReqRegister)(nil),                // 6: protos.ReqRegister
+	(*RspRegister)(nil),                // 7: protos.RspRegister
+	(*ReqMining)(nil),                  // 8: protos.ReqMining
+	(*RspMining)(nil),                  // 9: protos.RspMining
+	(*ReqUploadFile)(nil),              // 10: protos.ReqUploadFile
+	(*RspUploadFile)(nil),              // 11: protos.RspUploadFile
+	(*ReqUploadFileSlice)(nil),         // 12: protos.ReqUploadFileSlice
+	(*RspUploadFileSlice)(nil),         // 13: protos.RspUploadFileSlice
+	(*ReqUploadSlicesWrong)(nil),       // 14: protos.ReqUploadSlicesWrong
+	(*RspUploadSlicesWrong)(nil),       // 15: protos.RspUploadSlicesWrong
+	(*UploadSpeedOfProgress)(nil),      // 16: protos.UploadSpeedOfProgress
+	(*ReportUploadSliceResult)(nil),    // 17: protos.ReportUploadSliceResult
+	(*RspReportUploadSliceResult)(nil), // 18: protos.RspReportUploadSliceResult
+	(*Uploaded)(nil),                   // 19: protos.Uploaded
+	(*ReqFindMyFileList)(nil),          // 20: protos.ReqFindMyFileList
+	(*RspFindMyFileList)(nil),          // 21: protos.RspFindMyFileList
+	(*ReqFileStorageInfo)(nil),         // 22: protos.ReqFileStorageInfo
+	(*RspFileStorageInfo)(nil),         // 23: protos.RspFileStorageInfo
+	(*ReqDownloadFileWrong)(nil),       // 24: protos.ReqDownloadFileWrong
+	(*ReqDownloadSlice)(nil),           // 25: protos.ReqDownloadSlice
+	(*RspDownloadSlice)(nil),           // 26: protos.RspDownloadSlice
+	(*ReqDownloadSliceWrong)(nil),      // 27: protos.ReqDownloadSliceWrong
+	(*RspDownloadSliceWrong)(nil),      // 28: protos.RspDownloadSliceWrong
+	(*ReqDownloadSlicePause)(nil),      // 29: protos.ReqDownloadSlicePause
+	(*RspDownloadSlicePause)(nil),      // 30: protos.RspDownloadSlicePause
+	(*ReqReportDownloadResult)(nil),    // 31: protos.ReqReportDownloadResult
+	(*RspReportDownloadResult)(nil),    // 32: protos.RspReportDownloadResult
+	(*ReqReportTaskBP)(nil),            // 33: protos.ReqReportTaskBP
+	(*ReqRegisterNewPP)(nil),           // 34: protos.ReqRegisterNewPP
+	(*RspRegisterNewPP)(nil),           // 35: protos.RspRegisterNewPP
+	(*ReqActivatePP)(nil),              // 36: protos.ReqActivatePP
+	(*RspActivatePP)(nil),              // 37: protos.RspActivatePP
+	(*ReqActivatedPP)(nil),             // 38: protos.ReqActivatedPP
+	(*ReqActivatedSP)(nil),             // 39: protos.ReqActivatedSP
+	(*RspActivatedPP)(nil),             // 40: protos.RspActivatedPP
+	(*ReqUpdateStakePP)(nil),           // 41: protos.ReqUpdateStakePP
+	(*RspUpdateStakePP)(nil),           // 42: protos.RspUpdateStakePP
+	(*ReqUpdatedStakePP)(nil),          // 43: protos.ReqUpdatedStakePP
+	(*ReqUpdatedStakeSP)(nil),          // 44: protos.ReqUpdatedStakeSP
+	(*RspUpdatedStakePP)(nil),          // 45: protos.RspUpdatedStakePP
+	(*ReqDeactivatePP)(nil),            // 46: protos.ReqDeactivatePP
+	(*RspDeactivatePP)(nil),            // 47: protos.RspDeactivatePP
+	(*RspPPRegisteredToSP)(nil),        // 48: protos.RspPPRegisteredToSP
+	(*ReqUnbondingPP)(nil),             // 49: protos.ReqUnbondingPP
+	(*RspUnbondingPP)(nil),             // 50: protos.RspUnbondingPP
+	(*ReqDeactivatedPP)(nil),           // 51: protos.ReqDeactivatedPP
+	(*RspDeactivatedPP)(nil),           // 52: protos.RspDeactivatedPP
+	(*ReqUnbondingSP)(nil),             // 53: protos.ReqUnbondingSP
+	(*RspUnbondingSP)(nil),             // 54: protos.RspUnbondingSP
+	(*ReqDeactivatedSP)(nil),           // 55: protos.ReqDeactivatedSP
+	(*RspDeactivatedSP)(nil),           // 56: protos.RspDeactivatedSP
+	(*ReqPrepay)(nil),                  // 57: protos.ReqPrepay
+	(*RspPrepay)(nil),                  // 58: protos.RspPrepay
+	(*ReqPrepaid)(nil),                 // 59: protos.ReqPrepaid
+	(*RspPrepaid)(nil),                 // 60: protos.RspPrepaid
+	(*ReqDeleteFile)(nil),              // 61: protos.ReqDeleteFile
+	(*RspDeleteFile)(nil),              // 62: protos.RspDeleteFile
+	(*ReqFileSliceBackupNotice)(nil),   // 63: protos.ReqFileSliceBackupNotice
+	(*ReqReportBackupSliceResult)(nil), // 64: protos.ReqReportBackupSliceResult
+	(*RspReportBackupSliceResult)(nil), // 65: protos.RspReportBackupSliceResult
+	(*ReqBackupStatus)(nil),            // 66: protos.ReqBackupStatus
+	(*RspBackupStatus)(nil),            // 67: protos.RspBackupStatus
+	(*ReqTransferDownload)(nil),        // 68: protos.ReqTransferDownload
+	(*RspTransferDownload)(nil),        // 69: protos.RspTransferDownload
+	(*RspTransferDownloadResult)(nil),  // 70: protos.RspTransferDownloadResult
+	(*ReqTransferDownloadWrong)(nil),   // 71: protos.ReqTransferDownloadWrong
+	(*ReqGetHDInfo)(nil),               // 72: protos.ReqGetHDInfo
+	(*RspGetHDInfo)(nil),               // 73: protos.RspGetHDInfo
+	(*ReqDeleteSlice)(nil),             // 74: protos.ReqDeleteSlice
+	(*RspDeleteSlice)(nil),             // 75: protos.RspDeleteSlice
+	(*ReqLatencyCheck)(nil),            // 76: protos.ReqLatencyCheck
+	(*RspLatencyCheck)(nil),            // 77: protos.RspLatencyCheck
+	(*ReqBLSPublicKey)(nil),            // 78: protos.ReqBLSPublicKey
+	(*RspBPBLSPublicKey)(nil),          // 79: protos.RspBPBLSPublicKey
+	(*ReqBalance)(nil),                 // 80: protos.ReqBalance
+	(*RspBalance)(nil),                 // 81: protos.RspBalance
+	(*ReqTransaction)(nil),             // 82: protos.ReqTransaction
+	(*RspTransaction)(nil),             // 83: protos.RspTransaction
+	(*ReqBlockInfo)(nil),               // 84: protos.ReqBlockInfo
+	(*RspBlockInfo)(nil),               // 85: protos.RspBlockInfo
+	(*ReqBlockCheck)(nil),              // 86: protos.ReqBlockCheck
+	(*RspBlockCheck)(nil),              // 87: protos.RspBlockCheck
+	(*BlockCheckInfo)(nil),             // 88: protos.BlockCheckInfo
+	(*ReqDownloadTaskInfo)(nil),        // 89: protos.ReqDownloadTaskInfo
+	(*RspDownloadTaskInfo)(nil),        // 90: protos.RspDownloadTaskInfo
+	(*ReqClearDownloadTask)(nil),       // 91: protos.ReqClearDownloadTask
+	(*ReqShareLink)(nil),               // 92: protos.ReqShareLink
+	(*RspShareLink)(nil),               // 93: protos.RspShareLink
+	(*ReqShareFile)(nil),               // 94: protos.ReqShareFile
+	(*RspShareFile)(nil),               // 95: protos.RspShareFile
+	(*ReqDeleteShare)(nil),             // 96: protos.ReqDeleteShare
+	(*RspDeleteShare)(nil),             // 97: protos.RspDeleteShare
+	(*ReqGetShareFile)(nil),            // 98: protos.ReqGetShareFile
+	(*RspGetShareFile)(nil),            // 99: protos.RspGetShareFile
+	(*RelayMessage)(nil),               // 100: protos.RelayMessage
+	(*ReqTransferBLSSignature)(nil),    // 101: protos.ReqTransferBLSSignature
+	(*ReqReportNodeStatus)(nil),        // 102: protos.ReqReportNodeStatus
+	(*ReqGetPPStatus)(nil),             // 103: protos.ReqGetPPStatus
+	(*RspGetPPStatus)(nil),             // 104: protos.RspGetPPStatus
+	(*ReqGetWalletOz)(nil),             // 105: protos.ReqGetWalletOz
+	(*RspGetWalletOz)(nil),             // 106: protos.RspGetWalletOz
+	(*RspReportNodeStatus)(nil),        // 107: protos.RspReportNodeStatus
+	(*RspBadVersion)(nil),              // 108: protos.RspBadVersion
+	(*RspSpUnderMaintenance)(nil),      // 109: protos.RspSpUnderMaintenance
+	(*PPBaseInfo)(nil),                 // 110: protos.PPBaseInfo
+	(*Result)(nil),                     // 111: protos.Result
+	(*SPBaseInfo)(nil),                 // 112: protos.SPBaseInfo
+	(*FileInfo)(nil),                   // 113: protos.FileInfo
+	(*SliceNumAddr)(nil),               // 114: protos.SliceNumAddr
+	(*SliceOffsetInfo)(nil),            // 115: protos.SliceOffsetInfo
+	(UploadType)(0),                    // 116: protos.UploadType
+	(*SliceHashAddr)(nil),              // 117: protos.SliceHashAddr
+	(FileSortType)(0),                  // 118: protos.FileSortType
+	(*FileIndexes)(nil),                // 119: protos.FileIndexes
+	(*DownloadSliceInfo)(nil),          // 120: protos.DownloadSliceInfo
+	(DownloadWrongType)(0),             // 121: protos.DownloadWrongType
+	(*SliceStorageInfo)(nil),           // 122: protos.SliceStorageInfo
+	(HeartbeatType)(0),                 // 123: protos.HeartbeatType
+	(*ShareLinkInfo)(nil),              // 124: protos.ShareLinkInfo
+	(*CpuStat)(nil),                    // 125: protos.CpuStat
+	(*MemoryStat)(nil),                 // 126: protos.MemoryStat
+	(*DiskStat)(nil),                   // 127: protos.DiskStat
+	(*BandwidthStat)(nil),              // 128: protos.BandwidthStat
 }
 var file_sds_proto_depIdxs = []int32{
-	109, // 0: protos.ReqGetPPList.my_address:type_name -> protos.PPBaseInfo
-	109, // 1: protos.RspGetPPList.pp_list:type_name -> protos.PPBaseInfo
-	110, // 2: protos.RspGetPPList.result:type_name -> protos.Result
-	109, // 3: protos.ReqGetSPList.my_address:type_name -> protos.PPBaseInfo
-	111, // 4: protos.RspGetSPList.sp_list:type_name -> protos.SPBaseInfo
-	110, // 5: protos.RspGetSPList.result:type_name -> protos.Result
-	109, // 6: protos.ReqRegister.address:type_name -> protos.PPBaseInfo
-	109, // 7: protos.ReqRegister.my_address:type_name -> protos.PPBaseInfo
-	110, // 8: protos.RspRegister.result:type_name -> protos.Result
-	109, // 9: protos.ReqMining.address:type_name -> protos.PPBaseInfo
-	110, // 10: protos.RspMining.result:type_name -> protos.Result
-	112, // 11: protos.ReqUploadFile.file_info:type_name -> protos.FileInfo
-	109, // 12: protos.ReqUploadFile.my_address:type_name -> protos.PPBaseInfo
-	113, // 13: protos.RspUploadFile.pp_list:type_name -> protos.SliceNumAddr
-	110, // 14: protos.RspUploadFile.result:type_name -> protos.Result
-	113, // 15: protos.ReqUploadFileSlice.slice_num_addr:type_name -> protos.SliceNumAddr
-	114, // 16: protos.ReqUploadFileSlice.slice_info:type_name -> protos.SliceOffsetInfo
-	110, // 17: protos.RspUploadFileSlice.result:type_name -> protos.Result
-	113, // 18: protos.RspUploadFileSlice.slice_num_addr:type_name -> protos.SliceNumAddr
-	115, // 19: protos.ReqUploadSlicesWrong.upload_type:type_name -> protos.UploadType
-	109, // 20: protos.ReqUploadSlicesWrong.my_address:type_name -> protos.PPBaseInfo
-	109, // 21: protos.ReqUploadSlicesWrong.excluded_destinations:type_name -> protos.PPBaseInfo
-	116, // 22: protos.ReqUploadSlicesWrong.slices:type_name -> protos.SliceHashAddr
-	110, // 23: protos.RspUploadSlicesWrong.result:type_name -> protos.Result
-	115, // 24: protos.RspUploadSlicesWrong.upload_type:type_name -> protos.UploadType
-	116, // 25: protos.RspUploadSlicesWrong.slices:type_name -> protos.SliceHashAddr
-	113, // 26: protos.ReportUploadSliceResult.slice_num_addr:type_name -> protos.SliceNumAddr
-	110, // 27: protos.RspReportUploadSliceResult.result:type_name -> protos.Result
-	113, // 28: protos.RspReportUploadSliceResult.slice_num_addr:type_name -> protos.SliceNumAddr
-	117, // 29: protos.ReqFindMyFileList.file_type:type_name -> protos.FileSortType
-	112, // 30: protos.RspFindMyFileList.file_info:type_name -> protos.FileInfo
-	110, // 31: protos.RspFindMyFileList.result:type_name -> protos.Result
-	118, // 32: protos.ReqFileStorageInfo.file_indexes:type_name -> protos.FileIndexes
-	97,  // 33: protos.ReqFileStorageInfo.share_request:type_name -> protos.ReqGetShareFile
-	119, // 34: protos.RspFileStorageInfo.slice_info:type_name -> protos.DownloadSliceInfo
-	110, // 35: protos.RspFileStorageInfo.result:type_name -> protos.Result
-	118, // 36: protos.ReqDownloadFileWrong.file_indexes:type_name -> protos.FileIndexes
-	109, // 37: protos.ReqDownloadFileWrong.failed_pp_nodes:type_name -> protos.PPBaseInfo
-	114, // 38: protos.ReqDownloadSlice.slice_info:type_name -> protos.SliceOffsetInfo
-	114, // 39: protos.RspDownloadSlice.slice_info:type_name -> protos.SliceOffsetInfo
-	110, // 40: protos.RspDownloadSlice.result:type_name -> protos.Result
-	120, // 41: protos.ReqDownloadSliceWrong.type:type_name -> protos.DownloadWrongType
-	119, // 42: protos.RspDownloadSliceWrong.new_slice_info:type_name -> protos.DownloadSliceInfo
-	110, // 43: protos.RspDownloadSliceWrong.result:type_name -> protos.Result
-	110, // 44: protos.RspDownloadSlicePause.result:type_name -> protos.Result
-	119, // 45: protos.ReqReportDownloadResult.slice_info:type_name -> protos.DownloadSliceInfo
-	110, // 46: protos.RspReportDownloadResult.result:type_name -> protos.Result
-	119, // 47: protos.RspReportDownloadResult.slice_info:type_name -> protos.DownloadSliceInfo
-	109, // 48: protos.ReqReportTaskBP.reporter:type_name -> protos.PPBaseInfo
-	110, // 49: protos.RspRegisterNewPP.result:type_name -> protos.Result
-	109, // 50: protos.ReqActivatePP.pp_info:type_name -> protos.PPBaseInfo
-	110, // 51: protos.RspActivatePP.result:type_name -> protos.Result
-	110, // 52: protos.RspActivatedPP.result:type_name -> protos.Result
-	110, // 53: protos.RspUpdateStakePP.result:type_name -> protos.Result
-	110, // 54: protos.RspUpdatedStakePP.result:type_name -> protos.Result
-	110, // 55: protos.RspDeactivatePP.result:type_name -> protos.Result
-	110, // 56: protos.RspPPRegisteredToSP.result:type_name -> protos.Result
-	110, // 57: protos.RspUnbondingPP.result:type_name -> protos.Result
-	110, // 58: protos.RspDeactivatedPP.result:type_name -> protos.Result
-	110, // 59: protos.RspUnbondingSP.result:type_name -> protos.Result
-	110, // 60: protos.RspDeactivatedSP.result:type_name -> protos.Result
-	110, // 61: protos.RspPrepay.result:type_name -> protos.Result
-	110, // 62: protos.RspPrepaid.result:type_name -> protos.Result
-	110, // 63: protos.RspDeleteFile.result:type_name -> protos.Result
-	121, // 64: protos.ReqFileSliceBackupNotice.slice_storage_info:type_name -> protos.SliceStorageInfo
-	109, // 65: protos.ReqFileSliceBackupNotice.pp_info:type_name -> protos.PPBaseInfo
-	109, // 66: protos.ReqReportBackupSliceResult.pp_info:type_name -> protos.PPBaseInfo
-	110, // 67: protos.RspReportBackupSliceResult.result:type_name -> protos.Result
-	109, // 68: protos.ReqBackupStatus.address:type_name -> protos.PPBaseInfo
-	110, // 69: protos.RspBackupStatus.result:type_name -> protos.Result
-	116, // 70: protos.RspBackupStatus.pp_list:type_name -> protos.SliceHashAddr
-	109, // 71: protos.ReqTransferDownload.new_pp:type_name -> protos.PPBaseInfo
-	109, // 72: protos.ReqTransferDownload.original_pp:type_name -> protos.PPBaseInfo
-	121, // 73: protos.ReqTransferDownload.slice_storage_info:type_name -> protos.SliceStorageInfo
-	110, // 74: protos.RspTransferDownload.result:type_name -> protos.Result
-	110, // 75: protos.RspTransferDownloadResult.result:type_name -> protos.Result
-	109, // 76: protos.ReqTransferDownloadWrong.new_pp:type_name -> protos.PPBaseInfo
-	109, // 77: protos.ReqTransferDownloadWrong.original_pp:type_name -> protos.PPBaseInfo
-	121, // 78: protos.ReqTransferDownloadWrong.slice_storage_info:type_name -> protos.SliceStorageInfo
-	110, // 79: protos.RspDeleteSlice.result:type_name -> protos.Result
-	122, // 80: protos.ReqLatencyCheck.hb_type:type_name -> protos.HeartbeatType
-	122, // 81: protos.RspLatencyCheck.hb_type:type_name -> protos.HeartbeatType
-	5,   // 82: protos.RspBPBLSPublicKey.bp_info:type_name -> protos.ReqRegister
-	87,  // 83: protos.RspBlockCheck.block_list:type_name -> protos.BlockCheckInfo
-	110, // 84: protos.RspDownloadTaskInfo.result:type_name -> protos.Result
-	123, // 85: protos.RspShareLink.share_info:type_name -> protos.ShareLinkInfo
-	110, // 86: protos.RspShareLink.result:type_name -> protos.Result
-	110, // 87: protos.RspShareFile.result:type_name -> protos.Result
-	110, // 88: protos.RspDeleteShare.result:type_name -> protos.Result
-	97,  // 89: protos.RspGetShareFile.share_request:type_name -> protos.ReqGetShareFile
-	110, // 90: protos.RspGetShareFile.result:type_name -> protos.Result
-	112, // 91: protos.RspGetShareFile.file_info:type_name -> protos.FileInfo
-	124, // 92: protos.ReqReportNodeStatus.cpu:type_name -> protos.CpuStat
-	125, // 93: protos.ReqReportNodeStatus.memory:type_name -> protos.MemoryStat
-	126, // 94: protos.ReqReportNodeStatus.disk:type_name -> protos.DiskStat
-	127, // 95: protos.ReqReportNodeStatus.bandwidth:type_name -> protos.BandwidthStat
-	109, // 96: protos.ReqGetPPStatus.my_address:type_name -> protos.PPBaseInfo
-	110, // 97: protos.RspGetPPStatus.result:type_name -> protos.Result
-	110, // 98: protos.RspGetWalletOz.result:type_name -> protos.Result
-	110, // 99: protos.RspReportNodeStatus.result:type_name -> protos.Result
+	110, // 0: protos.ReqGetPPList.my_address:type_name -> protos.PPBaseInfo
+	110, // 1: protos.RspGetPPList.pp_list:type_name -> protos.PPBaseInfo
+	111, // 2: protos.RspGetPPList.result:type_name -> protos.Result
+	110, // 3: protos.ReqGetSPList.my_address:type_name -> protos.PPBaseInfo
+	112, // 4: protos.RspGetSPList.sp_list:type_name -> protos.SPBaseInfo
+	111, // 5: protos.RspGetSPList.result:type_name -> protos.Result
+	110, // 6: protos.ReqRegister.address:type_name -> protos.PPBaseInfo
+	110, // 7: protos.ReqRegister.my_address:type_name -> protos.PPBaseInfo
+	111, // 8: protos.RspRegister.result:type_name -> protos.Result
+	110, // 9: protos.ReqMining.address:type_name -> protos.PPBaseInfo
+	111, // 10: protos.RspMining.result:type_name -> protos.Result
+	113, // 11: protos.ReqUploadFile.file_info:type_name -> protos.FileInfo
+	110, // 12: protos.ReqUploadFile.my_address:type_name -> protos.PPBaseInfo
+	114, // 13: protos.RspUploadFile.pp_list:type_name -> protos.SliceNumAddr
+	111, // 14: protos.RspUploadFile.result:type_name -> protos.Result
+	114, // 15: protos.ReqUploadFileSlice.slice_num_addr:type_name -> protos.SliceNumAddr
+	115, // 16: protos.ReqUploadFileSlice.slice_info:type_name -> protos.SliceOffsetInfo
+	111, // 17: protos.RspUploadFileSlice.result:type_name -> protos.Result
+	114, // 18: protos.RspUploadFileSlice.slice_num_addr:type_name -> protos.SliceNumAddr
+	116, // 19: protos.ReqUploadSlicesWrong.upload_type:type_name -> protos.UploadType
+	110, // 20: protos.ReqUploadSlicesWrong.my_address:type_name -> protos.PPBaseInfo
+	110, // 21: protos.ReqUploadSlicesWrong.excluded_destinations:type_name -> protos.PPBaseInfo
+	117, // 22: protos.ReqUploadSlicesWrong.slices:type_name -> protos.SliceHashAddr
+	111, // 23: protos.RspUploadSlicesWrong.result:type_name -> protos.Result
+	116, // 24: protos.RspUploadSlicesWrong.upload_type:type_name -> protos.UploadType
+	117, // 25: protos.RspUploadSlicesWrong.slices:type_name -> protos.SliceHashAddr
+	114, // 26: protos.ReportUploadSliceResult.slice_num_addr:type_name -> protos.SliceNumAddr
+	111, // 27: protos.RspReportUploadSliceResult.result:type_name -> protos.Result
+	114, // 28: protos.RspReportUploadSliceResult.slice_num_addr:type_name -> protos.SliceNumAddr
+	118, // 29: protos.ReqFindMyFileList.file_type:type_name -> protos.FileSortType
+	113, // 30: protos.RspFindMyFileList.file_info:type_name -> protos.FileInfo
+	111, // 31: protos.RspFindMyFileList.result:type_name -> protos.Result
+	119, // 32: protos.ReqFileStorageInfo.file_indexes:type_name -> protos.FileIndexes
+	98,  // 33: protos.ReqFileStorageInfo.share_request:type_name -> protos.ReqGetShareFile
+	120, // 34: protos.RspFileStorageInfo.slice_info:type_name -> protos.DownloadSliceInfo
+	111, // 35: protos.RspFileStorageInfo.result:type_name -> protos.Result
+	119, // 36: protos.ReqDownloadFileWrong.file_indexes:type_name -> protos.FileIndexes
+	110, // 37: protos.ReqDownloadFileWrong.failed_pp_nodes:type_name -> protos.PPBaseInfo
+	115, // 38: protos.ReqDownloadSlice.slice_info:type_name -> protos.SliceOffsetInfo
+	115, // 39: protos.RspDownloadSlice.slice_info:type_name -> protos.SliceOffsetInfo
+	111, // 40: protos.RspDownloadSlice.result:type_name -> protos.Result
+	121, // 41: protos.ReqDownloadSliceWrong.type:type_name -> protos.DownloadWrongType
+	120, // 42: protos.RspDownloadSliceWrong.new_slice_info:type_name -> protos.DownloadSliceInfo
+	111, // 43: protos.RspDownloadSliceWrong.result:type_name -> protos.Result
+	111, // 44: protos.RspDownloadSlicePause.result:type_name -> protos.Result
+	120, // 45: protos.ReqReportDownloadResult.slice_info:type_name -> protos.DownloadSliceInfo
+	111, // 46: protos.RspReportDownloadResult.result:type_name -> protos.Result
+	120, // 47: protos.RspReportDownloadResult.slice_info:type_name -> protos.DownloadSliceInfo
+	110, // 48: protos.ReqReportTaskBP.reporter:type_name -> protos.PPBaseInfo
+	111, // 49: protos.RspRegisterNewPP.result:type_name -> protos.Result
+	110, // 50: protos.ReqActivatePP.pp_info:type_name -> protos.PPBaseInfo
+	111, // 51: protos.RspActivatePP.result:type_name -> protos.Result
+	111, // 52: protos.RspActivatedPP.result:type_name -> protos.Result
+	111, // 53: protos.RspUpdateStakePP.result:type_name -> protos.Result
+	111, // 54: protos.RspUpdatedStakePP.result:type_name -> protos.Result
+	111, // 55: protos.RspDeactivatePP.result:type_name -> protos.Result
+	111, // 56: protos.RspPPRegisteredToSP.result:type_name -> protos.Result
+	111, // 57: protos.RspUnbondingPP.result:type_name -> protos.Result
+	111, // 58: protos.RspDeactivatedPP.result:type_name -> protos.Result
+	111, // 59: protos.RspUnbondingSP.result:type_name -> protos.Result
+	111, // 60: protos.RspDeactivatedSP.result:type_name -> protos.Result
+	111, // 61: protos.RspPrepay.result:type_name -> protos.Result
+	111, // 62: protos.RspPrepaid.result:type_name -> protos.Result
+	111, // 63: protos.RspDeleteFile.result:type_name -> protos.Result
+	122, // 64: protos.ReqFileSliceBackupNotice.slice_storage_info:type_name -> protos.SliceStorageInfo
+	110, // 65: protos.ReqFileSliceBackupNotice.pp_info:type_name -> protos.PPBaseInfo
+	110, // 66: protos.ReqReportBackupSliceResult.pp_info:type_name -> protos.PPBaseInfo
+	111, // 67: protos.RspReportBackupSliceResult.result:type_name -> protos.Result
+	110, // 68: protos.ReqBackupStatus.address:type_name -> protos.PPBaseInfo
+	111, // 69: protos.RspBackupStatus.result:type_name -> protos.Result
+	117, // 70: protos.RspBackupStatus.pp_list:type_name -> protos.SliceHashAddr
+	110, // 71: protos.ReqTransferDownload.new_pp:type_name -> protos.PPBaseInfo
+	110, // 72: protos.ReqTransferDownload.original_pp:type_name -> protos.PPBaseInfo
+	122, // 73: protos.ReqTransferDownload.slice_storage_info:type_name -> protos.SliceStorageInfo
+	111, // 74: protos.RspTransferDownload.result:type_name -> protos.Result
+	111, // 75: protos.RspTransferDownloadResult.result:type_name -> protos.Result
+	110, // 76: protos.ReqTransferDownloadWrong.new_pp:type_name -> protos.PPBaseInfo
+	110, // 77: protos.ReqTransferDownloadWrong.original_pp:type_name -> protos.PPBaseInfo
+	122, // 78: protos.ReqTransferDownloadWrong.slice_storage_info:type_name -> protos.SliceStorageInfo
+	111, // 79: protos.RspDeleteSlice.result:type_name -> protos.Result
+	123, // 80: protos.ReqLatencyCheck.hb_type:type_name -> protos.HeartbeatType
+	123, // 81: protos.RspLatencyCheck.hb_type:type_name -> protos.HeartbeatType
+	6,   // 82: protos.RspBPBLSPublicKey.bp_info:type_name -> protos.ReqRegister
+	88,  // 83: protos.RspBlockCheck.block_list:type_name -> protos.BlockCheckInfo
+	111, // 84: protos.RspDownloadTaskInfo.result:type_name -> protos.Result
+	124, // 85: protos.RspShareLink.share_info:type_name -> protos.ShareLinkInfo
+	111, // 86: protos.RspShareLink.result:type_name -> protos.Result
+	111, // 87: protos.RspShareFile.result:type_name -> protos.Result
+	111, // 88: protos.RspDeleteShare.result:type_name -> protos.Result
+	98,  // 89: protos.RspGetShareFile.share_request:type_name -> protos.ReqGetShareFile
+	111, // 90: protos.RspGetShareFile.result:type_name -> protos.Result
+	113, // 91: protos.RspGetShareFile.file_info:type_name -> protos.FileInfo
+	125, // 92: protos.ReqReportNodeStatus.cpu:type_name -> protos.CpuStat
+	126, // 93: protos.ReqReportNodeStatus.memory:type_name -> protos.MemoryStat
+	127, // 94: protos.ReqReportNodeStatus.disk:type_name -> protos.DiskStat
+	128, // 95: protos.ReqReportNodeStatus.bandwidth:type_name -> protos.BandwidthStat
+	110, // 96: protos.ReqGetPPStatus.my_address:type_name -> protos.PPBaseInfo
+	111, // 97: protos.RspGetPPStatus.result:type_name -> protos.Result
+	111, // 98: protos.RspGetWalletOz.result:type_name -> protos.Result
+	111, // 99: protos.RspReportNodeStatus.result:type_name -> protos.Result
 	100, // [100:100] is the sub-list for method output_type
 	100, // [100:100] is the sub-list for method input_type
 	100, // [100:100] is the sub-list for extension type_name
@@ -11105,7 +11173,7 @@ func file_sds_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_sds_proto_rawDesc,
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   108,
 			NumExtensions: 0,
 			NumServices:   0,

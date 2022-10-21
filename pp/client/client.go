@@ -4,6 +4,7 @@ import (
 	"net"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/client/cf"
@@ -19,11 +20,19 @@ type Offline struct {
 	NetworkAddress string
 }
 
+// SpMaintenanceRecords
+type MaintenanceRecordsBySp struct {
+	RecordTimes []int64
+}
+
 // OfflineChan OfflineChan
 var OfflineChan = make(chan *Offline, 2)
 
 // SPConn super node connection
 var SPConn *cf.ClientConn
+
+// SPMaintenanceMap stores records of SpUnderMaintenance, K - SpP2pAddress, V - list of MaintenanceRecord
+var SPMaintenanceMap = utils.NewAutoCleanMap(time.Duration(setting.Config.AllowableIntervalSpMaintenance) * time.Second)
 
 // PPConn current connected pp node
 var PPConn *cf.ClientConn
@@ -125,4 +134,26 @@ func GetConnectionName(conn core.WriteCloser) string {
 		return conn.(*cf.ClientConn).GetName()
 	}
 	return ""
+}
+
+// RecordSpMaintenance, return boolean flag of switching to new SP
+func RecordSpMaintenance(spP2pAddress string, recordTime int64) bool {
+	if records, ok := SPMaintenanceMap.Load(spP2pAddress); ok {
+		recordsBySp := records.(*MaintenanceRecordsBySp)
+		if len(recordsBySp.RecordTimes) >= int(setting.Config.LimitSpMaintenance)-1 {
+			// if exceed limit of MaintenanceRecords, delete record and return true
+			SPMaintenanceMap.Delete(spP2pAddress)
+			return true
+		}
+		recordsBySp.RecordTimes = append(recordsBySp.RecordTimes, recordTime)
+		SPMaintenanceMap.Store(spP2pAddress, recordsBySp)
+		utils.DebugLogf("RecordSpMaintenance of SP[%v] appended, current size is %v",
+			spP2pAddress, len(recordsBySp.RecordTimes))
+		return false
+	}
+	SPMaintenanceMap.Store(spP2pAddress, &MaintenanceRecordsBySp{
+		[]int64{recordTime},
+	})
+	utils.DebugLogf("RecordSpMaintenance of SP[%v] appended, current size is 1", spP2pAddress)
+	return false
 }
