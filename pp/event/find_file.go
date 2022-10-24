@@ -10,7 +10,7 @@ import (
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
@@ -19,7 +19,7 @@ import (
 // FindMyFileList
 func FindFileList(ctx context.Context, fileName string, walletAddr string, pageId uint64, keyword string, fileType int, isUp bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(ctx, requests.FindFileListData(fileName, walletAddr, pageId, keyword,
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.FindFileListData(fileName, walletAddr, pageId, keyword,
 			protos.FileSortType(fileType), isUp), header.ReqFindMyFileList)
 		storeResponseWriter(ctx, w)
 	} else {
@@ -30,7 +30,7 @@ func FindFileList(ctx context.Context, fileName string, walletAddr string, pageI
 // ReqFindMyFileList ReqFindMyFileList
 func ReqFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("+++++++++++++++++++++++++++++++++++++++++++++++++++")
-	peers.TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
+	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
 // RspFindMyFileList
@@ -51,7 +51,7 @@ func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	if target.P2PAddress != setting.P2PAddress {
-		peers.TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
+		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return
 	}

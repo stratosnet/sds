@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
@@ -77,5 +76,5 @@ func importWallet(w http.ResponseWriter, request *http.Request) {
 		},
 	}
 	w.Write(httpserv.NewJson(data1, setting.SUCCESSCode, "successfully import wallet").ToBytes())
-	serv.Login(context.Background(), setting.WalletAddress, password)
+	Login(context.Background(), setting.WalletAddress, password)
 }

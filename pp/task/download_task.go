@@ -16,8 +16,8 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
-	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
@@ -205,13 +205,13 @@ func DeleteDownloadTask(fileHash, walletAddress, fileReqId string) {
 }
 
 // CleanDownloadFileAndConnMap
-func CleanDownloadFileAndConnMap(fileHash, fileReqId string) {
+func CleanDownloadFileAndConnMap(ctx context.Context, fileHash, fileReqId string) {
 	DownloadSpeedOfProgress.Delete(fileHash + fileReqId)
 	if f, ok := DownloadFileMap.Load(fileHash + fileReqId); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
 		for _, slice := range fInfo.SliceInfo {
 			DownloadSliceProgress.Delete(slice.SliceStorageInfo.SliceHash + fileReqId)
-			client.DownloadConnMap.Delete(fileHash + slice.StoragePpInfo.P2PAddress + fileReqId)
+			p2pserver.GetP2pServer(ctx).DeleteDownloadConn(fileHash + slice.StoragePpInfo.P2PAddress + fileReqId)
 		}
 	}
 	DownloadFileMap.Delete(fileHash + fileReqId)
@@ -391,7 +391,7 @@ func CheckDownloadOver(ctx context.Context, fileHash string) (bool, float32) {
 				filePath := file.GetDownloadTmpPath(fileHash, fName, fInfo.SavePath)
 				if CheckFileOver(ctx, fileHash, filePath) {
 					DoneDownload(ctx, fileHash, fName, fInfo.SavePath)
-					CleanDownloadFileAndConnMap(fileHash, LOCAL_REQID)
+					CleanDownloadFileAndConnMap(ctx, fileHash, LOCAL_REQID)
 					return true, 1.0
 				}
 				reCount = 5
@@ -408,13 +408,13 @@ func CheckDownloadOver(ctx context.Context, fileHash string) (bool, float32) {
 
 }
 
-func CheckRemoteDownloadOver(fileHash, fileReqId string) {
+func CheckRemoteDownloadOver(ctx context.Context, fileHash, fileReqId string) {
 
 	key := fileHash + fileReqId
 	size := file.GetRemoteFileInfo(key, fileReqId)
 	utils.DebugLog("size:", string(size))
 	file.SetRemoteFileResult(key, rpc.Result{Return: rpc.SUCCESS})
-	CleanDownloadFileAndConnMap(fileHash, fileReqId)
+	CleanDownloadFileAndConnMap(ctx, fileHash, fileReqId)
 }
 
 // DownloadProgress
@@ -430,7 +430,7 @@ func DownloadProgress(ctx context.Context, fileHash, fileReqId string, size uint
 		// all bytes downloaded
 		if sp.DownloadedSize >= sp.TotalSize {
 			if file.IsFileRpcRemote(fileHash + fileReqId) {
-				CheckRemoteDownloadOver(fileHash, fileReqId)
+				CheckRemoteDownloadOver(ctx, fileHash, fileReqId)
 			} else {
 				go CheckDownloadOver(ctx, fileHash)
 			}

@@ -8,7 +8,7 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	ppTypes "github.com/stratosnet/sds/pp/types"
@@ -41,7 +41,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	formatRspGetPPStatus(ctx, target)
 
 	if target.InitPpList {
-		peers.InitPPList(ctx)
+		network.GetPeer(ctx).InitPPList(ctx)
 	}
 }
 

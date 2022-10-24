@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
@@ -156,7 +156,7 @@ func verifyToken(token string) bool {
 }
 
 // GetTrafficData fetch the traffic data from the file
-func (api *monitorApi) GetTrafficData(param ParamTrafficInfo) (*MonitorResult, error) {
+func (api *monitorApi) GetTrafficData(ctx context.Context, param ParamTrafficInfo) (*MonitorResult, error) {
 	if _, found := subscribedIds.Load(param.SubId); !found {
 		return nil, errors.New("client hasn't subscribed to the service")
 	}
@@ -208,37 +208,41 @@ func getDiskUsage() int64 {
 }
 
 // GetDiskUsage the size of files in setting.Config.StorehousePath, not the disk usage of the computer
-func (api *monitorApi) GetDiskUsage(param ParamMonitor) (*MonitorResult, error) {
+func (api *monitorApi) GetDiskUsage(ctx context.Context, param ParamMonitor) (*MonitorResult, error) {
 	if _, found := subscribedIds.Load(param.SubId); !found {
 		return nil, errors.New("client hasn't subscribed to the service")
 	}
 
 	return &MonitorResult{Return: "0", MessageType: MSG_GET_DIST_USAGE_RESPONSE, DiskUsage: &DiskUsage{DataHost: getDiskUsage()}}, nil
 }
-func getPeerList() ([]PeerInfo, int64) {
-	pl, t := peers.GetPPList(context.Background())
-	var peer PeerInfo
-	var peers []PeerInfo
-	var i int64
-	for i = 0; i < t; i++ {
-		peer = PeerInfo{
-			NetworkAddress: pl[i].NetworkAddress,
-			P2pAddress:     pl[i].P2pAddress,
-			Status:         pl[i].Status,
-			Latency:        pl[i].Latency,
-			Connection:     "tcp4",
+func getPeerList(ctx context.Context) ([]PeerInfo, int64) {
+	if ps := p2pserver.GetP2pServer(ctx); ps != nil {
+		pl, t, _ := ps.GetPPList(ctx)
+		var peer PeerInfo
+		var peers []PeerInfo
+		var i int64
+		for i = 0; i < t; i++ {
+			peer = PeerInfo{
+				NetworkAddress: pl[i].NetworkAddress,
+				P2pAddress:     pl[i].P2pAddress,
+				Status:         pl[i].Status,
+				Latency:        pl[i].Latency,
+				Connection:     "tcp4",
+			}
+			peers = append(peers, peer)
 		}
-		peers = append(peers, peer)
+		return peers, t
 	}
-	return peers, i
+	return nil, 0
+
 }
 
 // GetPeerList the peer pp list
-func (api *monitorApi) GetPeerList(param ParamMonitor) (*MonitorResult, error) {
+func (api *monitorApi) GetPeerList(ctx context.Context, param ParamMonitor) (*MonitorResult, error) {
 	if _, found := subscribedIds.Load(param.SubId); !found {
 		return nil, errors.New("client hasn't subscribed to the service")
 	}
-	peers, t := getPeerList()
+	peers, t := getPeerList(ctx)
 	return &MonitorResult{
 		Return:      "0",
 		MessageType: MSG_GET_PEER_LIST,
@@ -247,7 +251,7 @@ func (api *monitorApi) GetPeerList(param ParamMonitor) (*MonitorResult, error) {
 }
 
 // GetOnlineState if the pp node is online
-func (api *monitorApi) GetOnlineState(param ParamMonitor) (*MonitorResult, error) {
+func (api *monitorApi) GetOnlineState(ctx context.Context, param ParamMonitor) (*MonitorResult, error) {
 	if _, found := subscribedIds.Load(param.SubId); !found {
 		return nil, errors.New("client hasn't subscribed to the service")
 	}
@@ -259,7 +263,7 @@ func (api *monitorApi) GetOnlineState(param ParamMonitor) (*MonitorResult, error
 }
 
 // GetNodeDetail the deatils of the node
-func (api *monitorApi) GetNodeDetails(param ParamMonitor) (*MonitorResult, error) {
+func (api *monitorApi) GetNodeDetails(ctx context.Context, param ParamMonitor) (*MonitorResult, error) {
 	if _, found := subscribedIds.Load(param.SubId); !found {
 		return nil, errors.New("client hasn't subscribed to the service")
 	}
@@ -296,7 +300,7 @@ func (api *monitorApi) Subscription(ctx context.Context, token string) (*rpc.Sub
 		for {
 			select {
 			case ti := <-trafficInfo:
-				peers, t := getPeerList()
+				peers, t := getPeerList(ctx)
 				result := &MonitorNotificationResult{
 					TrafficInfo: &ti,
 					OnlineState: &OnlineState{Online: setting.OnlineTime != 0, Since: setting.OnlineTime},

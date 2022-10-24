@@ -8,7 +8,7 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 )
@@ -16,7 +16,7 @@ import (
 // RegisterNewPP P-SP P register to become PP
 func RegisterNewPP(ctx context.Context) {
 	if setting.CheckLogin() {
-		peers.SendMessageToSPServer(ctx, requests.ReqRegisterNewPPData(), header.ReqRegisterNewPP)
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqRegisterNewPPData(), header.ReqRegisterNewPP)
 	}
 }
 

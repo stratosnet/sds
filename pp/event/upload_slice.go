@@ -17,9 +17,8 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
-	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
@@ -29,7 +28,8 @@ import (
 
 var (
 	// ProgressMap required by API
-	ProgressMap = &sync.Map{}
+	ProgressMap             = &sync.Map{}
+	mutexHandleSendCostTime = &sync.Mutex{}
 	//// Maps to record uploading stats
 	PacketIdMap       = &sync.Map{} // K: reqId, V: TaskSlice{tkId+sliceNum, up/down}
 	upSendCostTimeMap = &upSendCostTime{
@@ -77,7 +77,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 				Msg:   "missing signature(s)",
 			},
 		}
-		peers.SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
+		p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
 		return
 	}
 	// verify addresses and signatures
@@ -88,7 +88,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 				Msg:   err.Error(),
 			},
 		}
-		peers.SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
+		p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
 		return
 	}
 	if target.SliceNumAddr.PpInfo.P2PAddress != setting.P2PAddress {
@@ -98,7 +98,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 				Msg:   "mismatch between p2p address in the request and node p2p address.",
 			},
 		}
-		peers.SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
+		p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
 		return
 	}
 
@@ -111,7 +111,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	}
 	upRecvCostTimeMap.dataMap.Store(tkSlice, totalCostTime)
 	upRecvCostTimeMap.mux.Unlock()
-	peers.SendMessage(ctx, conn, requests.UploadSpeedOfProgressData(target.FileHash, uint64(len(target.Data))), header.UploadSpeedOfProgress)
+	p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.UploadSpeedOfProgressData(target.FileHash, uint64(len(target.Data))), header.UploadSpeedOfProgress)
 
 	if !task.SaveUploadFile(&target) {
 		// save failed, not handling yet
@@ -124,13 +124,13 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		utils.DebugLog("the slice upload finished", target.SliceInfo.SliceHash)
 		// respond to PP in case the size is correct but actually not success
 		if utils.CalcSliceHash(file.GetSliceData(target.SliceInfo.SliceHash), target.FileHash, target.SliceNumAddr.SliceNumber) == target.SliceInfo.SliceHash {
-			peers.SendMessage(ctx, conn, requests.RspUploadFileSliceData(&target), header.RspUploadFileSlice)
+			p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspUploadFileSliceData(&target), header.RspUploadFileSlice)
 			// report upload result to SP
 
-			_, newCtx := peers.CreateNewContextPacketId(ctx)
+			_, newCtx := p2pserver.CreateNewContextPacketId(ctx)
 			utils.DebugLog("ReqReportUploadSliceResultDataPP reqID =========", core.GetReqIdFromContext(newCtx))
 			reportResultReq := requests.ReqReportUploadSliceResultDataPP(&target, totalCostTime)
-			peers.SendMessageToSPServer(newCtx, reportResultReq, header.ReqReportUploadSliceResult)
+			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(newCtx, reportResultReq, header.ReqReportUploadSliceResult)
 			metrics.StoredSliceCount.WithLabelValues("upload").Inc()
 			instantInboundSpeed := float64(target.SliceSize) / math.Max(float64(totalCostTime), 1)
 			metrics.InboundSpeed.WithLabelValues(reportResultReq.OpponentP2PAddress).Set(instantInboundSpeed)
@@ -172,7 +172,7 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		utils.DebugLogf("ctStat is %v", ctStat)
 		if ctStat.PacketCount == 0 && ctStat.TotalCostTime > 0 {
 			reportReq := requests.ReqReportUploadSliceResultData(&target, ctStat.TotalCostTime)
-			peers.SendMessageToSPServer(ctx, reportReq, header.ReqReportUploadSliceResult)
+			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, reportReq, header.ReqReportUploadSliceResult)
 			instantOutboundSpeed := float64(target.SliceSize) / math.Max(float64(ctStat.TotalCostTime), 1)
 			metrics.OutboundSpeed.WithLabelValues(reportReq.OpponentP2PAddress).Set(instantOutboundSpeed)
 
@@ -247,7 +247,7 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 	if tkDataLen <= setting.MAXDATA {
 		tk.SliceOffsetInfo.SliceOffset.SliceOffsetStart = 0
 
-		packetId, newCtx := peers.CreateNewContextPacketId(ctx)
+		packetId, newCtx := p2pserver.CreateNewContextPacketId(ctx)
 		PacketIdMap.Store(packetId, tkSlice)
 		utils.DebugLogf("PacketIdMap.Store <==(%v, %v)", packetId, tkSlice)
 		ctStat.PacketCount = ctStat.PacketCount + 1
@@ -276,7 +276,7 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 			},
 			SpP2pAddress: tk.SpP2pAddress,
 		}
-		packetId, newCtx := peers.CreateNewContextPacketId(ctx)
+		packetId, newCtx := p2pserver.CreateNewContextPacketId(ctx)
 		PacketIdMap.Store(packetId, tkSlice)
 		utils.DebugLogf("PacketIdMap.Store <==(%v, %v)", packetId, tkSlice)
 		upSendCostTimeMap.mux.Lock()
@@ -306,30 +306,49 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 	}
 }
 
+func writeReqUploadFileSliceHook(packetId, costTime int64) {
+	if costTime > 0 && packetId > 0 {
+		utils.DebugLogf("received report from WritePacket: %d %d", packetId, costTime)
+		HandleSendPacketCostTime(packetId, costTime)
+	}
+}
+
+func setWriteHook(conn *cf.ClientConn) {
+	if conn != nil {
+		var hooks []cf.WriteHook
+		hook := cf.WriteHook{
+			Message: header.ReqUploadFileSlice,
+			Fn:      HandleSendPacketCostTime,
+		}
+		hooks = append(hooks, hook)
+		conn.SetWriteHook(hooks)
+	}
+}
+
 func sendSlice(ctx context.Context, pb proto.Message, fileHash, p2pAddress, networkAddress string) error {
 	pp.DebugLog(ctx, "sendSlice(pb proto.Message, fileHash, p2pAddress, networkAddress string)",
 		fileHash, p2pAddress, networkAddress)
 
 	key := fileHash + p2pAddress
 
-	if c, ok := client.UpConnMap.Load(key); ok {
-		conn := c.(*cf.ClientConn)
-		err := peers.SendMessage(ctx, conn, pb, header.ReqUploadFileSlice)
+	if conn, ok := p2pserver.GetP2pServer(ctx).LoadUploadConn(key); ok {
+		setWriteHook(conn)
+		err := p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, pb, header.ReqUploadFileSlice)
 		if err == nil {
 			pp.DebugLog(ctx, "SendMessage(conn, pb, header.ReqUploadFileSlice) ", conn)
 			return nil
 		}
 	}
 
-	conn, err := client.NewClient(networkAddress, false)
+	conn, err := p2pserver.GetP2pServer(ctx).NewClient(ctx, networkAddress, false)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create connection with "+networkAddress)
 	}
-
-	err = peers.SendMessage(ctx, conn, pb, header.ReqUploadFileSlice)
+	setWriteHook(conn)
+	err = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, pb, header.ReqUploadFileSlice)
 	if err == nil {
 		pp.DebugLog(ctx, "SendMessage(conn, pb, header.ReqUploadFileSlice) ", conn)
-		client.UpConnMap.Store(key, conn)
+		p2pserver.GetP2pServer(ctx).StoreUploadConn(key, conn)
 	} else {
 		pp.ErrorLog(ctx, "Fail to send upload slice request to "+networkAddress)
 	}
@@ -356,7 +375,7 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 	ProgressMap.Store(target.FileHash, p)
 	if progress.HasUpload >= progress.Total {
 		task.UploadProgressMap.Delete(target.FileHash)
-		task.CleanUpConnMap(target.FileHash)
+		p2pserver.GetP2pServer(ctx).CleanUpConnMap(target.FileHash)
 		ScheduleReqBackupStatus(ctx, target.FileHash)
 		if file.IsFileRpcRemote(target.FileHash) {
 			file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: rpc.SUCCESS})
@@ -426,10 +445,12 @@ func verifyRspUploadSliceSign(target *protos.RspUploadFileSlice) error {
 	return nil
 }
 
-func HandleSendPacketCostTime(report core.WritePacketCostTime) {
-	packetId := report.PacketId
-	costTime := report.CostTime
-
+func HandleSendPacketCostTime(packetId, costTime int64) {
+	if packetId <= 0 || costTime <= 0 {
+		return
+	}
+	mutexHandleSendCostTime.Lock()
+	defer mutexHandleSendCostTime.Unlock()
 	// get record by reqId
 	if val, ok := PacketIdMap.Load(packetId); ok {
 		utils.DebugLogf("get packetId[%v] from PacketIdMap, success", packetId)
@@ -442,7 +463,6 @@ func HandleSendPacketCostTime(report core.WritePacketCostTime) {
 			go handleUploadSend(tkSlice, costTime)
 		} else {
 			go handleDownloadSend(tkSlice, costTime)
-
 		}
 	}
 }

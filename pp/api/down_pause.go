@@ -29,7 +29,7 @@ func downPause(w http.ResponseWriter, request *http.Request) {
 			}
 			list = append(list, l)
 			if val, ok := setting.DownloadTaskIDMap.Load(f.(string)); ok {
-				event.DownloadSlicePause(val.(string), uuid.New().String(), w)
+				event.DownloadSlicePause(request.Context(), val.(string), uuid.New().String(), w)
 			}
 		}
 		result := make(map[string][]*pause, 0)

@@ -8,8 +8,8 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/client"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/network"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
@@ -43,13 +43,14 @@ func Activate(ctx context.Context, amount utiltypes.Coin, fee utiltypes.Coin, ga
 		}
 	}
 	var logstring string
-	if client.SPConn != nil {
-		logstring = fmt.Sprintf("Sending activate message to SP: %s, from: %s", client.SPConn.GetName(), activateReq.PpInfo.P2PAddress)
+	if p2pserver.GetP2pServer(ctx).SpConnValid() {
+		logstring = fmt.Sprintf("Sending activate message to SP: %s, from: %s", p2pserver.GetP2pServer(ctx).GetSpName(), activateReq.PpInfo.P2PAddress)
 	} else {
 		logstring = fmt.Sprintf("Sending activate message to SP: %s, from: %s", "[no connected sp]", activateReq.PpInfo.P2PAddress)
 	}
 	utils.Log(logstring)
-	peers.SendMessageToSPServer(ctx, activateReq, header.ReqActivatePP)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, activateReq, header.ReqActivatePP)
+
 	return nil
 }
 
@@ -101,6 +102,6 @@ func RspActivated(ctx context.Context, conn core.WriteCloser) {
 
 	// if autorun = true, bond pp to sp
 	if setting.IsAuto && !setting.IsLoginToSP {
-		peers.RegisterToSP(ctx, true)
+		network.GetPeer(ctx).RegisterToSP(ctx, true)
 	}
 }

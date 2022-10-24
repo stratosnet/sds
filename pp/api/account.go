@@ -1,4 +1,4 @@
-package serv
+package api
 
 import (
 	"context"
@@ -8,8 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/event"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
@@ -130,7 +129,7 @@ func Login(ctx context.Context, walletAddress, password string) error {
 			setting.SetConfig("wallet_address", walletAddress)
 			setting.SetConfig("wallet_password", password)
 			setting.WalletAddress = walletAddress
-			peers.InitPeer(ctx, event.RegisterEventHandle)
+			network.GetPeer(ctx).InitPeer(ctx)
 			return nil
 		}
 		pp.ErrorLog(ctx, "wrong password")

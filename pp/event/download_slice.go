@@ -10,19 +10,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/stratosnet/sds/metrics"
 	"github.com/google/uuid"
+	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/metrics"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/utils/types"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
@@ -61,6 +60,27 @@ type QueuedDownloadReportToSP struct {
 	response *protos.RspDownloadSlice
 }
 
+func setWriteHookForRspDownloadSlice(conn core.WriteCloser) {
+	switch conn.(type) {
+	case *core.ServerConn:
+		hook := core.WriteHook{
+			Message: header.RspDownloadSlice,
+			Fn:      HandleSendPacketCostTime,
+		}
+		var hooks []core.WriteHook
+		hooks = append(hooks, hook)
+		conn.(*core.ServerConn).SetWriteHook(hooks)
+	case *cf.ClientConn:
+		hook := cf.WriteHook{
+			Message: header.RspDownloadSlice,
+			Fn:      HandleSendPacketCostTime,
+		}
+		var hooks []cf.WriteHook
+		hooks = append(hooks, hook)
+		conn.(*cf.ClientConn).SetWriteHook(hooks)
+	}
+}
+
 // ReqDownloadSlice download slice PP-storagePP
 func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("ReqDownloadSlice reqID =========", core.GetReqIdFromContext(ctx))
@@ -68,12 +88,12 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqDownloadSlice
 	if requests.UnmarshalData(ctx, &target) {
 		rsp := requests.RspDownloadSliceData(&target)
-
+		setWriteHookForRspDownloadSlice(conn)
 		if task.DownloadSliceTaskMap.HashKey(target.TaskId + target.SliceInfo.SliceHash) {
 			rsp.Data = nil
 			rsp.Result.State = protos.ResultState_RES_FAIL
 			rsp.Result.Msg = "duplicate request for the same slice in the same download task"
-			peers.SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
+			p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
 			return
 		}
 
@@ -81,7 +101,7 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 			rsp.Data = nil
 			rsp.Result.State = protos.ResultState_RES_FAIL
 			rsp.Result.Msg = "empty signature"
-			peers.SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
+			p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
 			return
 		}
 
@@ -89,7 +109,7 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 			rsp.Data = nil
 			rsp.Result.State = protos.ResultState_RES_FAIL
 			rsp.Result.Msg = "signature validation failed"
-			peers.SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
+			p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
 			return
 		}
 
@@ -97,7 +117,7 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 			utils.DebugLog("cannot find slice, sliceHash: ", target.SliceInfo.SliceHash)
 			rsp.Result.State = protos.ResultState_RES_FAIL
 			rsp.Result.Msg = LOSE_SLICE_MSG
-			peers.SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
+			p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
 			return
 		}
 
@@ -134,7 +154,7 @@ func splitSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlic
 
 		if dataEnd < dataLen {
 			utils.DebugLog("reqID-"+strconv.FormatUint(dataStart, 10)+" =========", strconv.FormatInt(core.GetReqIdFromContext(newCtx), 10))
-			peers.SendMessage(newCtx, conn, requests.RspDownloadSliceDataSplit(rsp, dataStart, dataEnd, offsetStart, offsetEnd,
+			p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspDownloadSliceDataSplit(rsp, dataStart, dataEnd, offsetStart, offsetEnd,
 				rsp.SliceInfo.SliceOffset.SliceOffsetStart, rsp.SliceInfo.SliceOffset.SliceOffsetEnd, false), header.RspDownloadSlice)
 			dataStart += setting.MAXDATA
 			dataEnd += setting.MAXDATA
@@ -142,7 +162,7 @@ func splitSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlic
 			offsetEnd += setting.MAXDATA
 		} else {
 			utils.DebugLog("reqID-"+strconv.FormatUint(dataStart, 10)+" =========", strconv.FormatInt(core.GetReqIdFromContext(newCtx), 10))
-			peers.SendMessage(newCtx, conn, requests.RspDownloadSliceDataSplit(rsp, dataStart, 0, offsetStart, 0,
+			p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspDownloadSliceDataSplit(rsp, dataStart, 0, offsetStart, 0,
 				rsp.SliceInfo.SliceOffset.SliceOffsetStart, rsp.SliceInfo.SliceOffset.SliceOffsetEnd, true), header.RspDownloadSlice)
 			return
 		}
@@ -150,7 +170,7 @@ func splitSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlic
 }
 
 func prepareSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlice, tkSliceUID string) (int64, context.Context) {
-	packetId, newCtx := peers.CreateNewContextPacketId(ctx)
+	packetId, newCtx := p2pserver.CreateNewContextPacketId(ctx)
 	tkSlice := TaskSlice{
 		TkSliceUID: tkSliceUID,
 		IsUpload:   false,
@@ -257,7 +277,7 @@ func receiveSliceAndProgress(ctx context.Context, target *protos.RspDownloadSlic
 	} else {
 		utils.DebugLog("Download failed: not able to write to the target file.")
 		file.CloseDownloadSession(fInfo.FileHash + fInfo.ReqId)
-		task.CleanDownloadFileAndConnMap(fInfo.FileHash, fInfo.ReqId)
+		task.CleanDownloadFileAndConnMap(ctx, fInfo.FileHash, fInfo.ReqId)
 	}
 }
 
@@ -344,13 +364,13 @@ func videoCacheKeep(fileHash, taskID string) {
 func SendReportDownloadResult(ctx context.Context, target *protos.RspDownloadSlice, costTime int64, isPP bool) *protos.ReqReportDownloadResult {
 	pp.DebugLog(ctx, "ReportDownloadResult report result target.fileHash = ", target.FileHash)
 	req := requests.ReqReportDownloadResultData(target, costTime, isPP)
-	peers.SendMessageDirectToSPOrViaPP(ctx, req, header.ReqReportDownloadResult)
+	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqReportDownloadResult)
 	return req
 }
 
 // ReportDownloadResult  P-SP OR PP-SP
-func SendReportStreamingResult(target *protos.RspDownloadSlice, isPP bool) {
-	peers.SendMessageToSPServer(context.Background(), requests.ReqReportStreamResultData(target, isPP), header.ReqReportDownloadResult)
+func SendReportStreamingResult(ctx context.Context, target *protos.RspDownloadSlice, isPP bool) {
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqReportStreamResultData(target, isPP), header.ReqReportDownloadResult)
 }
 
 // DownloadFileSlice
@@ -397,25 +417,24 @@ func SendReqDownloadSlice(ctx context.Context, fileHash string, sliceInfo *proto
 	networkAddress := sliceInfo.StoragePpInfo.NetworkAddress
 	key := fileHash + sliceInfo.StoragePpInfo.P2PAddress + fileReqId
 
-	if c, ok := client.DownloadConnMap.Load(key); ok {
-		conn := c.(*cf.ClientConn)
-		err := peers.SendMessage(ctx, conn, req, header.ReqDownloadSlice)
+	if conn, ok := p2pserver.GetP2pServer(ctx).LoadDownloadConn(key); ok {
+		err := p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, req, header.ReqDownloadSlice)
 		if err == nil {
 			pp.DebugLog(ctx, "Send download slice request to ", networkAddress)
 			return
 		}
 	}
 
-	if conn, ok := client.ConnMap[networkAddress]; ok {
-		err := peers.SendMessage(ctx, conn, req, header.ReqDownloadSlice)
+	if conn, ok := p2pserver.GetP2pServer(ctx).GetClientConn(networkAddress); ok {
+		err := p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, req, header.ReqDownloadSlice)
 		if err == nil {
 			pp.DebugLog(ctx, "Send download slice request to ", networkAddress)
-			client.DownloadConnMap.Store(key, conn)
+			p2pserver.GetP2pServer(ctx).StoreDownloadConn(key, conn)
 			return
 		}
 	}
 
-	conn, err := client.NewClient(networkAddress, false)
+	conn, err := p2pserver.GetP2pServer(ctx).NewClient(ctx, networkAddress, false)
 	if err != nil {
 		pp.ErrorLogf(ctx, "Failed to create connection with %v: %v", networkAddress, utils.FormatError(err))
 		if dTask, ok := task.GetDownloadTask(fileHash, req.WalletAddress, fileReqId); ok {
@@ -424,10 +443,10 @@ func SendReqDownloadSlice(ctx context.Context, fileHash string, sliceInfo *proto
 		return
 	}
 
-	err = peers.SendMessage(ctx, conn, req, header.ReqDownloadSlice)
+	err = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, req, header.ReqDownloadSlice)
 	if err == nil {
 		pp.DebugLog(ctx, "Send download slice request to ", networkAddress)
-		client.DownloadConnMap.Store(key, conn)
+		p2pserver.GetP2pServer(ctx).StoreDownloadConn(key, conn)
 	} else {
 		pp.ErrorLog(ctx, "Fail to send download slice request to"+networkAddress)
 	}
@@ -455,24 +474,24 @@ func RspDownloadSliceWrong(ctx context.Context, conn core.WriteCloser) {
 					sInfo.StoragePpInfo.P2PAddress = target.NewSliceInfo.StoragePpInfo.P2PAddress
 					sInfo.StoragePpInfo.WalletAddress = target.NewSliceInfo.StoragePpInfo.WalletAddress
 					sInfo.StoragePpInfo.NetworkAddress = target.NewSliceInfo.StoragePpInfo.NetworkAddress
-					peers.TransferSendMessageToPPServ(ctx, target.NewSliceInfo.StoragePpInfo.NetworkAddress, requests.RspDownloadSliceWrong(&target))
+					p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServ(ctx, target.NewSliceInfo.StoragePpInfo.NetworkAddress, requests.RspDownloadSliceWrong(&target))
 				}
 			}
 		}
 	}
 }
 
-func downloadWrong(taskID, sliceHash, p2pAddress, walletAddress string, wrongType protos.DownloadWrongType) {
+func downloadWrong(ctx context.Context, taskID, sliceHash, p2pAddress, walletAddress string, wrongType protos.DownloadWrongType) {
 	utils.DebugLog("downloadWrong, sliceHash: ", sliceHash)
-	peers.SendMessageToSPServer(context.Background(), requests.ReqDownloadSliceWrong(taskID, sliceHash, p2pAddress, walletAddress, wrongType), header.ReqDownloadSliceWrong)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(context.Background(), requests.ReqDownloadSliceWrong(taskID, sliceHash, p2pAddress, walletAddress, wrongType), header.ReqDownloadSliceWrong)
 }
 
 // DownloadSlicePause
-func DownloadSlicePause(fileHash, reqID string, w http.ResponseWriter) {
+func DownloadSlicePause(ctx context.Context, fileHash, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		// storeResponseWriter(reqID, w)
 		task.DownloadTaskMap.Delete(fileHash + setting.WalletAddress + task.LOCAL_REQID)
-		task.CleanDownloadFileAndConnMap(fileHash, reqID)
+		task.CleanDownloadFileAndConnMap(ctx, fileHash, reqID)
 	} else {
 		notLogin(w)
 	}
@@ -483,7 +502,7 @@ func DownloadSliceCancel(ctx context.Context, fileHash, reqID string, w http.Res
 	if setting.CheckLogin() {
 		storeResponseWriter(ctx, w)
 		task.DownloadTaskMap.Delete(fileHash + setting.WalletAddress + task.LOCAL_REQID)
-		task.CleanDownloadFileAndConnMap(fileHash, reqID)
+		task.CleanDownloadFileAndConnMap(ctx, fileHash, reqID)
 		task.CancelDownloadTask(fileHash)
 	} else {
 		notLogin(w)

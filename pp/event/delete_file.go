@@ -10,7 +10,7 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
@@ -19,7 +19,7 @@ import (
 // DeleteFile
 func DeleteFile(ctx context.Context, fileHash string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteFileData(fileHash), header.ReqDeleteFile)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteFileData(fileHash), header.ReqDeleteFile)
 		storeResponseWriter(ctx, w)
 	} else {
 		notLogin(w)
@@ -28,7 +28,7 @@ func DeleteFile(ctx context.Context, fileHash string, w http.ResponseWriter) {
 
 // ReqDeleteFile
 func ReqDeleteFile(ctx context.Context, conn core.WriteCloser) {
-	peers.TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
+	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
 // RspDeleteFile
@@ -43,7 +43,7 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 			}
 			putData(ctx, HTTPDeleteFile, &target)
 		} else {
-			peers.TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
+			p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -74,5 +74,5 @@ func ReqDeleteSlice(ctx context.Context, conn core.WriteCloser) {
 
 // RspDeleteSlice RspDeleteSlice
 func RspDeleteSlice(ctx context.Context, conn core.WriteCloser) {
-	peers.TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
+	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }

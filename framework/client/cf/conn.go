@@ -49,7 +49,10 @@ type onConnectFunc func(core.WriteCloser) bool
 type onMessageFunc func(msg.RelayMsgBuf, core.WriteCloser)
 type onCloseFunc func(core.WriteCloser)
 type onErrorFunc func(core.WriteCloser)
-
+type ContextKV struct {
+	Key   interface{}
+	Value interface{}
+}
 type options struct {
 	onConnect  onConnectFunc
 	onMessage  onMessageFunc
@@ -62,10 +65,16 @@ type options struct {
 	minAppVer  uint16
 	p2pAddress string
 	serverPort uint16
+	contextkv  []ContextKV
 }
 
 // ClientOption client configuration
 type ClientOption func(*options)
+
+type WriteHook struct {
+	Message string
+	Fn      func(packetId, costTime int64)
+}
 
 // ClientConn
 type ClientConn struct {
@@ -100,6 +109,7 @@ type ClientConn struct {
 	is_active        bool
 	sharedKey        []byte // ECDH shared key derived during handshake
 	remoteP2pAddress string
+	writeHook        []WriteHook
 }
 
 // ReconnectOption
@@ -160,6 +170,13 @@ func ServerPortOption(serverPort uint16) ClientOption {
 	}
 }
 
+// ContextKVOption
+func ContextKVOption(kv []ContextKV) ClientOption {
+	return func(o *options) {
+		o.contextkv = kv
+	}
+}
+
 // Mylog my
 func Mylog(b bool, v ...interface{}) {
 	if b {
@@ -191,6 +208,10 @@ func newClientConnWithOptions(netid int64, c net.Conn, opts options) *ClientConn
 		is_active:        false,
 	}
 	cc.ctx, cc.cancel = context.WithCancel(context.Background())
+	for _, kv := range cc.opts.contextkv {
+		cc.ctx = context.WithValue(cc.ctx, kv.Key, kv.Value)
+	}
+
 	cc.name = c.RemoteAddr().String()
 	cc.pending = []int64{}
 	return cc
@@ -276,6 +297,12 @@ func (cc *ClientConn) ContextValue(k interface{}) interface{} {
 	cc.mu.Lock()
 	defer cc.mu.Unlock()
 	return cc.ctx.Value(k)
+}
+
+func (cc *ClientConn) SetWriteHook(h []WriteHook) {
+	cc.mu.Lock()
+	cc.writeHook = h
+	cc.mu.Unlock()
 }
 
 func (cc *ClientConn) handshake() error {
@@ -460,7 +487,6 @@ func (cc *ClientConn) ClientClose() {
 func (cc *ClientConn) Close() {
 	cc.once.Do(func() {
 		Mylog(cc.opts.logOpen, fmt.Sprintf("client close gracefully %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
-
 		// callback on close
 		onClose := cc.opts.onClose
 		if onClose != nil {
@@ -870,12 +896,13 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 			}
 		}
 	}
-	if cmd == header.ReqUploadFileSlice {
-		writeEnd := time.Now()
-		costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
-		report := core.WritePacketCostTime{PacketId: packet.PacketId, CostTime: costTime}
-		utils.DetailLogf("[cf.conn | ReqUploadFileSlice] add cost time {%v} report to CostTimeCh", report)
-		core.CostTimeCh <- report
+	writeEnd := time.Now()
+	costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
+
+	for _, c := range cc.writeHook {
+		if cmd == c.Message && c.Fn != nil {
+			c.Fn(packet.PacketId, costTime)
+		}
 	}
 	cmem.Free(packet.Alloc)
 	return nil

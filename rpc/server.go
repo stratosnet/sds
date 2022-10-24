@@ -68,7 +68,24 @@ func (s *Server) ServeCodec(codec ServerCodec, options CodecOption) {
 	s.codecs.Add(codec)
 	defer s.codecs.Remove(codec)
 
-	c := initClient(codec, s.idgen, &s.services)
+	c := initClient(codec, s.idgen, &s.services, nil)
+	<-codec.closed()
+	c.Close()
+}
+
+func (s *Server) ServeCodecWithContext(codec ServerCodec, ctx context.Context) {
+	defer codec.close()
+
+	// Don't serve if server is stopped.
+	if atomic.LoadInt32(&s.run) == 0 {
+		return
+	}
+
+	// Add the codec to the set so it can be closed by Stop.
+	s.codecs.Add(codec)
+	defer s.codecs.Remove(codec)
+
+	c := initClient(codec, s.idgen, &s.services, ctx)
 	<-codec.closed()
 	c.Close()
 }

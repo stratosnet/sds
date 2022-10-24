@@ -6,61 +6,77 @@ import (
 	"strconv"
 
 	"github.com/stratosnet/sds/metrics"
+	"github.com/stratosnet/sds/pp/api"
+	"github.com/stratosnet/sds/pp/api/rest"
 	"github.com/stratosnet/sds/pp/event"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/network"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
 )
 
-const (
-	DefaultHTTPHost = "0.0.0.0" // Default host: INADDR_ANY
-	DefaultHTTPPort = 8235      // Default TCP port for the HTTP RPC server
-)
-
 // base pp server
 type BaseServer struct {
-	//ppServ      *peers.PPServer // not enclosing ppServer to avoid import cycle
+	p2pServ     *p2pserver.P2pServer
+	ppNetwork   *network.Network
 	ipcServ     *ipcServer
 	httpRpcServ *httpServer
 	monitorServ *httpServer
 }
 
-var baseServer = &BaseServer{}
-
-func Start() {
+func (bs *BaseServer) Start() {
 	ctx := context.Background()
-	err := GetWalletAddress(ctx)
+	err := api.GetWalletAddress(ctx)
 	if err != nil {
 		utils.ErrorLog(err)
 		return
 	}
 
-	err = startIPC()
+	err = bs.startP2pServer()
 	if err != nil {
 		utils.ErrorLog(err)
 		return
 	}
 
-	err = startHttpRPC()
+	err = bs.startInternalApiServer()
 	if err != nil {
 		utils.ErrorLog(err)
 		return
 	}
 
-	err = startMonitor()
+	err = bs.startRestServer()
 	if err != nil {
 		utils.ErrorLog(err)
 		return
 	}
 
-	ctxWithQuitChs := peers.InitQuitChs(ctx)
-	go peers.ListenSendPacket(event.HandleSendPacketCostTime)
-	peers.StartPP(ctxWithQuitChs, event.RegisterEventHandle)
+	err = bs.startTrafficLog()
+	if err != nil {
+		utils.ErrorLog(err)
+		return
+	}
 
+	err = bs.startIPC()
+	if err != nil {
+		utils.ErrorLog(err)
+		return
+	}
+
+	err = bs.startHttpRPC()
+	if err != nil {
+		utils.ErrorLog(err)
+		return
+	}
+
+	err = bs.startMonitor()
+	if err != nil {
+		utils.ErrorLog(err)
+		return
+	}
 }
 
-func startIPC() error {
+func (bs *BaseServer) startIPC() error {
 	rpcAPIs := []rpc.API{
 		{
 			Namespace: "sds",
@@ -77,25 +93,25 @@ func startIPC() error {
 	}
 
 	ipc := newIPCServer(setting.IpcEndpoint)
-	if err := ipc.start(rpcAPIs); err != nil {
+	ctx := context.WithValue(context.Background(), p2pserver.P2P_SERVER_KEY, bs.p2pServ)
+	if err := ipc.start(rpcAPIs, ctx); err != nil {
 		return err
 	}
-	baseServer.ipcServ = ipc
+	bs.ipcServ = ipc
 	//TODO bring this back later once we have a proper quit mechanism
 	//defer ipc.stop()
 
 	return nil
 }
 
-func startHttpRPC() error {
+func (bs *BaseServer) startHttpRPC() error {
 	rpcServer := newHTTPServer(rpc.DefaultHTTPTimeouts)
-
 	port, err := strconv.Atoi(setting.Config.RpcPort)
 	if err != nil {
-		port = DefaultHTTPPort
+		return err
 	}
 
-	if err := rpcServer.setListenAddr(DefaultHTTPHost, port); err != nil {
+	if err := rpcServer.setListenAddr("0.0.0.0", port); err != nil {
 		return err
 	}
 
@@ -108,16 +124,17 @@ func startHttpRPC() error {
 	if err := rpcServer.enableRPC(apis(), config); err != nil {
 		return err
 	}
-
-	if err := rpcServer.start(); err != nil {
+	ctx := context.WithValue(context.Background(), p2pserver.P2P_SERVER_KEY, bs.p2pServ)
+	ctx = context.WithValue(ctx, network.PP_NETWORK_KEY, bs.ppNetwork)
+	if err := rpcServer.start(ctx); err != nil {
 		return err
 	}
 
-	baseServer.httpRpcServ = rpcServer
+	bs.httpRpcServ = rpcServer
 	return nil
 }
 
-func startMonitor() error {
+func (bs *BaseServer) startMonitor() error {
 	monitorServer := newHTTPServer(rpc.DefaultHTTPTimeouts)
 	if setting.Config.Monitor.TLS {
 		monitorServer.enableTLS(setting.Config.Monitor.Cert, setting.Config.Monitor.Key)
@@ -147,16 +164,55 @@ func startMonitor() error {
 	if err := monitorServer.enableWS(monitorAPI(), config); err != nil {
 		return err
 	}
-
-	if err := monitorServer.start(); err != nil {
+	ctx := context.WithValue(context.Background(), p2pserver.P2P_SERVER_KEY, bs.p2pServ)
+	ctx = context.WithValue(ctx, network.PP_NETWORK_KEY, bs.ppNetwork)
+	if err := monitorServer.start(ctx); err != nil {
 		return err
 	}
-	baseServer.monitorServ = monitorServer
+	bs.monitorServ = monitorServer
 	return nil
 }
 
-func GetBaseServer() *BaseServer {
-	return baseServer
+func (bs *BaseServer) startP2pServer() error {
+	bs.p2pServ = &p2pserver.P2pServer{}
+	event.RegisterEventHandle()
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, p2pserver.P2P_SERVER_KEY, bs.p2pServ)
+	bs.p2pServ.Start(ctx)
+
+	bs.ppNetwork = &network.Network{}
+	ctx = context.WithValue(ctx, network.PP_NETWORK_KEY, bs.ppNetwork)
+	bs.ppNetwork.StartPP(ctx)
+	return nil
+}
+
+func (bs *BaseServer) startTrafficLog() error {
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, p2pserver.P2P_SERVER_KEY, bs.p2pServ)
+	StartDumpTrafficLog(ctx)
+	return nil
+}
+
+func (bs *BaseServer) startInternalApiServer() error {
+	if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
+		ctx := context.Background()
+		ctx = context.WithValue(ctx, p2pserver.P2P_SERVER_KEY, bs.p2pServ)
+		go api.StartHTTPServ(ctx)
+	} else {
+		utils.ErrorLog("Missing configuration for internal API server")
+	}
+	return nil
+}
+
+func (bs *BaseServer) startRestServer() error {
+	if setting.Config.RestPort != "" {
+		ctx := context.Background()
+		ctx = context.WithValue(ctx, p2pserver.P2P_SERVER_KEY, bs.p2pServ)
+		go rest.StartHTTPServ(ctx)
+	} else {
+		utils.ErrorLog("Missing configuration for rest port")
+	}
+	return nil
 }
 
 func (bs *BaseServer) Stop() {
@@ -170,11 +226,8 @@ func (bs *BaseServer) Stop() {
 	if bs.monitorServ != nil {
 		bs.monitorServ.stop()
 	}
-	if ppServer := peers.GetPPServer(); ppServer != nil {
-		// send signal to close peers level goroutines
-		for _, ch := range peers.GetQuitChMap() {
-			ch <- true
-		}
-		ppServer.Stop()
+	if bs.p2pServ != nil {
+		bs.p2pServ.Stop()
 	}
+	// TODO: stop IPC, TrafficLog, InternalApiServer, RestServer
 }

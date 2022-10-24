@@ -63,7 +63,7 @@ func downProgress(w http.ResponseWriter, request *http.Request) {
 					p.Rate = 0
 					p.State = true
 				}
-				// TODO replace client.PDownloadPassageway with client.DownloadConnMap and aggregate speed of all connections that are involved in the task
+				// TODO replace client.PDownloadPassageway with client.downloadConnMap and aggregate speed of all connections that are involved in the task
 				//if c, ok := client.PDownloadPassageway.Load(ts.(string)); ok {
 				//	conn := c.(*cf.ClientConn)
 				//	re := conn.GetSecondReadFlow()

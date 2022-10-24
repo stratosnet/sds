@@ -8,7 +8,7 @@ import (
 
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
@@ -82,7 +82,7 @@ func uploadFile(w http.ResponseWriter, request *http.Request) {
 
 		if isFile {
 			f := requests.RequestUploadFileData(ctx, path, sdPath, false, false, false)
-			go peers.SendMessageToSPServer(ctx, f, header.ReqUploadFile)
+			go p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, f, header.ReqUploadFile)
 			taskID := uuid.New().String()
 			r := &uploadFileResult{
 				FailInfo: "",
@@ -153,7 +153,7 @@ func uploadFile(w http.ResponseWriter, request *http.Request) {
 				})
 				setting.UploadTaskIDMap.Store(r.TaskID, f.FileInfo.FileHash)
 				resultArr = append(resultArr, r)
-				go peers.SendMessageToSPServer(ctx, f, header.ReqUploadFile)
+				go p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, f, header.ReqUploadFile)
 				utils.DebugLog("result>>>>>>>>>>>>>>", resultArr)
 
 			default:

@@ -7,7 +7,7 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
@@ -23,7 +23,7 @@ func Deactivate(ctx context.Context, fee utiltypes.Coin, gas int64) error {
 		return err
 	}
 	pp.Log(ctx, "Sending deactivate message to SP! "+deactivateReq.P2PAddress)
-	peers.SendMessageToSPServer(ctx, deactivateReq, header.ReqDeactivatePP)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, deactivateReq, header.ReqDeactivatePP)
 	return nil
 }
 

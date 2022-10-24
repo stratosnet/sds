@@ -110,7 +110,7 @@ func (h *httpServer) listenAddr() string {
 }
 
 // start starts the HTTP server if it is enabled and not already running.
-func (h *httpServer) start() error {
+func (h *httpServer) start(ctx context.Context) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -119,7 +119,13 @@ func (h *httpServer) start() error {
 	}
 
 	// Initialize the server.
-	h.server = &http.Server{Handler: h}
+	h.server = &http.Server{
+		Handler: h,
+		BaseContext: func(listener net.Listener) context.Context {
+			return ctx
+		},
+	}
+
 	if h.timeouts != (rpc.HTTPTimeouts{}) {
 		CheckTimeouts(&h.timeouts)
 		h.server.ReadTimeout = h.timeouts.ReadTimeout
@@ -488,15 +494,15 @@ func newIPCServer(endpoint string) *ipcServer {
 	return &ipcServer{endpoint: endpoint}
 }
 
-// Start starts the httpServer's http.Server
-func (is *ipcServer) start(apis []rpc.API) error {
+// Start starts the httpServer's http.server
+func (is *ipcServer) start(apis []rpc.API, ctx context.Context) error {
 	is.mu.Lock()
 	defer is.mu.Unlock()
 
 	if is.listener != nil {
 		return nil // already running
 	}
-	listener, srv, err := rpc.StartIPCEndpoint(is.endpoint, apis)
+	listener, srv, err := rpc.StartIPCEndpoint(is.endpoint, apis, ctx)
 	if err != nil {
 		utils.WarnLog("IPC opening failed", "url", is.endpoint, "error", err)
 		return err

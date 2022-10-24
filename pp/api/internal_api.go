@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -38,7 +39,7 @@ type httpres struct {
 }
 
 // StartHTTPServ
-func StartHTTPServ() {
+func StartHTTPServ(ctx context.Context) {
 	httpServ := httpserv.MyNewHTTPServ(setting.Config.InternalPort)
 	httpServ.MyRoute("/walletList", getWalletList)
 	httpServ.MyRoute("/createWallet", createWallet)
@@ -68,7 +69,7 @@ func StartHTTPServ() {
 	httpServ.MyRoute("/streamVideoStorageInfoHttp/", streamVideoInfoHttp)
 	httpServ.MyRoute("/streamVideoHttp/", streamVideoHttp)
 	httpServ.MyRoute("/clearStreamTask/", clearStreamTask)
-	httpServ.MyStart()
+	httpServ.MyStart(ctx)
 }
 
 // httprequest go

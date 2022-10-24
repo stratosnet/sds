@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
@@ -88,6 +87,7 @@ func createWallet(w http.ResponseWriter, request *http.Request) {
 	}
 	utils.DebugLog("add", data1)
 	setting.WalletAddress = walletAddressString
-	serv.Login(context.Background(), setting.WalletAddress, password)
+
+	Login(context.Background(), setting.WalletAddress, password)
 	w.Write(httpserv.NewJson(data1, setting.SUCCESSCode, "create wallet successfully").ToBytes())
 }

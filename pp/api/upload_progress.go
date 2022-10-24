@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/event"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/httpserv"
@@ -42,14 +42,17 @@ func upProgress(w http.ResponseWriter, request *http.Request) {
 				utils.DebugLog("gress.Progress", gress.Progress)
 				utils.DebugLog("f>>>>>>>>>>>>>>>>>>>>", val.(string))
 				gress.Rate = 0
-				client.UpConnMap.Range(func(k, v interface{}) bool {
-					if strings.HasPrefix(k.(string), val.(string)) {
-						vconn := v.(*cf.ClientConn)
-						w := vconn.GetSecondWriteFlow()
-						gress.Rate += w
-					}
-					return true
-				})
+				if ps := p2pserver.GetP2pServer(request.Context()); ps != nil {
+					ps.RangeUploadConn(func(k, v interface{}) bool {
+						if strings.HasPrefix(k.(string), val.(string)) {
+							vconn := v.(*cf.ClientConn)
+							w := vconn.GetSecondWriteFlow()
+							gress.Rate += w
+						}
+						return true
+					})
+				}
+
 				ma[f.(string)] = gress
 			}
 

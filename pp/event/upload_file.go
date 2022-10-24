@@ -15,9 +15,8 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
-	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
@@ -43,7 +42,7 @@ func RequestUploadCoverImage(pathStr, reqID string, w http.ResponseWriter) {
 		return
 	}
 	p := requests.RequestUploadFileData(ctx, tmpString, "", true, false, false)
-	peers.SendMessageToSPServer(ctx, p, header.ReqUploadFile)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 	storeResponseWriter(ctx, w)
 }
 
@@ -61,7 +60,7 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ htt
 	}
 	if isFile {
 		p := requests.RequestUploadFileData(ctx, path, "", false, false, isEncrypted)
-		peers.SendMessageToSPServer(ctx, p, header.ReqUploadFile)
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 		return
 	}
 
@@ -73,7 +72,7 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ htt
 		case pathString := <-setting.UpChan:
 			pp.DebugLog(ctx, "path string == ", pathString)
 			p := requests.RequestUploadFileData(ctx, pathString, "", false, false, isEncrypted)
-			peers.SendMessageToSPServer(ctx, p, header.ReqUploadFile)
+			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 		default:
 			return
 		}
@@ -93,7 +92,7 @@ func RequestUploadStream(ctx context.Context, path string, _ http.ResponseWriter
 	if isFile {
 		p := requests.RequestUploadFileData(ctx, path, "", false, true, false)
 		if p != nil {
-			peers.SendMessageToSPServer(ctx, p, header.ReqUploadFile)
+			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 		}
 		return
 	} else {
@@ -113,7 +112,7 @@ func ReqBackupStatus(ctx context.Context, fileHash string) {
 		FileHash: fileHash,
 		Address:  setting.GetPPInfo(),
 	}
-	peers.SendMessageToSPServer(ctx, p, header.ReqFileBackupStatus)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqFileBackupStatus)
 }
 
 // RspUploadFile response of upload file event
@@ -214,7 +213,7 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 		totalSize += int64(slice.GetSliceSize())
 	}
 	uploadTask := task.CreateUploadFileTask(target.FileHash, target.TaskId, target.SpP2PAddress, false, false, target.Sign, target.PpList, protos.UploadType_BACKUP)
-	task.CleanUpConnMap(target.FileHash)
+	p2pserver.GetP2pServer(ctx).CleanUpConnMap(target.FileHash)
 	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
 
 	p := &task.UploadProgress{
@@ -243,7 +242,7 @@ func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
 	// Create upload task
 	uploadTask := task.CreateUploadFileTask(target.FileHash, target.TaskId, target.SpP2PAddress, target.IsEncrypted, target.IsVideoStream, target.NodeSign, slices, protos.UploadType_NEW_UPLOAD)
 
-	task.CleanUpConnMap(target.FileHash)
+	p2pserver.GetP2pServer(ctx).CleanUpConnMap(target.FileHash)
 	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
 
 	// Video Hls transformation and upload progress update
@@ -324,7 +323,7 @@ func waitForUploadFinished(ctx context.Context, uploadTask *task.UploadFileTask)
 			if !uploadTask.CanRetry() {
 				return errors.New("max upload retry count reached")
 			}
-			peers.SendMessageToSPServer(ctx, requests.ReqUploadSlicesWrong(uploadTask, uploadTask.SpP2pAddress, slicesToReDownload, failedSlices), header.ReqUploadSlicesWrong)
+			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqUploadSlicesWrong(uploadTask, uploadTask.SpP2pAddress, slicesToReDownload, failedSlices), header.ReqUploadSlicesWrong)
 		}
 
 		// Start uploading to next destination
@@ -369,7 +368,7 @@ func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileT
 
 // UploadPause
 func UploadPause(ctx context.Context, fileHash, reqID string, w http.ResponseWriter) {
-	client.UpConnMap.Range(func(k, v interface{}) bool {
+	p2pserver.GetP2pServer(ctx).RangeUploadConn(func(k, v interface{}) bool {
 		if strings.HasPrefix(k.(string), fileHash) {
 			conn := v.(*cf.ClientConn)
 			conn.ClientClose()
@@ -377,7 +376,7 @@ func UploadPause(ctx context.Context, fileHash, reqID string, w http.ResponseWri
 		}
 		return true
 	})
-	task.CleanUpConnMap(fileHash)
+	p2pserver.GetP2pServer(ctx).CleanUpConnMap(fileHash)
 	task.UploadFileTaskMap.Delete(fileHash)
 	task.UploadProgressMap.Delete(fileHash)
 }

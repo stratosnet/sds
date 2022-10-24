@@ -152,7 +152,7 @@ func streamVideoHttp(w http.ResponseWriter, req *http.Request) {
 
 	utils.DebugLog("Redirect the request to resource node.")
 	redirectToResourceNode(body.FileHash, sliceHash, body.RestAddress, setting.WalletAddress, w, req)
-	sendReportStreamResult(body, sliceHash, false)
+	sendReportStreamResult(req.Context(), body, sliceHash, false)
 }
 
 func redirectToResourceNode(fileHash, sliceHash, restAddress, walletAddress string, w http.ResponseWriter, req *http.Request) {
@@ -171,7 +171,7 @@ func redirectToResourceNode(fileHash, sliceHash, restAddress, walletAddress stri
 }
 
 func clearStreamTask(w http.ResponseWriter, req *http.Request) {
-	event.ClearFileInfoAndDownloadTask(parseFileHash(req.URL), task.LOCAL_REQID, w)
+	event.ClearFileInfoAndDownloadTask(req.Context(), parseFileHash(req.URL), task.LOCAL_REQID, w)
 }
 
 func GetVideoSlice(w http.ResponseWriter, req *http.Request) {
@@ -220,7 +220,7 @@ func GetVideoSlice(w http.ResponseWriter, req *http.Request) {
 	utils.DebugLog("Found the slice and return", body)
 	w.Write(video)
 
-	sendReportStreamResult(body, sliceHash, true)
+	sendReportStreamResult(req.Context(), body, sliceHash, true)
 }
 
 func parseFilePath(reqURI string) (walletAddress, fileHash string, err error) {
@@ -347,8 +347,8 @@ func verifySignature(reqBody *StreamReqBody, sliceHash string, data []byte) bool
 	return sliceHash == utils.CalcSliceHash(data, reqBody.FileHash, reqBody.SliceInfo.SliceNumber)
 }
 
-func sendReportStreamResult(body *StreamReqBody, sliceHash string, isPP bool) {
-	event.SendReportStreamingResult(&protos.RspDownloadSlice{
+func sendReportStreamResult(ctx context.Context, body *StreamReqBody, sliceHash string, isPP bool) {
+	event.SendReportStreamingResult(ctx, &protos.RspDownloadSlice{
 		SliceInfo:     &protos.SliceOffsetInfo{SliceHash: sliceHash},
 		FileHash:      body.FileHash,
 		WalletAddress: setting.WalletAddress,
