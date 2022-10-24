@@ -44,7 +44,7 @@ func RspSpUnderMaintenance(ctx context.Context, conn core.WriteCloser) {
 
 			// record SpMaintenance
 			triggerSpSwitch := client.RecordSpMaintenance(target.SpP2PAddress, target.Time)
-			if triggerSpSwitch {
+			if setting.Config.IsSwitchIfSpMaintenance && triggerSpSwitch {
 				ReqHBLatencyCheckSpList(ctx, conn)
 			}
 		}
