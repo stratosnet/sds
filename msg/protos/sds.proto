@@ -922,8 +922,5 @@ enum SpMaintenanceType {
 message RspSpUnderMaintenance{
   string sp_p2p_address = 1;
   int32  maintenance_type = 2;
-  int64 time = 3;
-  bytes sign = 4;
-
-
+  int64  time = 3;
 }
