@@ -1,5 +1,5 @@
 download_path_min_len = 88
-port = '9082'
+port = '9102'
 network_address = '127.0.0.1'
 debug = true
 pp_list_dir = "./peers"
@@ -20,11 +20,11 @@ limit_upload_speed = 100
 chain_id = 'testchain_1-1'
 token = 'ustos'
 stratos_chain_url = 'http://127.0.0.1:1317'
-rest_port = '18092'
-internal_port = ''
-rpc_port = '8235'
-monitor_port = '5688'
-metrics_port = '8766'
+rest_port = '9202'
+internal_port = '9302'
+rpc_port = '9402'
+monitor_port = '9502'
+metrics_port = '9602'
 traffic_log_interval = 10
 max_connection = 1000
 [version]
