@@ -32,7 +32,7 @@ var OfflineChan = make(chan *Offline, 2)
 var SPConn *cf.ClientConn
 
 // SPMaintenanceMap stores records of SpUnderMaintenance, K - SpP2pAddress, V - list of MaintenanceRecord
-var SPMaintenanceMap = utils.NewAutoCleanMap(time.Duration(setting.Config.AllowableIntervalSpMaintenance) * time.Second)
+var SPMaintenanceMap *utils.AutoCleanMap
 
 // PPConn current connected pp node
 var PPConn *cf.ClientConn
@@ -138,6 +138,9 @@ func GetConnectionName(conn core.WriteCloser) string {
 
 // RecordSpMaintenance, return boolean flag of switching to new SP
 func RecordSpMaintenance(spP2pAddress string, recordTime int64) bool {
+	if SPMaintenanceMap == nil {
+		SPMaintenanceMap = utils.NewAutoCleanMap(time.Duration(setting.Config.AllowableIntervalSpMaintenance) * time.Second)
+	}
 	if records, ok := SPMaintenanceMap.Load(spP2pAddress); ok {
 		recordsBySp := records.(*MaintenanceRecordsBySp)
 		if len(recordsBySp.RecordTimes) >= int(setting.Config.LimitSpMaintenance)-1 {
