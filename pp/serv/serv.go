@@ -119,8 +119,10 @@ func startHttpRPC() error {
 
 func startMonitor() error {
 	monitorServer := newHTTPServer(rpc.DefaultHTTPTimeouts)
-
-	port, err := strconv.Atoi(setting.Config.MonitorPort)
+	if setting.Config.Monitor.TLS {
+		monitorServer.enableTLS(setting.Config.Monitor.Cert, setting.Config.Monitor.Key)
+	}
+	port, err := strconv.Atoi(setting.Config.Monitor.Port)
 	if err != nil {
 		return errors.New("wrong configuration for monitor port")
 	}

@@ -3,6 +3,7 @@ package serv
 import (
 	"compress/gzip"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -46,6 +47,11 @@ type httpServer struct {
 	server   *http.Server
 	listener net.Listener // non-nil when server is running
 
+	// tls support
+	tls  bool
+	cert string
+	key  string
+
 	// HTTP RPC handler things.
 
 	httpConfig  httpConfig
@@ -69,6 +75,12 @@ func newHTTPServer(timeouts rpc.HTTPTimeouts) *httpServer {
 	h.httpHandler.Store((*rpcHandler)(nil))
 	h.wsHandler.Store((*rpcHandler)(nil))
 	return h
+}
+
+func (h *httpServer) enableTLS(cert, key string) {
+	h.tls = true
+	h.cert = cert
+	h.key = key
 }
 
 // setListenAddr configures the listening address of the server.
@@ -115,6 +127,13 @@ func (h *httpServer) start() error {
 		h.server.IdleTimeout = h.timeouts.IdleTimeout
 	}
 
+	if h.tls {
+		h.server.TLSConfig = &tls.Config{
+			MinVersion:               tls.VersionTLS13,
+			PreferServerCipherSuites: true,
+		}
+	}
+
 	// Start the server.
 	listener, err := net.Listen("tcp", h.endpoint)
 	if err != nil {
@@ -125,7 +144,11 @@ func (h *httpServer) start() error {
 		return err
 	}
 	h.listener = listener
-	go h.server.Serve(listener)
+	if h.tls {
+		go h.server.ServeTLS(listener, h.cert, h.key)
+	} else {
+		go h.server.Serve(listener)
+	}
 
 	if h.wsAllowed() {
 		url := fmt.Sprintf("ws://%v", listener.Addr())
