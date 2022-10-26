@@ -32,10 +32,12 @@ func RspRegisterNewPP(ctx context.Context, conn core.WriteCloser) {
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		if target.AlreadyPp {
 			setting.IsPP = true
+			setting.IsPPSyncedWithSP = true
 		}
 		return
 	}
 
 	pp.Log(ctx, "registered as PP successfully, you can deposit by `activate` ")
 	setting.IsPP = true
+	setting.IsPPSyncedWithSP = true
 }

@@ -913,3 +913,14 @@ message RspBadVersion{
   int32  minimum_version = 2;
   string command = 3;
 }
+
+enum SpMaintenanceType {
+  CONSENSUS = 0;
+  OTHER = 1;
+}
+
+message RspSpUnderMaintenance{
+  string sp_p2p_address = 1;
+  int32  maintenance_type = 2;
+  int64  time = 3;
+}
