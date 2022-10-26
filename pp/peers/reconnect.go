@@ -29,12 +29,17 @@ func ListenOffline() {
 		select {
 		case offline := <-client.OfflineChan:
 			if offline.IsSp {
-				if setting.IsPP {
-					utils.DebugLogf("SP %v is offline", offline.NetworkAddress)
+				utils.DebugLogf("SP %v is offline", offline.NetworkAddress)
+				if setting.IsPP || !setting.IsPPSyncedWithSP {
+					// working pp node, or pp status not yet synced with SP after node starts
 					setting.IsStartMining = false
 					reloadConnectSP()
 					GetSPList()
+					return
 				}
+				// not yet registered pp node (IsPPSyncedWithSP = true && IsPP = false)
+				ConnectToSP()
+				GetSPList()
 			} else {
 				peerList.PPDisconnected("", offline.NetworkAddress)
 				InitPPList()

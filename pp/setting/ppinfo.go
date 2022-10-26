@@ -10,6 +10,8 @@ import (
 
 var IsPP = false
 
+var IsPPSyncedWithSP = false
+
 var IsLoginToSP = false
 
 var State uint32 = ppTypes.PP_INACTIVE

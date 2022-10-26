@@ -78,6 +78,7 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("Register successful", target.Result.Msg)
 	setting.IsLoad = true
 	setting.IsLoginToSP = true
+	setting.IsPPSyncedWithSP = true
 	utils.DebugLog("@@@@@@@@@@@@@@@@@@@@@@@@@@@@", client.GetConnectionName(conn))
 	setting.IsPP = target.IsPP
 	if !setting.IsPP {

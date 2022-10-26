@@ -30,11 +30,14 @@ import (
 )
 
 var (
-	limitDownloadSpeed   uint64
-	limitUploadSpeed     uint64
-	isLimitDownloadSpeed bool
-	isLimitUploadSpeed   bool
-	isSpLatencyChecked   bool
+	limitDownloadSpeed             uint64
+	limitUploadSpeed               uint64
+	isLimitDownloadSpeed           bool
+	isLimitUploadSpeed             bool
+	isSpLatencyChecked             bool
+	isSwitchIfSpMaintenance        bool
+	allowableIntervalSpMaintenance uint64 // min allowable interval for 2 consecutive SpUnderMaintenance records
+	limitSpMaintenance             uint64 // consecutive n records of SpUnderMaintenance would trigger SP switch
 )
 
 // MsgHandler
@@ -211,6 +214,13 @@ func (cc *ClientConn) GetName() string {
 	name := cc.name
 	cc.mu.Unlock()
 	return name
+}
+
+// SetSwitchIfOngoingSpDown
+func SetLimitSpMaintenance(limitMaintenance, maxInterval uint64, switchSp bool) {
+	isSwitchIfSpMaintenance = switchSp
+	allowableIntervalSpMaintenance = maxInterval
+	limitSpMaintenance = limitMaintenance
 }
 
 // SetLimitDownloadSpeed

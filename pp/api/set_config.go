@@ -32,6 +32,8 @@ func setConfig(w http.ResponseWriter, request *http.Request) {
 		w.Write(httpserv.NewJson(nil, setting.SUCCESSCode, "change successfully").ToBytes())
 		cf.SetLimitDownloadSpeed(setting.Config.LimitDownloadSpeed, setting.Config.IsLimitDownloadSpeed)
 		cf.SetLimitUploadSpeed(setting.Config.LimitUploadSpeed, setting.Config.IsLimitUploadSpeed)
+		cf.SetLimitSpMaintenance(setting.Config.LimitSpMaintenance, setting.Config.AllowableIntervalSpMaintenance,
+			setting.Config.IsSwitchIfSpMaintenance)
 	} else {
 		w.Write(httpserv.NewJson(nil, setting.FAILCode, "change failed").ToBytes())
 	}

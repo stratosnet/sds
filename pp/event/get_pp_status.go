@@ -23,6 +23,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.ErrorLog(target.Result.Msg)
 		if strings.Contains(target.Result.Msg, "Please register first") {
+			setting.IsPPSyncedWithSP = true
 			return
 		}
 		utils.Log("failed to query node status, please retry later")
@@ -32,6 +33,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	setting.State = target.IsActive
 	if setting.State == ppTypes.PP_ACTIVE {
 		setting.IsPP = true
+		setting.IsPPSyncedWithSP = true
 	}
 
 	formatRspGetPPStatus(target)

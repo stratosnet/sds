@@ -96,34 +96,37 @@ type SPBaseInfo struct {
 }
 
 type config struct {
-	Version              AppVersion   `toml:"version"`
-	DownloadPathMinLen   int          `toml:"download_path_min_len"`
-	Port                 string       `toml:"port"`
-	NetworkAddress       string       `toml:"network_address"`
-	Debug                bool         `toml:"debug"`
-	PPListDir            string       `toml:"pp_list_dir"`
-	AccountDir           string       `toml:"account_dir"`
-	StorehousePath       string       `toml:"storehouse_path"`
-	DownloadPath         string       `toml:"download_path"`
-	P2PAddress           string       `toml:"p2p_address"`
-	P2PPassword          string       `toml:"p2p_password"`
-	WalletAddress        string       `toml:"wallet_address"`
-	WalletPassword       string       `toml:"wallet_password"`
-	AutoRun              bool         `toml:"auto_run"`  // is auto login
-	Internal             bool         `toml:"internal"`  // is internal net
-	IsWallet             bool         `toml:"is_wallet"` // is wallet
-	IsLimitDownloadSpeed bool         `toml:"is_limit_download_speed"`
-	LimitDownloadSpeed   uint64       `toml:"limit_download_speed"`
-	IsLimitUploadSpeed   bool         `toml:"is_limit_upload_speed"`
-	LimitUploadSpeed     uint64       `toml:"limit_upload_speed"`
-	ChainId              string       `toml:"chain_id"`
-	Token                string       `toml:"token"`
-	StratosChainUrl      string       `toml:"stratos_chain_url"`
-	RestPort             string       `toml:"rest_port"`
-	InternalPort         string       `toml:"internal_port"`
-	TrafficLogInterval   uint64       `toml:"traffic_log_interval"`
-	MaxConnection        int          `toml:"max_connection"`
-	SPList               []SPBaseInfo `toml:"sp_list"`
+	Version                        AppVersion   `toml:"version"`
+	DownloadPathMinLen             int          `toml:"download_path_min_len"`
+	Port                           string       `toml:"port"`
+	NetworkAddress                 string       `toml:"network_address"`
+	Debug                          bool         `toml:"debug"`
+	PPListDir                      string       `toml:"pp_list_dir"`
+	AccountDir                     string       `toml:"account_dir"`
+	StorehousePath                 string       `toml:"storehouse_path"`
+	DownloadPath                   string       `toml:"download_path"`
+	P2PAddress                     string       `toml:"p2p_address"`
+	P2PPassword                    string       `toml:"p2p_password"`
+	WalletAddress                  string       `toml:"wallet_address"`
+	WalletPassword                 string       `toml:"wallet_password"`
+	AutoRun                        bool         `toml:"auto_run"`  // is auto login
+	Internal                       bool         `toml:"internal"`  // is internal net
+	IsWallet                       bool         `toml:"is_wallet"` // is wallet
+	IsSwitchIfSpMaintenance        bool         `toml:"is_switch_if_sp_maintenance"`
+	AllowableIntervalSpMaintenance uint64       `toml:"allowable_interval_sp_maintenance"`
+	LimitSpMaintenance             uint64       `toml:"limit_sp_maintenance"`
+	IsLimitDownloadSpeed           bool         `toml:"is_limit_download_speed"`
+	LimitDownloadSpeed             uint64       `toml:"limit_download_speed"`
+	IsLimitUploadSpeed             bool         `toml:"is_limit_upload_speed"`
+	LimitUploadSpeed               uint64       `toml:"limit_upload_speed"`
+	ChainId                        string       `toml:"chain_id"`
+	Token                          string       `toml:"token"`
+	StratosChainUrl                string       `toml:"stratos_chain_url"`
+	RestPort                       string       `toml:"rest_port"`
+	InternalPort                   string       `toml:"internal_port"`
+	TrafficLogInterval             uint64       `toml:"traffic_log_interval"`
+	MaxConnection                  int          `toml:"max_connection"`
+	SPList                         []SPBaseInfo `toml:"sp_list"`
 }
 
 func SetupRoot(root string) {
@@ -163,6 +166,7 @@ func LoadConfig(configPath string) error {
 
 	cf.SetLimitDownloadSpeed(Config.LimitDownloadSpeed, Config.IsLimitDownloadSpeed)
 	cf.SetLimitUploadSpeed(Config.LimitUploadSpeed, Config.IsLimitUploadSpeed)
+	cf.SetLimitSpMaintenance(Config.LimitSpMaintenance, Config.AllowableIntervalSpMaintenance, Config.IsSwitchIfSpMaintenance)
 
 	IsAuto = Config.AutoRun
 	utils.DebugLogf("AutoRun flag: %v", IsAuto)
