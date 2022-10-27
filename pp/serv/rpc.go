@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
@@ -89,6 +90,7 @@ func ResultHook(r *rpc_api.Result, fileHash string) *rpc_api.Result {
 }
 
 func (api *rpcApi) RequestUpload(param rpc_api.ParamReqUploadFile) rpc_api.Result {
+	metrics.RpcReqCount.WithLabelValues("RequestUpload").Inc()
 	fileName := param.FileName
 	fileSize := param.FileSize
 	fileHash := param.FileHash
@@ -196,6 +198,7 @@ func (api *rpcApi) UploadData(param rpc_api.ParamUploadData) rpc_api.Result {
 
 // RequestDownload
 func (api *rpcApi) RequestDownload(param rpc_api.ParamReqDownloadFile) rpc_api.Result {
+	metrics.RpcReqCount.WithLabelValues("RequestDownload").Inc()
 	_, _, fileHash, _, err := datamesh.ParseFileHandle(param.FileHandle)
 	if err != nil {
 		return rpc_api.Result{Return: rpc_api.WRONG_INPUT}
@@ -287,6 +290,7 @@ func (api *rpcApi) DownloadData(param rpc_api.ParamDownloadData) rpc_api.Result 
 
 // DownloadedFileInfo
 func (api *rpcApi) DownloadedFileInfo(param rpc_api.ParamDownloadFileInfo) rpc_api.Result {
+	metrics.RpcReqCount.WithLabelValues("DownloadedFileInfo").Inc()
 
 	fileSize := param.FileSize
 	key := param.FileHash + param.ReqId
@@ -316,6 +320,7 @@ func (api *rpcApi) DownloadedFileInfo(param rpc_api.ParamDownloadFileInfo) rpc_a
 
 // RequestList
 func (api *rpcApi) RequestList(param rpc_api.ParamReqFileList) rpc_api.FileListResult {
+	metrics.RpcReqCount.WithLabelValues("RequestList").Inc()
 
 	reqId := uuid.New().String()
 	parentCtx := context.Background()
@@ -345,7 +350,7 @@ func (api *rpcApi) RequestList(param rpc_api.ParamReqFileList) rpc_api.FileListR
 
 // RequestShare
 func (api *rpcApi) RequestShare(param rpc_api.ParamReqShareFile) rpc_api.FileShareResult {
-
+	metrics.RpcReqCount.WithLabelValues("RequestShare").Inc()
 	reqId := uuid.New().String()
 	parentCtx := context.Background()
 	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
@@ -374,7 +379,7 @@ func (api *rpcApi) RequestShare(param rpc_api.ParamReqShareFile) rpc_api.FileSha
 
 // RequestListShare
 func (api *rpcApi) RequestListShare(param rpc_api.ParamReqListShared) rpc_api.FileShareResult {
-
+	metrics.RpcReqCount.WithLabelValues("RequestListShare").Inc()
 	reqId := uuid.New().String()
 	parentCtx := context.Background()
 	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
@@ -403,7 +408,7 @@ func (api *rpcApi) RequestListShare(param rpc_api.ParamReqListShared) rpc_api.Fi
 
 // RequestStopShare
 func (api *rpcApi) RequestStopShare(param rpc_api.ParamReqStopShare) rpc_api.FileShareResult {
-
+	metrics.RpcReqCount.WithLabelValues("RequestStopShare").Inc()
 	reqId := uuid.New().String()
 	parentCtx := context.Background()
 	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
@@ -432,7 +437,7 @@ func (api *rpcApi) RequestStopShare(param rpc_api.ParamReqStopShare) rpc_api.Fil
 
 // RequestGetShared
 func (api *rpcApi) RequestGetShared(param rpc_api.ParamReqGetShared) rpc_api.Result {
-
+	metrics.RpcReqCount.WithLabelValues("RequestGetShared").Inc()
 	wallet := param.WalletAddr
 	pubkey := param.WalletPubkey
 	signature := param.Signature
@@ -525,6 +530,7 @@ func (api *rpcApi) RequestGetShared(param rpc_api.ParamReqGetShared) rpc_api.Res
 
 // RequestGetOzone
 func (api *rpcApi) RequestGetOzone(param rpc_api.ParamReqGetOzone) rpc_api.GetOzoneResult {
+	metrics.RpcReqCount.WithLabelValues("RequestGetOzone").Inc()
 	reqId := uuid.New().String()
 	parentCtx := context.Background()
 	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)

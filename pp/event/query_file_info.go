@@ -48,7 +48,7 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, isVi
 
 	if ok := task.CheckDownloadTask(fileHash, walletAddress, task.LOCAL_REQID); ok {
 		msg := "The previous download task hasn't finished, please check back later"
-		utils.ErrorLog(msg)
+		pp.ErrorLog(ctx, msg)
 		if w != nil {
 			w.Write(httpserv.NewJson(nil, setting.FAILCode, msg).ToBytes())
 		}
@@ -278,7 +278,6 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	target.ReqId = fileReqId
 	pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, fileReqId)
 	if target.Result.State == protos.ResultState_RES_SUCCESS {
-		pp.Log(ctx, "download starts: ")
 		task.CleanDownloadFileAndConnMap(target.FileHash, target.ReqId)
 		task.DownloadFileMap.Store(target.FileHash+target.ReqId, &target)
 		task.AddDownloadTask(&target)
@@ -286,7 +285,6 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 			return
 		}
 		DownloadFileSlice(ctx, &target)
-		pp.DebugLog(ctx, "DownloadFileSlice(&target)", target)
 	} else {
 		file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
 		pp.Log(ctx, "failed to download，", target.Result.Msg)

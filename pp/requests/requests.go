@@ -550,10 +550,10 @@ func ReqRegisterNewPPData() *protos.ReqRegisterNewPP {
 	}
 }
 
-func ReqTransferDownloadData(notice *protos.ReqFileSliceBackupNotice, newPpP2pAddress string) *msg.RelayMsgBuf {
+func ReqTransferDownloadData(notice *protos.ReqFileSliceBackupNotice) *msg.RelayMsgBuf {
 	protoMsg := &protos.ReqTransferDownload{
 		TaskId:           notice.TaskId,
-		NewPp:            &protos.PPBaseInfo{P2PAddress: newPpP2pAddress},
+		NewPp:            setting.GetPPInfo(),
 		OriginalPp:       notice.PpInfo,
 		SliceStorageInfo: notice.SliceStorageInfo,
 		SpP2PAddress:     notice.SpP2PAddress,
@@ -571,38 +571,15 @@ func ReqTransferDownloadData(notice *protos.ReqFileSliceBackupNotice, newPpP2pAd
 	}
 }
 
-func ReqTransferDownloadWrongData(notice *protos.ReqFileSliceBackupNotice, newPpP2pAddress string) *protos.ReqTransferDownloadWrong {
+func ReqTransferDownloadWrongData(notice *protos.ReqFileSliceBackupNotice) *protos.ReqTransferDownloadWrong {
 	return &protos.ReqTransferDownloadWrong{
 		TaskId:           notice.TaskId,
-		NewPp:            &protos.PPBaseInfo{P2PAddress: newPpP2pAddress},
+		NewPp:            setting.GetPPInfo(),
 		OriginalPp:       notice.PpInfo,
 		SliceStorageInfo: notice.SliceStorageInfo,
 		FileHash:         notice.FileHash,
 		Sign:             notice.Sign,
 		SpP2PAddress:     notice.SpP2PAddress,
-	}
-}
-
-//TODO: Change to BP to SP
-func ReqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
-	utils.DebugLog("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~reqReportTaskBPDatareqReportTaskBPData  taskID ==", taskID, "traffic == ", traffic)
-	sendTager := &protos.ReqReportTaskBP{
-		TaskId:  taskID,
-		Traffic: traffic,
-		Reporter: &protos.PPBaseInfo{
-			P2PAddress:     setting.P2PAddress,
-			WalletAddress:  setting.WalletAddress,
-			NetworkAddress: setting.NetworkAddress,
-			RestAddress:    setting.RestAddress,
-		},
-	}
-	data, err := proto.Marshal(sendTager)
-	if err != nil {
-		utils.ErrorLog(err)
-	}
-	return &msg.RelayMsgBuf{
-		MSGHead: PPMsgHeader(data, header.ReqReportTaskBP),
-		MSGData: data,
 	}
 }
 

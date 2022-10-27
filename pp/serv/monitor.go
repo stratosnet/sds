@@ -17,48 +17,68 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-type TrafficDataResult struct {
-	Return    string        `json:"return"`
-	TraffInfo []TrafficInfo `json:"trafficinfo"`
-}
+const (
+	MSG_GET_TRAFFIC_DATA_RESPONSE = "monitor_getTrafficData"
+	MSG_GET_DIST_USAGE_RESPONSE   = "monitor_getDiskUsage"
+	MSG_GET_PEER_LIST             = "monitor_getPeerList"
+	MSG_GET_ONLINE_STATE          = "monitor_getOnlineState"
+	MSG_GET_NODE_DETAILS          = "monitor_getNodeDetails"
+)
 
-type DiskUsageResult struct {
-	Return   string `json:"return"`
-	DataHost int64  `json:"datahost"`
+type DiskUsage struct {
+	DataHost int64 `json:"data_host"`
 }
 
 type PeerInfo struct {
-	NetworkAddress string `json:"networkaddress"`
-	P2pAddress     string `json:"p2paddress"`
+	NetworkAddress string `json:"network_address"`
+	P2pAddress     string `json:"p2p_address"`
 	Status         int    `json:"status"`
 	Latency        int64  `json:"latency"`
+	Connection     string `json:"connection"`
 }
 
-type PeerListResult struct {
-	Return   string     `json:"return"`
+type PeerList struct {
 	Total    int64      `json:"total"`
 	PeerList []PeerInfo `json:"peerlist"`
 }
 
-type OnlineStateResult struct {
-	Return string `json:"return"`
-	Online bool   `json:"online"`
-	Since  int64  `json:"since"`
+type OnlineState struct {
+	Online bool  `json:"online"`
+	Since  int64 `json:"since"`
+}
+
+type NodeDetails struct {
+	Id              string `json:"id"`
+	Address         string `json:"address"`
+	AdvancedDetails *[]struct {
+		Id      string `json:"id"`
+		Title   string `json:"title"`
+		Details string `json:"details"`
+	} `json:"advanced_details,omitempty"`
+}
+
+type MonitorResult struct {
+	Return      string         `json:"return"`
+	MessageType string         `json:"message_type"`
+	TrafficInfo *[]TrafficInfo `json:"traffic_info,omitempty"`
+	OnlineState *OnlineState   `json:"online_state,omitempty"`
+	PeerList    *PeerList      `json:"peer_list,omitempty"`
+	DiskUsage   *DiskUsage     `json:"disk_usage,omitempty"`
+	NodeDetails *NodeDetails   `json:"node_details,omitempty"`
+}
+
+type MonitorNotificationResult struct {
+	TrafficInfo *TrafficInfo `json:"traffic_info"`
+	OnlineState *OnlineState `json:"online_state,omitempty"`
+	PeerList    *PeerList    `json:"peer_list,omitempty"`
+	DiskUsage   *DiskUsage   `json:"disk_usage,omitempty"`
 }
 
 type ParamTrafficInfo struct {
 	SubId string `json:"subid"`
 	Lines uint64 `json:"lines"`
 }
-type ParamGetDiskUsage struct {
-	SubId string `json:"subid"`
-}
-
-type ParamGetPeerList struct {
-	SubId string `json:"subid"`
-}
-
-type ParamGetOnLineState struct {
+type ParamMonitor struct {
 	SubId string `json:"subid"`
 }
 
@@ -136,44 +156,44 @@ func verifyToken(token string) bool {
 }
 
 // GetTrafficData fetch the traffic data from the file
-func (api *monitorApi) GetTrafficData(param ParamTrafficInfo) (*TrafficDataResult, error) {
+func (api *monitorApi) GetTrafficData(param ParamTrafficInfo) (*MonitorResult, error) {
 	if _, found := subscribedIds.Load(param.SubId); !found {
 		return nil, errors.New("client hasn't subscribed to the service")
 	}
 	lines := utils.GetLastLinesFromTrafficLog(setting.TrafficLogPath, param.Lines)
 
 	var ts []TrafficInfo
-	var i uint64
 	var line string
-	for i = 0; i < param.Lines; i++ {
-		line = lines[i]
-		date := line[17:36]
+	for _, line = range lines {
+		if len(line) <= 26 {
+			return &MonitorResult{Return: "-1", MessageType: MSG_GET_TRAFFIC_DATA_RESPONSE}, nil
+		}
+
+		date := line[7:26]
 
 		content := strings.SplitN(line, "{", 2)
 		if len(content) < 2 {
-			return &TrafficDataResult{Return: "-1"}, nil
+			return &MonitorResult{Return: "-1", MessageType: MSG_GET_TRAFFIC_DATA_RESPONSE}, nil
 		}
 
 		c := "{" + content[1]
-
-		var t TrafficDumpInfo
-		if err := json.Unmarshal([]byte(c), &t); err != nil {
-			return &TrafficDataResult{Return: "-1"}, nil
+		var trafficDumpInfo TrafficDumpInfo
+		err := json.Unmarshal([]byte(c), &trafficDumpInfo)
+		if err != nil {
+			return &MonitorResult{Return: "-1", MessageType: MSG_GET_TRAFFIC_DATA_RESPONSE}, nil
 		}
 
-		t.TrafficInfo.TimeStamp = date
-		ts = append(ts, t.TrafficInfo)
+		trafficDumpInfo.TrafficInfo.TimeStamp = date
+		ts = append(ts, trafficDumpInfo.TrafficInfo)
+	}
+	if ts == nil {
+		return &MonitorResult{Return: "-1", MessageType: MSG_GET_TRAFFIC_DATA_RESPONSE}, nil
 	}
 
-	return &TrafficDataResult{Return: "0", TraffInfo: ts}, nil
+	return &MonitorResult{Return: "0", MessageType: MSG_GET_TRAFFIC_DATA_RESPONSE, TrafficInfo: &ts}, nil
 }
 
-// GetDiskUsage the size of files in setting.Config.StorehousePath, not the disk usage of the computer
-func (api *monitorApi) GetDiskUsage(param ParamGetDiskUsage) (*DiskUsageResult, error) {
-	if _, found := subscribedIds.Load(param.SubId); !found {
-		return nil, errors.New("client hasn't subscribed to the service")
-	}
-
+func getDiskUsage() int64 {
 	var size int64
 	filepath.Walk(setting.Config.StorehousePath, func(_ string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -184,16 +204,18 @@ func (api *monitorApi) GetDiskUsage(param ParamGetDiskUsage) (*DiskUsageResult, 
 		}
 		return err
 	})
-
-	return &DiskUsageResult{Return: "0", DataHost: size}, nil
+	return size
 }
 
-// GetPeerList the peer pp list
-func (api *monitorApi) GetPeerList(param ParamGetPeerList) (*PeerListResult, error) {
+// GetDiskUsage the size of files in setting.Config.StorehousePath, not the disk usage of the computer
+func (api *monitorApi) GetDiskUsage(param ParamMonitor) (*MonitorResult, error) {
 	if _, found := subscribedIds.Load(param.SubId); !found {
 		return nil, errors.New("client hasn't subscribed to the service")
 	}
 
+	return &MonitorResult{Return: "0", MessageType: MSG_GET_DIST_USAGE_RESPONSE, DiskUsage: &DiskUsage{DataHost: getDiskUsage()}}, nil
+}
+func getPeerList() ([]PeerInfo, int64) {
 	pl, t := peers.GetPPList(context.Background())
 	var peer PeerInfo
 	var peers []PeerInfo
@@ -204,26 +226,48 @@ func (api *monitorApi) GetPeerList(param ParamGetPeerList) (*PeerListResult, err
 			P2pAddress:     pl[i].P2pAddress,
 			Status:         pl[i].Status,
 			Latency:        pl[i].Latency,
+			Connection:     "tcp4",
 		}
 		peers = append(peers, peer)
 	}
+	return peers, i
+}
 
-	return &PeerListResult{
-		Return:   "0",
-		Total:    t,
-		PeerList: peers,
+// GetPeerList the peer pp list
+func (api *monitorApi) GetPeerList(param ParamMonitor) (*MonitorResult, error) {
+	if _, found := subscribedIds.Load(param.SubId); !found {
+		return nil, errors.New("client hasn't subscribed to the service")
+	}
+	peers, t := getPeerList()
+	return &MonitorResult{
+		Return:      "0",
+		MessageType: MSG_GET_PEER_LIST,
+		PeerList:    &PeerList{Total: t, PeerList: peers},
 	}, nil
 }
 
 // GetOnlineState if the pp node is online
-func (api *monitorApi) GetOnlineState(param ParamGetOnLineState) *OnlineStateResult {
-	if setting.OnlineTime == 0 {
+func (api *monitorApi) GetOnlineState(param ParamMonitor) (*MonitorResult, error) {
+	if _, found := subscribedIds.Load(param.SubId); !found {
+		return nil, errors.New("client hasn't subscribed to the service")
 	}
-	return &OnlineStateResult{
-		Return: "0",
-		Online: setting.OnlineTime != 0,
-		Since:  setting.OnlineTime,
+	return &MonitorResult{
+		Return:      "0",
+		MessageType: MSG_GET_ONLINE_STATE,
+		OnlineState: &OnlineState{Online: setting.OnlineTime != 0, Since: setting.OnlineTime},
+	}, nil
+}
+
+// GetNodeDetail the deatils of the node
+func (api *monitorApi) GetNodeDetails(param ParamMonitor) (*MonitorResult, error) {
+	if _, found := subscribedIds.Load(param.SubId); !found {
+		return nil, errors.New("client hasn't subscribed to the service")
 	}
+	return &MonitorResult{
+		Return:      "0",
+		MessageType: MSG_GET_NODE_DETAILS,
+		NodeDetails: &NodeDetails{Id: "1", Address: setting.P2PAddress},
+	}, nil
 }
 
 // Subscription client calls the method monitor_subscribe with this function as the parameter
@@ -252,7 +296,14 @@ func (api *monitorApi) Subscription(ctx context.Context, token string) (*rpc.Sub
 		for {
 			select {
 			case ti := <-trafficInfo:
-				notifier.Notify(rpcSub.ID, &ti)
+				peers, t := getPeerList()
+				result := &MonitorNotificationResult{
+					TrafficInfo: &ti,
+					OnlineState: &OnlineState{Online: setting.OnlineTime != 0, Since: setting.OnlineTime},
+					PeerList:    &PeerList{Total: t, PeerList: peers},
+					DiskUsage:   &DiskUsage{DataHost: getDiskUsage()},
+				}
+				notifier.Notify(rpcSub.ID, result)
 			case <-rpcSub.Err(): // client send an unsubscribe request
 				unsubscribeTrafficInfo(*rpcSub)
 				return

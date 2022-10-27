@@ -145,10 +145,6 @@ func StartLatencyCheckToPp(ctx context.Context, NetworkAddr string) error {
 		MSGData: data,
 	}
 
-	if client.ConnMap[NetworkAddr] != nil {
-		client.ConnMap[NetworkAddr].Write(msg, ctx)
-	} else {
-		pp.DebugLog(ctx, "new conn, connect and transfer")
-	}
+	TransferSendMessageToPPServ(ctx, NetworkAddr, msg)
 	return nil
 }

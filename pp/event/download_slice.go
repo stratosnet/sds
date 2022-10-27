@@ -4,11 +4,13 @@ package event
 import (
 	"context"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/stratosnet/sds/metrics"
 	"github.com/google/uuid"
 	"github.com/stratosnet/sds/utils/types"
 
@@ -323,7 +325,10 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 	if val, ok := downRecvCostTimeMap.dataMap.Load(tkSlice); ok {
 		totalCostTime += val.(int64)
 	}
-	SendReportDownloadResult(ctx, target, totalCostTime, false)
+	reportReq := SendReportDownloadResult(ctx, target, totalCostTime, false)
+	metrics.StoredSliceCount.WithLabelValues("download").Inc()
+	instantInboundSpeed := float64(target.SliceSize) / math.Max(float64(totalCostTime), 1)
+	metrics.InboundSpeed.WithLabelValues(reportReq.OpponentP2PAddress).Set(instantInboundSpeed)
 	downRecvCostTimeMap.dataMap.Delete(tkSlice)
 }
 
@@ -336,9 +341,11 @@ func videoCacheKeep(fileHash, taskID string) {
 }
 
 // ReportDownloadResult  PP-SP OR StoragePP-SP
-func SendReportDownloadResult(ctx context.Context, target *protos.RspDownloadSlice, costTime int64, isPP bool) {
+func SendReportDownloadResult(ctx context.Context, target *protos.RspDownloadSlice, costTime int64, isPP bool) *protos.ReqReportDownloadResult {
 	pp.DebugLog(ctx, "ReportDownloadResult report result target.fileHash = ", target.FileHash)
-	peers.SendMessageDirectToSPOrViaPP(ctx, requests.ReqReportDownloadResultData(target, costTime, isPP), header.ReqReportDownloadResult)
+	req := requests.ReqReportDownloadResultData(target, costTime, isPP)
+	peers.SendMessageDirectToSPOrViaPP(ctx, req, header.ReqReportDownloadResult)
+	return req
 }
 
 // ReportDownloadResult  P-SP OR PP-SP
@@ -348,8 +355,8 @@ func SendReportStreamingResult(target *protos.RspDownloadSlice, isPP bool) {
 
 // DownloadFileSlice
 func DownloadFileSlice(ctx context.Context, target *protos.RspFileStorageInfo) {
+	pp.DebugLog(ctx, "DownloadFileSlice(&target)", target)
 	fileSize := uint64(0)
-
 	dTask, _ := task.GetDownloadTask(target.FileHash, target.WalletAddress, target.ReqId)
 	for _, sliceInfo := range target.SliceInfo {
 		fileSize += sliceInfo.SliceStorageInfo.SliceSize
@@ -362,6 +369,7 @@ func DownloadFileSlice(ctx context.Context, target *protos.RspFileStorageInfo) {
 		DownloadedSize: 0,
 	}
 	if !file.CheckFileExisting(ctx, target.FileHash, target.FileName, target.SavePath, target.EncryptionTag, target.ReqId) {
+		pp.Log(ctx, "download starts: ")
 		task.DownloadSpeedOfProgress.Store(target.FileHash+target.ReqId, sp)
 		for _, rsp := range target.SliceInfo {
 			pp.DebugLog(ctx, "taskid ======= ", rsp.TaskId)
@@ -378,7 +386,7 @@ func DownloadFileSlice(ctx context.Context, target *protos.RspFileStorageInfo) {
 			}
 		}
 	} else {
-		utils.ErrorLog("file exists already!")
+		pp.Log(ctx, "file exists already!")
 		task.DeleteDownloadTask(target.FileHash, target.WalletAddress, target.ReqId)
 	}
 }
@@ -502,28 +510,33 @@ func decryptSliceData(dataToDecrypt []byte) ([]byte, error) {
 func verifyDownloadSliceSign(target *protos.ReqDownloadSlice, rsp *protos.RspDownloadSlice) bool {
 	// verify pp address
 	if !types.VerifyP2pAddrBytes(target.PpP2PPubkey, target.P2PAddress) {
+		utils.ErrorLogf("ppP2pPubkey validation failed, ppP2PAddress:[%v], ppP2PPubKey:[%v]", target.P2PAddress, target.PpP2PPubkey)
 		return false
 	}
 
 	// verify node signature from the pp
 	msg := utils.GetReqDownloadSlicePpNodeSignMessage(target.P2PAddress, setting.P2PAddress, target.SliceInfo.SliceHash, header.ReqDownloadSlice)
 	if !types.VerifyP2pSignBytes(target.PpP2PPubkey, target.PpNodeSign, msg) {
+		utils.ErrorLog("pp node signature validation failed, msg:", msg)
 		return false
 	}
 
 	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
 	if err != nil {
+		utils.ErrorLog("failed to find spP2pPubkey: ", err)
 		return false
 	}
 
 	// verify sp address
 	if !types.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
+		utils.ErrorLogf("spP2pPubkey validation failed, spP2PAddress:[%v], spP2PPubKey:[%v]", target.SpP2PAddress, spP2pPubkey)
 		return false
 	}
 
 	// verify sp node signature
 	msg = utils.GetReqDownloadSliceSpNodeSignMessage(setting.P2PAddress, target.SpP2PAddress, target.SliceInfo.SliceHash, header.ReqDownloadSlice)
 	if !types.VerifyP2pSignBytes(spP2pPubkey, target.SpNodeSign, msg) {
+		utils.ErrorLog("sp node signature validation failed, msg: ", msg)
 		return false
 	}
 
@@ -563,7 +576,9 @@ func handleDownloadSend(tkSlice TaskSlice, costTime int64) {
 		if val, ok := downloadRspMap.Load(tkSlice.TkSliceUID); ok {
 			queuedReport := val.(QueuedDownloadReportToSP)
 			// report download slice result
-			SendReportDownloadResult(queuedReport.context, queuedReport.response, newCostTimeStat.TotalCostTime, true)
+			reportReq := SendReportDownloadResult(queuedReport.context, queuedReport.response, newCostTimeStat.TotalCostTime, true)
+			instantOutboundSpeed := float64(queuedReport.response.SliceSize) / math.Max(float64(newCostTimeStat.TotalCostTime), 1)
+			metrics.OutboundSpeed.WithLabelValues(reportReq.OpponentP2PAddress).Set(instantOutboundSpeed)
 			// set task status as finished
 			task.DownloadSliceTaskMap.Store(tkSlice.TkSliceUID, true)
 			downloadRspMap.Delete(tkSlice.TkSliceUID)

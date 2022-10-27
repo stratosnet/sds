@@ -28,4 +28,39 @@ var (
 		},
 		[]string{"ip_address"},
 	)
+
+	InboundSpeed = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pp_inbound_speed",
+			Help: ": inbound speed from slice related traffic",
+		},
+		[]string{"opponent_p2p_address"})
+
+	OutboundSpeed = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pp_outbound_speed",
+			Help: ": outbound speed from slice related traffic",
+		},
+		[]string{"opponent_p2p_address"})
+
+	TaskCount = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pp_task_cnt",
+			Help: ": count of tasks",
+		},
+		[]string{"task_cnt"})
+
+	StoredSliceCount = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pp_stored_slices_cnt",
+			Help: ": count of stored slices",
+		},
+		[]string{"stored_slices_cnt"})
+
+	RpcReqCount = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "pp_rpc_req_cnt",
+			Help: ": count of rpc requests",
+		},
+		[]string{"rpc_req_cnt"})
 )
