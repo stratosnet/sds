@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stratosnet/sds/utils/types"
 
 	"github.com/golang/protobuf/proto"
@@ -176,12 +177,13 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	sid, ok := task.SliceSessionMap.Load(target.ReqId)
-	if !ok {
-		utils.DebugLog("Can't find who created slice request", target.ReqId)
+	fileReqId, found := getFileReqIdFromContext(ctx)
+	if !found {
+		utils.DebugLog("Can't find who created slice request", core.GetRemoteReqId(ctx))
+		return
 	}
 
-	dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress, sid.(string))
+	dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress, fileReqId)
 	if !ok {
 		pp.DebugLog(ctx, "current task is stopped！！！！！！！！！！！！！！！！！！！！！！！！！！")
 		return
@@ -208,7 +210,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	downRecvCostTimeMap.dataMap.Store(tkSlice, totalCostTime)
 	downRecvCostTimeMap.mux.Unlock()
 
-	if f, ok := task.DownloadFileMap.Load(target.FileHash + sid.(string)); ok {
+	if f, ok := task.DownloadFileMap.Load(target.FileHash + fileReqId); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
 		pp.DebugLog(ctx, "get a slice -------")
 		pp.DebugLog(ctx, "SliceHash", target.SliceInfo.SliceHash)
@@ -221,7 +223,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 			receiveSliceAndProgress(ctx, &target, fInfo, dTask, costTime)
 		}
 		if !fInfo.IsVideoStream {
-			task.DownloadProgress(ctx, target.FileHash, sid.(string), uint64(len(target.Data)))
+			task.DownloadProgress(ctx, target.FileHash, fileReqId, uint64(len(target.Data)))
 		}
 	} else {
 		utils.DebugLog("DownloadFileMap doesn't have entry with file hash", target.FileHash)
@@ -308,7 +310,7 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 		State: protos.ResultState_RES_SUCCESS,
 	}
 	if fInfo.IsVideoStream && !target.IsVideoCaching {
-		putData(target.ReqId, HTTPDownloadSlice, target)
+		putData(ctx, HTTPDownloadSlice, target)
 	} else if fInfo.IsVideoStream && target.IsVideoCaching {
 		videoCacheKeep(fInfo.FileHash, target.TaskId)
 	}
@@ -371,8 +373,8 @@ func DownloadFileSlice(ctx context.Context, target *protos.RspFileStorageInfo) {
 			} else {
 				pp.DebugLog(ctx, "request download data")
 				req := requests.ReqDownloadSliceData(target, rsp)
-				task.SliceSessionMap.Store(req.ReqId, target.ReqId)
-				SendReqDownloadSlice(ctx, target.FileHash, rsp, req, target.ReqId)
+				newCtx := createAndRegisterSliceReqId(ctx, target.ReqId)
+				SendReqDownloadSlice(newCtx, target.FileHash, rsp, req, target.ReqId)
 			}
 		}
 	} else {
@@ -469,9 +471,9 @@ func DownloadSlicePause(fileHash, reqID string, w http.ResponseWriter) {
 }
 
 // DownloadSliceCancel
-func DownloadSliceCancel(fileHash, reqID string, w http.ResponseWriter) {
+func DownloadSliceCancel(ctx context.Context, fileHash, reqID string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		storeResponseWriter(reqID, w)
+		storeResponseWriter(ctx, w)
 		task.DownloadTaskMap.Delete(fileHash + setting.WalletAddress + task.LOCAL_REQID)
 		task.CleanDownloadFileAndConnMap(fileHash, reqID)
 		task.CancelDownloadTask(fileHash)
@@ -567,4 +569,26 @@ func handleDownloadSend(tkSlice TaskSlice, costTime int64) {
 			downloadRspMap.Delete(tkSlice.TkSliceUID)
 		}
 	}
+}
+
+func createAndRegisterSliceReqId(ctx context.Context, fileReqId string) context.Context {
+	newReqId, _ := utils.NextSnowFlakeId()
+	core.InheritRpcLoggerFromParentReqId(ctx, newReqId)
+	sliceReqId := uuid.New().String()
+	newCtx := core.CreateContextWithReqId(ctx, newReqId)
+	core.StoreRemoteReqId(newReqId, sliceReqId)
+	task.SliceSessionMap.Store(sliceReqId, fileReqId)
+	return newCtx
+}
+
+func getFileReqIdFromContext(ctx context.Context) (string, bool) {
+	remoteReqId := core.GetRemoteReqId(ctx)
+	if remoteReqId == "" {
+		return "", false
+	}
+	fileReqId, found := task.SliceSessionMap.Load(remoteReqId)
+	if !found {
+		return remoteReqId, true
+	}
+	return fileReqId.(string), true
 }

@@ -4,10 +4,10 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/google/uuid"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
-
-	"github.com/google/uuid"
 )
 
 // case body.Directory == "" AND body.fileHash == "": query all files under root
@@ -50,6 +50,7 @@ func getAllFile(w http.ResponseWriter, request *http.Request) {
 		keyword = ""
 	}
 	if setting.CheckLogin() {
-		event.FindFileList(context.Background(), fileName, setting.WalletAddress, pageId, uuid.New().String(), keyword, fileType, isUp, w)
+		ctx := core.RegisterRemoteReqId(context.Background(), uuid.New().String())
+		event.FindFileList(ctx, fileName, setting.WalletAddress, pageId, keyword, fileType, isUp, w)
 	}
 }

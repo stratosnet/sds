@@ -17,11 +17,11 @@ import (
 )
 
 // FindMyFileList
-func FindFileList(ctx context.Context, fileName string, walletAddr string, pageId uint64, reqID, keyword string, fileType int, isUp bool, w http.ResponseWriter) {
+func FindFileList(ctx context.Context, fileName string, walletAddr string, pageId uint64, keyword string, fileType int, isUp bool, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(ctx, requests.FindFileListData(fileName, walletAddr, pageId, reqID, keyword,
+		peers.SendMessageDirectToSPOrViaPP(ctx, requests.FindFileListData(fileName, walletAddr, pageId, keyword,
 			protos.FileSortType(fileType), isUp), header.ReqFindMyFileList)
-		storeResponseWriter(reqID, w)
+		storeResponseWriter(ctx, w)
 	} else {
 		notLogin(w)
 	}
@@ -45,8 +45,9 @@ func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	// serv the RPC user when the ReqId is not empty
-	if target.ReqId != "" {
-		defer file.SetFileListResult(target.WalletAddress+target.ReqId, rpcResult)
+	reqId := core.GetRemoteReqId(ctx)
+	if reqId != "" {
+		defer file.SetFileListResult(target.WalletAddress+reqId, rpcResult)
 	}
 
 	if target.P2PAddress != setting.P2PAddress {
@@ -55,7 +56,7 @@ func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	putData(target.ReqId, HTTPGetAllFile, &target)
+	putData(ctx, HTTPGetAllFile, &target)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.ErrorLog(target.Result.Msg)
 		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE

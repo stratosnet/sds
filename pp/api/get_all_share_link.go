@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
 )
@@ -14,5 +15,6 @@ func getAllShareLink(w http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		return
 	}
-	event.GetAllShareLink(context.Background(), uuid.New().String(), setting.WalletAddress, 0, w)
+	ctx := core.RegisterRemoteReqId(context.Background(), uuid.New().String())
+	event.GetAllShareLink(ctx, setting.WalletAddress, 0, w)
 }

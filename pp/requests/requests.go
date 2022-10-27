@@ -112,12 +112,11 @@ func ReqGetPPStatusData(initPPList bool) *protos.ReqGetPPStatus {
 func ReqGetWalletOzData(walletAddr, reqId string) *protos.ReqGetWalletOz {
 	return &protos.ReqGetWalletOz{
 		WalletAddress: walletAddr,
-		ReqId:         reqId,
 	}
 }
 
 // RequestUploadFile a file from an owner instead from a "path" belongs to PP's default wallet
-func RequestUploadFile(fileName, fileHash string, fileSize uint64, reqID, walletAddress, walletPubkey, signature string, isEncrypted bool) *protos.ReqUploadFile {
+func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress, walletPubkey, signature string, isEncrypted bool) *protos.ReqUploadFile {
 	utils.Log("fileName: ", fileName)
 	encryptionTag := ""
 	if isEncrypted {
@@ -155,7 +154,6 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, reqID, wallet
 		WalletSign:    wsig,
 		WalletPubkey:  wpk.Bytes(),
 		IsCover:       false,
-		ReqId:         reqID,
 		IsVideoStream: false,
 	}
 
@@ -169,7 +167,7 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, reqID, wallet
 }
 
 // RequestUploadFileData assume the PP's current wallet is the owner, otherwise RequestUploadFile() should be used instead
-func RequestUploadFileData(ctx context.Context, paths, storagePath, reqID string, isCover, isVideoStream, isEncrypted bool) *protos.ReqUploadFile {
+func RequestUploadFileData(ctx context.Context, paths, storagePath string, isCover, isVideoStream, isEncrypted bool) *protos.ReqUploadFile {
 	info := file.GetFileInfo(paths)
 	if info == nil {
 		pp.ErrorLog(ctx, "wrong filePath")
@@ -209,7 +207,6 @@ func RequestUploadFileData(ctx context.Context, paths, storagePath, reqID string
 		WalletSign:    wsign,
 		WalletPubkey:  setting.WalletPublicKey,
 		IsCover:       isCover,
-		ReqId:         reqID,
 		IsVideoStream: isVideoStream,
 	}
 	if isCover {
@@ -238,7 +235,7 @@ func RequestUploadFileData(ctx context.Context, paths, storagePath, reqID string
 }
 
 // RequestDownloadFile the entry for rpc remote download
-func RequestDownloadFile(fileHash, sdmPath, walletAddr, reqId string, walletSign, walletPubkey []byte, shareRequest *protos.ReqGetShareFile) (*protos.ReqFileStorageInfo, string) {
+func RequestDownloadFile(fileHash, sdmPath, walletAddr string, reqId string, walletSign, walletPubkey []byte, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
 	// file's request id is used for identifying the download session
 	fileReqId := reqId
 	if reqId == "" {
@@ -249,8 +246,8 @@ func RequestDownloadFile(fileHash, sdmPath, walletAddr, reqId string, walletSign
 	file.SaveRemoteFileHash(fileHash+fileReqId, "rpc:", 0)
 
 	// path: mesh network address
-	req := ReqFileStorageInfoData(sdmPath, "", fileReqId, "", walletAddr, walletSign, walletPubkey, false, shareRequest)
-	return req, fileReqId
+	req := ReqFileStorageInfoData(sdmPath, "", "", walletAddr, walletSign, walletPubkey, false, shareRequest)
+	return req
 }
 
 func RspDownloadSliceData(target *protos.ReqDownloadSlice) *protos.RspDownloadSlice {
@@ -266,7 +263,6 @@ func RspDownloadSliceData(target *protos.ReqDownloadSlice) *protos.RspDownloadSl
 		SliceSize:         uint64(len(slice.Data)),
 		SavePath:          target.SavePath,
 		Result:            &protos.Result{State: protos.ResultState_RES_SUCCESS, Msg: ""},
-		ReqId:             target.ReqId,
 		IsEncrypted:       target.IsEncrypted,
 		SpP2PAddress:      target.SpP2PAddress,
 		IsVideoCaching:    target.IsVideoCaching,
@@ -298,7 +294,6 @@ func RspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 		Result:            rsp.Result,
 		NeedReport:        last,
 		SavePath:          rsp.SavePath,
-		ReqId:             rsp.ReqId,
 		SpP2PAddress:      rsp.SpP2PAddress,
 		IsEncrypted:       rsp.IsEncrypted,
 		IsVideoCaching:    rsp.IsVideoCaching,
@@ -527,7 +522,6 @@ func ReqDownloadSliceData(target *protos.RspFileStorageInfo, slice *protos.Downl
 			SliceOffset: slice.SliceOffset,
 		},
 		SavePath:          target.SavePath,
-		ReqId:             uuid.New().String(),
 		IsEncrypted:       target.EncryptionTag != "",
 		SliceNumber:       slice.SliceNumber,
 		SpNodeSign:        slice.SpNodeSign,
@@ -614,7 +608,7 @@ func ReqReportTaskBPData(taskID string, traffic uint64) *msg.RelayMsgBuf {
 
 // ReqFileStorageInfoData encode ReqFileStorageInfo message. If it's not a "share request", walletAddr should keep the same
 // as the wallet from the "path".
-func ReqFileStorageInfoData(path, savePath, reqID, saveAs, walletAddr string, walletSign, walletPUbkey []byte, isVideoStream bool, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
+func ReqFileStorageInfoData(path, savePath, saveAs, walletAddr string, walletSign, walletPUbkey []byte, isVideoStream bool, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
 	msg := utils.GetReqFileStorageInfoNodeSignMessage(setting.P2PAddress, path, header.ReqFileStorageInfo)
 	return &protos.ReqFileStorageInfo{
 		FileIndexes: &protos.FileIndexes{
@@ -627,7 +621,6 @@ func ReqFileStorageInfoData(path, savePath, reqID, saveAs, walletAddr string, wa
 		NodeSign:      types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
 		WalletSign:    walletSign,
 		WalletPubkey:  walletPUbkey,
-		ReqId:         reqID,
 		IsVideoStream: isVideoStream,
 		ShareRequest:  shareRequest,
 	}
@@ -650,20 +643,18 @@ func ReqDownloadFileWrongData(fInfo *protos.RspFileStorageInfo, dTask *task.Down
 		},
 		FileHash:      fInfo.FileHash,
 		Sign:          fInfo.NodeSign,
-		ReqId:         fInfo.ReqId,
 		IsVideoStream: fInfo.IsVideoStream,
 		FailedSlices:  failedSlices,
 		FailedPpNodes: failedPPNodes,
 	}
 }
 
-func FindFileListData(fileName string, walletAddr string, pageId uint64, reqID, keyword string, fileType protos.FileSortType, isUp bool) *protos.ReqFindMyFileList {
+func FindFileListData(fileName string, walletAddr string, pageId uint64, keyword string, fileType protos.FileSortType, isUp bool) *protos.ReqFindMyFileList {
 	return &protos.ReqFindMyFileList{
 		FileName:      fileName,
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: walletAddr,
 		PageId:        pageId,
-		ReqId:         reqID,
 		FileType:      fileType,
 		IsUp:          isUp,
 		Keyword:       keyword,
@@ -692,13 +683,12 @@ func RspTransferDownload(data []byte, taskId, sliceHash, spP2pAddress string, of
 	}
 }
 
-func ReqDeleteFileData(fileHash, reqID string) *protos.ReqDeleteFile {
+func ReqDeleteFileData(fileHash string) *protos.ReqDeleteFile {
 	return &protos.ReqDeleteFile{
 		FileHash:      fileHash,
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
 		Sign:          setting.GetSign(setting.P2PAddress + fileHash),
-		ReqId:         reqID,
 	}
 }
 
@@ -763,16 +753,15 @@ func RspDeleteSliceData(sliceHash, msg string, result bool) *protos.RspDeleteSli
 	}
 }
 
-func ReqShareLinkData(reqID, walletAddr string, page uint64) *protos.ReqShareLink {
+func ReqShareLinkData(walletAddr string, page uint64) *protos.ReqShareLink {
 	return &protos.ReqShareLink{
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: walletAddr,
-		ReqId:         reqID,
 		PageId:        page,
 	}
 }
 
-func ReqShareFileData(reqID, fileHash, pathHash, walletAddr string, isPrivate bool, shareTime int64) *protos.ReqShareFile {
+func ReqShareFileData(fileHash, pathHash, walletAddr string, isPrivate bool, shareTime int64) *protos.ReqShareFile {
 	return &protos.ReqShareFile{
 		FileHash:      fileHash,
 		IsPrivate:     isPrivate,
@@ -780,20 +769,18 @@ func ReqShareFileData(reqID, fileHash, pathHash, walletAddr string, isPrivate bo
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: walletAddr,
 		PathHash:      pathHash,
-		ReqId:         reqID,
 	}
 }
 
-func ReqDeleteShareData(reqID, shareID, walletAddr string) *protos.ReqDeleteShare {
+func ReqDeleteShareData(shareID, walletAddr string) *protos.ReqDeleteShare {
 	return &protos.ReqDeleteShare{
-		ReqId:         reqID,
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: walletAddr,
 		ShareId:       shareID,
 	}
 }
 
-func ReqGetShareFileData(keyword, sharePassword, saveAs, reqID, walletAddr string, walletPubkey, walletSign []byte) *protos.ReqGetShareFile {
+func ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr string, walletPubkey, walletSign []byte) *protos.ReqGetShareFile {
 	msg := utils.GetFileDownloadShareNodeSignMessage(setting.P2PAddress, keyword, header.ReqGetShareFile)
 	return &protos.ReqGetShareFile{
 		Keyword:       keyword,
@@ -802,7 +789,6 @@ func ReqGetShareFileData(keyword, sharePassword, saveAs, reqID, walletAddr strin
 		WalletAddress: walletAddr,
 		WalletPubkey:  walletPubkey,
 		WalletSign:    walletSign,
-		ReqId:         reqID,
 		SharePassword: sharePassword,
 		SaveAs:        saveAs,
 	}

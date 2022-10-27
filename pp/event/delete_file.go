@@ -17,10 +17,10 @@ import (
 )
 
 // DeleteFile
-func DeleteFile(ctx context.Context, fileHash, reqID string, w http.ResponseWriter) {
+func DeleteFile(ctx context.Context, fileHash string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
-		peers.SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteFileData(fileHash, reqID), header.ReqDeleteFile)
-		storeResponseWriter(reqID, w)
+		peers.SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteFileData(fileHash), header.ReqDeleteFile)
+		storeResponseWriter(ctx, w)
 	} else {
 		notLogin(w)
 	}
@@ -41,7 +41,7 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 			} else {
 				pp.Log(ctx, "delete failed ", target.Result.Msg)
 			}
-			putData(target.ReqId, HTTPDeleteFile, &target)
+			putData(ctx, HTTPDeleteFile, &target)
 		} else {
 			peers.TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		}

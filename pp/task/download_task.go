@@ -409,7 +409,7 @@ func CheckDownloadOver(ctx context.Context, fileHash string) (bool, float32) {
 func CheckRemoteDownloadOver(fileHash, fileReqId string) {
 
 	key := fileHash + fileReqId
-	size := file.GetRemoteFileInfo(key)
+	size := file.GetRemoteFileInfo(key, fileReqId)
 	utils.DebugLog("size:", string(size))
 	file.SetRemoteFileResult(key, rpc.Result{Return: rpc.SUCCESS})
 	CleanDownloadFileAndConnMap(fileHash, fileReqId)

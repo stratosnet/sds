@@ -29,8 +29,9 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	rpcResult := &rpc.GetOzoneResult{}
-	if target.ReqId != "" {
-		defer file.SetQueryOzoneResult(target.WalletAddress+target.ReqId, rpcResult)
+	reqId := core.GetRemoteReqId(ctx)
+	if reqId != "" {
+		defer file.SetQueryOzoneResult(target.WalletAddress+reqId, rpcResult)
 	}
 
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
@@ -38,7 +39,7 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE
 		return
 	}
-	pp.Logf(ctx, "get GetWalletOz RSP, the current ozone balance of %v = %v, %v", target.GetWalletAddress(), target.GetWalletOz(), target.ReqId)
+	pp.Logf(ctx, "get GetWalletOz RSP, the current ozone balance of %v = %v, %v", target.GetWalletAddress(), target.GetWalletOz(), reqId)
 	rpcResult.Return = rpc.SUCCESS
 	rpcResult.Ozone = target.WalletOz
 	return
