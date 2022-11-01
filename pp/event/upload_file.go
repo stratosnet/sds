@@ -31,7 +31,7 @@ var isCover bool
 
 // RequestUploadCoverImage RequestUploadCoverImage
 func RequestUploadCoverImage(pathStr, reqID string, w http.ResponseWriter) {
-	ctx := context.Background()
+	ctx := core.RegisterRemoteReqId(context.Background(), reqID)
 	isCover = true
 	tmpString, err := utils.ImageCommpress(pathStr)
 	utils.DebugLog("reqID", reqID)
@@ -42,13 +42,13 @@ func RequestUploadCoverImage(pathStr, reqID string, w http.ResponseWriter) {
 		}
 		return
 	}
-	p := requests.RequestUploadFileData(ctx, tmpString, "", reqID, true, false, false)
+	p := requests.RequestUploadFileData(ctx, tmpString, "", true, false, false)
 	peers.SendMessageToSPServer(ctx, p, header.ReqUploadFile)
-	storeResponseWriter(reqID, w)
+	storeResponseWriter(ctx, w)
 }
 
 // RequestUploadFile request to SP for upload file
-func RequestUploadFile(ctx context.Context, path, reqID string, isEncrypted bool, _ http.ResponseWriter) {
+func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ http.ResponseWriter) {
 	pp.DebugLog(ctx, "______________path", path)
 	if !setting.CheckLogin() {
 		return
@@ -60,7 +60,7 @@ func RequestUploadFile(ctx context.Context, path, reqID string, isEncrypted bool
 		return
 	}
 	if isFile {
-		p := requests.RequestUploadFileData(ctx, path, "", reqID, false, false, isEncrypted)
+		p := requests.RequestUploadFileData(ctx, path, "", false, false, isEncrypted)
 		peers.SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 		return
 	}
@@ -72,7 +72,7 @@ func RequestUploadFile(ctx context.Context, path, reqID string, isEncrypted bool
 		select {
 		case pathString := <-setting.UpChan:
 			pp.DebugLog(ctx, "path string == ", pathString)
-			p := requests.RequestUploadFileData(ctx, pathString, "", reqID, false, false, isEncrypted)
+			p := requests.RequestUploadFileData(ctx, pathString, "", false, false, isEncrypted)
 			peers.SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 		default:
 			return
@@ -80,7 +80,7 @@ func RequestUploadFile(ctx context.Context, path, reqID string, isEncrypted bool
 	}
 }
 
-func RequestUploadStream(ctx context.Context, path, reqID string, _ http.ResponseWriter) {
+func RequestUploadStream(ctx context.Context, path string, _ http.ResponseWriter) {
 	pp.DebugLog(ctx, "______________path", path)
 	if !setting.CheckLogin() {
 		return
@@ -91,7 +91,7 @@ func RequestUploadStream(ctx context.Context, path, reqID string, _ http.Respons
 		return
 	}
 	if isFile {
-		p := requests.RequestUploadFileData(ctx, path, "", reqID, false, true, false)
+		p := requests.RequestUploadFileData(ctx, path, "", false, true, false)
 		if p != nil {
 			peers.SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 		}
@@ -178,8 +178,8 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		}
 	}
 	if isCover {
-		pp.DebugLog(ctx, "is_cover", target.ReqId)
-		putData(target.ReqId, HTTPUploadFile, target)
+		pp.DebugLog(ctx, "is_cover")
+		putData(ctx, HTTPUploadFile, target)
 	}
 }
 

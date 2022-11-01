@@ -248,8 +248,8 @@ func UnsubscribeDownloadFileInfo(key string) {
 }
 
 // GetRemoteFileInfo
-func GetRemoteFileInfo(key string) uint64 {
-	SetRemoteFileResult(key, rpc.Result{Return: rpc.DL_OK_ASK_INFO})
+func GetRemoteFileInfo(key, reqId string) uint64 {
+	SetRemoteFileResult(key, rpc.Result{ReqId: reqId, Return: rpc.DL_OK_ASK_INFO})
 	var fileSize uint64
 	parentCtx := context.Background()
 	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
