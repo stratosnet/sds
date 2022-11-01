@@ -79,7 +79,7 @@ func RspHBLatencyCheckSpList(ctx context.Context, _ core.WriteCloser) {
 			peer.Latency = rspTime - start
 			peers.UpdatePP(ctx, peer)
 			// delete the KV from PingTimePPMap
-			delete(peers.PingTimePPMap, response.P2PAddressPp)
+			delete(peers.PingTimePPMap, peer.NetworkAddress)
 		}
 	} else if response.HbType == protos.HeartbeatType_LATENCY_CHECK {
 		if start, ok := peers.PingTimeSPMap[response.NetworkAddressSp]; ok {
