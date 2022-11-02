@@ -19,7 +19,12 @@ func CheckAndSendRetryMessage(ctx context.Context, dTask *task.DownloadTask) {
 	if !dTask.NeedRetry() {
 		return
 	}
-	if f, ok := task.DownloadFileMap.Load(dTask.FileHash + task.LOCAL_REQID); ok {
+	fileReqId, found := getFileReqIdFromContext(ctx)
+	if !found {
+		pp.DebugLog(ctx, "cannot find the original file request id")
+		return
+	}
+	if f, ok := task.DownloadFileMap.Load(dTask.FileHash + fileReqId); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
 		peers.SendMessageToSPServer(ctx, requests.ReqDownloadFileWrongData(fInfo, dTask), header.ReqDownloadFileWrong)
 	}
@@ -49,10 +54,15 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 			return
 		}
 
+		fileReqId, found := getFileReqIdFromContext(ctx)
+		if !found {
+			pp.DebugLog(ctx, "cannot find the original file request id")
+			return
+		}
 		pp.DebugLog(ctx, "file hash", target.FileHash)
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
 			pp.Log(ctx, "download starts: ")
-			dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress, target.ReqId)
+			dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress, fileReqId)
 			if !ok {
 				pp.DebugLog(ctx, "cannot find the download task")
 				return
@@ -61,21 +71,21 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 			if target.IsVideoStream {
 				return
 			}
-			if _, ok := task.DownloadSpeedOfProgress.Load(target.FileHash + target.ReqId); !ok {
+			if _, ok := task.DownloadSpeedOfProgress.Load(target.FileHash + fileReqId); !ok {
 				pp.Log(ctx, "download has stopped")
 				return
 			}
 			for _, slice := range target.SliceInfo {
 				pp.DebugLog(ctx, "taskid ======= ", slice.TaskId)
-				if file.CheckSliceExisting(target.FileHash, target.FileName, slice.SliceStorageInfo.SliceHash, target.SavePath, target.ReqId) {
+				if file.CheckSliceExisting(target.FileHash, target.FileName, slice.SliceStorageInfo.SliceHash, target.SavePath, fileReqId) {
 					pp.Log(ctx, "slice exist already,", slice.SliceStorageInfo.SliceHash)
 					setDownloadSliceSuccess(ctx, slice.SliceStorageInfo.SliceHash, dTask)
-					task.DownloadProgress(ctx, target.FileHash, target.ReqId, slice.SliceStorageInfo.SliceSize)
+					task.DownloadProgress(ctx, target.FileHash, fileReqId, slice.SliceStorageInfo.SliceSize)
 				} else {
 					pp.DebugLog(ctx, "request download data")
 					req := requests.ReqDownloadSliceData(&target, slice)
-					task.SliceSessionMap.Store(req.ReqId, target.ReqId)
-					SendReqDownloadSlice(ctx, target.FileHash, slice, req, target.ReqId)
+					newCtx := createAndRegisterSliceReqId(ctx, fileReqId)
+					SendReqDownloadSlice(newCtx, target.FileHash, slice, req, fileReqId)
 				}
 			}
 			pp.DebugLog(ctx, "DownloadFileSlice(&target)", target)

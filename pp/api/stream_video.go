@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/types/bech32"
-	"github.com/google/uuid"
 	"github.com/ipfs/go-cid"
 	"github.com/pkg/errors"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/event"
@@ -56,7 +56,7 @@ type SliceInfo struct {
 }
 
 func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
-	ctx := context.Background()
+	ctx := core.RegisterRemoteReqId(context.Background(), task.LOCAL_REQID)
 	ownerWalletAddress, fileHash, err := parseFilePath(req.RequestURI)
 	if err != nil {
 		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
@@ -89,7 +89,7 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 }
 
 func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
-	ctx := context.Background()
+	ctx := core.RegisterRemoteReqId(context.Background(), task.LOCAL_REQID)
 	ownerWalletAddress, fileHash, err := parseFilePath(req.RequestURI)
 	if err != nil {
 		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
@@ -132,6 +132,7 @@ func streamVideoP2P(w http.ResponseWriter, req *http.Request) {
 		SavePath:      body.SavePath,
 		FileName:      body.FileName,
 		NodeSign:      body.Sign,
+		ReqId:         task.LOCAL_REQID,
 		SpP2PAddress:  body.SpP2pAddress,
 		WalletAddress: setting.WalletAddress,
 	}
@@ -250,7 +251,7 @@ func getStreamInfo(ctx context.Context, fileHash, ownerWalletAddress string, w h
 		Owner: ownerWalletAddress,
 		Hash:  fileHash,
 	}.String()
-	event.GetFileStorageInfo(ctx, filePath, setting.VIDEOPATH, uuid.New().String(), "", true, w)
+	event.GetFileStorageInfo(ctx, filePath, setting.VIDEOPATH, "", true, w)
 	var fInfo *protos.RspFileStorageInfo
 	start := time.Now().Unix()
 	for {
@@ -269,6 +270,7 @@ func getStreamInfo(ctx context.Context, fileHash, ownerWalletAddress string, w h
 		}
 	}
 
+	fInfo.ReqId = task.LOCAL_REQID
 	hlsInfo := event.GetHlsInfo(ctx, fInfo)
 	segmentToSliceInfo := make(map[string]*protos.DownloadSliceInfo, 0)
 	for segment := range hlsInfo.SegmentToSlice {

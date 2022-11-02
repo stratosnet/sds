@@ -4,11 +4,11 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/google/uuid"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils/httpserv"
-
-	"github.com/google/uuid"
 )
 
 func deleteFile(w http.ResponseWriter, request *http.Request) {
@@ -20,7 +20,8 @@ func deleteFile(w http.ResponseWriter, request *http.Request) {
 	//path := ""
 	if data["fileHash"] != nil {
 		fileHash = data["fileHash"].(string)
-		event.DeleteFile(context.Background(), fileHash, uuid.New().String(), w)
+		ctx := core.RegisterRemoteReqId(context.Background(), uuid.New().String())
+		event.DeleteFile(ctx, fileHash, w)
 	}
 
 	//if data["path"] != nil {

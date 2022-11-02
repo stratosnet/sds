@@ -25,7 +25,7 @@ import (
 )
 
 // GetFileStorageInfo p to pp. The downloader is assumed the default wallet of this node, if this function is invoked.
-func GetFileStorageInfo(ctx context.Context, path, savePath, reqID, saveAs string, isVideoStream bool, w http.ResponseWriter) {
+func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, isVideoStream bool, w http.ResponseWriter) {
 	utils.DebugLog("GetFileStorageInfo")
 	if !setting.CheckLogin() {
 		notLogin(w)
@@ -62,7 +62,7 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, reqID, saveAs strin
 		return
 	}
 
-	req := requests.ReqFileStorageInfoData(path, savePath, reqID, saveAs, setting.WalletAddress, wsign, setting.WalletPublicKey, isVideoStream, nil)
+	req := requests.ReqFileStorageInfoData(path, savePath, saveAs, setting.WalletAddress, wsign, setting.WalletPublicKey, isVideoStream, nil)
 	peers.SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 }
 
@@ -108,9 +108,10 @@ func GetVideoSlice(ctx context.Context, sliceInfo *protos.DownloadSliceInfo, fIn
 			w.Write(video)
 		} else {
 			req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
+			newCtx := createAndRegisterSliceReqId(ctx, fInfo.ReqId)
 			utils.Log("Send request for downloading slice: ", sliceInfo.SliceStorageInfo.SliceHash)
-			SendReqDownloadSlice(ctx, fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
-			if err := storeResponseWriter(req.ReqId, w); err != nil {
+			SendReqDownloadSlice(newCtx, fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
+			if err := storeResponseWriter(newCtx, w); err != nil {
 				w.WriteHeader(setting.FAILCode)
 				w.Write(httpserv.NewErrorJson(setting.FAILCode, "Get video segment time out").ToBytes())
 			}
@@ -147,9 +148,10 @@ func GetVideoSlices(ctx context.Context, fInfo *protos.RspFileStorageInfo, dTask
 			if !file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceInfo.SliceStorageInfo.SliceHash, fInfo.SavePath, fInfo.ReqId) {
 
 				req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
+				newCtx := createAndRegisterSliceReqId(ctx, fInfo.ReqId)
 				req.IsVideoCaching = true
 				if req != nil {
-					SendReqDownloadSlice(ctx, fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
+					SendReqDownloadSlice(newCtx, fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
 				}
 			} else {
 				task.CleanDownloadTask(ctx, fInfo.FileHash, sliceInfo.SliceStorageInfo.SliceHash, setting.WalletAddress, task.LOCAL_REQID)
@@ -190,8 +192,9 @@ func cacheSlice(ctx context.Context, videoCacheTask *task.VideoCacheTask, fInfo 
 				videoCacheTask.DownloadCh <- true
 			} else {
 				req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
+				newCtx := createAndRegisterSliceReqId(ctx, fInfo.ReqId)
 				req.IsVideoCaching = true
-				SendReqDownloadSlice(ctx, fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
+				SendReqDownloadSlice(newCtx, fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
 			}
 
 			videoCacheTask.Slices = append(videoCacheTask.Slices[:0], videoCacheTask.Slices[0+1:]...)
@@ -204,7 +207,8 @@ func GetHlsInfo(ctx context.Context, fInfo *protos.RspFileStorageInfo) *file.Hls
 	sliceHash := sliceInfo.SliceStorageInfo.SliceHash
 	if !file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceHash, fInfo.SavePath, fInfo.ReqId) {
 		req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
-		SendReqDownloadSlice(ctx, fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
+		newCtx := createAndRegisterSliceReqId(ctx, fInfo.ReqId)
+		SendReqDownloadSlice(newCtx, fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
 
 		start := time.Now().Unix()
 		for {
@@ -270,7 +274,9 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, target.ReqId)
+	fileReqId := core.GetRemoteReqId(ctx)
+	target.ReqId = fileReqId
+	pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, fileReqId)
 	if target.Result.State == protos.ResultState_RES_SUCCESS {
 		task.CleanDownloadFileAndConnMap(target.FileHash, target.ReqId)
 		task.DownloadFileMap.Store(target.FileHash+target.ReqId, &target)
@@ -280,7 +286,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		}
 		DownloadFileSlice(ctx, &target)
 	} else {
-		file.SetRemoteFileResult(target.FileHash+target.ReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
+		file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
 		pp.Log(ctx, "failed to download，", target.Result.Msg)
 	}
 }
