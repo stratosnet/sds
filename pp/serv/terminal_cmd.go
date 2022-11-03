@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/google/uuid"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
@@ -242,7 +244,7 @@ func (api *terminalCmd) Upload(param []string) (CmdResult, error) {
 	pathStr := file.EscapePath(param[0:1])
 
 	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
-	event.RequestUploadFile(ctx, pathStr, "", isEncrypted, nil)
+	event.RequestUploadFile(ctx, pathStr, isEncrypted, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -252,7 +254,8 @@ func (api *terminalCmd) UploadStream(param []string) (CmdResult, error) {
 	}
 	pathStr := file.EscapePath(param)
 	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
-	event.RequestUploadStream(ctx, pathStr, "", nil)
+	ctx = core.RegisterRemoteReqId(ctx, uuid.New().String())
+	event.RequestUploadStream(ctx, pathStr, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -268,13 +271,13 @@ func (api *terminalCmd) BackupStatus(param []string) (CmdResult, error) {
 func (api *terminalCmd) List(param []string) (CmdResult, error) {
 	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
 	if len(param) == 0 {
-		event.FindFileList(ctx, "", setting.WalletAddress, 0, "", "", 0, true, nil)
+		event.FindFileList(ctx, "", setting.WalletAddress, 0, "", 0, true, nil)
 	} else {
 		pageId, err := strconv.ParseUint(param[0], 10, 64)
 		if err == nil {
-			event.FindFileList(ctx, "", setting.WalletAddress, pageId, "", "", 0, true, nil)
+			event.FindFileList(ctx, "", setting.WalletAddress, pageId, "", 0, true, nil)
 		} else {
-			event.FindFileList(ctx, param[0], setting.WalletAddress, 0, "", "", 0, true, nil)
+			event.FindFileList(ctx, param[0], setting.WalletAddress, 0, "", 0, true, nil)
 		}
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
@@ -289,7 +292,8 @@ func (api *terminalCmd) Download(param []string) (CmdResult, error) {
 		saveAs = param[1]
 	}
 	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
-	event.GetFileStorageInfo(ctx, param[0], "", task.LOCAL_REQID, saveAs, false, nil)
+	core.RegisterReqId(ctx, task.LOCAL_REQID)
+	event.GetFileStorageInfo(ctx, param[0], "", saveAs, false, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -302,7 +306,7 @@ func (api *terminalCmd) DeleteFn(param []string) (CmdResult, error) {
 		return CmdResult{}, errors.New("input correct file hash")
 	}
 	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
-	event.DeleteFile(ctx, param[0], "", nil)
+	event.DeleteFile(ctx, param[0], nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -349,7 +353,7 @@ func (api *terminalCmd) SharePath(param []string) (CmdResult, error) {
 	// if len(str1) == setting.FILEHASHLEN { //
 	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
-	event.GetReqShareFile(ctx, "", "", param[0], setting.WalletAddress, int64(time), isPrivate, nil)
+	event.GetReqShareFile(ctx, "", param[0], setting.WalletAddress, int64(time), isPrivate, nil)
 	// }
 	return CmdResult{Msg: DefaultMsg}, nil
 }
@@ -372,7 +376,7 @@ func (api *terminalCmd) ShareFile(param []string) (CmdResult, error) {
 		isPrivate = true
 	}
 	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
-	event.GetReqShareFile(ctx, "", param[0], "", setting.WalletAddress, int64(time), isPrivate, nil)
+	event.GetReqShareFile(ctx, param[0], "", setting.WalletAddress, int64(time), isPrivate, nil)
 	// if len(str1) == setting.FILEHASHLEN { //
 	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
@@ -383,13 +387,13 @@ func (api *terminalCmd) ShareFile(param []string) (CmdResult, error) {
 func (api *terminalCmd) AllShare(param []string) (CmdResult, error) {
 	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
 	if len(param) < 1 {
-		event.GetAllShareLink(ctx, "", setting.WalletAddress, 0, nil)
+		event.GetAllShareLink(ctx, setting.WalletAddress, 0, nil)
 	} else {
 		page, err := strconv.ParseUint(param[0], 10, 64)
 		if err != nil {
 			return CmdResult{Msg: ""}, errors.New("invalid page id.")
 		}
-		event.GetAllShareLink(ctx, "", setting.WalletAddress, page, nil)
+		event.GetAllShareLink(ctx, setting.WalletAddress, page, nil)
 	}
 
 	return CmdResult{Msg: DefaultMsg}, nil
@@ -400,7 +404,7 @@ func (api *terminalCmd) CancelShare(param []string) (CmdResult, error) {
 		return CmdResult{Msg: ""}, errors.New("input share id")
 	}
 	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
-	event.DeleteShare(ctx, param[0], "", setting.WalletAddress, nil)
+	event.DeleteShare(ctx, param[0], setting.WalletAddress, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -410,9 +414,9 @@ func (api *terminalCmd) GetShareFile(param []string) (CmdResult, error) {
 		return CmdResult{Msg: ""}, errors.New("input share link and retrieval secret key(if any)")
 	}
 	if len(param) < 2 {
-		event.GetShareFile(ctx, param[0], "", "", task.LOCAL_REQID, setting.WalletAddress, setting.WalletPublicKey, nil, nil)
+		event.GetShareFile(ctx, param[0], "", "", setting.WalletAddress, setting.WalletPublicKey, nil, nil)
 	} else {
-		event.GetShareFile(ctx, param[0], param[1], "", task.LOCAL_REQID, setting.WalletAddress, setting.WalletPublicKey, nil, nil)
+		event.GetShareFile(ctx, param[0], param[1], "", setting.WalletAddress, setting.WalletPublicKey, nil, nil)
 	}
 
 	return CmdResult{Msg: DefaultMsg}, nil
@@ -439,7 +443,8 @@ func (api *terminalCmd) CancelGet(param []string) (CmdResult, error) {
 	if len(param) < 1 {
 		return CmdResult{Msg: ""}, errors.New("input file hash of the cancel")
 	}
-	event.DownloadSliceCancel(param[0], "", nil)
+	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	event.DownloadSliceCancel(ctx, param[0], "", nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 

@@ -188,7 +188,6 @@ func (peerList *PeerList) GetPPList(ctx context.Context) (list []*PeerInfo, tota
 		return true
 	})
 
-	pp.Logf(ctx, "#pp_in_list:[%d], #pp_connected:[%d]", totalCnt, connectCnt)
 	return ppList, totalCnt, connectCnt
 }
 

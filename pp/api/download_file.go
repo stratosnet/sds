@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils/datamesh"
@@ -41,8 +42,8 @@ func downloadFile(w http.ResponseWriter, request *http.Request) {
 		Hash:  p.FileHash,
 	}.String()
 	downTaskID := uuid.New().String()
-
-	event.GetFileStorageInfo(context.Background(), path, "", downTaskID, p.SaveAs, false, w)
+	ctx := core.RegisterRemoteReqId(context.Background(), downTaskID)
+	event.GetFileStorageInfo(ctx, path, "", p.SaveAs, false, w)
 
 	type df struct {
 		TaskID             string `json:"taskID"`

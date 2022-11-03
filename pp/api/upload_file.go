@@ -81,7 +81,7 @@ func uploadFile(w http.ResponseWriter, request *http.Request) {
 		}
 
 		if isFile {
-			f := requests.RequestUploadFileData(ctx, path, sdPath, "", false, false, false)
+			f := requests.RequestUploadFileData(ctx, path, sdPath, false, false, false)
 			go peers.SendMessageToSPServer(ctx, f, header.ReqUploadFile)
 			taskID := uuid.New().String()
 			r := &uploadFileResult{
@@ -132,7 +132,7 @@ func uploadFile(w http.ResponseWriter, request *http.Request) {
 					lastPaths = sdPath + "/" + lastPaths
 				}
 
-				f := requests.RequestUploadFileData(ctx, pathstring, lastPaths, "", false, false, false)
+				f := requests.RequestUploadFileData(ctx, pathstring, lastPaths, false, false, false)
 				utils.DebugLog("lastPaths>>>>", lastPaths)
 				utils.DebugLog("storagePath+relativePath", lastPaths, pathstring)
 				taskID := uuid.New().String()

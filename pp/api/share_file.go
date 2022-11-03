@@ -4,11 +4,11 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/google/uuid"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils/httpserv"
-
-	"github.com/google/uuid"
 )
 
 func shareFile(w http.ResponseWriter, request *http.Request) {
@@ -49,5 +49,6 @@ func shareFile(w http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	event.GetReqShareFile(context.Background(), uuid.New().String(), fileHash, pathHash, setting.WalletAddress, shareTime, isPrivate, w)
+	ctx := core.RegisterRemoteReqId(context.Background(), uuid.New().String())
+	event.GetReqShareFile(ctx, fileHash, pathHash, setting.WalletAddress, shareTime, isPrivate, w)
 }

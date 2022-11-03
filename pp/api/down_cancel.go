@@ -1,8 +1,10 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils/httpserv"
@@ -29,7 +31,9 @@ func downloadCancel(w http.ResponseWriter, request *http.Request) {
 			}
 			list = append(list, l)
 			if val, ok := setting.DownloadTaskIDMap.Load(l.TaskID); ok {
-				go event.DownloadSliceCancel(val.(string), uuid.New().String(), w)
+				reqId := uuid.New().String()
+				ctx := core.RegisterRemoteReqId(context.Background(), reqId)
+				go event.DownloadSliceCancel(ctx, val.(string), reqId, w)
 			}
 			setting.DownloadTaskIDMap.Delete(l.TaskID)
 			delete(setting.DownMap, l.TaskID)

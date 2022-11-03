@@ -1,6 +1,7 @@
 package event
 
 import (
+	"context"
 	"errors"
 	"io/ioutil"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
@@ -57,21 +59,26 @@ var HTTPRspMap = &sync.Map{}
 // HTTPWriterMap
 var HTTPWriterMap = &sync.Map{}
 
-func putData(reqID string, httpType HTTPType, target interface{}) {
+func putData(ctx context.Context, httpType HTTPType, target interface{}) {
+	reqId := core.GetRemoteReqId(ctx)
+	if reqId == "" {
+		return
+	}
+
 	if setting.Config.InternalPort != "" && setting.WalletAddress != "" {
 		// httpRsp(target.ReqId, HTTPDownloadFile, &target)
 		rsp := &HTTPRsp{
 			Data: target,
 			Type: httpType,
 		}
-		HTTPRspMap.Store(reqID, rsp)
+		HTTPRspMap.Store(reqId, rsp)
 	}
 }
 
-func storeResponseWriter(reqID string, w http.ResponseWriter) error {
+func storeResponseWriter(ctx context.Context, w http.ResponseWriter) error {
 	if setting.Config.InternalPort != "" && setting.WalletAddress != "" {
 		if w != nil {
-			return StoreReqID(reqID, w)
+			return StoreReqID(ctx, w)
 		}
 	}
 	return nil
@@ -172,7 +179,7 @@ func HTTPUploadFileFun(httpRsp *HTTPRsp, write http.ResponseWriter, reqID string
 	if target.Result.State == protos.ResultState_RES_SUCCESS {
 		result := make(map[string]*upLoadFileResult, 0)
 		r := &upLoadFileResult{
-			TaskID:             target.ReqId,
+			TaskID:             reqID,
 			FileHash:           target.FileHash,
 			ImageWalletAddress: target.OwnerWalletAddress,
 		}
@@ -419,7 +426,11 @@ func HTTPGetAllFileFun(httpRsp *HTTPRsp, write http.ResponseWriter, reqID string
 }
 
 // StoreReqID
-func StoreReqID(reqID string, w http.ResponseWriter) error {
-	HTTPWriterMap.Store(reqID, w)
-	return HTTPStartListen(reqID)
+func StoreReqID(ctx context.Context, w http.ResponseWriter) error {
+	reqId := core.GetRemoteReqId(ctx)
+	if reqId == "" {
+		return nil
+	}
+	HTTPWriterMap.Store(reqId, w)
+	return HTTPStartListen(reqId)
 }
