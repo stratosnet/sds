@@ -75,18 +75,20 @@ func RspHBLatencyCheckSpList(ctx context.Context, _ core.WriteCloser) {
 		if peer == nil {
 			return
 		}
-		if start, ok := peers.PingTimePPMap[peer.NetworkAddress]; ok {
+		if value, ok := peers.PingTimePPMap.Load(peer.NetworkAddress); ok {
+			start := value.(int64)
 			peer.Latency = rspTime - start
 			peers.UpdatePP(ctx, peer)
 			// delete the KV from PingTimePPMap
-			delete(peers.PingTimePPMap, peer.NetworkAddress)
+			peers.PingTimePPMap.Delete(peer.NetworkAddress)
 		}
 	} else if response.HbType == protos.HeartbeatType_LATENCY_CHECK {
-		if start, ok := peers.PingTimeSPMap[response.NetworkAddressSp]; ok {
+		if value, ok := peers.PingTimeSPMap.Load(response.NetworkAddressSp); ok {
+			start := value.(int64)
 			timeCost := rspTime - start
 			go updateOptimalSp(ctx, timeCost, &response, &summary.optSp)
 			// delete the KV from PingTimeSPMap
-			delete(peers.PingTimeSPMap, response.NetworkAddressSp)
+			peers.PingTimeSPMap.Delete(response.NetworkAddressSp)
 		}
 	}
 }

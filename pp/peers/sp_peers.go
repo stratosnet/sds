@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -23,7 +24,7 @@ import (
 
 var bufferedSpConns = make([]*cf.ClientConn, 0)
 
-var PingTimeSPMap = make(map[string]int64, 0)
+var PingTimeSPMap = &sync.Map{}
 
 // SendMessage
 func SendMessage(ctx context.Context, conn core.WriteCloser, pb proto.Message, cmd string) error {
@@ -175,7 +176,7 @@ func checkSingleSpLatency(ctx context.Context, server string, heartbeat bool) {
 	//defer spConn.Close()
 	if spConn != nil {
 		start := time.Now().UnixNano()
-		PingTimeSPMap[server] = start
+		PingTimeSPMap.Store(server, start)
 		pb := &protos.ReqLatencyCheck{
 			HbType:           protos.HeartbeatType_LATENCY_CHECK,
 			P2PAddressPp:     setting.P2PAddress,
@@ -197,7 +198,7 @@ func ClearBufferedSpConns() {
 }
 
 func ClearPingTimeSPMap() {
-	PingTimeSPMap = make(map[string]int64, 0)
+	PingTimeSPMap = &sync.Map{}
 }
 
 func ScheduleReloadSPlist(ctx context.Context, future time.Duration) {

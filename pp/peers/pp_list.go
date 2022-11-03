@@ -2,6 +2,7 @@ package peers
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -19,7 +20,7 @@ import (
 // PeerList is a list of the know PP node peers
 var peerList types.PeerList
 
-var PingTimePPMap = make(map[string]int64, 0)
+var PingTimePPMap = &sync.Map{}
 
 const (
 	RELOAD_PP_LIST_INTERVAL_SHORT  = 5 * time.Second
@@ -118,7 +119,7 @@ func UpdatePP(ctx context.Context, pp *types.PeerInfo) {
 }
 
 func clearPingTimePPMap() {
-	PingTimePPMap = make(map[string]int64, 0)
+	PingTimePPMap = &sync.Map{}
 }
 
 //LantencyOfNextPp
@@ -137,7 +138,7 @@ func LatencyOfNextPp(ctx context.Context) func() {
 // StartLatencyCheckToPp
 func StartLatencyCheckToPp(ctx context.Context, NetworkAddr string) error {
 	start := time.Now().UnixNano()
-	PingTimePPMap[NetworkAddr] = start
+	PingTimePPMap.Store(NetworkAddr, start)
 	pb := &protos.ReqLatencyCheck{
 		HbType: protos.HeartbeatType_LATENCY_CHECK_PP,
 	}
