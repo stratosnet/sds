@@ -1,6 +1,7 @@
 package client
 
 import (
+	"math"
 	"net"
 	"strconv"
 	"sync"
@@ -20,9 +21,17 @@ type Offline struct {
 	NetworkAddress string
 }
 
-// SpMaintenanceRecords
-type MaintenanceRecordsBySp struct {
-	RecordTimes []int64
+const (
+	LAST_RECONNECT_KEY               = "last_reconnect"
+	MIN_RECONNECT_INTERVAL_THRESHOLD = 60  // seconds
+	MAX_RECONNECT_INTERVAL_THRESHOLD = 600 // seconds
+	RECONNECT_INTERVAL_MULTIPLIER    = 2
+)
+
+type LastReconnectRecord struct {
+	SpP2PAddress                string
+	Time                        time.Time
+	NextAllowableReconnectInSec int64
 }
 
 // OfflineChan OfflineChan
@@ -137,26 +146,35 @@ func GetConnectionName(conn core.WriteCloser) string {
 }
 
 // RecordSpMaintenance, return boolean flag of switching to new SP
-func RecordSpMaintenance(spP2pAddress string, recordTime int64) bool {
+func RecordSpMaintenance(spP2pAddress string, recordTime time.Time) bool {
 	if SPMaintenanceMap == nil {
-		SPMaintenanceMap = utils.NewAutoCleanMap(time.Duration(setting.Config.AllowableIntervalSpMaintenance) * time.Second)
+		resetSPMaintenanceMap(spP2pAddress, recordTime, MIN_RECONNECT_INTERVAL_THRESHOLD)
+		return true
 	}
-	if records, ok := SPMaintenanceMap.Load(spP2pAddress); ok {
-		recordsBySp := records.(*MaintenanceRecordsBySp)
-		if len(recordsBySp.RecordTimes) >= int(setting.Config.LimitSpMaintenance)-1 {
-			// if exceed limit of MaintenanceRecords, delete record and return true
-			SPMaintenanceMap.Delete(spP2pAddress)
-			return true
+	if value, ok := SPMaintenanceMap.Load(LAST_RECONNECT_KEY); ok {
+		lastRecord := value.(*LastReconnectRecord)
+		if time.Now().Before(lastRecord.Time.Add(time.Duration(lastRecord.NextAllowableReconnectInSec) * time.Second)) {
+			// if new maintenance rsp incoming in between the interval, extend the KV by storing it again (not changing value)
+			SPMaintenanceMap.Store(LAST_RECONNECT_KEY, lastRecord)
+			return false
 		}
-		recordsBySp.RecordTimes = append(recordsBySp.RecordTimes, recordTime)
-		SPMaintenanceMap.Store(spP2pAddress, recordsBySp)
-		utils.DebugLogf("RecordSpMaintenance of SP[%v] appended, current size is %v",
-			spP2pAddress, len(recordsBySp.RecordTimes))
-		return false
+		// if new maintenance rsp incoming beyond the interval, reset the map and modify the NextAllowableReconnectInSec
+		nextReconnectInterval := int64(math.Min(MAX_RECONNECT_INTERVAL_THRESHOLD,
+			float64(lastRecord.NextAllowableReconnectInSec*RECONNECT_INTERVAL_MULTIPLIER)))
+		resetSPMaintenanceMap(spP2pAddress, recordTime, nextReconnectInterval)
+		return true
 	}
-	SPMaintenanceMap.Store(spP2pAddress, &MaintenanceRecordsBySp{
-		[]int64{recordTime},
+	resetSPMaintenanceMap(spP2pAddress, recordTime, MIN_RECONNECT_INTERVAL_THRESHOLD)
+	return true
+}
+
+func resetSPMaintenanceMap(spP2pAddress string, recordTime time.Time, nextReconnectInterval int64) {
+	// reset the interval to 60s
+	SPMaintenanceMap = nil
+	SPMaintenanceMap = utils.NewAutoCleanMap(time.Duration(nextReconnectInterval) * time.Second)
+	SPMaintenanceMap.Store(LAST_RECONNECT_KEY, &LastReconnectRecord{
+		SpP2PAddress:                spP2pAddress,
+		Time:                        recordTime,
+		NextAllowableReconnectInSec: nextReconnectInterval,
 	})
-	utils.DebugLogf("RecordSpMaintenance of SP[%v] appended, current size is 1", spP2pAddress)
-	return false
 }
