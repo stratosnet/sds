@@ -8,21 +8,6 @@ import (
 	"time"
 )
 
-const (
-	LAST_RECONNECT_KEY               = "last_reconnect"
-	MIN_RECONNECT_INTERVAL_THRESHOLD = 3  // seconds
-	MAX_RECONNECT_INTERVAL_THRESHOLD = 20 // seconds
-	RECONNECT_INTERVAL_MULTIPLIER    = 3
-)
-
-var SPMaintenanceMap *AutoCleanMap
-
-type LastReconnectRecord struct {
-	SpP2PAddress                string
-	Time                        time.Time
-	NextAllowableReconnectInSec int64
-}
-
 func TestAutoClean(t *testing.T) {
 	autoCleanMap := NewAutoCleanMap(5 * time.Second)
 
