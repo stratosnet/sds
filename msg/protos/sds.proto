@@ -658,7 +658,6 @@ message ReqLatencyCheck {
   string p2p_address_pp = 2;
   string network_address_sp = 3;
   string sp_index = 4;
-  string ping_time = 5;
 }
 
 message RspLatencyCheck {
@@ -666,7 +665,6 @@ message RspLatencyCheck {
   string p2p_address_pp = 2;
   string network_address_sp = 3;
   string sp_index = 4;
-  string ping_time = 5;
 }
 
 // BP msg ###################
