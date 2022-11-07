@@ -204,7 +204,7 @@ func RspUploadSlicesWrong(ctx context.Context, _ core.WriteCloser) {
 	}
 
 	if len(target.Slices) == 0 {
-		pp.ErrorLogf(ctx, "No new slices in RspUploadSlicesWrong for file %v. Cannot update slice destinations")
+		pp.ErrorLogf(ctx, "No new slices in RspUploadSlicesWrong for file %v. Cannot update slice destinations", target.FileHash)
 		return
 	}
 
