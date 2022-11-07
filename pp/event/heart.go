@@ -2,7 +2,6 @@ package event
 
 import (
 	"context"
-	"strconv"
 	"sync"
 	"time"
 
@@ -40,6 +39,7 @@ func ReqHBLatencyCheckSpList(ctx context.Context, conn core.WriteCloser) {
 	//utils.DebugLogf("====== sending latency check %v ======", client.GetConnectionName(conn))
 
 	peers.ClearBufferedSpConns()
+	peers.ClearPingTimeSPMap()
 	// clear optSp before ping sp list
 	summary.optSp = OptimalSp{}
 	go peers.SendLatencyCheckMessageToSPList(ctx)
@@ -57,7 +57,6 @@ func ReqLatencyCheckToPp(ctx context.Context, conn core.WriteCloser) {
 	response := &protos.RspLatencyCheck{
 		HbType:       target.HbType,
 		P2PAddressPp: setting.Config.P2PAddress,
-		PingTime:     target.PingTime,
 	}
 	peers.SendMessage(ctx, conn, response, header.RspLatencyCheck)
 	return
@@ -72,30 +71,34 @@ func RspHBLatencyCheckSpList(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 	if response.HbType == protos.HeartbeatType_LATENCY_CHECK_PP {
-		start, _ := strconv.ParseInt(response.PingTime, 10, 64)
 		peer := peers.GetPPByP2pAddress(ctx, response.P2PAddressPp)
 		if peer == nil {
 			return
 		}
-		peer.Latency = rspTime - start
-		peers.UpdatePP(ctx, peer)
+		if value, ok := peers.PingTimePPMap.Load(peer.NetworkAddress); ok {
+			start := value.(int64)
+			peer.Latency = rspTime - start
+			peers.UpdatePP(ctx, peer)
+			// delete the KV from PingTimePPMap
+			peers.PingTimePPMap.Delete(peer.NetworkAddress)
+		}
 	} else if response.HbType == protos.HeartbeatType_LATENCY_CHECK {
-		go updateOptimalSp(ctx, rspTime, &response, &summary.optSp)
+		if value, ok := peers.PingTimeSPMap.Load(response.NetworkAddressSp); ok {
+			start := value.(int64)
+			timeCost := rspTime - start
+			go updateOptimalSp(ctx, timeCost, &response, &summary.optSp)
+			// delete the KV from PingTimeSPMap
+			peers.PingTimeSPMap.Delete(response.NetworkAddressSp)
+		}
 	}
 }
 
-func updateOptimalSp(ctx context.Context, rspTime int64, rsp *protos.RspLatencyCheck, optSp *OptimalSp) {
+func updateOptimalSp(ctx context.Context, timeCost int64, rsp *protos.RspLatencyCheck, optSp *OptimalSp) {
 	summary.mtx.Lock()
 	if rsp.P2PAddressPp != setting.Config.P2PAddress || len(rsp.P2PAddressPp) == 0 {
 		// invalid response containing unknown PP p2pAddr
 		return
 	}
-	reqTime, err := strconv.ParseInt(rsp.PingTime, 10, 64)
-	if err != nil {
-		pp.ErrorLog(ctx, "cannot parse ping time from response")
-		return
-	}
-	timeCost := rspTime - reqTime
 	if timeCost <= 0 {
 		return
 	}

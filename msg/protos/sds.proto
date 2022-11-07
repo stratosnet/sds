@@ -658,7 +658,6 @@ message ReqLatencyCheck {
   string p2p_address_pp = 2;
   string network_address_sp = 3;
   string sp_index = 4;
-  string ping_time = 5;
 }
 
 message RspLatencyCheck {
@@ -666,7 +665,6 @@ message RspLatencyCheck {
   string p2p_address_pp = 2;
   string network_address_sp = 3;
   string sp_index = 4;
-  string ping_time = 5;
 }
 
 // BP msg ###################
@@ -891,4 +889,14 @@ message RspBadVersion{
   int32  version = 1;
   int32  minimum_version = 2;
   string command = 3;
+}
+
+enum SpMaintenanceType {
+  CONSENSUS = 0;
+  OTHER = 1;
+}
+
+message RspSpUnderMaintenance{
+  string sp_p2p_address = 1;
+  int32  maintenance_type = 2;
 }

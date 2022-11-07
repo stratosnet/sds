@@ -195,6 +195,7 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAddr string, walletPubkey, walletSign []byte, w http.ResponseWriter) {
 	pp.DebugLog(ctx, "GetShareFile for file ", keyword)
 	if setting.CheckLogin() {
+		core.RegisterReqId(ctx, task.LOCAL_REQID)
 		peers.SendMessageDirectToSPOrViaPP(ctx, requests.ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr, walletPubkey, walletSign), header.ReqGetShareFile)
 		storeResponseWriter(ctx, w)
 	} else {
