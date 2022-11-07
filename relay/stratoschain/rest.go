@@ -10,6 +10,10 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/pkg/errors"
+
+	coretypes "github.com/tendermint/tendermint/rpc/core/types"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -17,8 +21,6 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdkrest "github.com/cosmos/cosmos-sdk/types/rest"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
-
-	//txtypes "github.com/cosmos/cosmos-sdk/types/tx"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
@@ -26,7 +28,9 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/pkg/errors"
+
+	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
+
 	"github.com/stratosnet/sds/cmd/relayd/setting"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay"
@@ -34,13 +38,9 @@ import (
 	_ "github.com/stratosnet/sds/relay/stratoschain/prefix"
 	relaytypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils"
-	//"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	//"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	utilsecp256k1 "github.com/stratosnet/sds/utils/crypto/secp256k1"
-	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
-	//"github.com/tendermint/tendermint/crypto"
-	coretypes "github.com/tendermint/tendermint/rpc/core/types"
+	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
 var Url string
@@ -80,7 +80,7 @@ func FetchAccountInfo(address string) (*authtypes.BaseAccount, error) {
 	return &account, err
 }
 
-func buildAndSignStdTxNew(protoConfig client.TxConfig, txBuilder client.TxBuilder, token, chainId, memo string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas, height int64) ([]byte, error) {
+func buildAndSignStdTxNew(protoConfig client.TxConfig, txBuilder client.TxBuilder, chainId, memo string, unsignedMsgs []*relaytypes.UnsignedMsg, fee utiltypes.Coin, gas, height int64) ([]byte, error) {
 	if len(unsignedMsgs) == 0 {
 		return nil, errors.New("cannot build tx: no msgs to sign")
 	}
@@ -167,7 +167,7 @@ func buildAndSignStdTxNew(protoConfig client.TxConfig, txBuilder client.TxBuilde
 	return reqBytes, nil
 }
 
-func BuildTxBytesNew(protoConfig client.TxConfig, txBuilder client.TxBuilder, token, chainId, memo, mode string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas, height int64) ([]byte, error) {
+func BuildTxBytesNew(protoConfig client.TxConfig, txBuilder client.TxBuilder, chainId, memo, mode string, unsignedMsgs []*relaytypes.UnsignedMsg, fee utiltypes.Coin, gas, height int64) ([]byte, error) {
 	filteredMsgs := filterInvalidSignatures(unsignedMsgs)          // Filter msgs with invalid signatures
 	accountInfos := fetchAllAccountInfos(filteredMsgs)             // Fetch account info from stratos-chain for each signature
 	updatedMsgs := updateSignatureKeys(filteredMsgs, accountInfos) // Update signatureKeys for each msg
@@ -177,10 +177,10 @@ func BuildTxBytesNew(protoConfig client.TxConfig, txBuilder client.TxBuilder, to
 			len(updatedMsgs), len(unsignedMsgs)-len(filteredMsgs), len(filteredMsgs)-len(updatedMsgs))
 	}
 
-	return buildAndSignStdTxNew(protoConfig, txBuilder, token, chainId, memo, updatedMsgs, fee, gas, height)
+	return buildAndSignStdTxNew(protoConfig, txBuilder, chainId, memo, updatedMsgs, fee, gas, height)
 }
 
-func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas, height int64) (*legacytx.StdTx, error) {
+func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.UnsignedMsg, fee utiltypes.Coin, gas, height int64) (*legacytx.StdTx, error) {
 	if len(unsignedMsgs) == 0 {
 		return nil, errors.New("cannot build tx: no msgs to sign")
 	}
@@ -189,7 +189,10 @@ func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.U
 
 	stdFee := legacytx.NewStdFee(
 		uint64(gas),
-		sdktypes.NewCoins(sdktypes.NewInt64Coin(token, fee)),
+		sdktypes.NewCoins(sdktypes.Coin{
+			Denom:  fee.Denom,
+			Amount: fee.Amount,
+		}),
 	)
 
 	// Collect list of signatures to do. Must match order of GetSigners() method in cosmos-sdk's stdtx.go
@@ -251,7 +254,7 @@ func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.U
 	return &tx, nil
 }
 
-func BuildTxBytes(token, chainId, memo, mode string, unsignedMsgs []*relaytypes.UnsignedMsg, fee, gas, height int64) ([]byte, error) {
+func BuildTxBytes(token, chainId, memo, mode string, unsignedMsgs []*relaytypes.UnsignedMsg, fee utiltypes.Coin, gas, height int64) ([]byte, error) {
 	filteredMsgs := filterInvalidSignatures(unsignedMsgs)          // Filter msgs with invalid signatures
 	accountInfos := fetchAllAccountInfos(filteredMsgs)             // Fetch account info from stratos-chain for each signature
 	updatedMsgs := updateSignatureKeys(filteredMsgs, accountInfos) // Update signatureKeys for each msg

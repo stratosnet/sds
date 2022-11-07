@@ -13,10 +13,11 @@ import (
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
+	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
 // Update stake of node
-func UpdateStake(ctx context.Context, stakeDelta, fee, gas int64, incrStake bool) error {
+func UpdateStake(ctx context.Context, stakeDelta utiltypes.Coin, fee utiltypes.Coin, gas int64, incrStake bool) error {
 	updateStakeReq, err := reqUpdateStakeData(stakeDelta, fee, gas, incrStake)
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't build update PP stake request: "+err.Error())

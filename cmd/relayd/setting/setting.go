@@ -33,13 +33,12 @@ type stratoschain struct {
 }
 
 type transactionsConfig struct {
-	Fee int64 `yaml:"fee"`
-	Gas int64 `yaml:"gas"`
+	Fee string `yaml:"fee"`
+	Gas int64  `yaml:"gas"`
 }
 
 type blockchainInfoConfig struct {
 	ChainId      string             `toml:"chain_id"`
-	Token        string             `toml:"token"`
 	Transactions transactionsConfig `toml:"transactions"`
 }
 

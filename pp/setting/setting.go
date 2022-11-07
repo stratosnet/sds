@@ -45,7 +45,7 @@ const (
 
 	DEFAULT_MAX_CONNECTION = 1000
 
-	DEFAULT_MIN_UNSUSPEND_STAKE = 1 * 1000000000 // 1 stos
+	DEFAULT_MIN_UNSUSPEND_STAKE = "1stos" // 1 stos
 )
 
 var (
@@ -130,7 +130,6 @@ type config struct {
 	IsLimitUploadSpeed   bool         `toml:"is_limit_upload_speed"`
 	LimitUploadSpeed     uint64       `toml:"limit_upload_speed"`
 	ChainId              string       `toml:"chain_id"`
-	Token                string       `toml:"token"`
 	StratosChainUrl      string       `toml:"stratos_chain_url"`
 	RestPort             string       `toml:"rest_port"`
 	InternalPort         string       `toml:"internal_port"`
@@ -318,7 +317,6 @@ func defaultConfig() *config {
 		IsLimitUploadSpeed:   false,
 		LimitUploadSpeed:     0,
 		ChainId:              "tropos-4",
-		Token:                "ustos",
 		StratosChainUrl:      "http://127.0.0.1:1317",
 		RestPort:             "",
 		InternalPort:         "",
