@@ -410,6 +410,7 @@ func (api *terminalCmd) CancelShare(param []string) (CmdResult, error) {
 
 func (api *terminalCmd) GetShareFile(param []string) (CmdResult, error) {
 	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	core.RegisterReqId(ctx, task.LOCAL_REQID)
 	if len(param) < 1 {
 		return CmdResult{Msg: ""}, errors.New("input share link and retrieval secret key(if any)")
 	}
