@@ -56,7 +56,7 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ htt
 
 	isFile, err := file.IsFile(path)
 	if err != nil {
-		utils.ErrorLog(err)
+		pp.ErrorLog(ctx, err)
 		return
 	}
 	if isFile {
