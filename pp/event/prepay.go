@@ -10,10 +10,11 @@ import (
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/relay/stratoschain"
+	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
 // Prepay PP node sends a prepay transaction
-func Prepay(ctx context.Context, amount, fee, gas int64) error {
+func Prepay(ctx context.Context, amount utiltypes.Coin, fee utiltypes.Coin, gas int64) error {
 	prepayReq, err := reqPrepayData(amount, fee, gas)
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't build PP prepay request: "+err.Error())

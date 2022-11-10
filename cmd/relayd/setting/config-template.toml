@@ -23,9 +23,8 @@ max_msg_per_tx = 250
 
 [blockchain_info]
 chain_id = "testchain_1-1"
-token = "ustos"
 [blockchain_info.transactions]
-fee = 30000
+fee = "30000wei"
 gas = 20000000
 
 [keys]

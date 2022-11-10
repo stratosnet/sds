@@ -288,13 +288,18 @@ func (m *MultiClient) txBroadcasterLoop() {
 		for _, unsignedMsg := range unsignedMsgs {
 			unsignedSdkMsgs = append(unsignedSdkMsgs, unsignedMsg.Msg.(legacytx.LegacyMsg))
 		}
-		txBuilder, err := setMsgInfoToTxBuilder(txBuilder, unsignedSdkMsgs, setting.Config.BlockchainInfo.Transactions.Fee, setting.Config.BlockchainInfo.Transactions.Gas)
+		fee, err := types.ParseCoinNormalized(setting.Config.BlockchainInfo.Transactions.Fee)
+		if err != nil {
+			utils.ErrorLog("couldn't build tx bytes", err)
+			return
+		}
+		txBuilder, err = setMsgInfoToTxBuilder(txBuilder, unsignedSdkMsgs, fee, setting.Config.BlockchainInfo.Transactions.Gas)
 		if err != nil {
 			utils.ErrorLog("couldn't set tx builder", err)
 			return
 		}
-		txBytes, err := stratoschain.BuildTxBytesNew(protoConfig, txBuilder, setting.Config.BlockchainInfo.Token, setting.Config.BlockchainInfo.ChainId, "",
-			flags.BroadcastBlock, unsignedMsgs, setting.Config.BlockchainInfo.Transactions.Fee,
+		txBytes, err := stratoschain.BuildTxBytesNew(protoConfig, txBuilder, setting.Config.BlockchainInfo.ChainId, "",
+			flags.BroadcastBlock, unsignedMsgs, fee,
 			setting.Config.BlockchainInfo.Transactions.Gas, int64(0))
 		unsignedMsgs = nil // Clearing msg list
 		if err != nil {
@@ -436,13 +441,18 @@ func countMsgsByType(unsignedMsgs []*relaytypes.UnsignedMsg) string {
 	return "[" + countString + "]"
 }
 
-func setMsgInfoToTxBuilder(txBuilder client.TxBuilder, txMsg []sdktypes.Msg, fee int64, gas int64) (client.TxBuilder, error) {
+func setMsgInfoToTxBuilder(txBuilder client.TxBuilder, txMsg []sdktypes.Msg, fee types.Coin, gas int64) (client.TxBuilder, error) {
 	err := txBuilder.SetMsgs(txMsg...)
 	if err != nil {
 		return nil, err
 	}
 
-	txBuilder.SetFeeAmount(sdktypes.NewCoins(sdktypes.NewInt64Coin(setting.Config.BlockchainInfo.Token, fee)))
+	txBuilder.SetFeeAmount(sdktypes.NewCoins(
+		sdktypes.Coin{
+			Denom:  fee.Denom,
+			Amount: fee.Amount,
+		}),
+	)
 	//txBuilder.SetFeeGranter(tx.FeeGranter())
 	txBuilder.SetGasLimit(uint64(gas))
 	txBuilder.SetMemo("")

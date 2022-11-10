@@ -9,6 +9,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/stratosnet/sds/pp/api"
 	"github.com/stratosnet/sds/pp/api/rest"
 	"github.com/stratosnet/sds/pp/serv"
@@ -16,6 +19,7 @@ import (
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
+	utiltypes "github.com/stratosnet/sds/utils/types"
 	"github.com/stratosnet/stratos-chain/types"
 )
 
@@ -26,6 +30,8 @@ const (
 )
 
 func nodePP(cmd *cobra.Command, args []string) error {
+	registerDenoms()
+
 	if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
 		go api.StartHTTPServ()
 	}
@@ -139,4 +145,17 @@ func SetupP2PKey() error {
 	setting.P2PPrivateKey = p2pKey.PrivateKey
 	setting.P2PPublicKey = ed25519.PrivKeyBytesToPubKeyBytes(setting.P2PPrivateKey)
 	return nil
+}
+
+// RegisterDenoms registers the denominations to the PP.
+func registerDenoms() {
+	if err := utiltypes.RegisterDenom(utiltypes.Stos, sdktypes.OneDec()); err != nil {
+		panic(err)
+	}
+	if err := utiltypes.RegisterDenom(utiltypes.Gwei, sdktypes.NewDecWithPrec(1, utiltypes.GweiDenomUnit)); err != nil {
+		panic(err)
+	}
+	if err := utiltypes.RegisterDenom(utiltypes.Wei, sdktypes.NewDecWithPrec(1, utiltypes.WeiDenomUnit)); err != nil {
+		panic(err)
+	}
 }

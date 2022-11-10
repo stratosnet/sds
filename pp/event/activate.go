@@ -15,10 +15,11 @@ import (
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
+	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
 // Activate Inactive PP node becomes active
-func Activate(ctx context.Context, amount, fee, gas int64) error {
+func Activate(ctx context.Context, amount utiltypes.Coin, fee utiltypes.Coin, gas int64) error {
 	// Query blockchain to know if this node is already a resource node
 	ppState, height, err := stratoschain.QueryResourceNodeState(setting.P2PAddress)
 	if err != nil {
