@@ -18,6 +18,7 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
+	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
 const (
@@ -106,13 +107,14 @@ func (api *terminalCmd) Activate(param []string) (CmdResult, error) {
 		return CmdResult{Msg: ""}, errors.New("expecting 3 params. Input amount of tokens, fee amount and gas amount")
 	}
 
-	amount, err := strconv.ParseInt(param[0], 10, 64)
+	amount, err := utiltypes.ParseCoinNormalized(param[0])
 	if err != nil {
-		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be an integer")
+		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token")
 	}
-	fee, err := strconv.ParseInt(param[1], 10, 64)
+
+	fee, err := utiltypes.ParseCoinNormalized(param[1])
 	if err != nil {
-		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be an integer")
+		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
 	}
 	gas, err := strconv.ParseInt(param[2], 10, 64)
 	if err != nil {
@@ -140,17 +142,22 @@ func (api *terminalCmd) UpdateStake(param []string) (CmdResult, error) {
 			"gas amount and flag of incrStake(0 for desc, 1 for incr)")
 	}
 
-	stakeDelta, err := strconv.ParseInt(param[0], 10, 64)
+	stakeDelta, err := utiltypes.ParseCoinNormalized(param[0])
 	if err != nil {
-		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be an integer")
+		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token")
 	}
-	if stakeDelta < int64(setting.DEFAULT_MIN_UNSUSPEND_STAKE) {
-		return CmdResult{Msg: ""}, errors.New("the minimum value to update stake is " + strconv.FormatInt(setting.DEFAULT_MIN_UNSUSPEND_STAKE, 10))
+	minUnsuspendStake, err := utiltypes.ParseCoinNormalized(setting.DEFAULT_MIN_UNSUSPEND_STAKE)
+	if err != nil {
+		return CmdResult{Msg: ""}, err
 	}
 
-	fee, err := strconv.ParseInt(param[1], 10, 64)
+	if stakeDelta.IsLT(minUnsuspendStake) {
+		return CmdResult{Msg: ""}, errors.New("the minimum value to update stake is " + minUnsuspendStake.String())
+	}
+
+	fee, err := utiltypes.ParseCoinNormalized(param[1])
 	if err != nil {
-		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be an integer")
+		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
 	}
 	gas, err := strconv.ParseInt(param[2], 10, 64)
 	if err != nil {
@@ -188,9 +195,9 @@ func (api *terminalCmd) Deactivate(param []string) (CmdResult, error) {
 		return CmdResult{Msg: ""}, errors.New("expecting 2 params. Input fee amount and gas amount")
 	}
 
-	fee, err := strconv.ParseInt(param[0], 10, 64)
+	fee, err := utiltypes.ParseCoinNormalized(param[0])
 	if err != nil {
-		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be an integert")
+		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
 	}
 	gas, err := strconv.ParseInt(param[1], 10, 64)
 	if err != nil {
@@ -213,13 +220,13 @@ func (api *terminalCmd) Prepay(param []string) (CmdResult, error) {
 		return CmdResult{Msg: ""}, errors.New("expecting 3 params. Input amount of tokens, fee amount and gas amount")
 	}
 
-	amount, err := strconv.ParseInt(param[0], 10, 64)
+	amount, err := utiltypes.ParseCoinNormalized(param[0])
 	if err != nil {
-		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be an integer")
+		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token")
 	}
-	fee, err := strconv.ParseInt(param[1], 10, 64)
+	fee, err := utiltypes.ParseCoinNormalized(param[1])
 	if err != nil {
-		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be an integer")
+		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
 	}
 	gas, err := strconv.ParseInt(param[2], 10, 64)
 	if err != nil {
@@ -410,6 +417,7 @@ func (api *terminalCmd) CancelShare(param []string) (CmdResult, error) {
 
 func (api *terminalCmd) GetShareFile(param []string) (CmdResult, error) {
 	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	core.RegisterReqId(ctx, task.LOCAL_REQID)
 	if len(param) < 1 {
 		return CmdResult{Msg: ""}, errors.New("input share link and retrieval secret key(if any)")
 	}

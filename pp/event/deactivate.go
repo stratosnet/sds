@@ -12,10 +12,11 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay/stratoschain"
+	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
 // Deactivate Request that an active PP node becomes inactive
-func Deactivate(ctx context.Context, fee, gas int64) error {
+func Deactivate(ctx context.Context, fee utiltypes.Coin, gas int64) error {
 	deactivateReq, err := reqDeactivateData(fee, gas)
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't build PP deactivate request: "+err.Error())
