@@ -46,6 +46,8 @@ const (
 	DEFAULT_MAX_CONNECTION = 1000
 
 	DEFAULT_MIN_UNSUSPEND_STAKE = "1stos" // 1 stos
+  
+        BACKUP_TASK_EXPIRY_HEIGHT = 900
 )
 
 var (
