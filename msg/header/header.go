@@ -79,6 +79,11 @@ const (
 	ReqMining = "ReqMin" // request to mining
 	RspMining = "RspMin" //  response to mining
 
+	ReqStartMaintenance = "ReqStMtn"
+	RspStartMaintenance = "RspStMtn"
+	ReqStopMaintenance  = "ReqSpMtn"
+	RspStopMaintenance  = "RspSpMtn"
+
 	// upload
 	ReqUploadFile              = "ReqUpl"
 	RspUploadFile              = "RspUpl"

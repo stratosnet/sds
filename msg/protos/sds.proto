@@ -51,6 +51,23 @@ message RspMining {
   Result result = 1;
 }
 
+message ReqStartMaintenance {
+  PPBaseInfo address = 1;
+  uint64 duration = 2;
+}
+
+message RspStartMaintenance {
+  Result result = 1;
+}
+
+message ReqStopMaintenance {
+  PPBaseInfo address = 1;
+}
+
+message RspStopMaintenance {
+  Result result = 1;
+}
+
 message ReqUploadFile {
   FileInfo file_info = 1;
   PPBaseInfo my_address = 2;
@@ -878,6 +895,7 @@ enum PPState {
   OFFLINE = 0;
   ONLINE = 1;
   SUSPEND = 2;
+  MAINTENANCE = 3;
 }
 
 message RspReportNodeStatus{

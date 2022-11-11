@@ -606,7 +606,7 @@ func ReqFileStorageInfoData(path, savePath, saveAs, walletAddr string, walletSig
 func ReqDownloadFileWrongData(fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask) *protos.ReqDownloadFileWrong {
 	var failedSlices []string
 	var failedPPNodes []*protos.PPBaseInfo
-	for sliceHash, _ := range dTask.FailedSlice {
+	for sliceHash := range dTask.FailedSlice {
 		failedSlices = append(failedSlices, sliceHash)
 	}
 	for _, nodeInfo := range dTask.FailedPPNodes {
@@ -828,9 +828,22 @@ func ReqNodeStatusData() *protos.ReqReportNodeStatus {
 	return req
 }
 
+func ReqStartMaintenance(duration uint64) *protos.ReqStartMaintenance {
+	return &protos.ReqStartMaintenance{
+		Address:  setting.GetPPInfo(),
+		Duration: duration,
+	}
+}
+
+func ReqStopMaintenance() *protos.ReqStopMaintenance {
+	return &protos.ReqStopMaintenance{
+		Address: setting.GetPPInfo(),
+	}
+}
+
 // PPMsgHeader
 func PPMsgHeader(data []byte, head string) header.MessageHead {
-	return header.MakeMessageHeader(1, uint16(setting.Config.Version.AppVer), uint32(len(data)), head)
+	return header.MakeMessageHeader(1, setting.Config.Version.AppVer, uint32(len(data)), head)
 }
 
 func UnmarshalData(ctx context.Context, target interface{}) bool {

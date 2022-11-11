@@ -26,6 +26,8 @@ func RegisterEventHandle() {
 	core.Register(header.RspPrepay, RspPrepay)
 	core.Register(header.RspPrepaid, RspPrepaid)
 	core.Register(header.RspMining, RspMining)
+	core.Register(header.RspStartMaintenance, RspStartMaintenance)
+	core.Register(header.RspStopMaintenance, RspStopMaintenance)
 	core.Register(header.RspFindMyFileList, RspFindMyFileList)
 	core.Register(header.ReqFindMyFileList, ReqFindMyFileList)
 	core.Register(header.ReqUploadFileSlice, ReqUploadFileSlice)
