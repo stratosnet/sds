@@ -9,6 +9,7 @@ import (
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
+	"github.com/stratosnet/sds/pp/setting"
 )
 
 // StartMaintenance sends a request to SP to temporarily put the current node into maintenance mode
@@ -37,6 +38,8 @@ func RspStartMaintenance(ctx context.Context, _ core.WriteCloser) {
 		pp.Logf(ctx, "cannot start maintenance: %v", target.Result.Msg)
 		return
 	}
+
+	setting.IsStartMining = false
 }
 
 func RspStopMaintenance(ctx context.Context, _ core.WriteCloser) {
