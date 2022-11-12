@@ -30,35 +30,35 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	defer c.Close()
 
 	helpStr := "\n" +
-		"help                                       			show all the commands\n" +
-		"wallets                                    			acquire all wallet wallets' address\n" +
-		"newwallet		                                        create new wallet, input password in prompt\n" +
-		"login <walletAddress> ->password           			unlock and log in wallet, input password in prompt\n" +
-		"registerpeer                               			register peer to index node\n" +
-		"rp                                         			register peer to index node\n" +
-		"activate <amount> <fee> <gas>              			send transaction to stchain to become an active PP node\n" +
-		"updateStake <stakeDelta> <fee> <gas> <isIncrStake>		send transaction to stchain to update active pp's stake\n" +
-		"deactivate <fee> <gas>                     			send transaction to stchain to stop being an active PP node\n" +
-		"startmining                                			start mining\n" +
-		"prepay <amount> <fee> <gas>                			prepay stos to get ozone\n" +
-		"put <filepath>                             			upload file, need to consume ozone\n" +
-		"putstream <filepath>                       			upload video file for streaming, need to consume ozone (alpha version, encode format config impossible)\n" +
-		"list <filename>                            			query uploaded file by self\n" +
-		"list <page id>                             			query all files owned by the wallet, paginated\n" +
-		"delete <filehash>                          			delete file\n" +
-		"get <sdm://account/filehash> <saveAs>			        download file, need to consume ozone\n" +
-		"	e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe\n" +
-		"sharefile <filehash> <duration> <is_private>			share an uploaded file\n" +
-		"allshare                                   			list all shared files\n" +
-		"getsharefile <sharelink> <password>        			download a shared file, need to consume ozone\n" +
-		"cancelshare <shareID>                      			cancel a shared file\n" +
-		"ver                                        			version\n" +
-		"monitor                                    			show monitor\n" +
-		"stopmonitor                                			stop monitor\n" +
-		"monitortoken                               			show token for pp monitor service\n" +
-		"config  <key> <value>                      			set config key value\n" +
-		"getoz <walletAddress> ->password           			get current ozone balance\n" +
-		"status			                                        get current resource node status\n" +
+		"help                                                   show all the commands\n" +
+		"wallets                                                acquire all wallet wallets' address\n" +
+		"newwallet                                              create new wallet, input password in prompt\n" +
+		"login <walletAddress> ->password                       unlock and log in wallet, input password in prompt\n" +
+		"registerpeer                                           register peer to index node\n" +
+		"rp                                                     register peer to index node\n" +
+		"activate <amount> <fee> <gas>                          send transaction to stchain to become an active PP node\n" +
+		"updateStake <stakeDelta> <fee> <gas> <isIncrStake>     send transaction to stchain to update active pp's stake\n" +
+		"deactivate <fee> <gas>                                 send transaction to stchain to stop being an active PP node\n" +
+		"startmining                                            start mining\n" +
+		"prepay <amount> <fee> <gas>                            prepay stos to get ozone\n" +
+		"put <filepath>                                         upload file, need to consume ozone\n" +
+		"putstream <filepath>                                   upload video file for streaming, need to consume ozone (alpha version, encode format config impossible)\n" +
+		"list <filename>                                        query uploaded file by self\n" +
+		"list <page id>                                         query all files owned by the wallet, paginated\n" +
+		"delete <filehash>                                      delete file\n" +
+		"get <sdm://account/filehash> <saveAs>                  download file, need to consume ozone\n" +
+		"    e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe\n" +
+		"sharefile <filehash> <duration> <is_private>           share an uploaded file\n" +
+		"allshare                                               list all shared files\n" +
+		"getsharefile <sharelink> <password>                    download a shared file, need to consume ozone\n" +
+		"cancelshare <shareID>                                  cancel a shared file\n" +
+		"ver                                                    version\n" +
+		"monitor                                                show monitor\n" +
+		"stopmonitor                                            stop monitor\n" +
+		"monitortoken                                           show token for pp monitor service\n" +
+		"config  <key> <value>                                  set config key value\n" +
+		"getoz <walletAddress> ->password                       get current ozone balance\n" +
+		"status                                                 get current resource node status\n" +
 		"maintenance start <duration>                           put the node in maintenance mode for the requested duration (in seconds)\n" +
 		"maintenance stop                                       stop the current maintenance\n"
 
