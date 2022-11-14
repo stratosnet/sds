@@ -7,7 +7,7 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	utiltypes "github.com/stratosnet/sds/utils/types"
@@ -21,7 +21,7 @@ func Prepay(ctx context.Context, amount utiltypes.Coin, fee utiltypes.Coin, gas 
 		return err
 	}
 	pp.Log(ctx, "Sending prepay message to SP! "+prepayReq.WalletAddress)
-	peers.SendMessageToSPServer(ctx, prepayReq, header.ReqPrepay)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, prepayReq, header.ReqPrepay)
 	return nil
 }
 

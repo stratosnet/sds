@@ -6,12 +6,13 @@ import (
 	"time"
 
 	"github.com/alex023/clock"
+	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/client"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/network"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
@@ -32,19 +33,65 @@ var (
 )
 
 func ReqHBLatencyCheckSpList(ctx context.Context, conn core.WriteCloser) {
-	if client.GetConnectionName(conn) != client.GetConnectionName(client.SPConn) {
+	if p2pserver.GetP2pServer(ctx).GetConnectionName(conn) != p2pserver.GetP2pServer(ctx).GetSpName() {
 		//utils.DebugLogf("====== not sending latency check %v ======", client.GetConnectionName(conn))
 		return
 	}
 	//utils.DebugLogf("====== sending latency check %v ======", client.GetConnectionName(conn))
 
-	peers.ClearBufferedSpConns()
-	peers.ClearPingTimeSPMap()
+	p2pserver.GetP2pServer(ctx).ClearBufferedSpConns()
+	network.GetPeer(ctx).ClearPingTimeSPMap()
 	// clear optSp before ping sp list
 	summary.optSp = OptimalSp{}
-	go peers.SendLatencyCheckMessageToSPList(ctx)
+	go SendLatencyCheckMessageToSPList(ctx)
 	myClockLatency := clock.NewClock()
 	myClockLatency.AddJobRepeat(time.Second*utils.LatencyCheckSpListTimeout, 1, connectAndRegisterToOptSp(ctx))
+}
+
+// SendLatencyCheckMessageToSPList
+func SendLatencyCheckMessageToSPList(ctx context.Context) {
+	utils.DebugLogf("[SP_LATENCY_CHECK] SendHeartbeatToSPList, num of SPs: %v", len(setting.Config.SPList))
+	if len(setting.Config.SPList) < 2 {
+		utils.ErrorLog("there are not enough SP nodes in the config file")
+		return
+	}
+	for i := 0; i < len(setting.Config.SPList); i++ {
+		selectedSP := setting.Config.SPList[i]
+		checkSingleSpLatency(ctx, selectedSP.NetworkAddress, false)
+	}
+}
+
+func checkSingleSpLatency(ctx context.Context, server string, heartbeat bool) {
+	if !p2pserver.GetP2pServer(ctx).SpConnValid() {
+		utils.DebugLog("SP latency check skipped until connection to SP is recovered")
+		return
+	}
+	utils.DebugLog("[SP_LATENCY_CHECK] SendHeartbeat(", server, ", req, header.ReqHeartbeat)")
+	var spConn *cf.ClientConn
+	var err error
+	if p2pserver.GetP2pServer(ctx).GetSpName() != server {
+		spConn, err = p2pserver.GetP2pServer(ctx).NewClient(ctx, server, heartbeat)
+		if err != nil {
+			utils.DebugLogf("failed to connect to server %v: %v", server, utils.FormatError(err))
+		}
+	} else {
+		utils.DebugLog("Checking latency for working SP ", server)
+		spConn = p2pserver.GetP2pServer(ctx).GetSpConn()
+	}
+	//defer spConn.Close()
+	if spConn != nil {
+		start := time.Now().UnixNano()
+		network.GetPeer(ctx).StorePingTimeSPMap(server, start)
+		pb := &protos.ReqLatencyCheck{
+			HbType:           protos.HeartbeatType_LATENCY_CHECK,
+			P2PAddressPp:     setting.P2PAddress,
+			NetworkAddressSp: server,
+		}
+		p2pserver.GetP2pServer(ctx).SendMessage(ctx, spConn, pb, header.ReqLatencyCheck)
+		if p2pserver.GetP2pServer(ctx).GetSpName() != server {
+			p2pserver.GetP2pServer(ctx).StoreBufferedSpConn(spConn)
+		}
+	}
 }
 
 // Request latency measurement from a pp and to a pp
@@ -58,7 +105,7 @@ func ReqLatencyCheckToPp(ctx context.Context, conn core.WriteCloser) {
 		HbType:       target.HbType,
 		P2PAddressPp: setting.Config.P2PAddress,
 	}
-	peers.SendMessage(ctx, conn, response, header.RspLatencyCheck)
+	p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, response, header.RspLatencyCheck)
 	return
 }
 
@@ -71,24 +118,22 @@ func RspHBLatencyCheckSpList(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 	if response.HbType == protos.HeartbeatType_LATENCY_CHECK_PP {
-		peer := peers.GetPPByP2pAddress(ctx, response.P2PAddressPp)
+		peer := p2pserver.GetP2pServer(ctx).GetPPByP2pAddress(ctx, response.P2PAddressPp)
 		if peer == nil {
 			return
 		}
-		if value, ok := peers.PingTimePPMap.Load(peer.NetworkAddress); ok {
-			start := value.(int64)
+		if start, ok := network.GetPeer(ctx).LoadPingTimeSPMap(peer.NetworkAddress); ok {
 			peer.Latency = rspTime - start
-			peers.UpdatePP(ctx, peer)
-			// delete the KV from PingTimePPMap
-			peers.PingTimePPMap.Delete(peer.NetworkAddress)
+			p2pserver.GetP2pServer(ctx).UpdatePP(ctx, peer)
+			// delete the KV from pingTimePPMap
+			network.GetPeer(ctx).DeletePingTimePPMap(peer.NetworkAddress)
 		}
 	} else if response.HbType == protos.HeartbeatType_LATENCY_CHECK {
-		if value, ok := peers.PingTimeSPMap.Load(response.NetworkAddressSp); ok {
-			start := value.(int64)
+		if start, ok := network.GetPeer(ctx).LoadPingTimeSPMap(response.NetworkAddressSp); ok {
 			timeCost := rspTime - start
 			go updateOptimalSp(ctx, timeCost, &response, &summary.optSp)
-			// delete the KV from PingTimeSPMap
-			peers.PingTimeSPMap.Delete(response.NetworkAddressSp)
+			// delete the KV from pingTimeSPMap
+			network.GetPeer(ctx).DeletePingTimePPMap(response.NetworkAddressSp)
 		}
 	}
 }
@@ -115,10 +160,10 @@ func connectAndRegisterToOptSp(ctx context.Context) func() {
 	return func() {
 		summary.mtx.Lock()
 		// clear buffered spConn
-		spConnsToClose := peers.GetBufferedSpConns()
+		spConnsToClose := p2pserver.GetP2pServer(ctx).GetBufferedSpConns()
 		pp.DebugLogf(ctx, "closing %v spConns", len(spConnsToClose))
 		for _, spConn := range spConnsToClose {
-			if spConn.GetName() == client.SPConn.GetName() {
+			if p2pserver.GetP2pServer(ctx).SpConnValid() && spConn.GetName() == p2pserver.GetP2pServer(ctx).GetSpName() {
 				pp.DebugLogf(ctx, "spConn %v in connection, not closing it", spConn.GetName())
 				continue
 			}
@@ -131,7 +176,7 @@ func connectAndRegisterToOptSp(ctx context.Context) func() {
 			summary.mtx.Unlock()
 			return
 		}
-		peers.ConfirmOptSP(ctx, summary.optSp.NetworkAddr)
+		p2pserver.GetP2pServer(ctx).ConfirmOptSP(ctx, summary.optSp.NetworkAddr)
 		summary.mtx.Unlock()
 	}
 }

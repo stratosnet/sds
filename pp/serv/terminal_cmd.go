@@ -11,9 +11,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/pp"
+	api2 "github.com/stratosnet/sds/pp/api"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
@@ -36,15 +37,15 @@ func TerminalAPI() *terminalCmd {
 	return &terminalCmd{}
 }
 
-func (api *terminalCmd) Wallets(param []string) (CmdResult, error) {
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
-	Wallets(ctx)
+func (api *terminalCmd) Wallets(ctx context.Context, param []string) (CmdResult, error) {
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
+	api2.Wallets(ctx)
 	return CmdResult{Msg: ""}, nil
 }
 
-func (api *terminalCmd) Getoz(param []string) (CmdResult, error) {
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
-	files, err := GetWallets(ctx, param[0], param[1])
+func (api *terminalCmd) Getoz(ctx context.Context, param []string) (CmdResult, error) {
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
+	files, err := api2.GetWallets(ctx, param[0], param[1])
 
 	if err != nil {
 		fmt.Println(err)
@@ -78,31 +79,31 @@ func (api *terminalCmd) Getoz(param []string) (CmdResult, error) {
 	return CmdResult{Msg: ""}, err
 }
 
-func (api *terminalCmd) NewWallet(param []string) (CmdResult, error) {
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
-	CreateWallet(ctx, param[0], param[1], param[2], param[3])
+func (api *terminalCmd) NewWallet(ctx context.Context, param []string) (CmdResult, error) {
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
+	api2.CreateWallet(ctx, param[0], param[1], param[2], param[3])
 	return CmdResult{Msg: ""}, nil
 }
 
-func (api *terminalCmd) Login(param []string) (CmdResult, error) {
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
-	err := Login(ctx, param[0], param[1])
+func (api *terminalCmd) Login(ctx context.Context, param []string) (CmdResult, error) {
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
+	err := api2.Login(ctx, param[0], param[1])
 	return CmdResult{Msg: ""}, err
 }
 
-func (api *terminalCmd) Start(param []string) (CmdResult, error) {
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
-	peers.StartMining(ctx)
+func (api *terminalCmd) Start(ctx context.Context, param []string) (CmdResult, error) {
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
+	network.GetPeer(ctx).StartMining(ctx)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) RegisterPP(param []string) (CmdResult, error) {
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+func (api *terminalCmd) RegisterPP(ctx context.Context, param []string) (CmdResult, error) {
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	event.RegisterNewPP(ctx)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) Activate(param []string) (CmdResult, error) {
+func (api *terminalCmd) Activate(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) != 3 {
 		return CmdResult{Msg: ""}, errors.New("expecting 3 params. Input amount of tokens, fee amount and gas amount")
 	}
@@ -129,14 +130,14 @@ func (api *terminalCmd) Activate(param []string) (CmdResult, error) {
 		return CmdResult{Msg: "register as a PP node first"}, nil
 	}
 
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	if err := event.Activate(ctx, amount, fee, gas); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) UpdateStake(param []string) (CmdResult, error) {
+func (api *terminalCmd) UpdateStake(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) != 4 {
 		return CmdResult{Msg: ""}, errors.New("expecting 4 params. Input amount of stakeDelta, fee amount, " +
 			"gas amount and flag of incrStake(0 for desc, 1 for incr)")
@@ -177,20 +178,20 @@ func (api *terminalCmd) UpdateStake(param []string) (CmdResult, error) {
 		return CmdResult{Msg: "register as a PP node first"}, nil
 	}
 
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	if err := event.UpdateStake(ctx, stakeDelta, fee, gas, incrStake); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) Status(param []string) (CmdResult, error) {
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
-	peers.GetPPStatusFromSP(ctx)
+func (api *terminalCmd) Status(ctx context.Context, param []string) (CmdResult, error) {
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
+	network.GetPeer(ctx).GetPPStatusFromSP(ctx)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) Deactivate(param []string) (CmdResult, error) {
+func (api *terminalCmd) Deactivate(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) != 2 {
 		return CmdResult{Msg: ""}, errors.New("expecting 2 params. Input fee amount and gas amount")
 	}
@@ -208,14 +209,14 @@ func (api *terminalCmd) Deactivate(param []string) (CmdResult, error) {
 		return CmdResult{Msg: "The node is already inactive"}, nil
 	}
 
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	if err := event.Deactivate(ctx, fee, gas); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) Prepay(param []string) (CmdResult, error) {
+func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) != 3 {
 		return CmdResult{Msg: ""}, errors.New("expecting 3 params. Input amount of tokens, fee amount and gas amount")
 	}
@@ -233,14 +234,14 @@ func (api *terminalCmd) Prepay(param []string) (CmdResult, error) {
 		return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be an integerr")
 	}
 
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	if err := event.Prepay(ctx, amount, fee, gas); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) Upload(param []string) (CmdResult, error) {
+func (api *terminalCmd) Upload(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) == 0 {
 		return CmdResult{}, errors.New("input upload file path")
 	}
@@ -250,33 +251,33 @@ func (api *terminalCmd) Upload(param []string) (CmdResult, error) {
 	}
 	pathStr := file.EscapePath(param[0:1])
 
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	event.RequestUploadFile(ctx, pathStr, isEncrypted, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) UploadStream(param []string) (CmdResult, error) {
+func (api *terminalCmd) UploadStream(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) == 0 {
 		return CmdResult{}, errors.New("input upload file path")
 	}
 	pathStr := file.EscapePath(param)
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	ctx = core.RegisterRemoteReqId(ctx, uuid.New().String())
 	event.RequestUploadStream(ctx, pathStr, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) BackupStatus(param []string) (CmdResult, error) {
+func (api *terminalCmd) BackupStatus(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) == 0 {
 		return CmdResult{}, errors.New("input file hash")
 	}
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	event.ReqBackupStatus(ctx, param[0])
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) List(param []string) (CmdResult, error) {
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+func (api *terminalCmd) List(ctx context.Context, param []string) (CmdResult, error) {
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	if len(param) == 0 {
 		event.FindFileList(ctx, "", setting.WalletAddress, 0, "", 0, true, nil)
 	} else {
@@ -290,7 +291,7 @@ func (api *terminalCmd) List(param []string) (CmdResult, error) {
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) Download(param []string) (CmdResult, error) {
+func (api *terminalCmd) Download(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) == 0 {
 		return CmdResult{}, errors.New("input download path, e.g: sdm://account_address/file_hash|filename(optional)")
 	}
@@ -298,13 +299,13 @@ func (api *terminalCmd) Download(param []string) (CmdResult, error) {
 	if len(param) == 2 {
 		saveAs = param[1]
 	}
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	core.RegisterReqId(ctx, task.LOCAL_REQID)
 	event.GetFileStorageInfo(ctx, param[0], "", saveAs, false, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) DeleteFn(param []string) (CmdResult, error) {
+func (api *terminalCmd) DeleteFn(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) == 0 {
 		fmt.Println("input file hash")
 		return CmdResult{}, errors.New("input file hash")
@@ -312,26 +313,26 @@ func (api *terminalCmd) DeleteFn(param []string) (CmdResult, error) {
 	if !utils.VerifyHash(param[0]) {
 		return CmdResult{}, errors.New("input correct file hash")
 	}
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	event.DeleteFile(ctx, param[0], nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) Ver(param []string) (CmdResult, error) {
+func (api *terminalCmd) Ver(ctx context.Context, param []string) (CmdResult, error) {
 	return CmdResult{Msg: fmt.Sprintf("version: %v", setting.Config.Version.Show)}, nil
 }
 
-func (api *terminalCmd) Monitor(param []string) (CmdResult, error) {
-	ShowMonitor()
+func (api *terminalCmd) Monitor(ctx context.Context, param []string) (CmdResult, error) {
+	ShowMonitor(ctx)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) StopMonitor(param []string) (CmdResult, error) {
+func (api *terminalCmd) StopMonitor(ctx context.Context, param []string) (CmdResult, error) {
 	StopMonitor()
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) Config(param []string) (CmdResult, error) {
+func (api *terminalCmd) Config(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) < 2 {
 		return CmdResult{Msg: ""}, errors.New("input parameter name and value, 'name value' with space separator")
 	}
@@ -340,7 +341,7 @@ func (api *terminalCmd) Config(param []string) (CmdResult, error) {
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) SharePath(param []string) (CmdResult, error) {
+func (api *terminalCmd) SharePath(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) < 3 {
 		return CmdResult{Msg: ""}, errors.New("input directory hash, share duration(in seconds, 0 for default value), is_private (0:public,1:private)")
 	}
@@ -356,7 +357,7 @@ func (api *terminalCmd) SharePath(param []string) (CmdResult, error) {
 	if private == 1 {
 		isPrivate = true
 	}
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	// if len(str1) == setting.FILEHASHLEN { //
 	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
@@ -365,7 +366,7 @@ func (api *terminalCmd) SharePath(param []string) (CmdResult, error) {
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) ShareFile(param []string) (CmdResult, error) {
+func (api *terminalCmd) ShareFile(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) < 3 {
 		return CmdResult{Msg: ""}, errors.New("input file hash or directory path, share duration(in seconds, 0 for default value), is_private (0:public,1:private)")
 	}
@@ -382,7 +383,7 @@ func (api *terminalCmd) ShareFile(param []string) (CmdResult, error) {
 	if private == 1 {
 		isPrivate = true
 	}
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	event.GetReqShareFile(ctx, param[0], "", setting.WalletAddress, int64(time), isPrivate, nil)
 	// if len(str1) == setting.FILEHASHLEN { //
 	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
@@ -391,8 +392,8 @@ func (api *terminalCmd) ShareFile(param []string) (CmdResult, error) {
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) AllShare(param []string) (CmdResult, error) {
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+func (api *terminalCmd) AllShare(ctx context.Context, param []string) (CmdResult, error) {
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	if len(param) < 1 {
 		event.GetAllShareLink(ctx, setting.WalletAddress, 0, nil)
 	} else {
@@ -406,18 +407,19 @@ func (api *terminalCmd) AllShare(param []string) (CmdResult, error) {
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) CancelShare(param []string) (CmdResult, error) {
+func (api *terminalCmd) CancelShare(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) < 1 {
 		return CmdResult{Msg: ""}, errors.New("input share id")
 	}
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	event.DeleteShare(ctx, param[0], setting.WalletAddress, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) GetShareFile(param []string) (CmdResult, error) {
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+func (api *terminalCmd) GetShareFile(ctx context.Context, param []string) (CmdResult, error) {
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	core.RegisterReqId(ctx, task.LOCAL_REQID)
+
 	if len(param) < 1 {
 		return CmdResult{Msg: ""}, errors.New("input share link and retrieval secret key(if any)")
 	}
@@ -430,33 +432,33 @@ func (api *terminalCmd) GetShareFile(param []string) (CmdResult, error) {
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) PauseGet(param []string) (CmdResult, error) {
+func (api *terminalCmd) PauseGet(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) < 1 {
 		return CmdResult{Msg: ""}, errors.New("input file hash of the pause")
 	}
-	event.DownloadSlicePause(param[0], "", nil)
+	event.DownloadSlicePause(ctx, param[0], "", nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) PausePut(param []string) (CmdResult, error) {
+func (api *terminalCmd) PausePut(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) < 1 {
 		return CmdResult{Msg: ""}, errors.New("input file hash of the pause")
 	}
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	event.UploadPause(ctx, param[0], "", nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) CancelGet(param []string) (CmdResult, error) {
+func (api *terminalCmd) CancelGet(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) < 1 {
 		return CmdResult{Msg: ""}, errors.New("input file hash of the cancel")
 	}
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	event.DownloadSliceCancel(ctx, param[0], "", nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) MonitorToken(param []string) (CmdResult, error) {
+func (api *terminalCmd) MonitorToken(ctx context.Context, param []string) (CmdResult, error) {
 	utils.Log("Monitor token is:", GetCurrentToken())
 	return CmdResult{Msg: DefaultMsg}, nil
 }

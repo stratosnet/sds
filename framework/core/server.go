@@ -27,7 +27,10 @@ type onConnectFunc func(WriteCloser) bool
 type onMessageFunc func(msg.RelayMsgBuf, WriteCloser)
 type onCloseFunc func(WriteCloser)
 type onErrorFunc func(WriteCloser)
-
+type ContextKV struct {
+	Key   interface{}
+	Value interface{}
+}
 type options struct {
 	onConnect      onConnectFunc
 	onMessage      onMessageFunc
@@ -39,6 +42,7 @@ type options struct {
 	maxflow        int
 	minAppVersion  uint16
 	p2pAddress     string
+	contextkv      []ContextKV
 }
 
 // ServerOption
@@ -84,6 +88,9 @@ func CreateServer(opt ...ServerOption) *Server {
 		goAtom: utils.CreateAtomicInt64(0),
 	}
 	s.ctx, s.cancel = context.WithCancel(context.Background())
+	for _, kv := range s.opts.contextkv {
+		s.ctx = context.WithValue(s.ctx, kv.Key, kv.Value)
+	}
 	return s
 }
 
@@ -307,6 +314,13 @@ func LogOpenOption(b bool) ServerOption {
 func MaxConnectionsOption(indicator int) ServerOption {
 	return func(o *options) {
 		o.maxConnections = indicator
+	}
+}
+
+// ContextKVOption
+func ContextKVOption(kv []ContextKV) ServerOption {
+	return func(o *options) {
+		o.contextkv = kv
 	}
 }
 

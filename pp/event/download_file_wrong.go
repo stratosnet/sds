@@ -8,7 +8,7 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
@@ -26,7 +26,7 @@ func CheckAndSendRetryMessage(ctx context.Context, dTask *task.DownloadTask) {
 	}
 	if f, ok := task.DownloadFileMap.Load(dTask.FileHash + fileReqId); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
-		peers.SendMessageToSPServer(ctx, requests.ReqDownloadFileWrongData(fInfo, dTask), header.ReqDownloadFileWrong)
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqDownloadFileWrongData(fInfo, dTask), header.ReqDownloadFileWrong)
 	}
 }
 

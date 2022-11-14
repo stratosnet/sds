@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"math/rand"
-	"strings"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -12,7 +11,6 @@ import (
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
@@ -309,15 +307,6 @@ type UploadProgress struct {
 
 // UploadProgressMap Map of the progress for ongoing uploads
 var UploadProgressMap = &sync.Map{} // map[string]*UploadProgress
-
-func CleanUpConnMap(fileHash string) {
-	client.UpConnMap.Range(func(k, v interface{}) bool {
-		if strings.HasPrefix(k.(string), fileHash) {
-			client.UpConnMap.Delete(k.(string))
-		}
-		return true
-	})
-}
 
 func CreateUploadSliceTask(ctx context.Context, slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
 	if uploadTask.IsVideoStream {

@@ -6,7 +6,8 @@ import (
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/network"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
@@ -21,11 +22,11 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
-		utils.Log("failed to get any peers")
+		utils.Log("failed to get any network")
 		return
 	}
 
-	err := peers.SavePPList(ctx, &target)
+	err := p2pserver.GetP2pServer(ctx).SavePPList(ctx, &target)
 	if err != nil {
 		utils.ErrorLog("Error when saving PP List", err)
 	}
@@ -34,6 +35,6 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 		(setting.State == types.PP_ACTIVE)
 
 	if shouldRegisterToSP {
-		peers.RegisterToSP(ctx, true)
+		network.GetPeer(ctx).RegisterToSP(ctx, true)
 	}
 }

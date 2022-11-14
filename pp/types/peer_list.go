@@ -40,7 +40,7 @@ func (peerInfo *PeerInfo) String() string {
 type PeerList struct {
 	localNetworkAddress   string
 	ppListPath            string
-	ppMapByNetworkAddress *sync.Map // map[string]*PeerInfo
+	PpMapByNetworkAddress *sync.Map // map[string]*PeerInfo
 	ppMapByP2pAddress     *sync.Map // map[string]*PeerInfo
 
 	rwmutex sync.RWMutex
@@ -49,7 +49,7 @@ type PeerList struct {
 func (peerList *PeerList) Init(localNetworkAddress, ppListPath string) {
 	peerList.localNetworkAddress = localNetworkAddress
 	peerList.ppListPath = ppListPath
-	peerList.ppMapByNetworkAddress = &sync.Map{}
+	peerList.PpMapByNetworkAddress = &sync.Map{}
 	peerList.ppMapByP2pAddress = &sync.Map{}
 }
 
@@ -101,13 +101,13 @@ func (peerList *PeerList) loadPPListFromFile(ctx context.Context) error {
 			Status:             PEER_NOT_CONNECTED,
 		}
 
-		peerList.ppMapByNetworkAddress.Store(ppNode.NetworkAddress, ppNode)
+		peerList.PpMapByNetworkAddress.Store(ppNode.NetworkAddress, ppNode)
 		peerList.ppMapByP2pAddress.Store(ppNode.P2pAddress, ppNode)
 	}
 	return nil
 }
 
-func (peerList *PeerList) savePPListToFile(ctx context.Context) error {
+func (peerList *PeerList) SavePPListToFile(ctx context.Context) error {
 	peerList.rwmutex.Lock()
 	defer peerList.rwmutex.Unlock()
 
@@ -124,7 +124,7 @@ func (peerList *PeerList) savePPListToFile(ctx context.Context) error {
 	writer := csv.NewWriter(csvFile)
 
 	linesWritten := 0
-	peerList.ppMapByNetworkAddress.Range(func(k, v interface{}) bool {
+	peerList.PpMapByNetworkAddress.Range(func(k, v interface{}) bool {
 		ppNode, ok := v.(*PeerInfo)
 		if !ok {
 			pp.ErrorLogf(ctx, "Invalid PP with network address %v in local PP list)", k)
@@ -156,7 +156,7 @@ func (peerList *PeerList) savePPListToFile(ctx context.Context) error {
 
 func (peerList *PeerList) GetPPList(ctx context.Context) (list []*PeerInfo, total, connected int64) {
 	empty := true
-	peerList.ppMapByNetworkAddress.Range(func(k, v interface{}) bool {
+	peerList.PpMapByNetworkAddress.Range(func(k, v interface{}) bool {
 		empty = false
 		return false
 	})
@@ -172,7 +172,7 @@ func (peerList *PeerList) GetPPList(ctx context.Context) (list []*PeerInfo, tota
 	totalCnt := int64(0)
 	connectCnt := int64(0)
 
-	peerList.ppMapByNetworkAddress.Range(func(k, v interface{}) bool {
+	peerList.PpMapByNetworkAddress.Range(func(k, v interface{}) bool {
 		ppNode, ok := v.(*PeerInfo)
 		if !ok {
 			pp.ErrorLogf(ctx, "Invalid PP with network address %v in local PP map)", k)
@@ -223,14 +223,14 @@ func (peerList *PeerList) SavePPList(ctx context.Context, target *protos.RspGetP
 				peerList.ppMapByP2pAddress.Store(info.P2PAddress, ppNode)
 			}
 			if info.NetworkAddress != "" {
-				peerList.ppMapByNetworkAddress.Store(info.NetworkAddress, ppNode)
+				peerList.PpMapByNetworkAddress.Store(info.NetworkAddress, ppNode)
 			}
 			addedPeer = true
 		}
 	}
 
 	if addedPeer {
-		return peerList.savePPListToFile(ctx)
+		return peerList.SavePPListToFile(ctx)
 	}
 	return nil
 }
@@ -239,7 +239,7 @@ func (peerList *PeerList) GetPPByNetworkAddress(ctx context.Context, networkAddr
 	if networkAddress == "" {
 		return nil
 	}
-	value, found := peerList.ppMapByNetworkAddress.Load(networkAddress)
+	value, found := peerList.PpMapByNetworkAddress.Load(networkAddress)
 	if !found {
 		return nil
 	}
@@ -247,7 +247,7 @@ func (peerList *PeerList) GetPPByNetworkAddress(ctx context.Context, networkAddr
 	ppNode, ok := value.(*PeerInfo)
 	if !ok {
 		pp.ErrorLogf(ctx, "Invalid PP with network address %v in local PP list)", networkAddress)
-		peerList.ppMapByNetworkAddress.Delete(networkAddress)
+		peerList.PpMapByNetworkAddress.Delete(networkAddress)
 		return nil
 	}
 	return ppNode
@@ -282,10 +282,10 @@ func (peerList *PeerList) DeletePPByNetworkAddress(ctx context.Context, networkA
 	}
 
 	pp.DebugLogf(ctx, "deleting %v from local ppList", ppNode)
-	peerList.ppMapByNetworkAddress.Delete(networkAddress)
+	peerList.PpMapByNetworkAddress.Delete(networkAddress)
 	peerList.ppMapByP2pAddress.Delete(ppNode.P2pAddress)
 
-	err := peerList.savePPListToFile(ctx)
+	err := peerList.SavePPListToFile(ctx)
 	if err != nil {
 		pp.ErrorLog(ctx, "Error when saving PP list to file", err)
 	}
@@ -311,7 +311,7 @@ func (peerList *PeerList) UpdatePP(ctx context.Context, ppNode *PeerInfo) {
 			peerList.ppMapByP2pAddress.Store(ppNode.P2pAddress, ppNode)
 		}
 		if ppNode.NetworkAddress != "" {
-			peerList.ppMapByNetworkAddress.Store(ppNode.NetworkAddress, ppNode)
+			peerList.PpMapByNetworkAddress.Store(ppNode.NetworkAddress, ppNode)
 		}
 	} else {
 		// Update existing peer info
@@ -321,7 +321,7 @@ func (peerList *PeerList) UpdatePP(ctx context.Context, ppNode *PeerInfo) {
 		}
 		if ppNode.NetworkAddress != "" && existingPP.NetworkAddress == "" {
 			existingPP.NetworkAddress = ppNode.NetworkAddress
-			peerList.ppMapByNetworkAddress.Store(ppNode.NetworkAddress, existingPP)
+			peerList.PpMapByNetworkAddress.Store(ppNode.NetworkAddress, existingPP)
 		}
 
 		if ppNode.RestAddress != "" {
@@ -344,49 +344,8 @@ func (peerList *PeerList) UpdatePP(ctx context.Context, ppNode *PeerInfo) {
 		}
 	}
 
-	err := peerList.savePPListToFile(ctx)
+	err := peerList.SavePPListToFile(ctx)
 	if err != nil {
 		pp.ErrorLog(ctx, "Error when saving PP list to file", err)
-	}
-}
-
-func (peerList *PeerList) PPDisconnected(ctx context.Context, p2pAddress, networkAddress string) {
-	ppNode := peerList.GetPPByP2pAddress(ctx, p2pAddress)
-	if ppNode == nil {
-		ppNode = peerList.GetPPByNetworkAddress(ctx, networkAddress)
-	}
-
-	if ppNode == nil {
-		pp.DebugLogf(ctx, "PP %v (%v) is offline. It was not in the local PP list", p2pAddress, networkAddress)
-	} else {
-		ppNode.Status = PEER_NOT_CONNECTED
-		ppNode.LastConnectionTime = time.Now().Unix()
-		pp.DebugLogf(ctx, "PP %v is offline", ppNode)
-
-		err := peerList.savePPListToFile(ctx)
-		if err != nil {
-			pp.ErrorLog(ctx, "Error when saving PP list to file", err)
-		}
-	}
-}
-
-func (peerList *PeerList) PPDisconnectedNetId(ctx context.Context, netId int64) {
-	found := false
-	peerList.ppMapByNetworkAddress.Range(func(k, v interface{}) bool {
-		ppNode, ok := v.(*PeerInfo)
-		if !ok {
-			pp.ErrorLogf(ctx, "Invalid PP with network address %v in local PP list)", k)
-			return true
-		}
-		if ppNode.Status == PEER_CONNECTED && ppNode.NetId == netId {
-			peerList.PPDisconnected(ctx, ppNode.P2pAddress, ppNode.NetworkAddress)
-			found = true
-			return false
-		}
-		return true
-	})
-
-	if !found {
-		pp.DebugLogf(ctx, "PP with netId %v is offline, but it was not found in the local PP list", netId)
 	}
 }

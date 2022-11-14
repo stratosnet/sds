@@ -12,9 +12,8 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
-	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
@@ -63,10 +62,10 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, isVi
 	}
 
 	req := requests.ReqFileStorageInfoData(path, savePath, saveAs, setting.WalletAddress, wsign, setting.WalletPublicKey, isVideoStream, nil)
-	peers.SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
+	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 }
 
-func ClearFileInfoAndDownloadTask(fileHash string, fileReqId string, w http.ResponseWriter) {
+func ClearFileInfoAndDownloadTask(ctx context.Context, fileHash string, fileReqId string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		task.DownloadFileMap.Delete(fileHash + fileReqId)
 		task.DeleteDownloadTask(fileHash, setting.WalletAddress, "")
@@ -75,7 +74,8 @@ func ClearFileInfoAndDownloadTask(fileHash string, fileReqId string, w http.Resp
 			FileHash:      fileHash,
 			P2PAddress:    setting.P2PAddress,
 		}
-		peers.SendMessage(context.Background(), client.PPConn, req, header.ReqClearDownloadTask)
+		p2pServer := p2pserver.GetP2pServer(ctx)
+		p2pServer.SendMessage(ctx, p2pServer.GetPpConn(), req, header.ReqClearDownloadTask)
 		w.Write([]byte("ok"))
 	} else {
 		notLogin(w)
@@ -240,7 +240,7 @@ func GetSliceInfoBySliceNumber(fInfo *protos.RspFileStorageInfo, sliceNumber uin
 // ReqFileStorageInfo  P-PP , PP-SP
 func ReqFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("pp get ReqFileStorageInfo directly transfer to SP")
-	peers.TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
+	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
 // RspFileStorageInfo SP-PP , PP-P
@@ -278,7 +278,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	target.ReqId = fileReqId
 	pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, fileReqId)
 	if target.Result.State == protos.ResultState_RES_SUCCESS {
-		task.CleanDownloadFileAndConnMap(target.FileHash, target.ReqId)
+		task.CleanDownloadFileAndConnMap(ctx, target.FileHash, target.ReqId)
 		task.DownloadFileMap.Store(target.FileHash+target.ReqId, &target)
 		task.AddDownloadTask(&target)
 		if target.IsVideoStream {

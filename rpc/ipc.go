@@ -8,7 +8,7 @@ import (
 )
 
 // ServeListener accepts connections on l, serving JSON-RPC on them.
-func (s *Server) ServeListener(l net.Listener) error {
+func (s *Server) ServeListener(l net.Listener, ctx context.Context) error {
 	for {
 		conn, err := l.Accept()
 		if isTemporaryError(err) {
@@ -18,7 +18,7 @@ func (s *Server) ServeListener(l net.Listener) error {
 			return err
 		}
 		utils.Log("Accepted RPC connection", "conn", conn.RemoteAddr())
-		go s.ServeCodec(NewCodec(conn), 0)
+		go s.ServeCodecWithContext(NewCodec(conn), ctx)
 	}
 }
 

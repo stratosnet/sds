@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/pp/client"
 	"github.com/stratosnet/sds/pp/event"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
@@ -44,7 +44,7 @@ func SocketStart(conn net.Conn, upMap, downMap, m map[string]interface{}) error 
 		// utils.DebugLog("gress.Progress", gress.Progress)
 		// utils.DebugLog("f>>>>>>>>>>>>>>>>>>>>", hash)
 		gress.Rate = 0
-		client.UpConnMap.Range(func(k, v interface{}) bool {
+		p2pserver.UpConnMap.Range(func(k, v interface{}) bool {
 			if strings.HasPrefix(k.(string), hash) {
 				vconn := v.(*cf.ClientConn)
 				w := vconn.GetSecondWriteFlow()
@@ -78,7 +78,7 @@ func SocketStart(conn net.Conn, upMap, downMap, m map[string]interface{}) error 
 		// 	gress.State = true
 		// }
 		gress.Rate = 0
-		client.DownloadConnMap.Range(func(k, v interface{}) bool {
+		p2pserver.DownloadConnMap.Range(func(k, v interface{}) bool {
 			if strings.HasPrefix(k.(string), hash) {
 				vconn := v.(*cf.ClientConn)
 				re := vconn.GetSecondReadFlow()

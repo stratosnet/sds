@@ -99,8 +99,12 @@ type clientConn struct {
 	handler *handler
 }
 
-func (c *Client) newClientConn(conn ServerCodec) *clientConn {
-	ctx := context.WithValue(context.Background(), clientContextKey{}, c)
+func (c *Client) newClientConn(conn ServerCodec, ctx context.Context) *clientConn {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	ctx = context.WithValue(ctx, clientContextKey{}, c)
+
 	// Http connections have already set the scheme
 	if !c.isHTTP() && c.scheme != "" {
 		ctx = context.WithValue(ctx, "scheme", c.scheme)
@@ -191,12 +195,12 @@ func newClient(initctx context.Context, connect reconnectFunc) (*Client, error) 
 	if err != nil {
 		return nil, err
 	}
-	c := initClient(conn, randomIDGenerator(), new(serviceRegistry))
+	c := initClient(conn, randomIDGenerator(), new(serviceRegistry), nil)
 	c.reconnectFunc = connect
 	return c, nil
 }
 
-func initClient(conn ServerCodec, idgen func() ID, services *serviceRegistry) *Client {
+func initClient(conn ServerCodec, idgen func() ID, services *serviceRegistry, ctx context.Context) *Client {
 	scheme := ""
 	switch conn.(type) {
 	case *httpConn:
@@ -222,7 +226,7 @@ func initClient(conn ServerCodec, idgen func() ID, services *serviceRegistry) *C
 		reqTimeout:  make(chan *requestOp),
 	}
 	if !c.isHTTP() {
-		go c.dispatch(conn)
+		go c.dispatch(conn, ctx)
 	}
 	return c
 }
@@ -540,11 +544,11 @@ func (c *Client) reconnect(ctx context.Context) error {
 // dispatch is the main loop of the client.
 // It sends read messages to waiting calls to Call and BatchCall
 // and subscription notifications to registered subscriptions.
-func (c *Client) dispatch(codec ServerCodec) {
+func (c *Client) dispatch(codec ServerCodec, ctx context.Context) {
 	var (
 		lastOp      *requestOp  // tracks last send operation
 		reqInitLock = c.reqInit // nil while the send lock is held
-		conn        = c.newClientConn(codec)
+		conn        = c.newClientConn(codec, ctx)
 		reading     = true
 	)
 	defer func() {
@@ -591,7 +595,7 @@ func (c *Client) dispatch(codec ServerCodec) {
 			}
 			go c.read(newcodec)
 			reading = true
-			conn = c.newClientConn(newcodec)
+			conn = c.newClientConn(newcodec, ctx)
 			// Re-register the in-flight request on the new handler
 			// because that's where it will be sent.
 			conn.handler.addRequestOp(lastOp)

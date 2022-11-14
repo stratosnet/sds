@@ -12,8 +12,6 @@ import (
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/stratosnet/sds/pp/api"
-	"github.com/stratosnet/sds/pp/api/rest"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
@@ -29,18 +27,12 @@ const (
 	defaultConfigPath string = "./configs/config.toml"
 )
 
+var BaseServer = &serv.BaseServer{}
+
 func nodePP(cmd *cobra.Command, args []string) error {
 	registerDenoms()
 
-	if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
-		go api.StartHTTPServ()
-	}
-
-	if setting.Config.RestPort != "" {
-		go rest.StartHTTPServ()
-	}
-
-	serv.Start()
+	BaseServer.Start()
 
 	closure := make(chan os.Signal, 1)
 	signal.Notify(closure,
@@ -56,7 +48,7 @@ func nodePP(cmd *cobra.Command, args []string) error {
 		case sig := <-closure:
 			utils.Logf("Quit signal detected: [%s]. Shutting down...", sig.String())
 			// stop ipcServer | rpcServer | monitorServer | PPServer
-			serv.GetBaseServer().Stop()
+			BaseServer.Stop()
 			//os.Exit(1)
 			return nil
 		}
@@ -80,7 +72,6 @@ func nodePreRunE(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "Couldn't initialize id worker")
 	}
 
-	serv.StartDumpTrafficLog()
 	err = SetupP2PKey()
 	if err != nil {
 		return errors.Wrap(err, "Couldn't setup PP node")

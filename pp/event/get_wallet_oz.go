@@ -9,14 +9,14 @@ import (
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 )
 
 // GetWalletOz queries current ozone balance
 func GetWalletOz(ctx context.Context, walletAddr, reqId string) error {
 	pp.Logf(ctx, "Querying current ozone balance of the wallet: %v", walletAddr)
-	peers.SendMessageToSPServer(ctx, requests.ReqGetWalletOzData(walletAddr, reqId), header.ReqGetWalletOz)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqGetWalletOzData(walletAddr, reqId), header.ReqGetWalletOz)
 	return nil
 }
 

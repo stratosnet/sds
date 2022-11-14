@@ -9,7 +9,7 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
@@ -54,9 +54,9 @@ func ReqFileSliceBackupNotice(ctx context.Context, conn core.WriteCloser) {
 	task.AddTransferTask(target.TaskId, target.SliceStorageInfo.SliceHash, tTask)
 
 	//if the connection returns error, send a ReqTransferDownloadWrong message to sp to report the failure
-	err := peers.TransferSendMessageToPPServ(ctx, target.PpInfo.NetworkAddress, requests.ReqTransferDownloadData(target))
+	err := p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServ(ctx, target.PpInfo.NetworkAddress, requests.ReqTransferDownloadData(target))
 	if err != nil {
-		peers.SendMessageToSPServer(ctx, requests.ReqTransferDownloadWrongData(target), header.ReqTransferDownloadWrong)
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqTransferDownloadWrongData(target), header.ReqTransferDownloadWrong)
 	}
 }
 
@@ -68,7 +68,7 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	peers.UpdatePP(ctx, &types.PeerInfo{
+	p2pserver.GetP2pServer(ctx).UpdatePP(ctx, &types.PeerInfo{
 		NetworkAddress: target.NewPp.NetworkAddress,
 		P2pAddress:     target.NewPp.P2PAddress,
 		RestAddress:    target.NewPp.RestAddress,
@@ -95,11 +95,11 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	dataEnd := setting.MAXDATA
 	for {
 		if dataEnd > sliceDataLen {
-			peers.SendMessage(ctx, conn, requests.RspTransferDownload(sliceData[dataStart:], target.TaskId, sliceHash,
+			p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspTransferDownload(sliceData[dataStart:], target.TaskId, sliceHash,
 				target.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 			return
 		}
-		peers.SendMessage(ctx, conn, requests.RspTransferDownload(sliceData[dataStart:dataEnd], target.TaskId, sliceHash,
+		p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspTransferDownload(sliceData[dataStart:dataEnd], target.TaskId, sliceHash,
 			target.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 		dataStart += setting.MAXDATA
 		dataEnd += setting.MAXDATA
@@ -116,7 +116,7 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	if task.SaveTransferData(&target) {
 		// All data has been received
 		SendReportBackupSliceResult(ctx, target.TaskId, target.SliceHash, target.SpP2PAddress, true, false)
-		peers.SendMessage(ctx, conn, requests.RspTransferDownloadResultData(target.TaskId, target.SliceHash, target.SpP2PAddress), header.RspTransferDownloadResult)
+		p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspTransferDownloadResultData(target.TaskId, target.SliceHash, target.SpP2PAddress), header.RspTransferDownloadResult)
 	}
 }
 
@@ -164,7 +164,7 @@ func SendReportBackupSliceResult(ctx context.Context, taskId, sliceHash, spP2pAd
 		SpP2PAddress:  spP2pAddress,
 	}
 
-	peers.SendMessageToSPServer(ctx, req, header.ReqReportBackupSliceResult)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqReportBackupSliceResult)
 }
 
 // RspReportBackupSliceResult

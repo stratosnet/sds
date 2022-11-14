@@ -7,7 +7,7 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
@@ -24,7 +24,7 @@ func UpdateStake(ctx context.Context, stakeDelta utiltypes.Coin, fee utiltypes.C
 		return err
 	}
 	pp.Log(ctx, "Sending update stake message to SP! "+updateStakeReq.P2PAddress)
-	peers.SendMessageToSPServer(ctx, updateStakeReq, header.ReqUpdateStakePP)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, updateStakeReq, header.ReqUpdateStakePP)
 	return nil
 }
 

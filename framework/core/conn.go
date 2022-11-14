@@ -39,6 +39,11 @@ type WriteCloser interface {
 	Close()
 }
 
+type WriteHook struct {
+	Message string
+	Fn      func(packetId, costTime int64)
+}
+
 var (
 	GoroutineMap     = &sync.Map{}
 	HandshakeChanMap = &sync.Map{} // map[string]chan []byte    Map that stores channels used during handshake process
@@ -65,6 +70,8 @@ type ServerConn struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	writeHook []WriteHook
 }
 
 // CreateServerConn
@@ -146,6 +153,12 @@ func (sc *ServerConn) GetLocalP2pAddress() string {
 
 func (sc *ServerConn) GetRemoteP2pAddress() string {
 	return sc.remoteP2pAddress
+}
+
+func (sc *ServerConn) SetWriteHook(h []WriteHook) {
+	sc.mu.Lock()
+	sc.writeHook = h
+	sc.mu.Unlock()
 }
 
 func (sc *ServerConn) handshake() (error, bool) {
@@ -684,12 +697,13 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 			// Mylog(s.opts.logOpen,"i", i)
 		}
 	}
-	if cmd == header.RspDownloadSlice {
-		writeEnd := time.Now()
-		costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
-		report := WritePacketCostTime{PacketId: packet.PacketId, CostTime: costTime}
-		utils.DetailLogf("[core.conn | RspDownloadSlice] add cost time {%v} report to CostTimeCh", report)
-		CostTimeCh <- report
+	writeEnd := time.Now()
+	costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
+
+	for _, c := range sc.writeHook {
+		if cmd == c.Message && c.Fn != nil {
+			c.Fn(packet.PacketId, costTime)
+		}
 	}
 	cmem.Free(packet.Alloc)
 	return nil

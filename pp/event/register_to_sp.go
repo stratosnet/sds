@@ -7,8 +7,8 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/client"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/network"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
@@ -19,7 +19,7 @@ import (
 func ReqRegister(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqRegister
 	if requests.UnmarshalData(ctx, &target) {
-		peers.UpdatePP(ctx, &types.PeerInfo{
+		p2pserver.GetP2pServer(ctx).UpdatePP(ctx, &types.PeerInfo{
 			NetworkAddress: target.Address.NetworkAddress,
 			P2pAddress:     target.Address.P2PAddress,
 			RestAddress:    target.Address.RestAddress,
@@ -27,7 +27,7 @@ func ReqRegister(ctx context.Context, conn core.WriteCloser) {
 			NetId:          core.NetIDFromContext(ctx),
 			Status:         types.PEER_CONNECTED,
 		})
-		peers.TransferSendMessageToSPServer(ctx, requests.ReqRegisterDataTR(&target))
+		p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, requests.ReqRegisterDataTR(&target))
 
 		// IPProt := strings.Split(target.Address.NetworkAddress, ":")
 		// ip := ""
@@ -64,7 +64,7 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 	pp.Log(ctx, "target.RspRegister", target.P2PAddress)
 	if target.P2PAddress != setting.P2PAddress {
 		pp.Log(ctx, "transfer RspRegister to: ", target.P2PAddress)
-		peers.TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
+		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		return
 	}
 
@@ -80,13 +80,13 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 	setting.IsLoad = true
 	setting.IsLoginToSP = true
 	setting.IsPPSyncedWithSP = true
-	pp.DebugLog(ctx, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@", client.GetConnectionName(conn))
+	pp.DebugLog(ctx, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@", p2pserver.GetP2pServer(ctx).GetConnectionName(conn))
 	setting.IsPP = target.IsPP
 	if !setting.IsPP {
 		reportDHInfoToPP(ctx)
 	}
 	if setting.IsPP && !setting.IsStartMining {
-		peers.StartMining(ctx)
+		network.GetPeer(ctx).StartMining(ctx)
 	}
 }
 
@@ -104,21 +104,21 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	pp.Log(ctx, "start mining")
-	if peers.GetPPServer() == nil {
-		go peers.StartListenServer(ctx, setting.Config.Port)
+	if p2pserver.GetP2pServer(ctx).GetP2pServer() == nil {
+		go p2pserver.GetP2pServer(ctx).StartListenServer(ctx, setting.Config.Port)
 	}
 	setting.IsStartMining = true
 
-	newConnection, err := peers.ConnectToSP(ctx)
+	newConnection, err := p2pserver.GetP2pServer(ctx).ConnectToSP(ctx)
 	if err != nil {
 		utils.ErrorLog(err)
 		return
 	}
 	if newConnection {
-		peers.RegisterToSP(ctx, true)
+		network.GetPeer(ctx).RegisterToSP(ctx, true)
 	}
 
 	pp.DebugLog(ctx, "Start reporting node status to SP")
 	// trigger 1 stat report immediately
-	peers.ReportNodeStatus(ctx)()
+	network.GetPeer(ctx).ReportNodeStatus(ctx)()
 }

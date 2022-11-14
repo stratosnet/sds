@@ -7,7 +7,7 @@ import (
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/client"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/utils"
 )
@@ -23,7 +23,7 @@ func RspSpUnderMaintenance(ctx context.Context, conn core.WriteCloser) {
 		utils.DebugLog("Ignore RspSpUnderMaintenance in SeverConn")
 		return
 	case *cf.ClientConn:
-		if conn.(*cf.ClientConn).GetName() != client.SPConn.GetName() {
+		if conn.(*cf.ClientConn).GetName() != p2pserver.GetP2pServer(ctx).GetSpName() {
 			utils.DebugLog("Ignore RspSpUnderMaintenance from non SP node")
 			return
 		}
@@ -33,7 +33,7 @@ func RspSpUnderMaintenance(ctx context.Context, conn core.WriteCloser) {
 				target.SpP2PAddress, protos.SpMaintenanceType_CONSENSUS.String())
 
 			// record SpMaintenance
-			triggerSpSwitch := client.RecordSpMaintenance(target.SpP2PAddress, time.Now())
+			triggerSpSwitch := p2pserver.GetP2pServer(ctx).RecordSpMaintenance(target.SpP2PAddress, time.Now())
 			if triggerSpSwitch {
 				ReqHBLatencyCheckSpList(ctx, conn)
 			}
