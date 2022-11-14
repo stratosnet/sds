@@ -460,3 +460,43 @@ func (api *terminalCmd) MonitorToken(param []string) (CmdResult, error) {
 	utils.Log("Monitor token is:", GetCurrentToken())
 	return CmdResult{Msg: DefaultMsg}, nil
 }
+
+func (api *terminalCmd) Maintenance(param []string) (CmdResult, error) {
+	// Parse params
+	if len(param) < 1 {
+		return CmdResult{Msg: ""}, errors.New("first parameter should be either 'start' or 'stop'")
+	}
+	start := true
+	if param[0] == "stop" {
+		start = false
+	} else if param[0] != "start" {
+		return CmdResult{Msg: ""}, errors.New("first parameter should be either 'start' or 'stop'")
+	}
+
+	duration := uint64(0)
+	if start {
+		if len(param) < 2 {
+			return CmdResult{Msg: ""}, errors.New("second parameter should be the maintenance duration (in seconds)")
+		}
+		parsedDuration, err := strconv.ParseUint(param[1], 10, 64)
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.New("second parameter should be the maintenance duration (in seconds)")
+		}
+		duration = parsedDuration
+	}
+
+	// Execute request
+	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	if start {
+		err := event.StartMaintenance(ctx, duration)
+		if err != nil {
+			return CmdResult{Msg: ""}, err
+		}
+	} else {
+		err := event.StopMaintenance(ctx)
+		if err != nil {
+			return CmdResult{Msg: ""}, err
+		}
+	}
+	return CmdResult{Msg: DefaultMsg}, nil
+}

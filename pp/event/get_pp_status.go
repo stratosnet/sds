@@ -71,6 +71,9 @@ func formatRspGetPPStatus(ctx context.Context, response protos.RspGetPPStatus) {
 	case int32(protos.PPState_SUSPEND):
 		state = protos.PPState_SUSPEND.String()
 		setting.OnlineTime = 0
+	case int32(protos.PPState_MAINTENANCE):
+		state = protos.PPState_MAINTENANCE.String()
+		setting.OnlineTime = 0
 	default:
 		state = "Unknown"
 	}
