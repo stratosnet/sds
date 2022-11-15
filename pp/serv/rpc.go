@@ -320,8 +320,8 @@ func (api *rpcApi) RequestList(ctx context.Context, param rpc_api.ParamReqFileLi
 
 	reqId := uuid.New().String()
 	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
-	reqCtx := core.RegisterRemoteReqId(context.Background(), reqId)
-	event.FindFileList(reqCtx, "", param.WalletAddr, param.PageId, "", 0, true, nil)
+	ctx = core.RegisterRemoteReqId(ctx, reqId)
+	event.FindFileList(ctx, "", param.WalletAddr, param.PageId, "", 0, true, nil)
 
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileListResult
@@ -348,7 +348,7 @@ func (api *rpcApi) RequestShare(ctx context.Context, param rpc_api.ParamReqShare
 	metrics.RpcReqCount.WithLabelValues("RequestShare").Inc()
 	reqId := uuid.New().String()
 	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
-	reqCtx := core.RegisterRemoteReqId(context.Background(), reqId)
+	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
 	event.GetReqShareFile(reqCtx, param.FileHash, "", param.WalletAddr, param.Duration, param.PrivateFlag, nil)
 
 	// wait for result, SUCCESS or some failure
@@ -376,7 +376,7 @@ func (api *rpcApi) RequestListShare(ctx context.Context, param rpc_api.ParamReqL
 	metrics.RpcReqCount.WithLabelValues("RequestListShare").Inc()
 	reqId := uuid.New().String()
 	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
-	reqCtx := core.RegisterRemoteReqId(context.Background(), reqId)
+	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
 	event.GetAllShareLink(reqCtx, param.WalletAddr, param.PageId, nil)
 
 	// wait for result, SUCCESS or some failure
@@ -404,7 +404,7 @@ func (api *rpcApi) RequestStopShare(ctx context.Context, param rpc_api.ParamReqS
 	metrics.RpcReqCount.WithLabelValues("RequestStopShare").Inc()
 	reqId := uuid.New().String()
 	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
-	reqCtx := core.RegisterRemoteReqId(context.Background(), reqId)
+	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
 	event.DeleteShare(reqCtx, param.ShareId, param.WalletAddr, nil)
 
 	// wait for result, SUCCESS or some failure
@@ -461,7 +461,7 @@ func (api *rpcApi) RequestGetShared(ctx context.Context, param rpc_api.ParamReqG
 	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
 	key := param.WalletAddr + reqId
 
-	reqCtx := core.RegisterRemoteReqId(context.Background(), reqId)
+	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
 	event.GetShareFile(reqCtx, param.ShareLink, "", "", param.WalletAddr, wpk.Bytes(), wsig, nil)
 
 	// the application gives FileShareResult type of result
@@ -520,12 +520,11 @@ func (api *rpcApi) RequestGetShared(ctx context.Context, param rpc_api.ParamReqG
 }
 
 // RequestGetOzone
-func (api *rpcApi) RequestGetOzone(param rpc_api.ParamReqGetOzone) rpc_api.GetOzoneResult {
+func (api *rpcApi) RequestGetOzone(ctx context.Context, param rpc_api.ParamReqGetOzone) rpc_api.GetOzoneResult {
 	metrics.RpcReqCount.WithLabelValues("RequestGetOzone").Inc()
 	reqId := uuid.New().String()
-	parentCtx := context.Background()
-	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
-	err := event.GetWalletOz(core.RegisterRemoteReqId(context.Background(), reqId), param.WalletAddr, reqId)
+	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
+	err := event.GetWalletOz(core.RegisterRemoteReqId(ctx, reqId), param.WalletAddr, reqId)
 	if err != nil {
 		return rpc_api.GetOzoneResult{Return: rpc_api.TIME_OUT}
 	}
