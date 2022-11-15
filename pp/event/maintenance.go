@@ -7,7 +7,7 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 )
@@ -16,14 +16,14 @@ import (
 func StartMaintenance(ctx context.Context, duration uint64) error {
 	req := requests.ReqStartMaintenance(duration)
 	pp.Log(ctx, "Sending maintenance start request to SP!")
-	peers.SendMessageToSPServer(ctx, req, header.ReqStartMaintenance)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqStartMaintenance)
 	return nil
 }
 
 func StopMaintenance(ctx context.Context) error {
 	req := requests.ReqStopMaintenance()
 	pp.Log(ctx, "Sending maintenance stop request to SP!")
-	peers.SendMessageToSPServer(ctx, req, header.ReqStopMaintenance)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqStopMaintenance)
 	return nil
 }
 

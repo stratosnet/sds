@@ -463,7 +463,7 @@ func (api *terminalCmd) MonitorToken(ctx context.Context, param []string) (CmdRe
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) Maintenance(param []string) (CmdResult, error) {
+func (api *terminalCmd) Maintenance(ctx context.Context, param []string) (CmdResult, error) {
 	// Parse params
 	if len(param) < 1 {
 		return CmdResult{Msg: ""}, errors.New("first parameter should be either 'start' or 'stop'")
@@ -488,7 +488,7 @@ func (api *terminalCmd) Maintenance(param []string) (CmdResult, error) {
 	}
 
 	// Execute request
-	ctx := pp.CreateReqIdAndRegisterRpcLogger(context.Background())
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	if start {
 		err := event.StartMaintenance(ctx, duration)
 		if err != nil {
