@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"net/http"
 	"strconv"
 	"sync"
 	"time"
@@ -487,25 +486,20 @@ func downloadWrong(ctx context.Context, taskID, sliceHash, p2pAddress, walletAdd
 }
 
 // DownloadSlicePause
-func DownloadSlicePause(ctx context.Context, fileHash, reqID string, w http.ResponseWriter) {
+func DownloadSlicePause(ctx context.Context, fileHash, reqID string) {
 	if setting.CheckLogin() {
 		// storeResponseWriter(reqID, w)
 		task.DownloadTaskMap.Delete(fileHash + setting.WalletAddress + task.LOCAL_REQID)
 		task.CleanDownloadFileAndConnMap(ctx, fileHash, reqID)
-	} else {
-		notLogin(w)
 	}
 }
 
 // DownloadSliceCancel
-func DownloadSliceCancel(ctx context.Context, fileHash, reqID string, w http.ResponseWriter) {
+func DownloadSliceCancel(ctx context.Context, fileHash, reqID string) {
 	if setting.CheckLogin() {
-		storeResponseWriter(ctx, w)
 		task.DownloadTaskMap.Delete(fileHash + setting.WalletAddress + task.LOCAL_REQID)
 		task.CleanDownloadFileAndConnMap(ctx, fileHash, reqID)
 		task.CancelDownloadTask(fileHash)
-	} else {
-		notLogin(w)
 	}
 }
 

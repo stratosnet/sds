@@ -321,7 +321,7 @@ func (api *rpcApi) RequestList(ctx context.Context, param rpc_api.ParamReqFileLi
 	reqId := uuid.New().String()
 	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
-	event.FindFileList(ctx, "", param.WalletAddr, param.PageId, "", 0, true, nil)
+	event.FindFileList(ctx, "", param.WalletAddr, param.PageId, "", 0, true)
 
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileListResult
@@ -349,7 +349,7 @@ func (api *rpcApi) RequestShare(ctx context.Context, param rpc_api.ParamReqShare
 	reqId := uuid.New().String()
 	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
-	event.GetReqShareFile(reqCtx, param.FileHash, "", param.WalletAddr, param.Duration, param.PrivateFlag, nil)
+	event.GetReqShareFile(reqCtx, param.FileHash, "", param.WalletAddr, param.Duration, param.PrivateFlag)
 
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileShareResult
@@ -377,7 +377,7 @@ func (api *rpcApi) RequestListShare(ctx context.Context, param rpc_api.ParamReqL
 	reqId := uuid.New().String()
 	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
-	event.GetAllShareLink(reqCtx, param.WalletAddr, param.PageId, nil)
+	event.GetAllShareLink(reqCtx, param.WalletAddr, param.PageId)
 
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileShareResult
@@ -405,7 +405,7 @@ func (api *rpcApi) RequestStopShare(ctx context.Context, param rpc_api.ParamReqS
 	reqId := uuid.New().String()
 	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
-	event.DeleteShare(reqCtx, param.ShareId, param.WalletAddr, nil)
+	event.DeleteShare(reqCtx, param.ShareId, param.WalletAddr)
 
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileShareResult
@@ -462,7 +462,7 @@ func (api *rpcApi) RequestGetShared(ctx context.Context, param rpc_api.ParamReqG
 	key := param.WalletAddr + reqId
 
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
-	event.GetShareFile(reqCtx, param.ShareLink, "", "", param.WalletAddr, wpk.Bytes(), wsig, nil)
+	event.GetShareFile(reqCtx, param.ShareLink, "", "", param.WalletAddr, wpk.Bytes(), wsig)
 
 	// the application gives FileShareResult type of result
 	var res *rpc_api.FileShareResult

@@ -21,30 +21,11 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/httpserv"
 	"github.com/stratosnet/sds/utils/types"
 )
 
 //var m *sync.WaitGroup
 var isCover bool
-
-// RequestUploadCoverImage RequestUploadCoverImage
-func RequestUploadCoverImage(pathStr, reqID string, w http.ResponseWriter) {
-	ctx := core.RegisterRemoteReqId(context.Background(), reqID)
-	isCover = true
-	tmpString, err := utils.ImageCommpress(pathStr)
-	utils.DebugLog("reqID", reqID)
-	if err != nil {
-		utils.ErrorLog(err)
-		if w != nil {
-			_, _ = w.Write(httpserv.NewJson(nil, setting.FAILCode, "compress image failed").ToBytes())
-		}
-		return
-	}
-	p := requests.RequestUploadFileData(ctx, tmpString, "", true, false, false)
-	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
-	storeResponseWriter(ctx, w)
-}
 
 // RequestUploadFile request to SP for upload file
 func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ http.ResponseWriter) {
@@ -178,7 +159,6 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 	}
 	if isCover {
 		pp.DebugLog(ctx, "is_cover")
-		putData(ctx, HTTPUploadFile, target)
 	}
 }
 

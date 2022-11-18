@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/pp"
-	api2 "github.com/stratosnet/sds/pp/api"
+	"github.com/stratosnet/sds/pp/account"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/network"
@@ -39,13 +39,13 @@ func TerminalAPI() *terminalCmd {
 
 func (api *terminalCmd) Wallets(ctx context.Context, param []string) (CmdResult, error) {
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	api2.Wallets(ctx)
+	account.Wallets(ctx)
 	return CmdResult{Msg: ""}, nil
 }
 
 func (api *terminalCmd) Getoz(ctx context.Context, param []string) (CmdResult, error) {
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	files, err := api2.GetWallets(ctx, param[0], param[1])
+	files, err := account.GetWallets(ctx, param[0], param[1])
 
 	if err != nil {
 		fmt.Println(err)
@@ -81,13 +81,13 @@ func (api *terminalCmd) Getoz(ctx context.Context, param []string) (CmdResult, e
 
 func (api *terminalCmd) NewWallet(ctx context.Context, param []string) (CmdResult, error) {
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	api2.CreateWallet(ctx, param[0], param[1], param[2], param[3])
+	account.CreateWallet(ctx, param[0], param[1], param[2], param[3])
 	return CmdResult{Msg: ""}, nil
 }
 
 func (api *terminalCmd) Login(ctx context.Context, param []string) (CmdResult, error) {
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	err := api2.Login(ctx, param[0], param[1])
+	err := account.Login(ctx, param[0], param[1])
 	return CmdResult{Msg: ""}, err
 }
 
@@ -279,13 +279,13 @@ func (api *terminalCmd) BackupStatus(ctx context.Context, param []string) (CmdRe
 func (api *terminalCmd) List(ctx context.Context, param []string) (CmdResult, error) {
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	if len(param) == 0 {
-		event.FindFileList(ctx, "", setting.WalletAddress, 0, "", 0, true, nil)
+		event.FindFileList(ctx, "", setting.WalletAddress, 0, "", 0, true)
 	} else {
 		pageId, err := strconv.ParseUint(param[0], 10, 64)
 		if err == nil {
-			event.FindFileList(ctx, "", setting.WalletAddress, pageId, "", 0, true, nil)
+			event.FindFileList(ctx, "", setting.WalletAddress, pageId, "", 0, true)
 		} else {
-			event.FindFileList(ctx, param[0], setting.WalletAddress, 0, "", 0, true, nil)
+			event.FindFileList(ctx, param[0], setting.WalletAddress, 0, "", 0, true)
 		}
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
@@ -314,7 +314,7 @@ func (api *terminalCmd) DeleteFn(ctx context.Context, param []string) (CmdResult
 		return CmdResult{}, errors.New("input correct file hash")
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	event.DeleteFile(ctx, param[0], nil)
+	event.DeleteFile(ctx, param[0])
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -361,7 +361,7 @@ func (api *terminalCmd) SharePath(ctx context.Context, param []string) (CmdResul
 	// if len(str1) == setting.FILEHASHLEN { //
 	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
-	event.GetReqShareFile(ctx, "", param[0], setting.WalletAddress, int64(time), isPrivate, nil)
+	event.GetReqShareFile(ctx, "", param[0], setting.WalletAddress, int64(time), isPrivate)
 	// }
 	return CmdResult{Msg: DefaultMsg}, nil
 }
@@ -384,7 +384,7 @@ func (api *terminalCmd) ShareFile(ctx context.Context, param []string) (CmdResul
 		isPrivate = true
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	event.GetReqShareFile(ctx, param[0], "", setting.WalletAddress, int64(time), isPrivate, nil)
+	event.GetReqShareFile(ctx, param[0], "", setting.WalletAddress, int64(time), isPrivate)
 	// if len(str1) == setting.FILEHASHLEN { //
 	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
@@ -395,13 +395,13 @@ func (api *terminalCmd) ShareFile(ctx context.Context, param []string) (CmdResul
 func (api *terminalCmd) AllShare(ctx context.Context, param []string) (CmdResult, error) {
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	if len(param) < 1 {
-		event.GetAllShareLink(ctx, setting.WalletAddress, 0, nil)
+		event.GetAllShareLink(ctx, setting.WalletAddress, 0)
 	} else {
 		page, err := strconv.ParseUint(param[0], 10, 64)
 		if err != nil {
 			return CmdResult{Msg: ""}, errors.New("invalid page id.")
 		}
-		event.GetAllShareLink(ctx, setting.WalletAddress, page, nil)
+		event.GetAllShareLink(ctx, setting.WalletAddress, page)
 	}
 
 	return CmdResult{Msg: DefaultMsg}, nil
@@ -412,7 +412,7 @@ func (api *terminalCmd) CancelShare(ctx context.Context, param []string) (CmdRes
 		return CmdResult{Msg: ""}, errors.New("input share id")
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	event.DeleteShare(ctx, param[0], setting.WalletAddress, nil)
+	event.DeleteShare(ctx, param[0], setting.WalletAddress)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -424,9 +424,9 @@ func (api *terminalCmd) GetShareFile(ctx context.Context, param []string) (CmdRe
 		return CmdResult{Msg: ""}, errors.New("input share link and retrieval secret key(if any)")
 	}
 	if len(param) < 2 {
-		event.GetShareFile(ctx, param[0], "", "", setting.WalletAddress, setting.WalletPublicKey, nil, nil)
+		event.GetShareFile(ctx, param[0], "", "", setting.WalletAddress, setting.WalletPublicKey, nil)
 	} else {
-		event.GetShareFile(ctx, param[0], param[1], "", setting.WalletAddress, setting.WalletPublicKey, nil, nil)
+		event.GetShareFile(ctx, param[0], param[1], "", setting.WalletAddress, setting.WalletPublicKey, nil)
 	}
 
 	return CmdResult{Msg: DefaultMsg}, nil
@@ -436,7 +436,7 @@ func (api *terminalCmd) PauseGet(ctx context.Context, param []string) (CmdResult
 	if len(param) < 1 {
 		return CmdResult{Msg: ""}, errors.New("input file hash of the pause")
 	}
-	event.DownloadSlicePause(ctx, param[0], "", nil)
+	event.DownloadSlicePause(ctx, param[0], "")
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -454,7 +454,7 @@ func (api *terminalCmd) CancelGet(ctx context.Context, param []string) (CmdResul
 		return CmdResult{Msg: ""}, errors.New("input file hash of the cancel")
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	event.DownloadSliceCancel(ctx, param[0], "", nil)
+	event.DownloadSliceCancel(ctx, param[0], "")
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
