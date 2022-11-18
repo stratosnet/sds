@@ -2,7 +2,6 @@ package event
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
@@ -17,12 +16,9 @@ import (
 )
 
 // DeleteFile
-func DeleteFile(ctx context.Context, fileHash string, w http.ResponseWriter) {
+func DeleteFile(ctx context.Context, fileHash string) {
 	if setting.CheckLogin() {
 		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteFileData(fileHash), header.ReqDeleteFile)
-		storeResponseWriter(ctx, w)
-	} else {
-		notLogin(w)
 	}
 }
 
@@ -41,7 +37,6 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 			} else {
 				pp.Log(ctx, "delete failed ", target.Result.Msg)
 			}
-			putData(ctx, HTTPDeleteFile, &target)
 		} else {
 			p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		}

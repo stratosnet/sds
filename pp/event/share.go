@@ -2,7 +2,6 @@ package event
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/task"
@@ -21,32 +20,23 @@ import (
 )
 
 // GetAllShareLink GetShareLink
-func GetAllShareLink(ctx context.Context, walletAddr string, page uint64, w http.ResponseWriter) {
+func GetAllShareLink(ctx context.Context, walletAddr string, page uint64) {
 	if setting.CheckLogin() {
 		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqShareLinkData(walletAddr, page), header.ReqShareLink)
-		storeResponseWriter(ctx, w)
-	} else {
-		notLogin(w)
 	}
 }
 
 // GetReqShareFile GetReqShareFile
-func GetReqShareFile(ctx context.Context, fileHash, pathHash, walletAddr string, shareTime int64, isPrivate bool, w http.ResponseWriter) {
+func GetReqShareFile(ctx context.Context, fileHash, pathHash, walletAddr string, shareTime int64, isPrivate bool) {
 	if setting.CheckLogin() {
 		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqShareFileData(fileHash, pathHash, walletAddr, isPrivate, shareTime), header.ReqShareFile)
-		storeResponseWriter(ctx, w)
-	} else {
-		notLogin(w)
 	}
 }
 
 // DeleteShare DeleteShare
-func DeleteShare(ctx context.Context, shareID, walletAddress string, w http.ResponseWriter) {
+func DeleteShare(ctx context.Context, shareID, walletAddress string) {
 	if setting.CheckLogin() {
 		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteShareData(shareID, walletAddress), header.ReqDeleteShare)
-		storeResponseWriter(ctx, w)
-	} else {
-		notLogin(w)
 	}
 }
 
@@ -108,7 +98,6 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 		pp.ErrorLog(ctx, "all share failed:", target.Result.Msg)
 		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE
 	}
-	putData(ctx, HTTPShareLink, &target)
 	return
 }
 
@@ -150,7 +139,6 @@ func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE
 	}
 
-	putData(ctx, HTTPShareFile, &target)
 	return
 }
 
@@ -187,18 +175,14 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 		pp.ErrorLog(ctx, "cancel share failed:", target.Result.Msg)
 		rpcResult.Return = rpc.GENERIC_ERR
 	}
-	putData(ctx, HTTPDeleteShare, &target)
 	return
 }
 
 // GetShareFile
-func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAddr string, walletPubkey, walletSign []byte, w http.ResponseWriter) {
+func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAddr string, walletPubkey, walletSign []byte) {
 	pp.DebugLog(ctx, "GetShareFile for file ", keyword)
 	if setting.CheckLogin() {
 		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr, walletPubkey, walletSign), header.ReqGetShareFile)
-		storeResponseWriter(ctx, w)
-	} else {
-		notLogin(w)
 	}
 }
 
@@ -236,7 +220,6 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	}
 
 	pp.Log(ctx, "FileInfo:", target.FileInfo)
-	putData(ctx, HTTPGetShareFile, &target)
 
 	for idx, fileInfo := range target.FileInfo {
 		saveAs := ""

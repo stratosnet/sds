@@ -2,7 +2,6 @@ package event
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
@@ -17,13 +16,10 @@ import (
 )
 
 // FindMyFileList
-func FindFileList(ctx context.Context, fileName string, walletAddr string, pageId uint64, keyword string, fileType int, isUp bool, w http.ResponseWriter) {
+func FindFileList(ctx context.Context, fileName string, walletAddr string, pageId uint64, keyword string, fileType int, isUp bool) {
 	if setting.CheckLogin() {
 		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.FindFileListData(fileName, walletAddr, pageId, keyword,
 			protos.FileSortType(fileType), isUp), header.ReqFindMyFileList)
-		storeResponseWriter(ctx, w)
-	} else {
-		notLogin(w)
 	}
 }
 
@@ -56,7 +52,6 @@ func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	putData(ctx, HTTPGetAllFile, &target)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.ErrorLog(target.Result.Msg)
 		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE

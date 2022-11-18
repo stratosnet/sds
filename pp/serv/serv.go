@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/stratosnet/sds/metrics"
+	"github.com/stratosnet/sds/pp/account"
 	"github.com/stratosnet/sds/pp/api"
 	"github.com/stratosnet/sds/pp/api/rest"
 	"github.com/stratosnet/sds/pp/event"
@@ -27,7 +28,7 @@ type BaseServer struct {
 
 func (bs *BaseServer) Start() {
 	ctx := context.Background()
-	err := api.GetWalletAddress(ctx)
+	err := account.GetWalletAddress(ctx)
 	if err != nil {
 		utils.ErrorLog(err)
 		return
