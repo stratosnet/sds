@@ -353,6 +353,10 @@ func CreateUploadSliceTaskFile(ctx context.Context, slice *SliceWithStatus, ppIn
 		rawData = file.GetRemoteFileData(uploadTask.FileHash, offset)
 	}
 
+	if rawData == nil {
+		return nil, errors.New("Failed reading data from file")
+	}
+
 	// Encrypt slice data if required
 	data := rawData
 	if uploadTask.IsEncrypted {
