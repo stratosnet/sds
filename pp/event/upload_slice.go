@@ -10,7 +10,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/header"
@@ -313,46 +312,11 @@ func writeReqUploadFileSliceHook(packetId, costTime int64) {
 	}
 }
 
-func setWriteHook(conn *cf.ClientConn) {
-	if conn != nil {
-		var hooks []cf.WriteHook
-		hook := cf.WriteHook{
-			Message: header.ReqUploadFileSlice,
-			Fn:      HandleSendPacketCostTime,
-		}
-		hooks = append(hooks, hook)
-		conn.SetWriteHook(hooks)
-	}
-}
-
 func sendSlice(ctx context.Context, pb proto.Message, fileHash, p2pAddress, networkAddress string) error {
 	pp.DebugLog(ctx, "sendSlice(pb proto.Message, fileHash, p2pAddress, networkAddress string)",
 		fileHash, p2pAddress, networkAddress)
-
-	key := fileHash + p2pAddress
-
-	if conn, ok := p2pserver.GetP2pServer(ctx).LoadUploadConn(key); ok {
-		setWriteHook(conn)
-		err := p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, pb, header.ReqUploadFileSlice)
-		if err == nil {
-			pp.DebugLog(ctx, "SendMessage(conn, pb, header.ReqUploadFileSlice) ", conn)
-			return nil
-		}
-	}
-
-	conn, err := p2pserver.GetP2pServer(ctx).NewClient(ctx, networkAddress, false)
-	if err != nil {
-		return errors.Wrap(err, "Failed to create connection with "+networkAddress)
-	}
-	setWriteHook(conn)
-	err = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, pb, header.ReqUploadFileSlice)
-	if err == nil {
-		pp.DebugLog(ctx, "SendMessage(conn, pb, header.ReqUploadFileSlice) ", conn)
-		p2pserver.GetP2pServer(ctx).StoreUploadConn(key, conn)
-	} else {
-		pp.ErrorLog(ctx, "Fail to send upload slice request to "+networkAddress)
-	}
-	return err
+	key := "upload#" + fileHash + p2pAddress
+	return p2pserver.GetP2pServer(ctx).SendMessageByCachedConn(ctx, key, networkAddress, pb, header.ReqUploadFileSlice, HandleSendPacketCostTime)
 }
 
 func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {

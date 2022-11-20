@@ -2,10 +2,10 @@ package p2pserver
 
 import (
 	"context"
-	"errors"
 	"strconv"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
@@ -40,8 +40,8 @@ func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb p
 }
 
 func (p *P2pServer) SendMessageDirectToSPOrViaPP(ctx context.Context, pb proto.Message, cmd string) {
-	if p.spConn != nil {
-		p.SendMessage(ctx, p.spConn, pb, cmd)
+	if p.mainSpConn != nil {
+		p.SendMessage(ctx, p.mainSpConn, pb, cmd)
 	} else {
 		p.SendMessage(ctx, p.ppConn, pb, cmd)
 	}
@@ -54,7 +54,7 @@ func (p *P2pServer) SendMessageToSPServer(ctx context.Context, pb proto.Message,
 		utils.ErrorLog(err)
 		return
 	}
-	p.SendMessage(ctx, p.spConn, pb, cmd)
+	p.SendMessage(ctx, p.mainSpConn, pb, cmd)
 }
 
 // TransferSendMessageToPPServ
@@ -69,7 +69,7 @@ func (p *P2pServer) TransferSendMessageToPPServ(ctx context.Context, addr string
 	}
 
 	utils.DebugLog("new conn, connect and transfer")
-	newClient, err := p.NewClient(ctx, addr, false)
+	newClient, err := p.NewClientToPp(ctx, addr, false)
 	if err != nil {
 		utils.ErrorLogf("cannot transfer message to client [%v]", addr, utils.FormatError(err))
 		return err
@@ -95,7 +95,7 @@ func (p *P2pServer) TransferSendMessageToSPServer(ctx context.Context, msg *msg.
 		return
 	}
 
-	p.spConn.Write(msg, ctx)
+	p.mainSpConn.Write(msg, ctx)
 }
 
 // ReqTransferSendSP
@@ -124,6 +124,48 @@ func (p *P2pServer) StoreBufferedSpConn(spConn *cf.ClientConn) {
 
 func (p *P2pServer) ClearBufferedSpConns() {
 	p.bufferedSpConns = make([]*cf.ClientConn, 0)
+}
+
+func (p *P2pServer) setWriteHook(conn *cf.ClientConn, callback func(packetId, costTime int64)) {
+	if conn != nil {
+		var hooks []cf.WriteHook
+		hook := cf.WriteHook{
+			Message: header.ReqUploadFileSlice,
+			Fn:      callback,
+		}
+		hooks = append(hooks, hook)
+		conn.SetWriteHook(hooks)
+	}
+}
+
+func (p *P2pServer) SendMessageByCachedConn(ctx context.Context, key string, netAddr string, pb proto.Message, cmd string, fn func(packetId, costTime int64)) error {
+	// use the cached conn to send the message
+	if conn, ok := p.LoadConnFromCache(key); ok {
+		if fn != nil {
+			p.setWriteHook(conn, fn)
+		}
+		err := p.SendMessage(ctx, conn, pb, cmd)
+		if err == nil {
+			pp.DebugLog(ctx, "SendMessage(conn, pb, header.ReqUploadFileSlice) ", conn)
+			return err
+		}
+	}
+	// not in cache, connect to the network address
+	conn, err := p.NewClientToPp(ctx, netAddr, false)
+	if err != nil {
+		return errors.Wrap(err, "Failed to create connection with "+netAddr)
+	}
+	if fn != nil {
+		p.setWriteHook(conn, fn)
+	}
+	err = p.SendMessage(ctx, conn, pb, cmd)
+	if err == nil {
+		pp.DebugLog(ctx, "SendMessage(conn, pb, header.ReqUploadFileSlice) ", conn)
+		p.StoreConnToCache(key, conn)
+	} else {
+		pp.ErrorLog(ctx, "Fail to send upload slice request to "+netAddr)
+	}
+	return err
 }
 
 // CreateNewContextPacketId used for downloading / uploading speed tracking

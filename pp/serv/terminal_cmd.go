@@ -217,7 +217,7 @@ func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, 
 
 	amount, err := utiltypes.ParseCoinNormalized(param[0])
 	if err != nil {
-		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token")
+		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token" + err.Error())
 	}
 	fee, err := utiltypes.ParseCoinNormalized(param[1])
 	if err != nil {

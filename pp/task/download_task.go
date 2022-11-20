@@ -211,7 +211,7 @@ func CleanDownloadFileAndConnMap(ctx context.Context, fileHash, fileReqId string
 		fInfo := f.(*protos.RspFileStorageInfo)
 		for _, slice := range fInfo.SliceInfo {
 			DownloadSliceProgress.Delete(slice.SliceStorageInfo.SliceHash + fileReqId)
-			p2pserver.GetP2pServer(ctx).DeleteDownloadConn(fileHash + slice.StoragePpInfo.P2PAddress + fileReqId)
+			p2pserver.GetP2pServer(ctx).DeleteConnFromCache("download#" + fileHash + slice.StoragePpInfo.P2PAddress + fileReqId)
 		}
 	}
 	DownloadFileMap.Delete(fileHash + fileReqId)

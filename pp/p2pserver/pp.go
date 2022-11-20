@@ -47,8 +47,8 @@ type P2pServer struct {
 	// offlineChan
 	offlineChan chan *offline
 
-	// spConn super node connection
-	spConn *cf.ClientConn
+	// mainSpConn super node connection
+	mainSpConn *cf.ClientConn
 
 	// SPMaintenanceMap stores records of SpUnderMaintenance, K - SpP2pAddress, V - list of MaintenanceRecord
 	SPMaintenanceMap *utils.AutoCleanMap
@@ -56,15 +56,13 @@ type P2pServer struct {
 	// ppConn current connected pp node
 	ppConn *cf.ClientConn
 
-	// uploadConnMap upload connection
-	uploadConnMap *sync.Map
-
-	// downloadConnMap  download connection between  P-PP
-	downloadConnMap *sync.Map
+	// cachedConnMap upload connection
+	cachedConnMap *sync.Map
 
 	// connMap client connection map
 	connMap map[string]*cf.ClientConn
-	//ClientMutex sync.Mutex
+
+	clientMutex sync.Mutex
 
 	connContextKey []interface{}
 }
@@ -77,6 +75,10 @@ func (p *P2pServer) GetP2pServer() *core.Server {
 // SetPPServer
 func (p *P2pServer) SetPPServer(pp *core.Server) {
 	p.server = pp
+}
+
+func (p *P2pServer) GetMainSpConn() *cf.ClientConn {
+	return p.mainSpConn
 }
 
 // StartListenServer
