@@ -92,7 +92,9 @@ func (p *P2pServer) NewClient(ctx context.Context, server string, heartbeat bool
 	serverPortOpt := cf.ServerPortOption(uint16(serverPort))
 
 	var ckv []cf.ContextKV
-	ckv = append(ckv, cf.ContextKV{Key: "PPServerKey", Value: GetP2pServer(ctx)})
+	for _, key := range p.connContextKey {
+		ckv = append(ckv, cf.ContextKV{Key: key, Value: ctx.Value(key)})
+	}
 
 	options := []cf.ClientOption{
 		onConnect,

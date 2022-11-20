@@ -25,7 +25,7 @@ const (
 // GetPeer
 func GetPeer(ctx context.Context) *Network {
 	if ctx == nil || ctx.Value(PP_NETWORK_KEY) == nil {
-		return nil
+		panic("Network is not instantiated")
 	}
 
 	ps := ctx.Value(PP_NETWORK_KEY).(*Network)

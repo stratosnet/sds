@@ -95,6 +95,7 @@ func (bs *BaseServer) startIPC() error {
 
 	ipc := newIPCServer(setting.IpcEndpoint)
 	ctx := context.WithValue(context.Background(), p2pserver.P2P_SERVER_KEY, bs.p2pServ)
+	ctx = context.WithValue(ctx, network.PP_NETWORK_KEY, bs.ppNetwork)
 	if err := ipc.start(rpcAPIs, ctx); err != nil {
 		return err
 	}
@@ -179,10 +180,13 @@ func (bs *BaseServer) startP2pServer() error {
 	event.RegisterEventHandle()
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, p2pserver.P2P_SERVER_KEY, bs.p2pServ)
-	bs.p2pServ.Start(ctx)
+	bs.p2pServ.AddConnConntextKey(p2pserver.P2P_SERVER_KEY)
 
 	bs.ppNetwork = &network.Network{}
 	ctx = context.WithValue(ctx, network.PP_NETWORK_KEY, bs.ppNetwork)
+	bs.p2pServ.AddConnConntextKey(network.PP_NETWORK_KEY)
+
+	bs.p2pServ.Start(ctx)
 	bs.ppNetwork.StartPP(ctx)
 	return nil
 }
@@ -190,6 +194,7 @@ func (bs *BaseServer) startP2pServer() error {
 func (bs *BaseServer) startTrafficLog() error {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, p2pserver.P2P_SERVER_KEY, bs.p2pServ)
+	ctx = context.WithValue(ctx, network.PP_NETWORK_KEY, bs.ppNetwork)
 	StartDumpTrafficLog(ctx)
 	return nil
 }
@@ -198,6 +203,7 @@ func (bs *BaseServer) startInternalApiServer() error {
 	if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
 		ctx := context.Background()
 		ctx = context.WithValue(ctx, p2pserver.P2P_SERVER_KEY, bs.p2pServ)
+		ctx = context.WithValue(ctx, network.PP_NETWORK_KEY, bs.ppNetwork)
 		go api.StartHTTPServ(ctx)
 	} else {
 		utils.ErrorLog("Missing configuration for internal API server")
@@ -209,6 +215,7 @@ func (bs *BaseServer) startRestServer() error {
 	if setting.Config.RestPort != "" {
 		ctx := context.Background()
 		ctx = context.WithValue(ctx, p2pserver.P2P_SERVER_KEY, bs.p2pServ)
+		ctx = context.WithValue(ctx, network.PP_NETWORK_KEY, bs.ppNetwork)
 		go rest.StartHTTPServ(ctx)
 	} else {
 		utils.ErrorLog("Missing configuration for rest port")
