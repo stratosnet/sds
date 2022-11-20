@@ -124,8 +124,11 @@ func (p *Network) StorePingTimeSPMap(server string, start int64) {
 }
 
 func (p *Network) LoadPingTimeSPMap(key string) (int64, bool) {
-	start, ok := p.pingTimePPMap.Load(key)
-	return start.(int64), ok
+	if start, ok := p.pingTimePPMap.Load(key); ok {
+		return start.(int64), true
+	} else {
+		return 0, false
+	}
 }
 
 func (p *Network) DeletePingTimePPMap(key string) {
