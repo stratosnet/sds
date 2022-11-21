@@ -290,7 +290,7 @@ func (sc *ServerConn) handshake() (error, bool) {
 func (sc *ServerConn) Start() {
 	err, isHandshakeConn := sc.handshake()
 	if err != nil {
-		utils.ErrorLog("server conn handshake error", sc.spbConn.LocalAddr(), "->", sc.spbConn.RemoteAddr(), err)
+		Mylog(sc.belong.opts.logOpen, LOG_MODULE_START, fmt.Sprintf("handshake error %v -> %v, %v", sc.spbConn.LocalAddr(), sc.spbConn.RemoteAddr(), err.Error()))
 		sc.Close()
 		return
 	}
@@ -299,7 +299,7 @@ func (sc *ServerConn) Start() {
 		return
 	}
 
-	Mylog(sc.belong.opts.logOpen, fmt.Sprintf("server conn start %v -> %v (%v)", sc.spbConn.LocalAddr(), sc.spbConn.RemoteAddr(), sc.remoteP2pAddress))
+	Mylog(sc.belong.opts.logOpen, LOG_MODULE_START, fmt.Sprintf("start %v -> %v (%v)", sc.spbConn.LocalAddr(), sc.spbConn.RemoteAddr(), sc.remoteP2pAddress))
 	onConnect := sc.belong.opts.onConnect
 	if onConnect != nil {
 		onConnect(sc)
@@ -381,7 +381,7 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err
 func (sc *ServerConn) Close() {
 	sc.belong.goroutine = sc.belong.goAtom.DecrementAndGetNew()
 	sc.once.Do(func() {
-		Mylog(sc.belong.opts.logOpen, fmt.Sprintf("conn close gracefully %v -> %v (%v)", sc.spbConn.LocalAddr(), sc.spbConn.RemoteAddr(), sc.remoteP2pAddress))
+		Mylog(sc.belong.opts.logOpen, LOG_MODULE_CLOSE, fmt.Sprintf("close conn gracefully %v -> %v (%v)", sc.spbConn.LocalAddr(), sc.spbConn.RemoteAddr(), sc.remoteP2pAddress))
 
 		// close
 		onClose := sc.belong.opts.onClose
@@ -391,7 +391,7 @@ func (sc *ServerConn) Close() {
 
 		// close conns
 		sc.belong.conns.Delete(sc.netid)
-		Mylog(sc.belong.opts.logOpen, "closed", sc.belong.ConnsSize())
+		Mylog(sc.belong.opts.logOpen, LOG_MODULE_CLOSE, sc.belong.ConnsSize())
 		// close net.Conn, any blocked read or write operation will be unblocked and
 		// return errors.
 		if tc, ok := sc.spbConn.(*net.TCPConn); ok {
@@ -405,7 +405,6 @@ func (sc *ServerConn) Close() {
 		// cancel readLoop, writeLoop and handleLoop go-routines.
 		sc.mu.Lock()
 		sc.cancel()
-		Mylog(sc.belong.opts.logOpen, "enter close")
 		sc.mu.Unlock()
 
 		sc.wg.Wait()
@@ -459,13 +458,12 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 	onMessage = c.(*ServerConn).belong.opts.onMessage
 	handlerCh = c.(*ServerConn).handlerCh
 	sc = c.(*ServerConn)
-	Mylog(sc.belong.opts.logOpen, "read start")
+
 	defer func() {
 		if p := recover(); p != nil {
-			Mylog(sc.belong.opts.logOpen, "panics:", p, "\n")
+			Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "panic occurs:", p, "\n")
 		}
 		wg.Done()
-		Mylog(sc.belong.opts.logOpen, "server readLoop go-routine exited")
 		GoroutineMap.Delete(sc.GetName() + "read")
 		c.Close()
 	}()
@@ -475,30 +473,26 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-cDone: // connection closed
-			Mylog(sc.belong.opts.logOpen, "read receiving cancel signal from conn")
+			Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "closes by conn")
 			return
 		case <-sDone: // server closed
-			Mylog(sc.belong.opts.logOpen, "read receiving cancel signal from server")
+			Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "closes by server")
 			return
 		default:
 			recvStart := time.Now().UnixMilli()
 			_ = spbConn.SetDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
-			Mylog(sc.belong.opts.logOpen, "server read ok", msgH.Len)
 			if msgH.Len == 0 {
-				Mylog(sc.belong.opts.logOpen, "server receive msgHeader")
 				headerBytes, n, err := ReadEncryptedHeaderAndBody(spbConn, sc.sharedKey, utils.MessageBeatLen)
 				sc.increaseReadFlow(n)
 				if err != nil {
-					if err == io.EOF {
-						return
-					}
-					utils.ErrorLog("server header err", err)
+					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "read header err: "+err.Error())
 					return
 				}
 				header.DecodeHeader(headerBytes, &msgH)
 				headerBytes = nil
 				if msgH.Version < sc.minAppVer {
 					sc.SendBadVersionMsg(msgH.Version, utils.ByteToString(msgH.Cmd))
+					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "message versions don't match")
 					return
 				}
 
@@ -524,15 +518,14 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				nonce, dataLen, n, err := ReadEncryptedHeader(spbConn)
 				sc.increaseReadFlow(n)
 				if err != nil {
-					utils.ErrorLog("error when reading encrypted header for msg body", err)
+					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "read encrypted header err: "+err.Error())
 					return
 				}
 				if dataLen > utils.MessageBeatLen {
-					utils.ErrorLogf("encrypted message length over sized [%v], for cmd [%v]", dataLen, utils.ByteToString(msgH.Cmd))
+					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, fmt.Sprintf("read encrypted header err: over sized [%v], for cmd [%v]", dataLen, utils.ByteToString(msgH.Cmd)))
 					return
 				}
 
-				Mylog(sc.belong.opts.logOpen, "start", time.Now().Unix())
 				var onereadlen = 1024
 				msgBuf := make([]byte, utils.MessageBeatLen)
 				for ; i < int(dataLen); i = i + n {
@@ -545,15 +538,14 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					// Mylog(s.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
 					sc.increaseReadFlow(n)
 					if err != nil {
-						utils.ErrorLog("server body err", err)
+						Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "message body err: "+err.Error())
 						return
 					}
 				}
-				Mylog(sc.belong.opts.logOpen, "end", time.Now().Unix())
 				if uint32(i) == dataLen {
 					decryptedBody, err := encryption.DecryptAES(sc.sharedKey, msgBuf[:dataLen], nonce)
 					if err != nil {
-						utils.ErrorLog("server body decryption err", err)
+						Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "message body decryption err: "+err.Error())
 						return
 					}
 
@@ -567,7 +559,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 						if onMessage != nil {
 							onMessage(*msg, c.(WriteCloser))
 						} else {
-							Mylog(sc.belong.opts.logOpen, "server no handler or onMessage() found for message", "\n")
+							Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for message: "+utils.ByteToString(msgH.Cmd))
 						}
 						msgH.Len = 0
 						i = 0
@@ -579,9 +571,8 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					msgH.Len = 0
 					i = 0
 					msgBuf = nil
-					Mylog(sc.belong.opts.logOpen, "server msg receive complete, reported to application layer, msgHeader set to empty")
 				} else {
-					utils.ErrorLog("msgH.Len size not match")
+					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "msgH.Len doesn't match the size of data from message: "+utils.ByteToString(msgH.Cmd))
 					msgH.Len = 0
 					i = 0
 					msgBuf = nil
@@ -609,7 +600,7 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 	sc = c.(*ServerConn)
 	defer func() {
 		if p := recover(); p != nil {
-			Mylog(sc.belong.opts.logOpen, "panics:", p, "\n")
+			Mylog(sc.belong.opts.logOpen, LOG_MODULE_WRITELOOP, fmt.Sprintf("panics: %v", p))
 		}
 		// drain all pending messages before exit
 	OuterFor:
@@ -633,7 +624,6 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 			}
 		}
 		wg.Done()
-		Mylog(sc.belong.opts.logOpen, "writeLoop go-routine exited")
 		GoroutineMap.Delete(sc.GetName() + "write")
 		c.Close()
 	}()
@@ -641,15 +631,15 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-cDone: // connection closed
-			Mylog(sc.belong.opts.logOpen, "write receiving cancel signal from conn")
+			Mylog(sc.belong.opts.logOpen, LOG_MODULE_WRITELOOP, "closes by conn")
 			return
 		case <-sDone: // server closed
-			Mylog(sc.belong.opts.logOpen, "write receiving cancel signal from server")
+			Mylog(sc.belong.opts.logOpen, LOG_MODULE_WRITELOOP, "closes by server")
 			return
 		case packet = <-sendCh:
 			if packet != nil {
 				if err := sc.writePacket(packet); err != nil {
-					utils.ErrorLog(err)
+					Mylog(sc.belong.opts.logOpen, LOG_MODULE_WRITELOOP, "write packet err", err.Error())
 					return
 				}
 				packet = nil
@@ -729,12 +719,12 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 	netID = c.(*ServerConn).netid
 	ctx = c.(*ServerConn).ctx
 	sc = c.(*ServerConn)
+	var log string
 	defer func() {
 		if p := recover(); p != nil {
-			Mylog(sc.belong.opts.logOpen, "panics:", p, "\n")
+			Mylog(sc.belong.opts.logOpen, LOG_MODULE_HANDLELOOP, fmt.Sprintf("panic when handle message (%v), %v", log, p))
 		}
 		wg.Done()
-		Mylog(sc.belong.opts.logOpen, "handleLoop go-routine exited")
 		GoroutineMap.Delete(sc.GetName() + "handle")
 		c.Close()
 	}()
@@ -742,10 +732,10 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-cDone: // connection closed
-			Mylog(sc.belong.opts.logOpen, "handle receiving cancel signal from conn")
+			Mylog(sc.belong.opts.logOpen, LOG_MODULE_HANDLELOOP, "closes by conn")
 			return
 		case <-sDone: // server closed
-			Mylog(sc.belong.opts.logOpen, "handle receiving cancel signal from server")
+			Mylog(sc.belong.opts.logOpen, LOG_MODULE_HANDLELOOP, "closes by server")
 			return
 		case msgHandler := <-handlerCh:
 			msg, handler, recvStart := msgHandler.message, msgHandler.handler, msgHandler.recvStart
@@ -754,8 +744,10 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 				err = GlobalTaskPool.Job(netID, func() {
 					ctxWithReqId := CreateContextWithReqId(ctx, msg.MSGHead.ReqId)
 					ctxWithRecvStart := CreateContextWithRecvStartTime(ctxWithReqId, recvStart)
-					// Mylog(s.opts.logOpen,"handler(CreateContextWithNetID(CreateContextWithMessage(ctxWithReqId, msg), netID), c )", netID)
-					handler(CreateContextWithNetID(CreateContextWithMessage(ctxWithRecvStart, &msg), netID), c)
+					ctx := CreateContextWithMessage(ctxWithRecvStart, &msg)
+					ctx = CreateContextWithNetID(ctx, netID)
+					log = utils.ByteToString(msgHandler.message.MSGHead.Cmd)
+					handler(ctx, c)
 				})
 				if err != nil {
 					utils.ErrorLog(err)

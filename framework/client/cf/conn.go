@@ -38,6 +38,14 @@ var (
 	isSpLatencyChecked   bool
 )
 
+const (
+	LOG_MODULE_START      = "start: "
+	LOG_MODULE_WRITELOOP  = "writeLoop: "
+	LOG_MODULE_READLOOP   = "readLoop: "
+	LOG_MODULE_HANDLELOOP = "handleLoop: "
+	LOG_MODULE_CLOSE      = "close: "
+)
+
 // MsgHandler
 type MsgHandler struct {
 	message   msg.RelayMsgBuf
@@ -178,9 +186,9 @@ func ContextKVOption(kv []ContextKV) ClientOption {
 }
 
 // Mylog my
-func Mylog(b bool, v ...interface{}) {
+func Mylog(b bool, module string, v ...interface{}) {
 	if b {
-		utils.DetailLog(v...)
+		utils.DebugLogfWithCalldepth(5, "Client Conn: "+module+"%v", v...)
 	}
 }
 
@@ -391,12 +399,12 @@ func (cc *ClientConn) Start() {
 	metrics.ConnNumbers.WithLabelValues("client").Inc()
 	err := cc.handshake()
 	if err != nil {
-		utils.ErrorLog("client conn handshake error", cc.spbConn.LocalAddr(), "->", cc.spbConn.RemoteAddr(), err)
+		Mylog(cc.opts.logOpen, LOG_MODULE_START, fmt.Sprintf("handshake error %v -> %v, %v", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), err.Error()))
 		cc.ClientClose()
 		return
 	}
 
-	Mylog(cc.opts.logOpen, fmt.Sprintf("client conn start %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
+	Mylog(cc.opts.logOpen, LOG_MODULE_START, fmt.Sprintf("start conn %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
 	onConnect := cc.opts.onConnect
 	if onConnect != nil {
 		onConnect(cc)
@@ -447,7 +455,7 @@ func (cc *ClientConn) Start() {
 func (cc *ClientConn) ClientClose() {
 	cc.is_active = true
 	cc.once.Do(func() {
-		Mylog(cc.opts.logOpen, fmt.Sprintf("client close connection %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
+		Mylog(cc.opts.logOpen, LOG_MODULE_CLOSE, fmt.Sprintf("forced close conn %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
 
 		// callback on close
 		onClose := cc.opts.onClose
@@ -486,7 +494,7 @@ func (cc *ClientConn) ClientClose() {
 // Close
 func (cc *ClientConn) Close() {
 	cc.once.Do(func() {
-		Mylog(cc.opts.logOpen, fmt.Sprintf("client close gracefully %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
+		Mylog(cc.opts.logOpen, LOG_MODULE_CLOSE, fmt.Sprintf("close conn gracefully %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
 		// callback on close
 		onClose := cc.opts.onClose
 		if onClose != nil {
@@ -648,13 +656,12 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	cDone = c.(*ClientConn).ctx.Done()
 	onMessage = c.(*ClientConn).opts.onMessage
 	handlerCh = c.(*ClientConn).handlerCh
-	Mylog(cc.opts.logOpen, "read start")
+
 	defer func() {
 		if p := recover(); p != nil {
-			Mylog(cc.opts.logOpen, "panics:", p, "\n")
+			Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "panics:", p, "\n")
 		}
 		wg.Done()
-		Mylog(cc.opts.logOpen, "client readLoop go-routine exited")
 		if !cc.is_active {
 			c.Close()
 		}
@@ -668,7 +675,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-cDone: // connection closed
-			Mylog(cc.opts.logOpen, "receiving cancel signal from conn")
+			Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "closes by conn")
 			return
 		default:
 			recvStart := time.Now().UnixMilli()
@@ -677,10 +684,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				headerBytes, n, err := core.ReadEncryptedHeaderAndBody(spbConn, cc.sharedKey, utils.MessageBeatLen)
 				cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
 				if err != nil {
-					if err == io.EOF {
-						return
-					}
-					utils.ErrorLog("client read err", err)
+					Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read header err: "+err.Error())
 					return
 				}
 
@@ -703,11 +707,11 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				nonce, dataLen, n, err := core.ReadEncryptedHeader(spbConn)
 				cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
 				if err != nil {
-					utils.ErrorLog("error when reading encrypted header for msg body", err)
+					Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read encrypted header err: "+err.Error())
 					return
 				}
 				if dataLen > utils.MessageBeatLen {
-					utils.ErrorLogf("encrypted message length over sized [%v], for cmd [%v]", dataLen, utils.ByteToString(msgH.Cmd))
+					Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read encrypted header err: over sized [%v], for cmd [%v]", dataLen, utils.ByteToString(msgH.Cmd))
 					return
 				}
 
@@ -721,7 +725,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					n, err = io.ReadFull(spbConn, msgBuf[i:i+onereadlen])
 					cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
 					if err != nil {
-						utils.ErrorLog("client body err", err)
+						Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read server body err: "+err.Error())
 						return
 					}
 					if cmd == header.RspDownloadSlice {
@@ -749,10 +753,9 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					//Mylog(cc.opts.logOpen, "read handler:", handler, utils.ByteToString(msgH.Cmd))
 					if handler == nil {
 						if onMessage != nil {
-							Mylog(cc.opts.logOpen, "client message", message, " call onMessage()\n")
 							onMessage(*message, c.(core.WriteCloser))
 						} else {
-							// Mylog(cc.opts.logOpen,"client no handler or onMessage() found for message\n")
+							Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for message: "+utils.ByteToString(msgH.Cmd))
 						}
 						msgH.Len = 0
 						i = 0
@@ -765,7 +768,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					i = 0
 
 				} else {
-					utils.ErrorLog("msgHeader length not match")
+					Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "msgH.Len doesn't match the size of data for message: "+utils.ByteToString(msgH.Cmd))
 					msgH.Len = 0
 					msgBuf = nil
 					return
@@ -789,7 +792,7 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	cDone = c.(*ClientConn).ctx.Done()
 	defer func() {
 		if p := recover(); p != nil {
-			Mylog(cc.opts.logOpen, "panics:", p, "\n")
+			Mylog(cc.opts.logOpen, LOG_MODULE_WRITELOOP, fmt.Sprintf("panics: %v", p))
 		}
 		// OuterFor:
 		// 	for {
@@ -825,7 +828,7 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 		// 		}
 		// 	}
 		wg.Done()
-		Mylog(cc.opts.logOpen, "writeLoop go-routine exited")
+
 		if !cc.is_active {
 			c.Close()
 		}
@@ -834,12 +837,12 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-cDone: // connection closed
-			Mylog(cc.opts.logOpen, "receiving cancel signal from conn")
+			Mylog(cc.opts.logOpen, LOG_MODULE_WRITELOOP, "closes by conn")
 			return
 		case packet = <-sendCh:
 			if packet != nil {
 				if err := cc.writePacket(packet); err != nil {
-					utils.ErrorLog(err)
+					Mylog(cc.opts.logOpen, LOG_MODULE_WRITELOOP, "write packet err: "+err.Error())
 					return
 				}
 				packet = nil
@@ -922,13 +925,12 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	handlerCh = c.(*ClientConn).handlerCh
 	netID = c.(*ClientConn).netid
 	ctx = c.(*ClientConn).ctx
-
+	var log string = "handler start"
 	defer func() {
 		if p := recover(); p != nil {
-			Mylog(cc.opts.logOpen, "panics:", p, "\n")
+			Mylog(cc.opts.logOpen, LOG_MODULE_HANDLELOOP, "panic when handle message ("+log+") panic info: ", p)
 		}
 		wg.Done()
-		Mylog(cc.opts.logOpen, "handleLoop go-routine exited")
 		if !cc.is_active {
 			c.Close()
 		}
@@ -937,14 +939,17 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-cDone: // connection closed
-			Mylog(cc.opts.logOpen, "receiving cancel signal from conn")
+			Mylog(cc.opts.logOpen, LOG_MODULE_HANDLELOOP, "closes by conn")
 			return
 		case msgHandler := <-handlerCh:
 			msg, handler, recvStart := msgHandler.message, msgHandler.handler, msgHandler.recvStart
 			core.TimoutMap.DeleteByRspMsg(&msg)
 			ctxWithParentReqId := core.CreateContextWithParentReqId(ctx, msg.MSGHead.ReqId)
 			ctxWithRecvStart := core.CreateContextWithRecvStartTime(ctxWithParentReqId, recvStart)
-			handler(core.CreateContextWithNetID(core.CreateContextWithMessage(ctxWithRecvStart, &msg), netID), c)
+			ctx = core.CreateContextWithMessage(ctxWithRecvStart, &msg)
+			ctx = core.CreateContextWithNetID(ctx, netID)
+			log = utils.ByteToString(msgHandler.message.MSGHead.Cmd)
+			handler(ctx, c)
 		}
 	}
 }
