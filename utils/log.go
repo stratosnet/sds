@@ -42,13 +42,17 @@ var TrafficLogger *CombinedLogger
 var RpcLogger *Logger
 
 func newLogger(logFilepath string, enableStd, enableFile bool) *CombinedLogger {
-	if err := os.MkdirAll(filepath.Dir(logFilepath), os.ModePerm); err != nil {
-		panic(fmt.Sprintf("log file '%v' initialize failed: %v", logFilepath, err.Error()))
-	}
-	//init file output
-	outfile, err := os.OpenFile(logFilepath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666) //open file, if not exist, create at logFilepath
-	if err != nil {
-		panic(fmt.Sprintf("log file '%v' open failed: %v", logFilepath, err.Error()))
+	var outfile *os.File
+	if enableFile {
+		var err error
+		if err = os.MkdirAll(filepath.Dir(logFilepath), os.ModePerm); err != nil {
+			panic(fmt.Sprintf("log file '%v' initialize failed: %v", logFilepath, err.Error()))
+		}
+		//init file output
+		outfile, err = os.OpenFile(logFilepath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0666) //open file, if not exist, create at logFilepath
+		if err != nil {
+			panic(fmt.Sprintf("log file '%v' open failed: %v", logFilepath, err.Error()))
+		}
 	}
 
 	stdLogger := &Logger{
