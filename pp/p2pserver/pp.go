@@ -65,6 +65,8 @@ type P2pServer struct {
 	// connMap client connection map
 	connMap map[string]*cf.ClientConn
 	//ClientMutex sync.Mutex
+
+	connContextKey []interface{}
 }
 
 // GetP2pServer
@@ -111,7 +113,9 @@ func (p *P2pServer) newServer(ctx context.Context) *core.Server {
 		maxConnection = setting.Config.MaxConnection
 	}
 	var ckv []core.ContextKV
-	ckv = append(ckv, core.ContextKV{Key: P2P_SERVER_KEY, Value: ctx.Value(P2P_SERVER_KEY)})
+	for _, key := range p.connContextKey {
+		ckv = append(ckv, core.ContextKV{Key: key, Value: ctx.Value(key)})
+	}
 	server := core.CreateServer(onConnectOption,
 		onErrorOption,
 		onCloseOption,
@@ -163,6 +167,10 @@ func (p *P2pServer) initQuitChs(ctx context.Context) context.Context {
 	ctx = context.WithValue(ctx, LISTEN_OFFLINE_QUIT_CH_KEY, quitChListenOffline)
 	p.quitChMap[LISTEN_OFFLINE_QUIT_CH_KEY] = quitChListenOffline
 	return ctx
+}
+
+func (p *P2pServer) AddConnConntextKey(key interface{}) {
+	p.connContextKey = append(p.connContextKey, key)
 }
 
 // GetP2pServer
