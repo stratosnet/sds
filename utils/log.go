@@ -285,6 +285,12 @@ func DebugLogf(template string, v ...interface{}) {
 	MyLogger.LogDepth(Debug, 4, fmt.Sprintf(template, v...))
 }
 
+//DebugLog calls default logger and output debug log
+func DebugLogfWithCalldepth(calldepth int, template string, v ...interface{}) {
+	//GetLogger().Log(Info, v...)
+	MyLogger.LogDepth(Debug, calldepth, fmt.Sprintf(template, v...))
+}
+
 //DetailLog calls default logger and output detail log
 func DetailLog(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
