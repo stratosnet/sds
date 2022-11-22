@@ -209,37 +209,6 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		return callRpc(c, "maintenance", param)
 	}
 
-	//TODO move to pp api later
-	//if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
-	//	serv.Login(setting.Config.WalletAddress, setting.Config.WalletPassword)
-	//	// setting.ShowMonitor()
-	//	go func() {
-	//		netListen, err := net.Listen("tcp4", ":1203")
-	//		if err != nil {
-	//			utils.ErrorLog("p err", err)
-	//		}
-	//		// overChan := make(chan bool, 0)
-	//		for {
-	//			utils.DebugLog("!!!!!!!!!!!!!!!!!!")
-	//			conn, err := netListen.Accept()
-	//			if err != nil {
-	//				utils.ErrorLog("Accept err", err)
-	//			}
-	//			utils.DebugLog(">>>>>>>>>>>>>>>>")
-	//			go websocket.SocketRead(conn)
-	//			go func() {
-	//				for {
-	//					writeErr := websocket.SocketStart(conn, setting.UpMap, setting.DownMap, setting.ResultMap)
-	//					if writeErr != nil {
-	//						return
-	//					}
-	//					time.Sleep(666 * time.Millisecond)
-	//				}
-	//			}()
-	//		}
-	//	}()
-	//}
-
 	nc := make(chan serv.LogMsg)
 	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription")
 	if err != nil {

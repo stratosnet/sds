@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
@@ -111,32 +110,6 @@ func Wallets(ctx context.Context) []string {
 		}
 	}
 	return wallets
-}
-
-// Login
-func Login(ctx context.Context, walletAddress, password string) error {
-	files, err := GetWallets(ctx, walletAddress, password)
-	if err != nil {
-		return err
-	}
-	fileName := walletAddress + ".json"
-	for _, info := range files {
-		if info.Name() == ".placeholder" || info.Name() != fileName {
-			continue
-		}
-		utils.Log(info.Name())
-		if getPublicKey(ctx, filepath.Join(setting.Config.AccountDir, fileName), password) {
-			setting.SetConfig("wallet_address", walletAddress)
-			setting.SetConfig("wallet_password", password)
-			setting.WalletAddress = walletAddress
-			network.GetPeer(ctx).InitPeer(ctx)
-			return nil
-		}
-		pp.ErrorLog(ctx, "wrong password")
-		return errors.New("wrong password")
-	}
-	pp.ErrorLog(ctx, "wrong walletAddress or password")
-	return errors.New("wrong walletAddress or password")
 }
 
 func GetWallets(ctx context.Context, walletAddress string, password string) ([]fs.FileInfo, error) {

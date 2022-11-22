@@ -85,12 +85,6 @@ func (api *terminalCmd) NewWallet(ctx context.Context, param []string) (CmdResul
 	return CmdResult{Msg: ""}, nil
 }
 
-func (api *terminalCmd) Login(ctx context.Context, param []string) (CmdResult, error) {
-	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	err := account.Login(ctx, param[0], param[1])
-	return CmdResult{Msg: ""}, err
-}
-
 func (api *terminalCmd) Start(ctx context.Context, param []string) (CmdResult, error) {
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	network.GetPeer(ctx).StartMining(ctx)
