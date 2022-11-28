@@ -127,7 +127,11 @@ OuterFor:
 func SendFileDataBack(hash string, content []byte) {
 	ch, found := rpcUploadDataChan.Load(hash)
 	if found {
-		ch.(chan []byte) <- content
+		select {
+		case ch.(chan []byte) <- content:
+		default:
+			UnsubscribeGetRemoteFileData(hash)
+		}
 	}
 }
 
@@ -197,7 +201,11 @@ func SetRemoteFileResult(key string, result rpc.Result) {
 	defer eventMutex.Unlock()
 	ch, found := rpcFileEventChan.Load(key)
 	if found {
-		ch.(chan *rpc.Result) <- &result
+		select {
+		case ch.(chan *rpc.Result) <- &result:
+		default:
+			rpcFileEventChan.Delete(key)
+		}
 	}
 }
 
@@ -217,7 +225,11 @@ func UnsubscribeDownloadSliceDone(key string) {
 func SetDownloadSliceDone(key string) {
 	ch, found := rpcDownloadReady.Load(key)
 	if found {
-		ch.(chan bool) <- true
+		select {
+		case ch.(chan bool) <- true:
+		default:
+			UnsubscribeDownloadSliceDone(key)
+		}
 	}
 }
 
@@ -269,7 +281,11 @@ func SetRemoteFileInfo(key string, size uint64) {
 	defer reFileMutex.Unlock()
 	ch, found := rpcDownloadFileInfo.Load(key)
 	if found {
-		ch.(chan uint64) <- size
+		select {
+		case ch.(chan uint64) <- size:
+		default:
+			rpcDownloadFileInfo.Delete(key)
+		}
 	}
 }
 
