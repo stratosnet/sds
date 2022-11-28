@@ -56,7 +56,7 @@ type SliceInfo struct {
 }
 
 func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
-	ctx := core.RegisterRemoteReqId(context.Background(), task.LOCAL_REQID)
+	ctx := core.RegisterRemoteReqId(req.Context(), task.LOCAL_REQID)
 	ownerWalletAddress, fileHash, err := parseFilePath(req.RequestURI)
 	if err != nil {
 		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
@@ -109,7 +109,7 @@ func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 }
 
 func streamVideoP2P(w http.ResponseWriter, req *http.Request) {
-	ctx := context.Background()
+	ctx := req.Context()
 	sliceHash := parseSliceHash(req.URL)
 
 	body, err := verifyStreamReqBody(req)

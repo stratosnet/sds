@@ -15,7 +15,7 @@ import (
 type DownloadTimeoutHandler struct {
 }
 
-func (handler *DownloadTimeoutHandler) Handle(message *msg.RelayMsgBuf) {
+func (handler *DownloadTimeoutHandler) Handle(ctx context.Context, message *msg.RelayMsgBuf) {
 	target := &protos.ReqDownloadSlice{}
 	if err := proto.Unmarshal(message.MSGData, target); err != nil {
 
@@ -30,8 +30,8 @@ func (handler *DownloadTimeoutHandler) Handle(message *msg.RelayMsgBuf) {
 		return
 	}
 
-	ctx := core.CreateContextWithParentReqId(context.Background(), message.MSGHead.ReqId)
-	setDownloadSliceFail(ctx, target.SliceInfo.SliceHash, target.TaskId, target.IsVideoCaching, dTask)
+	newCtx := core.CreateContextWithParentReqId(ctx, message.MSGHead.ReqId)
+	setDownloadSliceFail(newCtx, target.SliceInfo.SliceHash, target.TaskId, target.IsVideoCaching, dTask)
 }
 
 func (handler *DownloadTimeoutHandler) GetDuration() time.Duration {
