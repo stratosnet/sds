@@ -25,7 +25,7 @@ import (
 const (
 	// FILE_DATA_SAFE_SIZE the length of request shall be shorter than 5242880 bytes
 	// this equals 3932160 bytes after
-	FILE_DATA_SAFE_SIZE = 3500000
+	FILE_DATA_SAFE_SIZE = 1900000
 
 	// WAIT_TIMEOUT timeout for waiting result from external source, in seconds
 	WAIT_TIMEOUT time.Duration = 10 * time.Second
