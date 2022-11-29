@@ -390,7 +390,9 @@ func (sc *ServerConn) Close() {
 		}
 
 		// close conns
-		sc.belong.conns.Delete(sc.netid)
+		if sc.belong.conns != nil {
+			sc.belong.conns.Delete(sc.netid) // If the server is closing, conns might be already nil, so no need to call delete
+		}
 		Mylog(sc.belong.opts.logOpen, LOG_MODULE_CLOSE, sc.belong.ConnsSize())
 		// close net.Conn, any blocked read or write operation will be unblocked and
 		// return errors.

@@ -245,8 +245,10 @@ func SetRpcLogger(rpc io.Writer) {
 }
 
 func ClearRpcLogger() {
-	RpcLogger.enabled = false
-	RpcLogger.logger = nil
+	if RpcLogger != nil {
+		RpcLogger.enabled = false
+		RpcLogger.logger = nil
+	}
 	RpcLoggerMap = NewAutoCleanMap(60 * time.Minute)
 }
 
