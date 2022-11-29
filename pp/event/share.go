@@ -179,10 +179,10 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 }
 
 // GetShareFile
-func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAddr string, walletPubkey, walletSign []byte) {
+func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAddr string, walletPubkey []byte) {
 	pp.DebugLog(ctx, "GetShareFile for file ", keyword)
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr, walletPubkey, walletSign), header.ReqGetShareFile)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr, walletPubkey), header.ReqGetShareFile)
 	}
 }
 
@@ -238,7 +238,13 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			rpcResult.Return = rpc.SHARED_DL_START
 			rpcResult.FileInfo = append(rpcResult.FileInfo, f)
 			file.SetFileShareResult(target.ShareRequest.WalletAddress+reqId, rpcResult)
-			req = requests.RequestDownloadFile(fileInfo.FileHash, filePath, target.ShareRequest.WalletAddress, reqId, target.ShareRequest.WalletSign, target.ShareRequest.WalletPubkey, target.ShareRequest)
+			go func() {
+				if walletSign := file.GetSignatureFromRemote(fileInfo.FileHash); walletSign != nil {
+					req = requests.RequestDownloadFile(fileInfo.FileHash, filePath, target.ShareRequest.WalletAddress, reqId, walletSign, target.ShareRequest.WalletPubkey, target.ShareRequest)
+					p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
+				}
+			}()
+
 		} else {
 			sig := utils.GetFileDownloadWalletSignMessage(fileInfo.FileHash, setting.WalletAddress)
 			sign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(sig))
@@ -246,8 +252,8 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 				return
 			}
 			req = requests.ReqFileStorageInfoData(filePath, "", saveAs, setting.WalletAddress, sign, setting.WalletPublicKey, false, target.ShareRequest)
+			p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 		}
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 	}
 	return
 }

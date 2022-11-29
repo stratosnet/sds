@@ -726,7 +726,7 @@ func stopshare(cmd *cobra.Command, args []string) error {
 }
 
 // reqGetSharedMsg
-func reqGetSharedMsg(shareLink, fileHash string) []byte {
+func reqGetSharedMsg(shareLink string) []byte {
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {
@@ -734,11 +734,6 @@ func reqGetSharedMsg(shareLink, fileHash string) []byte {
 		return nil
 	}
 
-	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileDownloadShareWalletSignMessage(fileHash, WalletAddress)))
-	if err != nil {
-		return nil
-	}
 	wpk, err := WalletPublicKey.ToBech()
 	if err != nil {
 		return nil
@@ -747,11 +742,9 @@ func reqGetSharedMsg(shareLink, fileHash string) []byte {
 	// param
 	var params = []rpc.ParamReqGetShared{}
 	params = append(params, rpc.ParamReqGetShared{
-		FileHash:     fileHash,
 		WalletAddr:   WalletAddress,
 		ShareLink:    shareLink,
 		WalletPubkey: wpk,
-		Signature:    hex.EncodeToString(sign),
 	})
 
 	pm, e := json.Marshal(params)
@@ -764,16 +757,54 @@ func reqGetSharedMsg(shareLink, fileHash string) []byte {
 	return wrapJsonRpc("user_requestGetShared", pm)
 }
 
-// getshared
-func getshared(cmd *cobra.Command, args []string) error {
-
-	fileHash := args[1]
-	// compose request
-	r := reqGetSharedMsg(args[0], fileHash)
-	if r == nil {
+// reqDownloadSharedMsg
+func reqDownloadSharedMsg(fileHash, reqId string) []byte {
+	// wallet address
+	ret := readWalletKeys(WalletAddress)
+	if !ret {
+		utils.DebugLog("Failed reading key file.")
 		return nil
 	}
 
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileDownloadShareWalletSignMessage(fileHash, WalletAddress)))
+	if err != nil {
+		return nil
+	}
+
+	wpk, err := WalletPublicKey.ToBech()
+	if err != nil {
+		return nil
+	}
+
+	// param
+	var params = []rpc.ParamReqDownloadShared{}
+	params = append(params, rpc.ParamReqDownloadShared{
+		FileHash:     fileHash,
+		WalletAddr:   WalletAddress,
+		WalletPubkey: wpk,
+		Signature:    hex.EncodeToString(sign),
+		ReqId:        reqId,
+	})
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.DebugLog("failed marshal param for ReqStopShare")
+		return nil
+	}
+
+	// wrap into request message
+	return wrapJsonRpc("user_requestDownloadShared", pm)
+}
+
+// getshared
+func getshared(cmd *cobra.Command, args []string) error {
+
+	// compose request: get shared file
+	r := reqGetSharedMsg(args[0])
+	if r == nil {
+		return nil
+	}
 	// http request-respond
 	body := httpRequest(r)
 	if body == nil {
@@ -787,6 +818,29 @@ func getshared(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	var res rpc.Result
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+		return nil
+	}
+	if res.Return != rpc.SHARED_DL_START {
+		return nil
+	}
+
+	fileHash := res.FileHash
+
+	// compose second request: download
+	r = reqDownloadSharedMsg(fileHash, res.ReqId)
+	// http request-respond
+	body = httpRequest(r)
+	if body == nil {
+		utils.DebugLog("json marshal error")
+		return nil
+	}
+	// handle response
+	err = json.Unmarshal(body, &rsp)
+	if err != nil {
+		return err
+	}
 	err = json.Unmarshal(rsp.Result, &res)
 	if err != nil {
 		return nil

@@ -30,6 +30,9 @@ var (
 	// key(fileHash) : value(chan []byte)
 	rpcUploadDataChan = &sync.Map{}
 
+	// key(fileHash) : value(chan string)
+	rpcSignatureChan = &sync.Map{}
+
 	// key(fileHash + file) : value(downloadReady)
 	rpcDownloadReady = &sync.Map{}
 
@@ -101,7 +104,7 @@ func GetRemoteFileData(hash string, offset *protos.SliceOffset) []byte {
 
 	cursor = data[:]
 	parentCtx := context.Background()
-	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
+	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT*2)
 
 OuterFor:
 	for {
@@ -229,6 +232,44 @@ func SetDownloadSliceDone(key string) {
 		case ch.(chan bool) <- true:
 		default:
 			UnsubscribeDownloadSliceDone(key)
+		}
+	}
+}
+
+// SubscribeGetSignature
+func SubscribeGetSignature(key string) chan []byte {
+	sig := make(chan []byte)
+	rpcDownloadReady.Store(key, sig)
+	return sig
+}
+
+// UnsubscribeGetSignature
+func UnsubscribeGetSignature(key string) {
+	rpcDownloadReady.Delete(key)
+}
+
+// GetSignatureFromRemote
+func GetSignatureFromRemote(key string) []byte {
+	parentCtx := context.Background()
+	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
+
+	select {
+	case <-ctx.Done():
+		return nil
+	case signature := <-SubscribeGetSignature(key):
+		UnsubscribeDownloadSliceDone(key)
+		return signature
+	}
+}
+
+// GetSignatureFromRemote
+func SetSignature(key string, sig []byte) {
+	ch, found := rpcDownloadReady.Load(key)
+	if found {
+		select {
+		case ch.(chan []byte) <- sig:
+		default:
+			return
 		}
 	}
 }
