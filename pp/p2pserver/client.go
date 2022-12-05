@@ -3,7 +3,6 @@ package p2pserver
 import (
 	"context"
 	"math"
-	"net"
 	"strconv"
 	"strings"
 	"sync"
@@ -26,23 +25,28 @@ type offline struct {
 // initClient
 func (p *P2pServer) initClient() {
 	p.offlineChan = make(chan *offline, 2)
-	p.uploadConnMap = &sync.Map{}
-	p.downloadConnMap = &sync.Map{}
+	p.cachedConnMap = &sync.Map{}
 	p.connMap = make(map[string]*cf.ClientConn)
 }
 
-// NewClient
-func (p *P2pServer) NewClient(ctx context.Context, server string, heartbeat bool) (*cf.ClientConn, error) {
-	utils.DebugLog("NewClient:", server)
-	tcpAddr, err := net.ResolveTCPAddr("tcp4", server)
-	if err != nil {
-		return nil, errors.Wrap(err, "resolve TCP address error")
-	}
-	c, err := net.DialTCP("tcp", nil, tcpAddr)
-	if err != nil {
-		return nil, err
-	}
+func (p *P2pServer) NewClientToMainSp(ctx context.Context, server string) error {
+	utils.DebugLog("NewClientToMainSp: to", server, " hb: true, rec: true")
+	_, err := p.newClient(ctx, server, true, true, true)
+	return err
+}
 
+func (p *P2pServer) NewClientToAlternativeSp(ctx context.Context, server string, heartbeat bool) (*cf.ClientConn, error) {
+	utils.DebugLog("NewClientToAlternativeSp: to", server)
+	return p.newClient(ctx, server, heartbeat, false, false)
+}
+
+func (p *P2pServer) NewClientToPp(ctx context.Context, server string, heartbeat bool) (*cf.ClientConn, error) {
+	utils.DebugLog("NewClientToPp: to", server)
+	return p.newClient(ctx, server, heartbeat, false, false)
+}
+
+// NewClient
+func (p *P2pServer) newClient(ctx context.Context, server string, heartbeat, reconnect, spconn bool) (*cf.ClientConn, error) {
 	onConnect := cf.OnConnectOption(func(c core.WriteCloser) bool {
 		utils.DebugLog("on connect")
 		return true
@@ -52,9 +56,9 @@ func (p *P2pServer) NewClient(ctx context.Context, server string, heartbeat bool
 	})
 	onClose := cf.OnCloseOption(func(c core.WriteCloser) {
 		utils.Log("on close", c.(*cf.ClientConn).GetName())
-		//p.ClientMutex.Lock()
+		p.clientMutex.Lock()
 		delete(p.connMap, c.(*cf.ClientConn).GetName())
-		//p.ClientMutex.Unlock()
+		p.clientMutex.Unlock()
 
 		if p.ppConn != nil {
 			if p.ppConn == c.(*cf.ClientConn) {
@@ -69,10 +73,10 @@ func (p *P2pServer) NewClient(ctx context.Context, server string, heartbeat bool
 				}
 			}
 		}
-		if p.spConn != nil {
-			if p.spConn.GetName() == c.(*cf.ClientConn).GetName() {
-				utils.DebugLog("lost SP conn, name: ", p.spConn.GetName(), " netId is ", p.spConn.GetNetID())
-				p.spConn = nil
+		if p.mainSpConn != nil {
+			if c.(*cf.ClientConn).GetIsActive() && p.mainSpConn.GetName() == c.(*cf.ClientConn).GetName() {
+				utils.DebugLog("lost SP conn, name: ", p.mainSpConn.GetName(), " netId is ", p.mainSpConn.GetNetID())
+				p.mainSpConn = nil
 				select {
 				case p.offlineChan <- &offline{
 					IsSp: true,
@@ -82,7 +86,6 @@ func (p *P2pServer) NewClient(ctx context.Context, server string, heartbeat bool
 				}
 			}
 		}
-
 	})
 
 	serverPort, err := strconv.ParseUint(setting.Config.Port, 10, 16)
@@ -102,6 +105,7 @@ func (p *P2pServer) NewClient(ctx context.Context, server string, heartbeat bool
 		onClose,
 		cf.OnMessageOption(func(msg msg.RelayMsgBuf, c core.WriteCloser) {}),
 		cf.BufferSizeOption(100),
+		cf.ReconnectOption(reconnect),
 		cf.HeartCloseOption(!heartbeat),
 		cf.LogOpenOption(true),
 		cf.MinAppVersionOption(setting.Config.Version.MinAppVer),
@@ -109,12 +113,16 @@ func (p *P2pServer) NewClient(ctx context.Context, server string, heartbeat bool
 		serverPortOpt,
 		cf.ContextKVOption(ckv),
 	}
-	utils.Logf("attempting to connect to %v", server)
-	conn := cf.CreateClientConn(0, c, options...)
+	conn := cf.CreateClientConn(0, server, options...)
+
+	// setting p.mainSpConn earlier than calling conn.Start() to avoid race condition
+	if spconn {
+		p.mainSpConn = conn
+	}
 	conn.Start()
-	//p.ClientMutex.Lock()
+	p.clientMutex.Lock()
 	p.connMap[server] = conn
-	//p.ClientMutex.Unlock()
+	p.clientMutex.Unlock()
 
 	return conn, nil
 }
@@ -135,8 +143,8 @@ func (p *P2pServer) GetConnectionName(conn core.WriteCloser) string {
 
 // GetClientConn
 func (p *P2pServer) GetClientConn(networkAddr string) (*cf.ClientConn, bool) {
-	//p.ClientMutex.Lock()
-	//defer p.ClientMutex.Unlock()
+	p.clientMutex.Lock()
+	defer p.clientMutex.Unlock()
 	if cc, ok := p.connMap[networkAddr]; ok {
 		return cc, true
 	} else {
@@ -146,9 +154,9 @@ func (p *P2pServer) GetClientConn(networkAddr string) (*cf.ClientConn, bool) {
 
 // CleanUpConnMap
 func (p *P2pServer) CleanUpConnMap(fileHash string) {
-	p.uploadConnMap.Range(func(k, v interface{}) bool {
+	p.cachedConnMap.Range(func(k, v interface{}) bool {
 		if strings.HasPrefix(k.(string), fileHash) {
-			p.uploadConnMap.Delete(k.(string))
+			p.DeleteConnFromCache(k.(string))
 		}
 		return true
 	})
@@ -164,48 +172,24 @@ func (p *P2pServer) ReadOfflineChan() chan *offline {
 }
 
 func (p *P2pServer) SpConnValid() bool {
-	return p.spConn != nil
+	return p.mainSpConn != nil
 }
 
 func (p *P2pServer) GetSpName() string {
-	if p.spConn == nil {
+	if p.mainSpConn == nil {
 		return "{NA} Invalid SpConn"
 	}
-	return p.spConn.GetName()
-}
-
-// StoreDownloadConn access function for member downloadConnMap
-func (p *P2pServer) StoreDownloadConn(key string, conn *cf.ClientConn) {
-	p.downloadConnMap.Store(key, conn)
-}
-
-// LoadDownloadConn access function for member downloadConnMap
-func (p *P2pServer) LoadDownloadConn(key string) (*cf.ClientConn, bool) {
-	if c, ok := p.downloadConnMap.Load(key); ok {
-		return c.(*cf.ClientConn), true
-	} else {
-		return nil, false
-	}
-}
-
-// DeleteDownloadConn access function for member downloadConnMap
-func (p *P2pServer) DeleteDownloadConn(key string) {
-	p.downloadConnMap.Delete(key)
-}
-
-// RangeDownloadConn access function for member downloadConnMap
-func (p *P2pServer) RangeDownloadConn(rf func(k, v interface{}) bool) {
-	p.downloadConnMap.Range(rf)
+	return p.mainSpConn.GetName()
 }
 
 // StoreUploadConn access function for member downloadConnMap
-func (p *P2pServer) StoreUploadConn(key string, conn *cf.ClientConn) {
-	p.uploadConnMap.Store(key, conn)
+func (p *P2pServer) StoreConnToCache(key string, conn *cf.ClientConn) {
+	p.cachedConnMap.Store(key, conn)
 }
 
 // LoadUploadConn access function for member downloadConnMap
-func (p *P2pServer) LoadUploadConn(key string) (*cf.ClientConn, bool) {
-	if c, ok := p.uploadConnMap.Load(key); ok {
+func (p *P2pServer) LoadConnFromCache(key string) (*cf.ClientConn, bool) {
+	if c, ok := p.cachedConnMap.Load(key); ok {
 		return c.(*cf.ClientConn), true
 	} else {
 		return nil, false
@@ -213,18 +197,24 @@ func (p *P2pServer) LoadUploadConn(key string) (*cf.ClientConn, bool) {
 }
 
 // DeleteUploadConn access function for member downloadConnMap
-func (p *P2pServer) DeleteUploadConn(key string) {
-	p.uploadConnMap.Delete(key)
+func (p *P2pServer) DeleteConnFromCache(key string) {
+	p.cachedConnMap.Delete(key)
 }
 
-// RangeUploadConn access function for member downloadConnMap
-func (p *P2pServer) RangeUploadConn(rf func(k, v interface{}) bool) {
-	p.uploadConnMap.Range(rf)
+func (p *P2pServer) RangeCachedConn(prefix string, rf func(k, v interface{}) bool) {
+	p.cachedConnMap.Range(
+		func(k, v interface{}) bool {
+			if strings.HasPrefix(k.(string), prefix) {
+				return rf(k, v)
+			}
+			return true
+		})
+	p.cachedConnMap.Range(rf)
 }
 
 // GetSpConn
 func (p *P2pServer) GetSpConn() *cf.ClientConn {
-	return p.spConn
+	return p.mainSpConn
 }
 
 // GetPpConn

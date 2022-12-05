@@ -13,9 +13,11 @@ import (
 )
 
 type Network struct {
-	ppPeerClock   *clock.Clock
-	pingTimePPMap *sync.Map
-	pingTimeSPMap *sync.Map
+	ppPeerClock          *clock.Clock
+	pingTimePPMap        *sync.Map
+	pingTimeSPMap        *sync.Map
+	reloadConnectSpRetry int
+	reloadConnecting     bool
 }
 
 const (
@@ -74,7 +76,7 @@ func (p *Network) ConnectToGatewayPP(ctx context.Context, pplist []*types.PeerIn
 			p2pserver.GetP2pServer(ctx).DeletePPByNetworkAddress(ctx, ppInfo.NetworkAddress)
 			continue
 		}
-		ppConn, err := p2pserver.GetP2pServer(ctx).NewClient(ctx, ppInfo.NetworkAddress, true)
+		ppConn, err := p2pserver.GetP2pServer(ctx).NewClientToPp(ctx, ppInfo.NetworkAddress, true)
 		if ppConn != nil {
 			p2pserver.GetP2pServer(ctx).SetPpClientConn(ppConn)
 			return true
@@ -92,7 +94,8 @@ func (p *Network) ListenOffline(ctx context.Context) {
 		qch = v.(chan bool)
 		utils.DebugLogf("ListenOffline quit ch found")
 	}
-
+	p.reloadConnectSpRetry = 0
+	p.reloadConnecting = false
 	for {
 		select {
 		case offline := <-p2pserver.GetP2pServer(ctx).ReadOfflineChan():
@@ -100,9 +103,7 @@ func (p *Network) ListenOffline(ctx context.Context) {
 				if setting.IsPP {
 					utils.DebugLogf("SP %v is offline", offline.NetworkAddress)
 					setting.IsStartMining = false
-					p.reloadConnectSP(ctx)()
-					utils.DebugLog("offline")
-					p.GetSPList(ctx)()
+					p.reloadConnectSP(ctx)
 				}
 			} else {
 				p2pserver.GetP2pServer(ctx).PPDisconnected(ctx, "", offline.NetworkAddress)

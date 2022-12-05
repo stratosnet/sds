@@ -24,7 +24,7 @@ var (
 
 // ConnectToSP Checks if there is a connection to an SP node. If it doesn't, it attempts to create one with a random SP node.
 func (p *P2pServer) ConnectToSP(ctx context.Context) (newConnection bool, err error) {
-	if p.spConn != nil {
+	if p.mainSpConn != nil {
 		return false, nil
 	}
 	if len(setting.Config.SPList) == 0 {
@@ -33,8 +33,8 @@ func (p *P2pServer) ConnectToSP(ctx context.Context) (newConnection bool, err er
 
 	if optSpNetworkAddr, err := p.GetOptSPAndClear(); err == nil {
 		pp.DebugLog(ctx, "reconnect to detected optimal SP ", optSpNetworkAddr)
-		p.spConn, _ = p.NewClient(ctx, optSpNetworkAddr, false)
-		if p.spConn != nil {
+		_ = p.NewClientToMainSp(ctx, optSpNetworkAddr)
+		if p.mainSpConn != nil {
 			return true, nil
 		}
 	}
@@ -43,8 +43,8 @@ func (p *P2pServer) ConnectToSP(ctx context.Context) (newConnection bool, err er
 	for _, index := range spListOrder {
 		selectedSP := setting.Config.SPList[index]
 		pp.DebugLog(ctx, "NewClient:", selectedSP.NetworkAddress)
-		p.spConn, err = p.NewClient(ctx, selectedSP.NetworkAddress, false)
-		if p.spConn != nil {
+		_ = p.NewClientToMainSp(ctx, selectedSP.NetworkAddress)
+		if p.mainSpConn != nil {
 			return true, nil
 		}
 	}
@@ -54,13 +54,13 @@ func (p *P2pServer) ConnectToSP(ctx context.Context) (newConnection bool, err er
 
 // ConnectToOptSP connect if there is a detected optimal SP node.
 func (p *P2pServer) ConfirmOptSP(ctx context.Context, spNetworkAddr string) {
-	pp.DebugLog(ctx, "current sp ", p.spConn.GetName(), " to be altered to new optimal SP ", spNetworkAddr)
-	if p.spConn.GetName() == spNetworkAddr {
+	pp.DebugLog(ctx, "current sp ", p.mainSpConn.GetName(), " to be altered to new optimal SP ", spNetworkAddr)
+	if p.mainSpConn.GetName() == spNetworkAddr {
 		pp.DebugLog(ctx, "optimal SP already in connection, won't change SP")
 		return
 	}
 	p.setOptSP(spNetworkAddr)
-	p.spConn.Close()
+	p.mainSpConn.Close()
 }
 
 func (p *P2pServer) GetOptSPAndClear() (string, error) {

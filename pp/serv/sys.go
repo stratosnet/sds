@@ -81,7 +81,7 @@ func dumpTrafficLog(ctx context.Context) func() {
 				clientOutbound += conn.GetOutboundAndReset()
 			}
 
-			ps.RangeUploadConn(func(k, v interface{}) bool {
+			ps.RangeCachedConn("upload#", func(k, v interface{}) bool {
 				vconn := v.(*cf.ClientConn)
 				in := vconn.GetInboundAndReset()
 				clientInbound += in
@@ -90,7 +90,7 @@ func dumpTrafficLog(ctx context.Context) func() {
 				return true
 			})
 
-			ps.RangeDownloadConn(func(k, v interface{}) bool {
+			ps.RangeCachedConn("download#", func(k, v interface{}) bool {
 				vconn := v.(*cf.ClientConn)
 				in := vconn.GetInboundAndReset()
 				clientInbound += in
@@ -179,7 +179,7 @@ func monitor(ctx context.Context) func() {
 				w += conn.GetSecondWriteFlow()
 			}
 
-			ps.RangeUploadConn(func(k, v interface{}) bool {
+			ps.RangeCachedConn("upload#", func(k, v interface{}) bool {
 				vconn := v.(*cf.ClientConn)
 				r1 := vconn.GetSecondReadFlow()
 				r += r1
@@ -188,7 +188,7 @@ func monitor(ctx context.Context) func() {
 				return true
 			})
 
-			ps.RangeDownloadConn(func(k, v interface{}) bool {
+			ps.RangeCachedConn("download#", func(k, v interface{}) bool {
 				vconn := v.(*cf.ClientConn)
 				r1 := vconn.GetSecondReadFlow()
 				r += r1

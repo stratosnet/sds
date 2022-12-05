@@ -414,40 +414,13 @@ func SendReqDownloadSlice(ctx context.Context, fileHash string, sliceInfo *proto
 	pp.DebugLog(ctx, "req = ", req)
 
 	networkAddress := sliceInfo.StoragePpInfo.NetworkAddress
-	key := fileHash + sliceInfo.StoragePpInfo.P2PAddress + fileReqId
-
-	if conn, ok := p2pserver.GetP2pServer(ctx).LoadDownloadConn(key); ok {
-		err := p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, req, header.ReqDownloadSlice)
-		if err == nil {
-			pp.DebugLog(ctx, "Send download slice request to ", networkAddress)
-			return
-		}
-	}
-
-	if conn, ok := p2pserver.GetP2pServer(ctx).GetClientConn(networkAddress); ok {
-		err := p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, req, header.ReqDownloadSlice)
-		if err == nil {
-			pp.DebugLog(ctx, "Send download slice request to ", networkAddress)
-			p2pserver.GetP2pServer(ctx).StoreDownloadConn(key, conn)
-			return
-		}
-	}
-
-	conn, err := p2pserver.GetP2pServer(ctx).NewClient(ctx, networkAddress, false)
+	key := "download#" + fileHash + sliceInfo.StoragePpInfo.P2PAddress + fileReqId
+	err := p2pserver.GetP2pServer(ctx).SendMessageByCachedConn(ctx, key, networkAddress, req, header.ReqDownloadSlice, nil)
 	if err != nil {
 		pp.ErrorLogf(ctx, "Failed to create connection with %v: %v", networkAddress, utils.FormatError(err))
 		if dTask, ok := task.GetDownloadTask(fileHash, req.WalletAddress, fileReqId); ok {
 			setDownloadSliceFail(ctx, sliceInfo.SliceStorageInfo.SliceHash, req.TaskId, req.IsVideoCaching, dTask)
 		}
-		return
-	}
-
-	err = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, req, header.ReqDownloadSlice)
-	if err == nil {
-		pp.DebugLog(ctx, "Send download slice request to ", networkAddress)
-		p2pserver.GetP2pServer(ctx).StoreDownloadConn(key, conn)
-	} else {
-		pp.ErrorLog(ctx, "Fail to send download slice request to"+networkAddress)
 	}
 }
 

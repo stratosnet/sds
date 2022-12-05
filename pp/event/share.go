@@ -240,7 +240,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			file.SetFileShareResult(target.ShareRequest.WalletAddress+reqId, rpcResult)
 			req = requests.RequestDownloadFile(fileInfo.FileHash, filePath, target.ShareRequest.WalletAddress, reqId, target.ShareRequest.WalletSign, target.ShareRequest.WalletPubkey, target.ShareRequest)
 		} else {
-			sig := utils.GetFileDownloadShareWalletSignMessage(fileInfo.FileHash, setting.WalletAddress)
+			sig := utils.GetFileDownloadWalletSignMessage(fileInfo.FileHash, setting.WalletAddress)
 			sign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(sig))
 			if err != nil {
 				return

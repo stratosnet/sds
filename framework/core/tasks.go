@@ -1,9 +1,11 @@
 package core
 
 import (
-	"github.com/stratosnet/sds/utils"
 	"hash/fnv"
+	"runtime/debug"
 	"unsafe"
+
+	"github.com/stratosnet/sds/utils"
 )
 
 type taskFunc func()
@@ -52,7 +54,13 @@ func makeTask(index int, size int, close chan struct{}) *task {
 	go t.start()
 	return t
 }
+
 func (t *task) start() {
+	defer func() {
+		if p := recover(); p != nil {
+			utils.Log("panic in calling a job function: ", string(debug.Stack()))
+		}
+	}()
 	for {
 		select {
 		case <-t.closeChan:

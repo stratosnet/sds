@@ -70,7 +70,7 @@ func checkSingleSpLatency(ctx context.Context, server string, heartbeat bool) {
 	var spConn *cf.ClientConn
 	var err error
 	if p2pserver.GetP2pServer(ctx).GetSpName() != server {
-		spConn, err = p2pserver.GetP2pServer(ctx).NewClient(ctx, server, heartbeat)
+		spConn, err = p2pserver.GetP2pServer(ctx).NewClientToAlternativeSp(ctx, server, heartbeat)
 		if err != nil {
 			utils.DebugLogf("failed to connect to server %v: %v", server, utils.FormatError(err))
 		}

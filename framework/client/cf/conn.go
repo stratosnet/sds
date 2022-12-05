@@ -121,19 +121,19 @@ type ClientConn struct {
 }
 
 // ReconnectOption
-func ReconnectOption() ClientOption {
+func ReconnectOption(rec bool) ClientOption {
 	return func(o *options) {
-		o.reconnect = true
+		o.reconnect = rec
 	}
 }
 
 // CreateClientConn
-func CreateClientConn(netid int64, c net.Conn, opt ...ClientOption) *ClientConn {
+func CreateClientConn(netid int64, addr string, opt ...ClientOption) *ClientConn {
 	var opts options
 	for _, o := range opt {
 		o(&opts)
 	}
-	return newClientConnWithOptions(netid, c, opts)
+	return newClientConnWithOptions(netid, addr, opts)
 }
 
 // MinAppVersionOption
@@ -193,16 +193,15 @@ func Mylog(b bool, module string, v ...interface{}) {
 }
 
 // client
-func newClientConnWithOptions(netid int64, c net.Conn, opts options) *ClientConn {
+func newClientConnWithOptions(netid int64, addr string, opts options) *ClientConn {
 	if opts.bufferSize == 0 {
 		opts.bufferSize = 200
 	}
 
 	cc := &ClientConn{
-		addr:             c.RemoteAddr().String(),
+		addr:             addr,
 		opts:             opts,
 		netid:            netid,
-		spbConn:          c,
 		once:             &sync.Once{},
 		wg:               &sync.WaitGroup{},
 		sendCh:           make(chan *msg.RelayMsgBuf, opts.bufferSize),
@@ -220,7 +219,7 @@ func newClientConnWithOptions(netid int64, c net.Conn, opts options) *ClientConn
 		cc.ctx = context.WithValue(cc.ctx, kv.Key, kv.Value)
 	}
 
-	cc.name = c.RemoteAddr().String()
+	cc.name = cc.addr
 	cc.pending = []int64{}
 	return cc
 }
@@ -396,11 +395,24 @@ func (cc *ClientConn) handshake() error {
 
 // Start client starts readLoop, writeLoop, handleLoop
 func (cc *ClientConn) Start() {
+	tcpAddr, err := net.ResolveTCPAddr("tcp4", cc.addr)
+	if err != nil {
+		Mylog(cc.opts.logOpen, LOG_MODULE_START, fmt.Sprintf("bad server address: %v, %v", cc.addr, err.Error()))
+		cc.ClientClose(false)
+		return
+	}
+	cc.spbConn, err = net.DialTCP("tcp", nil, tcpAddr)
+	if err != nil {
+		utils.DebugLogf("cc.spbConn:%p", cc.spbConn)
+		Mylog(cc.opts.logOpen, LOG_MODULE_START, fmt.Sprintf("failed to dial tcp: %v, %v", tcpAddr.String(), err.Error()))
+		cc.ClientClose(false)
+		return
+	}
 	metrics.ConnNumbers.WithLabelValues("client").Inc()
-	err := cc.handshake()
+	err = cc.handshake()
 	if err != nil {
 		Mylog(cc.opts.logOpen, LOG_MODULE_START, fmt.Sprintf("handshake error %v -> %v, %v", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), err.Error()))
-		cc.ClientClose()
+		cc.ClientClose(true)
 		return
 	}
 
@@ -452,10 +464,10 @@ func (cc *ClientConn) Start() {
 }
 
 // ClientClose Actively closes the client connection
-func (cc *ClientConn) ClientClose() {
+func (cc *ClientConn) ClientClose(closeLowLayerConn bool) {
 	cc.is_active = true
 	cc.once.Do(func() {
-		Mylog(cc.opts.logOpen, LOG_MODULE_CLOSE, fmt.Sprintf("forced close conn %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
+		Mylog(cc.opts.logOpen, LOG_MODULE_CLOSE, "forced close conn")
 
 		// callback on close
 		onClose := cc.opts.onClose
@@ -465,7 +477,10 @@ func (cc *ClientConn) ClientClose() {
 		}
 
 		// close net.Conn
-		cc.spbConn.Close()
+		if closeLowLayerConn {
+			cc.spbConn.Close()
+		}
+
 		metrics.ConnNumbers.WithLabelValues("client").Dec()
 
 		// cancel readLoop, writeLoop and handleLoop go-routines.
@@ -502,7 +517,9 @@ func (cc *ClientConn) Close() {
 		}
 
 		// close net.Conn
-		cc.spbConn.Close()
+		if cc.spbConn != nil {
+			cc.spbConn.Close()
+		}
 
 		// cancel readLoop, writeLoop and handleLoop go-routines.
 		cc.mu.Lock()
@@ -530,17 +547,14 @@ func (cc *ClientConn) Close() {
 
 // reconnect
 func (cc *ClientConn) reconnect() {
-	var c net.Conn
-	var err error
-	c, err = net.Dial("tcp", cc.addr)
-	if err != nil {
-		if p := recover(); p != nil {
-			Mylog(cc.opts.logOpen, "net dial error", err)
-		}
-		return
-	}
-	*cc = *newClientConnWithOptions(cc.netid, c, cc.opts)
+	Mylog(cc.opts.logOpen, LOG_MODULE_START, fmt.Sprintf("reconnect to %v (%v)", cc.addr, cc.remoteP2pAddress))
+	*cc = *newClientConnWithOptions(cc.netid, cc.addr, cc.opts)
 	cc.Start()
+}
+
+// GetIsActive
+func (cc *ClientConn) GetIsActive() bool {
+	return cc.is_active
 }
 
 // Write ,
