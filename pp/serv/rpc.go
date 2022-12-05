@@ -175,10 +175,10 @@ func (api *rpcApi) UploadData(ctx context.Context, param rpc_api.ParamUploadData
 	}
 
 	// second part: let the server decide what will be the next step
-	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
-
+	newctx := context.Background()
+	newctx, _ = context.WithTimeout(newctx, WAIT_TIMEOUT)
 	select {
-	case <-ctx.Done():
+	case <-newctx.Done():
 		result := &rpc_api.Result{Return: rpc_api.TIME_OUT}
 		return *result
 	// since a slice has been passed to the application, wait for application's reply then return the result back to the rpc client
