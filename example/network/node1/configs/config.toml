@@ -8,7 +8,7 @@ storehouse_path = "./storage"
 download_path = "./download"
 p2p_address = 'stsds1gl9ywg6jdfdgcja70ffum4ectq4fmt26ay4znv'
 p2p_password = 'aaa'
-wallet_address = 'st14d6vt45ws2fz9kgma5wlcfc283xr6pqgp3sklu'
+wallet_address = 'st1sqzsk8mplv5248gx6dddzzxweqvew8rtst96fx'
 wallet_password = 'aaa'
 auto_run = true
 internal = false
@@ -17,7 +17,7 @@ is_limit_download_speed = false
 limit_download_speed = 100
 is_limit_upload_speed = false
 limit_upload_speed = 100
-chain_id = 'testchain_1-1'
+chain_id = 'testchain'
 stratos_chain_url = 'http://127.0.0.1:1317'
 rest_port = '9201'
 internal_port = '9301'
@@ -38,6 +38,15 @@ min_app_ver = 8
 show = 'v0.8.1'
 
 [[sp_list]]
-p2p_address = ""
-p2p_public_key = ""
-network_address = "0.0.0.0:8888"
+p2p_address = 'stsds1cw8qhgsxddak8hh8gs7veqmy5ku8f8za6qlq64'
+p2p_public_key = 'stsdspub1jmfc8j7ve0jg3jwq9wkefpa34fg9hhrp7nu6rkf6hff7ml769f6qrwae56'
+network_address = '127.0.0.1:8888'
+[[sp_list]]
+p2p_address = 'stsds15sya4n40da64z6n6hvk0p9f7sx72hqpjjnrf9y'
+p2p_public_key = 'stsdspub1pfr08evmk73dtf7ud69pwdznl4xdfghx6k6dyugwpk2jhqq890yqnrcp6u'
+network_address = '127.0.0.1:28888'
+[[sp_list]]
+p2p_address = 'stsds14c3em44vlh276cujnr2ez802uyjyeqrrsu9fuh'
+p2p_public_key = 'stsdspub1zgqd566qdnj4kna050jz505vamjhglxcpdepqctkregdt6snxm6sck2v6h'
+network_address = '127.0.0.1:18888'
+
