@@ -309,6 +309,11 @@ func DetailLogf(template string, v ...interface{}) {
 	MyLogger.LogDepth(Detail, 4, fmt.Sprintf(template, v...))
 }
 
+func FatalLogfAndExit(exitCode int, template string, v ...interface{}) {
+	MyLogger.LogDepth(Fatal, 4, fmt.Sprintf(template, v...))
+	os.Exit(exitCode)
+}
+
 // CheckError  TODO This is a bad way to call error log, as you cannot know where this method is called in your error log
 // This give log line like this : [ERROR]2021/04/13 22:39:11 log.go:150: Fatal error: address 127.0.0.1: missing port in address
 // it always refer to this file and this line
