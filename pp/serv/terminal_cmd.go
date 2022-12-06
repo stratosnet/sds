@@ -453,9 +453,9 @@ func (api *terminalCmd) GetShareFile(ctx context.Context, param []string) (CmdRe
 		return CmdResult{Msg: ""}, errors.New("input share link and retrieval secret key(if any)")
 	}
 	if len(param) < 2 {
-		event.GetShareFile(ctx, param[0], "", "", setting.WalletAddress, setting.WalletPublicKey, nil)
+		event.GetShareFile(ctx, param[0], "", "", setting.WalletAddress, setting.WalletPublicKey)
 	} else {
-		event.GetShareFile(ctx, param[0], param[1], "", setting.WalletAddress, setting.WalletPublicKey, nil)
+		event.GetShareFile(ctx, param[0], param[1], "", setting.WalletAddress, setting.WalletPublicKey)
 	}
 
 	return CmdResult{Msg: DefaultMsg}, nil

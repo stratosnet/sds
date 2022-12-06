@@ -432,17 +432,11 @@ func (api *rpcApi) RequestGetShared(ctx context.Context, param rpc_api.ParamReqG
 	metrics.RpcReqCount.WithLabelValues("RequestGetShared").Inc()
 	wallet := param.WalletAddr
 	pubkey := param.WalletPubkey
-	signature := param.Signature
 
 	// wallet pubkey and wallet signature will be carried in sds messages in []byte format
 	wpk, err := utiltypes.WalletPubkeyFromBech(pubkey)
 	if err != nil {
 		utils.ErrorLog("wrong wallet pubkey")
-		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
-	}
-	wsig, err := hex.DecodeString(signature)
-	if err != nil {
-		utils.ErrorLog("wrong signature")
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
@@ -451,18 +445,12 @@ func (api *rpcApi) RequestGetShared(ctx context.Context, param rpc_api.ParamReqG
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
-	// verify the signature
-	wsigMsg := utils.GetFileDownloadShareWalletSignMessage(param.FileHash, wallet)
-	if !utiltypes.VerifyWalletSignBytes(wpk.Bytes(), wsig, wsigMsg) {
-		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
-	}
-
 	reqId := uuid.New().String()
 	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
 	key := param.WalletAddr + reqId
 
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
-	event.GetShareFile(reqCtx, param.ShareLink, "", "", param.WalletAddr, wpk.Bytes(), wsig)
+	event.GetShareFile(reqCtx, param.ShareLink, "", "", param.WalletAddr, wpk.Bytes())
 
 	// the application gives FileShareResult type of result
 	var res *rpc_api.FileShareResult
@@ -474,28 +462,60 @@ func (api *rpcApi) RequestGetShared(ctx context.Context, param rpc_api.ParamReqG
 		case <-ctx.Done():
 			return rpc_api.Result{Return: rpc_api.TIME_OUT}
 		default:
-			res, found = file.GetFileShareResult(param.WalletAddr + reqId)
+			res, found = file.GetFileShareResult(key)
 			if found {
 				// the result is read, but it's nil
 				if res == nil {
 					return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
-				}
-				// if shared download has started, wait for the rsp of file storage info
-				if res.Return != rpc_api.SHARED_DL_START {
-					return rpc_api.Result{Return: res.Return}
+				} else {
+					return rpc_api.Result{
+						Return:   res.Return,
+						ReqId:    reqId,
+						FileHash: res.FileInfo[0].FileHash,
+					}
 				}
 			}
 		}
 	}
+	return rpc_api.Result{Return: rpc_api.TIME_OUT}
+}
+
+// RequestDownloadShared
+func (api *rpcApi) RequestDownloadShared(ctx context.Context, param rpc_api.ParamReqDownloadShared) rpc_api.Result {
+	// wallet pubkey and wallet signature will be carried in sds messages in []byte format
+	wpk, err := utiltypes.WalletPubkeyFromBech(param.WalletPubkey)
+	if err != nil {
+		utils.ErrorLog("wrong wallet pubkey")
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
+	// verify if wallet and public key match
+	if utiltypes.VerifyWalletAddrBytes(wpk.Bytes(), param.WalletAddr) != 0 {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
+	wsig, err := hex.DecodeString(param.Signature)
+	if err != nil {
+		utils.ErrorLog("wrong signature")
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
+	// verify the signature
+	wsigMsg := utils.GetFileDownloadShareWalletSignMessage(param.FileHash, param.WalletAddr)
+	if !utiltypes.VerifyWalletSignBytes(wpk.Bytes(), wsig, wsigMsg) {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
 
 	// file hash should be given in the result message
-	fileHash := res.FileInfo[0].FileHash
+	fileHash := param.FileHash
 	if fileHash == "" {
 		return rpc_api.Result{Return: rpc_api.WRONG_FILE_INFO}
 	}
 
+	file.SetSignature(param.FileHash, wsig)
+
 	// start from here, the control flow follows that of download file
-	key = fileHash + reqId
+	key := fileHash + param.ReqId
 
 	var result *rpc_api.Result
 	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
@@ -510,7 +530,7 @@ func (api *rpcApi) RequestGetShared(ctx context.Context, param rpc_api.ParamReqG
 
 	// one piece to be sent to client
 	if result.Return == rpc_api.DOWNLOAD_OK {
-		result.ReqId = reqId
+		result.ReqId = param.ReqId
 	} else {
 		// end of the session
 		file.CleanFileHash(key)
