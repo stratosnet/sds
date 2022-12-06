@@ -84,11 +84,9 @@ type ParamReqStopShare struct {
 
 // share: request download a shared file
 type ParamReqGetShared struct {
-	FileHash     string `json:"filehash"`
 	WalletAddr   string `json:"walletaddr"`
-	ShareLink    string `json:"sharelink"`
 	WalletPubkey string `json:"walletpubkey"`
-	Signature    string `json:"signature"`
+	ShareLink    string `json:"sharelink"`
 }
 
 type FileInfo struct {
@@ -100,6 +98,15 @@ type FileInfo struct {
 	LinkTimeExp uint64 `json:"linktimeexp,omitempty"`
 	ShareId     string `json:"shareid,omitempty"`
 	ShareLink   string `json:"sharelink,omitempty"`
+}
+
+// share: request list shared files
+type ParamReqDownloadShared struct {
+	FileHash     string `json:"filehash"`
+	WalletAddr   string `json:"walletaddr"`
+	WalletPubkey string `json:"walletpubkey"`
+	Signature    string `json:"signature"`
+	ReqId        string `json:"reqid"`
 }
 
 // ozone: get ozone
@@ -114,6 +121,7 @@ type Result struct {
 	OffsetStart *uint64 `json:"offsetstart,omitempty"`
 	OffsetEnd   *uint64 `json:"offsetend,omitempty"`
 	FileData    string  `json:"filedata,omitempty"`
+	FileHash    string  `json:"filehash,omitempty"`
 }
 
 type FileListResult struct {
