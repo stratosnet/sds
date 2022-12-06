@@ -98,8 +98,8 @@ func (api *terminalCmd) RegisterPP(ctx context.Context, param []string) (CmdResu
 }
 
 func (api *terminalCmd) Activate(ctx context.Context, param []string) (CmdResult, error) {
-	if len(param) != 3 {
-		return CmdResult{Msg: ""}, errors.New("expecting 3 params. Input amount of tokens, fee amount and gas amount")
+	if len(param) < 2 {
+		return CmdResult{Msg: ""}, errors.New("expecting at least 2 params. Input amount of tokens, fee amount and (optionally) gas amount")
 	}
 
 	amount, err := utiltypes.ParseCoinNormalized(param[0])
@@ -111,9 +111,17 @@ func (api *terminalCmd) Activate(ctx context.Context, param []string) (CmdResult
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
 	}
-	gas, err := strconv.ParseInt(param[2], 10, 64)
-	if err != nil {
-		return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be an integer")
+	txFee := utiltypes.TxFee{
+		Fee:      fee,
+		Simulate: true,
+	}
+	if len(param) > 2 {
+		gas, err := strconv.ParseUint(param[2], 10, 64)
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be a positive integer")
+		}
+		txFee.Gas = gas
+		txFee.Simulate = false
 	}
 
 	if setting.State != types.PP_INACTIVE {
@@ -125,16 +133,16 @@ func (api *terminalCmd) Activate(ctx context.Context, param []string) (CmdResult
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	if err := event.Activate(ctx, amount, fee, gas); err != nil {
+	if err := event.Activate(ctx, amount, txFee); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
 func (api *terminalCmd) UpdateStake(ctx context.Context, param []string) (CmdResult, error) {
-	if len(param) != 4 {
-		return CmdResult{Msg: ""}, errors.New("expecting 4 params. Input amount of stakeDelta, fee amount, " +
-			"gas amount and flag of incrStake(0 for desc, 1 for incr)")
+	if len(param) < 3 {
+		return CmdResult{Msg: ""}, errors.New("expecting at least 3 params. Input amount of stakeDelta, fee amount, " +
+			"(optional) gas amount and flag of incrStake(0 for desc, 1 for incr)")
 	}
 
 	stakeDelta, err := utiltypes.ParseCoinNormalized(param[0])
@@ -154,11 +162,22 @@ func (api *terminalCmd) UpdateStake(ctx context.Context, param []string) (CmdRes
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
 	}
-	gas, err := strconv.ParseInt(param[2], 10, 64)
-	if err != nil {
-		return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be an integer")
+	txFee := utiltypes.TxFee{
+		Fee:      fee,
+		Simulate: true,
 	}
-	incrStake, err := strconv.ParseBool(param[3])
+	lastParamIndex := 2
+	if len(param) > 3 {
+		lastParamIndex = 3
+		gas, err := strconv.ParseUint(param[2], 10, 64)
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be a positive integer")
+		}
+		txFee.Gas = gas
+		txFee.Simulate = false
+	}
+
+	incrStake, err := strconv.ParseBool(param[lastParamIndex])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid flag for stake change. 0 for desc, 1 for incr")
 	}
@@ -173,7 +192,7 @@ func (api *terminalCmd) UpdateStake(ctx context.Context, param []string) (CmdRes
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	if err := event.UpdateStake(ctx, stakeDelta, fee, gas, incrStake); err != nil {
+	if err := event.UpdateStake(ctx, stakeDelta, txFee, incrStake); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
@@ -186,17 +205,25 @@ func (api *terminalCmd) Status(ctx context.Context, param []string) (CmdResult, 
 }
 
 func (api *terminalCmd) Deactivate(ctx context.Context, param []string) (CmdResult, error) {
-	if len(param) != 2 {
-		return CmdResult{Msg: ""}, errors.New("expecting 2 params. Input fee amount and gas amount")
+	if len(param) < 1 {
+		return CmdResult{Msg: ""}, errors.New("expecting at least 1 param. Input fee amount and (optional) gas amount")
 	}
 
 	fee, err := utiltypes.ParseCoinNormalized(param[0])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
 	}
-	gas, err := strconv.ParseInt(param[1], 10, 64)
-	if err != nil {
-		return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be an integer")
+	txFee := utiltypes.TxFee{
+		Fee:      fee,
+		Simulate: true,
+	}
+	if len(param) > 1 {
+		gas, err := strconv.ParseUint(param[1], 10, 64)
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be a positive integer")
+		}
+		txFee.Gas = gas
+		txFee.Simulate = false
 	}
 
 	if setting.State == types.PP_INACTIVE {
@@ -204,15 +231,15 @@ func (api *terminalCmd) Deactivate(ctx context.Context, param []string) (CmdResu
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	if err := event.Deactivate(ctx, fee, gas); err != nil {
+	if err := event.Deactivate(ctx, txFee); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
 func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, error) {
-	if len(param) != 3 {
-		return CmdResult{Msg: ""}, errors.New("expecting 3 params. Input amount of tokens, fee amount and gas amount")
+	if len(param) < 2 {
+		return CmdResult{Msg: ""}, errors.New("expecting at least 2 params. Input amount of tokens, fee amount and (optional) gas amount")
 	}
 
 	amount, err := utiltypes.ParseCoinNormalized(param[0])
@@ -223,13 +250,21 @@ func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, 
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
 	}
-	gas, err := strconv.ParseInt(param[2], 10, 64)
-	if err != nil {
-		return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be an integerr")
+	txFee := utiltypes.TxFee{
+		Fee:      fee,
+		Simulate: true,
+	}
+	if len(param) > 2 {
+		gas, err := strconv.ParseUint(param[2], 10, 64)
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be a positive integer")
+		}
+		txFee.Gas = gas
+		txFee.Simulate = false
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	if err := event.Prepay(ctx, amount, fee, gas); err != nil {
+	if err := event.Prepay(ctx, amount, txFee); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 	return CmdResult{Msg: DefaultMsg}, nil

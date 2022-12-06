@@ -3,6 +3,7 @@ package event
 import (
 	"context"
 
+	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -16,8 +17,8 @@ import (
 )
 
 // Deactivate Request that an active PP node becomes inactive
-func Deactivate(ctx context.Context, fee utiltypes.Coin, gas int64) error {
-	deactivateReq, err := reqDeactivateData(fee, gas)
+func Deactivate(ctx context.Context, txFee utiltypes.TxFee) error {
+	deactivateReq, err := reqDeactivateData(txFee)
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't build PP deactivate request: "+err.Error())
 		return err
@@ -27,7 +28,7 @@ func Deactivate(ctx context.Context, fee utiltypes.Coin, gas int64) error {
 	return nil
 }
 
-// RspDeactivate. Response to asking the SP node to deactivate this PP node
+// RspDeactivate Response to asking the SP node to deactivate this PP node
 func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeactivatePP
 	success := requests.UnmarshalData(ctx, &target)
@@ -47,7 +48,7 @@ func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	err := stratoschain.BroadcastTxBytes(target.Tx)
+	err := stratoschain.BroadcastTxBytes(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
 	if err != nil {
 		pp.ErrorLog(ctx, "The deactivation transaction couldn't be broadcast", err)
 	} else {

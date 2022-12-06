@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -19,9 +20,9 @@ import (
 )
 
 // Activate Inactive PP node becomes active
-func Activate(ctx context.Context, amount utiltypes.Coin, fee utiltypes.Coin, gas int64) error {
+func Activate(ctx context.Context, amount utiltypes.Coin, txFee utiltypes.TxFee) error {
 	// Query blockchain to know if this node is already a resource node
-	ppState, height, err := stratoschain.QueryResourceNodeState(setting.P2PAddress)
+	ppState, _, err := stratoschain.QueryResourceNodeState(setting.P2PAddress)
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't query node status from the blockchain", err)
 		//return err
@@ -36,7 +37,7 @@ func Activate(ctx context.Context, amount utiltypes.Coin, fee utiltypes.Coin, ga
 			AlreadyActive: true,
 		}
 	default:
-		activateReq, err = reqActivateData(amount, fee, gas, height)
+		activateReq, err = reqActivateData(amount, txFee)
 		if err != nil {
 			pp.ErrorLog(ctx, "Couldn't build PP activate request", err)
 			return err
@@ -75,7 +76,7 @@ func RspActivate(ctx context.Context, conn core.WriteCloser) {
 
 	switch target.ActivationState {
 	case types.PP_INACTIVE:
-		err := stratoschain.BroadcastTxBytes(target.Tx)
+		err := stratoschain.BroadcastTxBytes(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
 		if err != nil {
 			pp.ErrorLog(ctx, "The activation transaction couldn't be broadcast", err)
 		} else {

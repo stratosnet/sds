@@ -3,6 +3,7 @@ package event
 import (
 	"context"
 
+	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -14,8 +15,8 @@ import (
 )
 
 // Prepay PP node sends a prepay transaction
-func Prepay(ctx context.Context, amount utiltypes.Coin, fee utiltypes.Coin, gas int64) error {
-	prepayReq, err := reqPrepayData(amount, fee, gas)
+func Prepay(ctx context.Context, amount utiltypes.Coin, txFee utiltypes.TxFee) error {
+	prepayReq, err := reqPrepayData(amount, txFee)
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't build PP prepay request: "+err.Error())
 		return err
@@ -25,7 +26,7 @@ func Prepay(ctx context.Context, amount utiltypes.Coin, fee utiltypes.Coin, gas 
 	return nil
 }
 
-// RspPrepay. Response to asking the SP node to send a prepay transaction
+// RspPrepay Response to asking the SP node to send a prepay transaction
 func RspPrepay(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspPrepay
 	success := requests.UnmarshalData(ctx, &target)
@@ -38,7 +39,7 @@ func RspPrepay(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	err := stratoschain.BroadcastTxBytes(target.Tx)
+	err := stratoschain.BroadcastTxBytes(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
 	if err != nil {
 		pp.ErrorLog(ctx, "The prepay transaction couldn't be broadcast", err)
 	} else {
@@ -46,7 +47,7 @@ func RspPrepay(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-// RspPrepaid. Response when this PP node's prepay transaction was successful
+// RspPrepaid Response when this PP node's prepay transaction was successful
 func RspPrepaid(ctx context.Context, conn core.WriteCloser) {
 	pp.Log(ctx, "The prepay transaction has been executed")
 }
