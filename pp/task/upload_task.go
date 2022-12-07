@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"math/rand"
+	"strconv"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -347,10 +348,15 @@ func CreateUploadSliceTaskFile(ctx context.Context, slice *SliceWithStatus, ppIn
 	}
 
 	var rawData []byte
+
 	if !remote {
+		metrics.UploadPerformanceLogNow(uploadTask.FileHash + ":SND_GET_LOCAL_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
 		rawData = file.GetFileData(filePath, offset)
+		metrics.UploadPerformanceLogNow(uploadTask.FileHash + ":RCV_GET_LOCAL_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
 	} else {
+		metrics.UploadPerformanceLogNow(uploadTask.FileHash + ":SND_GET_REMOTE_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
 		rawData = file.GetRemoteFileData(uploadTask.FileHash, offset)
+		metrics.UploadPerformanceLogNow(uploadTask.FileHash + ":RCV_GET_REMOTE_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
 	}
 
 	if rawData == nil {

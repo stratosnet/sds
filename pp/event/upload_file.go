@@ -11,6 +11,7 @@ import (
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
@@ -33,6 +34,9 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ htt
 	if !setting.CheckLogin() {
 		return
 	}
+
+	fileHash := file.GetFileHash(path, "")
+	metrics.UploadPerformanceLogNow(fileHash + ":RCV_CMD_START:")
 
 	isFile, err := file.IsFile(path)
 	if err != nil {
@@ -104,6 +108,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		pp.ErrorLog(ctx, "unmarshal error")
 		return
 	}
+	metrics.UploadPerformanceLogNow(target.FileHash + ":RCV_RSP_UPLOAD_SP")
 
 	// upload file to PP based on the PP info provided by SP
 	if target.Result == nil {

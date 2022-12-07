@@ -145,6 +145,8 @@ message RspUploadSlicesWrong {
 message UploadSpeedOfProgress {
   string file_hash = 1; //
   uint64 slice_size = 2; //
+  uint64 slice_off_start = 3;
+  int64 handle_time = 4;
 }
 
 message ReportUploadSliceResult {

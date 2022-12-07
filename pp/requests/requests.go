@@ -770,10 +770,12 @@ func ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr string, wall
 	}
 }
 
-func UploadSpeedOfProgressData(fileHash string, size uint64) *protos.UploadSpeedOfProgress {
+func UploadSpeedOfProgressData(fileHash string, size uint64, start uint64, t int64) *protos.UploadSpeedOfProgress {
 	return &protos.UploadSpeedOfProgress{
-		FileHash:  fileHash,
-		SliceSize: size,
+		FileHash:      fileHash,
+		SliceSize:     size,
+		SliceOffStart: start,
+		HandleTime:    t,
 	}
 }
 
