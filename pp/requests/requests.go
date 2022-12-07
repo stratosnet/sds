@@ -757,7 +757,7 @@ func ReqDeleteShareData(shareID, walletAddr string) *protos.ReqDeleteShare {
 	}
 }
 
-func ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr string, walletPubkey, walletSign []byte) *protos.ReqGetShareFile {
+func ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr string, walletPubkey []byte) *protos.ReqGetShareFile {
 	msg := utils.GetFileDownloadShareNodeSignMessage(setting.P2PAddress, keyword, header.ReqGetShareFile)
 	return &protos.ReqGetShareFile{
 		Keyword:       keyword,
@@ -765,7 +765,6 @@ func ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr string, wall
 		NodeSign:      types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
 		WalletAddress: walletAddr,
 		WalletPubkey:  walletPubkey,
-		WalletSign:    walletSign,
 		SharePassword: sharePassword,
 		SaveAs:        saveAs,
 	}

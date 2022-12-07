@@ -193,7 +193,7 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 		totalSize += int64(slice.GetSliceSize())
 	}
 	uploadTask := task.CreateUploadFileTask(target.FileHash, target.TaskId, target.SpP2PAddress, false, false, target.Sign, target.PpList, protos.UploadType_BACKUP)
-	p2pserver.GetP2pServer(ctx).CleanUpConnMap(target.FileHash)
+	p2pserver.GetP2pServer(ctx).CleanUpConnMap("upload#" + target.FileHash)
 	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
 
 	p := &task.UploadProgress{
@@ -348,12 +348,10 @@ func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileT
 
 // UploadPause
 func UploadPause(ctx context.Context, fileHash, reqID string, w http.ResponseWriter) {
-	p2pserver.GetP2pServer(ctx).RangeUploadConn(func(k, v interface{}) bool {
-		if strings.HasPrefix(k.(string), fileHash) {
-			conn := v.(*cf.ClientConn)
-			conn.ClientClose()
-			pp.DebugLog(ctx, "UploadPause", conn)
-		}
+	p2pserver.GetP2pServer(ctx).RangeCachedConn("upload#"+fileHash, func(k, v interface{}) bool {
+		conn := v.(*cf.ClientConn)
+		conn.ClientClose(true)
+		pp.DebugLog(ctx, "UploadPause", conn)
 		return true
 	})
 	p2pserver.GetP2pServer(ctx).CleanUpConnMap(fileHash)

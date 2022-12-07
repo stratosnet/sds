@@ -30,6 +30,9 @@ var (
 	// key(fileHash) : value(chan []byte)
 	rpcUploadDataChan = &sync.Map{}
 
+	// key(fileHash) : value(chan string)
+	rpcSignatureChan = &sync.Map{}
+
 	// key(fileHash + file) : value(downloadReady)
 	rpcDownloadReady = &sync.Map{}
 
@@ -101,7 +104,7 @@ func GetRemoteFileData(hash string, offset *protos.SliceOffset) []byte {
 
 	cursor = data[:]
 	parentCtx := context.Background()
-	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
+	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT*2)
 
 OuterFor:
 	for {
@@ -127,7 +130,11 @@ OuterFor:
 func SendFileDataBack(hash string, content []byte) {
 	ch, found := rpcUploadDataChan.Load(hash)
 	if found {
-		ch.(chan []byte) <- content
+		select {
+		case ch.(chan []byte) <- content:
+		default:
+			UnsubscribeGetRemoteFileData(hash)
+		}
 	}
 }
 
@@ -197,7 +204,11 @@ func SetRemoteFileResult(key string, result rpc.Result) {
 	defer eventMutex.Unlock()
 	ch, found := rpcFileEventChan.Load(key)
 	if found {
-		ch.(chan *rpc.Result) <- &result
+		select {
+		case ch.(chan *rpc.Result) <- &result:
+		default:
+			rpcFileEventChan.Delete(key)
+		}
 	}
 }
 
@@ -217,7 +228,49 @@ func UnsubscribeDownloadSliceDone(key string) {
 func SetDownloadSliceDone(key string) {
 	ch, found := rpcDownloadReady.Load(key)
 	if found {
-		ch.(chan bool) <- true
+		select {
+		case ch.(chan bool) <- true:
+		default:
+			UnsubscribeDownloadSliceDone(key)
+		}
+	}
+}
+
+// SubscribeGetSignature
+func SubscribeGetSignature(key string) chan []byte {
+	sig := make(chan []byte)
+	rpcDownloadReady.Store(key, sig)
+	return sig
+}
+
+// UnsubscribeGetSignature
+func UnsubscribeGetSignature(key string) {
+	rpcDownloadReady.Delete(key)
+}
+
+// GetSignatureFromRemote
+func GetSignatureFromRemote(key string) []byte {
+	parentCtx := context.Background()
+	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
+
+	select {
+	case <-ctx.Done():
+		return nil
+	case signature := <-SubscribeGetSignature(key):
+		UnsubscribeDownloadSliceDone(key)
+		return signature
+	}
+}
+
+// GetSignatureFromRemote
+func SetSignature(key string, sig []byte) {
+	ch, found := rpcDownloadReady.Load(key)
+	if found {
+		select {
+		case ch.(chan []byte) <- sig:
+		default:
+			return
+		}
 	}
 }
 
@@ -269,7 +322,11 @@ func SetRemoteFileInfo(key string, size uint64) {
 	defer reFileMutex.Unlock()
 	ch, found := rpcDownloadFileInfo.Load(key)
 	if found {
-		ch.(chan uint64) <- size
+		select {
+		case ch.(chan uint64) <- size:
+		default:
+			rpcDownloadFileInfo.Delete(key)
+		}
 	}
 }
 

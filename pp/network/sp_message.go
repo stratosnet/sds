@@ -48,7 +48,7 @@ func (p *Network) GetPPStatusFromSP(ctx context.Context) {
 // GetPPStatusInitPPList P node get node status
 func (p *Network) GetPPStatusInitPPList(ctx context.Context) func() {
 	return func() {
-		pp.DebugLog(ctx, "SendMessage(client.spConn, req, header.ReqGetPPStatus)")
+		pp.DebugLogf(ctx, "SendMessage(client.spConn, req, header.ReqGetPPStatus)")
 		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqGetPPStatusData(true), header.ReqGetPPStatus)
 	}
 }
@@ -56,13 +56,13 @@ func (p *Network) GetPPStatusInitPPList(ctx context.Context) func() {
 // GetSPList node get spList
 func (p *Network) GetSPList(ctx context.Context) func() {
 	return func() {
-		pp.DebugLog(ctx, "SendMessage(client.spConn, req, header.ReqGetSPList)")
+		pp.DebugLogf(ctx, "SendMessage(client.spConn, req, header.ReqGetSPList)")
 		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqGetSPlistData(), header.ReqGetSPList)
 	}
 }
 
 // GetPPListFromSP node get ppList from sp
 func (p *Network) GetPPListFromSP(ctx context.Context) {
-	pp.DebugLog(ctx, "SendMessage(client.spConn, req, header.ReqGetPPList)")
+	pp.DebugLogf(ctx, "SendMessage(client.spConn, req, header.ReqGetPPList)")
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqGetPPlistData(), header.ReqGetPPList)
 }
