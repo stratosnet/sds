@@ -131,6 +131,7 @@ type config struct {
 	LimitUploadSpeed     uint64       `toml:"limit_upload_speed"`
 	ChainId              string       `toml:"chain_id"`
 	StratosChainUrl      string       `toml:"stratos_chain_url"`
+	GasAdjustment        float64      `toml:"gas_adjustment"`
 	RestPort             string       `toml:"rest_port"`
 	InternalPort         string       `toml:"internal_port"`
 	RpcPort              string       `toml:"rpc_port"`
@@ -318,6 +319,7 @@ func defaultConfig() *config {
 		LimitUploadSpeed:     0,
 		ChainId:              "tropos-4",
 		StratosChainUrl:      "http://127.0.0.1:1317",
+		GasAdjustment:        1.3,
 		RestPort:             "",
 		InternalPort:         "",
 		TrafficLogInterval:   10,

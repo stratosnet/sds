@@ -3,6 +3,7 @@ package event
 import (
 	"context"
 
+	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -16,9 +17,9 @@ import (
 	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
-// Update stake of node
-func UpdateStake(ctx context.Context, stakeDelta utiltypes.Coin, fee utiltypes.Coin, gas int64, incrStake bool) error {
-	updateStakeReq, err := reqUpdateStakeData(stakeDelta, fee, gas, incrStake)
+// UpdateStake Update stake of node
+func UpdateStake(ctx context.Context, stakeDelta utiltypes.Coin, txFee utiltypes.TxFee, incrStake bool) error {
+	updateStakeReq, err := reqUpdateStakeData(stakeDelta, txFee, incrStake)
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't build update PP stake request: "+err.Error())
 		return err
@@ -46,7 +47,7 @@ func RspUpdateStake(ctx context.Context, conn core.WriteCloser) {
 	}
 	setting.State = target.UpdateState
 
-	err := stratoschain.BroadcastTxBytes(target.Tx)
+	err := stratoschain.BroadcastTxBytes(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
 	if err != nil {
 		pp.ErrorLog(ctx, "The UpdateStake transaction couldn't be broadcast", err)
 	} else {

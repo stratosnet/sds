@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -288,26 +288,39 @@ func (m *MultiClient) txBroadcasterLoop() {
 		for _, unsignedMsg := range unsignedMsgs {
 			unsignedSdkMsgs = append(unsignedSdkMsgs, unsignedMsg.Msg.(legacytx.LegacyMsg))
 		}
+		defer func() {
+			unsignedMsgs = nil // Clearing msg list
+		}()
+
 		fee, err := types.ParseCoinNormalized(setting.Config.BlockchainInfo.Transactions.Fee)
 		if err != nil {
 			utils.ErrorLog("couldn't build tx bytes", err)
 			return
 		}
-		txBuilder, err = setMsgInfoToTxBuilder(txBuilder, unsignedSdkMsgs, fee, setting.Config.BlockchainInfo.Transactions.Gas)
+		err = setMsgInfoToTxBuilder(txBuilder, unsignedSdkMsgs, fee, 0, "")
 		if err != nil {
 			utils.ErrorLog("couldn't set tx builder", err)
 			return
 		}
-		txBytes, err := stratoschain.BuildTxBytesNew(protoConfig, txBuilder, setting.Config.BlockchainInfo.ChainId, "",
-			flags.BroadcastBlock, unsignedMsgs, fee,
-			setting.Config.BlockchainInfo.Transactions.Gas, int64(0))
-		unsignedMsgs = nil // Clearing msg list
+		txBytes, err := stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.BlockchainInfo.ChainId, unsignedMsgs)
 		if err != nil {
 			utils.ErrorLog("couldn't build tx bytes", err)
 			return
 		}
 
-		err = stratoschain.BroadcastTxBytes(txBytes)
+		gasInfo, err := stratoschain.SimulateTxBytes(txBytes)
+		if err != nil {
+			utils.ErrorLog("couldn't simulate tx bytes", err)
+			return
+		}
+		txBuilder.SetGasLimit(uint64(float64(gasInfo.GasUsed) * setting.Config.BlockchainInfo.Transactions.GasAdjustment))
+		txBytes, err = stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.BlockchainInfo.ChainId, unsignedMsgs)
+		if err != nil {
+			utils.ErrorLog("couldn't build tx bytes", err)
+			return
+		}
+
+		err = stratoschain.BroadcastTxBytes(txBytes, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
 		if err != nil {
 			utils.ErrorLog("couldn't broadcast transaction", err)
 			return
@@ -441,10 +454,10 @@ func countMsgsByType(unsignedMsgs []*relaytypes.UnsignedMsg) string {
 	return "[" + countString + "]"
 }
 
-func setMsgInfoToTxBuilder(txBuilder client.TxBuilder, txMsg []sdktypes.Msg, fee types.Coin, gas int64) (client.TxBuilder, error) {
+func setMsgInfoToTxBuilder(txBuilder client.TxBuilder, txMsg []sdktypes.Msg, fee types.Coin, gas uint64, memo string) error {
 	err := txBuilder.SetMsgs(txMsg...)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	txBuilder.SetFeeAmount(sdktypes.NewCoins(
@@ -454,9 +467,9 @@ func setMsgInfoToTxBuilder(txBuilder client.TxBuilder, txMsg []sdktypes.Msg, fee
 		}),
 	)
 	//txBuilder.SetFeeGranter(tx.FeeGranter())
-	txBuilder.SetGasLimit(uint64(gas))
-	txBuilder.SetMemo("")
-	return txBuilder, nil
+	txBuilder.SetGasLimit(gas)
+	txBuilder.SetMemo(memo)
+	return nil
 }
 
 func createTxConfigAndTxBuilder() (client.TxConfig, client.TxBuilder) {
