@@ -22,10 +22,7 @@ import (
 	sdkrest "github.com/cosmos/cosmos-sdk/types/rest"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/cosmos/cosmos-sdk/x/auth/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
 	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
-	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
@@ -40,7 +37,6 @@ import (
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	utilsecp256k1 "github.com/stratosnet/sds/utils/crypto/secp256k1"
-	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
 var Url string
@@ -80,7 +76,7 @@ func FetchAccountInfo(address string) (*authtypes.BaseAccount, error) {
 	return &account, err
 }
 
-func buildAndSignStdTxNew(protoConfig client.TxConfig, txBuilder client.TxBuilder, chainId, memo string, unsignedMsgs []*relaytypes.UnsignedMsg, fee utiltypes.Coin, gas, height int64) ([]byte, error) {
+func buildAndSignStdTx(protoConfig client.TxConfig, txBuilder client.TxBuilder, chainId string, unsignedMsgs []*relaytypes.UnsignedMsg) ([]byte, error) {
 	if len(unsignedMsgs) == 0 {
 		return nil, errors.New("cannot build tx: no msgs to sign")
 	}
@@ -159,15 +155,10 @@ func buildAndSignStdTxNew(protoConfig client.TxConfig, txBuilder client.TxBuilde
 		return []byte{}, err
 	}
 
-	txReq := &sdktx.BroadcastTxRequest{
-		TxBytes: txBytes,
-		Mode:    sdktx.BroadcastMode_BROADCAST_MODE_BLOCK,
-	}
-	reqBytes, _ := relay.ProtoCdc.MarshalJSON(txReq)
-	return reqBytes, nil
+	return txBytes, nil
 }
 
-func BuildTxBytesNew(protoConfig client.TxConfig, txBuilder client.TxBuilder, chainId, memo, mode string, unsignedMsgs []*relaytypes.UnsignedMsg, fee utiltypes.Coin, gas, height int64) ([]byte, error) {
+func BuildTxBytes(protoConfig client.TxConfig, txBuilder client.TxBuilder, chainId string, unsignedMsgs []*relaytypes.UnsignedMsg) ([]byte, error) {
 	filteredMsgs := filterInvalidSignatures(unsignedMsgs)          // Filter msgs with invalid signatures
 	accountInfos := fetchAllAccountInfos(filteredMsgs)             // Fetch account info from stratos-chain for each signature
 	updatedMsgs := updateSignatureKeys(filteredMsgs, accountInfos) // Update signatureKeys for each msg
@@ -177,131 +168,7 @@ func BuildTxBytesNew(protoConfig client.TxConfig, txBuilder client.TxBuilder, ch
 			len(updatedMsgs), len(unsignedMsgs)-len(filteredMsgs), len(filteredMsgs)-len(updatedMsgs))
 	}
 
-	return buildAndSignStdTxNew(protoConfig, txBuilder, chainId, memo, updatedMsgs, fee, gas, height)
-}
-
-func buildAndSignStdTx(token, chainId, memo string, unsignedMsgs []*relaytypes.UnsignedMsg, fee utiltypes.Coin, gas, height int64) (*legacytx.StdTx, error) {
-	if len(unsignedMsgs) == 0 {
-		return nil, errors.New("cannot build tx: no msgs to sign")
-	}
-
-	tx := legacytx.StdTx{TimeoutHeight: uint64(height) + relaytypes.DefaultTimeoutHeight}
-
-	stdFee := legacytx.NewStdFee(
-		uint64(gas),
-		sdktypes.NewCoins(sdktypes.Coin{
-			Denom:  fee.Denom,
-			Amount: fee.Amount,
-		}),
-	)
-
-	// Collect list of signatures to do. Must match order of GetSigners() method in cosmos-sdk's stdtx.go
-	var signaturesToDo []relaytypes.SignatureKey
-	signersSeen := make(map[string]bool)
-	var sdkMsgs []sdktypes.Msg
-	for _, msg := range unsignedMsgs {
-		for _, signaturekey := range msg.SignatureKeys {
-			if !signersSeen[signaturekey.Address] {
-				signersSeen[signaturekey.Address] = true
-				signaturesToDo = append(signaturesToDo, signaturekey)
-			}
-		}
-		sdkMsgs = append(sdkMsgs, msg.Msg)
-	}
-
-	// Sign the tx
-	var signatures []legacytx.StdSignature
-	for _, signatureKey := range signaturesToDo {
-		unsignedBytes := legacytx.StdSignBytes(chainId, signatureKey.AccountNum, signatureKey.AccountSequence, tx.GetTimeoutHeight(), stdFee, sdkMsgs, memo)
-
-		var signedBytes []byte
-		var pubKey cryptotypes.PubKey
-
-		switch signatureKey.Type {
-		case relaytypes.SignatureEd25519:
-			if len(signatureKey.PrivateKey) != ed25519crypto.PrivateKeySize {
-				return nil, errors.New("ed25519 private key has wrong length: " + hex.EncodeToString(signatureKey.PrivateKey))
-			}
-
-			signedBytes = ed25519crypto.Sign(signatureKey.PrivateKey, unsignedBytes)
-			pubKey = ed25519.PrivKeyBytesToSdkPubKey(signatureKey.PrivateKey)
-		default:
-			var err error
-			privKey := utilsecp256k1.PrivKeyToSdkPrivKey(signatureKey.PrivateKey)
-			signedBytes, err = privKey.Sign(unsignedBytes)
-			if err != nil {
-				return nil, err
-			}
-
-			pubKey = privKey.PubKey()
-		}
-
-		sig := legacytx.StdSignature{
-			PubKey:    pubKey,
-			Signature: signedBytes,
-		}
-		signatures = append(signatures, sig)
-	}
-
-	tx.Msgs = sdkMsgs
-	tx.Fee = stdFee
-	tx.Signatures = signatures
-	tx.Memo = memo
-	//tx := legacytx.NewStdTx(sdkMsgs, stdFee, signatures, memo)
-	txBytes, _ := relay.Cdc.MarshalJSON(tx.Msgs)
-	txHexStr := hex.EncodeToString(txBytes)
-	fmt.Print("tx hex str: " + txHexStr)
-	return &tx, nil
-}
-
-func BuildTxBytes(token, chainId, memo, mode string, unsignedMsgs []*relaytypes.UnsignedMsg, fee utiltypes.Coin, gas, height int64) ([]byte, error) {
-	filteredMsgs := filterInvalidSignatures(unsignedMsgs)          // Filter msgs with invalid signatures
-	accountInfos := fetchAllAccountInfos(filteredMsgs)             // Fetch account info from stratos-chain for each signature
-	updatedMsgs := updateSignatureKeys(filteredMsgs, accountInfos) // Update signatureKeys for each msg
-
-	tx, err := buildAndSignStdTx(token, chainId, memo, updatedMsgs, fee, gas, height)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(updatedMsgs) != len(unsignedMsgs) {
-		utils.ErrorLogf("BuildTxBytes couldn't build all the msgs provided (success: %v  invalid_signature: %v  missing_account_infos: %v",
-			len(updatedMsgs), len(unsignedMsgs)-len(filteredMsgs), len(filteredMsgs)-len(updatedMsgs))
-	}
-
-	// Print account sequences
-	accountsStr := ""
-	for walletAddress, account := range accountInfos {
-		if accountsStr != "" {
-			accountsStr += ", "
-		}
-		accountsStr += fmt.Sprintf("(Wallet %v  Num %v  Sequence %v)", walletAddress, account.AccountNumber, account.Sequence)
-	}
-	utils.DebugLogf("BuildTxBytes ChainId [%v] Accounts [%v] Mode [%v]", chainId, accountsStr, mode)
-
-	broadcastmode := sdktx.BroadcastMode_BROADCAST_MODE_BLOCK
-
-	protoConfig := authtx.NewTxConfig(relay.ProtoCdc, []signingtypes.SignMode{signingtypes.SignMode_SIGN_MODE_DIRECT})
-	txBuilder := protoConfig.NewTxBuilder()
-	txBuilder.SetFeeAmount(tx.Fee.Amount)
-	txBuilder.SetFeeGranter(tx.FeeGranter())
-	txBuilder.SetGasLimit(tx.Fee.Gas)
-	txBuilder.SetMemo(tx.Memo)
-	txBuilder.SetMsgs(tx.Msgs...)
-	//txBuilder.SetTimeoutHeight(tx.TimeoutHeight)
-	txBuilder.SetSignatures(signingtypes.SignatureV2{
-		PubKey: tx.Signatures[0].PubKey,
-		Data: &signingtypes.SingleSignatureData{
-			SignMode:  signingtypes.SignMode_SIGN_MODE_DIRECT,
-			Signature: tx.Signatures[0].Signature,
-		},
-	})
-	txBytes, _ := protoConfig.TxEncoder()(txBuilder.GetTx())
-	txReq := &sdktx.BroadcastTxRequest{
-		TxBytes: txBytes,
-		Mode:    broadcastmode,
-	}
-	return relay.ProtoCdc.MarshalJSON(txReq)
+	return buildAndSignStdTx(protoConfig, txBuilder, chainId, updatedMsgs)
 }
 
 func filterInvalidSignatures(msgs []*relaytypes.UnsignedMsg) []*relaytypes.UnsignedMsg {
@@ -378,7 +245,46 @@ func updateSignatureKeys(msgs []*relaytypes.UnsignedMsg, accountInfos map[string
 	return filteredMsgs
 }
 
-func BroadcastTxBytes(txBytes []byte) error {
+func SimulateTxBytes(txBytes []byte) (*sdktypes.GasInfo, error) {
+	if Url == "" {
+		return nil, errors.New("the stratos-chain URL is not set")
+	}
+
+	url, err := utils.ParseUrl(Url + "/cosmos/tx/v1beta1/simulate")
+	if err != nil {
+		return nil, err
+	}
+
+	simulateReq := &sdktx.SimulateRequest{
+		TxBytes: txBytes,
+	}
+	reqBytes, _ := relay.ProtoCdc.MarshalJSON(simulateReq)
+
+	bodyBytes := bytes.NewBuffer(reqBytes)
+	resp, err := http.Post(url.String(true, true, true, false), "application/json", bodyBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != 200 {
+		return nil, errors.Errorf("invalid response HTTP%v: %v", resp.Status, string(responseBody))
+	}
+	utils.Log(string(responseBody))
+
+	var simulateResponse sdktx.SimulateResponse
+	err = relay.ProtoCdc.UnmarshalJSON(responseBody, &simulateResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return simulateResponse.GasInfo, nil
+}
+
+func BroadcastTxBytes(txBytes []byte, mode sdktx.BroadcastMode) error {
 	if Url == "" {
 		return errors.New("the stratos-chain URL is not set")
 	}
@@ -388,7 +294,13 @@ func BroadcastTxBytes(txBytes []byte) error {
 		return err
 	}
 
-	bodyBytes := bytes.NewBuffer(txBytes)
+	broadcastTxReq := &sdktx.BroadcastTxRequest{
+		TxBytes: txBytes,
+		Mode:    mode,
+	}
+	reqBytes, _ := relay.ProtoCdc.MarshalJSON(broadcastTxReq)
+
+	bodyBytes := bytes.NewBuffer(reqBytes)
 	resp, err := http.Post(url.String(true, true, true, false), "application/json", bodyBytes)
 	if err != nil {
 		return err
@@ -403,17 +315,9 @@ func BroadcastTxBytes(txBytes []byte) error {
 	}
 	utils.Log(string(responseBody))
 
-	//var broadcastReq tx.BroadcastTxRequest
-	var broadcastReq cli.BroadcastReq
-	err = relay.Cdc.UnmarshalJSON(txBytes, &broadcastReq)
-	if err != nil {
-		return errors.Wrap(err, "cannot unmarshal txBytes to BroadcastReq")
-	}
-
 	// In block broadcast mode, do additional verification
-	if broadcastReq.Mode == sdktx.BroadcastMode_BROADCAST_MODE_BLOCK.String() {
+	if broadcastTxReq.Mode == sdktx.BroadcastMode_BROADCAST_MODE_BLOCK {
 		var broadcastTxResponse sdktx.BroadcastTxResponse
-		//var txResponse sdktypes.TxResponse
 
 		err = relay.ProtoCdc.UnmarshalJSON(responseBody, &broadcastTxResponse)
 		if err != nil {

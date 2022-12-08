@@ -2,7 +2,6 @@ package event
 
 import (
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
@@ -18,7 +17,7 @@ import (
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 )
 
-func reqActivateData(amount types.Coin, fee types.Coin, gas, height int64) (*protos.ReqActivatePP, error) {
+func reqActivateData(amount types.Coin, txFee types.TxFee) (*protos.ReqActivatePP, error) {
 	// Create and sign transaction to add new resource node
 	ownerAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
 	if err != nil {
@@ -29,32 +28,15 @@ func reqActivateData(amount types.Coin, fee types.Coin, gas, height int64) (*pro
 		return nil, err
 	}
 
-	protoConfig, txBuilder := createTxConfigAndTxBuilder()
-
-	//protoConfig := authtx.NewTxConfig(relay.ProtoCdc, []signingtypes.SignMode{signingtypes.SignMode_SIGN_MODE_DIRECT})
-	//txBuilder := protoConfig.NewTxBuilder()
-
 	txMsg, err := stratoschain.BuildCreateResourceNodeMsg(setting.P2PAddress, registertypes.STORAGE, setting.P2PPublicKey, amount, ownerAddress, p2pAddress)
 	if err != nil {
 		return nil, err
 	}
-
-	txBuilder, err = setMsgInfoToTxBuilder(txBuilder, txMsg, fee, gas)
-	//err = txBuilder.SetMsgs(txMsg)
-	if err != nil {
-		return nil, err
-	}
-
-	//txBuilder.SetFeeAmount(sdktypes.NewCoins(sdktypes.NewInt64Coin(setting.Config.Token, fee)))
-	////txBuilder.SetFeeGranter(tx.FeeGranter())
-	//txBuilder.SetGasLimit(uint64(gas))
-	//txBuilder.SetMemo("")
-
 	signatureKeys := []relaytypes.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
-	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg.(legacytx.LegacyMsg), SignatureKeys: signatureKeys}}
-	txBytes, err := stratoschain.BuildTxBytesNew(protoConfig, txBuilder, setting.Config.ChainId, "", flags.BroadcastBlock, unsignedMsgs, fee, gas, height)
+
+	txBytes, err := createAndSimulateTx(txMsg, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -68,31 +50,7 @@ func reqActivateData(amount types.Coin, fee types.Coin, gas, height int64) (*pro
 	return req, nil
 }
 
-func setMsgInfoToTxBuilder(txBuilder client.TxBuilder, txMsg sdktypes.Msg, fee types.Coin, gas int64) (client.TxBuilder, error) {
-	err := txBuilder.SetMsgs(txMsg)
-	if err != nil {
-		return nil, err
-	}
-
-	txBuilder.SetFeeAmount(sdktypes.NewCoins(
-		sdktypes.Coin{
-			Denom:  fee.Denom,
-			Amount: fee.Amount,
-		}),
-	)
-	//txBuilder.SetFeeGranter(tx.FeeGranter())
-	txBuilder.SetGasLimit(uint64(gas))
-	txBuilder.SetMemo("")
-	return txBuilder, nil
-}
-
-func createTxConfigAndTxBuilder() (client.TxConfig, client.TxBuilder) {
-	protoConfig := authtx.NewTxConfig(relay.ProtoCdc, []signingtypes.SignMode{signingtypes.SignMode_SIGN_MODE_DIRECT})
-	txBuilder := protoConfig.NewTxBuilder()
-	return protoConfig, txBuilder
-}
-
-func reqUpdateStakeData(stakeDelta, fee types.Coin, gas int64, incrStake bool) (*protos.ReqUpdateStakePP, error) {
+func reqUpdateStakeData(stakeDelta types.Coin, txFee types.TxFee, incrStake bool) (*protos.ReqUpdateStakePP, error) {
 	// Create and sign transaction to update stake for existing resource node
 	networkAddr := ed25519.PubKeyBytesToAddress(setting.P2PPublicKey)
 	ownerAddr, err := secp256k1.PubKeyToAddress(setting.WalletPublicKey)
@@ -100,18 +58,12 @@ func reqUpdateStakeData(stakeDelta, fee types.Coin, gas int64, incrStake bool) (
 		return nil, err
 	}
 
-	protoConfig, txBuilder := createTxConfigAndTxBuilder()
-
 	txMsg := stratoschain.BuildUpdateResourceNodeStakeMsg(networkAddr, *ownerAddr, stakeDelta, incrStake)
-	txBuilder, err = setMsgInfoToTxBuilder(txBuilder, txMsg, fee, gas)
-	if err != nil {
-		return nil, err
-	}
 	signatureKeys := []relaytypes.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
-	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg.(legacytx.LegacyMsg), SignatureKeys: signatureKeys}}
-	txBytes, err := stratoschain.BuildTxBytesNew(protoConfig, txBuilder, setting.Config.ChainId, "", flags.BroadcastSync, unsignedMsgs, fee, gas, int64(0))
+
+	txBytes, err := createAndSimulateTx(txMsg, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +75,7 @@ func reqUpdateStakeData(stakeDelta, fee types.Coin, gas int64, incrStake bool) (
 	return req, nil
 }
 
-func reqDeactivateData(fee types.Coin, gas int64) (*protos.ReqDeactivatePP, error) {
+func reqDeactivateData(txFee types.TxFee) (*protos.ReqDeactivatePP, error) {
 	// Create and sign transaction to remove a resource node
 	nodeAddress := ed25519.PubKeyBytesToAddress(setting.P2PPublicKey)
 	ownerAddress, err := secp256k1.PubKeyToAddress(setting.WalletPublicKey)
@@ -131,17 +83,12 @@ func reqDeactivateData(fee types.Coin, gas int64) (*protos.ReqDeactivatePP, erro
 		return nil, err
 	}
 
-	protoConfig, txBuilder := createTxConfigAndTxBuilder()
 	txMsg := stratoschain.BuildRemoveResourceNodeMsg(nodeAddress, *ownerAddress)
-	txBuilder, err = setMsgInfoToTxBuilder(txBuilder, txMsg, fee, gas)
-	if err != nil {
-		return nil, err
-	}
 	signatureKeys := []relaytypes.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
-	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg.(legacytx.LegacyMsg), SignatureKeys: signatureKeys}}
-	txBytes, err := stratoschain.BuildTxBytesNew(protoConfig, txBuilder, setting.Config.ChainId, "", flags.BroadcastSync, unsignedMsgs, fee, gas, int64(0))
+
+	txBytes, err := createAndSimulateTx(txMsg, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -153,23 +100,19 @@ func reqDeactivateData(fee types.Coin, gas int64) (*protos.ReqDeactivatePP, erro
 	return req, nil
 }
 
-func reqPrepayData(amount types.Coin, fee types.Coin, gas int64) (*protos.ReqPrepay, error) {
+func reqPrepayData(amount types.Coin, txFee types.TxFee) (*protos.ReqPrepay, error) {
 	// Create and sign a prepay transaction
 	senderAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
 	if err != nil {
 		return nil, err
 	}
-	protoConfig, txBuilder := createTxConfigAndTxBuilder()
+
 	txMsg := stratoschain.BuildPrepayMsg(amount, senderAddress[:])
-	txBuilder, err = setMsgInfoToTxBuilder(txBuilder, txMsg, fee, gas)
-	if err != nil {
-		return nil, err
-	}
 	signatureKeys := []relaytypes.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
-	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg.(legacytx.LegacyMsg), SignatureKeys: signatureKeys}}
-	txBytes, err := stratoschain.BuildTxBytesNew(protoConfig, txBuilder, setting.Config.ChainId, "", flags.BroadcastSync, unsignedMsgs, fee, gas, int64(0))
+
+	txBytes, err := createAndSimulateTx(txMsg, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -180,4 +123,55 @@ func reqPrepayData(amount types.Coin, fee types.Coin, gas int64) (*protos.ReqPre
 		WalletAddress: setting.WalletAddress,
 	}
 	return req, nil
+}
+
+func createAndSimulateTx(txMsg sdktypes.Msg, txFee types.TxFee, memo string, signatureKeys []relaytypes.SignatureKey) ([]byte, error) {
+	protoConfig, txBuilder := createTxConfigAndTxBuilder()
+	err := setMsgInfoToTxBuilder(txBuilder, txMsg, txFee.Fee, txFee.Gas, memo)
+	if err != nil {
+		return nil, err
+	}
+
+	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg.(legacytx.LegacyMsg), SignatureKeys: signatureKeys}}
+	txBytes, err := stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.ChainId, unsignedMsgs)
+	if err != nil {
+		return nil, err
+	}
+
+	if txFee.Simulate {
+		gasInfo, err := stratoschain.SimulateTxBytes(txBytes)
+		if err != nil {
+			return nil, err
+		}
+		txBuilder.SetGasLimit(uint64(float64(gasInfo.GasUsed) * setting.Config.GasAdjustment))
+		txBytes, err = stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.ChainId, unsignedMsgs)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return txBytes, nil
+}
+
+func createTxConfigAndTxBuilder() (client.TxConfig, client.TxBuilder) {
+	protoConfig := authtx.NewTxConfig(relay.ProtoCdc, []signingtypes.SignMode{signingtypes.SignMode_SIGN_MODE_DIRECT})
+	txBuilder := protoConfig.NewTxBuilder()
+	return protoConfig, txBuilder
+}
+
+func setMsgInfoToTxBuilder(txBuilder client.TxBuilder, txMsg sdktypes.Msg, fee types.Coin, gas uint64, memo string) error {
+	err := txBuilder.SetMsgs(txMsg)
+	if err != nil {
+		return err
+	}
+
+	txBuilder.SetFeeAmount(sdktypes.NewCoins(
+		sdktypes.Coin{
+			Denom:  fee.Denom,
+			Amount: fee.Amount,
+		}),
+	)
+	//txBuilder.SetFeeGranter(tx.FeeGranter())
+	txBuilder.SetGasLimit(gas)
+	txBuilder.SetMemo(memo)
+	return nil
 }
