@@ -51,6 +51,7 @@ func (r *Redis) Set(key string, value interface{}, expire time.Duration) error {
 			utils.FatalLogfAndExit(1, "failed to store to redis: %v", err)
 			return err
 		}
+		return nil
 	}
 
 	return errors.New("key or value is nil")
