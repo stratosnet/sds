@@ -60,7 +60,7 @@ func (p *P2pServer) ConfirmOptSP(ctx context.Context, spNetworkAddr string) {
 		return
 	}
 	p.setOptSP(spNetworkAddr)
-	p.mainSpConn.Close()
+	p.mainSpConn.ClientClose(true)
 }
 
 func (p *P2pServer) GetOptSPAndClear() (string, error) {
