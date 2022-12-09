@@ -4,9 +4,9 @@ min_app_ver = 7
 
 [sds]
 network_address = "127.0.0.1"
-api_port = "8081"
-client_port = "8888"
-websocket_port = "8889"
+api_port = "38081"
+client_port = "38888"
+websocket_port = "38889"
 [sds.connection_retries]
 max = 100
 sleep_duration = 3000 # milliseconds
@@ -29,5 +29,5 @@ fee = "30000wei"
 gas = 20000000
 
 [keys]
-wallet_path = "config/st1a8ngk4tjvuxneyuvyuy9nvgehkpfa38hm8mp3x.json"
+wallet_path = "config/st1ewlfmhl8j0p2jesfd2xrqp0qjeh2222gs9uefh.json"
 wallet_password = "aaa"

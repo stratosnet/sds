@@ -5,17 +5,20 @@ import (
 	ed25519crypto "crypto/ed25519"
 	"encoding/hex"
 	"fmt"
-	"github.com/tendermint/tendermint/crypto"
 	"math/big"
 	"strings"
 
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/crypto/ed25519"
+
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
+
 	"github.com/stratosnet/sds/utils/crypto/sha3"
+
+	"github.com/stratosnet/stratos-chain/crypto/ethsecp256k1"
+	"github.com/stratosnet/stratos-chain/crypto/hd"
 	"github.com/stratosnet/stratos-chain/types"
-	"github.com/tendermint/tendermint/crypto/ed25519"
 )
 
 // Lengths of hashes and addresses in bytes.
@@ -333,7 +336,7 @@ func (p AccPubKey) ToBech() (string, error) {
 
 // Address generate a wallet address from account public key
 func (p AccPubKey) Address() Address {
-	pk := secp256k1.PubKey{Key: p.Bytes()}
+	pk := ethsecp256k1.PubKey{Key: p.Bytes()}
 	return BytesToAddress(pk.Address().Bytes())
 }
 
@@ -386,13 +389,13 @@ func VerifyWalletSign(walletPubkey, signature, message string) bool {
 	if err != nil {
 		return false
 	}
-	pubkey := secp256k1.PubKey{Key: pk.Bytes()}
+	pubkey := ethsecp256k1.PubKey{Key: pk.Bytes()}
 	return pubkey.VerifySignature([]byte(message), ds)
 }
 
 // VerifyWalletSignBytes []byte version of VerifyWalletKey() for pubkey and signature format
 func VerifyWalletSignBytes(walletPubkey []byte, signature []byte, message string) bool {
-	pubkey := secp256k1.PubKey{Key: walletPubkey}
+	pubkey := ethsecp256k1.PubKey{Key: walletPubkey}
 	return pubkey.VerifySignature([]byte(message), signature)
 }
 
@@ -410,13 +413,13 @@ func (p *AccPrivKey) SetBytes(b []byte) {
 
 // Sign secp256k1 sign since account(wallet) uses secp256k1 key pair
 func (p AccPrivKey) Sign(b []byte) ([]byte, error) {
-	pk := secp256k1.PrivKey{Key: p.Bytes()}
+	pk := ethsecp256k1.PrivKey{Key: p.Bytes()}
 	return pk.Sign(b)
 }
 
 // PubKeyFromPrivKey generate a AccPubKey from the AccPrivKey
 func (p AccPrivKey) PubKeyFromPrivKey() AccPubKey {
-	return BytesToAccPubKey(hd.Secp256k1.Generate()(p.Bytes()).PubKey().Bytes())
+	return BytesToAccPubKey(hd.EthSecp256k1.Generate()(p.Bytes()).PubKey().Bytes())
 }
 
 // VerifyP2pAddrBytes verify whether P2P address matches public key
