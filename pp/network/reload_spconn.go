@@ -36,18 +36,22 @@ func (p *Network) tryReloadConnectSP(ctx context.Context) func() {
 			if setting.IsStartMining {
 				p.StartMining(ctx)
 			}
-		}
-
-		if err != nil {
-			//calc next reload interval
-			reloadSpInterval := MIN_RELOAD_SP_INTERVAL * int(math.Ceil(math.Pow(10, float64(p.reloadConnectSpRetry)))) * 2
-			//prevent reloadSpInterval from overflowing after multiple reloadConnectSpRetry
-			if reloadSpInterval < MAX_RELOAD_SP_INTERVAL {
-				p.reloadConnectSpRetry += 1
+		} else {
+			if err != nil {
+				p.reloadConnecting = true
+				//calc next reload interval
+				reloadSpInterval := MIN_RELOAD_SP_INTERVAL * int(math.Ceil(math.Pow(10, float64(p.reloadConnectSpRetry)))) * 2
+				//prevent reloadSpInterval from overflowing after multiple reloadConnectSpRetry
+				if reloadSpInterval < MAX_RELOAD_SP_INTERVAL {
+					p.reloadConnectSpRetry += 1
+				}
+				reloadSpInterval = int(math.Min(float64(reloadSpInterval), float64(MAX_RELOAD_SP_INTERVAL)))
+				pp.Logf(ctx, "couldn't connect to SP node. Retrying in %v seconds...", reloadSpInterval)
+				p.ppPeerClock.AddJobWithInterval(time.Duration(reloadSpInterval)*time.Second, p.tryReloadConnectSP(ctx))
+			} else {
+				// the sp conn has been rebuilt while handling this offline event
+				p.reloadConnecting = false
 			}
-			reloadSpInterval = int(math.Min(float64(reloadSpInterval), float64(MAX_RELOAD_SP_INTERVAL)))
-			pp.Logf(ctx, "couldn't connect to SP node. Retrying in %v seconds...", reloadSpInterval)
-			p.ppPeerClock.AddJobWithInterval(time.Duration(reloadSpInterval)*time.Second, p.tryReloadConnectSP(ctx))
 		}
 	}
 }
