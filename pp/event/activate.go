@@ -103,6 +103,6 @@ func RspActivated(ctx context.Context, conn core.WriteCloser) {
 
 	// if autorun = true, bond pp to sp
 	if setting.IsAuto && !setting.IsLoginToSP {
-		network.GetPeer(ctx).RegisterToSP(ctx, true)
+		network.GetPeer(ctx).StartRegisterToSp(ctx)
 	}
 }

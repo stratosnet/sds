@@ -87,7 +87,11 @@ func (api *terminalCmd) NewWallet(ctx context.Context, param []string) (CmdResul
 
 func (api *terminalCmd) Start(ctx context.Context, param []string) (CmdResult, error) {
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	network.GetPeer(ctx).StartMining(ctx)
+	if setting.IsStartMining {
+		return CmdResult{Msg: ""}, errors.New("mining already started")
+	}
+	// now startmining is triggered by rsp of register message
+	network.GetPeer(ctx).StartRegisterToSp(ctx)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 

@@ -49,12 +49,14 @@ func (p *P2pServer) SendMessageDirectToSPOrViaPP(ctx context.Context, pb proto.M
 
 // SendMessageToSPServer SendMessageToSPServer
 func (p *P2pServer) SendMessageToSPServer(ctx context.Context, pb proto.Message, cmd string) {
-	_, err := p.ConnectToSP(ctx)
-	if err != nil {
-		utils.ErrorLog(err)
-		return
+	//_, err := p.ConnectToSP(ctx)
+	//if err != nil {
+	//	utils.ErrorLog(err)
+	//	return
+	//}
+	if p.mainSpConn != nil {
+		p.SendMessage(ctx, p.mainSpConn, pb, cmd)
 	}
-	p.SendMessage(ctx, p.mainSpConn, pb, cmd)
 }
 
 // TransferSendMessageToPPServ

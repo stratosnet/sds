@@ -8,7 +8,6 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
 )
 
 // RegisterToSP send ReqRegister to SP
@@ -25,17 +24,7 @@ func (p *Network) RegisterToSP(ctx context.Context, toSP bool) {
 // StartMining send ReqMining to SP if needed
 func (p *Network) StartMining(ctx context.Context) {
 	if setting.CheckLogin() {
-		if setting.IsPP && !setting.IsLoginToSP {
-			pp.DebugLog(ctx, "Bond to SP and start mining")
-			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqRegisterData(), header.ReqRegister)
-		} else if setting.IsPP && !setting.IsStartMining {
-			utils.DebugLog("Sending ReqMining message to SP")
-			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqMiningData(), header.ReqMining)
-		} else if setting.IsStartMining {
-			pp.Log(ctx, "mining already started")
-		} else {
-			pp.Log(ctx, "register as miner first")
-		}
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqMiningData(), header.ReqMining)
 	}
 }
 
