@@ -16,6 +16,7 @@ var IsPP = false
 
 var IsPPSyncedWithSP = false
 
+// set after finishing register->startmining->node_status_report
 var IsLoginToSP = false
 
 var State uint32 = ppTypes.PP_INACTIVE

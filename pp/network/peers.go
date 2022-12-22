@@ -17,6 +17,7 @@ type Network struct {
 	pingTimePPMap        *sync.Map
 	pingTimeSPMap        *sync.Map
 	reloadConnectSpRetry int
+	reloadRegisterRetry  int
 	reloadConnecting     bool
 }
 
@@ -64,7 +65,7 @@ func (p *Network) InitPPList(ctx context.Context) {
 			return
 		}
 		if setting.IsAuto && setting.State == types.PP_ACTIVE && !setting.IsLoginToSP {
-			p.RegisterToSP(ctx, true)
+			p.StartRegisterToSp(ctx)
 		}
 	}
 }
@@ -103,6 +104,7 @@ func (p *Network) ListenOffline(ctx context.Context) {
 				if setting.IsPP {
 					utils.DebugLogf("SP %v is offline", offline.NetworkAddress)
 					setting.IsStartMining = false
+					setting.IsLoginToSP = false
 					p.reloadConnectSP(ctx)
 				}
 			} else {

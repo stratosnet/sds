@@ -6,11 +6,8 @@ import (
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -31,10 +28,10 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 		utils.ErrorLog("Error when saving PP List", err)
 	}
 
-	shouldRegisterToSP := setting.IsAuto && !setting.IsLoginToSP &&
-		(setting.State == types.PP_ACTIVE)
-
-	if shouldRegisterToSP {
-		network.GetPeer(ctx).RegisterToSP(ctx, true)
-	}
+	//shouldRegisterToSP := setting.IsAuto && !setting.IsLoginToSP &&
+	//	(setting.State == types.PP_ACTIVE)
+	//
+	//if shouldRegisterToSP {
+	//	network.GetPeer(ctx).StartRegisterToSp(ctx)
+	//}
 }

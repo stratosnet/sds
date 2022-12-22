@@ -21,6 +21,11 @@ func RspReportNodeStatus(ctx context.Context, conn core.WriteCloser) {
 		utils.ErrorLog(target.Result.Msg)
 		return
 	}
+	// finished register->startmining->first_status_report process
+	if !setting.IsLoginToSP && setting.IsStartMining {
+		utils.DebugLog("@#@#@#@#@#@#@#@#@#@#@#@#@#@#")
+		setting.IsLoginToSP = true
+	}
 
 	if target.GetPpstate() == 2 {
 		setting.IsStartMining = false

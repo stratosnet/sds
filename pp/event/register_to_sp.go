@@ -12,7 +12,6 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/utils"
 )
 
 // ReqRegister if get this, must be PP
@@ -78,14 +77,13 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 
 	pp.Log(ctx, "Register successful", target.Result.Msg)
 	setting.IsLoad = true
-	setting.IsLoginToSP = true
 	setting.IsPPSyncedWithSP = true
 	pp.DebugLog(ctx, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@", p2pserver.GetP2pServer(ctx).GetConnectionName(conn))
 	setting.IsPP = target.IsPP
 	if !setting.IsPP {
 		reportDHInfoToPP(ctx)
 	}
-	if setting.IsPP && !setting.IsStartMining {
+	if setting.IsPP {
 		network.GetPeer(ctx).StartMining(ctx)
 	}
 }
@@ -108,16 +106,6 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 		go p2pserver.GetP2pServer(ctx).StartListenServer(ctx, setting.Config.Port)
 	}
 	setting.IsStartMining = true
-
-	newConnection, err := p2pserver.GetP2pServer(ctx).ConnectToSP(ctx)
-	if err != nil {
-		utils.ErrorLog(err)
-		return
-	}
-	if newConnection {
-		network.GetPeer(ctx).RegisterToSP(ctx, true)
-	}
-
 	pp.DebugLog(ctx, "Start reporting node status to SP")
 	// trigger 1 stat report immediately
 	network.GetPeer(ctx).ReportNodeStatus(ctx)()

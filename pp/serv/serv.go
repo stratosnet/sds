@@ -187,6 +187,7 @@ func (bs *BaseServer) startP2pServer() error {
 	bs.p2pServ.AddConnConntextKey(network.PP_NETWORK_KEY)
 
 	bs.p2pServ.Start(ctx)
+	bs.p2pServ.ConnectToSP(ctx)
 	bs.ppNetwork.StartPP(ctx)
 	return nil
 }

@@ -7,7 +7,6 @@ import (
 
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/p2pserver"
-	"github.com/stratosnet/sds/pp/setting"
 )
 
 const (
@@ -30,12 +29,9 @@ func (p *Network) tryReloadConnectSP(ctx context.Context) func() {
 	return func() {
 		newConnection, err := p2pserver.GetP2pServer(ctx).ConnectToSP(ctx)
 		if newConnection {
-			p.RegisterToSP(ctx, true)
+			p.StartRegisterToSp(ctx)
 			p.reloadConnecting = false
 			p.reloadConnectSpRetry = 0
-			if setting.IsStartMining {
-				p.StartMining(ctx)
-			}
 		} else {
 			if err != nil {
 				p.reloadConnecting = true
