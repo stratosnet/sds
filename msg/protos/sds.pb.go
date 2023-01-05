@@ -7862,6 +7862,53 @@ func (x *ReqTransferBLSSignature) GetSignature() []byte {
 	return nil
 }
 
+type RspTransferBLSSignature struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Result *Result `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
+}
+
+func (x *RspTransferBLSSignature) Reset() {
+	*x = RspTransferBLSSignature{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_sds_proto_msgTypes[104]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RspTransferBLSSignature) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RspTransferBLSSignature) ProtoMessage() {}
+
+func (x *RspTransferBLSSignature) ProtoReflect() protoreflect.Message {
+	mi := &file_sds_proto_msgTypes[104]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RspTransferBLSSignature.ProtoReflect.Descriptor instead.
+func (*RspTransferBLSSignature) Descriptor() ([]byte, []int) {
+	return file_sds_proto_rawDescGZIP(), []int{104}
+}
+
+func (x *RspTransferBLSSignature) GetResult() *Result {
+	if x != nil {
+		return x.Result
+	}
+	return nil
+}
+
 type ReqReportNodeStatus struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -7877,7 +7924,7 @@ type ReqReportNodeStatus struct {
 func (x *ReqReportNodeStatus) Reset() {
 	*x = ReqReportNodeStatus{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[104]
+		mi := &file_sds_proto_msgTypes[105]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7890,7 +7937,7 @@ func (x *ReqReportNodeStatus) String() string {
 func (*ReqReportNodeStatus) ProtoMessage() {}
 
 func (x *ReqReportNodeStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[104]
+	mi := &file_sds_proto_msgTypes[105]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7903,7 +7950,7 @@ func (x *ReqReportNodeStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqReportNodeStatus.ProtoReflect.Descriptor instead.
 func (*ReqReportNodeStatus) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{104}
+	return file_sds_proto_rawDescGZIP(), []int{105}
 }
 
 func (x *ReqReportNodeStatus) GetP2PAddress() string {
@@ -7941,6 +7988,61 @@ func (x *ReqReportNodeStatus) GetBandwidth() *BandwidthStat {
 	return nil
 }
 
+type RspReportNodeStatus struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Ppstate int32   `protobuf:"varint,1,opt,name=ppstate,proto3" json:"ppstate,omitempty"`
+	Result  *Result `protobuf:"bytes,2,opt,name=result,proto3" json:"result,omitempty"`
+}
+
+func (x *RspReportNodeStatus) Reset() {
+	*x = RspReportNodeStatus{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_sds_proto_msgTypes[106]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RspReportNodeStatus) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RspReportNodeStatus) ProtoMessage() {}
+
+func (x *RspReportNodeStatus) ProtoReflect() protoreflect.Message {
+	mi := &file_sds_proto_msgTypes[106]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RspReportNodeStatus.ProtoReflect.Descriptor instead.
+func (*RspReportNodeStatus) Descriptor() ([]byte, []int) {
+	return file_sds_proto_rawDescGZIP(), []int{106}
+}
+
+func (x *RspReportNodeStatus) GetPpstate() int32 {
+	if x != nil {
+		return x.Ppstate
+	}
+	return 0
+}
+
+func (x *RspReportNodeStatus) GetResult() *Result {
+	if x != nil {
+		return x.Result
+	}
+	return nil
+}
+
 type ReqGetPPStatus struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -7953,7 +8055,7 @@ type ReqGetPPStatus struct {
 func (x *ReqGetPPStatus) Reset() {
 	*x = ReqGetPPStatus{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[105]
+		mi := &file_sds_proto_msgTypes[107]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -7966,7 +8068,7 @@ func (x *ReqGetPPStatus) String() string {
 func (*ReqGetPPStatus) ProtoMessage() {}
 
 func (x *ReqGetPPStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[105]
+	mi := &file_sds_proto_msgTypes[107]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7979,7 +8081,7 @@ func (x *ReqGetPPStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqGetPPStatus.ProtoReflect.Descriptor instead.
 func (*ReqGetPPStatus) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{105}
+	return file_sds_proto_rawDescGZIP(), []int{107}
 }
 
 func (x *ReqGetPPStatus) GetMyAddress() *PPBaseInfo {
@@ -8013,7 +8115,7 @@ type RspGetPPStatus struct {
 func (x *RspGetPPStatus) Reset() {
 	*x = RspGetPPStatus{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[106]
+		mi := &file_sds_proto_msgTypes[108]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8026,7 +8128,7 @@ func (x *RspGetPPStatus) String() string {
 func (*RspGetPPStatus) ProtoMessage() {}
 
 func (x *RspGetPPStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[106]
+	mi := &file_sds_proto_msgTypes[108]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8039,7 +8141,7 @@ func (x *RspGetPPStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspGetPPStatus.ProtoReflect.Descriptor instead.
 func (*RspGetPPStatus) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{106}
+	return file_sds_proto_rawDescGZIP(), []int{108}
 }
 
 func (x *RspGetPPStatus) GetIsActive() uint32 {
@@ -8102,7 +8204,7 @@ type ReqGetWalletOz struct {
 func (x *ReqGetWalletOz) Reset() {
 	*x = ReqGetWalletOz{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[107]
+		mi := &file_sds_proto_msgTypes[109]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8115,7 +8217,7 @@ func (x *ReqGetWalletOz) String() string {
 func (*ReqGetWalletOz) ProtoMessage() {}
 
 func (x *ReqGetWalletOz) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[107]
+	mi := &file_sds_proto_msgTypes[109]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8128,7 +8230,7 @@ func (x *ReqGetWalletOz) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReqGetWalletOz.ProtoReflect.Descriptor instead.
 func (*ReqGetWalletOz) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{107}
+	return file_sds_proto_rawDescGZIP(), []int{109}
 }
 
 func (x *ReqGetWalletOz) GetWalletAddress() string {
@@ -8151,7 +8253,7 @@ type RspGetWalletOz struct {
 func (x *RspGetWalletOz) Reset() {
 	*x = RspGetWalletOz{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[108]
+		mi := &file_sds_proto_msgTypes[110]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8164,7 +8266,7 @@ func (x *RspGetWalletOz) String() string {
 func (*RspGetWalletOz) ProtoMessage() {}
 
 func (x *RspGetWalletOz) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[108]
+	mi := &file_sds_proto_msgTypes[110]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8177,7 +8279,7 @@ func (x *RspGetWalletOz) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspGetWalletOz.ProtoReflect.Descriptor instead.
 func (*RspGetWalletOz) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{108}
+	return file_sds_proto_rawDescGZIP(), []int{110}
 }
 
 func (x *RspGetWalletOz) GetWalletOz() string {
@@ -8201,61 +8303,6 @@ func (x *RspGetWalletOz) GetResult() *Result {
 	return nil
 }
 
-type RspReportNodeStatus struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Ppstate int32   `protobuf:"varint,1,opt,name=ppstate,proto3" json:"ppstate,omitempty"`
-	Result  *Result `protobuf:"bytes,2,opt,name=result,proto3" json:"result,omitempty"`
-}
-
-func (x *RspReportNodeStatus) Reset() {
-	*x = RspReportNodeStatus{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[109]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *RspReportNodeStatus) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RspReportNodeStatus) ProtoMessage() {}
-
-func (x *RspReportNodeStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[109]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RspReportNodeStatus.ProtoReflect.Descriptor instead.
-func (*RspReportNodeStatus) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{109}
-}
-
-func (x *RspReportNodeStatus) GetPpstate() int32 {
-	if x != nil {
-		return x.Ppstate
-	}
-	return 0
-}
-
-func (x *RspReportNodeStatus) GetResult() *Result {
-	if x != nil {
-		return x.Result
-	}
-	return nil
-}
-
 type RspBadVersion struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -8269,7 +8316,7 @@ type RspBadVersion struct {
 func (x *RspBadVersion) Reset() {
 	*x = RspBadVersion{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[110]
+		mi := &file_sds_proto_msgTypes[111]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8282,7 +8329,7 @@ func (x *RspBadVersion) String() string {
 func (*RspBadVersion) ProtoMessage() {}
 
 func (x *RspBadVersion) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[110]
+	mi := &file_sds_proto_msgTypes[111]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8295,7 +8342,7 @@ func (x *RspBadVersion) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspBadVersion.ProtoReflect.Descriptor instead.
 func (*RspBadVersion) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{110}
+	return file_sds_proto_rawDescGZIP(), []int{111}
 }
 
 func (x *RspBadVersion) GetVersion() int32 {
@@ -8331,7 +8378,7 @@ type RspSpUnderMaintenance struct {
 func (x *RspSpUnderMaintenance) Reset() {
 	*x = RspSpUnderMaintenance{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_sds_proto_msgTypes[111]
+		mi := &file_sds_proto_msgTypes[112]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -8344,7 +8391,7 @@ func (x *RspSpUnderMaintenance) String() string {
 func (*RspSpUnderMaintenance) ProtoMessage() {}
 
 func (x *RspSpUnderMaintenance) ProtoReflect() protoreflect.Message {
-	mi := &file_sds_proto_msgTypes[111]
+	mi := &file_sds_proto_msgTypes[112]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8357,7 +8404,7 @@ func (x *RspSpUnderMaintenance) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RspSpUnderMaintenance.ProtoReflect.Descriptor instead.
 func (*RspSpUnderMaintenance) Descriptor() ([]byte, []int) {
-	return file_sds_proto_rawDescGZIP(), []int{111}
+	return file_sds_proto_rawDescGZIP(), []int{112}
 }
 
 func (x *RspSpUnderMaintenance) GetSpP2PAddress() string {
@@ -9513,84 +9560,88 @@ var file_sds_proto_rawDesc = []byte{
 	0x70, 0x6f, 0x63, 0x68, 0x12, 0x17, 0x0a, 0x07, 0x70, 0x75, 0x62, 0x5f, 0x6b, 0x65, 0x79, 0x18,
 	0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x06, 0x70, 0x75, 0x62, 0x4b, 0x65, 0x79, 0x12, 0x1c, 0x0a,
 	0x09, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c,
-	0x52, 0x09, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x22, 0xe0, 0x01, 0x0a, 0x13,
-	0x52, 0x65, 0x71, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x4e, 0x6f, 0x64, 0x65, 0x53, 0x74, 0x61,
-	0x74, 0x75, 0x73, 0x12, 0x1f, 0x0a, 0x0b, 0x70, 0x32, 0x70, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65,
-	0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x70, 0x32, 0x70, 0x41, 0x64, 0x64,
-	0x72, 0x65, 0x73, 0x73, 0x12, 0x21, 0x0a, 0x03, 0x63, 0x70, 0x75, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x0b, 0x32, 0x0f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x43, 0x70, 0x75, 0x53, 0x74,
-	0x61, 0x74, 0x52, 0x03, 0x63, 0x70, 0x75, 0x12, 0x2a, 0x0a, 0x06, 0x6d, 0x65, 0x6d, 0x6f, 0x72,
-	0x79, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x12, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73,
-	0x2e, 0x4d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x53, 0x74, 0x61, 0x74, 0x52, 0x06, 0x6d, 0x65, 0x6d,
-	0x6f, 0x72, 0x79, 0x12, 0x24, 0x0a, 0x04, 0x64, 0x69, 0x73, 0x6b, 0x18, 0x04, 0x20, 0x01, 0x28,
-	0x0b, 0x32, 0x10, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x44, 0x69, 0x73, 0x6b, 0x53,
-	0x74, 0x61, 0x74, 0x52, 0x04, 0x64, 0x69, 0x73, 0x6b, 0x12, 0x33, 0x0a, 0x09, 0x62, 0x61, 0x6e,
-	0x64, 0x77, 0x69, 0x64, 0x74, 0x68, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x42, 0x61, 0x6e, 0x64, 0x77, 0x69, 0x64, 0x74, 0x68, 0x53,
-	0x74, 0x61, 0x74, 0x52, 0x09, 0x62, 0x61, 0x6e, 0x64, 0x77, 0x69, 0x64, 0x74, 0x68, 0x22, 0x65,
-	0x0a, 0x0e, 0x52, 0x65, 0x71, 0x47, 0x65, 0x74, 0x50, 0x50, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73,
-	0x12, 0x31, 0x0a, 0x0a, 0x6d, 0x79, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x12, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x50, 0x50,
-	0x42, 0x61, 0x73, 0x65, 0x49, 0x6e, 0x66, 0x6f, 0x52, 0x09, 0x6d, 0x79, 0x41, 0x64, 0x64, 0x72,
-	0x65, 0x73, 0x73, 0x12, 0x20, 0x0a, 0x0c, 0x69, 0x6e, 0x69, 0x74, 0x5f, 0x70, 0x70, 0x5f, 0x6c,
-	0x69, 0x73, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0a, 0x69, 0x6e, 0x69, 0x74, 0x50,
-	0x70, 0x4c, 0x69, 0x73, 0x74, 0x22, 0xf0, 0x01, 0x0a, 0x0e, 0x52, 0x73, 0x70, 0x47, 0x65, 0x74,
-	0x50, 0x50, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x1b, 0x0a, 0x09, 0x69, 0x73, 0x5f, 0x61,
-	0x63, 0x74, 0x69, 0x76, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x08, 0x69, 0x73, 0x41,
-	0x63, 0x74, 0x69, 0x76, 0x65, 0x12, 0x21, 0x0a, 0x0c, 0x6f, 0x6e, 0x67, 0x6f, 0x69, 0x6e, 0x67,
-	0x5f, 0x74, 0x69, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x0b, 0x6f, 0x6e, 0x67,
-	0x6f, 0x69, 0x6e, 0x67, 0x54, 0x69, 0x65, 0x72, 0x12, 0x1b, 0x0a, 0x09, 0x69, 0x6e, 0x69, 0x74,
-	0x5f, 0x74, 0x69, 0x65, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x08, 0x69, 0x6e, 0x69,
-	0x74, 0x54, 0x69, 0x65, 0x72, 0x12, 0x21, 0x0a, 0x0c, 0x77, 0x65, 0x69, 0x67, 0x68, 0x74, 0x5f,
-	0x73, 0x63, 0x6f, 0x72, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x0b, 0x77, 0x65, 0x69,
-	0x67, 0x68, 0x74, 0x53, 0x63, 0x6f, 0x72, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x74,
-	0x65, 0x18, 0x05, 0x20, 0x01, 0x28, 0x05, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x12, 0x20,
-	0x0a, 0x0c, 0x69, 0x6e, 0x69, 0x74, 0x5f, 0x70, 0x70, 0x5f, 0x6c, 0x69, 0x73, 0x74, 0x18, 0x06,
-	0x20, 0x01, 0x28, 0x08, 0x52, 0x0a, 0x69, 0x6e, 0x69, 0x74, 0x50, 0x70, 0x4c, 0x69, 0x73, 0x74,
-	0x12, 0x26, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0b,
-	0x32, 0x0e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74,
-	0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x22, 0x37, 0x0a, 0x0e, 0x52, 0x65, 0x71, 0x47,
-	0x65, 0x74, 0x57, 0x61, 0x6c, 0x6c, 0x65, 0x74, 0x4f, 0x7a, 0x12, 0x25, 0x0a, 0x0e, 0x77, 0x61,
-	0x6c, 0x6c, 0x65, 0x74, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x09, 0x52, 0x0d, 0x77, 0x61, 0x6c, 0x6c, 0x65, 0x74, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73,
-	0x73, 0x22, 0x7c, 0x0a, 0x0e, 0x52, 0x73, 0x70, 0x47, 0x65, 0x74, 0x57, 0x61, 0x6c, 0x6c, 0x65,
-	0x74, 0x4f, 0x7a, 0x12, 0x1b, 0x0a, 0x09, 0x77, 0x61, 0x6c, 0x6c, 0x65, 0x74, 0x5f, 0x6f, 0x7a,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x77, 0x61, 0x6c, 0x6c, 0x65, 0x74, 0x4f, 0x7a,
-	0x12, 0x25, 0x0a, 0x0e, 0x77, 0x61, 0x6c, 0x6c, 0x65, 0x74, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65,
-	0x73, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0d, 0x77, 0x61, 0x6c, 0x6c, 0x65, 0x74,
-	0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x26, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c,
-	0x74, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73,
-	0x2e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x22,
-	0x57, 0x0a, 0x13, 0x52, 0x73, 0x70, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x4e, 0x6f, 0x64, 0x65,
-	0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x18, 0x0a, 0x07, 0x70, 0x70, 0x73, 0x74, 0x61, 0x74,
-	0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x07, 0x70, 0x70, 0x73, 0x74, 0x61, 0x74, 0x65,
-	0x12, 0x26, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b,
-	0x32, 0x0e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74,
-	0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x22, 0x6c, 0x0a, 0x0d, 0x52, 0x73, 0x70, 0x42,
-	0x61, 0x64, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x18, 0x0a, 0x07, 0x76, 0x65, 0x72,
-	0x73, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x07, 0x76, 0x65, 0x72, 0x73,
-	0x69, 0x6f, 0x6e, 0x12, 0x27, 0x0a, 0x0f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x5f, 0x76,
-	0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52, 0x0e, 0x6d, 0x69,
-	0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x18, 0x0a, 0x07,
-	0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63,
-	0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x22, 0x68, 0x0a, 0x15, 0x52, 0x73, 0x70, 0x53, 0x70, 0x55,
-	0x6e, 0x64, 0x65, 0x72, 0x4d, 0x61, 0x69, 0x6e, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x63, 0x65, 0x12,
-	0x24, 0x0a, 0x0e, 0x73, 0x70, 0x5f, 0x70, 0x32, 0x70, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73,
-	0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x73, 0x70, 0x50, 0x32, 0x70, 0x41, 0x64,
-	0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x29, 0x0a, 0x10, 0x6d, 0x61, 0x69, 0x6e, 0x74, 0x65, 0x6e,
-	0x61, 0x6e, 0x63, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52,
-	0x0f, 0x6d, 0x61, 0x69, 0x6e, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x63, 0x65, 0x54, 0x79, 0x70, 0x65,
-	0x2a, 0x40, 0x0a, 0x07, 0x50, 0x50, 0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x0b, 0x0a, 0x07, 0x4f,
-	0x46, 0x46, 0x4c, 0x49, 0x4e, 0x45, 0x10, 0x00, 0x12, 0x0a, 0x0a, 0x06, 0x4f, 0x4e, 0x4c, 0x49,
-	0x4e, 0x45, 0x10, 0x01, 0x12, 0x0b, 0x0a, 0x07, 0x53, 0x55, 0x53, 0x50, 0x45, 0x4e, 0x44, 0x10,
-	0x02, 0x12, 0x0f, 0x0a, 0x0b, 0x4d, 0x41, 0x49, 0x4e, 0x54, 0x45, 0x4e, 0x41, 0x4e, 0x43, 0x45,
-	0x10, 0x03, 0x2a, 0x2d, 0x0a, 0x11, 0x53, 0x70, 0x4d, 0x61, 0x69, 0x6e, 0x74, 0x65, 0x6e, 0x61,
-	0x6e, 0x63, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12, 0x0d, 0x0a, 0x09, 0x43, 0x4f, 0x4e, 0x53, 0x45,
-	0x4e, 0x53, 0x55, 0x53, 0x10, 0x00, 0x12, 0x09, 0x0a, 0x05, 0x4f, 0x54, 0x48, 0x45, 0x52, 0x10,
-	0x01, 0x42, 0x26, 0x5a, 0x24, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
-	0x73, 0x74, 0x72, 0x61, 0x74, 0x6f, 0x73, 0x6e, 0x65, 0x74, 0x2f, 0x73, 0x64, 0x73, 0x2f, 0x6d,
-	0x73, 0x67, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x52, 0x09, 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x22, 0x41, 0x0a, 0x17, 0x52,
+	0x73, 0x70, 0x54, 0x72, 0x61, 0x6e, 0x73, 0x66, 0x65, 0x72, 0x42, 0x4c, 0x53, 0x53, 0x69, 0x67,
+	0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x12, 0x26, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e,
+	0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x22, 0xe0,
+	0x01, 0x0a, 0x13, 0x52, 0x65, 0x71, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x4e, 0x6f, 0x64, 0x65,
+	0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x1f, 0x0a, 0x0b, 0x70, 0x32, 0x70, 0x5f, 0x61, 0x64,
+	0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x70, 0x32, 0x70,
+	0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x21, 0x0a, 0x03, 0x63, 0x70, 0x75, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x0f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x43, 0x70,
+	0x75, 0x53, 0x74, 0x61, 0x74, 0x52, 0x03, 0x63, 0x70, 0x75, 0x12, 0x2a, 0x0a, 0x06, 0x6d, 0x65,
+	0x6d, 0x6f, 0x72, 0x79, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x12, 0x2e, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x73, 0x2e, 0x4d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x53, 0x74, 0x61, 0x74, 0x52, 0x06,
+	0x6d, 0x65, 0x6d, 0x6f, 0x72, 0x79, 0x12, 0x24, 0x0a, 0x04, 0x64, 0x69, 0x73, 0x6b, 0x18, 0x04,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x10, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x44, 0x69,
+	0x73, 0x6b, 0x53, 0x74, 0x61, 0x74, 0x52, 0x04, 0x64, 0x69, 0x73, 0x6b, 0x12, 0x33, 0x0a, 0x09,
+	0x62, 0x61, 0x6e, 0x64, 0x77, 0x69, 0x64, 0x74, 0x68, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x15, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x42, 0x61, 0x6e, 0x64, 0x77, 0x69, 0x64,
+	0x74, 0x68, 0x53, 0x74, 0x61, 0x74, 0x52, 0x09, 0x62, 0x61, 0x6e, 0x64, 0x77, 0x69, 0x64, 0x74,
+	0x68, 0x22, 0x57, 0x0a, 0x13, 0x52, 0x73, 0x70, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x4e, 0x6f,
+	0x64, 0x65, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x18, 0x0a, 0x07, 0x70, 0x70, 0x73, 0x74,
+	0x61, 0x74, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x07, 0x70, 0x70, 0x73, 0x74, 0x61,
+	0x74, 0x65, 0x12, 0x26, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x52, 0x65, 0x73, 0x75,
+	0x6c, 0x74, 0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x22, 0x65, 0x0a, 0x0e, 0x52, 0x65,
+	0x71, 0x47, 0x65, 0x74, 0x50, 0x50, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x31, 0x0a, 0x0a,
+	0x6d, 0x79, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x12, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x50, 0x50, 0x42, 0x61, 0x73, 0x65,
+	0x49, 0x6e, 0x66, 0x6f, 0x52, 0x09, 0x6d, 0x79, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12,
+	0x20, 0x0a, 0x0c, 0x69, 0x6e, 0x69, 0x74, 0x5f, 0x70, 0x70, 0x5f, 0x6c, 0x69, 0x73, 0x74, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0a, 0x69, 0x6e, 0x69, 0x74, 0x50, 0x70, 0x4c, 0x69, 0x73,
+	0x74, 0x22, 0xf0, 0x01, 0x0a, 0x0e, 0x52, 0x73, 0x70, 0x47, 0x65, 0x74, 0x50, 0x50, 0x53, 0x74,
+	0x61, 0x74, 0x75, 0x73, 0x12, 0x1b, 0x0a, 0x09, 0x69, 0x73, 0x5f, 0x61, 0x63, 0x74, 0x69, 0x76,
+	0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x08, 0x69, 0x73, 0x41, 0x63, 0x74, 0x69, 0x76,
+	0x65, 0x12, 0x21, 0x0a, 0x0c, 0x6f, 0x6e, 0x67, 0x6f, 0x69, 0x6e, 0x67, 0x5f, 0x74, 0x69, 0x65,
+	0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x0b, 0x6f, 0x6e, 0x67, 0x6f, 0x69, 0x6e, 0x67,
+	0x54, 0x69, 0x65, 0x72, 0x12, 0x1b, 0x0a, 0x09, 0x69, 0x6e, 0x69, 0x74, 0x5f, 0x74, 0x69, 0x65,
+	0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x08, 0x69, 0x6e, 0x69, 0x74, 0x54, 0x69, 0x65,
+	0x72, 0x12, 0x21, 0x0a, 0x0c, 0x77, 0x65, 0x69, 0x67, 0x68, 0x74, 0x5f, 0x73, 0x63, 0x6f, 0x72,
+	0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x0b, 0x77, 0x65, 0x69, 0x67, 0x68, 0x74, 0x53,
+	0x63, 0x6f, 0x72, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x05, 0x20,
+	0x01, 0x28, 0x05, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x12, 0x20, 0x0a, 0x0c, 0x69, 0x6e,
+	0x69, 0x74, 0x5f, 0x70, 0x70, 0x5f, 0x6c, 0x69, 0x73, 0x74, 0x18, 0x06, 0x20, 0x01, 0x28, 0x08,
+	0x52, 0x0a, 0x69, 0x6e, 0x69, 0x74, 0x50, 0x70, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x26, 0x0a, 0x06,
+	0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x52, 0x06, 0x72, 0x65,
+	0x73, 0x75, 0x6c, 0x74, 0x22, 0x37, 0x0a, 0x0e, 0x52, 0x65, 0x71, 0x47, 0x65, 0x74, 0x57, 0x61,
+	0x6c, 0x6c, 0x65, 0x74, 0x4f, 0x7a, 0x12, 0x25, 0x0a, 0x0e, 0x77, 0x61, 0x6c, 0x6c, 0x65, 0x74,
+	0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0d,
+	0x77, 0x61, 0x6c, 0x6c, 0x65, 0x74, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x22, 0x7c, 0x0a,
+	0x0e, 0x52, 0x73, 0x70, 0x47, 0x65, 0x74, 0x57, 0x61, 0x6c, 0x6c, 0x65, 0x74, 0x4f, 0x7a, 0x12,
+	0x1b, 0x0a, 0x09, 0x77, 0x61, 0x6c, 0x6c, 0x65, 0x74, 0x5f, 0x6f, 0x7a, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x08, 0x77, 0x61, 0x6c, 0x6c, 0x65, 0x74, 0x4f, 0x7a, 0x12, 0x25, 0x0a, 0x0e,
+	0x77, 0x61, 0x6c, 0x6c, 0x65, 0x74, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x0d, 0x77, 0x61, 0x6c, 0x6c, 0x65, 0x74, 0x41, 0x64, 0x64, 0x72,
+	0x65, 0x73, 0x73, 0x12, 0x26, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x2e, 0x52, 0x65, 0x73,
+	0x75, 0x6c, 0x74, 0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x22, 0x6c, 0x0a, 0x0d, 0x52,
+	0x73, 0x70, 0x42, 0x61, 0x64, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x18, 0x0a, 0x07,
+	0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x07, 0x76,
+	0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x27, 0x0a, 0x0f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75,
+	0x6d, 0x5f, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x05, 0x52,
+	0x0e, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12,
+	0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x22, 0x68, 0x0a, 0x15, 0x52, 0x73, 0x70,
+	0x53, 0x70, 0x55, 0x6e, 0x64, 0x65, 0x72, 0x4d, 0x61, 0x69, 0x6e, 0x74, 0x65, 0x6e, 0x61, 0x6e,
+	0x63, 0x65, 0x12, 0x24, 0x0a, 0x0e, 0x73, 0x70, 0x5f, 0x70, 0x32, 0x70, 0x5f, 0x61, 0x64, 0x64,
+	0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x73, 0x70, 0x50, 0x32,
+	0x70, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x29, 0x0a, 0x10, 0x6d, 0x61, 0x69, 0x6e,
+	0x74, 0x65, 0x6e, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x05, 0x52, 0x0f, 0x6d, 0x61, 0x69, 0x6e, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x63, 0x65, 0x54,
+	0x79, 0x70, 0x65, 0x2a, 0x40, 0x0a, 0x07, 0x50, 0x50, 0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x0b,
+	0x0a, 0x07, 0x4f, 0x46, 0x46, 0x4c, 0x49, 0x4e, 0x45, 0x10, 0x00, 0x12, 0x0a, 0x0a, 0x06, 0x4f,
+	0x4e, 0x4c, 0x49, 0x4e, 0x45, 0x10, 0x01, 0x12, 0x0b, 0x0a, 0x07, 0x53, 0x55, 0x53, 0x50, 0x45,
+	0x4e, 0x44, 0x10, 0x02, 0x12, 0x0f, 0x0a, 0x0b, 0x4d, 0x41, 0x49, 0x4e, 0x54, 0x45, 0x4e, 0x41,
+	0x4e, 0x43, 0x45, 0x10, 0x03, 0x2a, 0x2d, 0x0a, 0x11, 0x53, 0x70, 0x4d, 0x61, 0x69, 0x6e, 0x74,
+	0x65, 0x6e, 0x61, 0x6e, 0x63, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12, 0x0d, 0x0a, 0x09, 0x43, 0x4f,
+	0x4e, 0x53, 0x45, 0x4e, 0x53, 0x55, 0x53, 0x10, 0x00, 0x12, 0x09, 0x0a, 0x05, 0x4f, 0x54, 0x48,
+	0x45, 0x52, 0x10, 0x01, 0x42, 0x26, 0x5a, 0x24, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
+	0x6f, 0x6d, 0x2f, 0x73, 0x74, 0x72, 0x61, 0x74, 0x6f, 0x73, 0x6e, 0x65, 0x74, 0x2f, 0x73, 0x64,
+	0x73, 0x2f, 0x6d, 0x73, 0x67, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -9606,7 +9657,7 @@ func file_sds_proto_rawDescGZIP() []byte {
 }
 
 var file_sds_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_sds_proto_msgTypes = make([]protoimpl.MessageInfo, 112)
+var file_sds_proto_msgTypes = make([]protoimpl.MessageInfo, 113)
 var file_sds_proto_goTypes = []interface{}{
 	(PPState)(0),                       // 0: protos.PPState
 	(SpMaintenanceType)(0),             // 1: protos.SpMaintenanceType
@@ -9714,144 +9765,146 @@ var file_sds_proto_goTypes = []interface{}{
 	(*RspGetShareFile)(nil),            // 103: protos.RspGetShareFile
 	(*RelayMessage)(nil),               // 104: protos.RelayMessage
 	(*ReqTransferBLSSignature)(nil),    // 105: protos.ReqTransferBLSSignature
-	(*ReqReportNodeStatus)(nil),        // 106: protos.ReqReportNodeStatus
-	(*ReqGetPPStatus)(nil),             // 107: protos.ReqGetPPStatus
-	(*RspGetPPStatus)(nil),             // 108: protos.RspGetPPStatus
-	(*ReqGetWalletOz)(nil),             // 109: protos.ReqGetWalletOz
-	(*RspGetWalletOz)(nil),             // 110: protos.RspGetWalletOz
-	(*RspReportNodeStatus)(nil),        // 111: protos.RspReportNodeStatus
-	(*RspBadVersion)(nil),              // 112: protos.RspBadVersion
-	(*RspSpUnderMaintenance)(nil),      // 113: protos.RspSpUnderMaintenance
-	(*PPBaseInfo)(nil),                 // 114: protos.PPBaseInfo
-	(*Result)(nil),                     // 115: protos.Result
-	(*SPBaseInfo)(nil),                 // 116: protos.SPBaseInfo
-	(*FileInfo)(nil),                   // 117: protos.FileInfo
-	(*SliceNumAddr)(nil),               // 118: protos.SliceNumAddr
-	(*SliceOffsetInfo)(nil),            // 119: protos.SliceOffsetInfo
-	(UploadType)(0),                    // 120: protos.UploadType
-	(*SliceHashAddr)(nil),              // 121: protos.SliceHashAddr
-	(FileSortType)(0),                  // 122: protos.FileSortType
-	(*FileIndexes)(nil),                // 123: protos.FileIndexes
-	(*DownloadSliceInfo)(nil),          // 124: protos.DownloadSliceInfo
-	(DownloadWrongType)(0),             // 125: protos.DownloadWrongType
-	(*SliceStorageInfo)(nil),           // 126: protos.SliceStorageInfo
-	(HeartbeatType)(0),                 // 127: protos.HeartbeatType
-	(*ShareLinkInfo)(nil),              // 128: protos.ShareLinkInfo
-	(*CpuStat)(nil),                    // 129: protos.CpuStat
-	(*MemoryStat)(nil),                 // 130: protos.MemoryStat
-	(*DiskStat)(nil),                   // 131: protos.DiskStat
-	(*BandwidthStat)(nil),              // 132: protos.BandwidthStat
+	(*RspTransferBLSSignature)(nil),    // 106: protos.RspTransferBLSSignature
+	(*ReqReportNodeStatus)(nil),        // 107: protos.ReqReportNodeStatus
+	(*RspReportNodeStatus)(nil),        // 108: protos.RspReportNodeStatus
+	(*ReqGetPPStatus)(nil),             // 109: protos.ReqGetPPStatus
+	(*RspGetPPStatus)(nil),             // 110: protos.RspGetPPStatus
+	(*ReqGetWalletOz)(nil),             // 111: protos.ReqGetWalletOz
+	(*RspGetWalletOz)(nil),             // 112: protos.RspGetWalletOz
+	(*RspBadVersion)(nil),              // 113: protos.RspBadVersion
+	(*RspSpUnderMaintenance)(nil),      // 114: protos.RspSpUnderMaintenance
+	(*PPBaseInfo)(nil),                 // 115: protos.PPBaseInfo
+	(*Result)(nil),                     // 116: protos.Result
+	(*SPBaseInfo)(nil),                 // 117: protos.SPBaseInfo
+	(*FileInfo)(nil),                   // 118: protos.FileInfo
+	(*SliceNumAddr)(nil),               // 119: protos.SliceNumAddr
+	(*SliceOffsetInfo)(nil),            // 120: protos.SliceOffsetInfo
+	(UploadType)(0),                    // 121: protos.UploadType
+	(*SliceHashAddr)(nil),              // 122: protos.SliceHashAddr
+	(FileSortType)(0),                  // 123: protos.FileSortType
+	(*FileIndexes)(nil),                // 124: protos.FileIndexes
+	(*DownloadSliceInfo)(nil),          // 125: protos.DownloadSliceInfo
+	(DownloadWrongType)(0),             // 126: protos.DownloadWrongType
+	(*SliceStorageInfo)(nil),           // 127: protos.SliceStorageInfo
+	(HeartbeatType)(0),                 // 128: protos.HeartbeatType
+	(*ShareLinkInfo)(nil),              // 129: protos.ShareLinkInfo
+	(*CpuStat)(nil),                    // 130: protos.CpuStat
+	(*MemoryStat)(nil),                 // 131: protos.MemoryStat
+	(*DiskStat)(nil),                   // 132: protos.DiskStat
+	(*BandwidthStat)(nil),              // 133: protos.BandwidthStat
 }
 var file_sds_proto_depIdxs = []int32{
-	114, // 0: protos.ReqGetPPList.my_address:type_name -> protos.PPBaseInfo
-	114, // 1: protos.RspGetPPList.pp_list:type_name -> protos.PPBaseInfo
-	115, // 2: protos.RspGetPPList.result:type_name -> protos.Result
-	114, // 3: protos.ReqGetSPList.my_address:type_name -> protos.PPBaseInfo
-	116, // 4: protos.RspGetSPList.sp_list:type_name -> protos.SPBaseInfo
-	115, // 5: protos.RspGetSPList.result:type_name -> protos.Result
-	114, // 6: protos.ReqRegister.address:type_name -> protos.PPBaseInfo
-	114, // 7: protos.ReqRegister.my_address:type_name -> protos.PPBaseInfo
-	115, // 8: protos.RspRegister.result:type_name -> protos.Result
-	114, // 9: protos.ReqMining.address:type_name -> protos.PPBaseInfo
-	115, // 10: protos.RspMining.result:type_name -> protos.Result
-	114, // 11: protos.ReqStartMaintenance.address:type_name -> protos.PPBaseInfo
-	115, // 12: protos.RspStartMaintenance.result:type_name -> protos.Result
-	114, // 13: protos.ReqStopMaintenance.address:type_name -> protos.PPBaseInfo
-	115, // 14: protos.RspStopMaintenance.result:type_name -> protos.Result
-	117, // 15: protos.ReqUploadFile.file_info:type_name -> protos.FileInfo
-	114, // 16: protos.ReqUploadFile.my_address:type_name -> protos.PPBaseInfo
-	118, // 17: protos.RspUploadFile.pp_list:type_name -> protos.SliceNumAddr
-	115, // 18: protos.RspUploadFile.result:type_name -> protos.Result
-	118, // 19: protos.ReqUploadFileSlice.slice_num_addr:type_name -> protos.SliceNumAddr
-	119, // 20: protos.ReqUploadFileSlice.slice_info:type_name -> protos.SliceOffsetInfo
-	115, // 21: protos.RspUploadFileSlice.result:type_name -> protos.Result
-	118, // 22: protos.RspUploadFileSlice.slice_num_addr:type_name -> protos.SliceNumAddr
-	120, // 23: protos.ReqUploadSlicesWrong.upload_type:type_name -> protos.UploadType
-	114, // 24: protos.ReqUploadSlicesWrong.my_address:type_name -> protos.PPBaseInfo
-	114, // 25: protos.ReqUploadSlicesWrong.excluded_destinations:type_name -> protos.PPBaseInfo
-	121, // 26: protos.ReqUploadSlicesWrong.slices:type_name -> protos.SliceHashAddr
-	115, // 27: protos.RspUploadSlicesWrong.result:type_name -> protos.Result
-	120, // 28: protos.RspUploadSlicesWrong.upload_type:type_name -> protos.UploadType
-	121, // 29: protos.RspUploadSlicesWrong.slices:type_name -> protos.SliceHashAddr
-	118, // 30: protos.ReportUploadSliceResult.slice_num_addr:type_name -> protos.SliceNumAddr
-	115, // 31: protos.RspReportUploadSliceResult.result:type_name -> protos.Result
-	118, // 32: protos.RspReportUploadSliceResult.slice_num_addr:type_name -> protos.SliceNumAddr
-	122, // 33: protos.ReqFindMyFileList.file_type:type_name -> protos.FileSortType
-	117, // 34: protos.RspFindMyFileList.file_info:type_name -> protos.FileInfo
-	115, // 35: protos.RspFindMyFileList.result:type_name -> protos.Result
-	123, // 36: protos.ReqFileStorageInfo.file_indexes:type_name -> protos.FileIndexes
+	115, // 0: protos.ReqGetPPList.my_address:type_name -> protos.PPBaseInfo
+	115, // 1: protos.RspGetPPList.pp_list:type_name -> protos.PPBaseInfo
+	116, // 2: protos.RspGetPPList.result:type_name -> protos.Result
+	115, // 3: protos.ReqGetSPList.my_address:type_name -> protos.PPBaseInfo
+	117, // 4: protos.RspGetSPList.sp_list:type_name -> protos.SPBaseInfo
+	116, // 5: protos.RspGetSPList.result:type_name -> protos.Result
+	115, // 6: protos.ReqRegister.address:type_name -> protos.PPBaseInfo
+	115, // 7: protos.ReqRegister.my_address:type_name -> protos.PPBaseInfo
+	116, // 8: protos.RspRegister.result:type_name -> protos.Result
+	115, // 9: protos.ReqMining.address:type_name -> protos.PPBaseInfo
+	116, // 10: protos.RspMining.result:type_name -> protos.Result
+	115, // 11: protos.ReqStartMaintenance.address:type_name -> protos.PPBaseInfo
+	116, // 12: protos.RspStartMaintenance.result:type_name -> protos.Result
+	115, // 13: protos.ReqStopMaintenance.address:type_name -> protos.PPBaseInfo
+	116, // 14: protos.RspStopMaintenance.result:type_name -> protos.Result
+	118, // 15: protos.ReqUploadFile.file_info:type_name -> protos.FileInfo
+	115, // 16: protos.ReqUploadFile.my_address:type_name -> protos.PPBaseInfo
+	119, // 17: protos.RspUploadFile.pp_list:type_name -> protos.SliceNumAddr
+	116, // 18: protos.RspUploadFile.result:type_name -> protos.Result
+	119, // 19: protos.ReqUploadFileSlice.slice_num_addr:type_name -> protos.SliceNumAddr
+	120, // 20: protos.ReqUploadFileSlice.slice_info:type_name -> protos.SliceOffsetInfo
+	116, // 21: protos.RspUploadFileSlice.result:type_name -> protos.Result
+	119, // 22: protos.RspUploadFileSlice.slice_num_addr:type_name -> protos.SliceNumAddr
+	121, // 23: protos.ReqUploadSlicesWrong.upload_type:type_name -> protos.UploadType
+	115, // 24: protos.ReqUploadSlicesWrong.my_address:type_name -> protos.PPBaseInfo
+	115, // 25: protos.ReqUploadSlicesWrong.excluded_destinations:type_name -> protos.PPBaseInfo
+	122, // 26: protos.ReqUploadSlicesWrong.slices:type_name -> protos.SliceHashAddr
+	116, // 27: protos.RspUploadSlicesWrong.result:type_name -> protos.Result
+	121, // 28: protos.RspUploadSlicesWrong.upload_type:type_name -> protos.UploadType
+	122, // 29: protos.RspUploadSlicesWrong.slices:type_name -> protos.SliceHashAddr
+	119, // 30: protos.ReportUploadSliceResult.slice_num_addr:type_name -> protos.SliceNumAddr
+	116, // 31: protos.RspReportUploadSliceResult.result:type_name -> protos.Result
+	119, // 32: protos.RspReportUploadSliceResult.slice_num_addr:type_name -> protos.SliceNumAddr
+	123, // 33: protos.ReqFindMyFileList.file_type:type_name -> protos.FileSortType
+	118, // 34: protos.RspFindMyFileList.file_info:type_name -> protos.FileInfo
+	116, // 35: protos.RspFindMyFileList.result:type_name -> protos.Result
+	124, // 36: protos.ReqFileStorageInfo.file_indexes:type_name -> protos.FileIndexes
 	102, // 37: protos.ReqFileStorageInfo.share_request:type_name -> protos.ReqGetShareFile
-	124, // 38: protos.RspFileStorageInfo.slice_info:type_name -> protos.DownloadSliceInfo
-	115, // 39: protos.RspFileStorageInfo.result:type_name -> protos.Result
-	123, // 40: protos.ReqDownloadFileWrong.file_indexes:type_name -> protos.FileIndexes
-	114, // 41: protos.ReqDownloadFileWrong.failed_pp_nodes:type_name -> protos.PPBaseInfo
-	119, // 42: protos.ReqDownloadSlice.slice_info:type_name -> protos.SliceOffsetInfo
-	119, // 43: protos.RspDownloadSlice.slice_info:type_name -> protos.SliceOffsetInfo
-	115, // 44: protos.RspDownloadSlice.result:type_name -> protos.Result
-	125, // 45: protos.ReqDownloadSliceWrong.type:type_name -> protos.DownloadWrongType
-	124, // 46: protos.RspDownloadSliceWrong.new_slice_info:type_name -> protos.DownloadSliceInfo
-	115, // 47: protos.RspDownloadSliceWrong.result:type_name -> protos.Result
-	115, // 48: protos.RspDownloadSlicePause.result:type_name -> protos.Result
-	124, // 49: protos.ReqReportDownloadResult.slice_info:type_name -> protos.DownloadSliceInfo
-	115, // 50: protos.RspReportDownloadResult.result:type_name -> protos.Result
-	124, // 51: protos.RspReportDownloadResult.slice_info:type_name -> protos.DownloadSliceInfo
-	114, // 52: protos.ReqReportTaskBP.reporter:type_name -> protos.PPBaseInfo
-	115, // 53: protos.RspRegisterNewPP.result:type_name -> protos.Result
-	114, // 54: protos.ReqActivatePP.pp_info:type_name -> protos.PPBaseInfo
-	115, // 55: protos.RspActivatePP.result:type_name -> protos.Result
-	115, // 56: protos.RspActivatedPP.result:type_name -> protos.Result
-	115, // 57: protos.RspUpdateStakePP.result:type_name -> protos.Result
-	115, // 58: protos.RspUpdatedStakePP.result:type_name -> protos.Result
-	115, // 59: protos.RspDeactivatePP.result:type_name -> protos.Result
-	115, // 60: protos.RspPPRegisteredToSP.result:type_name -> protos.Result
-	115, // 61: protos.RspUnbondingPP.result:type_name -> protos.Result
-	115, // 62: protos.RspDeactivatedPP.result:type_name -> protos.Result
-	115, // 63: protos.RspUnbondingSP.result:type_name -> protos.Result
-	115, // 64: protos.RspDeactivatedSP.result:type_name -> protos.Result
-	115, // 65: protos.RspPrepay.result:type_name -> protos.Result
-	115, // 66: protos.RspPrepaid.result:type_name -> protos.Result
-	115, // 67: protos.RspDeleteFile.result:type_name -> protos.Result
-	126, // 68: protos.ReqFileSliceBackupNotice.slice_storage_info:type_name -> protos.SliceStorageInfo
-	114, // 69: protos.ReqFileSliceBackupNotice.pp_info:type_name -> protos.PPBaseInfo
-	114, // 70: protos.ReqReportBackupSliceResult.pp_info:type_name -> protos.PPBaseInfo
-	115, // 71: protos.RspReportBackupSliceResult.result:type_name -> protos.Result
-	114, // 72: protos.ReqBackupStatus.address:type_name -> protos.PPBaseInfo
-	115, // 73: protos.RspBackupStatus.result:type_name -> protos.Result
-	121, // 74: protos.RspBackupStatus.pp_list:type_name -> protos.SliceHashAddr
-	114, // 75: protos.ReqTransferDownload.new_pp:type_name -> protos.PPBaseInfo
-	114, // 76: protos.ReqTransferDownload.original_pp:type_name -> protos.PPBaseInfo
-	126, // 77: protos.ReqTransferDownload.slice_storage_info:type_name -> protos.SliceStorageInfo
-	115, // 78: protos.RspTransferDownload.result:type_name -> protos.Result
-	115, // 79: protos.RspTransferDownloadResult.result:type_name -> protos.Result
-	114, // 80: protos.ReqTransferDownloadWrong.new_pp:type_name -> protos.PPBaseInfo
-	114, // 81: protos.ReqTransferDownloadWrong.original_pp:type_name -> protos.PPBaseInfo
-	126, // 82: protos.ReqTransferDownloadWrong.slice_storage_info:type_name -> protos.SliceStorageInfo
-	115, // 83: protos.RspDeleteSlice.result:type_name -> protos.Result
-	127, // 84: protos.ReqLatencyCheck.hb_type:type_name -> protos.HeartbeatType
-	127, // 85: protos.RspLatencyCheck.hb_type:type_name -> protos.HeartbeatType
+	125, // 38: protos.RspFileStorageInfo.slice_info:type_name -> protos.DownloadSliceInfo
+	116, // 39: protos.RspFileStorageInfo.result:type_name -> protos.Result
+	124, // 40: protos.ReqDownloadFileWrong.file_indexes:type_name -> protos.FileIndexes
+	115, // 41: protos.ReqDownloadFileWrong.failed_pp_nodes:type_name -> protos.PPBaseInfo
+	120, // 42: protos.ReqDownloadSlice.slice_info:type_name -> protos.SliceOffsetInfo
+	120, // 43: protos.RspDownloadSlice.slice_info:type_name -> protos.SliceOffsetInfo
+	116, // 44: protos.RspDownloadSlice.result:type_name -> protos.Result
+	126, // 45: protos.ReqDownloadSliceWrong.type:type_name -> protos.DownloadWrongType
+	125, // 46: protos.RspDownloadSliceWrong.new_slice_info:type_name -> protos.DownloadSliceInfo
+	116, // 47: protos.RspDownloadSliceWrong.result:type_name -> protos.Result
+	116, // 48: protos.RspDownloadSlicePause.result:type_name -> protos.Result
+	125, // 49: protos.ReqReportDownloadResult.slice_info:type_name -> protos.DownloadSliceInfo
+	116, // 50: protos.RspReportDownloadResult.result:type_name -> protos.Result
+	125, // 51: protos.RspReportDownloadResult.slice_info:type_name -> protos.DownloadSliceInfo
+	115, // 52: protos.ReqReportTaskBP.reporter:type_name -> protos.PPBaseInfo
+	116, // 53: protos.RspRegisterNewPP.result:type_name -> protos.Result
+	115, // 54: protos.ReqActivatePP.pp_info:type_name -> protos.PPBaseInfo
+	116, // 55: protos.RspActivatePP.result:type_name -> protos.Result
+	116, // 56: protos.RspActivatedPP.result:type_name -> protos.Result
+	116, // 57: protos.RspUpdateStakePP.result:type_name -> protos.Result
+	116, // 58: protos.RspUpdatedStakePP.result:type_name -> protos.Result
+	116, // 59: protos.RspDeactivatePP.result:type_name -> protos.Result
+	116, // 60: protos.RspPPRegisteredToSP.result:type_name -> protos.Result
+	116, // 61: protos.RspUnbondingPP.result:type_name -> protos.Result
+	116, // 62: protos.RspDeactivatedPP.result:type_name -> protos.Result
+	116, // 63: protos.RspUnbondingSP.result:type_name -> protos.Result
+	116, // 64: protos.RspDeactivatedSP.result:type_name -> protos.Result
+	116, // 65: protos.RspPrepay.result:type_name -> protos.Result
+	116, // 66: protos.RspPrepaid.result:type_name -> protos.Result
+	116, // 67: protos.RspDeleteFile.result:type_name -> protos.Result
+	127, // 68: protos.ReqFileSliceBackupNotice.slice_storage_info:type_name -> protos.SliceStorageInfo
+	115, // 69: protos.ReqFileSliceBackupNotice.pp_info:type_name -> protos.PPBaseInfo
+	115, // 70: protos.ReqReportBackupSliceResult.pp_info:type_name -> protos.PPBaseInfo
+	116, // 71: protos.RspReportBackupSliceResult.result:type_name -> protos.Result
+	115, // 72: protos.ReqBackupStatus.address:type_name -> protos.PPBaseInfo
+	116, // 73: protos.RspBackupStatus.result:type_name -> protos.Result
+	122, // 74: protos.RspBackupStatus.pp_list:type_name -> protos.SliceHashAddr
+	115, // 75: protos.ReqTransferDownload.new_pp:type_name -> protos.PPBaseInfo
+	115, // 76: protos.ReqTransferDownload.original_pp:type_name -> protos.PPBaseInfo
+	127, // 77: protos.ReqTransferDownload.slice_storage_info:type_name -> protos.SliceStorageInfo
+	116, // 78: protos.RspTransferDownload.result:type_name -> protos.Result
+	116, // 79: protos.RspTransferDownloadResult.result:type_name -> protos.Result
+	115, // 80: protos.ReqTransferDownloadWrong.new_pp:type_name -> protos.PPBaseInfo
+	115, // 81: protos.ReqTransferDownloadWrong.original_pp:type_name -> protos.PPBaseInfo
+	127, // 82: protos.ReqTransferDownloadWrong.slice_storage_info:type_name -> protos.SliceStorageInfo
+	116, // 83: protos.RspDeleteSlice.result:type_name -> protos.Result
+	128, // 84: protos.ReqLatencyCheck.hb_type:type_name -> protos.HeartbeatType
+	128, // 85: protos.RspLatencyCheck.hb_type:type_name -> protos.HeartbeatType
 	6,   // 86: protos.RspBPBLSPublicKey.bp_info:type_name -> protos.ReqRegister
 	92,  // 87: protos.RspBlockCheck.block_list:type_name -> protos.BlockCheckInfo
-	115, // 88: protos.RspDownloadTaskInfo.result:type_name -> protos.Result
-	128, // 89: protos.RspShareLink.share_info:type_name -> protos.ShareLinkInfo
-	115, // 90: protos.RspShareLink.result:type_name -> protos.Result
-	115, // 91: protos.RspShareFile.result:type_name -> protos.Result
-	115, // 92: protos.RspDeleteShare.result:type_name -> protos.Result
+	116, // 88: protos.RspDownloadTaskInfo.result:type_name -> protos.Result
+	129, // 89: protos.RspShareLink.share_info:type_name -> protos.ShareLinkInfo
+	116, // 90: protos.RspShareLink.result:type_name -> protos.Result
+	116, // 91: protos.RspShareFile.result:type_name -> protos.Result
+	116, // 92: protos.RspDeleteShare.result:type_name -> protos.Result
 	102, // 93: protos.RspGetShareFile.share_request:type_name -> protos.ReqGetShareFile
-	115, // 94: protos.RspGetShareFile.result:type_name -> protos.Result
-	117, // 95: protos.RspGetShareFile.file_info:type_name -> protos.FileInfo
-	129, // 96: protos.ReqReportNodeStatus.cpu:type_name -> protos.CpuStat
-	130, // 97: protos.ReqReportNodeStatus.memory:type_name -> protos.MemoryStat
-	131, // 98: protos.ReqReportNodeStatus.disk:type_name -> protos.DiskStat
-	132, // 99: protos.ReqReportNodeStatus.bandwidth:type_name -> protos.BandwidthStat
-	114, // 100: protos.ReqGetPPStatus.my_address:type_name -> protos.PPBaseInfo
-	115, // 101: protos.RspGetPPStatus.result:type_name -> protos.Result
-	115, // 102: protos.RspGetWalletOz.result:type_name -> protos.Result
-	115, // 103: protos.RspReportNodeStatus.result:type_name -> protos.Result
-	104, // [104:104] is the sub-list for method output_type
-	104, // [104:104] is the sub-list for method input_type
-	104, // [104:104] is the sub-list for extension type_name
-	104, // [104:104] is the sub-list for extension extendee
-	0,   // [0:104] is the sub-list for field type_name
+	116, // 94: protos.RspGetShareFile.result:type_name -> protos.Result
+	118, // 95: protos.RspGetShareFile.file_info:type_name -> protos.FileInfo
+	116, // 96: protos.RspTransferBLSSignature.result:type_name -> protos.Result
+	130, // 97: protos.ReqReportNodeStatus.cpu:type_name -> protos.CpuStat
+	131, // 98: protos.ReqReportNodeStatus.memory:type_name -> protos.MemoryStat
+	132, // 99: protos.ReqReportNodeStatus.disk:type_name -> protos.DiskStat
+	133, // 100: protos.ReqReportNodeStatus.bandwidth:type_name -> protos.BandwidthStat
+	116, // 101: protos.RspReportNodeStatus.result:type_name -> protos.Result
+	115, // 102: protos.ReqGetPPStatus.my_address:type_name -> protos.PPBaseInfo
+	116, // 103: protos.RspGetPPStatus.result:type_name -> protos.Result
+	116, // 104: protos.RspGetWalletOz.result:type_name -> protos.Result
+	105, // [105:105] is the sub-list for method output_type
+	105, // [105:105] is the sub-list for method input_type
+	105, // [105:105] is the sub-list for extension type_name
+	105, // [105:105] is the sub-list for extension extendee
+	0,   // [0:105] is the sub-list for field type_name
 }
 
 func init() { file_sds_proto_init() }
@@ -11110,7 +11163,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[104].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqReportNodeStatus); i {
+			switch v := v.(*RspTransferBLSSignature); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11122,7 +11175,7 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[105].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqGetPPStatus); i {
+			switch v := v.(*ReqReportNodeStatus); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11134,42 +11187,6 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[106].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspGetPPStatus); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_sds_proto_msgTypes[107].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ReqGetWalletOz); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_sds_proto_msgTypes[108].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspGetWalletOz); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_sds_proto_msgTypes[109].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*RspReportNodeStatus); i {
 			case 0:
 				return &v.state
@@ -11181,8 +11198,44 @@ func file_sds_proto_init() {
 				return nil
 			}
 		}
+		file_sds_proto_msgTypes[107].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ReqGetPPStatus); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_sds_proto_msgTypes[108].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RspGetPPStatus); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_sds_proto_msgTypes[109].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ReqGetWalletOz); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 		file_sds_proto_msgTypes[110].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RspBadVersion); i {
+			switch v := v.(*RspGetWalletOz); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -11194,6 +11247,18 @@ func file_sds_proto_init() {
 			}
 		}
 		file_sds_proto_msgTypes[111].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RspBadVersion); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_sds_proto_msgTypes[112].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*RspSpUnderMaintenance); i {
 			case 0:
 				return &v.state
@@ -11212,7 +11277,7 @@ func file_sds_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_sds_proto_rawDesc,
 			NumEnums:      2,
-			NumMessages:   112,
+			NumMessages:   113,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

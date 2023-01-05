@@ -858,12 +858,21 @@ message ReqTransferBLSSignature {
   bytes  signature = 3;
 }
 
+message RspTransferBLSSignature {
+  Result result = 1;
+}
+
 message ReqReportNodeStatus {
   string        p2p_address = 1;
   CpuStat       cpu = 2;
   MemoryStat    memory = 3;
   DiskStat      disk = 4;
   BandwidthStat bandwidth = 5;
+}
+
+message RspReportNodeStatus{
+  int32 ppstate = 1;
+  Result result = 2;
 }
 
 message ReqGetPPStatus {
@@ -896,11 +905,6 @@ enum PPState {
   ONLINE = 1;
   SUSPEND = 2;
   MAINTENANCE = 3;
-}
-
-message RspReportNodeStatus{
-  int32 ppstate = 1;
-  Result result = 2;
 }
 
 message RspBadVersion{
