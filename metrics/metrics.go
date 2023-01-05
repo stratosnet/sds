@@ -113,3 +113,13 @@ func UploadPerformanceLogData(index string, data int64) {
 		UploadProfiler.WithLabelValues(index).Set(float64(data))
 	}
 }
+
+func DownloadPerformanceLogNow(index string) {
+	if time.Now().Unix()-LogPerformanceStartTime >= PERFORMANCE_LOG_DURATION {
+		IsLoggingPerformanceData = false
+	}
+
+	if IsLoggingPerformanceData {
+		DownloadProfiler.WithLabelValues(index).Set(float64(time.Now().UnixMicro()))
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
@@ -26,6 +27,7 @@ import (
 // GetFileStorageInfo p to pp. The downloader is assumed the default wallet of this node, if this function is invoked.
 func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, isVideoStream bool, w http.ResponseWriter) {
 	utils.DebugLog("GetFileStorageInfo")
+
 	if !setting.CheckLogin() {
 		notLogin(w)
 		return
@@ -42,6 +44,7 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, isVi
 		}
 		return
 	}
+	metrics.DownloadPerformanceLogNow(fileHash + ":RCV_CMD_START:")
 
 	pp.DebugLog(ctx, "path:", path)
 
@@ -62,6 +65,7 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, isVi
 	}
 
 	req := requests.ReqFileStorageInfoData(path, savePath, saveAs, setting.WalletAddress, wsign, setting.WalletPublicKey, isVideoStream, nil)
+	metrics.DownloadPerformanceLogNow(fileHash + ":SND_STORAGE_INFO_SP:")
 	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 }
 
@@ -256,6 +260,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		pp.ErrorLog(ctx, "Received fail massage from sp: ", target.Result.Msg)
 		return
 	}
+	metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_STORAGE_INFO_SP:")
 
 	// get sp's p2p pubkey
 	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)

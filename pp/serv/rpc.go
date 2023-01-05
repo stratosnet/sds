@@ -207,6 +207,7 @@ func (api *rpcApi) RequestDownload(ctx context.Context, param rpc_api.ParamReqDo
 		return rpc_api.Result{Return: rpc_api.WRONG_INPUT}
 	}
 
+	metrics.UploadPerformanceLogNow(fileHash + ":RCV_REQ_DOWNLOAD_CLIENT")
 	wallet := param.WalletAddr
 	pubkey := param.WalletPubkey
 	signature := param.Signature

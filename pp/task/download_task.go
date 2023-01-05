@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -250,6 +251,8 @@ func SaveDownloadFile(ctx context.Context, target *protos.RspDownloadSlice, fInf
 	if fInfo.IsVideoStream {
 		return file.SaveFileData(ctx, target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, target.SliceInfo.SliceHash, fInfo.FileHash, fInfo.SavePath, fInfo.ReqId)
 	} else {
+		metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_SLICE_DATA:" + strconv.FormatInt(int64(target.SliceInfo.SliceOffset.SliceOffsetStart+(target.SliceNumber-1)*33554432), 10) + ":")
+		defer metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_SAVE_DATA:" + strconv.FormatInt(int64(target.SliceInfo.SliceOffset.SliceOffsetStart+(target.SliceNumber-1)*33554432), 10) + ":")
 		return file.SaveFileData(ctx, target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, fInfo.SavePath, fInfo.ReqId)
 	}
 }
@@ -305,6 +308,7 @@ func DoneDownload(ctx context.Context, fileHash, fileName, savePath string) {
 		pp.ErrorLog(ctx, "DoneDownload Remove", err)
 	}
 
+	metrics.DownloadPerformanceLogNow(fileHash + ":RCV_DOWNLOAD_DONE:")
 	if _, ok := setting.ImageMap.Load(fileHash); ok {
 		pp.DebugLog(ctx, "enter imageMap》》》》》》")
 		exist := false
@@ -413,6 +417,7 @@ func CheckRemoteDownloadOver(ctx context.Context, fileHash, fileReqId string) {
 	key := fileHash + fileReqId
 	size := file.GetRemoteFileInfo(key, fileReqId)
 	utils.DebugLog("size:", string(size))
+	metrics.DownloadPerformanceLogNow(fileHash + ":RCV_RPC_DOWNLOAD_DONE:")
 	file.SetRemoteFileResult(key, rpc.Result{Return: rpc.SUCCESS})
 	CleanDownloadFileAndConnMap(ctx, fileHash, fileReqId)
 }
