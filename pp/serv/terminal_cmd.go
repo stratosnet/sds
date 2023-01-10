@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/account"
 	"github.com/stratosnet/sds/pp/event"
@@ -542,5 +543,11 @@ func (api *terminalCmd) DowngradeInfo(ctx context.Context, param []string) (CmdR
 	if err != nil {
 		return CmdResult{Msg: ""}, err
 	}
+	return CmdResult{Msg: DefaultMsg}, nil
+}
+
+func (api *terminalCmd) PerformanceMeasure(ctx context.Context, param []string) (CmdResult, error) {
+	// Parse params
+	metrics.StartLoggingPerformanceData()
 	return CmdResult{Msg: DefaultMsg}, nil
 }

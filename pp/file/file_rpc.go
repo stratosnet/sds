@@ -4,10 +4,12 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"io"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/api/rpc"
 )
@@ -112,6 +114,7 @@ OuterFor:
 		case <-ctx.Done():
 			return nil
 		case subSlice := <-SubscribeGetRemoteFileData(hash):
+			metrics.UploadPerformanceLogNow(hash + ":RCV_SUBSLICE_RPC:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
 			copy(cursor, subSlice)
 			// one piece to be sent to client
 			read = read + uint64(len(subSlice))

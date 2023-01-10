@@ -110,7 +110,8 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	}
 	upRecvCostTimeMap.dataMap.Store(tkSlice, totalCostTime)
 	upRecvCostTimeMap.mux.Unlock()
-	p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.UploadSpeedOfProgressData(target.FileHash, uint64(len(target.Data))), header.UploadSpeedOfProgress)
+	timeEntry := time.Now().UnixMicro() - core.TimeRcv
+	p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.UploadSpeedOfProgressData(target.FileHash, uint64(len(target.Data)), (target.SliceNumAddr.SliceNumber-1)*33554432+target.SliceInfo.SliceOffset.SliceOffsetStart, timeEntry), header.UploadSpeedOfProgress)
 
 	if !task.SaveUploadFile(&target) {
 		// save failed, not handling yet
@@ -148,7 +149,7 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-
+	metrics.UploadPerformanceLogNow(target.FileHash + ":RCV_RSP_SLICE:" + strconv.FormatInt(int64(target.SliceNumAddr.SliceNumber), 10))
 	// verify node signature from sp
 	if target.SpNodeSign == nil || target.PpNodeSign == nil {
 		return
@@ -316,6 +317,8 @@ func sendSlice(ctx context.Context, pb proto.Message, fileHash, p2pAddress, netw
 	pp.DebugLog(ctx, "sendSlice(pb proto.Message, fileHash, p2pAddress, networkAddress string)",
 		fileHash, p2pAddress, networkAddress)
 	key := "upload#" + fileHash + p2pAddress
+	msg := pb.(*protos.ReqUploadFileSlice)
+	metrics.UploadPerformanceLogNow(fileHash + ":SND_FILE_DATA:" + strconv.FormatInt(int64(msg.SliceInfo.SliceOffset.SliceOffsetStart+(msg.SliceNumAddr.SliceNumber-1)*33554432), 10) + ":" + networkAddress)
 	return p2pserver.GetP2pServer(ctx).SendMessageByCachedConn(ctx, key, networkAddress, pb, header.ReqUploadFileSlice, HandleSendPacketCostTime)
 }
 
@@ -330,7 +333,8 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 		pp.DebugLog(ctx, "paused!!")
 		return
 	}
-
+	metrics.UploadPerformanceLogNow(target.FileHash + ":RCV_PROGRESS:" + strconv.FormatInt(int64(target.SliceOffStart), 10))
+	metrics.UploadPerformanceLogData(target.FileHash+":RCV_PROGRESS_DETAIL:"+strconv.FormatInt(int64(target.SliceOffStart), 10), target.HandleTime)
 	progress := prg.(*task.UploadProgress)
 	progress.HasUpload += int64(target.SliceSize)
 	p := float32(progress.HasUpload) / float32(progress.Total) * 100

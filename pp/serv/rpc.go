@@ -91,6 +91,7 @@ func ResultHook(r *rpc_api.Result, fileHash string) *rpc_api.Result {
 
 func (api *rpcApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqUploadFile) rpc_api.Result {
 	metrics.RpcReqCount.WithLabelValues("RequestUpload").Inc()
+	metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_CLIENT")
 	fileName := param.FileName
 	fileSize := param.FileSize
 	fileHash := param.FileHash
@@ -110,8 +111,10 @@ func (api *rpcApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqUplo
 
 	// start to upload file
 	p := requests.RequestUploadFile(fileName, fileHash, uint64(size), walletAddr, pubkey, signature, false)
+	metrics.UploadPerformanceLogNow(param.FileHash + ":SND_REQ_UPLOAD_SP")
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 
+	defer metrics.UploadPerformanceLogNow(param.FileHash + ":SND_RSP_UPLOAD_CLIENT")
 	//var done = make(chan bool)
 	ctx, _ = context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
 
@@ -133,6 +136,8 @@ func (api *rpcApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqUplo
 }
 
 func (api *rpcApi) UploadData(ctx context.Context, param rpc_api.ParamUploadData) rpc_api.Result {
+
+	metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_SP:")
 
 	content := param.Data
 	fileHash := param.FileHash
@@ -202,6 +207,7 @@ func (api *rpcApi) RequestDownload(ctx context.Context, param rpc_api.ParamReqDo
 		return rpc_api.Result{Return: rpc_api.WRONG_INPUT}
 	}
 
+	metrics.UploadPerformanceLogNow(fileHash + ":RCV_REQ_DOWNLOAD_CLIENT")
 	wallet := param.WalletAddr
 	pubkey := param.WalletPubkey
 	signature := param.Signature

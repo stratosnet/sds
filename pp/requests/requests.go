@@ -15,6 +15,7 @@ import (
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -246,6 +247,7 @@ func RequestDownloadFile(fileHash, sdmPath, walletAddr string, reqId string, wal
 	file.SaveRemoteFileHash(fileHash+fileReqId, "rpc:", 0)
 
 	// path: mesh network address
+	metrics.DownloadPerformanceLogNow(fileHash + ":SND_STORAGE_INFO_SP:")
 	req := ReqFileStorageInfoData(sdmPath, "", "", walletAddr, walletSign, walletPubkey, false, shareRequest)
 	return req
 }
@@ -770,10 +772,12 @@ func ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr string, wall
 	}
 }
 
-func UploadSpeedOfProgressData(fileHash string, size uint64) *protos.UploadSpeedOfProgress {
+func UploadSpeedOfProgressData(fileHash string, size uint64, start uint64, t int64) *protos.UploadSpeedOfProgress {
 	return &protos.UploadSpeedOfProgress{
-		FileHash:  fileHash,
-		SliceSize: size,
+		FileHash:      fileHash,
+		SliceSize:     size,
+		SliceOffStart: start,
+		HandleTime:    t,
 	}
 }
 
