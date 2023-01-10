@@ -7,6 +7,7 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
+	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
@@ -51,6 +52,20 @@ func RspStopMaintenance(ctx context.Context, _ core.WriteCloser) {
 
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		pp.Logf(ctx, "failed to stop maintenance: %v", target.Result.Msg)
+		return
+	}
+
+	// if PP process is killed, then setting.IsLoginToSP would be false after restarted
+	if setting.IsAuto && !setting.IsLoginToSP {
+		pp.DebugLog(ctx, "PP is not login to SP, register to SP")
+		network.GetPeer(ctx).StartRegisterToSp(ctx)
+		return
+	}
+
+	// if PP process is not killed, then setting.IsLoginToSP would keep true
+	if setting.IsAuto && setting.IsLoginToSP {
+		pp.DebugLog(ctx, "PP is login to SP, start mining")
+		network.GetPeer(ctx).StartMining(ctx)
 		return
 	}
 }
