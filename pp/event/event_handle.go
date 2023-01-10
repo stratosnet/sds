@@ -11,6 +11,7 @@ func RegisterEventHandle() {
 	core.Register(header.RspGetPPList, RspGetPPList)
 	core.Register(header.RspGetSPList, RspGetSPList)
 	core.Register(header.RspGetPPStatus, RspGetPPStatus)
+	core.Register(header.RspGetPPDowngradeInfo, RspGetPPDowngradeInfo)
 
 	core.Register(header.RspGetWalletOz, RspGetWalletOz)
 	core.Register(header.RspReportNodeStatus, RspReportNodeStatus)

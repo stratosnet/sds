@@ -535,3 +535,12 @@ func (api *terminalCmd) Maintenance(ctx context.Context, param []string) (CmdRes
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
 }
+
+func (api *terminalCmd) DowngradeInfo(ctx context.Context, param []string) (CmdResult, error) {
+	// Parse params
+	err := event.ReqGetPPDowngradeInfo(ctx)
+	if err != nil {
+		return CmdResult{Msg: ""}, err
+	}
+	return CmdResult{Msg: DefaultMsg}, nil
+}
