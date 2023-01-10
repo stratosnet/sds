@@ -60,7 +60,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"getoz <walletAddress> ->password                               get current ozone balance\n" +
 		"status                                                         get current resource node status\n" +
 		"maintenance start <duration>                                   put the node in maintenance mode for the requested duration (in seconds)\n" +
-		"maintenance stop                                               stop the current maintenance\n"
+		"maintenance stop                                               stop the current maintenance\n" +
+		"downgradeinfo                                                  get information of last downgrade happened on this pp node\n"
 
 	help := func(line string, param []string) bool {
 		fmt.Println(helpStr)
@@ -208,7 +209,9 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	maintenance := func(line string, param []string) bool {
 		return callRpc(c, "maintenance", param)
 	}
-
+	downgradeInfo := func(line string, param []string) bool {
+		return callRpc(c, "downgradeInfo", param)
+	}
 	nc := make(chan serv.LogMsg)
 	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription")
 	if err != nil {
@@ -259,6 +262,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("cancelget", cancelget, true)
 	console.Mystdin.RegisterProcessFunc("monitortoken", monitortoken, true)
 	console.Mystdin.RegisterProcessFunc("maintenance", maintenance, true)
+	console.Mystdin.RegisterProcessFunc("downgradeinfo", downgradeInfo, true)
 
 	if isExec {
 		exit := false

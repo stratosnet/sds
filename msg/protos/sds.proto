@@ -875,6 +875,17 @@ message RspReportNodeStatus{
   Result result = 2;
 }
 
+message ReqGetPPDowngradeInfo {
+  PPBaseInfo my_address = 1;
+}
+
+message RspGetPPDowngradeInfo{
+  int64 downgrade_height_delta_to_now = 1;
+  uint32 score_decreased = 2;
+  string sp_p2p_address = 3;
+  Result result = 4;
+}
+
 message ReqGetPPStatus {
   PPBaseInfo my_address = 1;
   bool init_pp_list = 2;

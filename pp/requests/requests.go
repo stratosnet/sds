@@ -840,6 +840,17 @@ func ReqStopMaintenance() *protos.ReqStopMaintenance {
 	}
 }
 
+func ReqDowngradeInfo() *protos.ReqGetPPDowngradeInfo {
+	return &protos.ReqGetPPDowngradeInfo{
+		MyAddress: &protos.PPBaseInfo{
+			P2PAddress:     setting.P2PAddress,
+			WalletAddress:  setting.WalletAddress,
+			NetworkAddress: setting.NetworkAddress,
+			RestAddress:    setting.RestAddress,
+		},
+	}
+}
+
 // PPMsgHeader
 func PPMsgHeader(data []byte, head string) header.MessageHead {
 	return header.MakeMessageHeader(1, setting.Config.Version.AppVer, uint32(len(data)), head)
