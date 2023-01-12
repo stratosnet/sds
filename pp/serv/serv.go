@@ -10,6 +10,7 @@ import (
 	"github.com/stratosnet/sds/pp/api"
 	"github.com/stratosnet/sds/pp/api/rest"
 	"github.com/stratosnet/sds/pp/event"
+	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
@@ -107,6 +108,7 @@ func (bs *BaseServer) startIPC() error {
 }
 
 func (bs *BaseServer) startHttpRPC() error {
+	file.RpcWaitTimeout = rpc.DefaultHTTPTimeouts.IdleTimeout
 	rpcServer := newHTTPServer(rpc.DefaultHTTPTimeouts)
 	port, err := strconv.Atoi(setting.Config.RpcPort)
 	if err != nil {
