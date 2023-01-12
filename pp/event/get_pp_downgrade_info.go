@@ -21,7 +21,7 @@ func RspGetPPDowngradeInfo(ctx context.Context, conn core.WriteCloser) {
 		pp.Log(ctx, "failed to query node status, please retry later")
 		return
 	}
-	pp.Logf(ctx, "PP downgrade happened at: %d (heights) ago, at SP node %v, score decreased by %v ", target.DowngradeHeightDeltaToNow, target.ScoreDecreased, target.SpP2PAddress)
+	pp.Logf(ctx, "PP downgrade happened at: %d (heights) ago, at SP node %v, score decreased by %v ", target.DowngradeHeightDeltaToNow, target.SpP2PAddress, target.ScoreDecreased)
 }
 
 func ReqGetPPDowngradeInfo(ctx context.Context) error {
