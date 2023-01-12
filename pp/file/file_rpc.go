@@ -14,8 +14,6 @@ import (
 	"github.com/stratosnet/sds/pp/api/rpc"
 )
 
-const WAIT_TIMEOUT time.Duration = 10 * time.Second
-
 var (
 	reFileMutex sync.Mutex
 
@@ -51,6 +49,9 @@ var (
 
 	// key(wallet + reqid) : value(*rpc.GetOzoneResult)
 	rpcOzone = &sync.Map{}
+
+	// wait for the next request from client per message
+	RpcWaitTimeout time.Duration
 )
 
 type pipe struct {
@@ -105,11 +106,11 @@ func GetRemoteFileData(hash string, offset *protos.SliceOffset) []byte {
 	var read uint64 = 0
 
 	cursor = data[:]
-	parentCtx := context.Background()
-	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT*2)
-
 OuterFor:
 	for {
+		parentCtx := context.Background()
+		ctx, _ := context.WithTimeout(parentCtx, RpcWaitTimeout)
+
 		select {
 		case <-ctx.Done():
 			return nil
@@ -254,7 +255,7 @@ func UnsubscribeGetSignature(key string) {
 // GetSignatureFromRemote
 func GetSignatureFromRemote(key string) []byte {
 	parentCtx := context.Background()
-	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
+	ctx, _ := context.WithTimeout(parentCtx, RpcWaitTimeout)
 
 	select {
 	case <-ctx.Done():
@@ -265,7 +266,7 @@ func GetSignatureFromRemote(key string) []byte {
 	}
 }
 
-// GetSignatureFromRemote
+// SetSignature
 func SetSignature(key string, sig []byte) {
 	ch, found := rpcDownloadReady.Load(key)
 	if found {
@@ -281,7 +282,7 @@ func SetSignature(key string, sig []byte) {
 func WaitDownloadSliceDone(key string) bool {
 	var done bool
 	parentCtx := context.Background()
-	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
+	ctx, _ := context.WithTimeout(parentCtx, RpcWaitTimeout)
 
 	select {
 	case <-ctx.Done():
@@ -308,7 +309,7 @@ func GetRemoteFileInfo(key, reqId string) uint64 {
 	SetRemoteFileResult(key, rpc.Result{ReqId: reqId, Return: rpc.DL_OK_ASK_INFO})
 	var fileSize uint64
 	parentCtx := context.Background()
-	ctx, _ := context.WithTimeout(parentCtx, WAIT_TIMEOUT)
+	ctx, _ := context.WithTimeout(parentCtx, RpcWaitTimeout)
 
 	select {
 	case <-ctx.Done():
