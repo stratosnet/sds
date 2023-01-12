@@ -538,6 +538,7 @@ func (api *terminalCmd) Maintenance(ctx context.Context, param []string) (CmdRes
 }
 
 func (api *terminalCmd) DowngradeInfo(ctx context.Context, param []string) (CmdResult, error) {
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	// Parse params
 	err := event.ReqGetPPDowngradeInfo(ctx)
 	if err != nil {
