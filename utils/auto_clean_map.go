@@ -70,15 +70,6 @@ func (m *AutoCleanMap) HashKey(key interface{}) bool {
 	return ok
 }
 
-func (m *AutoCleanMap) Len() int {
-	length := 0
-	m.myMap.Range(func(k, v interface{}) bool {
-		length++
-		return true
-	})
-	return length
-}
-
 func (m *AutoCleanMap) pushDelete(wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
@@ -152,6 +143,10 @@ func (m *AutoCleanUnsafeMap) Delete(key interface{}) {
 func (m *AutoCleanUnsafeMap) HashKey(key interface{}) bool {
 	_, ok := m.unsafeMap[key]
 	return ok
+}
+
+func (m *AutoCleanUnsafeMap) Len() int {
+	return len(m.unsafeMap)
 }
 
 func (m *AutoCleanUnsafeMap) pushDelete(wg *sync.WaitGroup) {

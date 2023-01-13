@@ -89,20 +89,15 @@ func RspStopMaintenance(ctx context.Context, _ core.WriteCloser) {
 
 func taskMonitorFunc(ctx context.Context) func() {
 	return func() {
-		uploadTasks := task.UploadFileTaskMap
-		downloadTasks := task.DownloadTaskMap
+		uploadTaskCnt := GetOngoingUploadTaskCount()
+		downloadTaskCnt := GetOngoingDownloadTaskCount()
 
-		uploadTasksCnt := 0
-		uploadTasks.Range(func(k, v interface{}) bool {
-			uploadTasksCnt++
-			return true
-		})
-		downloadTasksCnt := downloadTasks.Len()
 		transferTasksCnt := task.GetTransferTaskCnt()
-		pp.DebugLog(ctx, fmt.Sprintf("Ongoing tasks: upload--%v  download--%v  transfer--%v ",
-			uploadTasksCnt, downloadTasksCnt, transferTasksCnt))
 
-		totalTaskCnt := uploadTasksCnt + downloadTasksCnt + transferTasksCnt
+		pp.DebugLog(ctx, fmt.Sprintf("Ongoing tasks: upload--%v  download--%v  transfer--%v ",
+			uploadTaskCnt, downloadTaskCnt, transferTasksCnt))
+
+		totalTaskCnt := uploadTaskCnt + downloadTaskCnt + transferTasksCnt
 		if totalTaskCnt == 0 {
 			pp.Logf(ctx, "All tasks have been completed, pp service can be stopped.")
 			taskMonitorJob.Cancel()
