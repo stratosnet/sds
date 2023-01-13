@@ -92,7 +92,7 @@ func taskMonitorFunc(ctx context.Context) func() {
 		uploadTaskCnt := GetOngoingUploadTaskCount()
 		downloadTaskCnt := GetOngoingDownloadTaskCount()
 
-		transferTasksCnt := task.GetTransferTaskCnt()
+		transferTasksCnt := task.GetOngoingTransferTaskCnt()
 
 		pp.DebugLog(ctx, fmt.Sprintf("Ongoing tasks: upload--%v  download--%v  transfer--%v ",
 			uploadTaskCnt, downloadTaskCnt, transferTasksCnt))
