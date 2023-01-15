@@ -42,6 +42,9 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 
 	if target.InitPpList {
 		network.GetPeer(ctx).InitPPList(ctx)
+		if setting.IsAuto && setting.State == ppTypes.PP_ACTIVE && !setting.IsLoginToSP {
+			network.GetPeer(ctx).StartRegisterToSp(ctx)
+		}
 	}
 }
 
