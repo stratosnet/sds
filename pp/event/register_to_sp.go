@@ -67,6 +67,8 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
+	setting.IsSuspended = target.PpState == protos.PPState_SUSPEND
+
 	pp.Log(ctx, "get RspRegister ", target.Result.State, target.Result.Msg)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		//setting.P2PAddress = ""
