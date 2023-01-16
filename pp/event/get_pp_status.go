@@ -38,11 +38,17 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 		setting.IsPPSyncedWithSP = true
 	}
 
+	isSuspended := setting.IsSuspended
 	formatRspGetPPStatus(ctx, target)
 
 	if target.InitPpList {
 		network.GetPeer(ctx).InitPPList(ctx)
 		if setting.IsAuto && setting.State == ppTypes.PP_ACTIVE && !setting.IsLoginToSP {
+			network.GetPeer(ctx).StartRegisterToSp(ctx)
+		}
+	} else {
+		// after user intervention, pp state changed from suspended to non-suspended, start register process
+		if !setting.IsLoginToSP && !setting.IsSuspended && isSuspended != setting.IsSuspended {
 			network.GetPeer(ctx).StartRegisterToSp(ctx)
 		}
 	}
@@ -66,17 +72,21 @@ func formatRspGetPPStatus(ctx context.Context, response protos.RspGetPPStatus) {
 	case int32(protos.PPState_OFFLINE):
 		state = protos.PPState_OFFLINE.String()
 		setting.OnlineTime = 0
+		setting.IsSuspended = false
 	case int32(protos.PPState_ONLINE):
 		state = protos.PPState_ONLINE.String()
 		if setting.OnlineTime == 0 {
 			setting.OnlineTime = time.Now().Unix()
 		}
+		setting.IsSuspended = false
 	case int32(protos.PPState_SUSPEND):
 		state = protos.PPState_SUSPEND.String()
 		setting.OnlineTime = 0
+		setting.IsSuspended = true
 	case int32(protos.PPState_MAINTENANCE):
 		state = protos.PPState_MAINTENANCE.String()
 		setting.OnlineTime = 0
+		setting.IsSuspended = false
 	default:
 		state = "Unknown"
 	}
