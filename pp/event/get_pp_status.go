@@ -82,7 +82,13 @@ func formatRspGetPPStatus(ctx context.Context, response protos.RspGetPPStatus) {
 	case int32(protos.PPState_SUSPEND):
 		state = protos.PPState_SUSPEND.String()
 		setting.OnlineTime = 0
-		setting.IsSuspended = true
+		// a just activated pp node should be allowed to register to sp
+		// so, a more strict condition to set pp to a "suspended" flag: the value of tier
+		if response.InitTier != 0 && response.OngoingTier == 0 {
+			setting.IsSuspended = true
+		} else {
+			setting.IsSuspended = false
+		}
 	case int32(protos.PPState_MAINTENANCE):
 		state = protos.PPState_MAINTENANCE.String()
 		setting.OnlineTime = 0
