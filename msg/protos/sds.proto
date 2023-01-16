@@ -39,6 +39,7 @@ message RspRegister {
   Result result = 1; // if register success or not
   string p2p_address = 2;
   bool   isPP = 3;
+  PPState pp_state = 4;
 }
 
 message ReqMining {
