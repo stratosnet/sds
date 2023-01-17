@@ -19,8 +19,10 @@ const (
 func main() {
 	rootCmd := getRootCmd()
 	startCmd := getStartCmd()
+	configCmd := getGenConfigCmd()
 
 	rootCmd.AddCommand(startCmd)
+	rootCmd.AddCommand(configCmd)
 
 	err := rootCmd.Execute()
 	if err != nil {
@@ -47,9 +49,10 @@ func getRootCmd() *cobra.Command {
 
 func getStartCmd() *cobra.Command {
 	startCmd := &cobra.Command{
-		Use:   "start",
-		Short: "start relayd",
-		RunE:  startRunE,
+		Use:     "start",
+		Short:   "start relayd",
+		RunE:    startRunE,
+		PreRunE: startPreRunE,
 	}
 
 	dir, err := os.Getwd()
@@ -59,6 +62,15 @@ func getStartCmd() *cobra.Command {
 	}
 	startCmd.Flags().StringP(SP_HOME, "s", dir, "home path for the associated SP node")
 	return startCmd
+}
+
+func getGenConfigCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "config",
+		Short: "create default configuration file",
+		RunE:  genConfig,
+	}
+	return cmd
 }
 
 func rootPreRunE(cmd *cobra.Command, _ []string) error {
@@ -74,18 +86,5 @@ func rootPreRunE(cmd *cobra.Command, _ []string) error {
 	}
 	setting.HomePath = homePath
 	_ = utils.NewDefaultLogger(filepath.Join(homePath, "tmp/logs/stdout.log"), true, true)
-
-	configPath, err := cmd.Flags().GetString(CONFIG)
-	if err != nil {
-		utils.ErrorLog("failed to get 'config' path for the relayd process")
-		return err
-	}
-	configPath = filepath.Join(homePath, configPath)
-
-	err = setting.LoadConfig(configPath)
-	if err != nil {
-		utils.ErrorLog("Error loading the setting file", err)
-		return err
-	}
 	return nil
 }
