@@ -68,7 +68,7 @@ func BuildSlashingResourceNodeMsg(spP2pAddress, spWalletAddress []utiltypes.Addr
 }
 
 // Stratos-chain 'register' module
-func BuildCreateResourceNodeMsg(token, moniker string, nodeType registertypes.NodeType, pubKey []byte, stakeAmount int64, ownerAddress, p2pAddress utiltypes.Address) (sdktypes.Msg, error) {
+func BuildCreateResourceNodeMsg(moniker string, nodeType registertypes.NodeType, pubKey []byte, stakeAmount utiltypes.Coin, ownerAddress, p2pAddress utiltypes.Address) (sdktypes.Msg, error) {
 	if nodeType == 0 {
 		nodeType = registertypes.STORAGE
 	}
@@ -78,7 +78,10 @@ func BuildCreateResourceNodeMsg(token, moniker string, nodeType registertypes.No
 	return registertypes.NewMsgCreateResourceNode(
 		p2pAddress[:],
 		pk,
-		sdktypes.NewInt64Coin(token, stakeAmount),
+		sdktypes.Coin{
+			Denom:  stakeAmount.Denom,
+			Amount: stakeAmount.Amount,
+		},
 		ownerAddress[:],
 		&registertypes.Description{
 			Moniker: moniker,
@@ -87,12 +90,15 @@ func BuildCreateResourceNodeMsg(token, moniker string, nodeType registertypes.No
 	)
 }
 
-func BuildCreateMetaNodeMsg(token, moniker string, pubKey []byte, stakeAmount int64, ownerAddress, p2pAddress utiltypes.Address) (sdktypes.Msg, error) {
+func BuildCreateMetaNodeMsg(moniker string, pubKey []byte, stakeAmount utiltypes.Coin, ownerAddress, p2pAddress utiltypes.Address) (sdktypes.Msg, error) {
 	pk := ed25519.PubKeyBytesToSdkPubKey(pubKey)
 	return registertypes.NewMsgCreateMetaNode(
 		p2pAddress[:],
 		pk,
-		sdktypes.NewInt64Coin(token, stakeAmount),
+		sdktypes.Coin{
+			Denom:  stakeAmount.Denom,
+			Amount: stakeAmount.Amount,
+		},
 		ownerAddress[:],
 		&registertypes.Description{
 			Moniker: moniker,
@@ -101,8 +107,11 @@ func BuildCreateMetaNodeMsg(token, moniker string, pubKey []byte, stakeAmount in
 }
 
 // Stratos-chain 'register' module
-func BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, token string, stakeDelta int64, incrStake bool) sdktypes.Msg {
-	coin := sdktypes.NewInt64Coin(token, stakeDelta)
+func BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, stakeDelta utiltypes.Coin, incrStake bool) sdktypes.Msg {
+	coin := sdktypes.Coin{
+		Denom:  stakeDelta.Denom,
+		Amount: stakeDelta.Amount,
+	}
 	return registertypes.NewMsgUpdateResourceNodeStake(
 		networkAddr[:],
 		ownerAddr[:],
@@ -111,8 +120,11 @@ func BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, t
 	)
 }
 
-func BuildUpdateMetaNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, token string, stakeDelta int64, incrStake bool) sdktypes.Msg {
-	coin := sdktypes.NewInt64Coin(token, stakeDelta)
+func BuildUpdateMetaNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, stakeDelta utiltypes.Coin, incrStake bool) sdktypes.Msg {
+	coin := sdktypes.Coin{
+		Denom:  stakeDelta.Denom,
+		Amount: stakeDelta.Amount,
+	}
 	return registertypes.NewMsgUpdateMetaNodeStake(
 		networkAddr[:],
 		ownerAddr[:],
@@ -157,10 +169,13 @@ func BuildFileUploadMsg(fileHash string, from, reporterAddress, uploaderAddress 
 	)
 }
 
-func BuildPrepayMsg(token string, amount int64, senderAddress []byte) sdktypes.Msg {
+func BuildPrepayMsg(amount utiltypes.Coin, senderAddress []byte) sdktypes.Msg {
 	walletPrefix := types.GetConfig().GetBech32AccountAddrPrefix()
 	return sdstypes.NewMsgPrepay(
 		sdktypes.MustBech32ifyAddressBytes(walletPrefix, senderAddress),
-		sdktypes.NewCoins(sdktypes.NewInt64Coin(token, amount)),
+		sdktypes.NewCoins(sdktypes.Coin{
+			Denom:  amount.Denom,
+			Amount: amount.Amount,
+		}),
 	)
 }

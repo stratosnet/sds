@@ -1,9 +1,11 @@
 package event
 
 import (
+	"context"
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/requests"
@@ -13,13 +15,13 @@ import (
 type DownloadTimeoutHandler struct {
 }
 
-func (handler *DownloadTimeoutHandler) Handle(message *msg.RelayMsgBuf) {
+func (handler *DownloadTimeoutHandler) Handle(ctx context.Context, message *msg.RelayMsgBuf) {
 	target := &protos.ReqDownloadSlice{}
 	if err := proto.Unmarshal(message.MSGData, target); err != nil {
 
 	}
 
-	dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress)
+	dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress, task.LOCAL_REQID)
 	if !ok {
 		return
 	}
@@ -28,11 +30,8 @@ func (handler *DownloadTimeoutHandler) Handle(message *msg.RelayMsgBuf) {
 		return
 	}
 
-	setDownloadSliceFail(target.SliceInfo.SliceHash, dTask)
-
-	if target.IsVideoCaching {
-		videoCacheKeep(target.FileHash, target.TaskId)
-	}
+	newCtx := core.CreateContextWithParentReqId(ctx, message.MSGHead.ReqId)
+	setDownloadSliceFail(newCtx, target.SliceInfo.SliceHash, target.TaskId, target.IsVideoCaching, dTask)
 }
 
 func (handler *DownloadTimeoutHandler) GetDuration() time.Duration {

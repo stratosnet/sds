@@ -25,9 +25,9 @@
 <script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
 <script>
     const url = "localhost"
-    const internalPort = 9608 //corresponds to the InternalPort in the config of pp node
-    const fileHash = "[Hash of the file to be streamed]";
-    const ownerWalletAddress = "[wallet address of the owner]";
+    const internalPort = 9303 //corresponds to the InternalPort in the config of pp node
+    const fileHash = "v05ahm57b40ficclv3mibfap7668f5i544d7frgg";
+    const ownerWalletAddress = "st1pwptrzhvenhz8pu8jt6x99e4r02vcz8vrw5gkd";
     let streamInfo;
     httpGetAsync(`http://${url}:${internalPort}/streamVideoStorageInfo/${ownerWalletAddress}/${fileHash}`, function(responseText) {
         streamInfo = JSON.parse(responseText);

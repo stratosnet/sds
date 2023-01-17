@@ -6,61 +6,92 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/types"
 )
 
-func CheckAndSendRetryMessage(dTask *task.DownloadTask) {
+func CheckAndSendRetryMessage(ctx context.Context, dTask *task.DownloadTask) {
 	if !dTask.NeedRetry() {
 		return
 	}
-	if f, ok := task.DownloadFileMap.Load(dTask.FileHash); ok {
+	fileReqId, found := getFileReqIdFromContext(ctx)
+	if !found {
+		pp.DebugLog(ctx, "cannot find the original file request id")
+		return
+	}
+	if f, ok := task.DownloadFileMap.Load(dTask.FileHash + fileReqId); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
-		peers.SendMessageToSPServer(requests.ReqDownloadFileWrongData(fInfo, dTask), header.ReqDownloadFileWrong)
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqDownloadFileWrongData(fInfo, dTask), header.ReqDownloadFileWrong)
 	}
 }
 
 // RspFileStorageInfo SP-PP , PP-P
 func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 	// PP check whether itself is the storage PP, if not transfer
-	utils.Log("get，RspDownloadFileWrong")
+	pp.Log(ctx, "get，RspDownloadFileWrong")
 	var target protos.RspFileStorageInfo
 	if requests.UnmarshalData(ctx, &target) {
-		utils.DebugLog("file hash", target.FileHash)
+
+		spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
+		if err != nil {
+			return
+		}
+
+		// verify sp address
+		if !types.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
+			return
+		}
+
+		// verify sp node signature
+		msg := utils.GetRspFileStorageInfoNodeSignMessage(target.P2PAddress, target.SpP2PAddress, target.FileHash, header.RspFileStorageInfo)
+		if !types.VerifyP2pSignBytes(spP2pPubkey, target.NodeSign, msg) {
+			pp.ErrorLog(ctx, "sp node signature validation failed, msg: ", msg)
+			return
+		}
+
+		fileReqId, found := getFileReqIdFromContext(ctx)
+		if !found {
+			pp.DebugLog(ctx, "cannot find the original file request id")
+			return
+		}
+		pp.DebugLog(ctx, "file hash", target.FileHash)
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
-			utils.Log("download starts: ")
-			dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress)
+			pp.Log(ctx, "download starts: ")
+			dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress, fileReqId)
 			if !ok {
-				utils.DebugLog("cannot find the download task")
+				pp.DebugLog(ctx, "cannot find the download task")
 				return
 			}
 			dTask.RefreshTask(&target)
 			if target.IsVideoStream {
 				return
 			}
-			if _, ok := task.DownloadSpeedOfProgress.Load(target.FileHash); !ok {
-				utils.Log("download has stopped")
+			if _, ok := task.DownloadSpeedOfProgress.Load(target.FileHash + fileReqId); !ok {
+				pp.Log(ctx, "download has stopped")
 				return
 			}
-			for _, rsp := range target.SliceInfo {
-				utils.DebugLog("taskid ======= ", rsp.TaskId)
-				if file.CheckSliceExisting(target.FileHash, target.FileName, rsp.SliceStorageInfo.SliceHash, target.SavePath) {
-					utils.Log("slice exist already,", rsp.SliceStorageInfo.SliceHash)
-					setDownloadSliceSuccess(rsp.SliceStorageInfo.SliceHash, dTask)
-					task.DownloadProgress(target.FileHash, rsp.SliceStorageInfo.SliceSize)
+			for _, slice := range target.SliceInfo {
+				pp.DebugLog(ctx, "taskid ======= ", slice.TaskId)
+				if file.CheckSliceExisting(target.FileHash, target.FileName, slice.SliceStorageInfo.SliceHash, target.SavePath, fileReqId) {
+					pp.Log(ctx, "slice exist already,", slice.SliceStorageInfo.SliceHash)
+					setDownloadSliceSuccess(ctx, slice.SliceStorageInfo.SliceHash, dTask)
+					task.DownloadProgress(ctx, target.FileHash, fileReqId, slice.SliceStorageInfo.SliceSize)
 				} else {
-					utils.DebugLog("request download data")
-					req := requests.ReqDownloadSliceData(&target, rsp)
-					SendReqDownloadSlice(target.FileHash, rsp, req)
+					pp.DebugLog(ctx, "request download data")
+					req := requests.ReqDownloadSliceData(&target, slice)
+					newCtx := createAndRegisterSliceReqId(ctx, fileReqId)
+					SendReqDownloadSlice(newCtx, target.FileHash, slice, req, fileReqId)
 				}
 			}
-			utils.DebugLog("DownloadFileSlice(&target)", target)
+			pp.DebugLog(ctx, "DownloadFileSlice(&target)", target)
 		} else {
-			task.DeleteDownloadTask(target.FileHash, target.WalletAddress)
-			utils.Log("failed to download，", target.Result.Msg)
+			task.DeleteDownloadTask(target.FileHash, target.WalletAddress, task.LOCAL_REQID)
+			pp.Log(ctx, "failed to download，", target.Result.Msg)
 		}
 	}
 }

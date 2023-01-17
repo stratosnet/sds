@@ -6,7 +6,7 @@ import (
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
@@ -14,7 +14,6 @@ import (
 
 // RspGetPPList
 func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
-	utils.DebugLog("get GetSPList RSP")
 	var target protos.RspGetSPList
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -22,7 +21,7 @@ func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get GetSPList RSP", target.SpList)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.Log("failed to get any indexing nodes, reloading")
-		peers.ScheduleReloadSPlist(time.Second * 3)
+		network.GetPeer(ctx).ScheduleReloadSPlist(ctx, time.Second*30)
 		return
 	}
 

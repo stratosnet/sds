@@ -3,17 +3,21 @@ package main
 import (
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/stratosnet/sds/pp/api"
-	"github.com/stratosnet/sds/pp/api/rest"
+
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
+
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
+	utiltypes "github.com/stratosnet/sds/utils/types"
 	"github.com/stratosnet/stratos-chain/types"
 )
 
@@ -23,16 +27,33 @@ const (
 	defaultConfigPath string = "./configs/config.toml"
 )
 
+var BaseServer = &serv.BaseServer{}
+
 func nodePP(cmd *cobra.Command, args []string) error {
-	if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
-		go api.StartHTTPServ()
+	registerDenoms()
+
+	BaseServer.Start()
+
+	closure := make(chan os.Signal, 1)
+	signal.Notify(closure,
+		syscall.SIGTERM,
+		syscall.SIGINT,
+		syscall.SIGQUIT,
+		syscall.SIGKILL,
+		syscall.SIGHUP,
+	)
+
+	for {
+		select {
+		case sig := <-closure:
+			utils.Logf("Quit signal detected: [%s]. Shutting down...", sig.String())
+			// stop ipcServer | rpcServer | monitorServer | PPServer
+			BaseServer.Stop()
+			//os.Exit(1)
+			return nil
+		}
 	}
 
-	if setting.Config.RestPort != "" {
-		go rest.StartHTTPServ()
-	}
-
-	serv.Start()
 	return nil
 }
 
@@ -41,8 +62,9 @@ func nodePreRunE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-
-	trafficLogger := utils.NewTrafficLogger(filepath.Join(setting.GetRootPath(), "./tmp/logs/traffic_dump.log"), false, true)
+	setting.MonitorInitialToken = serv.CreateInitialToken()
+	setting.TrafficLogPath = filepath.Join(setting.GetRootPath(), "./tmp/logs/traffic_dump.log")
+	trafficLogger := utils.NewTrafficLogger(setting.TrafficLogPath, false, true)
 	trafficLogger.SetLogLevel(utils.Info)
 
 	err = utils.InitIdWorker()
@@ -50,7 +72,6 @@ func nodePreRunE(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "Couldn't initialize id worker")
 	}
 
-	serv.StartDumpTrafficLog()
 	err = SetupP2PKey()
 	if err != nil {
 		return errors.Wrap(err, "Couldn't setup PP node")
@@ -115,4 +136,17 @@ func SetupP2PKey() error {
 	setting.P2PPrivateKey = p2pKey.PrivateKey
 	setting.P2PPublicKey = ed25519.PrivKeyBytesToPubKeyBytes(setting.P2PPrivateKey)
 	return nil
+}
+
+// RegisterDenoms registers the denominations to the PP.
+func registerDenoms() {
+	if err := utiltypes.RegisterDenom(utiltypes.Stos, sdktypes.OneDec()); err != nil {
+		panic(err)
+	}
+	if err := utiltypes.RegisterDenom(utiltypes.Gwei, sdktypes.NewDecWithPrec(1, utiltypes.GweiDenomUnit)); err != nil {
+		panic(err)
+	}
+	if err := utiltypes.RegisterDenom(utiltypes.Wei, sdktypes.NewDecWithPrec(1, utiltypes.WeiDenomUnit)); err != nil {
+		panic(err)
+	}
 }

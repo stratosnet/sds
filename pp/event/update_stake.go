@@ -3,26 +3,29 @@ package event
 import (
 	"context"
 
+	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/peers"
+	"github.com/stratosnet/sds/pp"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
+	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
-// Update stake of node
-func UpdateStake(stakeDelta, fee, gas int64, incrStake bool) error {
-	updateStakeReq, err := reqUpdateStakeData(stakeDelta, fee, gas, incrStake)
+// UpdateStake Update stake of node
+func UpdateStake(ctx context.Context, stakeDelta utiltypes.Coin, txFee utiltypes.TxFee, incrStake bool) error {
+	updateStakeReq, err := reqUpdateStakeData(stakeDelta, txFee, incrStake)
 	if err != nil {
-		utils.ErrorLog("Couldn't build update PP stake request: " + err.Error())
+		pp.ErrorLog(ctx, "Couldn't build update PP stake request: "+err.Error())
 		return err
 	}
-	utils.Log("Sending update stake message to SP! " + updateStakeReq.P2PAddress)
-	peers.SendMessageToSPServer(updateStakeReq, header.ReqUpdateStakePP)
+	pp.Log(ctx, "Sending update stake message to SP! "+updateStakeReq.P2PAddress)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, updateStakeReq, header.ReqUpdateStakePP)
 	return nil
 }
 
@@ -34,21 +37,22 @@ func RspUpdateStake(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	utils.Log("get RspUpdateStakePP", target.Result.State, target.Result.Msg)
+	pp.Log(ctx, "get RspUpdateStakePP", target.Result.State, target.Result.Msg)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		return
 	}
 
 	if target.UpdateState == types.PP_INACTIVE {
-		utils.Log("Current node isn't active yet")
+		pp.Log(ctx, "Current node isn't active yet")
 	}
+
 	setting.State = target.UpdateState
 
-	err := stratoschain.BroadcastTxBytes(target.Tx)
+	err := stratoschain.BroadcastTxBytes(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
 	if err != nil {
-		utils.ErrorLog("The UpdateStake transaction couldn't be broadcast", err)
+		pp.ErrorLog(ctx, "The UpdateStake transaction couldn't be broadcast", err)
 	} else {
-		utils.Log("The UpdateStake transaction was broadcast")
+		pp.Log(ctx, "The UpdateStake transaction was broadcast")
 	}
 }
 

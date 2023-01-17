@@ -5,12 +5,11 @@ import (
 	"time"
 
 	"github.com/alex023/clock"
+	"github.com/stratosnet/sds/pp/p2pserver"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/client"
-	"github.com/stratosnet/sds/pp/peers"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 )
@@ -24,9 +23,9 @@ func ReqGetHDInfo(ctx context.Context, conn core.WriteCloser) {
 	if requests.UnmarshalData(ctx, &target) {
 
 		if setting.P2PAddress == target.P2PAddress {
-			peers.SendMessageToSPServer(requests.RspGetHDInfoData(), header.RspGetHDInfo)
+			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.RspGetHDInfoData(), header.RspGetHDInfo)
 		} else {
-			peers.TransferSendMessageToPPServByP2pAddress(target.P2PAddress, core.MessageFromContext(ctx))
+			p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
 }
@@ -34,29 +33,31 @@ func ReqGetHDInfo(ctx context.Context, conn core.WriteCloser) {
 // RspGetHDInfo
 func RspGetHDInfo(ctx context.Context, conn core.WriteCloser) {
 
-	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
+	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
-func reportDHInfo() {
-	peers.SendMessageToSPServer(requests.RspGetHDInfoData(), header.RspGetHDInfo)
+func reportDHInfo(ctx context.Context) func() {
+	return func() {
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.RspGetHDInfoData(), header.RspGetHDInfo)
+	}
 }
 
-func reportDHInfoToPP() {
-	peers.SendMessage(client.PPConn, requests.RspGetHDInfoData(), header.RspGetHDInfo)
+func reportDHInfoToPP(ctx context.Context) {
+	p2pserver.GetP2pServer(ctx).SendMessage(ctx, p2pserver.GetP2pServer(ctx).GetPpConn(), requests.RspGetHDInfoData(), header.RspGetHDInfo)
 }
 
-func startReportDHInfo() {
+func startReportDHInfo(ctx context.Context) {
 	if job != nil {
 		job.Cancel()
 	}
-	peers.SendMessageToSPServer(requests.RspGetHDInfoData(), header.RspGetHDInfo)
-	job, _ = myClock.AddJobRepeat(time.Second*setting.REPORTDHTIME, 0, reportDHInfo)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.RspGetHDInfoData(), header.RspGetHDInfo)
+	job, _ = myClock.AddJobRepeat(time.Second*setting.REPORTDHTIME, 0, reportDHInfo(ctx))
 }
 
 // GetCapacity GetCapacity
 //func GetCapacity(reqID string, w http.ResponseWriter) {
 //	if setting.CheckLogin() {
-//		peers.SendMessage(client.PPConn, requests.ReqGetCapacityData(reqID), header.ReqGetCapacity)
+//		network.SendMessage(client.ppConn, requests.ReqGetCapacityData(reqID), header.ReqGetCapacity)
 //		storeResponseWriter(reqID, w)
 //	} else {
 //		notLogin(w)
@@ -65,7 +66,7 @@ func startReportDHInfo() {
 
 // ReqGetCapacity
 //func ReqGetCapacity(ctx context.Context, conn core.WriteCloser) {
-//	peers.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
+//	network.TransferSendMessageToSPServer(core.MessageFromContext(ctx))
 //}
 
 // RspGetCapacity
@@ -80,7 +81,7 @@ func startReportDHInfo() {
 //			}
 //			putData(target.ReqId, HTTPGetCapacity, &target)
 //		} else {
-//			peers.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
+//			network.TransferSendMessageToClient(target.P2PAddress, core.MessageFromContext(ctx))
 //		}
 //	}
 //}

@@ -16,10 +16,11 @@ import (
 )
 
 const (
-	Version     = "v0.8.1"
-	APP_VER     = 8
-	MIN_APP_VER = 8
-	HD_PATH     = "m/44'/606'/0'/0/0"
+	Version        = "v0.9.0"
+	APP_VER        = 9
+	MIN_APP_VER    = 9
+	HD_PATH        = "m/44'/606'/0'/0/0"
+	PP_SERVER_TYPE = "tcp4"
 
 	// REPORTDHTIME 1 hour
 	REPORTDHTIME = 60 * 60
@@ -27,6 +28,7 @@ const (
 	NodeReportIntervalSec   = 300 // in seconds
 	NodeReportCheckInterval = 500 // in num of heights
 	WeightDeductionInterval = 200 // interval for weight deduction in heights
+	PpLatencyCheckInterval  = 60  // interval for checking the latency to next PP
 
 	// MAXDATA max slice size
 	MAXDATA = 1024 * 1024 * 3
@@ -42,6 +44,8 @@ const (
 	UPDATE_LATEST_STATUS_REPORT_BATCH_SIZE = 20
 
 	DEFAULT_MAX_CONNECTION = 1000
+
+	DEFAULT_MIN_UNSUSPEND_STAKE = "1stos" // 1 stos
 )
 
 var (
@@ -81,6 +85,9 @@ var (
 
 	// UpChan
 	UpChan = make(chan string, 100)
+
+	// traffic log path
+	TrafficLogPath string
 )
 
 type AppVersion struct {
@@ -93,6 +100,12 @@ type SPBaseInfo struct {
 	P2PAddress     string `toml:"p2p_address"`
 	P2PPublicKey   string `toml:"p2p_public_key"`
 	NetworkAddress string `toml:"network_address"`
+}
+type MonitorConn struct {
+	TLS  bool   `toml:"tls"`
+	Cert string `toml:"cert"`
+	Key  string `toml:"key"`
+	Port string `toml:"port"`
 }
 
 type config struct {
@@ -117,10 +130,13 @@ type config struct {
 	IsLimitUploadSpeed   bool         `toml:"is_limit_upload_speed"`
 	LimitUploadSpeed     uint64       `toml:"limit_upload_speed"`
 	ChainId              string       `toml:"chain_id"`
-	Token                string       `toml:"token"`
 	StratosChainUrl      string       `toml:"stratos_chain_url"`
+	GasAdjustment        float64      `toml:"gas_adjustment"`
 	RestPort             string       `toml:"rest_port"`
 	InternalPort         string       `toml:"internal_port"`
+	RpcPort              string       `toml:"rpc_port"`
+	MetricsPort          string       `toml:"metrics_port"`
+	Monitor              MonitorConn  `toml:"monitor"`
 	TrafficLogInterval   uint64       `toml:"traffic_log_interval"`
 	MaxConnection        int          `toml:"max_connection"`
 	SPList               []SPBaseInfo `toml:"sp_list"`
@@ -302,8 +318,8 @@ func defaultConfig() *config {
 		IsLimitUploadSpeed:   false,
 		LimitUploadSpeed:     0,
 		ChainId:              "tropos-4",
-		Token:                "ustos",
 		StratosChainUrl:      "http://127.0.0.1:1317",
+		GasAdjustment:        1.3,
 		RestPort:             "",
 		InternalPort:         "",
 		TrafficLogInterval:   10,

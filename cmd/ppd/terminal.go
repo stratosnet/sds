@@ -3,13 +3,21 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	"time"
 
+	"github.com/alex023/clock"
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
+)
+
+const (
+	verboseFlag = "verbose"
 )
 
 func run(cmd *cobra.Command, args []string, isExec bool) {
@@ -22,34 +30,39 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	defer c.Close()
 
 	helpStr := "\n" +
-		"help                                       			show all the commands\n" +
-		"wallets                                    			acquire all wallet wallets' address\n" +
-		"newwallet		                                        create new wallet, input password in prompt\n" +
-		"login <walletAddress> ->password           			unlock and log in wallet, input password in prompt\n" +
-		"registerpeer                               			register peer to index node\n" +
-		"rp                                         			register peer to index node\n" +
-		"activate <amount> <fee> <gas>              			send transaction to stchain to become an active PP node\n" +
-		"updateStake <stakeDelta> <fee> <gas> <isIncrStake>		send transaction to stchain to update active pp's stake\n" +
-		"deactivate <fee> <gas>                     			send transaction to stchain to stop being an active PP node\n" +
-		"startmining                                			start mining\n" +
-		"prepay <amount> <fee> <gas>                			prepay stos to get ozone, amount in ustos\n" +
-		"put <filepath>                             			upload file, need to consume ozone\n" +
-		"putstream <filepath>                       			upload video file for streaming, need to consume ozone (alpha version, encode format config impossible)\n" +
-		"list <filename>                            			query uploaded file by self\n" +
-		"list                                       			query all files\n" +
-		"delete <filehash>                          			delete file\n" +
-		"get <sdm://account/filehash> <saveAs>			        download file, need to consume ozone\n" +
-		"	e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe\n" +
-		"sharefile <filehash> <duration> <is_private>			share an uploaded file\n" +
-		"allshare                                   			list all shared files\n" +
-		"getsharefile <sharelink> <password>        			download a shared file, need to consume ozone\n" +
-		"cancelshare <shareID>                      			cancel a shared file\n" +
-		"ver                                        			version\n" +
-		"monitor                                    			show monitor\n" +
-		"stopmonitor                                			stop monitor\n" +
-		"config  <key> <value>                      			set config key value\n" +
-		"getoz <walletAddress> ->password           			get current ozone balance\n" +
-		"status			                                        get current resource node status\n"
+		"help                                                           show all the commands\n" +
+		"wallets                                                        acquire all wallet wallets' address\n" +
+		"newwallet                                                      create new wallet, input password in prompt\n" +
+		"login <walletAddress> ->password                               unlock and log in wallet, input password in prompt\n" +
+		"registerpeer                                                   register peer to index node\n" +
+		"rp                                                             register peer to index node\n" +
+		"activate <amount> <fee> optional<gas>                          send transaction to stchain to become an active PP node\n" +
+		"updateStake <stakeDelta> <fee> optional<gas> <isIncrStake>     send transaction to stchain to update active pp's stake\n" +
+		"deactivate <fee> optional<gas>                                 send transaction to stchain to stop being an active PP node\n" +
+		"startmining                                                    start mining\n" +
+		"prepay <amount> <fee> optional<gas>                            prepay stos to get ozone\n" +
+		"put <filepath>                                                 upload file, need to consume ozone\n" +
+		"putstream <filepath>                                           upload video file for streaming, need to consume ozone (alpha version, encode format config impossible)\n" +
+		"list <filename>                                                query uploaded file by self\n" +
+		"list <page id>                                                 query all files owned by the wallet, paginated\n" +
+		"delete <filehash>                                              delete file\n" +
+		"get <sdm://account/filehash> <saveAs>                          download file, need to consume ozone\n" +
+		"    e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe\n" +
+		"sharefile <filehash> <duration> <is_private>                   share an uploaded file\n" +
+		"allshare                                                       list all shared files\n" +
+		"getsharefile <sharelink> <password>                            download a shared file, need to consume ozone\n" +
+		"cancelshare <shareID>                                          cancel a shared file\n" +
+		"ver                                                            version\n" +
+		"monitor                                                        show monitor\n" +
+		"stopmonitor                                                    stop monitor\n" +
+		"monitortoken                                                   show token for pp monitor service\n" +
+		"config  <key> <value>                                          set config key value\n" +
+		"getoz <walletAddress> ->password                               get current ozone balance\n" +
+		"status                                                         get current resource node status\n" +
+		"maintenance start <duration>                                   put the node in maintenance mode for the requested duration (in seconds)\n" +
+		"maintenance stop                                               stop the current maintenance\n" +
+		"downgradeinfo                                                  get information of last downgrade happened on this pp node\n" +
+		"performancemeasure                                             turn on performance measurement log for 60 seconds\n"
 
 	help := func(line string, param []string) bool {
 		fmt.Println(helpStr)
@@ -70,7 +83,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	}
 
 	newwallet := func(line string, param []string) bool {
-		err := SetupWallet()
+		err := utils.SetupWallet(setting.Config.AccountDir, setting.HD_PATH, updateWalletConfig)
 		if err != nil {
 			fmt.Println(err)
 			return false
@@ -191,37 +204,27 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	cancelget := func(line string, param []string) bool {
 		return callRpc(c, "cancelGet", param)
 	}
+	monitortoken := func(line string, param []string) bool {
+		return callRpc(c, "monitorToken", param)
+	}
+	maintenance := func(line string, param []string) bool {
+		return callRpc(c, "maintenance", param)
+	}
+	downgradeInfo := func(line string, param []string) bool {
+		return callRpc(c, "downgradeInfo", param)
+	}
+	performanceMeasure := func(line string, param []string) bool {
+		return callRpc(c, "performanceMeasure", param)
+	}
+	nc := make(chan serv.LogMsg)
+	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription")
+	if err != nil {
+		utils.ErrorLog("can't subscribe:", err)
+		return
+	}
+	defer destroySub(c, sub)
 
-	//TODO move to pp api later
-	//if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
-	//	serv.Login(setting.Config.WalletAddress, setting.Config.WalletPassword)
-	//	// setting.ShowMonitor()
-	//	go func() {
-	//		netListen, err := net.Listen("tcp4", ":1203")
-	//		if err != nil {
-	//			utils.ErrorLog("p err", err)
-	//		}
-	//		// overChan := make(chan bool, 0)
-	//		for {
-	//			utils.DebugLog("!!!!!!!!!!!!!!!!!!")
-	//			conn, err := netListen.Accept()
-	//			if err != nil {
-	//				utils.ErrorLog("Accept err", err)
-	//			}
-	//			utils.DebugLog(">>>>>>>>>>>>>>>>")
-	//			go websocket.SocketRead(conn)
-	//			go func() {
-	//				for {
-	//					writeErr := websocket.SocketStart(conn, setting.UpMap, setting.DownMap, setting.ResultMap)
-	//					if writeErr != nil {
-	//						return
-	//					}
-	//					time.Sleep(666 * time.Millisecond)
-	//				}
-	//			}()
-	//		}
-	//	}()
-	//}
+	go printLogNotification(nc)
 
 	console.Mystdin.RegisterProcessFunc("help", help, true)
 	console.Mystdin.RegisterProcessFunc("h", help, true)
@@ -243,8 +246,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("backupStatus", backupStatus, true)
 	console.Mystdin.RegisterProcessFunc("d", download, true)
 	console.Mystdin.RegisterProcessFunc("get", download, true)
-	console.Mystdin.RegisterProcessFunc("list", list, false)
-	console.Mystdin.RegisterProcessFunc("ls", list, false)
+	console.Mystdin.RegisterProcessFunc("list", list, true)
+	console.Mystdin.RegisterProcessFunc("ls", list, true)
 	console.Mystdin.RegisterProcessFunc("delete", deleteFn, true)
 	console.Mystdin.RegisterProcessFunc("rm", deleteFn, true)
 	console.Mystdin.RegisterProcessFunc("ver", ver, false)
@@ -261,23 +264,43 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("pauseget", pauseget, true)
 	console.Mystdin.RegisterProcessFunc("pauseput", pauseput, true)
 	console.Mystdin.RegisterProcessFunc("cancelget", cancelget, true)
+	console.Mystdin.RegisterProcessFunc("monitortoken", monitortoken, true)
+	console.Mystdin.RegisterProcessFunc("maintenance", maintenance, true)
+	console.Mystdin.RegisterProcessFunc("downgradeinfo", downgradeInfo, true)
+	console.Mystdin.RegisterProcessFunc("performancemeasure", performanceMeasure, true)
 
 	if isExec {
+		exit := false
 		if len(args) > 0 {
-			console.Mystdin.RunCmd(args[0], args[1:], true)
+			exit = console.Mystdin.RunCmd(args[0], args[1:], true)
+		}
+
+		if exit {
+			return
+		}
+
+		verbose, err := cmd.Flags().GetBool(verboseFlag)
+		if err != nil || !verbose {
+			return
+		}
+
+		printExitMsg()
+		clock.NewClock().AddJobRepeat(10*time.Second, 0, printExitMsg)
+
+		// disable input buffering
+		exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
+		// do not display entered characters on the screen
+		exec.Command("stty", "-F", "/dev/tty", "-echo").Run()
+
+		var b = make([]byte, 1)
+		for {
+			os.Stdin.Read(b)
+			if b[0] == ']' {
+				break
+			}
 		}
 		return
 	}
-
-	nc := make(chan serv.LogMsg)
-	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription")
-	if err != nil {
-		utils.ErrorLog("can't subscribe:", err)
-		return
-	}
-	defer destroySub(c, sub)
-
-	go printLogNotification(nc)
 
 	fmt.Println(helpStr)
 	console.Mystdin.Run()
@@ -316,4 +339,8 @@ func destroySub(c *rpc.Client, sub *rpc.ClientSubscription) {
 	var cleanResult interface{}
 	sub.Unsubscribe()
 	c.Call(&cleanResult, "sdslog_cleanUp")
+}
+
+func printExitMsg() {
+	fmt.Println("Press the right bracket ']' to exit")
 }

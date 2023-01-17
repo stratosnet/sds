@@ -1,8 +1,10 @@
 package httpserv
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 
@@ -137,7 +139,7 @@ func (hs *MyHTTPServ) MyRoute(url string, h funcMyHandler) {
 }
 
 // MyStart
-func (hs *MyHTTPServ) MyStart() {
+func (hs *MyHTTPServ) MyStart(ctx context.Context) {
 	mux := http.NewServeMux()
 	for url, handler := range hs.routeMap {
 		mux.Handle(url, handler)
@@ -145,5 +147,9 @@ func (hs *MyHTTPServ) MyStart() {
 	}
 	h := http.TimeoutHandler(mux, hs.timeout, "http time out!")
 	utils.Log("Start HTTP Server...")
-	http.ListenAndServe(":"+hs.port, h)
+	server := &http.Server{Addr: ":" + hs.port, Handler: h}
+	server.BaseContext = func(listener net.Listener) context.Context {
+		return ctx
+	}
+	server.ListenAndServe()
 }

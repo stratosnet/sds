@@ -144,11 +144,13 @@ Use this command in the `ppd terminal` command-line terminal:
 ```bash
 activate stakingAmount feeAmount gasAmount
 ```
->`stakingAmount` is the amount of uSTOS you want to stake. A basic amount would be 1000000000.
+> `stakingAmount` is the amount of token you want to stake. 1stos = 10^9gwei = 10^18wei.
 >
->`feeAmount` is the amount of uSTOS to pay as a fee for the activation transaction. 10000 would work. it will use default number if not provide
+>`feeAmount` is the amount of token to pay as a fee for the activation transaction. 10000wei would work. it will use
+> default number if not provide
 >
->`gasAmount` is the amount of gas to use for the transaction. 1000000 would be a safe number. it will use default number if not provide
+>`gasAmount` is the amount of gas to use for the transaction. 1000000wei would be a safe number. it will use default
+> number if not provide
 
 Resource node will start to receive tasks from meta nodes and thus gain mining rewards automatically after it has been activated successfully.
 
@@ -168,28 +170,35 @@ status
 ```shell
 updateStake stakeDelta fee gas isIncrStake 
 ```
-> `stakeDelta` is the absolute amount of difference between the original and the updated stake. It should be a positive integer, in the unit of `ustos`.
+
+> `stakeDelta` is the absolute amount of difference between the original and the updated stake. It should be a valid
+> token, in the unit of `stos`/`gwei`/`wei`.
 >
 > `isIncrStake` is a flag with `0` for decreasing the original stake and `1` for increasing the original stake.
 >
 > When a resource node is suspended, use this command to update its state and re-start mining by increasing its stake.
 
 ### Purchase Ozone
+
 Ozone is the unit of traffic used by SDS. Operations involving network traffic require ozone to be executed.  
 You can purchase ozone with the following command:
+
 ```bash
 prepay purchaseAmount feeAmount gasAmount
 ```
->`purchaseAmount` is the amount of uSTOS you want to spend to purchase ozone.
+
+> `purchaseAmount` is the amount of token you want to spend to purchase ozone.
 >
 > The other two parameters are the same as above.
 
 ### Query Ozone Balance of Resource Node's Wallet
+
 ```bash
 getoz WALLET_ADDRESS
 ```
 
 ### Upload a File
+
 ```bash
 put FILE_PATH
 ```

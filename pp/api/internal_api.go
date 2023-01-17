@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -38,37 +39,14 @@ type httpres struct {
 }
 
 // StartHTTPServ
-func StartHTTPServ() {
+func StartHTTPServ(ctx context.Context) {
 	httpServ := httpserv.MyNewHTTPServ(setting.Config.InternalPort)
-	httpServ.MyRoute("/walletList", getWalletList)
-	httpServ.MyRoute("/createWallet", createWallet)
-	httpServ.MyRoute("/importWallet", importWallet)
-	httpServ.MyRoute("/changePassword", changePassword)
-	httpServ.MyRoute("/getAllFile", getAllFile)
-	httpServ.MyRoute("/getShareLink", getAllShareLink)
-	httpServ.MyRoute("/downloadFile", downloadFile)
-	httpServ.MyRoute("/uploadFile", uploadFile)
-	httpServ.MyRoute("/deleteFile", deleteFile)
-	httpServ.MyRoute("/setConfig", setConfig)
-	httpServ.MyRoute("/getKeyStore", getKeyStore)
-	httpServ.MyRoute("/shareFile", shareFile)
-	httpServ.MyRoute("/downPause", downPause)
-	httpServ.MyRoute("/deleteShare", deleteShare)
-	httpServ.MyRoute("/getShareFile", getShareFile)
-	httpServ.MyRoute("/downloadCancel", downloadCancel)
-	httpServ.MyRoute("/upPause", upPause)
-	httpServ.MyRoute("/upCancel", upCancel)
-	httpServ.MyRoute("/upProgress", upProgress)
-	httpServ.MyRoute("/downProgress", downProgress)
-	httpServ.MyRoute("/closeHTTP", closeHTTP)
-	httpServ.MyRoute("/legal", legal)
-	httpServ.MyRoute("/changeName", changeName)
 	httpServ.MyRoute("/streamVideoStorageInfo/", streamVideoInfoCache)
 	httpServ.MyRoute("/streamVideo/", streamVideoP2P)
 	httpServ.MyRoute("/streamVideoStorageInfoHttp/", streamVideoInfoHttp)
 	httpServ.MyRoute("/streamVideoHttp/", streamVideoHttp)
 	httpServ.MyRoute("/clearStreamTask/", clearStreamTask)
-	httpServ.MyStart()
+	httpServ.MyStart(ctx)
 }
 
 // httprequest go

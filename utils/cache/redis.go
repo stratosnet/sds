@@ -3,9 +3,10 @@ package cache
 import (
 	"encoding/json"
 	"errors"
+	"time"
+
 	"github.com/go-redis/redis"
 	"github.com/stratosnet/sds/utils"
-	"time"
 )
 
 // Redis client
@@ -45,7 +46,12 @@ func (r *Redis) Set(key string, value interface{}, expire time.Duration) error {
 			utils.Log(err)
 			return err
 		}
-		return r.Client.Set(key, data, expire).Err()
+		err = r.Client.Set(key, data, expire).Err()
+		if err != nil {
+			utils.FatalLogfAndExit(1, "failed to store to redis: %v", err)
+			return err
+		}
+		return nil
 	}
 
 	return errors.New("key or value is nil")

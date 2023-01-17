@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"context"
 	"net"
 	"strings"
 
@@ -8,7 +9,7 @@ import (
 )
 
 // StartIPCEndpoint starts an IPC endpoint.
-func StartIPCEndpoint(ipcEndpoint string, apis []API) (net.Listener, *Server, error) {
+func StartIPCEndpoint(ipcEndpoint string, apis []API, ctx context.Context) (net.Listener, *Server, error) {
 	// Register all the APIs exposed by the services.
 	var (
 		handler    = NewServer()
@@ -31,6 +32,6 @@ func StartIPCEndpoint(ipcEndpoint string, apis []API) (net.Listener, *Server, er
 	if err != nil {
 		return nil, nil, err
 	}
-	go handler.ServeListener(listener)
+	go handler.ServeListener(listener, ctx)
 	return listener, handler, nil
 }

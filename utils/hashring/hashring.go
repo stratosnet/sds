@@ -18,15 +18,23 @@ import (
 
 // Node
 type Node struct {
-	ID   string
-	Host string
-	Rest string
-	Data *sync.Map
+	ID        string
+	Host      string
+	Rest      string
+	Data      *sync.Map
+	DiskUsage float64
 }
 
 // nodeKey
 func (n *Node) nodeKey() string {
 	return n.ID + "#" + n.Host
+}
+
+func (n *Node) SetDiskUsage(diskSize, freeDisk uint64) {
+	if diskSize <= 0 || freeDisk <= 0 {
+		n.DiskUsage = 1
+	}
+	n.DiskUsage = float64(diskSize-freeDisk) / float64(diskSize)
 }
 
 // Less of rbtree
@@ -79,9 +87,7 @@ func (r *HashRing) CalcIndex(key string) uint32 {
 
 // AddNode
 func (r *HashRing) AddNode(node *Node) {
-
 	r.Lock()
-
 	defer r.Unlock()
 
 	var numberOfNode uint32 = 1
@@ -97,9 +103,9 @@ func (r *HashRing) AddNode(node *Node) {
 
 	if _, exists := r.Nodes.Load(node.ID); !exists {
 		r.NodeCount++
+		r.NodeStatus.Store(node.ID, false)
 	}
 	r.Nodes.Store(node.ID, node)
-	r.NodeStatus.Store(node.ID, false)
 
 	r.NRing.Insert(node)
 }
@@ -132,7 +138,6 @@ func (r *HashRing) RemoveNode(nodeID string) bool {
 	r.NRing.Delete(node)
 
 	r.NodeCount--
-
 	return true
 }
 
@@ -155,6 +160,7 @@ func (r *HashRing) SetOffline(ID string) {
 	if online, ok := r.NodeStatus.Load(ID); ok && online.(bool) {
 		r.NodeStatus.Store(ID, false)
 		r.NodeOkCount--
+
 	}
 }
 
@@ -352,6 +358,13 @@ func (r *HashRing) TraversalNRing() {
 		fmt.Printf("Node %d => %s\n", utils.CalcCRC32([]byte(item.(*Node).ID)), item.(*Node).ID)
 		return true
 	})
+}
+
+func (r *HashRing) UpdateNodeDiskUsage(ID string, diskSize, freeDisk uint64) {
+	node := r.Node(ID)
+	if node != nil {
+		node.SetDiskUsage(diskSize, freeDisk)
+	}
 }
 
 // NewHashRing

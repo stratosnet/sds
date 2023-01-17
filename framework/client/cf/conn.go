@@ -16,6 +16,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/utils/cmem"
@@ -37,17 +38,29 @@ var (
 	isSpLatencyChecked   bool
 )
 
+const (
+	LOG_MODULE_START      = "start: "
+	LOG_MODULE_WRITELOOP  = "writeLoop: "
+	LOG_MODULE_READLOOP   = "readLoop: "
+	LOG_MODULE_HANDLELOOP = "handleLoop: "
+	LOG_MODULE_CLOSE      = "close: "
+)
+
 // MsgHandler
 type MsgHandler struct {
-	message msg.RelayMsgBuf
-	handler core.HandlerFunc
+	message   msg.RelayMsgBuf
+	handler   core.HandlerFunc
+	recvStart int64
 }
 
 type onConnectFunc func(core.WriteCloser) bool
 type onMessageFunc func(msg.RelayMsgBuf, core.WriteCloser)
 type onCloseFunc func(core.WriteCloser)
 type onErrorFunc func(core.WriteCloser)
-
+type ContextKV struct {
+	Key   interface{}
+	Value interface{}
+}
 type options struct {
 	onConnect  onConnectFunc
 	onMessage  onMessageFunc
@@ -60,10 +73,16 @@ type options struct {
 	minAppVer  uint16
 	p2pAddress string
 	serverPort uint16
+	contextkv  []ContextKV
 }
 
 // ClientOption client configuration
 type ClientOption func(*options)
+
+type WriteHook struct {
+	Message string
+	Fn      func(packetId, costTime int64)
+}
 
 // ClientConn
 type ClientConn struct {
@@ -98,22 +117,24 @@ type ClientConn struct {
 	is_active        bool
 	sharedKey        []byte // ECDH shared key derived during handshake
 	remoteP2pAddress string
+	writeHook        []WriteHook
+	encryptMessage   bool
 }
 
 // ReconnectOption
-func ReconnectOption() ClientOption {
+func ReconnectOption(rec bool) ClientOption {
 	return func(o *options) {
-		o.reconnect = true
+		o.reconnect = rec
 	}
 }
 
 // CreateClientConn
-func CreateClientConn(netid int64, c net.Conn, opt ...ClientOption) *ClientConn {
+func CreateClientConn(netid int64, addr string, opt ...ClientOption) *ClientConn {
 	var opts options
 	for _, o := range opt {
 		o(&opts)
 	}
-	return newClientConnWithOptions(netid, c, opts)
+	return newClientConnWithOptions(netid, addr, opts)
 }
 
 // MinAppVersionOption
@@ -158,23 +179,30 @@ func ServerPortOption(serverPort uint16) ClientOption {
 	}
 }
 
+// ContextKVOption
+func ContextKVOption(kv []ContextKV) ClientOption {
+	return func(o *options) {
+		o.contextkv = kv
+	}
+}
+
 // Mylog my
-func Mylog(b bool, v ...interface{}) {
+func Mylog(b bool, module string, v ...interface{}) {
 	if b {
-		utils.DetailLog(v...)
+		utils.DebugLogfWithCalldepth(5, "Client Conn: "+module+"%v", v...)
 	}
 }
 
 // client
-func newClientConnWithOptions(netid int64, c net.Conn, opts options) *ClientConn {
+func newClientConnWithOptions(netid int64, addr string, opts options) *ClientConn {
 	if opts.bufferSize == 0 {
-		opts.bufferSize = 100
+		opts.bufferSize = 200
 	}
+
 	cc := &ClientConn{
-		addr:             c.RemoteAddr().String(),
+		addr:             addr,
 		opts:             opts,
 		netid:            netid,
-		spbConn:          c,
 		once:             &sync.Once{},
 		wg:               &sync.WaitGroup{},
 		sendCh:           make(chan *msg.RelayMsgBuf, opts.bufferSize),
@@ -188,7 +216,11 @@ func newClientConnWithOptions(netid int64, c net.Conn, opts options) *ClientConn
 		is_active:        false,
 	}
 	cc.ctx, cc.cancel = context.WithCancel(context.Background())
-	cc.name = c.RemoteAddr().String()
+	for _, kv := range cc.opts.contextkv {
+		cc.ctx = context.WithValue(cc.ctx, kv.Key, kv.Value)
+	}
+
+	cc.name = cc.addr
 	cc.pending = []int64{}
 	return cc
 }
@@ -275,6 +307,12 @@ func (cc *ClientConn) ContextValue(k interface{}) interface{} {
 	return cc.ctx.Value(k)
 }
 
+func (cc *ClientConn) SetWriteHook(h []WriteHook) {
+	cc.mu.Lock()
+	cc.writeHook = h
+	cc.mu.Unlock()
+}
+
 func (cc *ClientConn) handshake() error {
 	// Set handshake timeout
 	if err := cc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.HandshakeTimeOut) * time.Second)); err != nil {
@@ -358,14 +396,30 @@ func (cc *ClientConn) handshake() error {
 
 // Start client starts readLoop, writeLoop, handleLoop
 func (cc *ClientConn) Start() {
-	err := cc.handshake()
+	cc.encryptMessage = true
+
+	tcpAddr, err := net.ResolveTCPAddr("tcp4", cc.addr)
 	if err != nil {
-		utils.ErrorLog("client conn handshake error", cc.spbConn.LocalAddr(), "->", cc.spbConn.RemoteAddr(), err)
-		cc.ClientClose()
+		Mylog(cc.opts.logOpen, LOG_MODULE_START, fmt.Sprintf("bad server address: %v, %v", cc.addr, err.Error()))
+		cc.ClientClose(false)
+		return
+	}
+	cc.spbConn, err = net.DialTCP("tcp", nil, tcpAddr)
+	if err != nil {
+		utils.DebugLogf("cc.spbConn:%p", cc.spbConn)
+		Mylog(cc.opts.logOpen, LOG_MODULE_START, fmt.Sprintf("failed to dial tcp: %v, %v", tcpAddr.String(), err.Error()))
+		cc.ClientClose(false)
+		return
+	}
+	metrics.ConnNumbers.WithLabelValues("client").Inc()
+	err = cc.handshake()
+	if err != nil {
+		Mylog(cc.opts.logOpen, LOG_MODULE_START, fmt.Sprintf("handshake error %v -> %v, %v", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), err.Error()))
+		cc.ClientClose(true)
 		return
 	}
 
-	Mylog(cc.opts.logOpen, fmt.Sprintf("client conn start %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
+	Mylog(cc.opts.logOpen, LOG_MODULE_START, fmt.Sprintf("start conn %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
 	onConnect := cc.opts.onConnect
 	if onConnect != nil {
 		onConnect(cc)
@@ -383,7 +437,7 @@ func (cc *ClientConn) Start() {
 
 		spLatencyCheckJobFunc = func() {
 			if !isSpLatencyChecked && spLatencyCheckHandler != nil {
-				cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, spLatencyCheckHandler}
+				cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, spLatencyCheckHandler, time.Now().UnixMilli()}
 				isSpLatencyChecked = true
 			}
 		}
@@ -413,10 +467,10 @@ func (cc *ClientConn) Start() {
 }
 
 // ClientClose Actively closes the client connection
-func (cc *ClientConn) ClientClose() {
+func (cc *ClientConn) ClientClose(closeLowLayerConn bool) {
 	cc.is_active = true
 	cc.once.Do(func() {
-		Mylog(cc.opts.logOpen, fmt.Sprintf("client close connection %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
+		Mylog(cc.opts.logOpen, LOG_MODULE_CLOSE, "forced close conn")
 
 		// callback on close
 		onClose := cc.opts.onClose
@@ -426,7 +480,11 @@ func (cc *ClientConn) ClientClose() {
 		}
 
 		// close net.Conn
-		cc.spbConn.Close()
+		if closeLowLayerConn {
+			cc.spbConn.Close()
+		}
+
+		metrics.ConnNumbers.WithLabelValues("client").Dec()
 
 		// cancel readLoop, writeLoop and handleLoop go-routines.
 		cc.mu.Lock()
@@ -454,8 +512,7 @@ func (cc *ClientConn) ClientClose() {
 // Close
 func (cc *ClientConn) Close() {
 	cc.once.Do(func() {
-		Mylog(cc.opts.logOpen, fmt.Sprintf("client close gracefully %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
-
+		Mylog(cc.opts.logOpen, LOG_MODULE_CLOSE, fmt.Sprintf("close conn gracefully %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
 		// callback on close
 		onClose := cc.opts.onClose
 		if onClose != nil {
@@ -463,7 +520,9 @@ func (cc *ClientConn) Close() {
 		}
 
 		// close net.Conn
-		cc.spbConn.Close()
+		if cc.spbConn != nil {
+			cc.spbConn.Close()
+		}
 
 		// cancel readLoop, writeLoop and handleLoop go-routines.
 		cc.mu.Lock()
@@ -491,17 +550,14 @@ func (cc *ClientConn) Close() {
 
 // reconnect
 func (cc *ClientConn) reconnect() {
-	var c net.Conn
-	var err error
-	c, err = net.Dial("tcp", cc.addr)
-	if err != nil {
-		if p := recover(); p != nil {
-			Mylog(cc.opts.logOpen, "net dial error", err)
-		}
-		return
-	}
-	*cc = *newClientConnWithOptions(cc.netid, c, cc.opts)
+	Mylog(cc.opts.logOpen, LOG_MODULE_START, fmt.Sprintf("reconnect to %v (%v)", cc.addr, cc.remoteP2pAddress))
+	*cc = *newClientConnWithOptions(cc.netid, cc.addr, cc.opts)
 	cc.Start()
+}
+
+// GetIsActive
+func (cc *ClientConn) GetIsActive() bool {
+	return cc.is_active
 }
 
 // Write ,
@@ -539,11 +595,11 @@ func (cc *ClientConn) reconnect() {
 // }
 
 // Write
-func (cc *ClientConn) Write(message *msg.RelayMsgBuf) error {
-	return asyncWrite(cc, message)
+func (cc *ClientConn) Write(message *msg.RelayMsgBuf, ctx context.Context) error {
+	return asyncWrite(cc, message, ctx)
 }
 
-func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf) (err error) {
+func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err error) {
 	if c == nil {
 		return errors.New("nil client connection")
 	}
@@ -558,7 +614,12 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf) (err error) {
 	)
 	sendCh = c.sendCh
 	msgH := make([]byte, utils.MsgHeaderLen)
-	reqId, _ := utils.NextSnowFakeId()
+	reqId := core.GetReqIdFromContext(ctx)
+	if reqId == 0 {
+		reqId, _ = utils.NextSnowFlakeId()
+		core.InheritRpcLoggerFromParentReqId(ctx, reqId)
+		core.InheritRemoteReqIdFromParentReqId(ctx, reqId)
+	}
 	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, msgH)
 	// msgData := make([]byte, utils.MessageBeatLen)
 	// copy((*msgData)[0:], msgH)
@@ -568,8 +629,10 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf) (err error) {
 	// 	MSGData: (*msgData)[0 : m.MSGHead.Len+utils.MsgHeaderLen],
 	// }
 	memory := &msg.RelayMsgBuf{
-		MSGHead: m.MSGHead,
+		MSGHead:  m.MSGHead,
+		PacketId: core.GetPacketIdFromContext(ctx),
 	}
+	memory.MSGHead.ReqId = reqId
 	memory.Alloc = cmem.Alloc(uintptr(m.MSGHead.Len + utils.MsgHeaderLen))
 	memory.MSGData = (*[1 << 30]byte)(unsafe.Pointer(memory.Alloc))[:m.MSGHead.Len+utils.MsgHeaderLen]
 	(*reflect.SliceHeader)(unsafe.Pointer(&memory.MSGData)).Cap = int(m.MSGHead.Len + utils.MsgHeaderLen)
@@ -588,7 +651,8 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf) (err error) {
 		return
 	}
 
-	core.TimoutMap.Store(reqId, m)
+	m.MSGHead.ReqId = reqId
+	core.TimoutMap.Store(ctx, reqId, m)
 
 	return
 }
@@ -609,13 +673,12 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	cDone = c.(*ClientConn).ctx.Done()
 	onMessage = c.(*ClientConn).opts.onMessage
 	handlerCh = c.(*ClientConn).handlerCh
-	Mylog(cc.opts.logOpen, "read start")
+
 	defer func() {
 		if p := recover(); p != nil {
-			Mylog(cc.opts.logOpen, "panics:", p, "\n")
+			Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "panics:", p, "\n")
 		}
 		wg.Done()
-		Mylog(cc.opts.logOpen, "client readLoop go-routine exited")
 		if !cc.is_active {
 			c.Close()
 		}
@@ -625,50 +688,54 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	var msgH header.MessageHead
 	i := 0
 	var lr utils.LimitRate
+	var headerBytes []byte
+	var n int
+	var err error
 
 	for {
 		select {
 		case <-cDone: // connection closed
-			Mylog(cc.opts.logOpen, "receiving cancel signal from conn")
+			Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "closes by conn")
 			return
 		default:
-			// Mylog(cc.opts.logOpen,"client read ok", msgH.Len)
+			recvStart := time.Now().UnixMilli()
 			if msgH.Len == 0 {
-				headerBytes, n, err := core.ReadEncryptedHeaderAndBody(spbConn, cc.sharedKey, utils.MessageBeatLen)
+				if cc.encryptMessage {
+					headerBytes, n, err = core.ReadEncryptedHeaderAndBody(spbConn, cc.sharedKey, utils.MessageBeatLen)
+				} else {
+					headerBytes, n, err = core.ReadNonEncryptedHeaderAndBody(spbConn, utils.MessageBeatLen)
+				}
+
 				cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
 				if err != nil {
-					if err == io.EOF {
-						return
-					}
-					utils.ErrorLog("client read err", err)
+					Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read header err: "+err.Error())
 					return
 				}
 
 				header.DecodeHeader(headerBytes, &msgH)
 				headerBytes = nil
-
 				if msgH.Version < cc.opts.minAppVer {
 					utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
 					continue
 				}
 
-				// Mylog(cc.opts.logOpen,"client msg size", msgH.Cmd)
+				//when header shows msg length = 0, directly handle msg
 				if msgH.Len == 0 {
 					handler := core.GetHandlerFunc(utils.ByteToString(msgH.Cmd))
 					if handler != nil {
-						handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
+						handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler, recvStart}
 					}
 				}
 			} else {
 				// start to process the msg if there is more than just the header to read
-				nonce, dataLen, n, err := core.ReadEncryptedHeader(spbConn)
+				nonce, dataLen, n, err := core.ReadEncryptionHeader(spbConn)
 				cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
 				if err != nil {
-					utils.ErrorLog("error when reading encrypted header for msg body", err)
+					Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read encrypted header err: "+err.Error())
 					return
 				}
 				if dataLen > utils.MessageBeatLen {
-					utils.ErrorLogf("encrypted message length over sized [%v], for cmd [%v]", dataLen, utils.ByteToString(msgH.Cmd))
+					Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read encrypted header err: over sized [%v], for cmd [%v]", dataLen, utils.ByteToString(msgH.Cmd))
 					return
 				}
 
@@ -682,7 +749,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					n, err = io.ReadFull(spbConn, msgBuf[i:i+onereadlen])
 					cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
 					if err != nil {
-						utils.ErrorLog("client body err", err)
+						Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read server body err: "+err.Error())
 						return
 					}
 					if cmd == header.RspDownloadSlice {
@@ -696,37 +763,41 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				}
 
 				if uint32(i) == dataLen {
-					decryptedBody, err := encryption.DecryptAES(cc.sharedKey, msgBuf[:dataLen], nonce)
-					if err != nil {
-						utils.ErrorLog("client body decryption err", err)
-						return
+					var plainBody []byte
+					if cc.encryptMessage {
+						plainBody, err = encryption.DecryptAES(cc.sharedKey, msgBuf[:dataLen], nonce)
+						if err != nil {
+							utils.ErrorLog("client body decryption err", err)
+							return
+						}
+					} else {
+						plainBody = msgBuf[:dataLen]
 					}
 
 					message = &msg.RelayMsgBuf{
 						MSGHead: msgH,
-						MSGData: decryptedBody,
+						MSGData: plainBody,
 					}
+
 					handler := core.GetHandlerFunc(cmd)
-					//Mylog(cc.opts.logOpen, "read handler:", handler, utils.ByteToString(msgH.Cmd))
 					if handler == nil {
 						if onMessage != nil {
-							Mylog(cc.opts.logOpen, "client message", message, " call onMessage()\n")
 							onMessage(*message, c.(core.WriteCloser))
 						} else {
-							// Mylog(cc.opts.logOpen,"client no handler or onMessage() found for message\n")
+							Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for message: "+utils.ByteToString(msgH.Cmd))
 						}
 						msgH.Len = 0
 						i = 0
 						msgBuf = nil
 						continue
 					}
-					handlerCh <- MsgHandler{*message, handler}
+					handlerCh <- MsgHandler{*message, handler, recvStart}
 					msgH.Len = 0
 					msgBuf = nil
 					i = 0
 
 				} else {
-					utils.ErrorLog("msgHeader length not match")
+					Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "msgH.Len doesn't match the size of data for message: "+utils.ByteToString(msgH.Cmd))
 					msgH.Len = 0
 					msgBuf = nil
 					return
@@ -750,7 +821,7 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	cDone = c.(*ClientConn).ctx.Done()
 	defer func() {
 		if p := recover(); p != nil {
-			Mylog(cc.opts.logOpen, "panics:", p, "\n")
+			Mylog(cc.opts.logOpen, LOG_MODULE_WRITELOOP, fmt.Sprintf("panics: %v", p))
 		}
 		// OuterFor:
 		// 	for {
@@ -786,7 +857,7 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 		// 		}
 		// 	}
 		wg.Done()
-		Mylog(cc.opts.logOpen, "writeLoop go-routine exited")
+
 		if !cc.is_active {
 			c.Close()
 		}
@@ -795,12 +866,12 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-cDone: // connection closed
-			Mylog(cc.opts.logOpen, "receiving cancel signal from conn")
+			Mylog(cc.opts.logOpen, LOG_MODULE_WRITELOOP, "closes by conn")
 			return
 		case packet = <-sendCh:
 			if packet != nil {
 				if err := cc.writePacket(packet); err != nil {
-					utils.ErrorLog(err)
+					Mylog(cc.opts.logOpen, LOG_MODULE_WRITELOOP, "write packet err: "+err.Error())
 					return
 				}
 				packet = nil
@@ -811,36 +882,55 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 
 func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 	var lr utils.LimitRate
+	var encodedHeader []byte
+	var encodedData []byte
+	var err error
 	var onereadlen = 1024
 	var n int
-	// Mylog(cc.opts.logOpen, "write header", packet.MSGData[:16])
-	// Mylog(cc.opts.logOpen, "write body", packet.MSGData[16:])
+
 	cmd := utils.ByteToString(packet.MSGHead.Cmd)
 
-	// Encrypt and write message header
-	encryptedHeader, err := core.EncryptAndPack(cc.sharedKey, packet.MSGData[:utils.MsgHeaderLen])
-	if err != nil {
-		return errors.Wrap(err, "client cannot encrypt header")
+	// pack the header
+	if cc.encryptMessage {
+		// Encrypt and write message header
+		encodedHeader, err = core.EncryptAndPack(cc.sharedKey, packet.MSGData[:utils.MsgHeaderLen])
+		if err != nil {
+			return errors.Wrap(err, "client cannot encrypt header")
+		}
+	} else {
+		encodedHeader, err = core.Pack(packet.MSGData[:utils.MsgHeaderLen])
+		if err != nil {
+			return errors.Wrap(err, "client cannot pack header")
+		}
 	}
+
 	//_ = cc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
-	if err = core.WriteFull(cc.spbConn, encryptedHeader); err != nil {
+	if err = core.WriteFull(cc.spbConn, encodedHeader); err != nil {
 		return errors.Wrap(err, "client write err")
 	}
-	cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(len(encryptedHeader)))
+	cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(len(encodedHeader)))
 
-	// Encrypt and write message data
-	encryptedData, err := core.EncryptAndPack(cc.sharedKey, packet.MSGData[utils.MsgHeaderLen:])
-	if err != nil {
-		return errors.Wrap(err, "server cannot encrypt msg")
+	// pack the message data
+	if cc.encryptMessage {
+		encodedData, err = core.EncryptAndPack(cc.sharedKey, packet.MSGData[utils.MsgHeaderLen:])
+		if err != nil {
+			return errors.Wrap(err, "server cannot encrypt msg")
+		}
+	} else {
+		encodedData, err = core.Pack(packet.MSGData[utils.MsgHeaderLen:])
+		if err != nil {
+			return errors.Wrap(err, "server cannot pack msg")
+		}
 	}
-	for i := 0; i < len(encryptedData); i = i + n {
+	writeStart := time.Now()
+	for i := 0; i < len(encodedData); i = i + n {
 		// Mylog(cc.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
-		if len(encryptedData)-i < 1024 {
-			onereadlen = len(encryptedData) - i
+		if len(encodedData)-i < 1024 {
+			onereadlen = len(encodedData) - i
 			// Mylog(cc.opts.logOpen,"onereadlen:", onereadlen)
 		}
 		//_ = cc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
-		n, err = cc.spbConn.Write(encryptedData[i : i+onereadlen])
+		n, err = cc.spbConn.Write(encodedData[i : i+onereadlen])
 		cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(n))
 		// Mylog(cc.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
 		// Mylog(cc.opts.logOpen,"i+onereadlen:", i+onereadlen)
@@ -856,6 +946,34 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 			}
 		}
 	}
+	writeEnd := time.Now()
+	costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
+
+	for _, c := range cc.writeHook {
+		if cmd == c.Message && c.Fn != nil {
+			c.Fn(packet.PacketId, costTime)
+		}
+	}
+	cmem.Free(packet.Alloc)
+	return nil
+}
+
+func (cc *ClientConn) writePacketNoEncrypt(packet *msg.RelayMsgBuf) error {
+	var onereadlen = 1024
+	var n int
+	//cmd := utils.ByteToString(packet.MSGHead.Cmd)
+	for i := 0; i < len(packet.MSGData); i = i + n {
+		if len(packet.MSGData)-i < 1024 {
+			onereadlen = len(packet.MSGData) - i
+		}
+		n, err := cc.spbConn.Write(packet.MSGData[i : i+onereadlen])
+		cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(n))
+		if err != nil {
+			utils.ErrorLog("client body err", err)
+			return err
+		}
+	}
+
 	cmem.Free(packet.Alloc)
 	return nil
 }
@@ -874,13 +992,12 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	handlerCh = c.(*ClientConn).handlerCh
 	netID = c.(*ClientConn).netid
 	ctx = c.(*ClientConn).ctx
-
+	var log string = "handler start"
 	defer func() {
 		if p := recover(); p != nil {
-			Mylog(cc.opts.logOpen, "panics:", p, "\n")
+			Mylog(cc.opts.logOpen, LOG_MODULE_HANDLELOOP, "panic when handle message ("+log+") panic info: ", p)
 		}
 		wg.Done()
-		Mylog(cc.opts.logOpen, "handleLoop go-routine exited")
 		if !cc.is_active {
 			c.Close()
 		}
@@ -889,12 +1006,17 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-cDone: // connection closed
-			Mylog(cc.opts.logOpen, "receiving cancel signal from conn")
+			Mylog(cc.opts.logOpen, LOG_MODULE_HANDLELOOP, "closes by conn")
 			return
 		case msgHandler := <-handlerCh:
-			msg, handler := msgHandler.message, msgHandler.handler
+			msg, handler, recvStart := msgHandler.message, msgHandler.handler, msgHandler.recvStart
 			core.TimoutMap.DeleteByRspMsg(&msg)
-			handler(core.CreateContextWithNetID(core.CreateContextWithMessage(ctx, &msg), netID), c)
+			ctxWithParentReqId := core.CreateContextWithParentReqId(ctx, msg.MSGHead.ReqId)
+			ctxWithRecvStart := core.CreateContextWithRecvStartTime(ctxWithParentReqId, recvStart)
+			ctx = core.CreateContextWithMessage(ctxWithRecvStart, &msg)
+			ctx = core.CreateContextWithNetID(ctx, netID)
+			log = utils.ByteToString(msgHandler.message.MSGHead.Cmd)
+			handler(ctx, c)
 		}
 	}
 }

@@ -15,14 +15,13 @@ type MessageHead struct {
 }
 
 // MakeMessageHeader
-func MakeMessageHeader(tag int16, version uint16, length uint32, cmd string, reqId int64) MessageHead {
+func MakeMessageHeader(tag int16, version uint16, length uint32, cmd string) MessageHead {
 	var cmdByte = []byte(cmd)[:8]
 	return MessageHead{
 		Tag:     tag,
 		Len:     length,
 		Cmd:     cmdByte,
 		Version: version,
-		ReqId:   reqId,
 	}
 }
 
@@ -38,12 +37,14 @@ func GetMessageHeader(tag int16, varsion uint16, length uint32, cmd string, reqI
 
 //cmd, 8 bytes string, exceeded will be truncate
 const (
-	ReqGetPPList   = "ReqGPPL" // request to get pp list
-	RspGetPPList   = "RspGPPL" // response to get pp list
-	ReqGetSPList   = "ReqGSPL" // request to get sp list
-	RspGetSPList   = "RspGSPL" // response to get sp list
-	ReqGetPPStatus = "ReqGPPS" // request to get pp status
-	RspGetPPStatus = "RspGPPS" // response to get pp status
+	ReqGetPPList          = "ReqGPPL" // request to get pp list
+	RspGetPPList          = "RspGPPL" // response to get pp list
+	ReqGetSPList          = "ReqGSPL" // request to get sp list
+	RspGetSPList          = "RspGSPL" // response to get sp list
+	ReqGetPPStatus        = "ReqGPPS" // request to get pp status
+	RspGetPPStatus        = "RspGPPS" // response to get pp status
+	ReqGetPPDowngradeInfo = "ReqGPPD" // request to get pp downgrade information
+	RspGetPPDowngradeInfo = "RspGPPD" // response to get pp downgrade information
 
 	ReqGetWalletOz = "ReqGOz" // request to get wallet ozone
 	RspGetWalletOz = "RspGOz" // response to get wallet ozone
@@ -80,11 +81,18 @@ const (
 	ReqMining = "ReqMin" // request to mining
 	RspMining = "RspMin" //  response to mining
 
+	ReqStartMaintenance = "ReqStMtn"
+	RspStartMaintenance = "RspStMtn"
+	ReqStopMaintenance  = "ReqSpMtn"
+	RspStopMaintenance  = "RspSpMtn"
+
 	// upload
 	ReqUploadFile              = "ReqUpl"
 	RspUploadFile              = "RspUpl"
 	ReqUploadFileSlice         = "ReqUpLFS"
 	RspUploadFileSlice         = "RspUpLFS"
+	ReqUploadSlicesWrong       = "ReqUSW"
+	RspUploadSlicesWrong       = "RspUSW"
 	ReqReportUploadSliceResult = "ReqUFR"
 	RspReportUploadSliceResult = "RspUFR"
 	UploadSpeedOfProgress      = "USOP"
@@ -121,27 +129,17 @@ const (
 	ReqRegisterNewPP = "ReqRgNPP"
 	RspRegisterNewPP = "RspRgNPP"
 
-	/* transfer commented out for backup logic redesign QB-897
-	ReqTransferNotice         = "ReqTrNot"
-	RspTransferNotice         = "RspTrNot"
-	ReqValidateTransferCer    = "ReqVTCer" // request to validate transfer certificate PP->SP
-	RspValidateTransferCer    = "RspVTCer" // response to validate transfer certificate SP->PP
-	ReqReportTransferResult = "ReqTrRep"
-	RspReportTransferResult = "RspTrRep"
-	*/
-
-	// backup
+	// backup and transfer
 	ReqFileSliceBackupNotice   = "ReqFBNot"
 	ReqTransferDownload        = "ReqTdl"
 	RspTransferDownload        = "RspTdl"
+	ReqTransferDownloadWrong   = "ReqTDW"
+	RspTransferDownloadWrong   = "RspTDW"
 	RspTransferDownloadResult  = "RspTdlR"
 	ReqReportBackupSliceResult = "ReqRBSR"
 	RspReportBackupSliceResult = "RspRBSR"
 	ReqFileBackupStatus        = "ReqFBSt"
 	RspFileBackupStatus        = "RspFBSt"
-
-	//TODO change to report to SP
-	ReqReportTaskBP = "ReqRTBP" // report to BP
 
 	ReqShareLink    = "ReqSL"
 	RspShareLink    = "RspSL"
@@ -153,11 +151,10 @@ const (
 	RspGetShareFile = "RspGSF"
 
 	// heartbeat
-	ReqLatencyCheck = "ReqLatencyCheck"
-	RspLatencyCheck = "RspLatencyCheck"
+	ReqLatencyCheck = "ReqLaten"
+	RspLatencyCheck = "RspLaten"
 	// test sp latency
-	ReqSpLatencyCheck = "ReqSpLatencyCheck"
-
+	ReqSpLatencyCheck = "ReqSpLat"
 	// report node status
 	ReqReportNodeStatus = "ReqRNS"
 	RspReportNodeStatus = "RspRNS"
@@ -165,7 +162,8 @@ const (
 	ReqTransferBLSSignature = "ReqTrBLS"
 	RspTransferBLSSignature = "RspTrBLS"
 
-	RspBadVersion = "RspBdVer"
+	RspBadVersion         = "RspBdVer"
+	RspSpUnderMaintenance = "RspMtnc"
 )
 
 func DecodeHeader(packet []byte, msgH *MessageHead) {
@@ -173,5 +171,5 @@ func DecodeHeader(packet []byte, msgH *MessageHead) {
 	msgH.Len = utils.BytesToUInt32(packet[2:6])
 	msgH.Cmd = packet[6:14]
 	msgH.ReqId = int64(utils.BytesToUInt64(packet[14:22]))
-	msgH.Version = utils.BytesToUint16(packet[22:])
+	msgH.Version = utils.BytesToUint16(packet[22:24])
 }
