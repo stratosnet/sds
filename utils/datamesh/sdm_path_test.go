@@ -5,18 +5,18 @@ import (
 	"testing"
 )
 
-func TestDataMashIdFromString(t *testing.T) {
+func TestDataMeshIdFromString(t *testing.T) {
 	type args struct {
 		idString string
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    *DataMashId
+		want    *DataMeshId
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{name: "1", args: args{"sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/v05ahm52iirbq55177uii2bmbsmmcemnjtm740s8"}, want: &DataMashId{
+		{name: "1", args: args{"sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/v05ahm52iirbq55177uii2bmbsmmcemnjtm740s8"}, want: &DataMeshId{
 			Owner: "st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg",
 			Hash:  "v05ahm52iirbq55177uii2bmbsmmcemnjtm740s8",
 		}, wantErr: false},
@@ -27,19 +27,19 @@ func TestDataMashIdFromString(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := DataMashIdFromString(tt.args.idString)
+			got, err := DataMeshIdFromString(tt.args.idString)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("DataMashIdFromString() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("DataMeshIdFromString() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("DataMashIdFromString() got = %v, want %v", got, tt.want)
+				t.Errorf("DataMeshIdFromString() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestDataMashId_String(t *testing.T) {
+func TestDataMeshId_String(t *testing.T) {
 	type fields struct {
 		Owner string
 		Hash  string
@@ -57,7 +57,7 @@ func TestDataMashId_String(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := DataMashId{
+			d := DataMeshId{
 				Owner: tt.fields.Owner,
 				Hash:  tt.fields.Hash,
 			}

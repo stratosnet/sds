@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -14,7 +15,7 @@ var (
 )
 
 type TimeoutHandler interface {
-	Handle(message *msg.RelayMsgBuf)
+	Handle(ctx context.Context, message *msg.RelayMsgBuf)
 	GetDuration() time.Duration
 	GetTimeoutMsg(reqMessage *msg.RelayMsgBuf) *msg.RelayMsgBuf
 	CanDelete(rspMessage *msg.RelayMsgBuf) bool
@@ -40,7 +41,7 @@ func newTimeoutMap() *timeoutMap {
 	}
 }
 
-func (m *timeoutMap) Store(reqId int64, reqMsg *msg.RelayMsgBuf) {
+func (m *timeoutMap) Store(ctx context.Context, reqId int64, reqMsg *msg.RelayMsgBuf) {
 	handler, ok := TimeoutRegistry[utils.ByteToString(reqMsg.MSGHead.Cmd)]
 	if !ok {
 		return
@@ -61,7 +62,7 @@ func (m *timeoutMap) Store(reqId int64, reqMsg *msg.RelayMsgBuf) {
 				return
 			}
 		case <-time.After(handler.GetDuration()):
-			go handler.Handle(reqMsg)
+			go handler.Handle(ctx, reqMsg)
 		}
 		m.myMap.Delete(reqId)
 	}()

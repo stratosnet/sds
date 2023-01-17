@@ -40,43 +40,51 @@ func ParseFirstMessage(data []byte) (string, uint16, uint32, error) {
 }
 
 func EncryptAndPack(privKey, plaintext []byte) ([]byte, error) {
-	header := make([]byte, EncryptedHeaderSize) // Contains nonce and encrypted data length
-	if _, err := rand.Read(header[:EncryptedNonceSize]); err != nil {
+	header := make([]byte, EncryptionHeaderSize) // Contains nonce and encrypted data length
+	if _, err := rand.Read(header[:EncryptionNonceSize]); err != nil {
 		return nil, err
 	}
-	nonce := binary.BigEndian.Uint64(header[:EncryptedNonceSize])
+	nonce := binary.BigEndian.Uint64(header[:EncryptionNonceSize])
 
 	ciphertext, err := encryption.EncryptAES(privKey, plaintext, nonce)
 	if err != nil {
 		return nil, err
 	}
-	binary.BigEndian.PutUint32(header[EncryptedNonceSize:], uint32(len(ciphertext))) // Add encrypted data length
+	binary.BigEndian.PutUint32(header[EncryptionNonceSize:], uint32(len(ciphertext))) // Add encrypted data length
 
 	return append(header, ciphertext...), nil
 }
 
-func UnpackEncryptedHeader(data []byte) (uint64, uint32) {
-	if len(data) < EncryptedHeaderSize {
+func Pack(plaintext []byte) ([]byte, error) {
+	// set nonce to 0 when message is non-encrypted packed
+	header := make([]byte, EncryptionHeaderSize)
+	binary.BigEndian.PutUint64(header[:EncryptionNonceSize], uint64(0))
+	binary.BigEndian.PutUint32(header[EncryptionNonceSize:], uint32(len(plaintext))) // Add encrypted data length
+	return append(header, plaintext...), nil
+}
+
+func UnpackEncryptionHeader(data []byte) (uint64, uint32) {
+	if len(data) < EncryptionHeaderSize {
 		return 0, 0
 	}
 
-	nonce := binary.BigEndian.Uint64(data[:EncryptedNonceSize])
-	length := binary.BigEndian.Uint32(data[EncryptedNonceSize:])
+	nonce := binary.BigEndian.Uint64(data[:EncryptionNonceSize])
+	length := binary.BigEndian.Uint32(data[EncryptionNonceSize:])
 
 	return nonce, length
 }
 
-func ReadEncryptedHeader(c net.Conn) (nonce uint64, dataLen uint32, bytesRead int, err error) {
-	buffer := make([]byte, EncryptedHeaderSize)
+func ReadEncryptionHeader(c net.Conn) (nonce uint64, dataLen uint32, bytesRead int, err error) {
+	buffer := make([]byte, EncryptionHeaderSize)
 	if bytesRead, err = io.ReadFull(c, buffer); err != nil {
 		return 0, 0, bytesRead, err
 	}
-	nonce, dataLen = UnpackEncryptedHeader(buffer)
+	nonce, dataLen = UnpackEncryptionHeader(buffer)
 	return nonce, dataLen, bytesRead, nil
 }
 
 func ReadEncryptedHeaderAndBody(c net.Conn, privKey []byte, maxBodySize int) (plaintext []byte, bytesRead int, err error) {
-	nonce, dataLen, bytesRead, err := ReadEncryptedHeader(c)
+	nonce, dataLen, bytesRead, err := ReadEncryptionHeader(c)
 	if err != nil {
 		return nil, bytesRead, err
 	}
@@ -93,4 +101,23 @@ func ReadEncryptedHeaderAndBody(c net.Conn, privKey []byte, maxBodySize int) (pl
 
 	plaintext, err = encryption.DecryptAES(privKey, buffer, nonce)
 	return plaintext, bytesRead, err
+}
+
+func ReadNonEncryptedHeaderAndBody(c net.Conn, maxBodySize int) (plaintext []byte, bytesRead int, err error) {
+	_, dataLen, bytesRead, err := ReadEncryptionHeader(c)
+	if err != nil {
+		return nil, bytesRead, err
+	}
+	if dataLen > uint32(maxBodySize) {
+		return nil, bytesRead, errors.Errorf("message body is over sized [%v]", dataLen)
+	}
+
+	buffer := make([]byte, dataLen)
+	n, err := io.ReadFull(c, buffer)
+	bytesRead += n
+	if err != nil {
+		return nil, bytesRead, err
+	}
+
+	return buffer, bytesRead, err
 }

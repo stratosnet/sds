@@ -2,9 +2,13 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"net"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/stratosnet/sds/metrics"
 
 	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/msg"
@@ -24,7 +28,10 @@ type onConnectFunc func(WriteCloser) bool
 type onMessageFunc func(msg.RelayMsgBuf, WriteCloser)
 type onCloseFunc func(WriteCloser)
 type onErrorFunc func(WriteCloser)
-
+type ContextKV struct {
+	Key   interface{}
+	Value interface{}
+}
 type options struct {
 	onConnect      onConnectFunc
 	onMessage      onMessageFunc
@@ -36,6 +43,7 @@ type options struct {
 	maxflow        int
 	minAppVersion  uint16
 	p2pAddress     string
+	contextkv      []ContextKV
 }
 
 // ServerOption
@@ -56,10 +64,19 @@ type Server struct {
 	volRecOpts volRecOpts
 }
 
+const (
+	LOG_MODULE_SERVER     = "server: "
+	LOG_MODULE_START      = "start: "
+	LOG_MODULE_WRITELOOP  = "writeLoop: "
+	LOG_MODULE_READLOOP   = "readLoop: "
+	LOG_MODULE_HANDLELOOP = "handleLoop: "
+	LOG_MODULE_CLOSE      = "close: "
+)
+
 // Mylog
-func Mylog(b bool, v ...interface{}) {
+func Mylog(b bool, module string, v ...interface{}) {
 	if b {
-		utils.DebugLog(v...)
+		utils.DebugLogfWithCalldepth(5, "Server Conn: "+module+"%v", v...)
 	}
 }
 
@@ -81,6 +98,9 @@ func CreateServer(opt ...ServerOption) *Server {
 		goAtom: utils.CreateAtomicInt64(0),
 	}
 	s.ctx, s.cancel = context.WithCancel(context.Background())
+	for _, kv := range s.opts.contextkv {
+		s.ctx = context.WithValue(s.ctx, kv.Key, kv.Value)
+	}
 	return s
 }
 
@@ -94,6 +114,9 @@ func (s *Server) SetVolRecOptions(opt ...ServerVolRecOption) {
 
 // ConnsSize
 func (s *Server) ConnsSize() int {
+	if s.conns == nil {
+		return 0
+	}
 	return int(s.conns.Count())
 }
 
@@ -148,7 +171,7 @@ func (s *Server) Start(l net.Listener) error {
 		s.mu.Unlock()
 	}()
 
-	Mylog(s.opts.logOpen, "server start, net", l.Addr().Network(), "addr", l.Addr().String(), "\n")
+	Mylog(s.opts.logOpen, LOG_MODULE_SERVER, fmt.Sprintf("server start, net %v addr %v ", l.Addr().Network(), l.Addr().String()))
 
 	onStartLog := s.volRecOpts.onStartLog
 	if onStartLog != nil {
@@ -197,6 +220,8 @@ func (s *Server) Start(l net.Listener) error {
 		netid := netID.GetOldAndIncrement()
 		sc := CreateServerConn(netid, s, spbConn)
 		sc.SetConnName(sc.spbConn.RemoteAddr().String())
+		metrics.ConnReconnection.WithLabelValues(strings.Split(sc.GetName(), ":")[0]).Inc()
+		metrics.ConnNumbers.WithLabelValues("server").Inc()
 
 		// s.mu.Lock()
 		// if s.sched != nil {
@@ -212,7 +237,7 @@ func (s *Server) Start(l net.Listener) error {
 			sc.Start()
 		}()
 
-		Mylog(s.opts.logOpen, "accepted client", sc.GetName(), "id:", netid, "total:", s.ConnsSize(), "\n")
+		Mylog(s.opts.logOpen, LOG_MODULE_SERVER, fmt.Sprintf("accepted client %v id: %v total: %v", sc.GetName(), netid, s.ConnsSize()))
 		// s.conns.Range(func(k, v interface{}) bool {
 		// 	i := k.(int64)
 		// 	c := v.(*ServerConn)
@@ -231,7 +256,7 @@ func (s *Server) Stop() {
 
 	for l := range listeners {
 		l.Close()
-		Mylog(s.opts.logOpen, "stop accepting at address \n", l.Addr().String())
+		Mylog(s.opts.logOpen, LOG_MODULE_SERVER, fmt.Sprintf("stop accepting at address %v", l.Addr().String()))
 	}
 
 	// close all connections
@@ -247,7 +272,7 @@ func (s *Server) Stop() {
 	for _, c := range conns {
 		c.spbConn.Close()
 	}
-	Mylog(s.opts.logOpen, "closed connection cnt: ", len(conns))
+	Mylog(s.opts.logOpen, LOG_MODULE_SERVER, fmt.Sprintf("closed connection cnt: %v", len(conns)))
 
 	s.mu.Lock()
 	s.cancel()
@@ -305,6 +330,13 @@ func MaxConnectionsOption(indicator int) ServerOption {
 	}
 }
 
+// ContextKVOption
+func ContextKVOption(kv []ContextKV) ServerOption {
+	return func(o *options) {
+		o.contextkv = kv
+	}
+}
+
 // MaxFlowOption
 func MaxFlowOption(indicator int) ServerOption {
 	return func(o *options) {
@@ -331,20 +363,20 @@ func P2pAddressOption(p2pAddress string) ServerOption {
 }
 
 // Unicast
-func (s *Server) Unicast(netid int64, msg *msg.RelayMsgBuf) error {
+func (s *Server) Unicast(ctx context.Context, netid int64, msg *msg.RelayMsgBuf) error {
 	v, ok := s.conns.Load(netid)
 	if ok {
-		return v.Write(msg)
+		return v.Write(msg, ctx)
 	}
-	Mylog(s.opts.logOpen, "conn id not found", msg)
+	Mylog(s.opts.logOpen, LOG_MODULE_WRITELOOP, fmt.Sprintf("conn id not found: %v", msg))
 	return nil
 }
 
 // Broadcast
 func (s *Server) Broadcast(msg *msg.RelayMsgBuf) {
 	s.conns.Range(func(id int64, conn *ServerConn) bool {
-		if err := conn.Write(msg); err != nil {
-			Mylog(s.opts.logOpen, "broadcast error:", err, "conn id:", id)
+		if err := conn.Write(msg, context.Background()); err != nil {
+			Mylog(s.opts.logOpen, LOG_MODULE_WRITELOOP, fmt.Sprintf("broadcast error: %v conn id:%v", err.Error(), id))
 			return false
 		}
 		return true

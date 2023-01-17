@@ -2,15 +2,18 @@ package secp256k1
 
 import (
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/cosmos/cosmos-sdk/crypto/hd"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/pkg/errors"
+
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+
 	"github.com/stratosnet/sds/utils/types"
+
+	"github.com/stratosnet/stratos-chain/crypto/ethsecp256k1"
+	"github.com/stratosnet/stratos-chain/crypto/hd"
 )
 
 func PrivKeyToSdkPrivKey(privKey []byte) cryptotypes.PrivKey {
-	return hd.Secp256k1.Generate()(privKey)
+	return hd.EthSecp256k1.Generate()(privKey)
 }
 
 // PrivKeyToPubKey returns the public key associated with the given private key
@@ -30,7 +33,7 @@ func PubKeyToSdkPubKey(pubKey []byte) (cryptotypes.PubKey, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid secp256k1 public key")
 	}
-	return &secp256k1.PubKey{Key: ecdsaPubKey.SerializeCompressed()}, nil
+	return &ethsecp256k1.PubKey{Key: ecdsaPubKey.SerializeCompressed()}, nil
 }
 
 func PubKeyToAddress(pubKey []byte) (*types.Address, error) {

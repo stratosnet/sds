@@ -25,69 +25,74 @@ func init() {
 }
 
 func TestCreateWallet(t *testing.T) {
-	t.SkipNow() // Comment this line out to run the method and create a wallet
-	password := "aaa"
+	t.SkipNow() // Comment this line out to run the method and create wallets
+	for i := 0; i < 1; i++ {
+		password := "aaa"
 
-	mnemonic, err := NewMnemonic()
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	addr, err := CreateWallet("keys", "", password, stchaintypes.StratosBech32Prefix, mnemonic, "", "m/44'/606'/0'/0/0")
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+		mnemonic, err := NewMnemonic()
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		addr, err := CreateWallet("keys", "", password, stchaintypes.StratosBech32Prefix, mnemonic, "", "m/44'/606'/0'/0/0")
+		if err != nil {
+			t.Fatal(err.Error())
+		}
 
-	bechAddr, err := addr.WalletAddressToBech()
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+		bechAddr, err := addr.WalletAddressToBech()
+		if err != nil {
+			t.Fatal(err.Error())
+		}
 
-	keyjson, err := ioutil.ReadFile("keys/" + bechAddr + ".json")
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	key, err := DecryptKey(keyjson, password)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+		keyjson, err := ioutil.ReadFile("keys/" + bechAddr + ".json")
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		key, err := DecryptKey(keyjson, password)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
 
-	sdkPubkey := utilsecp256k1.PrivKeyToPubKey(key.PrivateKey)
-	bechPub, err := bech32.ConvertAndEncode(stchaintypes.AccountPubKeyPrefix, sdkPubkey.Bytes())
-	if err != nil {
-		t.Fatal(err.Error())
+		sdkPubkey := utilsecp256k1.PrivKeyToPubKey(key.PrivateKey)
+		bechPub, err := bech32.ConvertAndEncode(stchaintypes.AccountPubKeyPrefix, sdkPubkey.Bytes())
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		fmt.Printf("Address: %v  PublicKey: %v  Mnemonic: %v\n", bechAddr, bechPub, key.Mnemonic)
 	}
-	fmt.Printf("Address: %v  PublicKey: %v  Mnemonic: %v\n", bechAddr, bechPub, key.Mnemonic)
 }
 
 func TestCreateP2PKey(t *testing.T) {
-	t.SkipNow() // Comment this line out to run the method and create a P2PKey
-	password := "aaa"
+	t.SkipNow() // Comment this line out to run the method and create P2PKeys
 
-	addr, err := CreateP2PKey("keys", "", password, stchaintypes.SdsNodeP2PAddressPrefix)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+	for i := 0; i < 1; i++ {
+		password := "aaa"
 
-	bechAddr, err := addr.P2pAddressToBech()
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+		addr, err := CreateP2PKey("keys", "", password, stchaintypes.SdsNodeP2PAddressPrefix)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
 
-	keyjson, err := ioutil.ReadFile("keys/" + bechAddr + ".json")
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	key, err := DecryptKey(keyjson, password)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
+		bechAddr, err := addr.P2pAddressToBech()
+		if err != nil {
+			t.Fatal(err.Error())
+		}
 
-	pubKey := ed25519.PrivKeyBytesToPubKey(key.PrivateKey)
-	bechPub, err := bech32.ConvertAndEncode(stchaintypes.SdsNodeP2PPubkeyPrefix, pubKey.Bytes())
-	if err != nil {
-		t.Fatal(err.Error())
+		keyjson, err := ioutil.ReadFile("keys/" + bechAddr + ".json")
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		key, err := DecryptKey(keyjson, password)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+
+		pubKey := ed25519.PrivKeyBytesToPubKey(key.PrivateKey)
+		bechPub, err := bech32.ConvertAndEncode(stchaintypes.SdsNodeP2PPubkeyPrefix, pubKey.Bytes())
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		fmt.Printf("Address: %v  PublicKey: %v\n", bechAddr, bechPub)
 	}
-	fmt.Printf("Address: %v  PublicKey: %v\n", bechAddr, bechPub)
 }
 
 func TestDecryptP2PKeyJson(t *testing.T) {

@@ -1,0 +1,33 @@
+[version]
+app_ver = 7
+min_app_ver = 7
+
+[sds]
+network_address = "127.0.0.1"
+api_port = "28081"
+client_port = "28888"
+websocket_port = "28889"
+[sds.connection_retries]
+max = 100
+sleep_duration = 3000 # milliseconds
+
+[stratos_chain]
+rest_server = "http://127.0.0.1:1317"
+websocket_server = "127.0.0.1:26657"
+[stratos_chain.connection_retries]
+max = 100
+sleep_duration = 3000 # milliseconds
+[stratos_chain.broadcast]
+channel_size = 2000
+max_msg_per_tx = 250
+
+[blockchain_info]
+chain_id = "testchain"
+
+[blockchain_info.transactions]
+fee = "1000000000000000wei"
+gas_adjustment = 1.3
+
+[keys]
+wallet_path = "config/st1rwnmgk0x2n2wry876dkxq2hhcce8k7kzspppax.json"
+wallet_password = "aaa"

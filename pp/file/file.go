@@ -1,6 +1,7 @@
 package file
 
 import (
+	"context"
 	"encoding/csv"
 	"io/ioutil"
 	"os"
@@ -9,7 +10,9 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
@@ -19,7 +22,6 @@ var wmutex sync.RWMutex
 
 // key(fileHash) : value(file path)
 var fileMap = make(map[string]string)
-
 var infoMutex sync.Mutex
 
 // GetFileInfo
@@ -109,34 +111,34 @@ func GetSliceSize(sliceHash string) int64 {
 
 }
 
-func SaveTmpSliceData(fileHash, sliceHash string, data []byte) bool {
+func SaveTmpSliceData(fileHash, sliceHash string, data []byte) error {
 	wmutex.Lock()
 	defer wmutex.Unlock()
+
 	tmpFileFolderPath := getTmpFileFolderPath(fileHash)
 	folderPath := filepath.Join(tmpFileFolderPath)
 	exist, err := PathExists(folderPath)
 	if err != nil {
-		utils.ErrorLog(err)
-		return false
+		return err
 	}
 	if !exist {
 		if err = os.MkdirAll(folderPath, os.ModePerm); err != nil {
-			utils.ErrorLog(err)
-			return false
+			return err
 		}
 	}
+
 	fileMg, err := os.OpenFile(getTmpSlicePath(fileHash, sliceHash), os.O_CREATE|os.O_RDWR, 0777)
 	defer fileMg.Close()
 	if err != nil {
-		utils.ErrorLog("error initialize file")
-		return false
+		return errors.Wrap(err, "error initializing file")
 	}
+
 	_, err = fileMg.Write(data)
 	if err != nil {
-		utils.ErrorLog("error save file")
-		return false
+		return errors.Wrap(err, "error saving file")
 	}
-	return true
+
+	return nil
 }
 
 // SaveSliceData
@@ -158,9 +160,14 @@ func SaveSliceData(data []byte, sliceHash string, offset uint64) bool {
 }
 
 // SaveFileData
-func SaveFileData(data []byte, offset int64, sliceHash, fileName, fileHash, savePath string) bool {
+func SaveFileData(ctx context.Context, data []byte, offset int64, sliceHash, fileName, fileHash, savePath, fileReqId string) bool {
 
 	utils.DebugLog("sliceHash", sliceHash)
+
+	if IsFileRpcRemote(fileHash + fileReqId) {
+		// write to rpc
+		return SaveRemoteFileData(fileHash+fileReqId, data, uint64(offset))
+	}
 	wmutex.Lock()
 	if fileName == "" {
 		fileName = fileHash
@@ -168,17 +175,17 @@ func SaveFileData(data []byte, offset int64, sliceHash, fileName, fileHash, save
 	fileMg, err := os.OpenFile(GetDownloadTmpPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR, 0777)
 	defer fileMg.Close()
 	if err != nil {
-		utils.Log("SaveFileData err", err)
+		pp.Log(ctx, "SaveFileData err", err)
 	}
 	if err != nil {
-		utils.ErrorLog("error initialize file")
+		pp.ErrorLog(ctx, "error initialize file")
 		wmutex.Unlock()
 		return false
 	}
 	// _, err = fileMg.WriteAt(data, offset)
 	_, err = fileMg.Seek(offset, 0)
 	if err != nil {
-		utils.ErrorLog("error save file")
+		pp.ErrorLog(ctx, "error save file")
 		wmutex.Unlock()
 		return false
 	}
@@ -188,19 +195,22 @@ func SaveFileData(data []byte, offset int64, sliceHash, fileName, fileHash, save
 }
 
 // SaveDownloadProgress
-func SaveDownloadProgress(sliceHash, fileName, fileHash, savePath string) {
+func SaveDownloadProgress(ctx context.Context, sliceHash, fileName, fileHash, savePath, fileReqId string) {
+	if IsFileRpcRemote(fileHash + fileReqId) {
+		return
+	}
 	wmutex.Lock()
 	csvFile, err := os.OpenFile(GetDownloadCsvPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
 	defer csvFile.Close()
 	defer wmutex.Unlock()
 	if err != nil {
-		utils.ErrorLog("error open downloaded file records")
+		pp.ErrorLog(ctx, "error open downloaded file records")
 	}
 	writer := csv.NewWriter(csvFile)
 	line := []string{sliceHash}
 	err = writer.Write(line)
 	if err != nil {
-		utils.ErrorLog("download csv line ", err)
+		pp.ErrorLog(ctx, "download csv line ", err)
 	}
 	writer.Flush()
 }
@@ -242,8 +252,13 @@ func RecordDownloadCSV(target *protos.RspFileStorageInfo) {
 }
 
 // CheckFileExisting
-func CheckFileExisting(fileHash, fileName, savePath, encryptionTag string) bool {
-	utils.DebugLog("CheckFileExisting: file Hash", fileHash)
+func CheckFileExisting(ctx context.Context, fileHash, fileName, savePath, encryptionTag, fileReqId string) bool {
+	pp.DebugLog(ctx, "CheckFileExisting: file Hash", fileHash)
+
+	// check if the target path is remote, return false for "not match"
+	if IsFileRpcRemote(fileHash + fileReqId) {
+		return false
+	}
 	filePath := ""
 	if savePath == "" {
 		filePath = filepath.Join(setting.Config.DownloadPath, fileName)
@@ -251,29 +266,34 @@ func CheckFileExisting(fileHash, fileName, savePath, encryptionTag string) bool 
 		filePath = filepath.Join(setting.Config.DownloadPath, savePath, fileName)
 	}
 	// if setting.IsWindows {
-	// 	filePath = filepath.FromSlash(filePath)
+	//	filePath = filepath.FromSlash(filePath)
 	// }
-	utils.DebugLog("filePath", filePath)
+	pp.DebugLog(ctx, "filePath", filePath)
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0777)
 	defer file.Close()
 	if err != nil {
-		utils.DebugLog("no directory specified, thus no file slices")
+		pp.DebugLog(ctx, "no directory specified, thus no file slices")
 		return false
 	}
 
 	hash := utils.CalcFileHash(filePath, encryptionTag)
-	utils.DebugLog("hash", hash)
+	pp.DebugLog(ctx, "hash", hash)
 	if hash == fileHash {
-		utils.DebugLog("file hash matched")
+		pp.DebugLog(ctx, "file hash matched")
 		return true
 	}
-	utils.DebugLog("file hash not match")
+	pp.DebugLog(ctx, "file hash not match")
 	return false
 }
 
 // CheckSliceExisting
-func CheckSliceExisting(fileHash, fileName, sliceHash, savePath string) bool {
+func CheckSliceExisting(fileHash, fileName, sliceHash, savePath, fileReqId string) bool {
 	utils.DebugLog("CheckSliceExisting sliceHash", sliceHash)
+
+	if IsFileRpcRemote(fileHash + fileReqId) {
+		return false
+	}
+
 	csvFile, err := os.OpenFile(GetDownloadCsvPath(fileHash, fileName, savePath), os.O_RDONLY, 0777)
 	defer csvFile.Close()
 	if err != nil {
@@ -314,10 +334,10 @@ func DeleteDirectory(fileHash string) {
 
 }
 
-func DeleteTmpFileSlices(fileHash string) {
+func DeleteTmpFileSlices(ctx context.Context, fileHash string) {
 	err := os.RemoveAll(filepath.Join(setting.GetRootPath(), TEMP_FOLDER, fileHash))
 	if err != nil {
-		utils.DebugLog("Delete tmp folder err", err)
+		pp.DebugLog(ctx, "Delete tmp folder err", err)
 	}
 }
 

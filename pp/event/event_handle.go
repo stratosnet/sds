@@ -11,6 +11,7 @@ func RegisterEventHandle() {
 	core.Register(header.RspGetPPList, RspGetPPList)
 	core.Register(header.RspGetSPList, RspGetSPList)
 	core.Register(header.RspGetPPStatus, RspGetPPStatus)
+	core.Register(header.RspGetPPDowngradeInfo, RspGetPPDowngradeInfo)
 
 	core.Register(header.RspGetWalletOz, RspGetWalletOz)
 	core.Register(header.RspReportNodeStatus, RspReportNodeStatus)
@@ -26,11 +27,14 @@ func RegisterEventHandle() {
 	core.Register(header.RspPrepay, RspPrepay)
 	core.Register(header.RspPrepaid, RspPrepaid)
 	core.Register(header.RspMining, RspMining)
+	core.Register(header.RspStartMaintenance, RspStartMaintenance)
+	core.Register(header.RspStopMaintenance, RspStopMaintenance)
 	core.Register(header.RspFindMyFileList, RspFindMyFileList)
 	core.Register(header.ReqFindMyFileList, ReqFindMyFileList)
 	core.Register(header.ReqUploadFileSlice, ReqUploadFileSlice)
 	core.Register(header.RspUploadFile, RspUploadFile)
 	core.Register(header.RspUploadFileSlice, RspUploadFileSlice)
+	core.Register(header.RspUploadSlicesWrong, RspUploadSlicesWrong)
 	core.Register(header.RspReportUploadSliceResult, RspReportUploadSliceResult)
 	core.Register(header.ReqFileStorageInfo, ReqFileStorageInfo)
 	core.Register(header.ReqDownloadSlice, ReqDownloadSlice)
@@ -68,10 +72,12 @@ func RegisterEventHandle() {
 	core.Register(header.RspGetShareFile, RspGetShareFile)
 
 	core.Register(header.ReqSpLatencyCheck, ReqHBLatencyCheckSpList)
+	core.Register(header.ReqLatencyCheck, ReqLatencyCheckToPp)
 	core.Register(header.RspLatencyCheck, RspHBLatencyCheckSpList)
 	core.Register(header.ReqDeleteFile, ReqDeleteFile)
 	core.Register(header.RspDeleteFile, RspDeleteFile)
 	core.Register(header.RspBadVersion, RspBadVersion)
+	core.Register(header.RspSpUnderMaintenance, RspSpUnderMaintenance)
 
 	core.RegisterTimeoutHandler(header.ReqDownloadSlice, &DownloadTimeoutHandler{})
 }
