@@ -368,9 +368,18 @@ func (api *terminalCmd) StopMonitor(ctx context.Context, param []string) (CmdRes
 
 func (api *terminalCmd) Config(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) < 2 {
-		return CmdResult{Msg: ""}, errors.New("input parameter name and value, 'name value' with space separator")
+		return CmdResult{}, errors.New("input parameter name and value, 'name value' with space separator")
 	}
-	setting.SetConfig(param[0], param[1])
+
+	value, err := utils.ParseTomlValue(param[1])
+	if err != nil {
+		return CmdResult{}, err
+	}
+
+	err = setting.SetConfig(param[0], value)
+	if err != nil {
+		return CmdResult{}, err
+	}
 
 	return CmdResult{Msg: DefaultMsg}, nil
 }
