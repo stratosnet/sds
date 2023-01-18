@@ -3,20 +3,20 @@
 
 The Stratos Decentralized Storage (SDS) network is a scalable, reliable, self-balancing elastic acceleration network driven by data traffic. It accesses data efficiently and safely. The user has the full flexibility to store any data regardless of the size and type.
 
-SDS is composed of many resource nodes (also called PP nodes) that store data, and a few meta nodes (also called indexing or SP nodes) that coordinate everything.
+SDS is composed of many resource nodes (also called PP nodes) that store data, and a few meta nodes (also called SP nodes) that coordinate everything.
 The current repository contains the code for resource nodes only. For more information about meta nodes, we will open source it once it's ready.
 
-Here, we provide a concise quickstart guide to help set up and run a SDS resource node. For more details of SDS as well as the Tropos-Incentive-Testnet rewards distribution, please refer to [Tropos Incentive Testnet](https://github.com/stratosnet/sds/wiki/Tropos-Incentive-Testnet).
+Here, we provide a concise quickstart guide to help set up and run a SDS resource node. For more details of SDS as well as the `Tropos-Incentive-Testnet` rewards distribution, please refer to [Tropos Incentive Testnet](https://github.com/stratosnet/sds/wiki/Tropos-Incentive-Testnet).
 
 
 ## Building a Resource Node From Source
 ```bash
 git clone https://github.com/stratosnet/sds.git
 cd sds
-git checkout v0.8.1
+git checkout tags/v0.9.0
 make build
 ```
-Then you will find the executable binary `ppd` under `./target`
+Then you will find the executable binary `ppd` under th folder `target`
 ### Installing the Binary
 The binary can be installed to the default $GOPATH/bin folder by running:
 ```bash
@@ -45,9 +45,9 @@ First, make sure or change the SDS version section in the `configs/config.toml` 
 
 ```toml
 [version]
-app_ver = 8
-min_app_ver = 8
-show = 'v0.8.1'
+app_ver = 9
+min_app_ver = 9
+show = 'v0.9.0'
 ```
 
 To connect to the Stratos-chain Tropos testnet, make the following changes:
@@ -55,40 +55,40 @@ To connect to the Stratos-chain Tropos testnet, make the following changes:
 stratos_chain_url = 'https://rest-tropos.thestratos.org:443' 
 ```
 
-and then the indexing node list:
+and then the meta node list:
 ```toml
 [[sp_list]]
 p2p_address = ''
 p2p_public_key = ''
-network_address = '18.223.175.117:8888'
+network_address = ''
 [[sp_list]]
 p2p_address = ''
 p2p_public_key = ''
-network_address = '52.13.28.64:8888'
+network_address = ''
 [[sp_list]]
 p2p_address = ''
 p2p_public_key = ''
-network_address = '46.51.251.196:8888'
+network_address = ''
 [[sp_list]]
 p2p_address = ''
 p2p_public_key = ''
-network_address = '35.73.160.68:8888'
+network_address = ''
 [[sp_list]]
 p2p_address = ''
 p2p_public_key = ''
-network_address = '35.74.33.155:8888'
+network_address = ''
 [[sp_list]]
 p2p_address = ''
 p2p_public_key = ''
-network_address = '18.130.202.53:8888'
+network_address = ''
 [[sp_list]]
 p2p_address = ''
 p2p_public_key = ''
-network_address = '3.9.152.251:8888'
+network_address = ''
 ```
-You also need to change the `chain_id` to the value visible [`Stratos Explorer`](https://explorer-tropos.thestratos.org/) right next to the search bar at the top of the page. Currently, it is `tropos-4`.
+You also need to change the `chain_id` to the value visible [`Stratos Explorer`](https://explorer-tropos.thestratos.org/) right next to the search bar at the top of the page. Currently, it is `tropos-5`.
 ```toml
-chain_id = 'tropos-4'
+chain_id = 'tropos-5'
 ```
 Finally, make sure to set the `network_address` to your public IP address and port.
 
@@ -103,7 +103,7 @@ network_address = 'your node external ip'
 Before you can do anything with your resource node, you will need to acquire some STOS tokens.  
 You can get some by using the faucet API:
 ````bash
-  curl --header "Content-Type: application/json" --request POST --data '{"denom":"ustos","address":"put_your_wallet_address_here"} ' https://faucet-tropos.thestratos.org/credit
+  curl --header "Content-Type: application/json" --request POST --data '{"denom":"wei","address":"your wallet address"} ' https://faucet-tropos.thestratos.org/credit
 ````
 Just put your wallet address in the command above, and you should be good to go.
 
@@ -120,7 +120,9 @@ ppd start
 
 ### Starting Mining
 In order to interact with the resource node, you need to open a new COMMAND-LINE TERMINAL, and enter the root directory of the same resource node.
-Then, use `ppd terminal` command to start the interaction.
+Then, use `ppd terminal` command to start the interaction. You can find more details about 
+`ppd terminal subcommands` [here](https://github.com/stratosnet/sds/wiki/%60ppd-terminal%60--subcommands)
+
 ```bash
 # Open a new command-line terminal
 # Make sure we are inside the root directory of the resource node
@@ -142,15 +144,13 @@ registerpeer
 Now you need to activate your node within the blockchain.  
 Use this command in the `ppd terminal` command-line terminal:
 ```bash
-activate stakingAmount feeAmount gasAmount
+activate <amount> <fee> [gas]
 ```
-> `stakingAmount` is the amount of token you want to stake. 1stos = 10^9gwei = 10^18wei.
+> `amount` is the amount of tokens you want to stake. 1stos = 10^9gwei = 10^18wei.
 >
->`feeAmount` is the amount of token to pay as a fee for the activation transaction. 10000wei would work. it will use
-> default number if not provide
+> `fee` is the amount of tokens to pay as a fee for the activation transaction. 10000wei would work. it will use default value if not provide.
 >
->`gasAmount` is the amount of gas to use for the transaction. 1000000wei would be a safe number. it will use default
-> number if not provide
+> `gas` is the amount of gas to pay for the transaction. 1000000 would be a safe number. it will use default value if not provide.
 
 Resource node will start to receive tasks from meta nodes and thus gain mining rewards automatically after it has been activated successfully.
 
@@ -168,13 +168,12 @@ status
 ### Update stake of an active resource node
 
 ```shell
-updateStake stakeDelta fee gas isIncrStake 
+updateStake <stakeDelta> <fee> [gas] <isIncrStake> 
 ```
-
-> `stakeDelta` is the absolute amount of difference between the original and the updated stake. It should be a valid
-> token, in the unit of `stos`/`gwei`/`wei`.
+> `stakeDelta` is the absolute amount of difference between the original and the updated stake. It should be a positive valid
+   token, in the unit of `stos`/`gwei`/`wei`.
 >
-> `isIncrStake` is a flag with `0` for decreasing the original stake and `1` for increasing the original stake.
+> `isIncrStake` is a boolean flag with `false` for decreasing the original stake and `true` for increasing the original stake.
 >
 > When a resource node is suspended, use this command to update its state and re-start mining by increasing its stake.
 
@@ -184,7 +183,7 @@ Ozone is the unit of traffic used by SDS. Operations involving network traffic r
 You can purchase ozone with the following command:
 
 ```bash
-prepay purchaseAmount feeAmount gasAmount
+prepay <amount> <fee> [gas]
 ```
 
 > `purchaseAmount` is the amount of token you want to spend to purchase ozone.
@@ -194,22 +193,22 @@ prepay purchaseAmount feeAmount gasAmount
 ### Query Ozone Balance of Resource Node's Wallet
 
 ```bash
-getoz WALLET_ADDRESS
+getoz <walletAddress>
 ```
 
 ### Upload a File
 
 ```bash
-put FILE_PATH
+put <filepath>
 ```
-> `FILE_PATH` is the location of the file to upload, starting from your resource node folder. It is better to be an absolute path.
+> `filepath` is the location of the file to upload, starting from your resource node folder. It is better to be an absolute path.
 
 
 ### Upload a media file for streaming
 Streaming is the continuous transmission of audio or video files(media files) from a server to a client.
 In order to upload a streaming file, first you need to install a tool [`ffmpeg`](https://linuxize.com/post/how-to-install-ffmpeg-on-ubuntu-20-04/) for transcoding multimedia files.
 ```bash
-putstream FILE_PATH
+putstream <filepath>
 ```
 
 ### List Your Uploaded Files
@@ -221,27 +220,32 @@ ls
 
 ### Download a File
 ```bash
-get sdm://WALLET_ADDRESS/FILE_HASH SAVE_AS
+get <sdm://account/filehash> [saveAs]
 ```
+> Every file uploaded to SDS is attributed with a unique file hash.
+>
+> You can view the file hash for each of your files when you `list` your uploaded files.
+>
+> Use the optional parameter `saveAs` to rename the file
+>
+> The downloaded file will be saved into `download` folder by default under the root directory of the SDS resource node.
+> 
 
-Every file uploaded to SDS is attributed a unique file hash. You can view the file hash for each of your files when your list your uploaded files.   
-You can use an optional parameter `SAVE_AS` to rename the file after downloading
 
 ### Delete a File
 ```bash
-delete FILE_HASH
+delete <filehash>
 ```
 
 ### Share a File
 ```bash
-sharefile FILE_HASH DURATION IS_PRIVATE
+sharefile <filehash> <duration> <is_private>
 ```
-> `DURATION` is the time period(in seconds) when the file share expires. Put `0` for unlimited time.
+> `duration` is time period(in seconds) when the file share expires. Put `0` for unlimited time.
 >
-> `IS_PRIVATE` is whether the file shared should be protected by a password. Put `0` for no password, and `1` for a password.
+> `is_private` is whether the file share should be protected by a password. Put `0` for public file without password, and `1` for private file with a password.
 >
 > After this command has been executed successfully, SDS will provide a password to this shared file, like ` SharePassword 3gxw`. Please keep this password for future use.
-
 ### List All Shared Files
 ```bash
 allshare
@@ -249,13 +253,13 @@ allshare
 
 ### Download a Shared File
 ```bash
-getsharefile SHARE_LINK PASSWORD
+getsharefile <sharelink> [password]
 ```
 > Leave the `PASSWORD` blank if it's a public shared file.
 
 ### Cancel File Share
 ```bash
-cancelshare SHARE_ID
+cancelshare <shareID>
 ```
 
 ### View Resource Utilization
@@ -286,13 +290,13 @@ Please make sure your contributions adhere to our coding guidelines:
   guidelines.
 * Pull requests need to be based on and opened against the `dev` branch, PR name should follow `conventional commits`.
 * Commit messages should be prefixed with the package(s) they modify.
-  * E.g. "pp: make trace configs optional"
+    * E.g. "pp: make trace configs optional"
 
 --- ---
 
 # License
 
-Copyright 2021 Stratos
+Copyright 2023 Stratos
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
