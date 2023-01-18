@@ -1,5 +1,5 @@
 # Simple usage with a mounted data directory:
-# > docker build -t sds-e2e -f tests/e2e/Dockerfile .
+# > docker build -t sds-e2e --build-arg uid=$(id -u) --build-arg gid=$(id -g) -f tests/e2e/Dockerfile .
 FROM golang:1.19-alpine AS build-env
 
 # Set up dependencies
@@ -25,8 +25,11 @@ ENV RUN_AS_USER sds
 # Install ca-certificates
 RUN apk add --update ca-certificates
 
-RUN addgroup --gid 2048 "$RUN_AS_USER" && \
-    adduser -S -G "$RUN_AS_USER" --uid 2048 "$RUN_AS_USER" -h "$WORK_DIR"
+ARG uid=2048
+ARG gid=2048
+
+RUN addgroup --gid $gid "$RUN_AS_USER" && \
+    adduser -S -G "$RUN_AS_USER" --uid $uid "$RUN_AS_USER" -h "$WORK_DIR"
 
 WORKDIR $WORK_DIR
 
