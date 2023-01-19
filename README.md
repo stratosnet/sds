@@ -103,7 +103,7 @@ network_address = 'your node external ip'
 Before you can do anything with your resource node, you will need to acquire some STOS tokens.  
 You can get some by using the faucet API:
 ````bash
-  curl --header "Content-Type: application/json" --request POST --data '{"denom":"wei","address":"your wallet address"} ' https://faucet-tropos.thestratos.org/credit
+  curl --header "Content-Type: application/json" --request POST --data '{"denom":"stos","address":"your wallet address"} ' https://faucet-tropos.thestratos.org/credit
 ````
 Just put your wallet address in the command above, and you should be good to go.
 
