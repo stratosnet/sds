@@ -25,6 +25,8 @@ var OnlineTime int64 = 0
 
 var IsStartMining = false // Is the node currently mining
 
+var IsSuspended bool = false // Is not suspended nor offline nor in maintenance
+
 var IsAuto = false
 
 var WalletAddress string

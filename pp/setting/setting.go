@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	Version        = "v0.8.1"
-	APP_VER        = 8
-	MIN_APP_VER    = 8
+	Version        = "v0.9.0"
+	APP_VER        = 9
+	MIN_APP_VER    = 9
 	HD_PATH        = "m/44'/606'/0'/0/0"
 	PP_SERVER_TYPE = "tcp4"
 

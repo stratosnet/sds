@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -22,8 +23,7 @@ func (p *Network) StartRegisterToSp(ctx context.Context) {
 
 func (p *Network) tryRegister(ctx context.Context) func() {
 	return func() {
-		// try registering to sp when it failed finishing it
-		if !setting.IsLoginToSP {
+		if !setting.IsLoginToSP && setting.State == types.PP_ACTIVE && !setting.IsSuspended {
 			utils.DebugLog("Send register and set next try")
 			p.RegisterToSP(ctx, true)
 

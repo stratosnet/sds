@@ -64,9 +64,6 @@ func (p *Network) InitPPList(ctx context.Context) {
 			p.GetPPListFromSP(ctx)
 			return
 		}
-		if setting.IsAuto && setting.State == types.PP_ACTIVE && !setting.IsLoginToSP {
-			p.StartRegisterToSp(ctx)
-		}
 	}
 }
 
