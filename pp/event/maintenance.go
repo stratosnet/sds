@@ -56,8 +56,7 @@ func RspStartMaintenance(ctx context.Context, _ core.WriteCloser) {
 	pp.Logf(ctx, "Do not stop the pp service until all tasks are completed, otherwise score will be deducted.")
 	pp.Logf(ctx, "Checking ongoing tasks... ")
 	taskMonitorJob, _ = taskMonitorClock.AddJobRepeat(taskMonitorInterval, 0, taskMonitorFunc(ctx))
-
-	setting.IsStartMining = false
+	network.GetPeer(ctx).RunFsm(ctx, network.EVENT_MAINTANENCE_START)
 }
 
 func RspStopMaintenance(ctx context.Context, _ core.WriteCloser) {
@@ -72,17 +71,8 @@ func RspStopMaintenance(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	// if PP process is killed, then setting.IsLoginToSP would be false after restarted
-	if setting.IsAuto && !setting.IsLoginToSP {
-		pp.DebugLog(ctx, "PP is not login to SP, register to SP")
-		network.GetPeer(ctx).StartRegisterToSp(ctx)
-		return
-	}
-
-	// if PP process is not killed, then setting.IsLoginToSP would keep true
-	if setting.IsAuto && setting.IsLoginToSP {
-		pp.DebugLog(ctx, "PP is login to SP, start mining")
-		network.GetPeer(ctx).StartMining(ctx)
+	if setting.IsAuto {
+		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_MAINTANENCE_STOP)
 		return
 	}
 }

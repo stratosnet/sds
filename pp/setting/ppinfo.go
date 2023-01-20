@@ -16,16 +16,9 @@ var IsPP = false
 
 var IsPPSyncedWithSP = false
 
-// set after finishing register->startmining->node_status_report
-var IsLoginToSP = false
-
 var State uint32 = ppTypes.PP_INACTIVE
 
 var OnlineTime int64 = 0
-
-var IsStartMining = false // Is the node currently mining
-
-var IsSuspended bool = false // Is not suspended nor offline nor in maintenance
 
 var IsAuto = false
 

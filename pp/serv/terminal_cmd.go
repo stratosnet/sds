@@ -88,11 +88,16 @@ func (api *terminalCmd) NewWallet(ctx context.Context, param []string) (CmdResul
 
 func (api *terminalCmd) Start(ctx context.Context, param []string) (CmdResult, error) {
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	if setting.IsStartMining {
+
+	switch state := network.GetPeer(ctx).GetStateFromFsm(); state.Id {
+	case network.STATE_NOT_MINING:
+	case network.STATE_NOT_ACTIVATED, network.STATE_INIT, network.STATE_NOT_CREATED:
+		return CmdResult{Msg: ""}, errors.New("register and activate the node before start mining")
+	default:
 		return CmdResult{Msg: ""}, errors.New("mining already started")
 	}
-	// now startmining is triggered by rsp of register message
-	network.GetPeer(ctx).StartRegisterToSp(ctx)
+
+	network.GetPeer(ctx).RunFsm(ctx, network.EVENT_START_MINING)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -106,7 +111,7 @@ func (api *terminalCmd) Activate(ctx context.Context, param []string) (CmdResult
 	if len(param) < 2 {
 		return CmdResult{Msg: ""}, errors.New("expecting at least 2 params. Input amount of tokens, fee amount and (optionally) gas amount")
 	}
-
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	amount, err := utiltypes.ParseCoinNormalized(param[0])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token")
@@ -129,12 +134,13 @@ func (api *terminalCmd) Activate(ctx context.Context, param []string) (CmdResult
 		txFee.Simulate = false
 	}
 
-	if setting.State != types.PP_INACTIVE {
-		return CmdResult{Msg: "the pp is already active"}, nil
-	}
-
-	if !setting.IsPP {
+	switch state := network.GetPeer(ctx).GetStateFromFsm(); state.Id {
+	case network.STATE_NOT_ACTIVATED:
+		break
+	case network.STATE_NOT_CREATED:
 		return CmdResult{Msg: "register as a PP node first"}, nil
+	default:
+		return CmdResult{Msg: "the pp is already active"}, nil
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)

@@ -8,6 +8,7 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
+	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
@@ -37,6 +38,7 @@ func RspRegisterNewPP(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
+	network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_REGISTER_NEW_PP)
 	pp.Log(ctx, "registered as PP successfully, you can deposit by `activate` ")
 	setting.IsPP = true
 	setting.IsPPSyncedWithSP = true

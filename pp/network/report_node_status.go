@@ -10,7 +10,6 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -26,7 +25,7 @@ func (p *Network) StartStatusReportToSP(ctx context.Context) {
 // ReportNodeStatus
 func (p *Network) ReportNodeStatus(ctx context.Context) func() {
 	return func() {
-		if setting.IsStartMining && setting.State == types.PP_ACTIVE {
+		if state := p.GetStateFromFsm(); state.Id == STATE_REGISTERING || state.Id == STATE_REGISTERED {
 			status := requests.ReqNodeStatusData()
 			go p.doReportNodeStatus(ctx, status)
 		}
