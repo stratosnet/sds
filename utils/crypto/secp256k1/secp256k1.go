@@ -1,7 +1,7 @@
 package secp256k1
 
 import (
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/pkg/errors"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -29,7 +29,7 @@ func PrivKeyToAddress(privKey []byte) types.Address {
 
 // PubKeyToSdkPubKey converts pubKey bytes to a secp256k1 public key.
 func PubKeyToSdkPubKey(pubKey []byte) (cryptotypes.PubKey, error) {
-	ecdsaPubKey, err := btcec.ParsePubKey(pubKey, btcec.S256()) // Works for both compressed and uncompressed pubkey formats
+	ecdsaPubKey, err := btcec.ParsePubKey(pubKey) // Works for both compressed and uncompressed pubkey formats
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid secp256k1 public key")
 	}

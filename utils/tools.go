@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/stratosnet/sds/utils/crypto"
 
 	"github.com/google/uuid"
@@ -186,7 +186,7 @@ func ECCSign(text []byte, prk *ecdsa.PrivateKey) ([]byte, error) {
 
 // ECCSignBytes converts the private key bytes to an ecdsa.PrivateKey and then signs the given text
 func ECCSignBytes(text, privateKey []byte) ([]byte, error) {
-	privKey, _ := btcec.PrivKeyFromBytes(crypto.S256(), privateKey)
+	privKey, _ := btcec.PrivKeyFromBytes(privateKey)
 	return ECCSign(text, privKey.ToECDSA())
 }
 

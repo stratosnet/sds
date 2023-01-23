@@ -5,7 +5,8 @@ import (
 	"crypto/sha512"
 	"encoding/binary"
 	"errors"
-	"github.com/btcsuite/btcutil"
+
+	"github.com/btcsuite/btcd/btcutil"
 )
 
 type Ed25519 struct{}
