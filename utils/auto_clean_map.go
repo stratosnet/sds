@@ -145,6 +145,10 @@ func (m *AutoCleanUnsafeMap) HashKey(key interface{}) bool {
 	return ok
 }
 
+func (m *AutoCleanUnsafeMap) Len() int {
+	return len(m.unsafeMap)
+}
+
 func (m *AutoCleanUnsafeMap) pushDelete(wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {

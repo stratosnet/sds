@@ -60,6 +60,13 @@ type CostTimeStat struct {
 	PacketCount   int64
 }
 
+func GetOngoingUploadTaskCount() int {
+	upRecvCostTimeMap.mux.Lock()
+	count := upRecvCostTimeMap.dataMap.Len()
+	upRecvCostTimeMap.mux.Unlock()
+	return count
+}
+
 // ReqUploadFileSlice storage PP receives a request with file data from the PP who initiated uploading
 func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	costTime := core.GetRecvCostTimeFromContext(ctx)
