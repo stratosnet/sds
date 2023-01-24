@@ -6,8 +6,9 @@ import (
 	"encoding/binary"
 	"math/big"
 
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/btcutil"
+	secp "github.com/decred/dcrd/dcrec/secp256k1/v4"
 )
 
 type Secp256K1 struct{}
@@ -114,7 +115,7 @@ func (s *Secp256K1) Child(k ExtendedKey, i uint32) (*ExtendedKey, error) {
 		// Convert the serialized compressed parent public key into X
 		// and Y coordinates so it can be added to the intermediate
 		// public key.
-		pubKey, err := btcec.ParsePubKey(k.key, btcec.S256())
+		pubKey, err := btcec.ParsePubKey(k.key)
 		if err != nil {
 			return nil, err
 		}
@@ -123,8 +124,8 @@ func (s *Secp256K1) Child(k ExtendedKey, i uint32) (*ExtendedKey, error) {
 		// derive the final child key.
 		//
 		// childKey = serP(point(parse256(Il)) + parentKey)
-		childX, childY := btcec.S256().Add(ilx, ily, pubKey.X, pubKey.Y)
-		pk := btcec.PublicKey{Curve: btcec.S256(), X: childX, Y: childY}
+		childX, childY := btcec.S256().Add(ilx, ily, pubKey.X(), pubKey.Y())
+		pk := bigAffineToPublicKey(childX, childY)
 		childKey = pk.SerializeCompressed()
 	}
 
@@ -153,9 +154,17 @@ func pubKeyBytes(k *ExtendedKey) []byte {
 	// key if needed.
 	if len(k.pubKey) == 0 {
 		pkx, pky := btcec.S256().ScalarBaseMult(k.key)
-		pubKey := btcec.PublicKey{Curve: btcec.S256(), X: pkx, Y: pky}
+		pubKey := bigAffineToPublicKey(pkx, pky)
 		k.pubKey = pubKey.SerializeCompressed()
 	}
 
 	return k.pubKey
+}
+
+func bigAffineToPublicKey(x, y *big.Int) *btcec.PublicKey {
+	fieldX := &secp.FieldVal{}
+	fieldX.SetByteSlice(x.Bytes())
+	fieldY := &secp.FieldVal{}
+	fieldY.SetByteSlice(y.Bytes())
+	return btcec.NewPublicKey(fieldX, fieldY)
 }
