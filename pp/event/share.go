@@ -71,24 +71,30 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 
 	if target.Result.State == protos.ResultState_RES_SUCCESS {
 		var fileInfos = make([]rpc.FileInfo, 0)
-		for _, info := range target.ShareInfo {
-			pp.Log(ctx, "_______________________________")
-			pp.Log(ctx, "file_name:", info.Name)
-			pp.Log(ctx, "file_hash:", info.FileHash)
-			pp.Log(ctx, "file_size:", info.FileSize)
-			pp.Log(ctx, "link_time:", info.LinkTime)
-			pp.Log(ctx, "link_time_exp:", info.LinkTimeExp)
-			pp.Log(ctx, "ShareId:", info.ShareId)
-			pp.Log(ctx, "ShareLink:", info.ShareLink)
-			fileInfos = append(fileInfos, rpc.FileInfo{
-				FileHash:    info.FileHash,
-				FileSize:    info.FileSize,
-				FileName:    info.Name,
-				LinkTime:    info.LinkTime,
-				LinkTimeExp: info.LinkTimeExp,
-				ShareId:     info.ShareId,
-				ShareLink:   info.ShareLink,
-			})
+
+		if len(target.ShareInfo) == 0 {
+			pp.Log(ctx, "no shared file found")
+		} else {
+			for _, info := range target.ShareInfo {
+				pp.Log(ctx, "_______________________________")
+				pp.Log(ctx, "file_name:", info.Name)
+				pp.Log(ctx, "file_hash:", info.FileHash)
+				pp.Log(ctx, "file_size:", info.FileSize)
+
+				pp.Log(ctx, "link_time:", info.LinkTime)
+				pp.Log(ctx, "link_time_exp:", info.LinkTimeExp)
+				pp.Log(ctx, "ShareId:", info.ShareId)
+				pp.Log(ctx, "ShareLink:", info.ShareLink)
+				fileInfos = append(fileInfos, rpc.FileInfo{
+					FileHash:    info.FileHash,
+					FileSize:    info.FileSize,
+					FileName:    info.Name,
+					LinkTime:    info.LinkTime,
+					LinkTimeExp: info.LinkTimeExp,
+					ShareId:     info.ShareId,
+					ShareLink:   info.ShareLink,
+				})
+			}
 		}
 		rpcResult.Return = rpc.SUCCESS
 		rpcResult.FileInfo = fileInfos

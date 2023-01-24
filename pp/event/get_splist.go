@@ -12,7 +12,6 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// RspGetPPList
 func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspGetSPList
 	if !requests.UnmarshalData(ctx, &target) {
@@ -51,7 +50,7 @@ func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
 			setting.Config.SPList = append(setting.Config.SPList, sp)
 			return true
 		})
-		if err := utils.WriteTomlConfig(setting.Config, setting.ConfigPath); err != nil {
+		if err := setting.FlushConfig(); err != nil {
 			utils.ErrorLog("Couldn't write config with updated SP list to yaml file", err)
 		}
 	}

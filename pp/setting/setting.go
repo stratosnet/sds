@@ -3,13 +3,13 @@ package setting
 import (
 	ed25519crypto "crypto/ed25519"
 	"encoding/hex"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"sync"
 
+	"github.com/pelletier/go-toml"
+	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/utils"
@@ -31,12 +31,10 @@ const (
 	PpLatencyCheckInterval  = 60  // interval for checking the latency to next PP
 
 	// MAXDATA max slice size
-	MAXDATA = 1024 * 1024 * 3
-	// HTTPTIMEOUT  HTTPTIMEOUT second
-	HTTPTIMEOUT = 20
-	// IMAGEPATH
-	IMAGEPATH = "./images/"
-	VIDEOPATH = "./videos"
+	MAXDATA     = 1024 * 1024 * 3
+	HTTPTIMEOUT = 20 // seconds
+	IMAGEPATH   = "./images/"
+	VIDEOPATH   = "./videos"
 
 	STREAM_CACHE_MAXSLICE = 2
 
@@ -49,9 +47,7 @@ const (
 )
 
 var (
-	// Config
-	Config *config
-	// ConfigPath
+	Config     *config
 	ConfigPath string
 	rootPath   string
 
@@ -61,13 +57,9 @@ var (
 	// DownloadProgressMap download progress map
 	DownloadProgressMap = &sync.Map{}
 
-	// IsLoad
 	IsLoad bool
 
-	// UploadTaskIDMap
-	UploadTaskIDMap = &sync.Map{}
-
-	// DownloadTaskIDMap
+	UploadTaskIDMap   = &sync.Map{}
 	DownloadTaskIDMap = &sync.Map{}
 
 	// socket map
@@ -83,10 +75,8 @@ var (
 	ostype    = runtime.GOOS
 	IsWindows bool
 
-	// UpChan
 	UpChan = make(chan string, 100)
 
-	// traffic log path
 	TrafficLogPath string
 )
 
@@ -101,6 +91,7 @@ type SPBaseInfo struct {
 	P2PPublicKey   string `toml:"p2p_public_key"`
 	NetworkAddress string `toml:"network_address"`
 }
+
 type MonitorConn struct {
 	TLS  bool   `toml:"tls"`
 	Cert string `toml:"cert"`
@@ -150,7 +141,6 @@ func GetRootPath() string {
 	return rootPath
 }
 
-// LoadConfig
 func LoadConfig(configPath string) error {
 	ConfigPath = configPath
 	Config = &config{}
@@ -165,7 +155,7 @@ func LoadConfig(configPath string) error {
 
 	Config.DownloadPathMinLen = 88
 
-	err = formalizePath(Config)
+	err = formalizePath()
 	if err != nil {
 		return err
 	}
@@ -197,7 +187,6 @@ func LoadConfig(configPath string) error {
 	return nil
 }
 
-// CheckLogin
 func CheckLogin() bool {
 	if WalletAddress == "" {
 		utils.ErrorLog("please login")
@@ -206,99 +195,62 @@ func CheckLogin() bool {
 	return true
 }
 
-// GetSign
 func GetSign(str string) []byte {
 	sign := ed25519crypto.Sign(P2PPrivateKey, []byte(str))
 	utils.DebugLog("GetSign == ", hex.EncodeToString(sign))
 	return sign
 }
 
-// SetConfig SetConfig
-func SetConfig(key, value string) bool {
-	found, isString := utils.CheckStructField(key, Config)
-	if !found {
-		utils.Log("configuration not found")
-		return false
-	}
-
-	f, err := os.Open(ConfigPath)
-	defer f.Close()
+func SetConfig(key string, value interface{}) error {
+	tomlTree, err := toml.LoadFile(ConfigPath)
 	if err != nil {
-		utils.ErrorLog("failed to change configuration file", err)
-		return false
+		return err
 	}
 
-	var contents []byte
-	contents, err = ioutil.ReadAll(f)
-	if err != nil {
-		utils.ErrorLog("failed to read configuration file", err)
-		return false
+	// Read existing value
+	if !tomlTree.Has(key) {
+		return errors.Errorf("Key [%v] doesn't exist", key)
 	}
-
-	contentStrs := strings.Split(string(contents), "\n")
-	newString := ""
-	change := false
-	for _, str := range contentStrs {
-		ss := strings.Split(str, " ")
-		if len(ss) > 0 && ss[0] == key {
-			if key == "download_path" {
-				if ostype == "windows" {
-					value = value + `\`
-				} else {
-					value = value + `/`
-				}
-			}
-			ns := ""
-			if isString {
-				ns = key + " = '" + value + "'"
-			} else {
-				ns = key + " = " + value
-			}
-			newString += ns
-			newString += "\n"
-			change = true
-			continue
+	existingValue := tomlTree.Get(key)
+	switch existingValue.(type) {
+	case *toml.Tree:
+		return errors.Errorf("Key [%v] is a subtree. It cannot be edited directly", key)
+	case []*toml.Tree:
+		return errors.Errorf("Key [%v] is a subtree. It cannot be edited directly", key)
+	default:
+		if existingValue == value {
+			return nil
 		}
-		newString += str
-		newString += "\n"
-	}
-	if !change {
-		return false
+		tomlTree.Set(key, value)
 	}
 
-	if err = os.Truncate(ConfigPath, 0); err != nil {
-		utils.ErrorLog("failed to change configuration file", err)
-		return false
-	}
-
-	var configOS *os.File
-	configOS, err = os.OpenFile(ConfigPath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
-	defer configOS.Close()
-
+	// Check if change is valid
+	data, err := tomlTree.Marshal()
 	if err != nil {
-		utils.ErrorLog("failed to change configuration file", err)
-		return false
+		return err
+	}
+	if err = toml.Unmarshal(data, &config{}); err != nil {
+		return err
 	}
 
-	_, err = configOS.WriteString(newString)
+	// Save changes to file
+	err = os.WriteFile(ConfigPath, data, 0644)
 	if err != nil {
-		utils.ErrorLog("failed to change configuration file", err)
-		return false
+		return err
 	}
 
-	LoadConfig(ConfigPath)
-	if !(strings.Contains(strings.ToLower(key), "password") || strings.Contains(strings.ToLower(key), "pw")) {
-		utils.Log("finished changing configuration file ", key+": ", value)
-	}
-	//prefix.SetConfig(Config.AddressPrefix)
+	// Reload config object
+	return LoadConfig(ConfigPath)
+}
 
-	return true
+func FlushConfig() error {
+	return utils.WriteTomlConfig(Config, ConfigPath)
 }
 
 func defaultConfig() *config {
 	return &config{
 		Version:              AppVersion{AppVer: APP_VER, MinAppVer: MIN_APP_VER, Show: Version},
-		DownloadPathMinLen:   0,
+		DownloadPathMinLen:   88,
 		Port:                 "18081",
 		NetworkAddress:       "127.0.0.1",
 		Debug:                false,
@@ -317,7 +269,7 @@ func defaultConfig() *config {
 		LimitDownloadSpeed:   0,
 		IsLimitUploadSpeed:   false,
 		LimitUploadSpeed:     0,
-		ChainId:              "tropos-4",
+		ChainId:              "tropos-5",
 		StratosChainUrl:      "http://127.0.0.1:1317",
 		GasAdjustment:        1.3,
 		RestPort:             "",
@@ -327,13 +279,12 @@ func defaultConfig() *config {
 	}
 }
 
-func GenDefaultConfig(filePath string) error {
-	cfg := defaultConfig()
-
-	return utils.WriteTomlConfig(cfg, filePath)
+func GenDefaultConfig() error {
+	Config = defaultConfig()
+	return FlushConfig()
 }
 
-func formalizePath(config2 *config) (err error) {
+func formalizePath() (err error) {
 	//if the configuration are using default path, try to load the root path specified from flag
 	if Config.AccountDir == "./accounts" {
 		Config.AccountDir = filepath.Join(rootPath, Config.AccountDir)

@@ -34,6 +34,13 @@ func AddTransferTask(taskId, sliceHash string, tTask TransferTask) {
 	rwmutex.Unlock()
 }
 
+func GetOngoingTransferTaskCnt() int {
+	rwmutex.RLock()
+	count := len(transferTaskMap)
+	rwmutex.RUnlock()
+	return count
+}
+
 func GetTransferTask(taskId, sliceHash string) (tTask TransferTask, ok bool) {
 	rwmutex.RLock()
 	tTask, ok = transferTaskMap[taskId+sliceHash]

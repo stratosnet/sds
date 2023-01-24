@@ -41,8 +41,12 @@ func createAccounts(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return errors.New("couldn't convert P2P key address to bech string: " + err.Error())
 		}
-		setting.SetConfig("p2p_address", p2pKeyAddressString)
-		setting.SetConfig("p2p_password", p2ppass)
+		setting.Config.P2PAddress = p2pKeyAddressString
+		setting.Config.P2PPassword = p2ppass
+		err = setting.FlushConfig()
+		if err != nil {
+			return err
+		}
 	}
 
 	nickname, _ := cmd.Flags().GetString(nicknameFlag)
@@ -87,12 +91,18 @@ func createAccounts(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.New("couldn't convert wallet address to bech string: " + err.Error())
 	}
-	setting.SetConfig("wallet_address", walletKeyAddressString)
+	setting.Config.WalletAddress = walletKeyAddressString
 
 	save, _ := cmd.Flags().GetBool(savePassFlag)
 	if save {
-		setting.SetConfig("wallet_password", password)
+		setting.Config.WalletPassword = password
 	}
+
+	err = setting.FlushConfig()
+	if err != nil {
+		return err
+	}
+
 	fmt.Println("save the mnemonic phase properly for future recover: \n" +
 		"=======================================================================  \n" +
 		mnemonic + "\n" +

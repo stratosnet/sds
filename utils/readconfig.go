@@ -3,12 +3,12 @@ package utils
 import (
 	"fmt"
 	"io/ioutil"
+	"strconv"
 
 	"github.com/pelletier/go-toml/v2"
 	"gopkg.in/yaml.v2"
 )
 
-// GetYamlConfig
 func GetYamlConfig(path string) map[interface{}]interface{} {
 	data, err := ioutil.ReadFile(path)
 	m := make(map[interface{}]interface{})
@@ -19,7 +19,6 @@ func GetYamlConfig(path string) map[interface{}]interface{} {
 	return m
 }
 
-// GetElement
 func GetElement(key string, themap map[interface{}]interface{}) string {
 	if value, ok := themap[key]; ok {
 
@@ -30,7 +29,6 @@ func GetElement(key string, themap map[interface{}]interface{}) string {
 	return ""
 }
 
-// LoadYamlConfig
 func LoadYamlConfig(s interface{}, path string) error {
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -52,7 +50,6 @@ func WriteConfig(data interface{}, filePath string) error {
 	return ioutil.WriteFile(filePath, yamlData, 0644)
 }
 
-// LoadTomlConfig
 func LoadTomlConfig(s interface{}, path string) error {
 	file, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -72,4 +69,22 @@ func WriteTomlConfig(data interface{}, filePath string) error {
 		MyLogger.ErrorLog("Error while Marshaling.", err)
 	}
 	return ioutil.WriteFile(filePath, tomlData, 0644)
+}
+
+func ParseTomlValue(data string) (interface{}, error) {
+	if len(data) == 0 {
+		return "", nil
+	}
+	if len(data) >= 2 && ((string(data[0]) == "\"" && string(data[len(data)-1]) == "\"") || (string(data[0]) == "'" && string(data[len(data)-1]) == "'")) {
+		return data[1 : len(data)-1], nil
+	}
+	valInt, err := strconv.ParseInt(data, 10, 64)
+	if err == nil {
+		return valInt, nil
+	}
+	valFloat, err := strconv.ParseFloat(data, 64)
+	if err == nil {
+		return valFloat, nil
+	}
+	return strconv.ParseBool(data)
 }
