@@ -59,6 +59,15 @@ type QueuedDownloadReportToSP struct {
 	response *protos.RspDownloadSlice
 }
 
+func GetOngoingDownloadTaskCount() int {
+	count := 0
+	downloadRspMap.Range(func(key, value any) bool {
+		count++
+		return true
+	})
+	return count
+}
+
 func setWriteHookForRspDownloadSlice(conn core.WriteCloser) {
 	switch conn.(type) {
 	case *core.ServerConn:

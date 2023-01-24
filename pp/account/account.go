@@ -14,7 +14,6 @@ import (
 	"github.com/stratosnet/stratos-chain/types"
 )
 
-// CreateWallet
 func CreateWallet(ctx context.Context, password, name, mnemonic, hdPath string) string {
 	if mnemonic == "" {
 		newMnemonic, err := utils.NewMnemonic()
@@ -36,14 +35,14 @@ func CreateWallet(ctx context.Context, password, name, mnemonic, hdPath string) 
 		return ""
 	}
 	if setting.WalletAddress != "" {
-		setting.SetConfig("wallet_address", setting.WalletAddress)
+		setting.Config.WalletAddress = setting.WalletAddress
+		_ = setting.FlushConfig()
 	}
 	getPublicKey(ctx, filepath.Join(setting.Config.AccountDir, setting.WalletAddress+".json"), password)
 	utils.Log("Create account success ,", setting.WalletAddress)
 	return setting.WalletAddress
 }
 
-// GetWalletAddress
 func GetWalletAddress(ctx context.Context) error {
 	files, err := ioutil.ReadDir(setting.Config.AccountDir)
 
