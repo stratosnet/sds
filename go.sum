@@ -524,10 +524,10 @@ github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An
 github.com/spf13/viper v1.3.2/go.mod h1:ZiWeW+zYFKm7srdB9IoDzzZXaJaI5eL9QjNiN/DMA2s=
 github.com/spf13/viper v1.14.0 h1:Rg7d3Lo706X9tHsJMUjdiwMpHB7W8WnSVOssIY+JElU=
 github.com/spf13/viper v1.14.0/go.mod h1:WT//axPky3FdvXHzGw33dNdXXXfFQqmEalje+egj8As=
-github.com/stratosnet/cosmos-sdk v0.45.12-0.20230120193304-2764d97976b4 h1:/bGD538eoeCGdGWx84/6gy/gDhs9/YNCSqntj5jLTEo=
-github.com/stratosnet/cosmos-sdk v0.45.12-0.20230120193304-2764d97976b4/go.mod h1:MGnVQqzBiOFq62Jxxcl+NEwYjEJDyyKleBakfxsrNjg=
-github.com/stratosnet/stratos-chain v0.9.1-0.20230120213037-cc6d6f013c0c h1:ZB0k1xm5tuvPgM47wjx3gc81VgSiftLeo7p3j6F/wBo=
-github.com/stratosnet/stratos-chain v0.9.1-0.20230120213037-cc6d6f013c0c/go.mod h1:SgVE/PebcnKHGICdoBonr+VSFWN6wevl8YPNpOOp3zA=
+github.com/stratosnet/cosmos-sdk v0.45.12-0.20230124002546-fd8c3abd07d5 h1:WjTdRjQkoPKDtp2gaGu9s/Cv5QC4ahRI9VRuex+XvQE=
+github.com/stratosnet/cosmos-sdk v0.45.12-0.20230124002546-fd8c3abd07d5/go.mod h1:p8Nf05bzxH7rGhbEuC0L+GEX4Fwvq3MgYFbdTlprZLc=
+github.com/stratosnet/stratos-chain v0.9.1-0.20230124012052-7e7d42189558 h1:H7/c6oAdNWHmVdNjV4lMOC4JDs+YWbBB7o5tyhU0MPQ=
+github.com/stratosnet/stratos-chain v0.9.1-0.20230124012052-7e7d42189558/go.mod h1:H0mprRkeqLMvk2JCVwOaSFCBXFQQkdmLJp5meHXpMU4=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.2.0/go.mod h1:qt09Ya8vawLte6SNmTgCsAVtYtaKzEcn8ATUoHMkEqE=

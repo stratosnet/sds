@@ -5,7 +5,7 @@ go 1.18
 replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
 	github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
-	github.com/cosmos/cosmos-sdk => github.com/stratosnet/cosmos-sdk v0.45.12-0.20230120193304-2764d97976b4
+	github.com/cosmos/cosmos-sdk => github.com/stratosnet/cosmos-sdk v0.45.12-0.20230124002546-fd8c3abd07d5
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	google.golang.org/grpc => google.golang.org/grpc v1.33.2
 )
@@ -42,7 +42,7 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.6.0
-	github.com/stratosnet/stratos-chain v0.9.1-0.20230120213037-cc6d6f013c0c
+	github.com/stratosnet/stratos-chain v0.9.1-0.20230124012052-7e7d42189558
 	github.com/tendermint/tendermint v0.34.25-0.20221221220620-936221e0a8d9
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	golang.org/x/crypto v0.4.0
