@@ -10,9 +10,9 @@ var Config *config
 var HomePath string
 
 const (
-	VERSION     = "v0.8.1"
-	APP_VER     = 8
-	MIN_APP_VER = 8
+	VERSION     = "v0.9.0"
+	APP_VER     = 9
+	MIN_APP_VER = 9
 )
 
 type AppVersion struct {
