@@ -32,7 +32,6 @@ func TestSpMaintenance(t *testing.T) {
 	for i := 0; i < ITER; i++ {
 		RecordSpMaintenance(t, "aldskfjlsdfj", time.Now())
 		time.Sleep(time.Duration(SLEEP) * time.Millisecond)
-		//SLEEP++
 	}
 }
 
