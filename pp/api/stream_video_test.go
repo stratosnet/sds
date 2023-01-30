@@ -37,10 +37,6 @@ func TestVerifySignatureMissingSPInfo(t *testing.T) {
 	}
 }
 
-func TestFailure(t *testing.T) {
-	t.Fatal("test failed")
-}
-
 func setup(t *testing.T) (*StreamReqBody, string, []byte) {
 	bechPrefix := "stsdsp2p"
 
