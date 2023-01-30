@@ -1,6 +1,10 @@
 name: Go
 
-on: [pull_request]
+on:
+  push:
+    branches: [main, release, dev]
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
 
 jobs:
   build:
