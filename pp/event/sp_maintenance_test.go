@@ -1,7 +1,6 @@
 package event
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 	"testing"
@@ -29,19 +28,19 @@ func TestSpMaintenance(t *testing.T) {
 	//var SPMaintenanceMap *AutoCleanMap
 	//SPMaintenanceMap = NewAutoCleanMap(time.Duration(MIN_RECONNECT_INTERVAL_THRESHOLD) * time.Second)
 	ITER := 100
-	SLEEP := 1
+	SLEEP := 10
 	for i := 0; i < ITER; i++ {
-		RecordSpMaintenance("aldskfjlsdfj", time.Now())
-		time.Sleep(time.Duration(SLEEP) * time.Second)
+		RecordSpMaintenance(t, "aldskfjlsdfj", time.Now())
+		time.Sleep(time.Duration(SLEEP) * time.Millisecond)
 		//SLEEP++
 	}
 }
 
 // RecordSpMaintenance, return boolean flag of switching to new SP
-func RecordSpMaintenance(spP2pAddress string, recordTime time.Time) bool {
+func RecordSpMaintenance(t *testing.T, spP2pAddress string, recordTime time.Time) bool {
 	if SPMaintenanceMap == nil {
 		resetSPMaintenanceMap(spP2pAddress, recordTime, MIN_RECONNECT_INTERVAL_THRESHOLD)
-		fmt.Println("init&reset Map interval: " + strconv.Itoa(MIN_RECONNECT_INTERVAL_THRESHOLD) + " returning true")
+		t.Log("init&reset Map interval: " + strconv.Itoa(MIN_RECONNECT_INTERVAL_THRESHOLD) + " returning true")
 		return true
 	}
 	if value, ok := SPMaintenanceMap.Load(LAST_RECONNECT_KEY); ok {
@@ -49,18 +48,18 @@ func RecordSpMaintenance(spP2pAddress string, recordTime time.Time) bool {
 		if time.Now().Before(lastRecord.Time.Add(time.Duration(lastRecord.NextAllowableReconnectInSec) * time.Second)) {
 			// if new maintenance rsp incoming in between the interval, extend the KV by storing it again (not changing value)
 			SPMaintenanceMap.Store(LAST_RECONNECT_KEY, lastRecord)
-			fmt.Println("found&extend Map interval: " + strconv.FormatInt(lastRecord.NextAllowableReconnectInSec, 10) + " returning False")
+			t.Log("found&extend Map interval: " + strconv.FormatInt(lastRecord.NextAllowableReconnectInSec, 10) + " returning False")
 			return false
 		}
 		// if new maintenance rsp incoming beyond the interval, reset the map and modify the NextAllowableReconnectInSec
 		nextReconnectInterval := int64(math.Min(MAX_RECONNECT_INTERVAL_THRESHOLD,
 			float64(lastRecord.NextAllowableReconnectInSec*RECONNECT_INTERVAL_MULTIPLIER)))
 		resetSPMaintenanceMap(spP2pAddress, recordTime, nextReconnectInterval)
-		fmt.Println("found&reset Map interval: " + strconv.FormatInt(nextReconnectInterval, 10) + " returning true")
+		t.Log("found&reset Map interval: " + strconv.FormatInt(nextReconnectInterval, 10) + " returning true")
 		return true
 	}
 	resetSPMaintenanceMap(spP2pAddress, recordTime, MIN_RECONNECT_INTERVAL_THRESHOLD)
-	fmt.Println("not found&reset Map interval: " + strconv.Itoa(MIN_RECONNECT_INTERVAL_THRESHOLD) + " returning true")
+	t.Log("not found&reset Map interval: " + strconv.Itoa(MIN_RECONNECT_INTERVAL_THRESHOLD) + " returning true")
 	return true
 }
 

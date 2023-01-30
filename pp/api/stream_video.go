@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/ed25519"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -339,8 +338,8 @@ func verifySignature(reqBody *StreamReqBody, sliceHash string, data []byte) bool
 	}
 
 	p2pPubKey := utiled25519.PubKeyBytesToPubKey(pubKeyRaw)
-
-	if !ed25519.Verify(p2pPubKey.Bytes(), []byte(reqBody.P2PAddress+reqBody.FileHash+header.ReqDownloadSlice), reqBody.Sign) {
+	msg := []byte(reqBody.P2PAddress + reqBody.FileHash + header.ReqDownloadSlice)
+	if !p2pPubKey.VerifySignature(msg, reqBody.Sign) {
 		return false
 	}
 

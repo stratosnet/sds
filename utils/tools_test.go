@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"fmt"
+	"crypto/md5"
 	"math/rand"
 	"testing"
 	"time"
@@ -10,8 +10,11 @@ import (
 	"github.com/cosmos/go-bip39"
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/math"
-	utilsecp256k1 "github.com/stratosnet/sds/utils/crypto/secp256k1"
 )
+
+func init() {
+	NewDefaultLogger("", false, false)
+}
 
 func TestECCSignAndVerify(t *testing.T) {
 	mnemonic := "vacant cool enlist kiss van despair ethics silly route master funny door gossip athlete sword language argue alien any item desk mystery tray parade"
@@ -24,10 +27,10 @@ func TestECCSignAndVerify(t *testing.T) {
 	hdPath := "44'/606'/0'/0/0"
 	derivedKey, err := hd.DerivePrivateKeyForPath(masterPriv, ch, hdPath)
 	privateKeyECDSA := crypto.ToECDSAUnsafe(derivedKey[:])
+	privKeyBytes := math.PaddedBigBytes(privateKeyECDSA.D, 32)
 
 	publicKeyECDSA := &privateKeyECDSA.PublicKey
-	privKeyBytes := math.PaddedBigBytes(privateKeyECDSA.D, 32)
-	pubKeyBytes := utilsecp256k1.PrivKeyToPubKey(privKeyBytes).Bytes()
+	pubKeyBytes := crypto.FromECDSAPub(publicKeyECDSA)
 
 	msg := []byte("this is a random message")
 	sig1, err := ECCSign(msg, privateKeyECDSA)
@@ -68,7 +71,7 @@ func TestCid(t *testing.T) {
 			t.Fatal("cannot generate random data", err)
 		}
 
-		fileHash := calcFileHash(fileData[:])
+		fileHash := CalcFileHashFromData(fileData[:])
 		sliceHash := CalcSliceHash(sliceData[:], fileHash, uint64(i))
 
 		if !VerifyHash(fileHash) {
@@ -92,11 +95,16 @@ func TestCid(t *testing.T) {
 
 func TestCidLargeFile(t *testing.T) {
 	encryptionTag := GetRandomString(8)
+	fileContent := make([]byte, 1024*1024*1024) // 1GB
+	rand.Read(fileContent)
+
 	start := time.Now()
-	filehash := CalcFileHash("/home/osboxes/Downloads/ideaIU-2021.2.2.tar.gz", encryptionTag)
+	data := append([]byte(encryptionTag), md5.New().Sum(fileContent)...)
+	filehash := CalcFileHashFromData(data)
+
 	elapsed := time.Since(start)
-	fmt.Println(filehash)
-	fmt.Println(elapsed)
+	t.Log(filehash)
+	t.Log(elapsed)
 
 	if !VerifyHash(filehash) {
 		t.Fatal("generated file hash is invalid")

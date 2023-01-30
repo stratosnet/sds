@@ -1,33 +1,29 @@
 package utils
 
 import (
-	"fmt"
+	"crypto/rand"
 	"testing"
-	"time"
 )
 
-func TestSliceHash(t *testing.T) {
-	fileHash := calcFileHash([]byte("fileData"))
+func BenchmarkSliceHash(b *testing.B) {
+	fileHash := CalcFileHashFromData([]byte("fileData"))
 
-	//prepare data start
-	sliceCnt := 300000
+	//prepare data
+	sliceCnt := 1000
 	sliceContentSize := 10 * 1024
-	sliceList := make([][]byte, 0)
-
+	var sliceList [][]byte
 	for i := 0; i < sliceCnt; i++ {
-		sliceBytes := make([]byte, 0)
-		for j := 0; j < sliceContentSize; j++ {
-			sliceBytes = append(sliceBytes, []byte("a")...)
+		bytes := make([]byte, sliceContentSize)
+		_, err := rand.Read(bytes)
+		if err != nil {
+			b.Fatal(err)
 		}
-		sliceList = append(sliceList, sliceBytes)
+		sliceList = append(sliceList, bytes)
 	}
-	//prepare data end
-	start := time.Now()
-	sliceNumber := uint64(0)
-	for _, sliceData := range sliceList {
-		_ = CalcSliceHash(sliceData, fileHash, sliceNumber)
-		sliceNumber++
-	}
-	elapsed := time.Since(start)
-	fmt.Println("300000 slices hash calculation : " + elapsed.String())
+
+	b.Run("BenchmarkSliceHash", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_ = CalcSliceHash(sliceList[i%sliceCnt], fileHash, uint64(i))
+		}
+	})
 }
