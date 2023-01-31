@@ -6,7 +6,7 @@ The Stratos Decentralized Storage (SDS) network is a scalable, reliable, self-ba
 SDS is composed of many resource nodes (also called PP nodes) that store data, and a few meta nodes (also called SP nodes) that coordinate everything.
 The current repository contains the code for resource nodes only. For more information about meta nodes, we will open source it once it's ready.
 
-Here, we provide a concise quickstart guide to help set up and run a SDS resource node. For more details of SDS as well as the `Tropos-Incentive-Testnet` rewards distribution, please refer to [Tropos Incentive Testnet](https://github.com/stratosnet/sds/wiki/Tropos-Incentive-Testnet).
+Here, we provide a concise quickstart guide to help set up and run an SDS resource node. For more details of SDS as well as the `Tropos-Incentive-Testnet` rewards distribution, please refer to [Tropos Incentive Testnet](https://github.com/stratosnet/sds/wiki/Tropos-Incentive-Testnet).
 
 
 ## Building a Resource Node From Source
@@ -24,7 +24,7 @@ make install
 ```
 The binary should then be runnable from any folder if you have set up `go env` properly
 
-## Creating a SDS Resource Node
+## Creating SDS Resource Node
 
 ### Creating a Root Directory for Your Resource Node
 To start a resource node, you need to be in a directory dedicated to your resource node. Create a new directory, or go to the root directory of your existing node.
@@ -118,7 +118,7 @@ cd rsnode
 ppd start
 ```
 
-### Starting Mining
+### Interact with SDS resource node
 In order to interact with the resource node, you need to open a new COMMAND-LINE TERMINAL, and enter the root directory of the same resource node.
 Then, use `ppd terminal` command to start the interaction. You can find more details about 
 `ppd terminal subcommands` [here](https://github.com/stratosnet/sds/wiki/%60ppd-terminal%60--subcommands)
@@ -140,8 +140,28 @@ rp
 registerpeer
 ```
 
+#### Uploading/Downloading files without staking
+You do not need to stake anything if you just want to upload/download files.
+After registering your resource node(`rp` subcommand), purchase enough `ozone` using the `prepay` subcommand.
+Then, use `put` or `get` subcommands to upload/download files.
+
+    ```shell
+    prepay <amount> <fee> [gas]  
+    ```
+  
+    ```shell
+    put <filepath> 
+    
+    get <sdm://account/filehash> [saveAs] 
+    ```
+This is a quick way for users to upload/download their files. Resource node can go offline at any time without being punished.
+On the other hand, since the resource node is not activated, users will not receive mining rewards(`utros`).
+
+
 #### Activating the Resource Node by Staking
-Now you need to activate your node within the blockchain.  
+You can activate your resource node by staking an amount of tokens. After it is activated successfully,
+your resource node starts to receive tasks from meta nodes and thus gaining mining rewards automatically.  
+
 Use this command in the `ppd terminal` command-line terminal:
 ```bash
 activate <amount> <fee> [gas]
@@ -152,7 +172,6 @@ activate <amount> <fee> [gas]
 >
 > `gas` is the amount of gas to pay for the transaction. 1000000 would be a safe number. it will use default value if not provide.
 
-Resource node will start to receive tasks from meta nodes and thus gain mining rewards automatically after it has been activated successfully.
 
 ## What to Do With a Running Resource Node?
 Here are a set of `ppd terminal` subcommands you can try in the `ppd terminal` command-line terminal.
