@@ -17,7 +17,6 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// SendMessage
 func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb proto.Message, cmd string) error {
 	data, err := proto.Marshal(pb)
 
@@ -47,7 +46,6 @@ func (p *P2pServer) SendMessageDirectToSPOrViaPP(ctx context.Context, pb proto.M
 	}
 }
 
-// SendMessageToSPServer SendMessageToSPServer
 func (p *P2pServer) SendMessageToSPServer(ctx context.Context, pb proto.Message, cmd string) {
 	//_, err := p.ConnectToSP(ctx)
 	//if err != nil {
@@ -59,7 +57,6 @@ func (p *P2pServer) SendMessageToSPServer(ctx context.Context, pb proto.Message,
 	}
 }
 
-// TransferSendMessageToPPServ
 func (p *P2pServer) TransferSendMessageToPPServ(ctx context.Context, addr string, msgBuf *msg.RelayMsgBuf) error {
 	newCtx := core.CreateContextWithParentReqIdAsReqId(ctx)
 	//p.ClientMutex.Lock()
@@ -73,7 +70,7 @@ func (p *P2pServer) TransferSendMessageToPPServ(ctx context.Context, addr string
 	utils.DebugLog("new conn, connect and transfer")
 	newClient, err := p.NewClientToPp(ctx, addr, false)
 	if err != nil {
-		utils.ErrorLogf("cannot transfer message to client [%v]", addr, utils.FormatError(err))
+		utils.ErrorLogf("cannot transfer message to client [%v]: %v", addr, utils.FormatError(err))
 		return err
 	}
 	err = newClient.Write(msgBuf, newCtx)
@@ -89,7 +86,6 @@ func (p *P2pServer) TransferSendMessageToPPServByP2pAddress(ctx context.Context,
 	p.TransferSendMessageToPPServ(ctx, ppInfo.NetworkAddress, msgBuf)
 }
 
-// transferSendMessageToSPServer
 func (p *P2pServer) TransferSendMessageToSPServer(ctx context.Context, msg *msg.RelayMsgBuf) {
 	_, err := p.ConnectToSP(ctx)
 	if err != nil {
@@ -100,12 +96,10 @@ func (p *P2pServer) TransferSendMessageToSPServer(ctx context.Context, msg *msg.
 	p.mainSpConn.Write(msg, ctx)
 }
 
-// ReqTransferSendSP
 func (p *P2pServer) ReqTransferSendSP(ctx context.Context, conn core.WriteCloser) {
 	p.TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
-// transferSendMessageToClient
 func (p *P2pServer) TransferSendMessageToClient(ctx context.Context, p2pAddress string, msgBuf *msg.RelayMsgBuf) {
 	ppNode := p.peerList.GetPPByP2pAddress(ctx, p2pAddress)
 	if ppNode != nil && ppNode.Status == types.PEER_CONNECTED {

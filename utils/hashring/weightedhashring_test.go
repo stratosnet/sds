@@ -10,6 +10,10 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
+func init() {
+	utils.NewDefaultLogger("", false, false)
+}
+
 func TestWHRTrend(t *testing.T) {
 	testRing := NewWeightedHashRing()
 
