@@ -25,8 +25,6 @@ type LastReconnectRecord struct {
 }
 
 func TestSpMaintenance(t *testing.T) {
-	//var SPMaintenanceMap *AutoCleanMap
-	//SPMaintenanceMap = NewAutoCleanMap(time.Duration(MIN_RECONNECT_INTERVAL_THRESHOLD) * time.Second)
 	ITER := 100
 	SLEEP := 10
 	for i := 0; i < ITER; i++ {
