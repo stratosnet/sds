@@ -26,7 +26,7 @@ import (
 	"github.com/stratosnet/sds/utils/types"
 )
 
-//var m *sync.WaitGroup
+// var m *sync.WaitGroup
 var isCover bool
 
 // MigrateIpfsFile migrate ipfs file to sds
@@ -165,8 +165,8 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		go startUploadTask(ctx, target)
 	} else {
 		pp.Log(ctx, "file upload successful！  fileHash", target.FileHash)
-		var p float32 = 100
-		ProgressMap.Store(target.FileHash, p)
+		//var p float32 = 100
+		//ProgressMap.Store(target.FileHash, p)
 		task.UploadProgressMap.Delete(target.FileHash)
 
 		if file.IsFileRpcRemote(target.FileHash) {

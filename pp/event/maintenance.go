@@ -2,7 +2,10 @@ package event
 
 import (
 	"context"
+	"fmt"
+	"time"
 
+	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -11,6 +14,16 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/task"
+)
+
+const (
+	taskMonitorInterval = 30 * time.Second
+)
+
+var (
+	taskMonitorClock = clock.NewClock()
+	taskMonitorJob   clock.Job
 )
 
 // StartMaintenance sends a request to SP to temporarily put the current node into maintenance mode
@@ -40,6 +53,10 @@ func RspStartMaintenance(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
+	pp.Logf(ctx, "Do not stop the pp service until all tasks are completed, otherwise score will be deducted.")
+	pp.Logf(ctx, "Checking ongoing tasks... ")
+	taskMonitorJob, _ = taskMonitorClock.AddJobRepeat(taskMonitorInterval, 0, taskMonitorFunc(ctx))
+
 	setting.IsStartMining = false
 }
 
@@ -67,5 +84,26 @@ func RspStopMaintenance(ctx context.Context, _ core.WriteCloser) {
 		pp.DebugLog(ctx, "PP is login to SP, start mining")
 		network.GetPeer(ctx).StartMining(ctx)
 		return
+	}
+}
+
+func taskMonitorFunc(ctx context.Context) func() {
+	return func() {
+		uploadTaskCnt := GetOngoingUploadTaskCount()
+		downloadTaskCnt := GetOngoingDownloadTaskCount()
+
+		transferTasksCnt := task.GetOngoingTransferTaskCnt()
+
+		pp.DebugLog(ctx, fmt.Sprintf("Ongoing tasks: upload--%v  download--%v  transfer--%v ",
+			uploadTaskCnt, downloadTaskCnt, transferTasksCnt))
+
+		totalTaskCnt := uploadTaskCnt + downloadTaskCnt + transferTasksCnt
+		if totalTaskCnt == 0 {
+			pp.Logf(ctx, "All tasks have been completed, pp service can be stopped.")
+			taskMonitorJob.Cancel()
+		} else {
+			pp.Logf(ctx, fmt.Sprintf("%v ongoing task remaining, do not stop pp service...", totalTaskCnt))
+		}
+
 	}
 }

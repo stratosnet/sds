@@ -1,11 +1,25 @@
 package setting
 
 import (
+	"os"
+
 	"github.com/stratosnet/sds/utils"
 )
 
 var Config *config
 var HomePath string
+
+const (
+	VERSION     = "v0.9.0"
+	APP_VER     = 9
+	MIN_APP_VER = 9
+)
+
+type AppVersion struct {
+	AppVer    uint16 `toml:"app_ver"`
+	MinAppVer uint16 `toml:"min_app_ver"`
+	Show      string `toml:"show"`
+}
 
 type connectionRetries struct {
 	Max           int `toml:"max"`
@@ -39,12 +53,14 @@ type transactionsConfig struct {
 
 type blockchainInfoConfig struct {
 	ChainId      string             `toml:"chain_id"`
+	Token        string             `toml:"token"`
 	Transactions transactionsConfig `toml:"transactions"`
 }
 
 type Version struct {
 	AppVer    uint16 `toml:"app_ver"`
 	MinAppVer uint16 `toml:"min_app_ver"`
+	Show      string `toml:"show"`
 }
 
 type keysConfig struct {
@@ -62,10 +78,61 @@ type config struct {
 
 func LoadConfig(path string) error {
 	Config = new(config)
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		utils.Log("The config at location", path, "does not exist")
+		return err
+	}
+
 	err := utils.LoadTomlConfig(Config, path)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func defaultConfig() *config {
+	return &config{
+		BlockchainInfo: blockchainInfoConfig{
+			ChainId: "test-chain",
+			Token:   "wei",
+			Transactions: transactionsConfig{
+				Fee:           "30000wei",
+				GasAdjustment: 1.3,
+			},
+		},
+		Keys: keysConfig{
+			WalletPath:     "config/st1a8ngk4tjvuxneyuvyuy9nvgehkpfa38hm8mp3x.json",
+			WalletPassword: "aaa",
+		},
+		SDS: sds{
+			ApiPort:        "8081",
+			ClientPort:     "8088",
+			NetworkAddress: "127.0.0.1",
+			WebsocketPort:  "8889",
+			ConnectionRetries: connectionRetries{
+				Max:           100,
+				SleepDuration: 3000,
+			},
+		},
+		StratosChain: stratoschain{
+			RestServer:      "http://127.0.0.1:1317",
+			WebsocketServer: "127.0.0.1:26657",
+			ConnectionRetries: connectionRetries{
+				Max:           100,
+				SleepDuration: 3000,
+			},
+			Broadcast: broadcast{
+				ChannelSize: 2000,
+				MaxMsgPerTx: 250,
+			},
+		},
+		Version: Version{AppVer: APP_VER, MinAppVer: MIN_APP_VER, Show: VERSION},
+	}
+}
+
+func GenDefaultConfig(filePath string) error {
+	cfg := defaultConfig()
+
+	return utils.WriteTomlConfig(cfg, filePath)
 }

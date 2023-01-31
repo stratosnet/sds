@@ -3,6 +3,7 @@ package hdkey
 import (
 	"errors"
 	"fmt"
+
 	"golang.org/x/crypto/ed25519"
 )
 

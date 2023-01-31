@@ -36,14 +36,12 @@ func genConfig(cmd *cobra.Command, args []string) error {
 	err = setting.LoadConfig(path)
 	if err != nil {
 		fmt.Println("generating default config file")
-		err = setting.GenDefaultConfig(path)
+		err = setting.GenDefaultConfig()
 		if err != nil {
 			return errors.Wrap(err, "failed to generate config file at given path")
 		}
-
+		setting.LoadConfig(path)
 	}
-
-	setting.LoadConfig(path)
 
 	createP2pKey, err := cmd.Flags().GetBool(createP2pKeyFlag)
 	if err == nil && createP2pKey {
@@ -132,6 +130,7 @@ func SetupWalletKey() error {
 }
 
 func updateWalletConfig(walletKeyAddressString, password string) {
-	setting.SetConfig("wallet_address", walletKeyAddressString)
-	setting.SetConfig("wallet_password", password)
+	setting.Config.WalletAddress = walletKeyAddressString
+	setting.Config.WalletPassword = password
+	_ = setting.FlushConfig()
 }

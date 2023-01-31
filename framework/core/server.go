@@ -114,6 +114,9 @@ func (s *Server) SetVolRecOptions(opt ...ServerVolRecOption) {
 
 // ConnsSize
 func (s *Server) ConnsSize() int {
+	if s.conns == nil {
+		return 0
+	}
 	return int(s.conns.Count())
 }
 

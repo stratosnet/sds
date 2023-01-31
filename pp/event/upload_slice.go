@@ -26,8 +26,8 @@ import (
 )
 
 var (
-	// ProgressMap required by API
-	ProgressMap             = &sync.Map{}
+	//// ProgressMap required by API
+	//ProgressMap             = &sync.Map{}
 	mutexHandleSendCostTime = &sync.Mutex{}
 	//// Maps to record uploading stats
 	PacketIdMap       = &sync.Map{} // K: reqId, V: TaskSlice{tkId+sliceNum, up/down}
@@ -58,6 +58,13 @@ type TaskSlice struct {
 type CostTimeStat struct {
 	TotalCostTime int64
 	PacketCount   int64
+}
+
+func GetOngoingUploadTaskCount() int {
+	upRecvCostTimeMap.mux.Lock()
+	count := upRecvCostTimeMap.dataMap.Len()
+	upRecvCostTimeMap.mux.Unlock()
+	return count
 }
 
 // ReqUploadFileSlice storage PP receives a request with file data from the PP who initiated uploading
@@ -340,7 +347,7 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 	p := float32(progress.HasUpload) / float32(progress.Total) * 100
 	pp.Logf(ctx, "fileHash: %v  uploaded：%.2f %% ", target.FileHash, p)
 	setting.ShowProgress(ctx, p)
-	ProgressMap.Store(target.FileHash, p)
+	//ProgressMap.Store(target.FileHash, p)
 	if progress.HasUpload >= progress.Total {
 		task.UploadProgressMap.Delete(target.FileHash)
 		p2pserver.GetP2pServer(ctx).CleanUpConnMap(target.FileHash)
