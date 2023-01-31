@@ -29,6 +29,8 @@ import (
 
 const TEMP_FOLDER = "tmp"
 
+const IPFS_FOLDER = "ipfs"
+
 func setupPlugins(externalPluginsPath string) error {
 	// Load any external plugins if available on externalPluginsPath
 	plugins, err := loader.NewPluginLoader(filepath.Join(externalPluginsPath, "plugins"))
@@ -173,7 +175,7 @@ func GetFile(ctx context.Context, cid string, fileName string) (string, error) {
 }
 
 func getTmpFileFolderPath(cid string) string {
-	return filepath.Join(setting.GetRootPath(), TEMP_FOLDER, cid)
+	return filepath.Join(setting.GetRootPath(), TEMP_FOLDER, IPFS_FOLDER, cid)
 }
 
 // GetFileViaKuboCli get file from ipfs via kubo cli
