@@ -100,6 +100,7 @@ func UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 			"update_resource_node_stake.ozone_limit_changes",
 			"update_resource_node_stake.incr_stake",
 			"update_resource_node_stake.stake_delta",
+			"update_resource_node_stake.current_stake",
 		}
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
 		key := getCacheKey(requiredAttributes, result)
@@ -117,6 +118,7 @@ func UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 				IncrStake:         event["update_resource_node_stake.incr_stake"],
 				TxHash:            txHash,
 				StakeDelta:        event["update_resource_node_stake.stake_delta"],
+				CurrentStake:      event["update_resource_node_stake.current_stake"],
 			})
 		}
 

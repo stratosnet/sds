@@ -67,7 +67,9 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	setting.IsSuspended = target.IsSuspended
+	if target.IsSuspended {
+		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_SUSPENDED_STATE)
+	}
 
 	pp.Log(ctx, "get RspRegister ", target.Result.State, target.Result.Msg)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
@@ -99,6 +101,7 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_MINING_NOT_STARTED)
 		pp.Log(ctx, target.Result.Msg)
 		return
 	}
@@ -107,7 +110,6 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 	if p2pserver.GetP2pServer(ctx).GetP2pServer() == nil {
 		go p2pserver.GetP2pServer(ctx).StartListenServer(ctx, setting.Config.Port)
 	}
-	setting.IsStartMining = true
 	pp.DebugLog(ctx, "Start reporting node status to SP")
 	// trigger 1 stat report immediately
 	network.GetPeer(ctx).ReportNodeStatus(ctx)()

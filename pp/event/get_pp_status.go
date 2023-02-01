@@ -25,6 +25,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.ErrorLog(target.Result.Msg)
 		if strings.Contains(target.Result.Msg, "Please register first") {
+			network.GetPeer(ctx).RunFsm(ctx, network.EVENT_SP_NO_PP_IN_STORE)
 			setting.IsPPSyncedWithSP = true
 			return
 		}
@@ -38,18 +39,22 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 		setting.IsPPSyncedWithSP = true
 	}
 
-	isSuspended := setting.IsSuspended
 	formatRspGetPPStatus(ctx, target)
+
+	if target.IsActive == ppTypes.PP_ACTIVE {
+		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_ACTIVATE)
+		if setting.IsAuto {
+			network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATUS_ONLINE)
+		}
+	} else {
+		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATUS_INACTIVE)
+	}
 
 	if target.InitPpList {
 		network.GetPeer(ctx).InitPPList(ctx)
-		if setting.IsAuto && setting.State == ppTypes.PP_ACTIVE && !setting.IsLoginToSP {
-			network.GetPeer(ctx).StartRegisterToSp(ctx)
-		}
 	} else {
-		// after user intervention, pp state changed from suspended to non-suspended, start register process
-		if !setting.IsLoginToSP && !setting.IsSuspended && isSuspended != setting.IsSuspended {
-			network.GetPeer(ctx).StartRegisterToSp(ctx)
+		if target.State == int32(protos.PPState_ONLINE) {
+			network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATUS_ONLINE)
 		}
 	}
 }
@@ -72,27 +77,17 @@ func formatRspGetPPStatus(ctx context.Context, response protos.RspGetPPStatus) {
 	case int32(protos.PPState_OFFLINE):
 		state = protos.PPState_OFFLINE.String()
 		setting.OnlineTime = 0
-		setting.IsSuspended = false
 	case int32(protos.PPState_ONLINE):
 		state = protos.PPState_ONLINE.String()
 		if setting.OnlineTime == 0 {
 			setting.OnlineTime = time.Now().Unix()
 		}
-		setting.IsSuspended = false
 	case int32(protos.PPState_SUSPEND):
 		state = protos.PPState_SUSPEND.String()
 		setting.OnlineTime = 0
-		// a just activated pp node should be allowed to register to sp
-		// so, a more strict condition to set pp to a "suspended" flag: the value of tier
-		if response.InitTier != 0 && response.OngoingTier == 0 {
-			setting.IsSuspended = true
-		} else {
-			setting.IsSuspended = false
-		}
 	case int32(protos.PPState_MAINTENANCE):
 		state = protos.PPState_MAINTENANCE.String()
 		setting.OnlineTime = 0
-		setting.IsSuspended = false
 	default:
 		state = "Unknown"
 	}
