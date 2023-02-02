@@ -442,6 +442,9 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 			"slashing.p2p_address",
 			"slashing.suspend",
 			"slashing.amount",
+			"slashing.is_effective_stake_changed",
+			"slashing.effective_stake",
+			"slashing.is_unsuspended_during_slash",
 		}
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
 		key := getCacheKey(requiredAttributes, result)
@@ -462,12 +465,32 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 				utils.DebugLog("Invalid slashed amount in big integer in the slashing message from stratos-chain")
 				continue
 			}
-			utils.DebugLogf("slashed amount is %v", slashedAmt.String())
+			isEffectiveStakeChanged, err := strconv.ParseBool(event["slashing.is_effective_stake_changed"])
+			if err != nil {
+				utils.DebugLog("Invalid flag of is_effective_stake_changed in the slashing message from stratos-chain", err)
+				continue
+			}
+			effectiveStake, ok := new(big.Int).SetString(event["slashing.effective_stake"], 10)
+			if !ok {
+				utils.DebugLog("Invalid effective stake in big integer in the slashing message from stratos-chain")
+				continue
+			}
+			IsUnsuspendedDuringSlash, err := strconv.ParseBool(event["slashing.is_unsuspended_during_slash"])
+			if err != nil {
+				utils.DebugLog("Invalid flag of is_unsuspended_during_slash in the slashing message from stratos-chain", err)
+				continue
+			}
+			utils.DebugLogf("slashed amount is %v, is_effective_stake_changed: %v, "+
+				"current effective stake: %v, is_unsuspended_during_slash: %v", slashedAmt.String(),
+				isEffectiveStakeChanged, effectiveStake.String(), IsUnsuspendedDuringSlash)
 			slashedPP := relayTypes.SlashedPP{
-				P2PAddress: event["slashing.p2p_address"],
-				QueryFirst: false,
-				Suspended:  suspended,
-				SlashedAmt: slashedAmt,
+				P2PAddress:               event["slashing.p2p_address"],
+				QueryFirst:               false,
+				Suspended:                suspended,
+				SlashedAmt:               slashedAmt,
+				IsEffectiveStakeChanged:  isEffectiveStakeChanged,
+				EffectiveStake:           effectiveStake,
+				IsUnsuspendedDuringSlash: IsUnsuspendedDuringSlash,
 			}
 			slashedPPs = append(slashedPPs, slashedPP)
 		}

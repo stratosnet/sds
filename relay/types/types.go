@@ -43,10 +43,13 @@ type VolumeReportedReq struct {
 }
 
 type SlashedPP struct {
-	P2PAddress string   `json:"p2p_address"`
-	QueryFirst bool     `json:"query_first"`
-	Suspended  bool     `json:"suspended"`
-	SlashedAmt *big.Int `json:"slashed_amt"`
+	P2PAddress               string   `json:"p2p_address"`
+	QueryFirst               bool     `json:"query_first"`
+	Suspended                bool     `json:"suspended"`
+	SlashedAmt               *big.Int `json:"slashed_amt"`
+	EffectiveStake           *big.Int `json:"effective_stake"`
+	IsEffectiveStakeChanged  bool     `json:"is_effective_stake_changed"`
+	IsUnsuspendedDuringSlash bool     `json:"is_unsuspended_during_slash"`
 }
 
 type SlashedPPReq struct {
