@@ -28,7 +28,10 @@ build-docker-e2e:
 update:
 	go mod vendor
 
-
-
+coverage:
+	go test ./... -coverprofile cover.out -coverpkg=./...
+	go tool cover -html cover.out -o target/cover.html
+	go tool cover -func cover.out | grep total:
+	rm cover.out
 
 .PHONY: build-linux build-mac build clean

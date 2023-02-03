@@ -402,6 +402,7 @@ message ReqUpdatedStakePP {
   string incr_stake = 3; // true/false
   string tx_hash = 4;
   string stake_delta = 5;
+  string current_stake = 6;
 }
 
 message ReqUpdatedStakeSP {

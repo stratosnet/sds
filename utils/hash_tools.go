@@ -67,7 +67,7 @@ func CalcFileHash(filePath, encryptionTag string) string {
 		return ""
 	}
 	data := append([]byte(encryptionTag), CalcFileMD5(filePath)...)
-	return calcFileHash(data)
+	return CalcFileHashFromData(data)
 }
 
 // CalcHash
@@ -102,7 +102,7 @@ func uint64ToBytes(n uint64) []byte {
 	return byteBuf.Bytes()
 }
 
-func calcFileHash(data []byte) string {
+func CalcFileHashFromData(data []byte) string {
 	fileHash, _ := mh.Sum(data, mh.KECCAK_256, hashLen)
 	fileCid := cid.NewCidV1(cid.Raw, fileHash)
 	encoder, _ := mbase.NewEncoder(mbase.Base32hex)

@@ -29,7 +29,7 @@ func (p *Network) tryReloadConnectSP(ctx context.Context) func() {
 	return func() {
 		newConnection, err := p2pserver.GetP2pServer(ctx).ConnectToSP(ctx)
 		if newConnection {
-			p.StartRegisterToSp(ctx)
+			p.RunFsm(ctx, EVENT_CONN_RECONN)
 			p.reloadConnecting = false
 			p.reloadConnectSpRetry = 0
 		} else {

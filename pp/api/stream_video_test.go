@@ -2,16 +2,21 @@ package api
 
 import (
 	ed25519crypto "crypto/ed25519"
-	"encoding/hex"
+	"crypto/md5"
 	"testing"
 
+	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	//"github.com/tendermint/tendermint/libs/bech32"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 )
+
+func init() {
+	utils.NewDefaultLogger("", false, false)
+}
 
 func TestVerifySignature(t *testing.T) {
 	reqBody, sliceHash, data := setup(t)
@@ -50,14 +55,15 @@ func setup(t *testing.T) (*StreamReqBody, string, []byte) {
 
 	data := []byte("some kind of data")
 	reqBody := &StreamReqBody{
-		FileHash:     hex.EncodeToString(crypto.Keccak256(data)),
+		FileHash:     utils.CalcFileHashFromData(md5.New().Sum(data)),
 		P2PAddress:   "d4c3b2a1",
 		SpP2pAddress: spP2pAddrString,
 		Sign:         nil,
+		SliceInfo:    &protos.DownloadSliceInfo{SliceNumber: 0},
 	}
 	sliceHash := utils.CalcSliceHash(data, reqBody.FileHash, reqBody.SliceInfo.SliceNumber)
 
-	toSign := []byte(reqBody.P2PAddress + reqBody.FileHash)
+	toSign := []byte(reqBody.P2PAddress + reqBody.FileHash + header.ReqDownloadSlice)
 	signature := ed25519crypto.Sign(spP2pPrivateKey, toSign)
 	reqBody.Sign = signature
 

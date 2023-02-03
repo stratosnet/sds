@@ -5,8 +5,6 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -23,7 +21,7 @@ func (p *Network) StartRegisterToSp(ctx context.Context) {
 
 func (p *Network) tryRegister(ctx context.Context) func() {
 	return func() {
-		if !setting.IsLoginToSP && setting.State == types.PP_ACTIVE && !setting.IsSuspended {
+		if state := p.GetStateFromFsm(); state.Id == STATE_REGISTERING {
 			utils.DebugLog("Send register and set next try")
 			p.RegisterToSP(ctx, true)
 

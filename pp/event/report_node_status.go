@@ -5,8 +5,8 @@ import (
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/requests"
-	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -21,13 +21,13 @@ func RspReportNodeStatus(ctx context.Context, conn core.WriteCloser) {
 		utils.ErrorLog(target.Result.Msg)
 		return
 	}
-	// finished register->startmining->first_status_report process
-	if !setting.IsLoginToSP && setting.IsStartMining {
-		utils.DebugLog("@#@#@#@#@#@#@#@#@#@#@#@#@#@#")
-		setting.IsLoginToSP = true
+
+	if target.Ppstate == int32(protos.PPState_SUSPEND) {
+		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_SUSPENDED_STATE)
 	}
 
-	if target.GetPpstate() == 2 {
-		setting.IsStartMining = false
+	if state := network.GetPeer(ctx).GetStateFromFsm(); state.Id == network.STATE_REGISTERING {
+		utils.DebugLog("@#@#@#@#@#@#@#@#@#@#@#@#@#@#")
+		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_FIRST_STATUS)
 	}
 }
