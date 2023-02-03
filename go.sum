@@ -530,6 +530,8 @@ github.com/stratosnet/stratos-chain v0.9.1-0.20230124012052-7e7d42189558 h1:H7/c
 github.com/stratosnet/stratos-chain v0.9.1-0.20230124012052-7e7d42189558/go.mod h1:H0mprRkeqLMvk2JCVwOaSFCBXFQQkdmLJp5meHXpMU4=
 github.com/stratosnet/stratos-chain v0.9.1-0.20230202221415-3b5a4a1c4cfc h1:z4ya6ogy5MPU2ikxuEcJAs5Y9/38x6Rs4g7KUPyobkE=
 github.com/stratosnet/stratos-chain v0.9.1-0.20230202221415-3b5a4a1c4cfc/go.mod h1:H0mprRkeqLMvk2JCVwOaSFCBXFQQkdmLJp5meHXpMU4=
+github.com/stratosnet/stratos-chain v0.9.1-0.20230203144454-b1f447efc109 h1:xmeiORrz3Rr9QYNJjCr974rZGAACIaYX8NaGfTxdSO0=
+github.com/stratosnet/stratos-chain v0.9.1-0.20230203144454-b1f447efc109/go.mod h1:H0mprRkeqLMvk2JCVwOaSFCBXFQQkdmLJp5meHXpMU4=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.2.0/go.mod h1:qt09Ya8vawLte6SNmTgCsAVtYtaKzEcn8ATUoHMkEqE=
