@@ -47,13 +47,12 @@ type stratoschain struct {
 }
 
 type transactionsConfig struct {
-	Fee           string  `toml:"fee"`
+	GasPrice      string  `toml:"gas_price"`
 	GasAdjustment float64 `toml:"gas_adjustment"`
 }
 
 type blockchainInfoConfig struct {
 	ChainId      string             `toml:"chain_id"`
-	Token        string             `toml:"token"`
 	Transactions transactionsConfig `toml:"transactions"`
 }
 
@@ -94,11 +93,10 @@ func LoadConfig(path string) error {
 func defaultConfig() *config {
 	return &config{
 		BlockchainInfo: blockchainInfoConfig{
-			ChainId: "test-chain",
-			Token:   "wei",
+			ChainId: "testchain_1-1",
 			Transactions: transactionsConfig{
-				Fee:           "30000wei",
-				GasAdjustment: 1.3,
+				GasPrice:      "1000000000wei",
+				GasAdjustment: 2.0,
 			},
 		},
 		Keys: keysConfig{
