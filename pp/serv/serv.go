@@ -28,55 +28,44 @@ type BaseServer struct {
 	monitorServ *httpServer
 }
 
-func (bs *BaseServer) Start() {
+func (bs *BaseServer) Start() error {
 	ctx := context.Background()
 	err := account.GetWalletAddress(ctx)
 	if err != nil {
-		utils.ErrorLog(err)
-		return
+		return err
 	}
 
 	err = bs.startP2pServer()
 	if err != nil {
-		utils.ErrorLog(err)
-		return
+		return err
 	}
 
 	err = bs.startInternalApiServer()
 	if err != nil {
-		utils.ErrorLog(err)
-		return
+		return err
 	}
 
 	err = bs.startRestServer()
 	if err != nil {
-		utils.ErrorLog(err)
-		return
+		return err
 	}
 
 	err = bs.startTrafficLog()
 	if err != nil {
-		utils.ErrorLog(err)
-		return
+		return err
 	}
 
 	err = bs.startIPC()
 	if err != nil {
-		utils.ErrorLog(err)
-		return
+		return err
 	}
 
 	err = bs.startHttpRPC()
 	if err != nil {
-		utils.ErrorLog(err)
-		return
+		return err
 	}
 
-	err = bs.startMonitor()
-	if err != nil {
-		utils.ErrorLog(err)
-		return
-	}
+	return bs.startMonitor()
 }
 
 func (bs *BaseServer) startIPC() error {
@@ -192,10 +181,7 @@ func (bs *BaseServer) startP2pServer() error {
 	bs.p2pServ.AddConnConntextKey(types.PP_NETWORK_KEY)
 
 	bs.p2pServ.Start(ctx)
-	_, err := bs.p2pServ.ConnectToSP(ctx)
-	if err != nil {
-		return err
-	}
+	_, _ = bs.p2pServ.ConnectToSP(ctx) // Ignore error if we can't connect to any SPs
 	bs.ppNetwork.StartPP(ctx)
 	return nil
 }

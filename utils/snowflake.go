@@ -42,11 +42,11 @@ func NewIdWorker(NodeId int64) (*IdWorker, error) {
 	districtId := int64(1) // default to 1, for future extension
 	idWorker := &IdWorker{}
 	if NodeId > maxNodeId || NodeId < 0 {
-		fmt.Printf("NodeId Id can't be greater than %d or less than 0\n", maxNodeId)
+		ErrorLogf("NodeId Id can't be greater than %d or less than 0", maxNodeId)
 		return nil, fmt.Errorf("NodeId Id: %d error", NodeId)
 	}
 	if districtId > maxDistrictId || districtId < 0 {
-		fmt.Printf("District Id can't be greater than %d or less than 0\n", maxDistrictId)
+		ErrorLogf("District Id can't be greater than %d or less than 0", maxDistrictId)
 		return nil, fmt.Errorf("district Id: %d error", districtId)
 	}
 	idWorker.nodeId = NodeId
@@ -55,7 +55,7 @@ func NewIdWorker(NodeId int64) (*IdWorker, error) {
 	idWorker.sequence = 0
 	idWorker.twepoch = twepoch
 	idWorker.mutex = sync.Mutex{}
-	fmt.Printf("worker starting. timestamp left shift %d, District id bits %d, worker id bits %d, sequence bits %d, workerid %d\n", timestampLeftShift, DistrictIdBits, NodeIdBits, sequenceBits, NodeId)
+	DebugLogf("worker starting. timestamp left shift %d, District id bits %d, worker id bits %d, sequence bits %d, workerid %d", timestampLeftShift, DistrictIdBits, NodeIdBits, sequenceBits, NodeId)
 	return idWorker, nil
 }
 
@@ -83,7 +83,7 @@ func (id *IdWorker) NextId() (int64, error) {
 // NextIds get snowflake ids.
 func (id *IdWorker) NextIds(num int) ([]int64, error) {
 	if num > maxNextIdsNum || num < 0 {
-		fmt.Printf("NextIds num can't be greater than %d or less than 0\n", maxNextIdsNum)
+		ErrorLogf("NextIds num can't be greater than %d or less than 0", maxNextIdsNum)
 		return nil, fmt.Errorf("NextIds num: %d error", num)
 	}
 	ids := make([]int64, num)

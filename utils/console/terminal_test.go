@@ -2,6 +2,7 @@ package console
 
 import (
 	"testing"
+	"time"
 )
 
 func TestRun(t *testing.T) {
@@ -16,5 +17,7 @@ func TestRun(t *testing.T) {
 	}
 	Mystdin.RegisterProcessFunc("test", f, true)
 	Mystdin.RegisterProcessFunc("test2", f2, true)
-	Mystdin.Run()
+
+	go Mystdin.Run()
+	time.Sleep(time.Second) // Finish test after 1 second, otherwise Mystdin.Run() will last forever
 }

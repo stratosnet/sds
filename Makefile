@@ -34,4 +34,7 @@ coverage:
 	go tool cover -func cover.out | grep total:
 	rm cover.out
 
-.PHONY: build-linux build-mac build clean
+lint:
+	golangci-lint run
+
+.PHONY: build-linux build-mac build clean coverage lint

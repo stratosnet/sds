@@ -32,7 +32,11 @@ var BaseServer = &serv.BaseServer{}
 func nodePP(cmd *cobra.Command, args []string) error {
 	registerDenoms()
 
-	BaseServer.Start()
+	err := BaseServer.Start()
+	defer BaseServer.Stop()
+	if err != nil {
+		return errors.New(utils.FormatError(err))
+	}
 
 	closure := make(chan os.Signal, 1)
 	signal.Notify(closure,
@@ -44,9 +48,6 @@ func nodePP(cmd *cobra.Command, args []string) error {
 
 	sig := <-closure
 	utils.Logf("Quit signal detected: [%s]. Shutting down...", sig.String())
-	// stop ipcServer | rpcServer | monitorServer | PPServer
-	BaseServer.Stop()
-	//os.Exit(1)
 	return nil
 }
 
