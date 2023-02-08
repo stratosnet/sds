@@ -18,12 +18,12 @@ func RspSpUnderMaintenance(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	switch conn.(type) {
+	switch conn := conn.(type) {
 	case *core.ServerConn:
-		utils.DebugLog("Ignore RspSpUnderMaintenance in SeverConn")
+		utils.DebugLog("Ignore RspSpUnderMaintenance in ServerConn")
 		return
 	case *cf.ClientConn:
-		if conn.(*cf.ClientConn).GetName() != p2pserver.GetP2pServer(ctx).GetSpName() {
+		if conn.GetName() != p2pserver.GetP2pServer(ctx).GetSpName() {
 			utils.DebugLog("Ignore RspSpUnderMaintenance from non SP node")
 			return
 		}

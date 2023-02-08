@@ -294,13 +294,13 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		clock.NewClock().AddJobRepeat(10*time.Second, 0, printExitMsg)
 
 		// disable input buffering
-		exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
+		_ = exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
 		// do not display entered characters on the screen
-		exec.Command("stty", "-F", "/dev/tty", "-echo").Run()
+		_ = exec.Command("stty", "-F", "/dev/tty", "-echo").Run()
 
 		var b = make([]byte, 1)
 		for {
-			os.Stdin.Read(b)
+			_, _ = os.Stdin.Read(b)
 			if b[0] == ']' {
 				break
 			}
@@ -344,7 +344,7 @@ func printLogNotification(nc <-chan serv.LogMsg) {
 func destroySub(c *rpc.Client, sub *rpc.ClientSubscription) {
 	var cleanResult interface{}
 	sub.Unsubscribe()
-	c.Call(&cleanResult, "sdslog_cleanUp")
+	_ = c.Call(&cleanResult, "sdslog_cleanUp")
 }
 
 func printExitMsg() {

@@ -39,7 +39,9 @@ func NewServer() *Server {
 	// Register the default service providing meta information about the RPC service such
 	// as the services and methods it offers.
 	rpcService := &RPCService{server}
-	server.RegisterName(MetadataApi, rpcService)
+	if err := server.RegisterName(MetadataApi, rpcService); err != nil {
+		return nil
+	}
 	return server
 }
 
@@ -106,7 +108,7 @@ func (s *Server) serveSingleRequest(ctx context.Context, codec ServerCodec) {
 	reqs, batch, err := codec.readBatch()
 	if err != nil {
 		if err != io.EOF {
-			codec.writeJSON(ctx, errorMessage(&invalidMessageError{"parse error"}))
+			_ = codec.writeJSON(ctx, errorMessage(&invalidMessageError{"parse error"}))
 		}
 		return
 	}

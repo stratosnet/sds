@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/protos"
@@ -21,6 +20,7 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
+	"google.golang.org/protobuf/proto"
 )
 
 const LOCAL_REQID string = "local"
@@ -34,14 +34,11 @@ var DownloadSliceTaskMap = utils.NewAutoCleanMap(1 * time.Hour)
 // DownloadFileMap P download info map  make(map[string]*protos.RspFileStorageInfo)
 var DownloadFileMap = utils.NewAutoCleanMap(5 * time.Minute)
 
-// DownloadFileProgress
 // var DownloadFileProgress = &sync.Map{}
 
-// DownloadSpeedOfProgress DownloadSpeedOfProgress
 var DownloadSpeedOfProgress = &sync.Map{}
 
-// key: slice reqid, value: session id (file reqid)
-var SliceSessionMap = &sync.Map{}
+var SliceSessionMap = &sync.Map{} // key: slice reqid, value: session id (file reqid)
 
 // DownloadSP download progress
 type DownloadSP struct {
@@ -121,14 +118,12 @@ func (task *DownloadTask) RefreshTask(target *protos.RspFileStorageInfo) {
 	task.FailedSlice = make(map[string]bool)
 }
 
-// DownloadSliceData
 type DownloadSliceData struct {
 	Data    []byte
 	FileCrc uint32
 	RawSize uint64
 }
 
-// AddDownloadTask
 func AddDownloadTask(target *protos.RspFileStorageInfo) {
 	SliceInfoMap := make(map[string]*protos.DownloadSliceInfo)
 	for _, dlSliceInfo := range target.SliceInfo {
@@ -185,7 +180,6 @@ func CheckDownloadTask(fileHash, walletAddress, fileReqId string) bool {
 	return DownloadTaskMap.HashKey(fileHash + walletAddress + fileReqId)
 }
 
-// CleanDownloadTask
 func CleanDownloadTask(ctx context.Context, fileHash, sliceHash, walletAddress, fileReqId string) {
 	if dlTask, ok := DownloadTaskMap.Load(fileHash + walletAddress + fileReqId); ok {
 
@@ -205,7 +199,6 @@ func DeleteDownloadTask(fileHash, walletAddress, fileReqId string) {
 	DownloadTaskMap.Delete(fileHash + walletAddress + fileReqId)
 }
 
-// CleanDownloadFileAndConnMap
 func CleanDownloadFileAndConnMap(ctx context.Context, fileHash, fileReqId string) {
 	DownloadSpeedOfProgress.Delete(fileHash + fileReqId)
 	if f, ok := DownloadFileMap.Load(fileHash + fileReqId); ok {
@@ -218,12 +211,10 @@ func CleanDownloadFileAndConnMap(ctx context.Context, fileHash, fileReqId string
 	DownloadFileMap.Delete(fileHash + fileReqId)
 }
 
-// CancelDownloadTask
 func CancelDownloadTask(fileHash string) {
 	file.DeleteDirectory(fileHash)
 }
 
-// GetDownloadSlice
 func GetDownloadSlice(target *protos.ReqDownloadSlice) *DownloadSliceData {
 	data := file.GetSliceData(target.SliceInfo.SliceHash)
 	rawSize := uint64(len(data))
@@ -246,7 +237,6 @@ func GetDownloadSlice(target *protos.ReqDownloadSlice) *DownloadSliceData {
 
 }
 
-// SaveDownloadFile
 func SaveDownloadFile(ctx context.Context, target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo) bool {
 	if fInfo.IsVideoStream {
 		return file.SaveFileData(ctx, target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, target.SliceInfo.SliceHash, fInfo.FileHash, fInfo.SavePath, fInfo.ReqId)
@@ -421,7 +411,6 @@ func CheckRemoteDownloadOver(ctx context.Context, fileHash, fileReqId string) {
 	CleanDownloadFileAndConnMap(ctx, fileHash, fileReqId)
 }
 
-// DownloadProgress
 func DownloadProgress(ctx context.Context, fileHash, fileReqId string, size uint64) {
 	if s, ok := DownloadSpeedOfProgress.Load(fileHash + fileReqId); ok {
 		sp := s.(*DownloadSP)

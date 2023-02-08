@@ -14,9 +14,7 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/cmd/relayd/setting"
@@ -31,6 +29,7 @@ import (
 	"github.com/stratosnet/sds/utils/types"
 	tmHttp "github.com/tendermint/tendermint/rpc/client/http"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
+	"google.golang.org/protobuf/proto"
 )
 
 type MultiClient struct {
@@ -286,7 +285,7 @@ func (m *MultiClient) txBroadcasterLoop() {
 		var unsignedSdkMsgs []sdktypes.Msg
 		protoConfig, txBuilder := createTxConfigAndTxBuilder()
 		for _, unsignedMsg := range unsignedMsgs {
-			unsignedSdkMsgs = append(unsignedSdkMsgs, unsignedMsg.Msg.(legacytx.LegacyMsg))
+			unsignedSdkMsgs = append(unsignedSdkMsgs, unsignedMsg.Msg)
 		}
 		defer func() {
 			unsignedMsgs = nil // Clearing msg list

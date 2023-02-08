@@ -42,5 +42,4 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 	pp.Logf(ctx, "get GetWalletOz RSP, the current ozone balance of %v = %v, %v", target.GetWalletAddress(), target.GetWalletOz(), reqId)
 	rpcResult.Return = rpc.SUCCESS
 	rpcResult.Ozone = target.WalletOz
-	return
 }

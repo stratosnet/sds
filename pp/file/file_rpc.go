@@ -3,7 +3,6 @@ package file
 import (
 	"context"
 	b64 "encoding/base64"
-	"io"
 	"strconv"
 	"strings"
 	"sync"
@@ -30,9 +29,6 @@ var (
 	// key(fileHash) : value(chan []byte)
 	rpcUploadDataChan = &sync.Map{}
 
-	// key(fileHash) : value(chan string)
-	rpcSignatureChan = &sync.Map{}
-
 	// key(fileHash + file) : value(downloadReady)
 	rpcDownloadReady = &sync.Map{}
 
@@ -54,12 +50,6 @@ var (
 	RpcWaitTimeout time.Duration
 )
 
-type pipe struct {
-	reader *io.PipeReader
-	writer *io.PipeWriter
-}
-
-// IsFileRpcRemote
 func IsFileRpcRemote(key string) bool {
 	str := fileMap[key]
 	if str == "" {
@@ -109,10 +99,11 @@ func GetRemoteFileData(hash string, offset *protos.SliceOffset) []byte {
 OuterFor:
 	for {
 		parentCtx := context.Background()
-		ctx, _ := context.WithTimeout(parentCtx, RpcWaitTimeout)
+		ctx, cancel := context.WithTimeout(parentCtx, RpcWaitTimeout)
 
 		select {
 		case <-ctx.Done():
+			cancel()
 			return nil
 		case subSlice := <-SubscribeGetRemoteFileData(hash):
 			metrics.UploadPerformanceLogNow(hash + ":RCV_SUBSLICE_RPC:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
@@ -122,12 +113,13 @@ OuterFor:
 			cursor = data[read:]
 			if read >= offset.SliceOffsetEnd-offset.SliceOffsetStart {
 				UnsubscribeGetRemoteFileData(hash)
+				cancel()
 				break OuterFor
 			}
 		}
 	}
 
-	return []byte(data)
+	return data
 }
 
 // SendFileDataBack rpc server feeds file data from remote user to application
@@ -169,7 +161,6 @@ func SaveRemoteFileData(key string, data []byte, offset uint64) bool {
 	return WaitDownloadSliceDone(key)
 }
 
-// GetRemoteFileSize
 func GetRemoteFileSize(hash string) uint64 {
 	if f, ok := rpcFileInfoMap.Load(hash); ok {
 		return f.(uint64)
@@ -177,7 +168,6 @@ func GetRemoteFileSize(hash string) uint64 {
 	return 0
 }
 
-// SaveRemoteFileHash
 func SaveRemoteFileHash(hash, fileName string, fileSize uint64) {
 	reFileMutex.Lock()
 	defer reFileMutex.Unlock()
@@ -216,14 +206,12 @@ func SetRemoteFileResult(key string, result rpc.Result) {
 	}
 }
 
-// SubscribeDownloadSliceDone
 func SubscribeDownloadSliceDone(key string) chan bool {
 	done := make(chan bool)
 	rpcDownloadReady.Store(key, done)
 	return done
 }
 
-// UnsubscribeDownloadSliceDone
 func UnsubscribeDownloadSliceDone(key string) {
 	rpcDownloadReady.Delete(key)
 }
@@ -240,22 +228,20 @@ func SetDownloadSliceDone(key string) {
 	}
 }
 
-// SubscribeGetSignature
 func SubscribeGetSignature(key string) chan []byte {
 	sig := make(chan []byte)
 	rpcDownloadReady.Store(key, sig)
 	return sig
 }
 
-// UnsubscribeGetSignature
 func UnsubscribeGetSignature(key string) {
 	rpcDownloadReady.Delete(key)
 }
 
-// GetSignatureFromRemote
 func GetSignatureFromRemote(key string) []byte {
 	parentCtx := context.Background()
-	ctx, _ := context.WithTimeout(parentCtx, RpcWaitTimeout)
+	ctx, cancel := context.WithTimeout(parentCtx, RpcWaitTimeout)
+	defer cancel()
 
 	select {
 	case <-ctx.Done():
@@ -266,7 +252,6 @@ func GetSignatureFromRemote(key string) []byte {
 	}
 }
 
-// SetSignature
 func SetSignature(key string, sig []byte) {
 	ch, found := rpcDownloadReady.Load(key)
 	if found {
@@ -282,7 +267,8 @@ func SetSignature(key string, sig []byte) {
 func WaitDownloadSliceDone(key string) bool {
 	var done bool
 	parentCtx := context.Background()
-	ctx, _ := context.WithTimeout(parentCtx, RpcWaitTimeout)
+	ctx, cancel := context.WithTimeout(parentCtx, RpcWaitTimeout)
+	defer cancel()
 
 	select {
 	case <-ctx.Done():
@@ -299,17 +285,16 @@ func SubscribeDownloadFileInfo(key string) chan uint64 {
 	return fileSize
 }
 
-// UnsubscribeDownloadFileInfo
 func UnsubscribeDownloadFileInfo(key string) {
 	rpcDownloadFileInfo.Delete(key)
 }
 
-// GetRemoteFileInfo
 func GetRemoteFileInfo(key, reqId string) uint64 {
 	SetRemoteFileResult(key, rpc.Result{ReqId: reqId, Return: rpc.DL_OK_ASK_INFO})
 	var fileSize uint64
 	parentCtx := context.Background()
-	ctx, _ := context.WithTimeout(parentCtx, RpcWaitTimeout)
+	ctx, cancel := context.WithTimeout(parentCtx, RpcWaitTimeout)
+	defer cancel()
 
 	select {
 	case <-ctx.Done():
@@ -320,7 +305,6 @@ func GetRemoteFileInfo(key, reqId string) uint64 {
 	return fileSize
 }
 
-// SetRemoteFileInfo
 func SetRemoteFileInfo(key string, size uint64) {
 	reFileMutex.Lock()
 	defer reFileMutex.Unlock()
@@ -334,7 +318,6 @@ func SetRemoteFileInfo(key string, size uint64) {
 	}
 }
 
-// CleanFileHash
 func CleanFileHash(key string) {
 	reFileMutex.Lock()
 	defer reFileMutex.Unlock()
@@ -342,12 +325,10 @@ func CleanFileHash(key string) {
 	ClearFileMap(key)
 }
 
-// CloseDownloadSession
 func CloseDownloadSession(key string) {
 	rpcDownSessionClosing.Store(key, true)
 }
 
-// GetFileListResult
 func GetFileListResult(key string) (*rpc.FileListResult, bool) {
 	result, loaded := rpcFileListResult.LoadAndDelete(key)
 	if result != nil && loaded {
@@ -356,14 +337,12 @@ func GetFileListResult(key string) (*rpc.FileListResult, bool) {
 	return nil, loaded
 }
 
-// SetFileListResult
 func SetFileListResult(key string, result *rpc.FileListResult) {
 	if result != nil {
 		rpcFileListResult.Store(key, result)
 	}
 }
 
-// GetFileShareResult
 func GetFileShareResult(key string) (*rpc.FileShareResult, bool) {
 	result, loaded := rpcFileShareResult.LoadAndDelete(key)
 	if result != nil && loaded {
@@ -372,14 +351,12 @@ func GetFileShareResult(key string) (*rpc.FileShareResult, bool) {
 	return nil, loaded
 }
 
-// SetFileShareResult
 func SetFileShareResult(key string, result *rpc.FileShareResult) {
 	if result != nil {
 		rpcFileShareResult.Store(key, result)
 	}
 }
 
-// GetQueryOzoneResult
 func GetQueryOzoneResult(key string) (*rpc.GetOzoneResult, bool) {
 	result, loaded := rpcOzone.LoadAndDelete(key)
 	if result != nil && loaded {
@@ -388,7 +365,6 @@ func GetQueryOzoneResult(key string) (*rpc.GetOzoneResult, bool) {
 	return nil, loaded
 }
 
-// SetQueryOzoneResult
 func SetQueryOzoneResult(key string, result *rpc.GetOzoneResult) {
 	if result != nil {
 		rpcOzone.Store(key, result)

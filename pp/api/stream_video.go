@@ -58,13 +58,13 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 	ctx := core.RegisterRemoteReqId(req.Context(), task.LOCAL_REQID)
 	ownerWalletAddress, fileHash, err := parseFilePath(req.RequestURI)
 	if err != nil {
-		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
 		return
 	}
 
 	if setting.State == types.PP_ACTIVE {
 		w.WriteHeader(setting.FAILCode)
-		w.Write(httpserv.NewErrorJson(setting.FAILCode, "Current node is activated and is not allowed to cache video").ToBytes())
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "Current node is activated and is not allowed to cache video").ToBytes())
 		return
 	}
 
@@ -73,25 +73,25 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 	streamInfo, err := getStreamInfo(ctx, fileHash, ownerWalletAddress, w)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
-		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
 		return
 	}
 	dTask, ok := task.GetDownloadTask(fileHash, setting.WalletAddress, task.LOCAL_REQID)
 	if !ok {
 		w.WriteHeader(setting.FAILCode)
-		w.Write(httpserv.NewErrorJson(setting.FAILCode, "Failed to retrieve download task info").ToBytes())
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "Failed to retrieve download task info").ToBytes())
 		return
 	}
 	event.GetVideoSlices(ctx, streamInfo.FileInfo, dTask)
 	ret, _ := json.Marshal(streamInfo)
-	w.Write(ret)
+	_, _ = w.Write(ret)
 }
 
 func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 	ctx := core.RegisterRemoteReqId(context.Background(), task.LOCAL_REQID)
 	ownerWalletAddress, fileHash, err := parseFilePath(req.RequestURI)
 	if err != nil {
-		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
 		return
 	}
 
@@ -99,12 +99,12 @@ func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 	streamInfo, err := getStreamInfo(ctx, fileHash, ownerWalletAddress, w)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
-		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
 		return
 	}
 
 	ret, _ := json.Marshal(streamInfo)
-	w.Write(ret)
+	_, _ = w.Write(ret)
 }
 
 func streamVideoP2P(w http.ResponseWriter, req *http.Request) {
@@ -114,13 +114,13 @@ func streamVideoP2P(w http.ResponseWriter, req *http.Request) {
 	body, err := verifyStreamReqBody(req)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
-		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
 		return
 	}
 
 	if setting.State == types.PP_ACTIVE {
 		w.WriteHeader(setting.FAILCode)
-		w.Write(httpserv.NewErrorJson(setting.FAILCode, "Current node is activated and is not allowed to cache video").ToBytes())
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "Current node is activated and is not allowed to cache video").ToBytes())
 		return
 	}
 
@@ -145,7 +145,7 @@ func streamVideoHttp(w http.ResponseWriter, req *http.Request) {
 	body, err := verifyStreamReqBody(req)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
-		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
 		return
 	}
 
@@ -181,7 +181,7 @@ func GetVideoSlice(w http.ResponseWriter, req *http.Request) {
 	body, err := verifyStreamReqBody(req)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
-		w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
 		return
 	}
 
@@ -206,18 +206,18 @@ func GetVideoSlice(w http.ResponseWriter, req *http.Request) {
 	video := file.GetSliceData(sliceHash)
 	if video == nil {
 		w.WriteHeader(setting.FAILCode)
-		w.Write(httpserv.NewErrorJson(setting.FAILCode, "Could not find the video segment!").ToBytes())
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "Could not find the video segment!").ToBytes())
 		return
 	}
 
 	if !verifySignature(body, sliceHash, video) {
 		w.WriteHeader(setting.FAILCode)
-		w.Write(httpserv.NewErrorJson(setting.FAILCode, "Authorization failed!").ToBytes())
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "Authorization failed!").ToBytes())
 		return
 	}
 
 	utils.DebugLog("Found the slice and return", body)
-	w.Write(video)
+	_, _ = w.Write(video)
 
 	sendReportStreamResult(req.Context(), body, sliceHash, true)
 }
@@ -259,9 +259,7 @@ func getStreamInfo(ctx context.Context, fileHash, ownerWalletAddress string, w h
 			utils.DebugLog("Received file storage info from sp ", fInfo)
 			break
 		} else {
-			select {
-			case <-time.After(time.Second):
-			}
+			<-time.After(time.Second)
 			// timeout
 			if time.Now().Unix()-start > setting.HTTPTIMEOUT {
 				return nil, errors.New("http stream video failed to get file storage info!")

@@ -609,10 +609,7 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 		}
 	}()
 
-	var (
-		sendCh chan *msg.RelayMsgBuf
-	)
-	sendCh = c.sendCh
+	sendCh := c.sendCh
 	msgH := make([]byte, utils.MsgHeaderLen)
 	reqId := core.GetReqIdFromContext(ctx)
 	if reqId == 0 {
@@ -638,12 +635,13 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 	(*reflect.SliceHeader)(unsafe.Pointer(&memory.MSGData)).Cap = int(m.MSGHead.Len + utils.MsgHeaderLen)
 	copy(memory.MSGData[0:], msgH)
 	copy(memory.MSGData[utils.MsgHeaderLen:], m.MSGData)
-	select {
+	sendCh <- memory
+	/*select {
 	case sendCh <- memory:
 		err = nil
-		// default:
-		// 	err = utils.ErrWouldBlock
-	}
+	default:
+		err = utils.ErrWouldBlock
+	}*/
 
 	if err != nil {
 		utils.ErrorLog("asyncWrite error ", err)
@@ -665,7 +663,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 		// setHeartBeatFunc func(int64)
 		onMessage onMessageFunc
 		handlerCh chan MsgHandler
-		message   = new(msg.RelayMsgBuf)
+		message   *msg.RelayMsgBuf
 		cc        *ClientConn
 	)
 	cc = c.(*ClientConn)
@@ -713,7 +711,6 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				}
 
 				header.DecodeHeader(headerBytes, &msgH)
-				headerBytes = nil
 				if msgH.Version < cc.opts.minAppVer {
 					utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
 					continue
@@ -782,7 +779,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					handler := core.GetHandlerFunc(cmd)
 					if handler == nil {
 						if onMessage != nil {
-							onMessage(*message, c.(core.WriteCloser))
+							onMessage(*message, c)
 						} else {
 							Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for message: "+utils.ByteToString(msgH.Cmd))
 						}
@@ -874,7 +871,6 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					Mylog(cc.opts.logOpen, LOG_MODULE_WRITELOOP, "write packet err: "+err.Error())
 					return
 				}
-				packet = nil
 			}
 		}
 	}
@@ -958,6 +954,7 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 	return nil
 }
 
+//nolint:unused
 func (cc *ClientConn) writePacketNoEncrypt(packet *msg.RelayMsgBuf) error {
 	var onereadlen = 1024
 	var n int

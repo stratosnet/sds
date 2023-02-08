@@ -27,7 +27,7 @@ func SetupWallet(accountDir, defaultHDPath string, updateConfig func(walletKeyAd
 	}
 
 	mnemonic, err := console.Stdin.PromptPassword("input bip39 mnemonic (leave blank to generate a new one)")
-	if mnemonic == "" {
+	if mnemonic == "" || err != nil {
 		newMnemonic, err := NewMnemonic()
 		if err != nil {
 			return errors.Wrap(err, "Couldn't generate new mnemonic")

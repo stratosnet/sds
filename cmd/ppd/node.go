@@ -39,21 +39,14 @@ func nodePP(cmd *cobra.Command, args []string) error {
 		syscall.SIGTERM,
 		syscall.SIGINT,
 		syscall.SIGQUIT,
-		syscall.SIGKILL,
 		syscall.SIGHUP,
 	)
 
-	for {
-		select {
-		case sig := <-closure:
-			utils.Logf("Quit signal detected: [%s]. Shutting down...", sig.String())
-			// stop ipcServer | rpcServer | monitorServer | PPServer
-			BaseServer.Stop()
-			//os.Exit(1)
-			return nil
-		}
-	}
-
+	sig := <-closure
+	utils.Logf("Quit signal detected: [%s]. Shutting down...", sig.String())
+	// stop ipcServer | rpcServer | monitorServer | PPServer
+	BaseServer.Stop()
+	//os.Exit(1)
 	return nil
 }
 

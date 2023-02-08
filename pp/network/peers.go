@@ -18,25 +18,19 @@ type Network struct {
 	pingTimeSPMap        *sync.Map
 	reloadConnectSpRetry int
 	reloadRegisterRetry  int
-	reloadConnecting bool
-	fsm              utils.Fsm
+	reloadConnecting     bool
+	fsm                  utils.Fsm
 }
 
-const (
-	PP_NETWORK_KEY = "PpNetworkKey"
-)
-
-// GetPeer
 func GetPeer(ctx context.Context) *Network {
-	if ctx == nil || ctx.Value(PP_NETWORK_KEY) == nil {
+	if ctx == nil || ctx.Value(types.PP_NETWORK_KEY) == nil {
 		panic("Network is not instantiated")
 	}
 
-	ps := ctx.Value(PP_NETWORK_KEY).(*Network)
+	ps := ctx.Value(types.PP_NETWORK_KEY).(*Network)
 	return ps
 }
 
-// StartPP
 func (p *Network) StartPP(ctx context.Context) {
 	p.ppPeerClock = clock.NewClock()
 	p.pingTimePPMap = &sync.Map{}
@@ -49,14 +43,12 @@ func (p *Network) StartPP(ctx context.Context) {
 	go p.ListenOffline(ctx)
 }
 
-// InitPeer
 func (p *Network) InitPeer(ctx context.Context) {
 	p.GetSPList(ctx)()
 	p.GetPPStatusInitPPList(ctx)()
 	go p.ListenOffline(ctx)
 }
 
-// InitPPList
 func (p *Network) InitPPList(ctx context.Context) {
 	pplist, total, _ := p2pserver.GetP2pServer(ctx).GetPPList(ctx)
 	if total == 0 {
@@ -69,7 +61,6 @@ func (p *Network) InitPPList(ctx context.Context) {
 	}
 }
 
-// ConnectToGatewayPP
 func (p *Network) ConnectToGatewayPP(ctx context.Context, pplist []*types.PeerInfo) bool {
 	for _, ppInfo := range pplist {
 		if ppInfo.NetworkAddress == setting.NetworkAddress {
@@ -87,10 +78,9 @@ func (p *Network) ConnectToGatewayPP(ctx context.Context, pplist []*types.PeerIn
 	return false
 }
 
-// ListenOffline
 func (p *Network) ListenOffline(ctx context.Context) {
 	var qch chan bool
-	if v := ctx.Value(p2pserver.LISTEN_OFFLINE_QUIT_CH_KEY); v != nil {
+	if v := ctx.Value(types.LISTEN_OFFLINE_QUIT_CH_KEY); v != nil {
 		qch = v.(chan bool)
 		utils.DebugLogf("ListenOffline quit ch found")
 	}

@@ -77,6 +77,9 @@ func createAccounts(cmd *cobra.Command, args []string) error {
 	}
 
 	hdPath, err := cmd.Flags().GetString(hdPathFlag)
+	if err != nil {
+		return err
+	}
 	if len(hdPath) <= 0 {
 		hdPath = setting.HD_PATH
 	}

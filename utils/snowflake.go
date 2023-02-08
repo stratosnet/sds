@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -40,16 +39,15 @@ type IdWorker struct {
 
 // NewIdWorker new a snowflake id generator object.
 func NewIdWorker(NodeId int64) (*IdWorker, error) {
-	var districtId int64
-	districtId = 1 // default to 1, for future extension
+	districtId := int64(1) // default to 1, for future extension
 	idWorker := &IdWorker{}
 	if NodeId > maxNodeId || NodeId < 0 {
-		fmt.Sprintf("NodeId Id can't be greater than %d or less than 0", maxNodeId)
-		return nil, errors.New(fmt.Sprintf("NodeId Id: %d error", NodeId))
+		fmt.Printf("NodeId Id can't be greater than %d or less than 0\n", maxNodeId)
+		return nil, fmt.Errorf("NodeId Id: %d error", NodeId)
 	}
 	if districtId > maxDistrictId || districtId < 0 {
-		fmt.Sprintf("District Id can't be greater than %d or less than 0", maxDistrictId)
-		return nil, errors.New(fmt.Sprintf("District Id: %d error", districtId))
+		fmt.Printf("District Id can't be greater than %d or less than 0\n", maxDistrictId)
+		return nil, fmt.Errorf("district Id: %d error", districtId)
 	}
 	idWorker.nodeId = NodeId
 	idWorker.districtId = districtId
@@ -57,7 +55,7 @@ func NewIdWorker(NodeId int64) (*IdWorker, error) {
 	idWorker.sequence = 0
 	idWorker.twepoch = twepoch
 	idWorker.mutex = sync.Mutex{}
-	fmt.Sprintf("worker starting. timestamp left shift %d, District id bits %d, worker id bits %d, sequence bits %d, workerid %d", timestampLeftShift, DistrictIdBits, NodeIdBits, sequenceBits, NodeId)
+	fmt.Printf("worker starting. timestamp left shift %d, District id bits %d, worker id bits %d, sequence bits %d, workerid %d\n", timestampLeftShift, DistrictIdBits, NodeIdBits, sequenceBits, NodeId)
 	return idWorker, nil
 }
 
@@ -85,8 +83,8 @@ func (id *IdWorker) NextId() (int64, error) {
 // NextIds get snowflake ids.
 func (id *IdWorker) NextIds(num int) ([]int64, error) {
 	if num > maxNextIdsNum || num < 0 {
-		fmt.Sprintf("NextIds num can't be greater than %d or less than 0", maxNextIdsNum)
-		return nil, errors.New(fmt.Sprintf("NextIds num: %d error", num))
+		fmt.Printf("NextIds num can't be greater than %d or less than 0\n", maxNextIdsNum)
+		return nil, fmt.Errorf("NextIds num: %d error", num)
 	}
 	ids := make([]int64, num)
 	id.mutex.Lock()
@@ -101,7 +99,7 @@ func (id *IdWorker) nextid() (int64, error) {
 	timestamp := timeGen()
 	if timestamp < id.lastTimestamp {
 		//    fmt.Sprintf("clock is moving backwards.  Rejecting requests until %d.", id.lastTimestamp)
-		return 0, errors.New(fmt.Sprintf("Clock moved backwards.  Refusing to generate id for %d milliseconds", id.lastTimestamp-timestamp))
+		return 0, fmt.Errorf("Clock moved backwards.  Refusing to generate id for %d milliseconds", id.lastTimestamp-timestamp)
 	}
 	if id.lastTimestamp == timestamp {
 		id.sequence = (id.sequence + 1) & sequenceMask

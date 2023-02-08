@@ -901,6 +901,9 @@ func httpRequest(request []byte) []byte {
 
 	// http post
 	req, err := http.NewRequest("POST", Url, bytes.NewBuffer(request))
+	if err != nil {
+		panic(err)
+	}
 	req.Header.Set("X-Custom-Header", "myvalue")
 	req.Header.Set("Content-Type", "application/json")
 
@@ -908,7 +911,6 @@ func httpRequest(request []byte) []byte {
 	resp, err := client.Do(req)
 	if err != nil {
 		panic(err)
-		return nil
 	}
 
 	body, _ := ioutil.ReadAll(resp.Body)

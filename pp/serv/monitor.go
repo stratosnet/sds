@@ -195,7 +195,7 @@ func (api *monitorApi) GetTrafficData(ctx context.Context, param ParamTrafficInf
 
 func getDiskUsage() int64 {
 	var size int64
-	filepath.Walk(setting.Config.StorehousePath, func(_ string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(setting.Config.StorehousePath, func(_ string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -307,7 +307,7 @@ func (api *monitorApi) Subscription(ctx context.Context, token string) (*rpc.Sub
 					PeerList:    &PeerList{Total: t, PeerList: peers},
 					DiskUsage:   &DiskUsage{DataHost: getDiskUsage()},
 				}
-				notifier.Notify(rpcSub.ID, result)
+				_ = notifier.Notify(rpcSub.ID, result)
 			case <-rpcSub.Err(): // client send an unsubscribe request
 				unsubscribeTrafficInfo(*rpcSub)
 				return

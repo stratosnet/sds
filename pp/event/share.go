@@ -19,35 +19,30 @@ import (
 	"github.com/stratosnet/sds/utils/datamesh"
 )
 
-// GetAllShareLink GetShareLink
 func GetAllShareLink(ctx context.Context, walletAddr string, page uint64) {
 	if setting.CheckLogin() {
 		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqShareLinkData(walletAddr, page), header.ReqShareLink)
 	}
 }
 
-// GetReqShareFile GetReqShareFile
 func GetReqShareFile(ctx context.Context, fileHash, pathHash, walletAddr string, shareTime int64, isPrivate bool) {
 	if setting.CheckLogin() {
 		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqShareFileData(fileHash, pathHash, walletAddr, isPrivate, shareTime), header.ReqShareFile)
 	}
 }
 
-// DeleteShare DeleteShare
 func DeleteShare(ctx context.Context, shareID, walletAddress string) {
 	if setting.CheckLogin() {
 		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteShareData(shareID, walletAddress), header.ReqDeleteShare)
 	}
 }
 
-// ReqShareLink
 func ReqShareLink(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
 	utils.DebugLog("ReqShareLinkReqShareLinkReqShareLinkReqShareLink")
 	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
-// RspShareLink
 func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 	pp.DebugLog(ctx, "RspShareLink(ctx context.Context, conn core.WriteCloser) {RspShareLink(ctx context.Context, conn core.WriteCloser) {")
 	var target protos.RspShareLink
@@ -104,16 +99,13 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 		pp.ErrorLog(ctx, "all share failed:", target.Result.Msg)
 		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE
 	}
-	return
 }
 
-// ReqShareFile
 func ReqShareFile(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
 	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
-// RspShareFile
 func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspShareFile
 	rpcResult := &rpc.FileShareResult{}
@@ -144,17 +136,13 @@ func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 		pp.ErrorLog(ctx, "share file failed:", target.Result.Msg)
 		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE
 	}
-
-	return
 }
 
-// ReqDeleteShare
 func ReqDeleteShare(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
 	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
-// RspDeleteShare
 func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeleteShare
 	rpcResult := &rpc.FileShareResult{}
@@ -181,10 +169,8 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 		pp.ErrorLog(ctx, "cancel share failed:", target.Result.Msg)
 		rpcResult.Return = rpc.GENERIC_ERR
 	}
-	return
 }
 
-// GetShareFile
 func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAddr string, walletPubkey []byte) {
 	pp.DebugLog(ctx, "GetShareFile for file ", keyword)
 	if setting.CheckLogin() {
@@ -192,14 +178,12 @@ func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAdd
 	}
 }
 
-// ReqGetShareFile
 func ReqGetShareFile(ctx context.Context, conn core.WriteCloser) {
 	// pp send to SP
 	pp.DebugLog(ctx, "ReqGetShareFile: transferring message to SP server")
 	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
-// RspGetShareFile
 func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	var target protos.RspGetShareFile
 	rpcResult := &rpc.FileShareResult{}
@@ -261,5 +245,4 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 		}
 	}
-	return
 }

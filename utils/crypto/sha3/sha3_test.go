@@ -185,16 +185,16 @@ func TestSqueezing(t *testing.T) {
 	testUnalignedAndGeneric(t, func(impl string) {
 		for functionName, newShakeHash := range testShakes {
 			d0 := newShakeHash()
-			d0.Write([]byte(testString))
+			_, _ = d0.Write([]byte(testString))
 			ref := make([]byte, 32)
-			d0.Read(ref)
+			_, _ = d0.Read(ref)
 
 			d1 := newShakeHash()
-			d1.Write([]byte(testString))
+			_, _ = d1.Write([]byte(testString))
 			var multiple []byte
 			for range ref {
 				one := make([]byte, 1)
-				d1.Read(one)
+				_, _ = d1.Read(one)
 				multiple = append(multiple, one...)
 			}
 			if !bytes.Equal(ref, multiple) {
@@ -256,9 +256,9 @@ func benchmarkShake(b *testing.B, h ShakeHash, size, num int) {
 	for i := 0; i < b.N; i++ {
 		h.Reset()
 		for j := 0; j < num; j++ {
-			h.Write(data)
+			_, _ = h.Write(data)
 		}
-		h.Read(d)
+		_, _ = h.Read(d)
 	}
 }
 
@@ -289,9 +289,9 @@ func Example_mac() {
 	h := make([]byte, 32)
 	d := NewShake256()
 	// Write the key into the hash.
-	d.Write(k)
+	_, _ = d.Write(k)
 	// Now write the data.
-	d.Write(buf)
+	_, _ = d.Write(buf)
 	// Read 32 bytes of output from the hash into h.
-	d.Read(h)
+	_, _ = d.Read(h)
 }

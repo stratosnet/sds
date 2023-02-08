@@ -19,7 +19,6 @@ type HTTPServ struct {
 	port     int
 }
 
-// NewHTTPServ
 func NewHTTPServ() *HTTPServ {
 	return &HTTPServ{
 		routeMap: make(map[string]*httpHandler),
@@ -41,10 +40,9 @@ func (hh *httpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for k, v := range hh.headers {
 		w.Header().Set(k, v)
 	}
-	w.Write(hh.fh(r))
+	_, _ = w.Write(hh.fh(r))
 }
 
-// Route
 func (hs *HTTPServ) Route(url string, h funcHandler) {
 	handler := &httpHandler{fh: h}
 	hs.routeMap[url] = handler
@@ -54,7 +52,6 @@ func (hs *HTTPServ) SetTimeout(t time.Duration)     { hs.timeout = t }
 func (hs *HTTPServ) SetHeaders(h map[string]string) { hs.headers = h }
 func (hs *HTTPServ) SetPort(p int)                  { hs.port = p }
 
-// Start
 func (hs *HTTPServ) Start() {
 	mux := http.NewServeMux()
 	for url, handler := range hs.routeMap {
@@ -65,7 +62,7 @@ func (hs *HTTPServ) Start() {
 	h := http.TimeoutHandler(mux, hs.timeout, "http time out!")
 
 	utils.Log("Start Http Server...")
-	http.ListenAndServe(fmt.Sprintf(":%d", hs.port), h)
+	_ = http.ListenAndServe(fmt.Sprintf(":%d", hs.port), h)
 }
 
 type jsonResult struct {
@@ -74,7 +71,6 @@ type jsonResult struct {
 	Message string      `json:"message"`
 }
 
-// NewJson
 func NewJson(data interface{}, errcode int, msg string) *jsonResult {
 	return &jsonResult{
 		Errcode: errcode,
@@ -92,7 +88,6 @@ func (jr *jsonResult) ToBytes() []byte {
 	return b
 }
 
-// NewErrorJson
 func NewErrorJson(errcode int, msg string) *jsonResult {
 	return &jsonResult{
 		Errcode: errcode,
@@ -100,14 +95,12 @@ func NewErrorJson(errcode int, msg string) *jsonResult {
 	}
 }
 
-// MyHTTPServ
 type MyHTTPServ struct {
 	routeMap map[string]*myHTTPHandler
 	timeout  time.Duration
 	port     string
 }
 
-// MyNewHTTPServ
 func MyNewHTTPServ(port string) *MyHTTPServ {
 	return &MyHTTPServ{
 		routeMap: make(map[string]*myHTTPHandler),
@@ -132,13 +125,11 @@ func (hh *myHTTPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	hh.fh(w, r)
 }
 
-// MyRoute
 func (hs *MyHTTPServ) MyRoute(url string, h funcMyHandler) {
 	handler := &myHTTPHandler{fh: h}
 	hs.routeMap[url] = handler
 }
 
-// MyStart
 func (hs *MyHTTPServ) MyStart(ctx context.Context) {
 	mux := http.NewServeMux()
 	for url, handler := range hs.routeMap {
@@ -151,5 +142,5 @@ func (hs *MyHTTPServ) MyStart(ctx context.Context) {
 	server.BaseContext = func(listener net.Listener) context.Context {
 		return ctx
 	}
-	server.ListenAndServe()
+	_ = server.ListenAndServe()
 }

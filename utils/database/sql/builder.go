@@ -15,7 +15,6 @@ import (
 // Builder sql query builder
 type Builder struct{}
 
-// Insert
 func (b *Builder) Insert(tableName string, columns []string, data ...[]interface{}) (string, []interface{}, error) {
 
 	if tableName == "" {
@@ -53,7 +52,6 @@ func (b *Builder) Insert(tableName string, columns []string, data ...[]interface
 	return sql, values, nil
 }
 
-// Delete
 func (b *Builder) Delete(tableName string, where map[string]interface{}) (string, []interface{}, error) {
 
 	if tableName == "" {
@@ -74,7 +72,6 @@ func (b *Builder) Delete(tableName string, where map[string]interface{}) (string
 	return sql, values, nil
 }
 
-// Update
 func (b *Builder) Update(tableName string, data, where map[string]interface{}) (string, []interface{}, error) {
 
 	if tableName == "" {
@@ -108,7 +105,6 @@ func (b *Builder) Update(tableName string, data, where map[string]interface{}) (
 	return sql, values, nil
 }
 
-// Query
 func (b *Builder) Query(tableName string, params map[string]interface{}) (string, []interface{}, error) {
 
 	if tableName == "" {
@@ -123,13 +119,11 @@ func (b *Builder) Query(tableName string, params map[string]interface{}) (string
 
 	var joinArr [][]string
 	if join, isJoin := params["join"]; isJoin {
-		switch join.(type) {
+		switch join := join.(type) {
 		case [][]string:
-			for _, arr := range join.([][]string) {
-				joinArr = append(joinArr, arr)
-			}
+			joinArr = append(joinArr, join...)
 		case []string:
-			joinArr = append(joinArr, join.([]string))
+			joinArr = append(joinArr, join)
 		}
 		if len(joinArr) > 0 {
 			for _, j := range joinArr {
@@ -148,7 +142,7 @@ func (b *Builder) Query(tableName string, params map[string]interface{}) (string
 	}
 
 	where, isSetWhere := params["where"].(map[string]interface{})
-	values := make([]interface{}, 0, 0)
+	values := make([]interface{}, 0)
 	conditionsInString := ""
 	if isSetWhere {
 		conditionsInString, values = b.Where(where)
@@ -201,7 +195,6 @@ func (b *Builder) Query(tableName string, params map[string]interface{}) (string
 	return sql, values, nil
 }
 
-// Where
 func (b *Builder) Where(where map[string]interface{}) (string, []interface{}) {
 
 	valuesTotal := 0
@@ -223,7 +216,7 @@ func (b *Builder) Where(where map[string]interface{}) (string, []interface{}) {
 		if ok {
 			values = append(values, val.([]interface{})...)
 		} else {
-			values = append(values, val.(interface{}))
+			values = append(values, val)
 		}
 	}
 	conditionsInString = strings.Join(conditions, " AND ")
@@ -231,5 +224,4 @@ func (b *Builder) Where(where map[string]interface{}) (string, []interface{}) {
 	return conditionsInString, values
 }
 
-// DefaultBuilder
 var DefaultBuilder Builder
