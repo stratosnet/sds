@@ -292,12 +292,7 @@ func (m *MultiClient) txBroadcasterLoop() {
 			unsignedMsgs = nil // Clearing msg list
 		}()
 
-		fee, err := types.ParseCoinNormalized(setting.Config.BlockchainInfo.Transactions.Fee)
-		if err != nil {
-			utils.ErrorLog("couldn't build tx bytes", err)
-			return
-		}
-		err = setMsgInfoToTxBuilder(txBuilder, unsignedSdkMsgs, fee, 0, "")
+		err := setMsgInfoToTxBuilder(txBuilder, unsignedSdkMsgs, 0, "")
 		if err != nil {
 			utils.ErrorLog("couldn't set tx builder", err)
 			return
@@ -313,7 +308,22 @@ func (m *MultiClient) txBroadcasterLoop() {
 			utils.ErrorLog("couldn't simulate tx bytes", err)
 			return
 		}
-		txBuilder.SetGasLimit(uint64(float64(gasInfo.GasUsed) * setting.Config.BlockchainInfo.Transactions.GasAdjustment))
+		gasLimit := uint64(float64(gasInfo.GasUsed) * setting.Config.BlockchainInfo.Transactions.GasAdjustment)
+		txBuilder.SetGasLimit(gasLimit)
+
+		gasPrice, err := types.ParseCoinNormalized(setting.Config.BlockchainInfo.Transactions.GasPrice)
+		if err != nil {
+			utils.ErrorLog("couldn't parse gas price", err)
+			return
+		}
+		fee := sdktypes.NewInt64Coin(gasPrice.Denom, gasPrice.Amount.Int64()*int64(gasLimit))
+		txBuilder.SetFeeAmount(sdktypes.NewCoins(
+			sdktypes.Coin{
+				Denom:  fee.Denom,
+				Amount: fee.Amount,
+			}),
+		)
+
 		txBytes, err = stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.BlockchainInfo.ChainId, unsignedMsgs)
 		if err != nil {
 			utils.ErrorLog("couldn't build tx bytes", err)
@@ -454,18 +464,12 @@ func countMsgsByType(unsignedMsgs []*relaytypes.UnsignedMsg) string {
 	return "[" + countString + "]"
 }
 
-func setMsgInfoToTxBuilder(txBuilder client.TxBuilder, txMsg []sdktypes.Msg, fee types.Coin, gas uint64, memo string) error {
+func setMsgInfoToTxBuilder(txBuilder client.TxBuilder, txMsg []sdktypes.Msg, gas uint64, memo string) error {
 	err := txBuilder.SetMsgs(txMsg...)
 	if err != nil {
 		return err
 	}
 
-	txBuilder.SetFeeAmount(sdktypes.NewCoins(
-		sdktypes.Coin{
-			Denom:  fee.Denom,
-			Amount: fee.Amount,
-		}),
-	)
 	//txBuilder.SetFeeGranter(tx.FeeGranter())
 	txBuilder.SetGasLimit(gas)
 	txBuilder.SetMemo(memo)
