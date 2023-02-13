@@ -12,7 +12,6 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/metrics"
 	message "github.com/stratosnet/sds/msg"
@@ -24,16 +23,15 @@ import (
 	"github.com/stratosnet/sds/utils/encryption"
 	"github.com/stratosnet/sds/utils/types"
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
+	"google.golang.org/protobuf/proto"
 )
 
-// MsgHandler
 type MsgHandler struct {
 	message   message.RelayMsgBuf
 	handler   HandlerFunc
 	recvStart int64
 }
 
-// WriteCloser
 type WriteCloser interface {
 	Write(*message.RelayMsgBuf, context.Context) error
 	Close()
@@ -50,7 +48,6 @@ var (
 	TimeRcv          int64
 )
 
-// ServerConn
 type ServerConn struct {
 	netid   int64
 	belong  *Server
@@ -77,7 +74,6 @@ type ServerConn struct {
 	encryptMessage bool
 }
 
-// CreateServerConn
 func CreateServerConn(id int64, s *Server, c net.Conn) *ServerConn {
 	sc := &ServerConn{
 		netid:     id,
@@ -96,25 +92,21 @@ func CreateServerConn(id int64, s *Server, c net.Conn) *ServerConn {
 	return sc
 }
 
-// ServerFromCtx
 func ServerFromCtx(ctx context.Context) (*Server, bool) {
 	server, ok := ctx.Value(serverCtxKey).(*Server)
 	return server, ok
 }
 
-// GetNetID
 func (sc *ServerConn) GetNetID() int64 {
 	return sc.netid
 }
 
-// SetConnName
 func (sc *ServerConn) SetConnName(name string) {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
 	sc.name = name
 }
 
-// GetName
 func (sc *ServerConn) GetName() string {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
@@ -122,7 +114,6 @@ func (sc *ServerConn) GetName() string {
 	return name
 }
 
-// GetIP
 func (sc *ServerConn) GetIP() string {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
@@ -130,7 +121,6 @@ func (sc *ServerConn) GetIP() string {
 	return host
 }
 
-// GetPort
 func (sc *ServerConn) GetPort() string {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
@@ -322,7 +312,6 @@ func (sc *ServerConn) Start() {
 	}
 }
 
-// Write
 /**
 error is caught at application layer, if it's utils.ErrWouldBlock，sleep and then continue write
 */
@@ -337,10 +326,7 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err
 		}
 	}()
 
-	var (
-		sendCh chan *message.RelayMsgBuf
-	)
-	sendCh = c.(*ServerConn).sendCh
+	sendCh := c.(*ServerConn).sendCh
 	msgH := make([]byte, utils.MsgHeaderLen)
 	reqId := GetReqIdFromContext(ctx)
 	if reqId == 0 {
@@ -366,12 +352,13 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err
 	(*reflect.SliceHeader)(unsafe.Pointer(&memory.MSGData)).Cap = int(m.MSGHead.Len + utils.MsgHeaderLen)
 	copy(memory.MSGData[0:], msgH)
 	copy(memory.MSGData[utils.MsgHeaderLen:], m.MSGData)
-	select {
+	sendCh <- memory
+	/*select {
 	case sendCh <- memory:
 		err = nil
-		// default:
-		// 	err = utils.ErrWouldBlock
-	}
+	default:
+		err = utils.ErrWouldBlock
+	}*/
 
 	if err != nil {
 		utils.ErrorLog("asyncWrite error ", err)
@@ -382,7 +369,6 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err
 	return
 }
 
-// Close
 func (sc *ServerConn) Close() {
 	sc.belong.goroutine = sc.belong.goAtom.DecrementAndGetNew()
 	sc.once.Do(func() {
@@ -406,9 +392,9 @@ func (sc *ServerConn) Close() {
 			// if sec < 0 (default), the data sending will be finished before close.
 			// if sec = 0, the data will be dropped
 			// if sec > 0, the data sending will continue for <sec> second and then remaining data will be dropped
-			tc.SetLinger(0)
+			_ = tc.SetLinger(0)
 		}
-		sc.spbConn.Close()
+		_ = sc.spbConn.Close()
 		// cancel readLoop, writeLoop and handleLoop go-routines.
 		sc.mu.Lock()
 		sc.cancel()
@@ -444,10 +430,8 @@ func (sc *ServerConn) SendBadVersionMsg(version uint16, cmd string) {
 		utils.ErrorLog(err)
 	}
 	time.Sleep(500 * time.Millisecond)
-	return
 }
 
-// readLoop
 func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 	var (
 		spbConn   net.Conn
@@ -455,7 +439,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 		sDone     <-chan struct{}
 		onMessage onMessageFunc
 		handlerCh chan MsgHandler
-		msg       = new(message.RelayMsgBuf)
+		msg       *message.RelayMsgBuf
 		sc        *ServerConn
 	)
 
@@ -506,7 +490,6 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				}
 
 				header.DecodeHeader(headerBytes, &msgH)
-				headerBytes = nil
 
 				if msgH.Version < sc.minAppVer {
 					sc.SendBadVersionMsg(msgH.Version, utils.ByteToString(msgH.Cmd))
@@ -543,7 +526,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					if int(dataLen)-i < 1024 {
 						onereadlen = int(dataLen) - i
 					}
-					spbConn.SetDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
+					_ = spbConn.SetDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
 					n, err = io.ReadFull(spbConn, msgBuf[i:i+onereadlen])
 					sc.increaseReadFlow(n)
 					if err != nil {
@@ -572,7 +555,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					handler := GetHandlerFunc(utils.ByteToString(msgH.Cmd))
 					if handler == nil {
 						if onMessage != nil {
-							onMessage(*msg, c.(WriteCloser))
+							onMessage(*msg, c)
 						} else {
 							Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for message: "+utils.ByteToString(msgH.Cmd))
 						}
@@ -588,9 +571,6 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					msgBuf = nil
 				} else {
 					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "msgH.Len doesn't match the size of data from message: "+utils.ByteToString(msgH.Cmd))
-					msgH.Len = 0
-					i = 0
-					msgBuf = nil
 					return
 				}
 			}
@@ -599,7 +579,6 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 	}
 }
 
-// writeLoop
 func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 	var (
 		sendCh chan *message.RelayMsgBuf
@@ -632,7 +611,6 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 						utils.ErrorLog(err)
 						break OuterFor
 					}
-					packet = nil
 				}
 			default:
 				break OuterFor
@@ -657,7 +635,6 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 					Mylog(sc.belong.opts.logOpen, LOG_MODULE_WRITELOOP, "write packet err", err.Error())
 					return
 				}
-				packet = nil
 			}
 		}
 	}
@@ -718,9 +695,9 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 		sc.increaseWriteFlow(n)
 		if err != nil {
 			return errors.Wrap(err, "server write err")
-		} else {
-			// Mylog(s.opts.logOpen,"i", i)
-		}
+		} /*else {
+			Mylog(s.opts.logOpen,"i", i)
+		}*/
 	}
 	writeEnd := time.Now()
 	costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
@@ -734,11 +711,11 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 	return nil
 }
 
+//nolint:unused
 func (sc *ServerConn) writePacketNoEncrypt(packet *message.RelayMsgBuf) error {
 	var onereadlen = 1024
 	var n int
 	var err error
-	n = 0
 	for i := 0; i < len(packet.MSGData); i = i + n {
 		// Mylog(s.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
 		if len(packet.MSGData)-i < 1024 {
@@ -746,7 +723,7 @@ func (sc *ServerConn) writePacketNoEncrypt(packet *message.RelayMsgBuf) error {
 			// Mylog(s.opts.logOpen,"onereadlen:", onereadlen)
 		}
 
-		sc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
+		_ = sc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
 		n, err = sc.spbConn.Write(packet.MSGData[i : i+onereadlen])
 		// Mylog(s.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
 		// Mylog(s.opts.logOpen,"i+onereadlen:", i+onereadlen)
@@ -767,7 +744,6 @@ func (sc *ServerConn) writePacketNoEncrypt(packet *message.RelayMsgBuf) error {
 	return nil
 }
 
-// handleLoop
 func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 	var (
 		cDone <-chan struct{}

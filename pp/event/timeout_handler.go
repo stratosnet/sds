@@ -4,12 +4,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/utils"
+	"google.golang.org/protobuf/proto"
 )
 
 type DownloadTimeoutHandler struct {
@@ -18,7 +19,8 @@ type DownloadTimeoutHandler struct {
 func (handler *DownloadTimeoutHandler) Handle(ctx context.Context, message *msg.RelayMsgBuf) {
 	target := &protos.ReqDownloadSlice{}
 	if err := proto.Unmarshal(message.MSGData, target); err != nil {
-
+		utils.ErrorLog(err)
+		return
 	}
 
 	dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress, task.LOCAL_REQID)

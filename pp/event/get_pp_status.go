@@ -39,7 +39,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 		setting.IsPPSyncedWithSP = true
 	}
 
-	formatRspGetPPStatus(ctx, target)
+	formatRspGetPPStatus(ctx, &target)
 
 	if target.IsActive == ppTypes.PP_ACTIVE {
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_ACTIVATE)
@@ -59,7 +59,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-func formatRspGetPPStatus(ctx context.Context, response protos.RspGetPPStatus) {
+func formatRspGetPPStatus(ctx context.Context, response *protos.RspGetPPStatus) {
 	activation, state := "", ""
 
 	switch response.IsActive {

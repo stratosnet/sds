@@ -32,6 +32,11 @@ func StartIPCEndpoint(ipcEndpoint string, apis []API, ctx context.Context) (net.
 	if err != nil {
 		return nil, nil, err
 	}
-	go handler.ServeListener(listener, ctx)
+	go func() {
+		err := handler.ServeListener(listener, ctx)
+		if err != nil {
+			utils.ErrorLog("Error serving IPC listener", err)
+		}
+	}()
 	return listener, handler, nil
 }

@@ -88,7 +88,7 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 					SendReqDownloadSlice(newCtx, target.FileHash, slice, req, fileReqId)
 				}
 			}
-			pp.DebugLog(ctx, "DownloadFileSlice(&target)", target)
+			pp.DebugLog(ctx, "DownloadFileSlice(&target)", &target)
 		} else {
 			task.DeleteDownloadTask(target.FileHash, target.WalletAddress, task.LOCAL_REQID)
 			pp.Log(ctx, "failed to download，", target.Result.Msg)

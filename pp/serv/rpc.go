@@ -64,7 +64,6 @@ func apis() []rpc.API {
 	}
 }
 
-// ResultHook
 func ResultHook(r *rpc_api.Result, fileHash string) *rpc_api.Result {
 	if r.Return == rpc_api.UPLOAD_DATA {
 		start := *r.OffsetStart
@@ -116,7 +115,8 @@ func (api *rpcApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqUplo
 
 	defer metrics.UploadPerformanceLogNow(param.FileHash + ":SND_RSP_UPLOAD_CLIENT")
 	//var done = make(chan bool)
-	ctx, _ = context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
+	defer cancel()
 
 	select {
 	case <-ctx.Done():
@@ -180,8 +180,9 @@ func (api *rpcApi) UploadData(ctx context.Context, param rpc_api.ParamUploadData
 	}
 
 	// second part: let the server decide what will be the next step
-	newctx := context.Background()
-	newctx, _ = context.WithTimeout(newctx, WAIT_TIMEOUT)
+	newctx, cancel := context.WithTimeout(context.Background(), WAIT_TIMEOUT)
+	defer cancel()
+
 	select {
 	case <-newctx.Done():
 		result := &rpc_api.Result{Return: rpc_api.TIME_OUT}
@@ -199,7 +200,6 @@ func (api *rpcApi) UploadData(ctx context.Context, param rpc_api.ParamUploadData
 	}
 }
 
-// RequestDownload
 func (api *rpcApi) RequestDownload(ctx context.Context, param rpc_api.ParamReqDownloadFile) rpc_api.Result {
 	metrics.RpcReqCount.WithLabelValues("RequestDownload").Inc()
 	_, _, fileHash, _, err := datamesh.ParseFileHandle(param.FileHandle)
@@ -244,7 +244,9 @@ func (api *rpcApi) RequestDownload(ctx context.Context, param rpc_api.ParamReqDo
 	key := fileHash + reqId
 
 	// wait for the result
-	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
+	defer cancel()
+
 	var result *rpc_api.Result
 
 	select {
@@ -266,7 +268,6 @@ func (api *rpcApi) RequestDownload(ctx context.Context, param rpc_api.ParamReqDo
 	return *result
 }
 
-// DownloadData
 func (api *rpcApi) DownloadData(ctx context.Context, param rpc_api.ParamDownloadData) rpc_api.Result {
 	key := param.FileHash + param.ReqId
 
@@ -274,7 +275,8 @@ func (api *rpcApi) DownloadData(ctx context.Context, param rpc_api.ParamDownload
 	file.SetDownloadSliceDone(key)
 
 	// wait for result: DOWNLOAD_OK or DL_OK_ASK_INFO
-	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
+	defer cancel()
 	var result *rpc_api.Result
 
 	select {
@@ -291,7 +293,6 @@ func (api *rpcApi) DownloadData(ctx context.Context, param rpc_api.ParamDownload
 	return *result
 }
 
-// DownloadedFileInfo
 func (api *rpcApi) DownloadedFileInfo(ctx context.Context, param rpc_api.ParamDownloadFileInfo) rpc_api.Result {
 	metrics.RpcReqCount.WithLabelValues("DownloadedFileInfo").Inc()
 
@@ -304,7 +305,8 @@ func (api *rpcApi) DownloadedFileInfo(ctx context.Context, param rpc_api.ParamDo
 	file.SetRemoteFileInfo(key, fileSize)
 
 	// wait for result, SUCCESS or some failure
-	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
+	defer cancel()
 	var result *rpc_api.Result
 
 	select {
@@ -320,12 +322,12 @@ func (api *rpcApi) DownloadedFileInfo(ctx context.Context, param rpc_api.ParamDo
 	return *result
 }
 
-// RequestList
 func (api *rpcApi) RequestList(ctx context.Context, param rpc_api.ParamReqFileList) rpc_api.FileListResult {
 	metrics.RpcReqCount.WithLabelValues("RequestList").Inc()
 
 	reqId := uuid.New().String()
-	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
+	defer cancel()
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
 	event.FindFileList(ctx, "", param.WalletAddr, param.PageId, "", 0, true)
 
@@ -345,15 +347,13 @@ func (api *rpcApi) RequestList(ctx context.Context, param rpc_api.ParamReqFileLi
 			}
 		}
 	}
-
-	return *result
 }
 
-// RequestShare
 func (api *rpcApi) RequestShare(ctx context.Context, param rpc_api.ParamReqShareFile) rpc_api.FileShareResult {
 	metrics.RpcReqCount.WithLabelValues("RequestShare").Inc()
 	reqId := uuid.New().String()
-	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
+	defer cancel()
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
 	event.GetReqShareFile(reqCtx, param.FileHash, "", param.WalletAddr, param.Duration, param.PrivateFlag)
 
@@ -373,15 +373,13 @@ func (api *rpcApi) RequestShare(ctx context.Context, param rpc_api.ParamReqShare
 			}
 		}
 	}
-
-	return *result
 }
 
-// RequestListShare
 func (api *rpcApi) RequestListShare(ctx context.Context, param rpc_api.ParamReqListShared) rpc_api.FileShareResult {
 	metrics.RpcReqCount.WithLabelValues("RequestListShare").Inc()
 	reqId := uuid.New().String()
-	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
+	defer cancel()
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
 	event.GetAllShareLink(reqCtx, param.WalletAddr, param.PageId)
 
@@ -401,15 +399,13 @@ func (api *rpcApi) RequestListShare(ctx context.Context, param rpc_api.ParamReqL
 			}
 		}
 	}
-
-	return *result
 }
 
-// RequestStopShare
 func (api *rpcApi) RequestStopShare(ctx context.Context, param rpc_api.ParamReqStopShare) rpc_api.FileShareResult {
 	metrics.RpcReqCount.WithLabelValues("RequestStopShare").Inc()
 	reqId := uuid.New().String()
-	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
+	defer cancel()
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
 	event.DeleteShare(reqCtx, param.ShareId, param.WalletAddr)
 
@@ -429,11 +425,8 @@ func (api *rpcApi) RequestStopShare(ctx context.Context, param rpc_api.ParamReqS
 			}
 		}
 	}
-
-	return *result
 }
 
-// RequestGetShared
 func (api *rpcApi) RequestGetShared(ctx context.Context, param rpc_api.ParamReqGetShared) rpc_api.Result {
 	metrics.RpcReqCount.WithLabelValues("RequestGetShared").Inc()
 	wallet := param.WalletAddr
@@ -452,7 +445,8 @@ func (api *rpcApi) RequestGetShared(ctx context.Context, param rpc_api.ParamReqG
 	}
 
 	reqId := uuid.New().String()
-	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
+	defer cancel()
 	key := param.WalletAddr + reqId
 
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
@@ -486,7 +480,6 @@ func (api *rpcApi) RequestGetShared(ctx context.Context, param rpc_api.ParamReqG
 	return rpc_api.Result{Return: rpc_api.TIME_OUT}
 }
 
-// RequestDownloadShared
 func (api *rpcApi) RequestDownloadShared(ctx context.Context, param rpc_api.ParamReqDownloadShared) rpc_api.Result {
 	// wallet pubkey and wallet signature will be carried in sds messages in []byte format
 	wpk, err := utiltypes.WalletPubkeyFromBech(param.WalletPubkey)
@@ -524,7 +517,8 @@ func (api *rpcApi) RequestDownloadShared(ctx context.Context, param rpc_api.Para
 	key := fileHash + param.ReqId
 
 	var result *rpc_api.Result
-	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
+	defer cancel()
 
 	select {
 	case <-ctx.Done():
@@ -545,11 +539,11 @@ func (api *rpcApi) RequestDownloadShared(ctx context.Context, param rpc_api.Para
 	return *result
 }
 
-// RequestGetOzone
 func (api *rpcApi) RequestGetOzone(ctx context.Context, param rpc_api.ParamReqGetOzone) rpc_api.GetOzoneResult {
 	metrics.RpcReqCount.WithLabelValues("RequestGetOzone").Inc()
 	reqId := uuid.New().String()
-	ctx, _ = context.WithTimeout(ctx, WAIT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
+	defer cancel()
 	err := event.GetWalletOz(core.RegisterRemoteReqId(ctx, reqId), param.WalletAddr, reqId)
 	if err != nil {
 		return rpc_api.GetOzoneResult{Return: rpc_api.TIME_OUT}
@@ -571,6 +565,4 @@ func (api *rpcApi) RequestGetOzone(ctx context.Context, param rpc_api.ParamReqGe
 			}
 		}
 	}
-
-	return *result
 }

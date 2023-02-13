@@ -2,9 +2,10 @@ package database
 
 import (
 	"errors"
+	"time"
+
 	"github.com/stratosnet/sds/utils/cache"
 	"github.com/stratosnet/sds/utils/database/config"
-	"time"
 )
 
 // CTable Table's cache version
@@ -105,18 +106,18 @@ func (ct *CacheTable) handleSmt() {
 		// TODO readjust the ttl for each table
 		case "store":
 			ct.Lock()
-			ct.StoreTable(cTable)
+			_, _ = ct.StoreTable(cTable)
 			//ct.Cache.Delete(cTable.GetCacheKey())
 			ct.Unlock()
 			//ct.Fetch(cTable)
 		case "update":
 			ct.Lock()
-			ct.UpdateTable(cTable)
+			_, _ = ct.UpdateTable(cTable)
 			//ct.Cache.Delete(cTable.GetCacheKey())
 			ct.Unlock()
 			//ct.Fetch(cTable)
 		case "remove":
-			ct.DeleteTable(cTable)
+			_, _ = ct.DeleteTable(cTable)
 		}
 	}
 }

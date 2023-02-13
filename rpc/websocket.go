@@ -23,11 +23,8 @@ const (
 	wsPingWriteTimeout = 5 * time.Second
 	wsPongTimeout      = 30 * time.Second
 	wsMessageSizeLimit = 15 * 1024 * 1024
-	wsNotifDeadline    = 10 * time.Second
 )
 
-var conns []*websocket.Conn
-var mutex sync.Mutex
 var wsBufferPool = new(sync.Pool)
 
 // WebsocketHandler returns a handler that serves JSON-RPC to WebSocket connections.
@@ -230,7 +227,7 @@ type websocketCodec struct {
 func newWebsocketCodec(conn *websocket.Conn) ServerCodec {
 	conn.SetReadLimit(wsMessageSizeLimit)
 	conn.SetPongHandler(func(appData string) error {
-		conn.SetReadDeadline(time.Time{})
+		_ = conn.SetReadDeadline(time.Time{})
 		return nil
 	})
 	wc := &websocketCodec{
@@ -277,9 +274,9 @@ func (wc *websocketCodec) pingLoop() {
 			timer.Reset(wsPingInterval)
 		case <-timer.C:
 			wc.jsonCodec.encMu.Lock()
-			wc.conn.SetWriteDeadline(time.Now().Add(wsPingWriteTimeout))
-			wc.conn.WriteMessage(websocket.PingMessage, nil)
-			wc.conn.SetReadDeadline(time.Now().Add(wsPongTimeout))
+			_ = wc.conn.SetWriteDeadline(time.Now().Add(wsPingWriteTimeout))
+			_ = wc.conn.WriteMessage(websocket.PingMessage, nil)
+			_ = wc.conn.SetReadDeadline(time.Now().Add(wsPongTimeout))
 			wc.jsonCodec.encMu.Unlock()
 			timer.Reset(wsPingInterval)
 		}

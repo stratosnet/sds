@@ -107,6 +107,9 @@ func spawnEphemeral(ctx context.Context, repoPath string) (icore.CoreAPI, *core.
 	}
 
 	repoPath, err := createTempRepo(repoPath)
+	if err != nil {
+		return nil, nil, err
+	}
 	node, err := createNode(ctx, repoPath)
 	if err != nil {
 		return nil, nil, err
@@ -154,9 +157,9 @@ func GetFile(ctx context.Context, cid string, fileName string) (string, error) {
 	pp.Logf(ctx, "output folder: %s", outputBasePath)
 	outputPathFile := outputBasePath
 	if fileName != "" {
-		outputPathFile = path.Join(outputBasePath, fileName)
+		outputPathFile = path.Join(outputPathFile, fileName)
 	} else {
-		outputPathFile = path.Join(outputBasePath, strings.Split(cidFile.String(), "/")[2])
+		outputPathFile = path.Join(outputPathFile, strings.Split(cidFile.String(), "/")[2])
 	}
 
 	os.RemoveAll(outputPathFile)
@@ -187,13 +190,15 @@ func GetFileViaKuboCli(ctx context.Context, cid string, fileName string) (string
 	}
 	outputPath := outputBasePath
 	if fileName != "" {
-		outputPath = path.Join(outputBasePath, fileName)
+		outputPath = path.Join(outputPath, fileName)
 	} else {
-		outputPath = path.Join(outputBasePath, cid)
+		outputPath = path.Join(outputPath, cid)
 	}
 	transformCmd := exec.Command("ipfs", "get", cid, "-o", outputPath)
 	stderr, _ := transformCmd.StderrPipe()
-	transformCmd.Start()
+	if err = transformCmd.Start(); err != nil {
+		return "", err
+	}
 
 	scanner := bufio.NewScanner(stderr)
 	scanner.Split(bufio.ScanLines)
@@ -201,6 +206,8 @@ func GetFileViaKuboCli(ctx context.Context, cid string, fileName string) (string
 		m := scanner.Text()
 		pp.Log(ctx, m)
 	}
-	transformCmd.Wait()
+	if err = transformCmd.Wait(); err != nil {
+		return "", err
+	}
 	return outputPath, nil
 }

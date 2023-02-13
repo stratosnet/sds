@@ -11,10 +11,11 @@ import (
 	"github.com/nfnt/resize"
 )
 
-// ImageCommpress ImageCommpress
 func ImageCommpress(pathStr string) (string, error) {
 	fileIn, err := os.Open(pathStr)
-	defer fileIn.Close()
+	defer func() {
+		_ = fileIn.Close()
+	}()
 	if CheckError(err) {
 		ErrorLog(err)
 		return "", err

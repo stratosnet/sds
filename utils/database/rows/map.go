@@ -26,7 +26,7 @@ func ToMaps(rows *sql.Rows) ([]map[string]interface{}, error) {
 		for i := 0; i < count; i++ {
 			valuePointer[i] = &values[i]
 		}
-		rows.Scan(valuePointer...)
+		_ = rows.Scan(valuePointer...)
 		entry := make(map[string]interface{})
 		for i, col := range columns {
 			var v interface{}

@@ -118,11 +118,11 @@ func (exec *Executor) QueryCache(cacheOpt map[string]interface{}, sql string, ar
 		} else {
 			cacheKey = sql
 			for _, val := range args {
-				switch val.(type) {
+				switch val := val.(type) {
 				case int:
-					cacheKey = strings.Replace(cacheKey, "?", strconv.Itoa(val.(int)), 1)
+					cacheKey = strings.Replace(cacheKey, "?", strconv.Itoa(val), 1)
 				case string:
-					cacheKey = strings.Replace(cacheKey, "?", "'"+val.(string)+"'", 1)
+					cacheKey = strings.Replace(cacheKey, "?", "'"+val+"'", 1)
 				}
 			}
 			cacheKey = "mysql_cache#" + utils.CalcHash([]byte(cacheKey))

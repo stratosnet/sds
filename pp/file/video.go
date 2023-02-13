@@ -59,7 +59,7 @@ func VideoToHls(ctx context.Context, fileHash string) bool {
 	transformCmd := exec.Command("ffmpeg", "-i", filePath, "-codec:", "copy", "-start_number", "0", "-hls_time", "10",
 		"-hls_list_size", "0", "-f", "hls", "-hls_segment_filename", hlsSegmentFileName, hlsHeaderFileName)
 	stderr, _ := transformCmd.StderrPipe()
-	transformCmd.Start()
+	_ = transformCmd.Start()
 
 	scanner := bufio.NewScanner(stderr)
 	scanner.Split(bufio.ScanLines)
@@ -67,7 +67,7 @@ func VideoToHls(ctx context.Context, fileHash string) bool {
 		m := scanner.Text()
 		pp.Log(ctx, m)
 	}
-	transformCmd.Wait()
+	_ = transformCmd.Wait()
 	return true
 }
 
