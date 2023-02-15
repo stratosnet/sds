@@ -76,6 +76,12 @@ func (bs *BaseServer) Start() {
 		utils.ErrorLog(err)
 		return
 	}
+
+	err = bs.startIpfsApiServer()
+	if err != nil {
+		utils.ErrorLog(err)
+		return
+	}
 }
 
 func (bs *BaseServer) startIPC() error {
@@ -211,6 +217,14 @@ func (bs *BaseServer) startInternalApiServer() error {
 	} else {
 		utils.ErrorLog("Missing configuration for internal API server")
 	}
+	return nil
+}
+
+func (bs *BaseServer) startIpfsApiServer() error {
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, p2pserver.P2P_SERVER_KEY, bs.p2pServ)
+	ctx = context.WithValue(ctx, network.PP_NETWORK_KEY, bs.ppNetwork)
+	go StartIpfsServ(ctx)
 	return nil
 }
 

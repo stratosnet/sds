@@ -22,6 +22,7 @@ var wmutex sync.RWMutex
 
 // key(fileHash) : value(file path)
 var fileMap = make(map[string]string)
+var ipfsFileMap = make(map[string]string)
 var infoMutex sync.Mutex
 
 // GetFileInfo

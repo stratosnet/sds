@@ -126,6 +126,7 @@ type config struct {
 	RestPort             string       `toml:"rest_port"`
 	InternalPort         string       `toml:"internal_port"`
 	RpcPort              string       `toml:"rpc_port"`
+	IpfsRpcPort          string       `toml:"ipfs_rpc_port"`
 	MetricsPort          string       `toml:"metrics_port"`
 	Monitor              MonitorConn  `toml:"monitor"`
 	TrafficLogInterval   uint64       `toml:"traffic_log_interval"`

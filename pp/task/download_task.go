@@ -258,7 +258,7 @@ func SaveDownloadFile(ctx context.Context, target *protos.RspDownloadSlice, fInf
 }
 
 // checkAgain only used by local file downloading session
-func checkAgain(ctx context.Context, fileHash string) {
+func checkAgain(ctx context.Context, fileHash, fileReqId string) {
 	reCount--
 	if f, ok := DownloadFileMap.Load(fileHash + LOCAL_REQID); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
@@ -267,22 +267,22 @@ func checkAgain(ctx context.Context, fileHash string) {
 			fName = fileHash
 		}
 		filePath := file.GetDownloadTmpPath(fileHash, fName, fInfo.SavePath)
-		if CheckFileOver(ctx, fileHash, filePath) {
+		if CheckFileOver(ctx, fileHash, filePath, fileReqId) {
 			DownloadFileMap.Delete(fileHash + LOCAL_REQID)
 			DownloadSpeedOfProgress.Delete(fileHash + LOCAL_REQID)
 			utils.Log("————————————————————————————————————download finished————————————————————————————————————")
-			DoneDownload(ctx, fileHash, fName, fInfo.SavePath)
+			DoneDownload(ctx, fileHash, fName, fInfo.SavePath, fileReqId)
 		} else {
 			if reCount > 0 {
 				time.Sleep(time.Second * 2)
-				checkAgain(ctx, fileHash)
+				checkAgain(ctx, fileHash, fileReqId)
 			}
 		}
 	}
 }
 
 // DoneDownload only used by local file downloading session
-func DoneDownload(ctx context.Context, fileHash, fileName, savePath string) {
+func DoneDownload(ctx context.Context, fileHash, fileName, savePath, fileReqId string) {
 	filePath := file.GetDownloadTmpPath(fileHash, fileName, savePath)
 	newFilePath := filePath[:len(filePath)-4]
 	err := os.Rename(filePath, newFilePath)
@@ -307,6 +307,8 @@ func DoneDownload(ctx context.Context, fileHash, fileName, savePath string) {
 	if err != nil {
 		pp.ErrorLog(ctx, "DoneDownload Remove", err)
 	}
+
+	file.SetSuccessIpfsDownloadResult(fileReqId)
 
 	metrics.DownloadPerformanceLogNow(fileHash + ":RCV_DOWNLOAD_DONE:")
 	if _, ok := setting.ImageMap.Load(fileHash); ok {
@@ -360,10 +362,10 @@ func DoneDownload(ctx context.Context, fileHash, fileName, savePath string) {
 }
 
 // CheckFileOver check finished
-func CheckFileOver(ctx context.Context, fileHash, filePath string) bool {
+func CheckFileOver(ctx context.Context, fileHash, filePath, fileReqId string) bool {
 	pp.DebugLog(ctx, "CheckFileOver")
 
-	if s, ok := DownloadSpeedOfProgress.Load(fileHash + LOCAL_REQID); ok {
+	if s, ok := DownloadSpeedOfProgress.Load(fileHash + fileReqId); ok {
 		sp := s.(*DownloadSP)
 		info := file.GetFileInfo(filePath)
 		if info == nil {
@@ -381,11 +383,11 @@ func CheckFileOver(ctx context.Context, fileHash, filePath string) bool {
 }
 
 // CheckDownloadOver check download finished
-func CheckDownloadOver(ctx context.Context, fileHash string) (bool, float32) {
+func CheckDownloadOver(ctx context.Context, fileHash, fileReqId string) (bool, float32) {
 	pp.DebugLog(ctx, "CheckDownloadOver")
-	if f, ok := DownloadFileMap.Load(fileHash + LOCAL_REQID); ok {
+	if f, ok := DownloadFileMap.Load(fileHash + fileReqId); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
-		if s, ok := DownloadSpeedOfProgress.Load(fileHash + LOCAL_REQID); ok {
+		if s, ok := DownloadSpeedOfProgress.Load(fileHash + fileReqId); ok {
 			sp := s.(*DownloadSP)
 			if sp.DownloadedSize >= sp.TotalSize {
 				fName := fInfo.FileName
@@ -393,14 +395,14 @@ func CheckDownloadOver(ctx context.Context, fileHash string) (bool, float32) {
 					fName = fileHash
 				}
 				filePath := file.GetDownloadTmpPath(fileHash, fName, fInfo.SavePath)
-				if CheckFileOver(ctx, fileHash, filePath) {
-					DoneDownload(ctx, fileHash, fName, fInfo.SavePath)
-					CleanDownloadFileAndConnMap(ctx, fileHash, LOCAL_REQID)
+				if CheckFileOver(ctx, fileHash, filePath, fileReqId) {
+					DoneDownload(ctx, fileHash, fName, fInfo.SavePath, fileReqId)
+					CleanDownloadFileAndConnMap(ctx, fileHash, fileReqId)
 					return true, 1.0
 				}
 				reCount = 5
 				time.Sleep(time.Second * 2)
-				checkAgain(ctx, fileHash)
+				checkAgain(ctx, fileHash, fileReqId)
 				return true, 1
 			}
 			return false, float32(sp.DownloadedSize) / float32(sp.TotalSize)
@@ -436,7 +438,7 @@ func DownloadProgress(ctx context.Context, fileHash, fileReqId string, size uint
 			if file.IsFileRpcRemote(fileHash + fileReqId) {
 				CheckRemoteDownloadOver(ctx, fileHash, fileReqId)
 			} else {
-				go CheckDownloadOver(ctx, fileHash)
+				go CheckDownloadOver(ctx, fileHash, fileReqId)
 			}
 		}
 	}
