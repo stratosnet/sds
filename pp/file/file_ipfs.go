@@ -1,71 +1,26 @@
 package file
 
 import (
-	"context"
-	"strings"
 	"sync"
 
 	"github.com/stratosnet/sds/pp/api/ipfsrpc"
-	"github.com/stratosnet/sds/pp/api/rpc"
 )
 
 var (
-	ipfsFileMutex sync.Mutex
-	//
-	//upSliceMutex sync.Mutex
-
 	ipfsEventMutex sync.Mutex
 
-	// key(fileHash + fileReqId) : value(fileSize)
-	//rpcFileInfoMap = &sync.Map{}
-
-	// key(fileHash + fileReqId) : value(chan *rpc.Result)
+	// key(fileReqId) : value(chan *rpc.Result)
 	ipfsRpcDownloadEventChan = &sync.Map{}
 
 	// key(fileHash + fileReqId) : value(chan *rpc.Result)
 	ipfsRpcUploadEventChan = &sync.Map{}
-
-	//// key(fileHash) : value(chan []byte)
-	//rpcUploadDataChan = &sync.Map{}
-	//
-	//// key(fileHash) : value(chan string)
-	//rpcSignatureChan = &sync.Map{}
-	//
-	//// key(fileHash + file) : value(downloadReady)
-	//rpcDownloadReady = &sync.Map{}
-
-	// key(fileHash + file) : value(chan uint64)
-	//rpcDownloadFileInfo = &sync.Map{}
-
-	// wait for the next request from client per message
-	//RpcWaitTimeout time.Duration
 )
 
-// GetRemoteFileInfo
-func GetIpfsFileDownload(key, reqId string) uint64 {
-	SetRemoteFileResult(key, rpc.Result{ReqId: reqId, Return: rpc.DL_OK_ASK_INFO})
-	var fileSize uint64
-	parentCtx := context.Background()
-	ctx, _ := context.WithTimeout(parentCtx, RpcWaitTimeout)
-
-	select {
-	case <-ctx.Done():
-		return 0
-	case fileSize = <-SubscribeDownloadFileInfo(key):
-		UnsubscribeDownloadFileInfo(key)
-	}
-	return fileSize
+func SetSuccessIpfsDownloadDataResult(key string) {
+	SetIpfsDownloadResult(key, ipfsrpc.DownloadResult{Return: ipfsrpc.DOWNLOAD_DATA})
 }
 
-func IsIpfsRpc(key string) bool {
-	str := ipfsFileMap[key]
-	if str == "" {
-		return false
-	}
-	return strings.Split(str, ":")[0] == "ipfs"
-}
-
-func SetSuccessIpfsDownloadResult(key string) {
+func SetSuccessIpfsDownloadFileResult(key string) {
 	SetIpfsDownloadResult(key, ipfsrpc.DownloadResult{Return: ipfsrpc.SUCCESS})
 }
 
@@ -73,7 +28,6 @@ func SetFailIpfsDownloadResult(key, message string) {
 	SetIpfsDownloadResult(key, ipfsrpc.DownloadResult{Return: ipfsrpc.FAILED, Message: message})
 }
 
-// SetIpfsFileDownloadResult
 func SetIpfsDownloadResult(key string, result ipfsrpc.DownloadResult) {
 	ipfsEventMutex.Lock()
 	defer ipfsEventMutex.Unlock()
@@ -85,6 +39,18 @@ func SetIpfsDownloadResult(key string, result ipfsrpc.DownloadResult) {
 			ipfsRpcDownloadEventChan.Delete(key)
 		}
 	}
+}
+
+func SetSuccessIpfsUploadDataResult(key string) {
+	SetIpfsDownloadResult(key, ipfsrpc.DownloadResult{Return: ipfsrpc.UPLOAD_DATA})
+}
+
+func SetSuccessIpfsUploadFileResult(key string) {
+	SetIpfsUploadResult(key, ipfsrpc.UploadResult{Return: ipfsrpc.SUCCESS})
+}
+
+func SetFailIpfsUploadResult(key, message string) {
+	SetIpfsUploadResult(key, ipfsrpc.UploadResult{Return: ipfsrpc.FAILED, Message: message})
 }
 
 func SetIpfsUploadResult(key string, result ipfsrpc.UploadResult) {
@@ -123,24 +89,3 @@ func UnsubscribeIpfsUpload(key string) {
 	defer ipfsEventMutex.Unlock()
 	ipfsRpcUploadEventChan.Delete(key)
 }
-
-func SaveIpfsRemoteFileHash(hash, fileName string) {
-	ipfsFileMutex.Lock()
-	defer ipfsFileMutex.Unlock()
-
-	ipfsFileMap[hash] = "ipfs:" + fileName
-}
-
-//// SetRemoteFileInfo
-//func SetIpfsDownload(key string, size uint64) {
-//	ipfsEventMutex.Lock()
-//	defer ipfsEventMutex.Unlock()
-//	ch, found := rpcDownloadFileInfo.Load(key)
-//	if found {
-//		select {
-//		case ch.(chan uint64) <- size:
-//		default:
-//			rpcDownloadFileInfo.Delete(key)
-//		}
-//	}
-//}

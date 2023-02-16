@@ -41,6 +41,7 @@ func MigrateIpfsFile(ctx context.Context, cid, fileName string) {
 
 // RequestUploadFile request to SP for upload file
 func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ http.ResponseWriter) {
+	fileReqId, _ := getFileReqIdFromContext(ctx)
 	pp.DebugLog(ctx, "______________path", path)
 	if !setting.CheckLogin() {
 		return
@@ -52,6 +53,7 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ htt
 	isFile, err := file.IsFile(path)
 	if err != nil {
 		pp.ErrorLog(ctx, err)
+		file.SetFailIpfsUploadResult(fileReqId, err.Error())
 		return
 	}
 	if isFile {
@@ -113,17 +115,22 @@ func ReqBackupStatus(ctx context.Context, fileHash string) {
 
 // RspUploadFile response of upload file event
 func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
+	fileReqId, _ := getFileReqIdFromContext(ctx)
 	pp.DebugLog(ctx, "get RspUploadFile")
 	target := &protos.RspUploadFile{}
 	if !requests.UnmarshalData(ctx, target) {
-		pp.ErrorLog(ctx, "unmarshal error")
+		errMsg := "unmarshal error"
+		pp.ErrorLog(ctx, errMsg)
+		file.SetFailIpfsUploadResult(fileReqId, errMsg)
 		return
 	}
 	metrics.UploadPerformanceLogNow(target.FileHash + ":RCV_RSP_UPLOAD_SP")
 
 	// upload file to PP based on the PP info provided by SP
 	if target.Result == nil {
-		pp.ErrorLog(ctx, "target.Result is nil")
+		errMsg := "target.Result is nil"
+		pp.ErrorLog(ctx, errMsg)
+		file.SetFailIpfsUploadResult(fileReqId, errMsg)
 		return
 	}
 
@@ -137,6 +144,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		if file.IsFileRpcRemote(target.FileHash) {
 			file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: target.Result.Msg})
 		} else {
+			file.SetFailIpfsUploadResult(fileReqId, target.Result.Msg)
 			file.ClearFileMap(target.FileHash)
 		}
 		return

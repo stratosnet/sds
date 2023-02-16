@@ -13,7 +13,6 @@ import (
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/task"
 )
 
 type CtxEnv struct {
@@ -21,8 +20,9 @@ type CtxEnv struct {
 }
 
 const (
-	// IPFS_WAIT_TIMEOUT timeout for waiting result from external source, in seconds
-	IPFS_WAIT_TIMEOUT = 60 * time.Second
+	IPFS_WAIT_TIMEOUT_ADD = 15 * time.Second
+	IPFS_WAIT_TIMEOUT_GET = 15 * time.Second
+	TIMEOUT_MESSAGE       = "time out"
 )
 
 // Define the root of the commands
@@ -68,22 +68,26 @@ func add(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 	}
 	pathStr := file.EscapePath(args[0:1])
 
-	fileHash := file.GetFileHash(pathStr, "")
-	event.RequestUploadFile(ctx, pathStr, isEncrypted, nil)
+	go event.RequestUploadFile(ctx, pathStr, isEncrypted, nil)
 
-	ctx, _ = context.WithTimeout(ctx, IPFS_WAIT_TIMEOUT)
-
-	key := fileHash + task.LOCAL_REQID
-	file.SaveIpfsRemoteFileHash(key, "ipfs:")
+	timeout := time.After(IPFS_WAIT_TIMEOUT_ADD)
 	var result *ipfsrpc.UploadResult
-
-	select {
-	case <-ctx.Done():
-		result = &ipfsrpc.UploadResult{Return: rpc_api.TIME_OUT}
-	case result = <-file.SubscribeIpfsUpload(fileHash):
-		file.UnsubscribeIpfsUpload(fileHash)
+	for {
+		select {
+		case <-timeout:
+			return re.CloseWithError(errors.New(TIMEOUT_MESSAGE))
+		case result = <-file.SubscribeIpfsUpload(reqId):
+			file.UnsubscribeIpfsUpload(reqId)
+			if result.Return == ipfsrpc.SUCCESS {
+				//TODO alter message
+				return re.Emit(*result)
+			} else if result.Return == ipfsrpc.FAILED {
+				return re.CloseWithError(errors.New(result.Message))
+			} else if result.Return == ipfsrpc.UPLOAD_DATA {
+				timeout = time.After(IPFS_WAIT_TIMEOUT_ADD)
+			}
+		}
 	}
-	return re.Emit(*result)
 }
 
 func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error {
@@ -100,20 +104,23 @@ func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 	}
 	go event.GetFileStorageInfo(ctx, filePath, "", saveAs, false, nil)
 
-	// wait for the result
-	ctx, _ = context.WithTimeout(ctx, IPFS_WAIT_TIMEOUT)
+	timeout := time.After(IPFS_WAIT_TIMEOUT_GET)
 	var result *ipfsrpc.DownloadResult
-
-	select {
-	case <-ctx.Done():
-		result = &ipfsrpc.DownloadResult{Return: rpc_api.TIME_OUT}
-		return re.Emit(*result)
-	case result = <-resultCh:
-		file.UnsubscribeIpfsDownload(reqId)
-		if result.Return == ipfsrpc.FAILED {
-			return re.CloseWithError(errors.New(result.Message))
+	for {
+		select {
+		case <-timeout:
+			return re.CloseWithError(errors.New(TIMEOUT_MESSAGE))
+		case result = <-resultCh:
+			file.UnsubscribeIpfsDownload(reqId)
+			if result.Return == ipfsrpc.SUCCESS {
+				//TODO alter message
+				return re.Emit(*result)
+			} else if result.Return == ipfsrpc.FAILED {
+				return re.CloseWithError(errors.New(result.Message))
+			} else if result.Return == ipfsrpc.DOWNLOAD_DATA {
+				timeout = time.After(IPFS_WAIT_TIMEOUT_GET)
+			}
 		}
-		return re.Emit(*result)
 	}
 }
 

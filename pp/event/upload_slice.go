@@ -15,7 +15,6 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/api/ipfsrpc"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/p2pserver"
@@ -327,11 +326,14 @@ func sendSlice(ctx context.Context, pb proto.Message, fileHash, p2pAddress, netw
 	key := "upload#" + fileHash + p2pAddress
 	msg := pb.(*protos.ReqUploadFileSlice)
 	metrics.UploadPerformanceLogNow(fileHash + ":SND_FILE_DATA:" + strconv.FormatInt(int64(msg.SliceInfo.SliceOffset.SliceOffsetStart+(msg.SliceNumAddr.SliceNumber-1)*33554432), 10) + ":" + networkAddress)
-	return p2pserver.GetP2pServer(ctx).SendMessageByCachedConn(ctx, key, networkAddress, pb, header.ReqUploadFileSlice, HandleSendPacketCostTime)
+	fileReqId, _ := getFileReqIdFromContext(ctx)
+	newCtx := createAndRegisterSliceReqId(ctx, fileReqId)
+	return p2pserver.GetP2pServer(newCtx).SendMessageByCachedConn(newCtx, key, networkAddress, pb, header.ReqUploadFileSlice, HandleSendPacketCostTime)
 }
 
 func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 	var target protos.UploadSpeedOfProgress
+	fileReqId, _ := getFileReqIdFromContext(ctx)
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
@@ -348,6 +350,7 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 	p := float32(progress.HasUpload) / float32(progress.Total) * 100
 	pp.Logf(ctx, "fileHash: %v  uploaded：%.2f %% ", target.FileHash, p)
 	setting.ShowProgress(ctx, p)
+	file.SetSuccessIpfsUploadDataResult(fileReqId)
 	//ProgressMap.Store(target.FileHash, p)
 	if progress.HasUpload >= progress.Total {
 		task.UploadProgressMap.Delete(target.FileHash)
@@ -356,9 +359,7 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 		if file.IsFileRpcRemote(target.FileHash) {
 			file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: rpc.SUCCESS})
 		}
-		if file.IsIpfsRpc(target.FileHash + task.LOCAL_REQID) {
-			file.SetIpfsUploadResult(target.FileHash, ipfsrpc.UploadResult{Return: rpc.SUCCESS})
-		}
+		file.SetSuccessIpfsUploadFileResult(fileReqId)
 	}
 }
 

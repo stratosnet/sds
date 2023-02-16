@@ -308,7 +308,7 @@ func DoneDownload(ctx context.Context, fileHash, fileName, savePath, fileReqId s
 		pp.ErrorLog(ctx, "DoneDownload Remove", err)
 	}
 
-	file.SetSuccessIpfsDownloadResult(fileReqId)
+	file.SetSuccessIpfsDownloadFileResult(fileReqId)
 
 	metrics.DownloadPerformanceLogNow(fileHash + ":RCV_DOWNLOAD_DONE:")
 	if _, ok := setting.ImageMap.Load(fileHash); ok {
@@ -405,6 +405,7 @@ func CheckDownloadOver(ctx context.Context, fileHash, fileReqId string) (bool, f
 				checkAgain(ctx, fileHash, fileReqId)
 				return true, 1
 			}
+			file.SetSuccessIpfsDownloadDataResult(fileReqId)
 			return false, float32(sp.DownloadedSize) / float32(sp.TotalSize)
 		}
 		return false, 0
