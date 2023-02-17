@@ -289,7 +289,11 @@ func (api *rpcApi) DownloadData(ctx context.Context, param rpc_api.ParamDownload
 		if result == nil || !(result.Return == rpc_api.DOWNLOAD_OK || result.Return == rpc_api.DL_OK_ASK_INFO) {
 			file.CleanFileHash(key)
 		}
+		if result != nil {
+			result.FileName = ""
+		}
 	}
+
 	return *result
 }
 
