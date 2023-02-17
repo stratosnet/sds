@@ -11,6 +11,7 @@ import (
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/api/rpc"
+	"github.com/stratosnet/sds/utils"
 )
 
 var (
@@ -120,6 +121,55 @@ OuterFor:
 	}
 
 	return data
+}
+
+func CacheRemoteFileData(fileHash string, offset *protos.SliceOffset, fileName string) bool {
+	upSliceMutex.Lock()
+	defer upSliceMutex.Unlock()
+
+	// compose event, as well notify the remote user
+	r := &rpc.Result{
+		Return:      rpc.UPLOAD_DATA,
+		OffsetStart: &offset.SliceOffsetStart,
+		OffsetEnd:   &offset.SliceOffsetEnd,
+	}
+
+	// send event and open the pipe for coming data
+	SetRemoteFileResult(fileHash, *r)
+
+	fileMg := OpenTmpFile(fileHash, fileName)
+	if fileMg == nil {
+		utils.DebugLog("CacheRemoteFileData exit...")
+		return false
+	}
+	defer func() {
+		_ = fileMg.Close()
+	}()
+
+	var read int64 = 0
+
+OuterFor:
+	for {
+		parentCtx := context.Background()
+		ctx, cancel := context.WithTimeout(parentCtx, RpcWaitTimeout)
+
+		select {
+		case <-ctx.Done():
+			cancel()
+			return false
+		case subSlice := <-SubscribeGetRemoteFileData(fileHash):
+			metrics.UploadPerformanceLogNow(fileHash + ":RCV_SUBSLICE_RPC:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
+			WriteFile(subSlice, read, fileMg)
+			read = read + int64(len(subSlice))
+			if read >= int64(offset.SliceOffsetEnd-offset.SliceOffsetStart) {
+				UnsubscribeGetRemoteFileData(fileHash)
+				cancel()
+				break OuterFor
+			}
+		}
+	}
+
+	return true
 }
 
 // SendFileDataBack rpc server feeds file data from remote user to application
