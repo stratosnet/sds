@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"math"
 	"path"
+	"path/filepath"
 	"reflect"
 	"time"
 
@@ -117,7 +118,7 @@ func ReqGetWalletOzData(walletAddr, reqId string) *protos.ReqGetWalletOz {
 }
 
 // RequestUploadFile a file from an owner instead from a "path" belongs to PP's default wallet
-func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress, walletPubkey, signature string, isEncrypted bool) *protos.ReqUploadFile {
+func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress, walletPubkey, signature string, isEncrypted, isVideoStream bool) *protos.ReqUploadFile {
 	utils.Log("fileName: ", fileName)
 	encryptionTag := ""
 	if isEncrypted {
@@ -155,7 +156,16 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress
 		WalletSign:    wsig,
 		WalletPubkey:  wpk.Bytes(),
 		IsCover:       false,
-		IsVideoStream: false,
+		IsVideoStream: isVideoStream,
+	}
+
+	if isVideoStream {
+		duration, err := file.GetVideoDuration(filepath.Join(setting.GetRootPath(), file.TEMP_FOLDER, fileHash, fileName))
+		if err != nil {
+			utils.Log("Failed to get the length of the video: ", err)
+			return nil
+		}
+		req.FileInfo.Duration = duration
 	}
 
 	// info

@@ -48,8 +48,7 @@ func GetVideoDuration(path string) (uint64, error) {
 	return uint64(math.Ceil(length)), nil
 }
 
-func VideoToHls(ctx context.Context, fileHash string) bool {
-	filePath := GetFilePath(fileHash)
+func VideoToHls(ctx context.Context, fileHash, filePath string) bool {
 	videoTmpFolder := GetVideoTmpFolder(fileHash)
 	if _, err := os.Stat(videoTmpFolder); os.IsNotExist(err) {
 		_ = os.Mkdir(videoTmpFolder, fs.ModePerm)
