@@ -14,6 +14,8 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
+const NUMBER_OF_UPLOAD_CHAN_BUFFER = 5
+
 var (
 	reFileMutex sync.Mutex
 
@@ -61,9 +63,12 @@ func IsFileRpcRemote(key string) bool {
 
 // SubscribeGetRemoteFileData application subscribes to remote file data and waits for remote user's feedback
 func SubscribeGetRemoteFileData(key string) chan []byte {
-	event := make(chan []byte)
-	rpcUploadDataChan.Store(key, event)
-	return event
+	event, found := rpcUploadDataChan.Load(key)
+	if !found {
+		event = make(chan []byte, NUMBER_OF_UPLOAD_CHAN_BUFFER)
+		rpcUploadDataChan.Store(key, event)
+	}
+	return event.(chan []byte)
 }
 
 // UnsubscribeGetRemoteFileData unsubscribe after the application finishes receiving the slice of file data
