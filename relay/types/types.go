@@ -43,16 +43,26 @@ type VolumeReportedReq struct {
 }
 
 type SlashedPP struct {
-	P2PAddress               string   `json:"p2p_address"`
-	QueryFirst               bool     `json:"query_first"`
-	Suspended                bool     `json:"suspended"`
-	SlashedAmt               *big.Int `json:"slashed_amt"`
-	EffectiveStake           *big.Int `json:"effective_stake"`
-	IsEffectiveStakeChanged  bool     `json:"is_effective_stake_changed"`
-	IsUnsuspendedDuringSlash bool     `json:"is_unsuspended_during_slash"`
+	P2PAddress              string   `json:"p2p_address"`
+	QueryFirst              bool     `json:"query_first"`
+	Suspended               bool     `json:"suspended"`
+	SlashedAmt              *big.Int `json:"slashed_amt"`
+	EffectiveStake          *big.Int `json:"effective_stake"`
+	IsEffectiveStakeChanged bool     `json:"is_effective_stake_changed"`
 }
 
 type SlashedPPReq struct {
 	PPList []SlashedPP `json:"pp_list"`
 	TxHash string      `json:"tx_hash"`
+}
+
+type UpdatedEffectiveStakePP struct {
+	P2PAddress                string   `json:"p2p_address"`
+	IsUnsuspendedDuringUpdate bool     `json:"is_unsuspended_during_update"`
+	EffectiveStakeAfter       *big.Int `json:"effective_stake_after"`
+}
+
+type UpdatedEffectiveStakePPReq struct {
+	PPList []UpdatedEffectiveStakePP `json:"pp_list"`
+	TxHash string                    `json:"tx_hash"`
 }

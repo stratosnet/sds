@@ -40,6 +40,7 @@ func init() {
 	Handlers[MSG_TYPE_FILE_UPLOAD] = FileUploadMsgHandler()
 	Handlers[MSG_TYPE_VOLUME_REPORT] = VolumeReportHandler()
 	Handlers[MSG_TYPE_SLASHING_RESOURCE_NODE] = SlashingResourceNodeHandler()
+	Handlers[MSG_TYPE_UPDATE_EFFECTIVE_STAKE] = UpdateEffectiveStakeHandler()
 
 	cache = utils.NewAutoCleanMap(time.Minute)
 }
@@ -446,7 +447,6 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 			"slashing.amount",
 			"slashing.is_effective_stake_changed",
 			"slashing.effective_stake",
-			"slashing.is_unsuspended_during_slash",
 		}
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
 		key := getCacheKey(requiredAttributes, result)
@@ -477,22 +477,16 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 				utils.DebugLog("Invalid effective stake in big integer in the slashing message from stratos-chain")
 				continue
 			}
-			IsUnsuspendedDuringSlash, err := strconv.ParseBool(event["slashing.is_unsuspended_during_slash"])
-			if err != nil {
-				utils.DebugLog("Invalid flag of is_unsuspended_during_slash in the slashing message from stratos-chain", err)
-				continue
-			}
 			utils.DebugLogf("slashed amount is %v, is_effective_stake_changed: %v, "+
-				"current effective stake: %v, is_unsuspended_during_slash: %v", slashedAmt.String(),
-				isEffectiveStakeChanged, effectiveStake.String(), IsUnsuspendedDuringSlash)
+				"current effective stake: %v", slashedAmt.String(),
+				isEffectiveStakeChanged, effectiveStake.String())
 			slashedPP := relayTypes.SlashedPP{
-				P2PAddress:               event["slashing.p2p_address"],
-				QueryFirst:               false,
-				Suspended:                suspended,
-				SlashedAmt:               slashedAmt,
-				IsEffectiveStakeChanged:  isEffectiveStakeChanged,
-				EffectiveStake:           effectiveStake,
-				IsUnsuspendedDuringSlash: IsUnsuspendedDuringSlash,
+				P2PAddress:              event["slashing.p2p_address"],
+				QueryFirst:              false,
+				Suspended:               suspended,
+				SlashedAmt:              slashedAmt,
+				IsEffectiveStakeChanged: isEffectiveStakeChanged,
+				EffectiveStake:          effectiveStake,
 			}
 			slashedPPs = append(slashedPPs, slashedPP)
 		}
@@ -510,6 +504,69 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 			TxHash: txHash,
 		}
 		err := postToSP("/pp/slashed", req)
+		if err != nil {
+			utils.ErrorLog(err)
+			return
+		}
+	}
+}
+
+func UpdateEffectiveStakeHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
+		requiredAttributes := []string{
+			"update_effective_stake.network_address",
+			"update_effective_stake.is_unsuspended",
+			"update_effective_stake.effective_stake_after",
+		}
+		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
+		key := getCacheKey(requiredAttributes, result)
+		if _, ok := cache.Load(key); ok {
+			utils.DebugLogf("Event update_effective_stake was already handled for tx [%v]. Ignoring...", txHash)
+			return
+		}
+		cache.Store(key, true)
+		var updatedPPs []relayTypes.UpdatedEffectiveStakePP
+		for _, event := range processedEvents {
+			isUnsuspendedDuringUpdate, err := strconv.ParseBool(event["update_effective_stake.is_unsuspended"])
+			if err != nil {
+				utils.DebugLog("Invalid is_unsuspended boolean in the update_effective_stake message from stratos-chain", err)
+				continue
+			}
+
+			effectiveStakeAfter, ok := new(big.Int).SetString(event["update_effective_stake.effective_stake_change"], 10)
+			if !ok {
+				utils.DebugLog("Invalid effective_stake_change in big integer in the update_effective_stake message from stratos-chain")
+				continue
+			}
+			utils.DebugLogf("network_address: %v, isUnsuspendedDuringUpdate is %v, effectiveStakeAfter: %v",
+				event["update_effective_stake.network_address"], isUnsuspendedDuringUpdate, effectiveStakeAfter.String())
+
+			if !isUnsuspendedDuringUpdate {
+				// only msg for unsuspended node will be transferred to SP
+				continue
+			}
+
+			updatedPP := relayTypes.UpdatedEffectiveStakePP{
+				P2PAddress:                event["update_effective_stake.network_address"],
+				IsUnsuspendedDuringUpdate: isUnsuspendedDuringUpdate,
+				EffectiveStakeAfter:       effectiveStakeAfter,
+			}
+			updatedPPs = append(updatedPPs, updatedPP)
+		}
+
+		if len(updatedPPs) != initialEventCount {
+			utils.ErrorLogf("updatedEffectiveStake message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+				len(updatedPPs), initialEventCount-len(processedEvents), len(processedEvents)-len(updatedPPs))
+		}
+		if len(updatedPPs) == 0 {
+			return
+		}
+
+		req := relayTypes.UpdatedEffectiveStakePPReq{
+			PPList: updatedPPs,
+			TxHash: txHash,
+		}
+		err := postToSP("/pp/updatedEffectiveStake", req)
 		if err != nil {
 			utils.ErrorLog(err)
 			return

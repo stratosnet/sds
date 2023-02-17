@@ -47,7 +47,7 @@ func BuildVolumeReportMsg(traffic []*Traffic, reporterAddress, reporterOwnerAddr
 	return volumeReportMsg, signBytes, nil
 }
 
-func BuildSlashingResourceNodeMsg(spP2pAddress, spWalletAddress []utiltypes.Address, ppP2pAddress, ppWalletAddress utiltypes.Address, slashingAmount *big.Int, suspend bool, newEffectiveStake *big.Int) sdktypes.Msg {
+func BuildSlashingResourceNodeMsg(spP2pAddress, spWalletAddress []utiltypes.Address, ppP2pAddress, ppWalletAddress utiltypes.Address, slashingAmount *big.Int, suspend bool) sdktypes.Msg {
 	var spP2pAddressSdk []types.SdsAddress
 	for _, p2pAddress := range spP2pAddress {
 		spP2pAddressSdk = append(spP2pAddressSdk, p2pAddress[:])
@@ -64,8 +64,26 @@ func BuildSlashingResourceNodeMsg(spP2pAddress, spWalletAddress []utiltypes.Addr
 		ppWalletAddress[:],
 		sdktypes.NewIntFromBigInt(slashingAmount),
 		suspend,
+	)
+}
+
+func BuildUpdateEffectiveStakeMsg(spP2pAddress, spWalletAddress []utiltypes.Address, ppP2pAddress utiltypes.Address, newEffectiveStake *big.Int) sdktypes.Msg {
+	var spP2pAddressSdk []types.SdsAddress
+	for _, p2pAddress := range spP2pAddress {
+		spP2pAddressSdk = append(spP2pAddressSdk, p2pAddress[:])
+	}
+	var spWalletAddressSdk []sdktypes.AccAddress
+	for _, walletAddress := range spWalletAddress {
+		spWalletAddressSdk = append(spWalletAddressSdk, walletAddress[:])
+	}
+
+	return registertypes.NewMsgUpdateEffectiveStake(
+		spP2pAddressSdk,
+		spWalletAddressSdk,
+		ppP2pAddress[:],
 		sdktypes.NewIntFromBigInt(newEffectiveStake),
 	)
+
 }
 
 // Stratos-chain 'register' module
