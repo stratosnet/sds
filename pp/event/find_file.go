@@ -93,5 +93,6 @@ func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	rpcResult.PageId = target.PageId
 	rpcResult.FileInfo = fileInfos
 
+	file.SetSuccessIpfsFileListResult(reqId, &target)
 	return
 }

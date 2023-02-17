@@ -2,7 +2,6 @@ package serv
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"time"
 
@@ -10,9 +9,9 @@ import (
 	cmds "github.com/ipfs/go-ipfs-cmds"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/pp/api/ipfsrpc"
-	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/setting"
 )
 
 type CtxEnv struct {
@@ -20,9 +19,10 @@ type CtxEnv struct {
 }
 
 const (
-	IPFS_WAIT_TIMEOUT_ADD = 15 * time.Second
-	IPFS_WAIT_TIMEOUT_GET = 15 * time.Second
-	TIMEOUT_MESSAGE       = "time out"
+	IPFS_WAIT_TIMEOUT_ADD  = 15 * time.Second
+	IPFS_WAIT_TIMEOUT_GET  = 15 * time.Second
+	IPFS_WAIT_TIMEOUT_LIST = 15 * time.Second
+	TIMEOUT_MESSAGE        = "time out"
 )
 
 // Define the root of the commands
@@ -43,10 +43,8 @@ var RootCmd = &cmds.Command{
 			Run: get,
 		},
 		"list": {
-			Arguments: []cmds.Argument{
-				cmds.StringArg("walletAddr", true, true, "walletAddress"),
-			},
-			Run: list,
+			Arguments: []cmds.Argument{},
+			Run:       list,
 		},
 	},
 }
@@ -61,6 +59,8 @@ func add(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 
 	reqId := uuid.New().String()
 	ctx := core.RegisterRemoteReqId(ctxEnv.Ctx, reqId)
+	resultCh := file.SubscribeIpfsUpload(reqId)
+	defer file.UnsubscribeIpfsUpload(reqId)
 
 	isEncrypted := false
 	if encrypted == "encrypt" {
@@ -76,8 +76,7 @@ func add(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 		select {
 		case <-timeout:
 			return re.CloseWithError(errors.New(TIMEOUT_MESSAGE))
-		case result = <-file.SubscribeIpfsUpload(reqId):
-			file.UnsubscribeIpfsUpload(reqId)
+		case result = <-resultCh:
 			if result.Return == ipfsrpc.SUCCESS {
 				//TODO alter message
 				return re.Emit(*result)
@@ -85,6 +84,7 @@ func add(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 				return re.CloseWithError(errors.New(result.Message))
 			} else if result.Return == ipfsrpc.UPLOAD_DATA {
 				timeout = time.After(IPFS_WAIT_TIMEOUT_ADD)
+				continue
 			}
 		}
 	}
@@ -97,6 +97,7 @@ func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 	reqId := uuid.New().String()
 	ctx := core.RegisterRemoteReqId(ctxEnv.Ctx, reqId)
 	resultCh := file.SubscribeIpfsDownload(reqId)
+	defer file.UnsubscribeIpfsDownload(reqId)
 
 	saveAs := ""
 	if len(req.Arguments) == 2 {
@@ -111,7 +112,6 @@ func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 		case <-timeout:
 			return re.CloseWithError(errors.New(TIMEOUT_MESSAGE))
 		case result = <-resultCh:
-			file.UnsubscribeIpfsDownload(reqId)
 			if result.Return == ipfsrpc.SUCCESS {
 				//TODO alter message
 				return re.Emit(*result)
@@ -127,25 +127,21 @@ func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 func list(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error {
 	ctxEnv, _ := env.(CtxEnv)
 	reqId := uuid.New().String()
-	walletAddre := req.Arguments[0]
-	ctx, _ := context.WithTimeout(ctxEnv.Ctx, WAIT_TIMEOUT)
+	ctx, _ := context.WithTimeout(ctxEnv.Ctx, IPFS_WAIT_TIMEOUT_LIST)
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
-	event.FindFileList(ctx, "", walletAddre, 0, "", 0, true)
 
-	var result *rpc_api.FileListResult
-	var found bool
+	resultCh := file.SubscribeIpfsFileList(reqId)
+	defer file.UnsubscribeIpfsFileList(reqId)
 
+	go event.FindFileList(ctx, "", setting.WalletAddress, 0, "", 0, true)
+
+	var result *ipfsrpc.FileListResult
 	for {
 		select {
 		case <-ctx.Done():
-			result = &rpc_api.FileListResult{Return: rpc_api.TIME_OUT}
-			r, _ := json.Marshal(result)
-			return re.Emit(r)
-		default:
-			result, found = file.GetFileListResult(walletAddre + reqId)
-			if result != nil && found {
-				return re.Emit(result)
-			}
+			return re.CloseWithError(errors.New(TIMEOUT_MESSAGE))
+		case result = <-resultCh:
+			return re.Emit(result)
 		}
 	}
 }

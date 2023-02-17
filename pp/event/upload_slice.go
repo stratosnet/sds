@@ -350,7 +350,6 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 	p := float32(progress.HasUpload) / float32(progress.Total) * 100
 	pp.Logf(ctx, "fileHash: %v  uploaded：%.2f %% ", target.FileHash, p)
 	setting.ShowProgress(ctx, p)
-	file.SetSuccessIpfsUploadDataResult(fileReqId)
 	//ProgressMap.Store(target.FileHash, p)
 	if progress.HasUpload >= progress.Total {
 		task.UploadProgressMap.Delete(target.FileHash)
@@ -360,6 +359,8 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 			file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: rpc.SUCCESS})
 		}
 		file.SetSuccessIpfsUploadFileResult(fileReqId)
+	} else {
+		file.SetSuccessIpfsUploadDataResult(fileReqId)
 	}
 }
 
