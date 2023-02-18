@@ -135,7 +135,7 @@ func SendFileDataBack(hash string, content []byte) {
 }
 
 // SaveRemoteFileData application calls this func to send a slice of file data to remote user during download process
-func SaveRemoteFileData(key string, data []byte, offset uint64) bool {
+func SaveRemoteFileData(key, fileName string, data []byte, offset uint64) bool {
 	if data == nil {
 		return false
 	}
@@ -155,6 +155,7 @@ func SaveRemoteFileData(key string, data []byte, offset uint64) bool {
 		OffsetStart: &offset,
 		OffsetEnd:   &offsetend,
 		FileData:    b64.StdEncoding.EncodeToString(data),
+		FileName:    fileName,
 	}
 
 	SetRemoteFileResult(key, result)

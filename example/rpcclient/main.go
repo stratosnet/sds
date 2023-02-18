@@ -360,15 +360,26 @@ func get(cmd *cobra.Command, args []string) error {
 
 	var fileSize uint64 = 0
 	var pieceCount uint64 = 0
-	fileMg, err := os.OpenFile("sample_shared_download.file", os.O_CREATE|os.O_RDWR, 0777)
-	if err != nil {
-		utils.ErrorLog("error initialize file")
-		return errors.New("can't open file")
-	}
-	defer fileMg.Close()
-
+	var fileMg *os.File = nil
 	// Handle result:1 sending the content
 	for res.Return == rpc.DOWNLOAD_OK || res.Return == rpc.DL_OK_ASK_INFO {
+		if fileMg == nil {
+			exist, err := file.PathExists("./download/")
+			if err != nil {
+				return err
+			}
+			if !exist {
+				if err = os.MkdirAll("./download/", 0777); err != nil {
+					return err
+				}
+			}
+			fileMg, err = os.OpenFile(filepath.Join("./download/", res.FileName), os.O_CREATE|os.O_RDWR, 0777)
+			if err != nil {
+				utils.ErrorLog("error initialize file")
+				return errors.New("can't open file")
+			}
+		}
+
 		if res.Return == rpc.DL_OK_ASK_INFO {
 			utils.Log("- received response (return: DL_OK_ASK_INFO) after received", pieceCount, "piece(s)")
 			r = downloadedFileInfoMsg(fileHash, fileSize, res.ReqId)
@@ -381,8 +392,8 @@ func get(cmd *cobra.Command, args []string) error {
 			fileSize = fileSize + (end - start)
 			decoded, _ := base64.StdEncoding.DecodeString(res.FileData)
 			if len(decoded) != int(end-start) {
-				utils.ErrorLog("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 				utils.ErrorLog("Wrong size:", strconv.Itoa(len(decoded)), " ", strconv.Itoa(int(end-start)))
+				fileMg.Close()
 				return nil
 			}
 			pieceCount = pieceCount + 1
@@ -390,7 +401,8 @@ func get(cmd *cobra.Command, args []string) error {
 			_, err = fileMg.WriteAt(decoded, int64(start))
 			if err != nil {
 				utils.ErrorLog("error save file")
-				return errors.New("failed writting file")
+				fileMg.Close()
+				return errors.New("failed writing file")
 			}
 
 			r = downloadDataMsg(fileHash, res.ReqId)
@@ -400,6 +412,7 @@ func get(cmd *cobra.Command, args []string) error {
 		body := httpRequest(r)
 		if body == nil {
 			utils.ErrorLog("json marshal error")
+			fileMg.Close()
 			return nil
 		}
 
@@ -412,8 +425,12 @@ func get(cmd *cobra.Command, args []string) error {
 		err = json.Unmarshal(rsp.Result, &res)
 		if err != nil {
 			utils.ErrorLog("unmarshal failed")
+			fileMg.Close()
 			return nil
 		}
+	}
+	if fileMg != nil {
+		fileMg.Close()
 	}
 	if res.Return == rpc.SUCCESS {
 		utils.Log("- received response (return: SUCCESS)")
@@ -564,7 +581,8 @@ func getozone(cmd *cobra.Command, args []string) error {
 	}
 	if res.Return == rpc.SUCCESS {
 		utils.Log("- received response (return: SUCCESS)")
-		utils.Log("OZONE balance: ", res.Ozone)
+		ozone, _ := strconv.ParseFloat(res.Ozone, 64)
+		utils.Log("OZONE balance: ", ozone/1000000000.0)
 	} else {
 		utils.Log("- received response (return: ", res.Return, ")")
 	}
@@ -714,6 +732,8 @@ func share(cmd *cobra.Command, args []string) error {
 	}
 	if res.Return == rpc.SUCCESS {
 		utils.Log("- received response (return: SUCCESS)")
+		fmt.Println("ShareId: ", res.ShareId)
+		fmt.Println("ShareLink: ", res.ShareLink)
 	} else {
 		utils.Log("- received response (return: ", res.Return, ")")
 	}
@@ -909,15 +929,25 @@ func getshared(cmd *cobra.Command, args []string) error {
 
 	var fileSize uint64 = 0
 	var pieceCount uint64 = 0
-	fileMg, err := os.OpenFile("sample_shared_download.file", os.O_CREATE|os.O_RDWR, 0777)
-	if err != nil {
-		utils.ErrorLog("error initialize file")
-		return errors.New("can't open file")
-	}
-	defer fileMg.Close()
+	var fileMg *os.File = nil
 	// Handle result:1 sending the content
 	for res.Return == rpc.DOWNLOAD_OK || res.Return == rpc.DL_OK_ASK_INFO {
-		// TODO: save the piece to the file
+		exist, err := file.PathExists("./download/")
+		if err != nil {
+			return err
+		}
+		if !exist {
+			if err = os.MkdirAll("./download/", 0777); err != nil {
+				return err
+			}
+		}
+		if fileMg == nil {
+			fileMg, err = os.OpenFile(filepath.Join("./download/", res.FileName), os.O_CREATE|os.O_RDWR, 0777)
+			if err != nil {
+				utils.ErrorLog("error initialize file")
+				return errors.New("can't open file")
+			}
+		}
 		if res.Return == rpc.DL_OK_ASK_INFO {
 			utils.Log("- received response (return: DL_OK_ASK_INFO)")
 			r = downloadedFileInfoMsg(fileHash, fileSize, res.ReqId)
@@ -929,14 +959,15 @@ func getshared(cmd *cobra.Command, args []string) error {
 			fileSize = fileSize + (end - start)
 			decoded, _ := base64.StdEncoding.DecodeString(res.FileData)
 			if len(decoded) != int(end-start) {
-				utils.ErrorLog("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 				utils.ErrorLog("Wrong size:", strconv.Itoa(len(decoded)), " ", strconv.Itoa(int(end-start)))
+				fileMg.Close()
 				return nil
 			}
 			pieceCount = pieceCount + 1
 			_, err = fileMg.WriteAt(decoded, int64(start))
 			if err != nil {
 				utils.ErrorLog("error save file")
+				fileMg.Close()
 				return errors.New("failed writing file")
 			}
 			r = downloadDataMsg(fileHash, res.ReqId)
@@ -946,20 +977,26 @@ func getshared(cmd *cobra.Command, args []string) error {
 		body := httpRequest(r)
 		if body == nil {
 			utils.ErrorLog("json marshal error")
+			fileMg.Close()
 			return nil
 		}
 
 		// Handle rsp
-		err := json.Unmarshal(body, &rsp)
+		err = json.Unmarshal(body, &rsp)
 		if err != nil {
+			fileMg.Close()
 			return nil
 		}
 
 		err = json.Unmarshal(rsp.Result, &res)
 		if err != nil {
 			utils.ErrorLog("unmarshal failed")
+			fileMg.Close()
 			return nil
 		}
+	}
+	if fileMg != nil {
+		fileMg.Close()
 	}
 	if res.Return == rpc.SUCCESS {
 		utils.Log("- received response (return: SUCCESS)")

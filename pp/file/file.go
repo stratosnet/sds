@@ -161,7 +161,7 @@ func SaveFileData(ctx context.Context, data []byte, offset int64, sliceHash, fil
 
 	if IsFileRpcRemote(fileHash + fileReqId) {
 		// write to rpc
-		return SaveRemoteFileData(fileHash+fileReqId, data, uint64(offset))
+		return SaveRemoteFileData(fileHash+fileReqId, fileName, data, uint64(offset))
 	}
 	wmutex.Lock()
 	defer wmutex.Unlock()
