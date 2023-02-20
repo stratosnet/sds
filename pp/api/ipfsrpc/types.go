@@ -16,6 +16,10 @@ type DownloadResult struct {
 type UploadResult struct {
 	Return  string `json:"return"`
 	Message string `json:"message,omitempty"`
+	Bytes   int64  `json:"bytes,omitempty"`
+	Hash    string `json:"hash,omitempty"`
+	Name    string `json:"name,omitempty"`
+	Size    string `json:"size,omitempty"`
 }
 
 type FileListResult struct {

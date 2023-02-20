@@ -358,7 +358,7 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 		if file.IsFileRpcRemote(target.FileHash) {
 			file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: rpc.SUCCESS})
 		}
-		file.SetSuccessIpfsUploadFileResult(fileReqId)
+		file.SetSuccessIpfsUploadFileResult(fileReqId, target.FileHash, progress.Total)
 	} else {
 		file.SetSuccessIpfsUploadDataResult(fileReqId)
 	}

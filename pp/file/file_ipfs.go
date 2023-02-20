@@ -1,6 +1,7 @@
 package file
 
 import (
+	"strconv"
 	"sync"
 
 	"github.com/stratosnet/sds/msg/protos"
@@ -49,8 +50,12 @@ func SetSuccessIpfsUploadDataResult(key string) {
 	SetIpfsUploadResult(key, ipfsrpc.UploadResult{Return: ipfsrpc.UPLOAD_DATA})
 }
 
-func SetSuccessIpfsUploadFileResult(key string) {
-	SetIpfsUploadResult(key, ipfsrpc.UploadResult{Return: ipfsrpc.SUCCESS})
+func SetSuccessIpfsUploadFileResult(key string, fileHash string, size int64) {
+	SetIpfsUploadResult(key, ipfsrpc.UploadResult{
+		Return: ipfsrpc.SUCCESS,
+		Hash:   fileHash,
+		Bytes:  size,
+		Size:   strconv.FormatInt(size, 10)})
 }
 
 func SetFailIpfsUploadResult(key, message string) {

@@ -42,7 +42,7 @@ var RootCmd = &cmds.Command{
 			},
 			Run: get,
 		},
-		"list": {
+		"ls": {
 			Arguments: []cmds.Argument{},
 			Run:       list,
 		},
@@ -113,8 +113,7 @@ func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 			return re.CloseWithError(errors.New(TIMEOUT_MESSAGE))
 		case result = <-resultCh:
 			if result.Return == ipfsrpc.SUCCESS {
-				//TODO alter message
-				return re.Emit(*result)
+				return re.Emit(nil)
 			} else if result.Return == ipfsrpc.FAILED {
 				return re.CloseWithError(errors.New(result.Message))
 			} else if result.Return == ipfsrpc.DOWNLOAD_DATA {

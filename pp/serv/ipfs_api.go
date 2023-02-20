@@ -9,7 +9,9 @@ import (
 )
 
 func StartIpfsServ(ctx context.Context) {
-	h := http.NewHandler(CtxEnv{Ctx: ctx}, RootCmd, http.NewServerConfig())
+	config := http.NewServerConfig()
+	config.APIPath = "/api/v0"
+	h := http.NewHandler(CtxEnv{Ctx: ctx}, RootCmd, config)
 	port := setting.Config.IpfsRpcPort
 
 	if port == "" {
