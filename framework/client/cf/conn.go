@@ -46,7 +46,6 @@ const (
 	LOG_MODULE_CLOSE      = "close: "
 )
 
-// MsgHandler
 type MsgHandler struct {
 	message   msg.RelayMsgBuf
 	handler   core.HandlerFunc
@@ -84,7 +83,6 @@ type WriteHook struct {
 	Fn      func(packetId, costTime int64)
 }
 
-// ClientConn
 type ClientConn struct {
 	addr      string
 	opts      options
@@ -121,14 +119,12 @@ type ClientConn struct {
 	encryptMessage   bool
 }
 
-// ReconnectOption
 func ReconnectOption(rec bool) ClientOption {
 	return func(o *options) {
 		o.reconnect = rec
 	}
 }
 
-// CreateClientConn
 func CreateClientConn(netid int64, addr string, opt ...ClientOption) *ClientConn {
 	var opts options
 	for _, o := range opt {
@@ -137,28 +133,24 @@ func CreateClientConn(netid int64, addr string, opt ...ClientOption) *ClientConn
 	return newClientConnWithOptions(netid, addr, opts)
 }
 
-// MinAppVersionOption
 func MinAppVersionOption(b uint16) ClientOption {
 	return func(o *options) {
 		o.minAppVer = b
 	}
 }
 
-// BufferSizeOption
 func BufferSizeOption(indicator int) ClientOption {
 	return func(o *options) {
 		o.bufferSize = indicator
 	}
 }
 
-// HeartCloseOption
 func HeartCloseOption(b bool) ClientOption {
 	return func(o *options) {
 		o.heartClose = b
 	}
 }
 
-// LogOpenOption
 func LogOpenOption(b bool) ClientOption {
 	return func(o *options) {
 		o.logOpen = b
@@ -179,21 +171,18 @@ func ServerPortOption(serverPort uint16) ClientOption {
 	}
 }
 
-// ContextKVOption
 func ContextKVOption(kv []ContextKV) ClientOption {
 	return func(o *options) {
 		o.contextkv = kv
 	}
 }
 
-// Mylog my
 func Mylog(b bool, module string, v ...interface{}) {
 	if b {
 		utils.DebugLogfWithCalldepth(5, "Client Conn: "+module+"%v", v...)
 	}
 }
 
-// client
 func newClientConnWithOptions(netid int64, addr string, opts options) *ClientConn {
 	if opts.bufferSize == 0 {
 		opts.bufferSize = 200
@@ -225,19 +214,16 @@ func newClientConnWithOptions(netid int64, addr string, opts options) *ClientCon
 	return cc
 }
 
-// GetNetID
 func (cc *ClientConn) GetNetID() int64 {
 	return cc.netid
 }
 
-// SetConnName
 func (cc *ClientConn) SetConnName(name string) {
 	cc.mu.Lock()
 	cc.name = name
 	cc.mu.Unlock()
 }
 
-// GetName
 func (cc *ClientConn) GetName() string {
 	cc.mu.Lock()
 	name := cc.name
@@ -245,13 +231,11 @@ func (cc *ClientConn) GetName() string {
 	return name
 }
 
-// SetLimitDownloadSpeed
 func SetLimitDownloadSpeed(down uint64, isLimitDown bool) {
 	limitDownloadSpeed = down
 	isLimitDownloadSpeed = isLimitDown
 }
 
-// SetLimitUploadSpeed
 func SetLimitUploadSpeed(up uint64, isLimitUpload bool) {
 	limitUploadSpeed = up
 	isLimitUploadSpeed = isLimitUpload
@@ -265,7 +249,6 @@ func (cc *ClientConn) GetIP() string {
 	return host
 }
 
-// GetPort
 func (cc *ClientConn) GetPort() string {
 	cc.mu.Lock()
 	defer cc.mu.Unlock()
@@ -293,14 +276,12 @@ func (cc *ClientConn) GetRemoteP2pAddress() string {
 	return cc.remoteP2pAddress
 }
 
-// SetContextValue
 func (cc *ClientConn) SetContextValue(k, v interface{}) {
 	cc.mu.Lock()
 	defer cc.mu.Unlock()
 	cc.ctx = context.WithValue(cc.ctx, k, v)
 }
 
-// ContextValue
 func (cc *ClientConn) ContextValue(k interface{}) interface{} {
 	cc.mu.Lock()
 	defer cc.mu.Unlock()
@@ -509,7 +490,6 @@ func (cc *ClientConn) ClientClose(closeLowLayerConn bool) {
 	})
 }
 
-// Close
 func (cc *ClientConn) Close() {
 	cc.once.Do(func() {
 		Mylog(cc.opts.logOpen, LOG_MODULE_CLOSE, fmt.Sprintf("close conn gracefully %v -> %v (%v)", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), cc.remoteP2pAddress))
@@ -548,14 +528,12 @@ func (cc *ClientConn) Close() {
 	})
 }
 
-// reconnect
 func (cc *ClientConn) reconnect() {
 	Mylog(cc.opts.logOpen, LOG_MODULE_START, fmt.Sprintf("reconnect to %v (%v)", cc.addr, cc.remoteP2pAddress))
 	*cc = *newClientConnWithOptions(cc.netid, cc.addr, cc.opts)
 	cc.Start()
 }
 
-// GetIsActive
 func (cc *ClientConn) GetIsActive() bool {
 	return cc.is_active
 }
@@ -594,7 +572,6 @@ func (cc *ClientConn) GetIsActive() bool {
 // 	return
 // }
 
-// Write
 func (cc *ClientConn) Write(message *msg.RelayMsgBuf, ctx context.Context) error {
 	return asyncWrite(cc, message, ctx)
 }
@@ -609,10 +586,7 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 		}
 	}()
 
-	var (
-		sendCh chan *msg.RelayMsgBuf
-	)
-	sendCh = c.sendCh
+	sendCh := c.sendCh
 	msgH := make([]byte, utils.MsgHeaderLen)
 	reqId := core.GetReqIdFromContext(ctx)
 	if reqId == 0 {
@@ -638,12 +612,13 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 	(*reflect.SliceHeader)(unsafe.Pointer(&memory.MSGData)).Cap = int(m.MSGHead.Len + utils.MsgHeaderLen)
 	copy(memory.MSGData[0:], msgH)
 	copy(memory.MSGData[utils.MsgHeaderLen:], m.MSGData)
-	select {
+	sendCh <- memory
+	/*select {
 	case sendCh <- memory:
 		err = nil
-		// default:
-		// 	err = utils.ErrWouldBlock
-	}
+	default:
+		err = utils.ErrWouldBlock
+	}*/
 
 	if err != nil {
 		utils.ErrorLog("asyncWrite error ", err)
@@ -657,7 +632,6 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 	return
 }
 
-// readLoop
 func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	var (
 		spbConn net.Conn
@@ -665,7 +639,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 		// setHeartBeatFunc func(int64)
 		onMessage onMessageFunc
 		handlerCh chan MsgHandler
-		message   = new(msg.RelayMsgBuf)
+		message   *msg.RelayMsgBuf
 		cc        *ClientConn
 	)
 	cc = c.(*ClientConn)
@@ -713,7 +687,6 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				}
 
 				header.DecodeHeader(headerBytes, &msgH)
-				headerBytes = nil
 				if msgH.Version < cc.opts.minAppVer {
 					utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
 					continue
@@ -782,7 +755,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					handler := core.GetHandlerFunc(cmd)
 					if handler == nil {
 						if onMessage != nil {
-							onMessage(*message, c.(core.WriteCloser))
+							onMessage(*message, c)
 						} else {
 							Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for message: "+utils.ByteToString(msgH.Cmd))
 						}
@@ -808,7 +781,6 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	}
 }
 
-// writeLoop
 func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	var (
 		sendCh chan *msg.RelayMsgBuf
@@ -874,7 +846,6 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					Mylog(cc.opts.logOpen, LOG_MODULE_WRITELOOP, "write packet err: "+err.Error())
 					return
 				}
-				packet = nil
 			}
 		}
 	}
@@ -958,6 +929,7 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 	return nil
 }
 
+//nolint:unused
 func (cc *ClientConn) writePacketNoEncrypt(packet *msg.RelayMsgBuf) error {
 	var onereadlen = 1024
 	var n int
@@ -978,7 +950,6 @@ func (cc *ClientConn) writePacketNoEncrypt(packet *msg.RelayMsgBuf) error {
 	return nil
 }
 
-// handleLoop
 func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	var (
 		cDone     <-chan struct{}
@@ -1021,40 +992,34 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	}
 }
 
-// OnConnectOption
 func OnConnectOption(cb func(core.WriteCloser) bool) ClientOption {
 	return func(o *options) {
 		o.onConnect = cb
 	}
 }
 
-// OnMessageOption
 func OnMessageOption(cb func(msg.RelayMsgBuf, core.WriteCloser)) ClientOption {
 	return func(o *options) {
 		o.onMessage = cb
 	}
 }
 
-// OnCloseOption
 func OnCloseOption(cb func(core.WriteCloser)) ClientOption {
 	return func(o *options) {
 		o.onClose = cb
 	}
 }
 
-// OnErrorOption
 func OnErrorOption(cb func(core.WriteCloser)) ClientOption {
 	return func(o *options) {
 		o.onError = cb
 	}
 }
 
-// GetSecondReadFlow
 func (cc *ClientConn) GetSecondReadFlow() int64 {
 	return cc.secondReadFlowB
 }
 
-// GetSecondWriteFlow
 func (cc *ClientConn) GetSecondWriteFlow() int64 {
 	return cc.secondWriteFlowB
 }

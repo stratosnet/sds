@@ -4,11 +4,11 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
@@ -25,14 +25,14 @@ func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb p
 		return errors.New("error decoding")
 	}
 	msg := &msg.RelayMsgBuf{
-		MSGHead: header.MakeMessageHeader(1, uint16(setting.Config.Version.AppVer), uint32(len(data)), cmd),
+		MSGHead: header.MakeMessageHeader(1, setting.Config.Version.AppVer, uint32(len(data)), cmd),
 		MSGData: data,
 	}
-	switch conn.(type) {
+	switch conn := conn.(type) {
 	case *core.ServerConn:
-		return conn.(*core.ServerConn).Write(msg, ctx)
+		return conn.Write(msg, ctx)
 	case *cf.ClientConn:
-		return conn.(*cf.ClientConn).Write(msg, ctx)
+		return conn.Write(msg, ctx)
 	default:
 		return errors.New("unknown connection type")
 	}
@@ -40,9 +40,9 @@ func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb p
 
 func (p *P2pServer) SendMessageDirectToSPOrViaPP(ctx context.Context, pb proto.Message, cmd string) {
 	if p.mainSpConn != nil {
-		p.SendMessage(ctx, p.mainSpConn, pb, cmd)
+		_ = p.SendMessage(ctx, p.mainSpConn, pb, cmd)
 	} else {
-		p.SendMessage(ctx, p.ppConn, pb, cmd)
+		_ = p.SendMessage(ctx, p.ppConn, pb, cmd)
 	}
 }
 
@@ -53,7 +53,7 @@ func (p *P2pServer) SendMessageToSPServer(ctx context.Context, pb proto.Message,
 	//	return
 	//}
 	if p.mainSpConn != nil {
-		p.SendMessage(ctx, p.mainSpConn, pb, cmd)
+		_ = p.SendMessage(ctx, p.mainSpConn, pb, cmd)
 	}
 }
 
@@ -83,7 +83,7 @@ func (p *P2pServer) TransferSendMessageToPPServByP2pAddress(ctx context.Context,
 		utils.ErrorLogf("PP %v missing from local ppList. Cannot transfer message due to missing network address", p2pAddress)
 		return
 	}
-	p.TransferSendMessageToPPServ(ctx, ppInfo.NetworkAddress, msgBuf)
+	_ = p.TransferSendMessageToPPServ(ctx, ppInfo.NetworkAddress, msgBuf)
 }
 
 func (p *P2pServer) TransferSendMessageToSPServer(ctx context.Context, msg *msg.RelayMsgBuf) {
@@ -93,7 +93,7 @@ func (p *P2pServer) TransferSendMessageToSPServer(ctx context.Context, msg *msg.
 		return
 	}
 
-	p.mainSpConn.Write(msg, ctx)
+	_ = p.mainSpConn.Write(msg, ctx)
 }
 
 func (p *P2pServer) ReqTransferSendSP(ctx context.Context, conn core.WriteCloser) {
@@ -104,7 +104,7 @@ func (p *P2pServer) TransferSendMessageToClient(ctx context.Context, p2pAddress 
 	ppNode := p.peerList.GetPPByP2pAddress(ctx, p2pAddress)
 	if ppNode != nil && ppNode.Status == types.PEER_CONNECTED {
 		pp.Log(ctx, "transfer to netid = ", ppNode.NetId)
-		p.GetP2pServer().Unicast(ctx, ppNode.NetId, msgBuf)
+		_ = p.GetP2pServer().Unicast(ctx, ppNode.NetId, msgBuf)
 	} else {
 		pp.DebugLog(ctx, "waller ===== ", p2pAddress)
 	}

@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/metrics"
@@ -23,6 +22,7 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/types"
+	"google.golang.org/protobuf/proto"
 )
 
 var (
@@ -83,7 +83,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 				Msg:   "missing signature(s)",
 			},
 		}
-		p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
+		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
 		return
 	}
 	// verify addresses and signatures
@@ -94,7 +94,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 				Msg:   err.Error(),
 			},
 		}
-		p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
+		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
 		return
 	}
 	if target.SliceNumAddr.PpInfo.P2PAddress != setting.P2PAddress {
@@ -104,7 +104,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 				Msg:   "mismatch between p2p address in the request and node p2p address.",
 			},
 		}
-		p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
+		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
 		return
 	}
 
@@ -118,7 +118,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	upRecvCostTimeMap.dataMap.Store(tkSlice, totalCostTime)
 	upRecvCostTimeMap.mux.Unlock()
 	timeEntry := time.Now().UnixMicro() - core.TimeRcv
-	p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.UploadSpeedOfProgressData(target.FileHash, uint64(len(target.Data)), (target.SliceNumAddr.SliceNumber-1)*33554432+target.SliceInfo.SliceOffset.SliceOffsetStart, timeEntry), header.UploadSpeedOfProgress)
+	_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.UploadSpeedOfProgressData(target.FileHash, uint64(len(target.Data)), (target.SliceNumAddr.SliceNumber-1)*33554432+target.SliceInfo.SliceOffset.SliceOffsetStart, timeEntry), header.UploadSpeedOfProgress)
 
 	if !task.SaveUploadFile(&target) {
 		// save failed, not handling yet
@@ -131,7 +131,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		utils.DebugLog("the slice upload finished", target.SliceInfo.SliceHash)
 		// respond to PP in case the size is correct but actually not success
 		if utils.CalcSliceHash(file.GetSliceData(target.SliceInfo.SliceHash), target.FileHash, target.SliceNumAddr.SliceNumber) == target.SliceInfo.SliceHash {
-			p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspUploadFileSliceData(&target), header.RspUploadFileSlice)
+			_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspUploadFileSliceData(&target), header.RspUploadFileSlice)
 			// report upload result to SP
 
 			_, newCtx := p2pserver.CreateNewContextPacketId(ctx)
@@ -310,13 +310,6 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 			newTask.Data = tk.Data[dataStart:]
 			return sendSlice(newCtx, requests.ReqUploadFileSliceData(newTask, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
 		}
-	}
-}
-
-func writeReqUploadFileSliceHook(packetId, costTime int64) {
-	if costTime > 0 && packetId > 0 {
-		utils.DebugLogf("received report from WritePacket: %d %d", packetId, costTime)
-		HandleSendPacketCostTime(packetId, costTime)
 	}
 }
 

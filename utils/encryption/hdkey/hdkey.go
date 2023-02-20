@@ -4,8 +4,9 @@ import (
 	"crypto/hmac"
 	"crypto/sha512"
 	"encoding/hex"
-	"github.com/bgadrian/go-mnemonic/bip39"
 	"strings"
+
+	"github.com/bgadrian/go-mnemonic/bip39"
 )
 
 // Secp256k1CurvePhrase is the master key used along with a random seed used to generate
@@ -49,6 +50,9 @@ func MasterKeyFromPassphrase(passphrase string) (*ExtendedKey, []string, error) 
 		return nil, nil, err
 	}
 	seedBytes, err := hex.DecodeString(seed)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	return MasterKeyGenerate(seedBytes, ED25519CurvePhrase), strings.Split(password, " "), nil
 }
@@ -63,8 +67,11 @@ func MasterKeyFromMnemonic(mnemonic []string, passphrase string) (*ExtendedKey, 
 	if err != nil {
 		return nil, err
 	}
-	seedBytes, err := hex.DecodeString(seed)
 
+	seedBytes, err := hex.DecodeString(seed)
+	if err != nil {
+		return nil, err
+	}
 	return MasterKeyGenerate(seedBytes, ED25519CurvePhrase), nil
 }
 

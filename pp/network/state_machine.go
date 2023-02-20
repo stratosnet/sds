@@ -96,11 +96,11 @@ func (n *Network) InitFsm() {
 		{STATE_SUSPENDED, EVENT_RCV_MINING_NOT_STARTED, utils.TransitionItem{NewState: STATE_NOT_MINING}},
 	}
 
-	n.fsm.InitFsm(sl, el, func(fsm *utils.Fsm) {
+	_ = n.fsm.InitFsm(sl, el, func(fsm *utils.Fsm) {
 		// init to self transition entries
 		for row := range s_list {
 			var itemslist []utils.TransitionItem
-			for _ = range e_list {
+			for range e_list {
 				itemslist = append(itemslist, utils.TransitionItem{NewState: sl[row].Id})
 			}
 			fsm.StateTransTable = append(fsm.StateTransTable, itemslist)

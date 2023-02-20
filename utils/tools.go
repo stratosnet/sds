@@ -24,7 +24,7 @@ func BytesToInt16(b []byte) int16 {
 	bytesBuffer := bytes.NewBuffer(b)
 
 	var x int16
-	binary.Read(bytesBuffer, binary.BigEndian, &x)
+	_ = binary.Read(bytesBuffer, binary.BigEndian, &x)
 
 	return x
 }
@@ -33,7 +33,7 @@ func BytesToInt64(b []byte) int64 {
 	bytesBuffer := bytes.NewBuffer(b)
 
 	var x int64
-	binary.Read(bytesBuffer, binary.BigEndian, &x)
+	_ = binary.Read(bytesBuffer, binary.BigEndian, &x)
 
 	return x
 }
@@ -42,7 +42,7 @@ func BytesToUInt64(b []byte) uint64 {
 	bytesBuffer := bytes.NewBuffer(b)
 
 	var x uint64
-	binary.Read(bytesBuffer, binary.BigEndian, &x)
+	_ = binary.Read(bytesBuffer, binary.BigEndian, &x)
 
 	return x
 }
@@ -51,7 +51,7 @@ func BytesToUInt32(b []byte) uint32 {
 	bytesBuffer := bytes.NewBuffer(b)
 
 	var x uint32
-	binary.Read(bytesBuffer, binary.BigEndian, &x)
+	_ = binary.Read(bytesBuffer, binary.BigEndian, &x)
 
 	return x
 }
@@ -60,7 +60,7 @@ func BytesToUint16(b []byte) uint16 {
 	bytesBuffer := bytes.NewBuffer(b)
 
 	var x uint16
-	binary.Read(bytesBuffer, binary.BigEndian, &x)
+	_ = binary.Read(bytesBuffer, binary.BigEndian, &x)
 
 	return x
 }
@@ -69,7 +69,7 @@ func Int16ToBytes(n int16) []byte {
 	x := n
 
 	bytesBuffer := bytes.NewBuffer([]byte{})
-	binary.Write(bytesBuffer, binary.BigEndian, x)
+	_ = binary.Write(bytesBuffer, binary.BigEndian, x)
 	return bytesBuffer.Bytes()
 }
 
@@ -77,7 +77,7 @@ func Uint64ToBytes(n uint64) []byte {
 	x := n
 
 	bytesBuffer := bytes.NewBuffer([]byte{})
-	binary.Write(bytesBuffer, binary.BigEndian, x)
+	_ = binary.Write(bytesBuffer, binary.BigEndian, x)
 	return bytesBuffer.Bytes()
 }
 
@@ -85,7 +85,7 @@ func Uint32ToBytes(n uint32) []byte {
 	x := n
 
 	bytesBuffer := bytes.NewBuffer([]byte{})
-	binary.Write(bytesBuffer, binary.BigEndian, x)
+	_ = binary.Write(bytesBuffer, binary.BigEndian, x)
 	return bytesBuffer.Bytes()
 }
 
@@ -93,7 +93,7 @@ func Uint16ToBytes(n uint16) []byte {
 	x := n
 
 	bytesBuffer := bytes.NewBuffer([]byte{})
-	binary.Write(bytesBuffer, binary.BigEndian, x)
+	_ = binary.Write(bytesBuffer, binary.BigEndian, x)
 	return bytesBuffer.Bytes()
 }
 
@@ -109,7 +109,7 @@ func ByteToString(p []byte) string {
 
 func Int64ToByte(n int64) []byte {
 	bytesBuffer := bytes.NewBuffer([]byte{})
-	binary.Write(bytesBuffer, binary.BigEndian, n)
+	_ = binary.Write(bytesBuffer, binary.BigEndian, n)
 	return bytesBuffer.Bytes()
 }
 
@@ -162,12 +162,16 @@ func ECCSign(text []byte, prk *ecdsa.PrivateKey) ([]byte, error) {
 	}
 	var b bytes.Buffer
 	w := gzip.NewWriter(&b)
-	defer w.Close()
+	defer func() {
+		_ = w.Close()
+	}()
 	_, err = w.Write([]byte(string(rt) + "+" + string(st)))
 	if err != nil {
 		return nil, err
 	}
-	w.Flush()
+	if err = w.Flush(); err != nil {
+		return nil, err
+	}
 	return b.Bytes(), nil
 }
 
@@ -185,7 +189,9 @@ func ECCVerify(text []byte, signature []byte, key *ecdsa.PublicKey) bool {
 		ErrorLog(errors.New("decode error," + err.Error()))
 		return false
 	}
-	defer r.Close()
+	defer func() {
+		_ = r.Close()
+	}()
 	buf := make([]byte, 1024)
 	count, err := r.Read(buf)
 	if err != nil {

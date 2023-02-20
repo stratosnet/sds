@@ -26,36 +26,37 @@ var hashCidPrefix = cid.Prefix{
 	MhLength: 20,
 }
 
-// CalcCRC32
 func CalcCRC32(data []byte) uint32 {
 	iEEE := crc32.NewIEEE()
-	io.WriteString(iEEE, string(data))
+	_, _ = io.WriteString(iEEE, string(data))
 	return iEEE.Sum32()
 }
 
-// CalcFileMD5
 func CalcFileMD5(filePath string) []byte {
 	file, err := os.Open(filePath)
 	if err != nil {
 		Log(err.Error())
 		return nil
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 	MD5 := md5.New()
-	io.Copy(MD5, file)
+	_, _ = io.Copy(MD5, file)
 	return MD5.Sum(nil)
 }
 
-// CalcFileCRC32
 func CalcFileCRC32(filePath string) uint32 {
 	file, err := os.Open(filePath)
 	if err != nil {
 		Log(err.Error())
 		return 0
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 	iEEE := crc32.NewIEEE()
-	io.Copy(iEEE, file)
+	_, _ = io.Copy(iEEE, file)
 	return iEEE.Sum32()
 }
 
@@ -70,12 +71,10 @@ func CalcFileHash(filePath, encryptionTag string) string {
 	return CalcFileHashFromData(data)
 }
 
-// CalcHash
 func CalcHash(data []byte) string {
 	return hex.EncodeToString(crypto.Keccak256(data))
 }
 
-// CalcHash
 func CalcSliceHash(data []byte, fileHash string, sliceNumber uint64) string {
 	fileCid, _ := cid.Decode(fileHash)
 	fileKeccak256 := fileCid.Hash()
@@ -98,7 +97,7 @@ func CalcSliceHash(data []byte, fileHash string, sliceNumber uint64) string {
 
 func uint64ToBytes(n uint64) []byte {
 	byteBuf := bytes.NewBuffer([]byte{})
-	binary.Write(byteBuf, binary.BigEndian, n)
+	_ = binary.Write(byteBuf, binary.BigEndian, n)
 	return byteBuf.Bytes()
 }
 

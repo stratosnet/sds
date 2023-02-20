@@ -3,6 +3,7 @@ package file
 import (
 	"context"
 	"encoding/csv"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -24,7 +25,6 @@ var wmutex sync.RWMutex
 var fileMap = make(map[string]string)
 var infoMutex sync.Mutex
 
-// GetFileInfo
 func GetFileInfo(filePath string) os.FileInfo {
 	infoMutex.Lock()
 	fileInfo, err := os.Stat(filePath)
@@ -36,13 +36,11 @@ func GetFileInfo(filePath string) os.FileInfo {
 	return fileInfo
 }
 
-// GetFileSuffix
 func GetFileSuffix(fileName string) string {
 	fileSuffix := path.Ext(fileName)
 	return fileSuffix
 }
 
-// GetFileHash
 func GetFileHash(filePath, encryptionTag string) string {
 	filehash := utils.CalcFileHash(filePath, encryptionTag)
 	utils.DebugLog("filehash", filehash)
@@ -50,17 +48,14 @@ func GetFileHash(filePath, encryptionTag string) string {
 	return filehash
 }
 
-// GetFilePath
 func GetFilePath(hash string) string {
 	return fileMap[hash]
 }
 
-// ClearFileMap
 func ClearFileMap(hash string) {
 	delete(fileMap, hash)
 }
 
-// GetFileData
 func GetFileData(filePath string, offset *protos.SliceOffset) []byte {
 	rmutex.Lock()
 	fin, err := os.Open(filePath)
@@ -69,7 +64,7 @@ func GetFileData(filePath string, offset *protos.SliceOffset) []byte {
 		return nil
 	}
 	defer fin.Close()
-	_, _ = fin.Seek(int64(offset.SliceOffsetStart), os.SEEK_SET)
+	_, _ = fin.Seek(int64(offset.SliceOffsetStart), io.SeekStart)
 	data := make([]byte, offset.SliceOffsetEnd-offset.SliceOffsetStart)
 	_, err = fin.Read(data)
 	if err != nil {
@@ -85,7 +80,6 @@ func GetSliceDataFromTmp(fileHash, sliceHash string) []byte {
 	return GetWholeFileData(getTmpSlicePath(fileHash, sliceHash))
 }
 
-// GetSliceData
 func GetSliceData(sliceHash string) []byte {
 	return GetWholeFileData(getSlicePath(sliceHash))
 }
@@ -100,7 +94,6 @@ func GetWholeFileData(filePath string) []byte {
 	return data
 }
 
-// GetSliceSize
 func GetSliceSize(sliceHash string) int64 {
 	info := GetFileInfo(getSlicePath(sliceHash))
 	if info != nil {
@@ -128,7 +121,9 @@ func SaveTmpSliceData(fileHash, sliceHash string, data []byte) error {
 	}
 
 	fileMg, err := os.OpenFile(getTmpSlicePath(fileHash, sliceHash), os.O_CREATE|os.O_RDWR, 0777)
-	defer fileMg.Close()
+	defer func() {
+		_ = fileMg.Close()
+	}()
 	if err != nil {
 		return errors.Wrap(err, "error initializing file")
 	}
@@ -141,12 +136,13 @@ func SaveTmpSliceData(fileHash, sliceHash string, data []byte) error {
 	return nil
 }
 
-// SaveSliceData
 func SaveSliceData(data []byte, sliceHash string, offset uint64) bool {
 	wmutex.Lock()
 	defer wmutex.Unlock()
 	fileMg, err := os.OpenFile(getSlicePath(sliceHash), os.O_CREATE|os.O_RDWR, 0777)
-	defer fileMg.Close()
+	defer func() {
+		_ = fileMg.Close()
+	}()
 	if err != nil {
 		utils.ErrorLog("error initialize file")
 		return false
@@ -159,49 +155,53 @@ func SaveSliceData(data []byte, sliceHash string, offset uint64) bool {
 	return true
 }
 
-// SaveFileData
 func SaveFileData(ctx context.Context, data []byte, offset int64, sliceHash, fileName, fileHash, savePath, fileReqId string) bool {
 
 	utils.DebugLog("sliceHash", sliceHash)
 
 	if IsFileRpcRemote(fileHash + fileReqId) {
 		// write to rpc
-		return SaveRemoteFileData(fileHash+fileReqId, data, uint64(offset))
+		return SaveRemoteFileData(fileHash+fileReqId, fileName, data, uint64(offset))
 	}
 	wmutex.Lock()
+	defer wmutex.Unlock()
+
 	if fileName == "" {
 		fileName = fileHash
 	}
 	fileMg, err := os.OpenFile(GetDownloadTmpPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR, 0777)
-	defer fileMg.Close()
+	defer func() {
+		_ = fileMg.Close()
+	}()
 	if err != nil {
-		pp.Log(ctx, "SaveFileData err", err)
+		pp.ErrorLog(ctx, "SaveFileData err", err)
 	}
 	if err != nil {
-		pp.ErrorLog(ctx, "error initialize file")
-		wmutex.Unlock()
+		pp.ErrorLog(ctx, "error initialize file", err)
 		return false
 	}
 	// _, err = fileMg.WriteAt(data, offset)
 	_, err = fileMg.Seek(offset, 0)
 	if err != nil {
-		pp.ErrorLog(ctx, "error save file")
-		wmutex.Unlock()
+		pp.ErrorLog(ctx, "error save file", err)
 		return false
 	}
-	fileMg.Write(data)
-	wmutex.Unlock()
+	_, err = fileMg.Write(data)
+	if err != nil {
+		pp.ErrorLog(ctx, "error writing to file", err)
+	}
 	return true
 }
 
-// SaveDownloadProgress
 func SaveDownloadProgress(ctx context.Context, sliceHash, fileName, fileHash, savePath, fileReqId string) {
 	if IsFileRpcRemote(fileHash + fileReqId) {
 		return
 	}
 	wmutex.Lock()
 	csvFile, err := os.OpenFile(GetDownloadCsvPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
-	defer csvFile.Close()
+	defer func() {
+		_ = csvFile.Close()
+	}()
 	defer wmutex.Unlock()
 	if err != nil {
 		pp.ErrorLog(ctx, "error open downloaded file records")
@@ -215,11 +215,12 @@ func SaveDownloadProgress(ctx context.Context, sliceHash, fileName, fileHash, sa
 	writer.Flush()
 }
 
-// RecordDownloadCSV
 func RecordDownloadCSV(target *protos.RspFileStorageInfo) {
 	// check if downloading, if not create new, sliceHash+startPosition
 	csvFile, err := os.OpenFile(GetDownloadCsvPath(target.FileHash, target.FileName, target.SavePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
-	defer csvFile.Close()
+	defer func() {
+		_ = csvFile.Close()
+	}()
 	if err != nil {
 		utils.ErrorLog("error open download file records")
 	}
@@ -251,7 +252,6 @@ func RecordDownloadCSV(target *protos.RspFileStorageInfo) {
 	writer.Flush()
 }
 
-// CheckFileExisting
 func CheckFileExisting(ctx context.Context, fileHash, fileName, savePath, encryptionTag, fileReqId string) bool {
 	pp.DebugLog(ctx, "CheckFileExisting: file Hash", fileHash)
 
@@ -270,7 +270,9 @@ func CheckFileExisting(ctx context.Context, fileHash, fileName, savePath, encryp
 	// }
 	pp.DebugLog(ctx, "filePath", filePath)
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0777)
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 	if err != nil {
 		pp.DebugLog(ctx, "no directory specified, thus no file slices")
 		return false
@@ -286,7 +288,6 @@ func CheckFileExisting(ctx context.Context, fileHash, fileName, savePath, encryp
 	return false
 }
 
-// CheckSliceExisting
 func CheckSliceExisting(fileHash, fileName, sliceHash, savePath, fileReqId string) bool {
 	utils.DebugLog("CheckSliceExisting sliceHash", sliceHash)
 
@@ -295,28 +296,30 @@ func CheckSliceExisting(fileHash, fileName, sliceHash, savePath, fileReqId strin
 	}
 
 	csvFile, err := os.OpenFile(GetDownloadCsvPath(fileHash, fileName, savePath), os.O_RDONLY, 0777)
-	defer csvFile.Close()
+	defer func() {
+		_ = csvFile.Close()
+	}()
 	if err != nil {
 		// 没有此文件目录，因此不存在此切片
 		return false
 	}
 	reader := csv.NewReader(csvFile)
 	hashs, err := reader.ReadAll()
-	if len(hashs) > 0 {
-		for _, item := range hashs {
-			if len(item) > 0 {
-				if item[0] == sliceHash {
-					return true
-				}
-			}
-		}
-	} else {
+	if len(hashs) == 0 || err != nil {
 		return false
 	}
+
+	for _, item := range hashs {
+		if len(item) > 0 {
+			if item[0] == sliceHash {
+				return true
+			}
+		}
+	}
+
 	return false
 }
 
-// DeleteSlice
 func DeleteSlice(sliceHash string) error {
 	if err := os.Remove(getSlicePath(sliceHash)); err != nil {
 		utils.ErrorLog("DeleteSlice Remove", err)
@@ -325,7 +328,6 @@ func DeleteSlice(sliceHash string) error {
 	return nil
 }
 
-// DeleteDirectory DeleteDirectory
 func DeleteDirectory(fileHash string) {
 	err := os.RemoveAll(filepath.Join(setting.Config.DownloadPath, fileHash))
 	if err != nil {
@@ -341,7 +343,6 @@ func DeleteTmpFileSlices(ctx context.Context, fileHash string) {
 	}
 }
 
-// CheckFilePathEx
 func CheckFilePathEx(fileHash, fileName, savePath string) bool {
 	filePath := ""
 	if savePath == "" {
@@ -351,11 +352,10 @@ func CheckFilePathEx(fileHash, fileName, savePath string) bool {
 	}
 	utils.DebugLog("filePath", filePath)
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0777)
-	defer file.Close()
-	if err != nil {
-		return false
-	}
-	return true
+	defer func() {
+		_ = file.Close()
+	}()
+	return err == nil
 }
 
 func getTmpSlicePath(fileHash, sliceHash string) string {

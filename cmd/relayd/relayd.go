@@ -44,7 +44,6 @@ func startRunE(cmd *cobra.Command, _ []string) error {
 		syscall.SIGTERM,
 		syscall.SIGINT,
 		syscall.SIGQUIT,
-		syscall.SIGKILL,
 		syscall.SIGHUP,
 	)
 

@@ -17,7 +17,6 @@ import (
 
 var (
 	netID *utils.AtomicInt64
-	lock  sync.Mutex
 )
 
 func init() {
@@ -46,10 +45,8 @@ type options struct {
 	contextkv      []ContextKV
 }
 
-// ServerOption
 type ServerOption func(*options)
 
-// Server
 type Server struct {
 	opts       options
 	ctx        context.Context
@@ -58,7 +55,6 @@ type Server struct {
 	wg         *sync.WaitGroup
 	mu         sync.Mutex // lock
 	lis        map[net.Listener]bool
-	interv     time.Duration
 	goroutine  int64
 	goAtom     *utils.AtomicInt64
 	volRecOpts volRecOpts
@@ -73,14 +69,12 @@ const (
 	LOG_MODULE_CLOSE      = "close: "
 )
 
-// Mylog
 func Mylog(b bool, module string, v ...interface{}) {
 	if b {
 		utils.DebugLogfWithCalldepth(5, "Server Conn: "+module+"%v", v...)
 	}
 }
 
-// CreateServer
 func CreateServer(opt ...ServerOption) *Server {
 	var opts options
 	for _, o := range opt {
@@ -112,7 +106,6 @@ func (s *Server) SetVolRecOptions(opt ...ServerVolRecOption) {
 	s.volRecOpts = opts
 }
 
-// ConnsSize
 func (s *Server) ConnsSize() int {
 	if s.conns == nil {
 		return 0
@@ -151,7 +144,6 @@ func (s *Server) AddVolumeLogJob(logAll bool, logRead bool, logWrite bool, logIn
 	}
 }
 
-// Start
 func (s *Server) Start(l net.Listener) error {
 	s.mu.Lock()
 	if s.lis == nil {
@@ -182,7 +174,7 @@ func (s *Server) Start(l net.Listener) error {
 	for {
 		spbConn, err := l.Accept()
 		if err != nil {
-			if ne, ok := err.(net.Error); ok && ne.Temporary() {
+			if _, ok := err.(net.Error); ok {
 				if tempDelay == 0 {
 					tempDelay = 5 * time.Millisecond
 				} else {
@@ -204,7 +196,7 @@ func (s *Server) Start(l net.Listener) error {
 		}
 		tcpConn, ok := spbConn.(*net.TCPConn)
 		if ok {
-			tcpConn.SetNoDelay(false)
+			_ = tcpConn.SetNoDelay(false)
 		}
 		// tempDelay = 0
 
@@ -247,7 +239,6 @@ func (s *Server) Start(l net.Listener) error {
 	}
 }
 
-// Stop
 func (s *Server) Stop() {
 	s.mu.Lock()
 	listeners := s.lis
@@ -281,63 +272,54 @@ func (s *Server) Stop() {
 	s.wg.Wait()
 }
 
-// OnConnectOption
 func OnConnectOption(cb func(WriteCloser) bool) ServerOption {
 	return func(o *options) {
 		o.onConnect = cb
 	}
 }
 
-// OnMessageOption
 func OnMessageOption(cb func(msg.RelayMsgBuf, WriteCloser)) ServerOption {
 	return func(o *options) {
 		o.onMessage = cb
 	}
 }
 
-// OnCloseOption
 func OnCloseOption(cb func(WriteCloser)) ServerOption {
 	return func(o *options) {
 		o.onClose = cb
 	}
 }
 
-// OnErrorOption
 func OnErrorOption(cb func(WriteCloser)) ServerOption {
 	return func(o *options) {
 		o.onError = cb
 	}
 }
 
-// BufferSizeOption
 func BufferSizeOption(indicator int) ServerOption {
 	return func(o *options) {
 		o.bufferSize = indicator
 	}
 }
 
-// LogOpenOption
 func LogOpenOption(b bool) ServerOption {
 	return func(o *options) {
 		o.logOpen = b
 	}
 }
 
-// MaxConnectionsOption
 func MaxConnectionsOption(indicator int) ServerOption {
 	return func(o *options) {
 		o.maxConnections = indicator
 	}
 }
 
-// ContextKVOption
 func ContextKVOption(kv []ContextKV) ServerOption {
 	return func(o *options) {
 		o.contextkv = kv
 	}
 }
 
-// MaxFlowOption
 func MaxFlowOption(indicator int) ServerOption {
 	return func(o *options) {
 		o.maxflow = indicator
@@ -362,7 +344,6 @@ func P2pAddressOption(p2pAddress string) ServerOption {
 	}
 }
 
-// Unicast
 func (s *Server) Unicast(ctx context.Context, netid int64, msg *msg.RelayMsgBuf) error {
 	v, ok := s.conns.Load(netid)
 	if ok {
@@ -372,7 +353,6 @@ func (s *Server) Unicast(ctx context.Context, netid int64, msg *msg.RelayMsgBuf)
 	return nil
 }
 
-// Broadcast
 func (s *Server) Broadcast(msg *msg.RelayMsgBuf) {
 	s.conns.Range(func(id int64, conn *ServerConn) bool {
 		if err := conn.Write(msg, context.Background()); err != nil {
@@ -383,22 +363,20 @@ func (s *Server) Broadcast(msg *msg.RelayMsgBuf) {
 	})
 }
 
-// unused
+//nolint:unused
 func (s *Server) GetWriteFlow() int64 {
 	return s.volRecOpts.writeFlow
 }
 
-// unused
+//nolint:unused
 func (s *Server) GetReadFlow() int64 {
 	return s.volRecOpts.readFlow
 }
 
-// GetSecondReadFlow
 func (s *Server) GetSecondReadFlow() int64 {
 	return s.volRecOpts.secondReadFlowB
 }
 
-// GetSecondWriteFlow
 func (s *Server) GetSecondWriteFlow() int64 {
 	return s.volRecOpts.secondWriteFlowB
 }

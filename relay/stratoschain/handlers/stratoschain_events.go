@@ -593,7 +593,9 @@ func postToSP(endpoint string, data interface{}) error {
 	}
 
 	var res map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&res)
+	if err = json.NewDecoder(resp.Body).Decode(&res); err != nil {
+		return err
+	}
 
 	utils.Log(endpoint+" endpoint response from SP node", resp.StatusCode, res["Msg"])
 	return nil

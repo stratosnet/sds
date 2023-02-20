@@ -28,7 +28,11 @@ func StartHTTPEndpoint(endpoint string, timeouts rpc.HTTPTimeouts, handler http.
 		WriteTimeout: timeouts.WriteTimeout,
 		IdleTimeout:  timeouts.IdleTimeout,
 	}
-	go httpSrv.Serve(listener)
+	go func() {
+		if err = httpSrv.Serve(listener); err != nil {
+			utils.ErrorLog(err)
+		}
+	}()
 	return httpSrv, listener.Addr(), err
 }
 

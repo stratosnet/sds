@@ -66,10 +66,7 @@ func SaveTransferData(target *protos.RspTransferDownload) bool {
 	if tTask, ok := GetTransferTask(target.TaskId, target.SliceHash); ok {
 		save := file.SaveSliceData(target.Data, tTask.SliceStorageInfo.SliceHash, target.Offset)
 		if save {
-			if target.SliceSize == uint64(file.GetSliceSize(tTask.SliceStorageInfo.SliceHash)) {
-				return true
-			}
-			return false
+			return target.SliceSize == uint64(file.GetSliceSize(tTask.SliceStorageInfo.SliceHash))
 		}
 		return false
 	}

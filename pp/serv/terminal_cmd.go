@@ -193,10 +193,10 @@ func (api *terminalCmd) UpdateStake(ctx context.Context, param []string) (CmdRes
 		return CmdResult{Msg: ""}, errors.New("invalid flag for stake change. 0 for desc, 1 for incr")
 	}
 
-	if setting.State != types.PP_ACTIVE {
-		//	//fmt.Println("PP node not activated yet")
-		//	return CmdResult{Msg: "PP node not activated yet"}, nil
-	}
+	/*if setting.State != types.PP_ACTIVE {
+		//fmt.Println("PP node not activated yet")
+		return CmdResult{Msg: "PP node not activated yet"}, nil
+	}*/
 
 	if !setting.IsPP {
 		return CmdResult{Msg: "register as a PP node first"}, nil

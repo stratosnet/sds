@@ -2,15 +2,14 @@ package database
 
 import (
 	"errors"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/database/drivers"
 	"reflect"
 	"sync"
+
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/database/drivers"
 )
 
 const (
-
-	// ConnectFailed
 	ConnectFailed = "database connect fail"
 
 	BEFORE_INSERT = 0x01
@@ -24,7 +23,6 @@ const (
 	AFTER_FETCH  = 0x08
 )
 
-// Table
 type Table interface {
 	TableName() string
 	PrimaryKey() []string
@@ -32,7 +30,6 @@ type Table interface {
 	Event(event int, dt *DataTable)
 }
 
-// Table2Map
 func Table2Map(table Table) map[string]interface{} {
 	data := make(map[string]interface{})
 	fields := reflect.TypeOf(table).Elem()
@@ -47,7 +44,6 @@ func Table2Map(table Table) map[string]interface{} {
 	return data
 }
 
-// Map2Table
 func Map2Table(table Table, data map[string]interface{}) (bool, error) {
 	fields := reflect.TypeOf(table).Elem()
 	values := reflect.ValueOf(table)
@@ -75,18 +71,16 @@ func Map2Table(table Table, data map[string]interface{}) (bool, error) {
 	return true, nil
 }
 
-// LoadTable: alias of Map2Table
+// LoadTable alias of Map2Table
 func LoadTable(table Table, data map[string]interface{}) (bool, error) {
 	return Map2Table(table, data)
 }
 
-// DataTable
 type DataTable struct {
 	driver drivers.DBDriver
 	sync.Mutex
 }
 
-// IsConnected
 func (dt *DataTable) IsConnected() bool {
 	if !dt.driver.IsConnected() {
 		utils.MyLogger.ErrorLog(ConnectFailed)
@@ -132,7 +126,7 @@ func (dt *DataTable) FetchTables(tables interface{}, params map[string]interface
 	if len(rows) > 0 {
 		for _, row := range rows {
 			table := reflect.New(t).Interface().(Table)
-			LoadTable(table, row)
+			_, _ = LoadTable(table, row)
 
 			V = reflect.Append(V, reflect.ValueOf(table).Elem())
 		}
@@ -170,7 +164,7 @@ func (dt *DataTable) FetchTable(table Table, params map[string]interface{}) erro
 		return errors.New("not found")
 	}
 
-	LoadTable(table, row)
+	_, _ = LoadTable(table, row)
 	table.Event(AFTER_FETCH, dt)
 
 	return nil
@@ -292,7 +286,7 @@ func (dt *DataTable) InsertTable(table Table) (bool, error) {
 		if newID > 0 {
 			data[pkNames[0]] = newID
 		}
-		Map2Table(table, data)
+		_, _ = Map2Table(table, data)
 		table.Event(AFTER_INSERT, dt)
 		return true, nil
 	}
@@ -370,7 +364,7 @@ func (dt *DataTable) StoreTable(table Table) (bool, error) {
 		if utils.StrInSlices(columns, "id") {
 			data["id"] = newID
 		}
-		Map2Table(table, data)
+		_, _ = Map2Table(table, data)
 		table.Event(AFTER_INSERT, dt)
 		return true, nil
 	}
@@ -405,7 +399,6 @@ func (dt *DataTable) DeleteTable(table Table) (bool, error) {
 
 	data := Table2Map(table)
 
-	columns := make([]string, 0, len(data))
 	for col, val := range data {
 		if utils.StrInSlices(pkNames, col) {
 			delete(data, col)
@@ -415,7 +408,6 @@ func (dt *DataTable) DeleteTable(table Table) (bool, error) {
 			delete(data, col)
 			continue
 		}
-		columns = append(columns, col)
 	}
 
 	where := make(map[string]interface{})
@@ -436,7 +428,6 @@ func (dt *DataTable) DeleteTable(table Table) (bool, error) {
 	return false, errors.New("delete fail")
 }
 
-// CountTable
 func (dt *DataTable) CountTable(table Table, params map[string]interface{}) (int64, error) {
 
 	if !dt.driver.IsConnected() {
@@ -498,7 +489,6 @@ func (dt *DataTable) SumTable(table Table, field string, params map[string]inter
 	return total, nil
 }
 
-// GetDriver
 func (dt *DataTable) GetDriver() drivers.DBDriver {
 	return dt.driver
 }

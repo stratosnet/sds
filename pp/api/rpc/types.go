@@ -120,8 +120,9 @@ type Result struct {
 	ReqId       string  `json:"reqid,omitempty"`
 	OffsetStart *uint64 `json:"offsetstart,omitempty"`
 	OffsetEnd   *uint64 `json:"offsetend,omitempty"`
-	FileData    string  `json:"filedata,omitempty"`
 	FileHash    string  `json:"filehash,omitempty"`
+	FileName    string  `json:"filename,omitempty"`
+	FileData    string  `json:"filedata,omitempty"`
 }
 
 type FileListResult struct {

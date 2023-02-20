@@ -16,38 +16,20 @@ import (
 	"github.com/stratosnet/sds/utils/httpserv"
 )
 
-// HTTPType
 type HTTPType int
 
-//
 const (
 	HTTPDownloadSlice HTTPType = 1 + iota
 )
 
-// HTTPRsp HTTPRsp
 type HTTPRsp struct {
 	Data  interface{}
 	Type  HTTPType
 	ReqID string
 }
 
-type allFile struct {
-	FileSize           uint64 `json:"fileSize"`
-	FileHash           string `json:"fileHash"`
-	FileName           string `json:"fileName"`
-	CreateTime         uint64 `json:"createTime"`
-	IsDirectory        bool   `json:"isDirectory"`
-	IsPrivate          bool   `json:"isPrivate"`
-	OwnerWalletAddress string `json:"ownerWalletAddress"`
-	ShareLink          string `json:"shareLink"`
-	ID                 uint64 `json:"id"`
-	StoragePath        string `json:"storagePath"`
-}
-
-// HTTPRspMap
 var HTTPRspMap = &sync.Map{}
 
-// HTTPWriterMap
 var HTTPWriterMap = &sync.Map{}
 
 func putData(ctx context.Context, httpType HTTPType, target interface{}) {
@@ -77,11 +59,10 @@ func storeResponseWriter(ctx context.Context, w http.ResponseWriter) error {
 
 func notLogin(w http.ResponseWriter) {
 	if w != nil {
-		w.Write(httpserv.NewJson(nil, setting.FAILCode, "login first").ToBytes())
+		_, _ = w.Write(httpserv.NewJson(nil, setting.FAILCode, "login first").ToBytes())
 	}
 }
 
-// HTTPStartListen HTTPStartListen
 func HTTPStartListen(reqID string) error {
 	start := time.Now().Unix()
 	for {
@@ -124,21 +105,20 @@ func HTTPDownloadSliceFun(httpRsp *HTTPRsp, write http.ResponseWriter, reqID str
 		video, err := ioutil.ReadFile(slicePath)
 		if err != nil {
 			write.WriteHeader(setting.FAILCode)
-			write.Write(httpserv.NewJson(nil, setting.FAILCode, err.Error()).ToBytes())
+			_, _ = write.Write(httpserv.NewJson(nil, setting.FAILCode, err.Error()).ToBytes())
 		}
 		utils.Log("Received video slice: ", target.SliceInfo.SliceHash, "from file: ", target.FileHash)
-		write.Write(video)
+		_, _ = write.Write(video)
 		HTTPWriterMap.Delete(reqID)
 		HTTPRspMap.Delete(reqID)
 		return
 	}
 	utils.DebugLog("HTTPDownloadSliceFun error ")
-	write.Write(httpserv.NewJson(nil, setting.FAILCode, target.Result.Msg).ToBytes())
+	_, _ = write.Write(httpserv.NewJson(nil, setting.FAILCode, target.Result.Msg).ToBytes())
 	HTTPWriterMap.Delete(reqID)
 	HTTPRspMap.Delete(reqID)
 }
 
-// StoreReqID
 func StoreReqID(ctx context.Context, w http.ResponseWriter) error {
 	reqId := core.GetRemoteReqId(ctx)
 	if reqId == "" {

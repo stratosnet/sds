@@ -14,8 +14,8 @@ import (
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/utils/types"
+	"google.golang.org/protobuf/proto"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -69,7 +69,7 @@ func GetOngoingDownloadTaskCount() int {
 }
 
 func setWriteHookForRspDownloadSlice(conn core.WriteCloser) {
-	switch conn.(type) {
+	switch conn := conn.(type) {
 	case *core.ServerConn:
 		hook := core.WriteHook{
 			Message: header.RspDownloadSlice,
@@ -77,7 +77,7 @@ func setWriteHookForRspDownloadSlice(conn core.WriteCloser) {
 		}
 		var hooks []core.WriteHook
 		hooks = append(hooks, hook)
-		conn.(*core.ServerConn).SetWriteHook(hooks)
+		conn.SetWriteHook(hooks)
 	case *cf.ClientConn:
 		hook := cf.WriteHook{
 			Message: header.RspDownloadSlice,
@@ -85,7 +85,7 @@ func setWriteHookForRspDownloadSlice(conn core.WriteCloser) {
 		}
 		var hooks []cf.WriteHook
 		hooks = append(hooks, hook)
-		conn.(*cf.ClientConn).SetWriteHook(hooks)
+		conn.SetWriteHook(hooks)
 	}
 }
 
@@ -101,7 +101,7 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 			rsp.Data = nil
 			rsp.Result.State = protos.ResultState_RES_FAIL
 			rsp.Result.Msg = "duplicate request for the same slice in the same download task"
-			p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
+			_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
 			return
 		}
 
@@ -109,7 +109,7 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 			rsp.Data = nil
 			rsp.Result.State = protos.ResultState_RES_FAIL
 			rsp.Result.Msg = "empty signature"
-			p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
+			_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
 			return
 		}
 
@@ -117,7 +117,7 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 			rsp.Data = nil
 			rsp.Result.State = protos.ResultState_RES_FAIL
 			rsp.Result.Msg = "signature validation failed"
-			p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
+			_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
 			return
 		}
 
@@ -125,7 +125,7 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 			utils.DebugLog("cannot find slice, sliceHash: ", target.SliceInfo.SliceHash)
 			rsp.Result.State = protos.ResultState_RES_FAIL
 			rsp.Result.Msg = LOSE_SLICE_MSG
-			p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
+			_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
 			return
 		}
 
@@ -162,7 +162,7 @@ func splitSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlic
 
 		if dataEnd < dataLen {
 			utils.DebugLog("reqID-"+strconv.FormatUint(dataStart, 10)+" =========", strconv.FormatInt(core.GetReqIdFromContext(newCtx), 10))
-			p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspDownloadSliceDataSplit(rsp, dataStart, dataEnd, offsetStart, offsetEnd,
+			_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspDownloadSliceDataSplit(rsp, dataStart, dataEnd, offsetStart, offsetEnd,
 				rsp.SliceInfo.SliceOffset.SliceOffsetStart, rsp.SliceInfo.SliceOffset.SliceOffsetEnd, false), header.RspDownloadSlice)
 			dataStart += setting.MAXDATA
 			dataEnd += setting.MAXDATA
@@ -170,7 +170,7 @@ func splitSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlic
 			offsetEnd += setting.MAXDATA
 		} else {
 			utils.DebugLog("reqID-"+strconv.FormatUint(dataStart, 10)+" =========", strconv.FormatInt(core.GetReqIdFromContext(newCtx), 10))
-			p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspDownloadSliceDataSplit(rsp, dataStart, 0, offsetStart, 0,
+			_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspDownloadSliceDataSplit(rsp, dataStart, 0, offsetStart, 0,
 				rsp.SliceInfo.SliceOffset.SliceOffsetStart, rsp.SliceInfo.SliceOffset.SliceOffsetEnd, true), header.RspDownloadSlice)
 			return
 		}
@@ -368,7 +368,7 @@ func videoCacheKeep(fileHash, taskID string) {
 	}
 }
 
-// ReportDownloadResult  PP-SP OR StoragePP-SP
+// SendReportDownloadResult  PP-SP OR StoragePP-SP
 func SendReportDownloadResult(ctx context.Context, target *protos.RspDownloadSlice, costTime int64, isPP bool) *protos.ReqReportDownloadResult {
 	pp.DebugLog(ctx, "ReportDownloadResult report result target.fileHash = ", target.FileHash)
 	req := requests.ReqReportDownloadResultData(target, costTime, isPP)
@@ -376,12 +376,11 @@ func SendReportDownloadResult(ctx context.Context, target *protos.RspDownloadSli
 	return req
 }
 
-// ReportDownloadResult  P-SP OR PP-SP
+// SendReportStreamingResult  P-SP OR PP-SP
 func SendReportStreamingResult(ctx context.Context, target *protos.RspDownloadSlice, isPP bool) {
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqReportStreamResultData(target, isPP), header.ReqReportDownloadResult)
 }
 
-// DownloadFileSlice
 func DownloadFileSlice(ctx context.Context, target *protos.RspFileStorageInfo) {
 	pp.DebugLog(ctx, "DownloadFileSlice(&target)", target)
 	fileSize := uint64(0)
@@ -443,32 +442,28 @@ func RspReportDownloadResult(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-// RspDownloadSliceWrong
 func RspDownloadSliceWrong(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("RspDownloadSlice")
 	var target protos.RspDownloadSliceWrong
-	if requests.UnmarshalData(ctx, &target) {
-		if target.Result.State == protos.ResultState_RES_SUCCESS {
-			utils.DebugLog("RspDownloadSliceWrongRspDownloadSliceWrongRspDownloadSliceWrong", target.NewSliceInfo.SliceStorageInfo.SliceHash)
-			if dlTask, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress + task.LOCAL_REQID); ok {
-				downloadTask := dlTask.(*task.DownloadTask)
-				if sInfo, ok := downloadTask.SliceInfo[target.NewSliceInfo.SliceStorageInfo.SliceHash]; ok {
-					sInfo.StoragePpInfo.P2PAddress = target.NewSliceInfo.StoragePpInfo.P2PAddress
-					sInfo.StoragePpInfo.WalletAddress = target.NewSliceInfo.StoragePpInfo.WalletAddress
-					sInfo.StoragePpInfo.NetworkAddress = target.NewSliceInfo.StoragePpInfo.NetworkAddress
-					p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServ(ctx, target.NewSliceInfo.StoragePpInfo.NetworkAddress, requests.RspDownloadSliceWrong(&target))
-				}
-			}
+	if !requests.UnmarshalData(ctx, &target) {
+		return
+	}
+	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		return
+	}
+
+	utils.DebugLog("RspDownloadSliceWrong", target.NewSliceInfo.SliceStorageInfo.SliceHash)
+	if dlTask, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress + task.LOCAL_REQID); ok {
+		downloadTask := dlTask.(*task.DownloadTask)
+		if sInfo, ok := downloadTask.SliceInfo[target.NewSliceInfo.SliceStorageInfo.SliceHash]; ok {
+			sInfo.StoragePpInfo.P2PAddress = target.NewSliceInfo.StoragePpInfo.P2PAddress
+			sInfo.StoragePpInfo.WalletAddress = target.NewSliceInfo.StoragePpInfo.WalletAddress
+			sInfo.StoragePpInfo.NetworkAddress = target.NewSliceInfo.StoragePpInfo.NetworkAddress
+			_ = p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServ(ctx, target.NewSliceInfo.StoragePpInfo.NetworkAddress, requests.RspDownloadSliceWrong(&target))
 		}
 	}
 }
 
-func downloadWrong(ctx context.Context, taskID, sliceHash, p2pAddress, walletAddress string, wrongType protos.DownloadWrongType) {
-	utils.DebugLog("downloadWrong, sliceHash: ", sliceHash)
-	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(context.Background(), requests.ReqDownloadSliceWrong(taskID, sliceHash, p2pAddress, walletAddress, wrongType), header.ReqDownloadSliceWrong)
-}
-
-// DownloadSlicePause
 func DownloadSlicePause(ctx context.Context, fileHash, reqID string) {
 	if setting.CheckLogin() {
 		// storeResponseWriter(reqID, w)
@@ -477,7 +472,6 @@ func DownloadSlicePause(ctx context.Context, fileHash, reqID string) {
 	}
 }
 
-// DownloadSliceCancel
 func DownloadSliceCancel(ctx context.Context, fileHash, reqID string) {
 	if setting.CheckLogin() {
 		task.DownloadTaskMap.Delete(fileHash + setting.WalletAddress + task.LOCAL_REQID)

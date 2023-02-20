@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -106,7 +107,7 @@ func wrapJsonRpc(method string, param []byte) []byte {
 	}
 	r, e := json.Marshal(request)
 	if e != nil {
-		utils.DebugLog("json marshal error", e)
+		utils.ErrorLog("json marshal error", e)
 		return nil
 	}
 	return r
@@ -116,14 +117,14 @@ func reqUploadMsg(fileName, hash string) []byte {
 	// file size
 	info := file.GetFileInfo(fileName)
 	if info == nil {
-		utils.DebugLog("Failed to get file information.")
+		utils.ErrorLog("Failed to get file information.")
 		return nil
 	}
 
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {
-		utils.DebugLog("Failed reading key file.")
+		utils.ErrorLog("Failed reading key file.")
 		return nil
 	}
 
@@ -149,7 +150,7 @@ func reqUploadMsg(fileName, hash string) []byte {
 
 	pm, e := json.Marshal(params)
 	if e != nil {
-		utils.DebugLog("failed marshal param for ReqUploadFile")
+		utils.ErrorLog("failed marshal param for ReqUploadFile")
 		return nil
 	}
 
@@ -164,7 +165,7 @@ func uploadDataMsg(hash, data string) []byte {
 	})
 	pm, e := json.Marshal(pa)
 	if e != nil {
-		utils.DebugLog("json marshal error", e)
+		utils.ErrorLog("json marshal error", e)
 	}
 
 	return wrapJsonRpc("user_uploadData", pm)
@@ -175,6 +176,7 @@ func put(cmd *cobra.Command, args []string) error {
 	// args[0] is the first param, instead of the subcommand "put"
 	fileName := args[0]
 	hash := file.GetFileHash(args[0], "")
+	utils.Log("- start uploading the file:", fileName)
 
 	// compose request file upload params
 	r := reqUploadMsg(args[0], hash)
@@ -182,10 +184,11 @@ func put(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	utils.Log("- request uploading file (method: user_requestUpload)")
 	// http request-respond
 	body := httpRequest(r)
 	if body == nil {
-		utils.DebugLog("http no response")
+		utils.ErrorLog("http no response")
 		return nil
 	}
 
@@ -193,19 +196,20 @@ func put(cmd *cobra.Command, args []string) error {
 	var rsp jsonrpcMessage
 	err := json.Unmarshal(body, &rsp)
 	if err != nil {
-		utils.DebugLog("unmarshal failed")
+		utils.ErrorLog("unmarshal failed")
 		return nil
 	}
 
 	var res rpc.Result
 	err = json.Unmarshal(rsp.Result, &res)
 	if err != nil {
-		utils.DebugLog("unmarshal failed")
+		utils.ErrorLog("unmarshal failed")
 		return nil
 	}
 
 	// Handle result:1 sending the content
 	for res.Return == rpc.UPLOAD_DATA {
+		utils.Log("- received response (return: UPLOAD_DATA)")
 		// get the data from the file
 		so := &protos.SliceOffset{
 			SliceOffsetStart: *res.OffsetStart,
@@ -214,25 +218,26 @@ func put(cmd *cobra.Command, args []string) error {
 		rawData := file.GetFileData(fileName, so)
 		encoded := base64.StdEncoding.EncodeToString(rawData)
 		r = uploadDataMsg(hash, encoded)
-
+		utils.Log("- request upload date (method: user_uploadData)")
 		body = httpRequest(r)
 		if body == nil {
-			utils.DebugLog("json marshal error")
+			utils.ErrorLog("json marshal error")
 			return nil
 		}
 
 		// Handle rsp
 		err = json.Unmarshal(body, &rsp)
 		if err != nil {
-			utils.DebugLog("unmarshal failed")
+			utils.ErrorLog("unmarshal failed")
 			return nil
 		}
 		err = json.Unmarshal(rsp.Result, &res)
 		if err != nil {
-			utils.DebugLog("unmarshal failed")
+			utils.ErrorLog("unmarshal failed")
 			return nil
 		}
 	}
+	utils.Log("- uploading is done")
 	return nil
 }
 
@@ -242,7 +247,7 @@ func reqDownloadMsg(hash, sdmPath string) []byte {
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {
-		utils.DebugLog("Failed reading key file.")
+		utils.ErrorLog("Failed reading key file.")
 		return nil
 	}
 
@@ -267,7 +272,7 @@ func reqDownloadMsg(hash, sdmPath string) []byte {
 
 	pm, e := json.Marshal(params)
 	if e != nil {
-		utils.DebugLog("failed marshal param for ReqUploadFile")
+		utils.ErrorLog("failed marshal param for ReqUploadFile")
 		return nil
 	}
 
@@ -286,7 +291,7 @@ func downloadDataMsg(hash, reqid string) []byte {
 
 	pm, e := json.Marshal(params)
 	if e != nil {
-		utils.DebugLog("failed marshal param for ReqUploadFile")
+		utils.ErrorLog("failed marshal param for ReqUploadFile")
 		return nil
 	}
 
@@ -306,7 +311,7 @@ func downloadedFileInfoMsg(fileHash string, fileSize uint64, reqid string) []byt
 
 	pm, e := json.Marshal(params)
 	if e != nil {
-		utils.DebugLog("failed marshal param for ReqUploadFile")
+		utils.ErrorLog("failed marshal param for ReqUploadFile")
 		return nil
 	}
 
@@ -319,9 +324,10 @@ func get(cmd *cobra.Command, args []string) error {
 
 	// args[0] is the fileHash
 	sdmPath := args[0]
+	utils.Log("- start downloading the file: ", sdmPath)
 	_, _, fileHash, _, err := datamesh.ParseFileHandle(sdmPath)
 	if err != nil {
-		utils.DebugLog("sdm format error")
+		utils.ErrorLog("sdm format error")
 		return nil
 	}
 
@@ -330,11 +336,11 @@ func get(cmd *cobra.Command, args []string) error {
 	if r == nil {
 		return nil
 	}
-
+	utils.Log("- request downloading the file (method: user_requestDownload)")
 	// http request-respond
 	body := httpRequest(r)
 	if body == nil {
-		utils.DebugLog("json marshal error")
+		utils.ErrorLog("json marshal error")
 		return nil
 	}
 
@@ -348,35 +354,65 @@ func get(cmd *cobra.Command, args []string) error {
 	var res rpc.Result
 	err = json.Unmarshal(rsp.Result, &res)
 	if err != nil {
-		utils.DebugLog("unmarshal failed")
+		utils.ErrorLog("unmarshal failed")
 		return nil
 	}
 
 	var fileSize uint64 = 0
 	var pieceCount uint64 = 0
+	var fileMg *os.File = nil
 	// Handle result:1 sending the content
 	for res.Return == rpc.DOWNLOAD_OK || res.Return == rpc.DL_OK_ASK_INFO {
-		// TODO: save the piece to the file
+		if fileMg == nil {
+			exist, err := file.PathExists("./download/")
+			if err != nil {
+				return err
+			}
+			if !exist {
+				if err = os.MkdirAll("./download/", 0777); err != nil {
+					return err
+				}
+			}
+			fileMg, err = os.OpenFile(filepath.Join("./download/", res.FileName), os.O_CREATE|os.O_RDWR, 0777)
+			if err != nil {
+				utils.ErrorLog("error initialize file")
+				return errors.New("can't open file")
+			}
+		}
+
 		if res.Return == rpc.DL_OK_ASK_INFO {
+			utils.Log("- received response (return: DL_OK_ASK_INFO) after received", pieceCount, "piece(s)")
 			r = downloadedFileInfoMsg(fileHash, fileSize, res.ReqId)
-			fmt.Println("There are", pieceCount, "pieces received.")
+			utils.Log("- request file information verification (method: user_downloadedFileInfo)")
 		} else {
+			// rpc.DOWNLOAD_OK
+			utils.Log("- received response (return: DOWNLOAD_OK)")
 			start := *res.OffsetStart
 			end := *res.OffsetEnd
 			fileSize = fileSize + (end - start)
 			decoded, _ := base64.StdEncoding.DecodeString(res.FileData)
 			if len(decoded) != int(end-start) {
-				utils.DebugLog("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-				utils.DebugLog("Wrong size:", strconv.Itoa(len(decoded)), " ", strconv.Itoa(int(end-start)))
+				utils.ErrorLog("Wrong size:", strconv.Itoa(len(decoded)), " ", strconv.Itoa(int(end-start)))
+				fileMg.Close()
 				return nil
 			}
 			pieceCount = pieceCount + 1
+
+			_, err = fileMg.WriteAt(decoded, int64(start))
+			if err != nil {
+				utils.ErrorLog("error save file")
+				fileMg.Close()
+				return errors.New("failed writing file")
+			}
+
 			r = downloadDataMsg(fileHash, res.ReqId)
+			utils.Log("- request downloading file date (user_downloadData)")
 		}
 
 		body := httpRequest(r)
 		if body == nil {
-			utils.DebugLog("json marshal error")
+			utils.ErrorLog("json marshal error")
+			fileMg.Close()
 			return nil
 		}
 
@@ -388,11 +424,20 @@ func get(cmd *cobra.Command, args []string) error {
 
 		err = json.Unmarshal(rsp.Result, &res)
 		if err != nil {
-			utils.DebugLog("unmarshal failed")
+			utils.ErrorLog("unmarshal failed")
+			fileMg.Close()
 			return nil
 		}
 	}
-
+	if fileMg != nil {
+		fileMg.Close()
+	}
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
+	utils.Log("- downloading is done")
 	return nil
 }
 
@@ -401,7 +446,7 @@ func reqListMsg(page uint64) []byte {
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {
-		utils.DebugLog("Failed reading key file.")
+		utils.ErrorLog("Failed reading key file.")
 		return nil
 	}
 
@@ -414,7 +459,7 @@ func reqListMsg(page uint64) []byte {
 
 	pm, e := json.Marshal(params)
 	if e != nil {
-		utils.DebugLog("failed marshal param for ReqFileList")
+		utils.ErrorLog("failed marshal param for ReqFileList")
 		return nil
 	}
 
@@ -451,11 +496,11 @@ func list(cmd *cobra.Command, args []string) error {
 	if r == nil {
 		return nil
 	}
-
+	utils.Log("- request listing files (method: user_requestList)")
 	// http request-respond
 	body := httpRequest(r)
 	if body == nil {
-		utils.DebugLog("json marshal error")
+		utils.ErrorLog("json marshal error")
 		return nil
 	}
 
@@ -471,7 +516,11 @@ func list(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return nil
 	}
-
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
 	printFileList(res)
 	return nil
 }
@@ -482,7 +531,7 @@ func reqGetOzoneMsg() []byte {
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {
-		utils.DebugLog("Failed reading key file.")
+		utils.ErrorLog("Failed reading key file.")
 		return nil
 	}
 
@@ -494,7 +543,7 @@ func reqGetOzoneMsg() []byte {
 
 	pm, e := json.Marshal(params)
 	if e != nil {
-		utils.DebugLog("failed marshal param for ReqUGetOzone")
+		utils.ErrorLog("failed marshal param for ReqUGetOzone")
 		return nil
 	}
 
@@ -509,10 +558,11 @@ func getozone(cmd *cobra.Command, args []string) error {
 	if r == nil {
 		return nil
 	}
+	utils.Log("- request ozone balance (method: user_requestGetOzone)")
 	// http request-respond
 	body := httpRequest(r)
 	if body == nil {
-		utils.DebugLog("json marshal error")
+		utils.ErrorLog("json marshal error")
 		return nil
 	}
 
@@ -526,9 +576,17 @@ func getozone(cmd *cobra.Command, args []string) error {
 	var res rpc.GetOzoneResult
 	err = json.Unmarshal(rsp.Result, &res)
 	if err != nil {
-		utils.DebugLog("unmarshal failed")
+		utils.ErrorLog("unmarshal failed")
 		return nil
 	}
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+		ozone, _ := strconv.ParseFloat(res.Ozone, 64)
+		utils.Log("OZONE balance: ", ozone/1000000000.0)
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
+
 	return nil
 }
 
@@ -552,7 +610,7 @@ func reqListShareMsg(page uint64) []byte {
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {
-		utils.DebugLog("Failed reading key file.")
+		utils.ErrorLog("Failed reading key file.")
 		return nil
 	}
 
@@ -565,7 +623,7 @@ func reqListShareMsg(page uint64) []byte {
 
 	pm, e := json.Marshal(params)
 	if e != nil {
-		utils.DebugLog("failed marshal param for ReqUploadFile")
+		utils.ErrorLog("failed marshal param for ReqUploadFile")
 		return nil
 	}
 
@@ -589,10 +647,11 @@ func listshare(cmd *cobra.Command, args []string) error {
 	if r == nil {
 		return nil
 	}
+	utils.Log("- request listing files (method: user_requestListShare)")
 	// http request-respond
 	body := httpRequest(r)
 	if body == nil {
-		utils.DebugLog("json marshal error")
+		utils.ErrorLog("json marshal error")
 		return nil
 	}
 	// handle response
@@ -606,6 +665,11 @@ func listshare(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return nil
 	}
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
 	printSharedFileList(res)
 	return nil
 }
@@ -615,7 +679,7 @@ func reqShareMsg(hash string) []byte {
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {
-		utils.DebugLog("Failed reading key file.")
+		utils.ErrorLog("Failed reading key file.")
 		return nil
 	}
 
@@ -628,7 +692,7 @@ func reqShareMsg(hash string) []byte {
 
 	pm, e := json.Marshal(params)
 	if e != nil {
-		utils.DebugLog("failed marshal param for ReqUploadFile")
+		utils.ErrorLog("failed marshal param for ReqUploadFile")
 		return nil
 	}
 
@@ -640,7 +704,7 @@ func reqShareMsg(hash string) []byte {
 func share(cmd *cobra.Command, args []string) error {
 	// check input
 	if len(args) != 1 {
-		utils.DebugLog("file hash is not provided")
+		utils.ErrorLog("file hash is not provided")
 		return nil
 	}
 	// compose request
@@ -648,11 +712,11 @@ func share(cmd *cobra.Command, args []string) error {
 	if r == nil {
 		return nil
 	}
-
+	utils.Log("- request sharing file (method: user_requestShare)")
 	// http request-respond
 	body := httpRequest(r)
 	if body == nil {
-		utils.DebugLog("json marshal error")
+		utils.ErrorLog("json marshal error")
 		return nil
 	}
 	// handle response
@@ -666,7 +730,13 @@ func share(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return nil
 	}
-
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+		fmt.Println("ShareId: ", res.ShareId)
+		fmt.Println("ShareLink: ", res.ShareLink)
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
 	return nil
 }
 
@@ -675,7 +745,7 @@ func reqStopShareMsg(shareId string) []byte {
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {
-		utils.DebugLog("Failed reading key file.")
+		utils.ErrorLog("Failed reading key file.")
 		return nil
 	}
 
@@ -688,7 +758,7 @@ func reqStopShareMsg(shareId string) []byte {
 
 	pm, e := json.Marshal(params)
 	if e != nil {
-		utils.DebugLog("failed marshal param for ReqStopShare")
+		utils.ErrorLog("failed marshal param for ReqStopShare")
 		return nil
 	}
 
@@ -704,10 +774,11 @@ func stopshare(cmd *cobra.Command, args []string) error {
 	if r == nil {
 		return nil
 	}
+	utils.Log("- request stop sharing (method: user_requestStopShare)")
 	// http request-respond
 	body := httpRequest(r)
 	if body == nil {
-		utils.DebugLog("json marshal error")
+		utils.ErrorLog("json marshal error")
 		return nil
 	}
 	// handle response
@@ -721,6 +792,11 @@ func stopshare(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return nil
 	}
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
 
 	return nil
 }
@@ -730,7 +806,7 @@ func reqGetSharedMsg(shareLink string) []byte {
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {
-		utils.DebugLog("Failed reading key file.")
+		utils.ErrorLog("Failed reading key file.")
 		return nil
 	}
 
@@ -749,7 +825,7 @@ func reqGetSharedMsg(shareLink string) []byte {
 
 	pm, e := json.Marshal(params)
 	if e != nil {
-		utils.DebugLog("failed marshal param for ReqStopShare")
+		utils.ErrorLog("failed marshal param for ReqStopShare")
 		return nil
 	}
 
@@ -762,7 +838,7 @@ func reqDownloadSharedMsg(fileHash, reqId string) []byte {
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {
-		utils.DebugLog("Failed reading key file.")
+		utils.ErrorLog("Failed reading key file.")
 		return nil
 	}
 
@@ -789,7 +865,7 @@ func reqDownloadSharedMsg(fileHash, reqId string) []byte {
 
 	pm, e := json.Marshal(params)
 	if e != nil {
-		utils.DebugLog("failed marshal param for ReqStopShare")
+		utils.ErrorLog("failed marshal param for ReqStopShare")
 		return nil
 	}
 
@@ -800,15 +876,18 @@ func reqDownloadSharedMsg(fileHash, reqId string) []byte {
 // getshared
 func getshared(cmd *cobra.Command, args []string) error {
 
+	utils.Log("- start downloading the file:", args[0])
 	// compose request: get shared file
 	r := reqGetSharedMsg(args[0])
 	if r == nil {
 		return nil
 	}
+
+	utils.Log("- request shared file information (method: user_requestGetShared)")
 	// http request-respond
 	body := httpRequest(r)
 	if body == nil {
-		utils.DebugLog("json marshal error")
+		utils.ErrorLog("json marshal error")
 		return nil
 	}
 	// handle response
@@ -825,15 +904,17 @@ func getshared(cmd *cobra.Command, args []string) error {
 	if res.Return != rpc.SHARED_DL_START {
 		return nil
 	}
+	utils.Log("- received response (return: SHARED_DL_START)")
 
 	fileHash := res.FileHash
 
 	// compose second request: download
 	r = reqDownloadSharedMsg(fileHash, res.ReqId)
+	utils.Log("- request downloading shared file (method: user_requestDownloadShared)")
 	// http request-respond
 	body = httpRequest(r)
 	if body == nil {
-		utils.DebugLog("json marshal error")
+		utils.ErrorLog("json marshal error")
 		return nil
 	}
 	// handle response
@@ -848,45 +929,82 @@ func getshared(cmd *cobra.Command, args []string) error {
 
 	var fileSize uint64 = 0
 	var pieceCount uint64 = 0
+	var fileMg *os.File = nil
 	// Handle result:1 sending the content
 	for res.Return == rpc.DOWNLOAD_OK || res.Return == rpc.DL_OK_ASK_INFO {
-		// TODO: save the piece to the file
+		exist, err := file.PathExists("./download/")
+		if err != nil {
+			return err
+		}
+		if !exist {
+			if err = os.MkdirAll("./download/", 0777); err != nil {
+				return err
+			}
+		}
+		if fileMg == nil {
+			fileMg, err = os.OpenFile(filepath.Join("./download/", res.FileName), os.O_CREATE|os.O_RDWR, 0777)
+			if err != nil {
+				utils.ErrorLog("error initialize file")
+				return errors.New("can't open file")
+			}
+		}
 		if res.Return == rpc.DL_OK_ASK_INFO {
+			utils.Log("- received response (return: DL_OK_ASK_INFO)")
 			r = downloadedFileInfoMsg(fileHash, fileSize, res.ReqId)
-			fmt.Println("There are", pieceCount, "pieces received.")
+			utils.Log("- request file information verification (method: user_downloadedFileInfo)")
 		} else {
+			utils.Log("- received response (return: DOWNLOAD_OK)")
 			start := *res.OffsetStart
 			end := *res.OffsetEnd
 			fileSize = fileSize + (end - start)
 			decoded, _ := base64.StdEncoding.DecodeString(res.FileData)
 			if len(decoded) != int(end-start) {
-				utils.DebugLog("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-				utils.DebugLog("Wrong size:", strconv.Itoa(len(decoded)), " ", strconv.Itoa(int(end-start)))
+				utils.ErrorLog("Wrong size:", strconv.Itoa(len(decoded)), " ", strconv.Itoa(int(end-start)))
+				fileMg.Close()
 				return nil
 			}
 			pieceCount = pieceCount + 1
+			_, err = fileMg.WriteAt(decoded, int64(start))
+			if err != nil {
+				utils.ErrorLog("error save file")
+				fileMg.Close()
+				return errors.New("failed writing file")
+			}
 			r = downloadDataMsg(fileHash, res.ReqId)
+			utils.Log("- request downloading file data (method: user_downloadData)")
 		}
 
 		body := httpRequest(r)
 		if body == nil {
-			utils.DebugLog("json marshal error")
+			utils.ErrorLog("json marshal error")
+			fileMg.Close()
 			return nil
 		}
 
 		// Handle rsp
-		err := json.Unmarshal(body, &rsp)
+		err = json.Unmarshal(body, &rsp)
 		if err != nil {
+			fileMg.Close()
 			return nil
 		}
 
 		err = json.Unmarshal(rsp.Result, &res)
 		if err != nil {
-			utils.DebugLog("unmarshal failed")
+			utils.ErrorLog("unmarshal failed")
+			fileMg.Close()
 			return nil
 		}
 	}
+	if fileMg != nil {
+		fileMg.Close()
+	}
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
 
+	utils.Log("- downloading is done")
 	return nil
 }
 
@@ -894,13 +1012,16 @@ func getshared(cmd *cobra.Command, args []string) error {
 // httpRequest
 func httpRequest(request []byte) []byte {
 	if len(request) < 300 {
-		fmt.Println("--> ", string(request))
+		utils.DebugLog("--> ", string(request))
 	} else {
-		fmt.Println("--> ", string(request[:230]), "... \"}]}")
+		utils.DebugLog("--> ", string(request[:230]), "... \"}]}")
 	}
 
 	// http post
 	req, err := http.NewRequest("POST", Url, bytes.NewBuffer(request))
+	if err != nil {
+		panic(err)
+	}
 	req.Header.Set("X-Custom-Header", "myvalue")
 	req.Header.Set("Content-Type", "application/json")
 
@@ -908,14 +1029,13 @@ func httpRequest(request []byte) []byte {
 	resp, err := client.Do(req)
 	if err != nil {
 		panic(err)
-		return nil
 	}
 
 	body, _ := ioutil.ReadAll(resp.Body)
 	if len(body) < 300 {
-		fmt.Println("<-- ", string(body))
+		utils.DebugLog("<-- ", string(body))
 	} else {
-		fmt.Println("<-- ", string(body[:230]), "... \"}]}")
+		utils.DebugLog("<-- ", string(body[:230]), "... \"}]}")
 	}
 
 	resp.Body.Close()
@@ -1006,7 +1126,8 @@ func main() {
 	rootCmd.AddCommand(getsharedCmd)
 	rootCmd.AddCommand(getozoneCmd)
 
-	utils.NewDefaultLogger("./logs/stdout.log", true, true)
+	combineLogger := utils.NewDefaultLogger("./logs/stdout.log", true, true)
+	combineLogger.SetLogLevel(utils.Info)
 
 	err := rootCmd.Execute()
 	if err != nil {

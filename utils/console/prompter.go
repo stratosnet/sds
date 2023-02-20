@@ -94,7 +94,7 @@ func newTerminalPrompter() *terminalPrompter {
 		p.normalMode = normalMode
 		p.rawMode = rawMode
 		// Switch back to normal mode while we're not prompting.
-		normalMode.ApplyMode()
+		_ = normalMode.ApplyMode()
 	}
 	p.SetCtrlCAborts(true)
 	p.SetTabCompletionStyle(liner.TabPrints)
@@ -106,8 +106,10 @@ func newTerminalPrompter() *terminalPrompter {
 // data to be entered, returning the input of the user.
 func (p *terminalPrompter) PromptInput(prompt string) (string, error) {
 	if p.supported {
-		p.rawMode.ApplyMode()
-		defer p.normalMode.ApplyMode()
+		_ = p.rawMode.ApplyMode()
+		defer func() {
+			_ = p.normalMode.ApplyMode()
+		}()
 	} else {
 		// liner tries to be smart about printing the prompt
 		// and doesn't print anything if input is redirected.
@@ -124,8 +126,10 @@ func (p *terminalPrompter) PromptInput(prompt string) (string, error) {
 // The method returns the input provided by the user.
 func (p *terminalPrompter) PromptPassword(prompt string) (passwd string, err error) {
 	if p.supported {
-		p.rawMode.ApplyMode()
-		defer p.normalMode.ApplyMode()
+		_ = p.rawMode.ApplyMode()
+		defer func() {
+			_ = p.normalMode.ApplyMode()
+		}()
 		return p.State.PasswordPrompt(prompt)
 	}
 	if !p.warned {
@@ -152,7 +156,7 @@ func (p *terminalPrompter) PromptConfirm(prompt string) (bool, error) {
 // SetHistory sets the the input scrollback history that the prompter will allow
 // the user to scroll back to.
 func (p *terminalPrompter) SetHistory(history []string) {
-	p.State.ReadHistory(strings.NewReader(strings.Join(history, "\n")))
+	_, _ = p.State.ReadHistory(strings.NewReader(strings.Join(history, "\n")))
 }
 
 // AppendHistory appends an entry to the scrollback history.
