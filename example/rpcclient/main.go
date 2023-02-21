@@ -115,9 +115,9 @@ func wrapJsonRpc(method string, param []byte) []byte {
 
 func reqUploadMsg(fileName, hash string) []byte {
 	// file size
-	info := file.GetFileInfo(fileName)
-	if info == nil {
-		utils.ErrorLog("Failed to get file information.")
+	info, err := file.GetFileInfo(fileName)
+	if err != nil {
+		utils.ErrorLog("Failed to get file information.", err.Error())
 		return nil
 	}
 
@@ -215,7 +215,11 @@ func put(cmd *cobra.Command, args []string) error {
 			SliceOffsetStart: *res.OffsetStart,
 			SliceOffsetEnd:   *res.OffsetEnd,
 		}
-		rawData := file.GetFileData(fileName, so)
+		rawData, err := file.GetFileData(fileName, so)
+		if err != nil {
+			utils.ErrorLog("failed reading file data", err.Error())
+			return nil
+		}
 		encoded := base64.StdEncoding.EncodeToString(rawData)
 		r = uploadDataMsg(hash, encoded)
 		utils.Log("- request upload date (method: user_uploadData)")
@@ -244,9 +248,9 @@ func put(cmd *cobra.Command, args []string) error {
 /////////////////////////////////////////////////////////////////////////////////////////
 func reqUploadStreamMsg(fileName, hash string) []byte {
 	// file size
-	info := file.GetFileInfo(fileName)
-	if info == nil {
-		utils.ErrorLog("Failed to get file information.")
+	info, err := file.GetFileInfo(fileName)
+	if err != nil {
+		utils.ErrorLog("Failed to get file information.", err.Error())
 		return nil
 	}
 
@@ -343,7 +347,11 @@ func putstream(cmd *cobra.Command, args []string) error {
 			SliceOffsetStart: *res.OffsetStart,
 			SliceOffsetEnd:   *res.OffsetEnd,
 		}
-		rawData := file.GetFileData(fileName, so)
+		rawData, err := file.GetFileData(fileName, so)
+		if err != nil {
+			utils.ErrorLog("failed getting file data ", err.Error())
+			return nil
+		}
 		encoded := base64.StdEncoding.EncodeToString(rawData)
 		r = uploadDataStreamMsg(hash, encoded)
 		utils.Log("- request upload date (method: user_uploadDataStream)")

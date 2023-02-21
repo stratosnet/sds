@@ -262,30 +262,31 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 
 func receiveSliceAndProgress(ctx context.Context, target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo,
 	dTask *task.DownloadTask, costTime int64) {
-	if task.SaveDownloadFile(ctx, target, fInfo) {
-		dataLen := uint64(len(target.Data))
-		if s, ok := task.DownloadSliceProgress.Load(target.SliceInfo.SliceHash + fInfo.ReqId); ok {
-			alreadySize := s.(uint64)
-			alreadySize += dataLen
-			if alreadySize == target.SliceSize {
-				pp.DebugLog(ctx, "slice download finished", target.SliceInfo.SliceHash)
-				task.DownloadSliceProgress.Delete(target.SliceInfo.SliceHash + fInfo.ReqId)
-				receivedSlice(ctx, target, fInfo, dTask)
-			} else {
-				task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash+fInfo.ReqId, alreadySize)
-			}
-		} else {
-			// if data is sent at once
-			if target.SliceSize == dataLen {
-				receivedSlice(ctx, target, fInfo, dTask)
-			} else {
-				task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash+fInfo.ReqId, dataLen)
-			}
-		}
-	} else {
-		utils.DebugLog("Download failed: not able to write to the target file.")
+	err := task.SaveDownloadFile(ctx, target, fInfo)
+	if err != nil {
+		utils.ErrorLog("Download failed, failed saving file ", err)
 		file.CloseDownloadSession(fInfo.FileHash + fInfo.ReqId)
 		task.CleanDownloadFileAndConnMap(ctx, fInfo.FileHash, fInfo.ReqId)
+		return
+	}
+	dataLen := uint64(len(target.Data))
+	if s, ok := task.DownloadSliceProgress.Load(target.SliceInfo.SliceHash + fInfo.ReqId); ok {
+		alreadySize := s.(uint64)
+		alreadySize += dataLen
+		if alreadySize == target.SliceSize {
+			pp.DebugLog(ctx, "slice download finished", target.SliceInfo.SliceHash)
+			task.DownloadSliceProgress.Delete(target.SliceInfo.SliceHash + fInfo.ReqId)
+			receivedSlice(ctx, target, fInfo, dTask)
+		} else {
+			task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash+fInfo.ReqId, alreadySize)
+		}
+	} else {
+		// if data is sent at once
+		if target.SliceSize == dataLen {
+			receivedSlice(ctx, target, fInfo, dTask)
+		} else {
+			task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash+fInfo.ReqId, dataLen)
+		}
 	}
 }
 
@@ -314,13 +315,15 @@ func receiveSliceAndProgressEncrypted(ctx context.Context, target *protos.RspDow
 			return
 		}
 		target.Data = decryptedData
-
-		if task.SaveDownloadFile(ctx, target, fInfo) {
-			pp.DebugLog(ctx, "slice download finished", target.SliceInfo.SliceHash)
-			task.DownloadSliceProgress.Delete(target.SliceInfo.SliceHash + fInfo.ReqId)
-			task.DownloadEncryptedSlices.Delete(target.SliceInfo.SliceHash + fInfo.ReqId)
-			receivedSlice(ctx, target, fInfo, dTask)
+		err = task.SaveDownloadFile(ctx, target, fInfo)
+		if err != nil {
+			pp.ErrorLog(ctx, "Failed saving download file", err.Error())
+			return
 		}
+		pp.DebugLog(ctx, "slice download finished", target.SliceInfo.SliceHash)
+		task.DownloadSliceProgress.Delete(target.SliceInfo.SliceHash + fInfo.ReqId)
+		task.DownloadEncryptedSlices.Delete(target.SliceInfo.SliceHash + fInfo.ReqId)
+		receivedSlice(ctx, target, fInfo, dTask)
 	} else {
 		// Store partial slice data to memory
 		dataToStore := dataToDecrypt

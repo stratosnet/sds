@@ -120,17 +120,26 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	timeEntry := time.Now().UnixMicro() - core.TimeRcv
 	_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.UploadSpeedOfProgressData(target.FileHash, uint64(len(target.Data)), (target.SliceNumAddr.SliceNumber-1)*33554432+target.SliceInfo.SliceOffset.SliceOffsetStart, timeEntry), header.UploadSpeedOfProgress)
 
-	if !task.SaveUploadFile(&target) {
+	if err := task.SaveUploadFile(&target); err != nil {
 		// save failed, not handling yet
-		utils.ErrorLog("SaveUploadFile failed")
+		utils.ErrorLog("SaveUploadFile failed", err.Error())
 		return
 	}
-
-	utils.DebugLogf("ReqUploadFileSlice saving slice %v  current_size %v  total_size %v", target.SliceInfo.SliceHash, file.GetSliceSize(target.SliceInfo.SliceHash), target.SliceSize)
-	if file.GetSliceSize(target.SliceInfo.SliceHash) == int64(target.SliceSize) {
+	sliceSize, err := file.GetSliceSize(target.SliceInfo.SliceHash)
+	if err != nil {
+		utils.ErrorLog("Failed getting slice size", err.Error())
+		return
+	}
+	utils.DebugLogf("ReqUploadFileSlice saving slice %v  current_size %v  total_size %v", target.SliceInfo.SliceHash, sliceSize, target.SliceSize)
+	if sliceSize == int64(target.SliceSize) {
 		utils.DebugLog("the slice upload finished", target.SliceInfo.SliceHash)
 		// respond to PP in case the size is correct but actually not success
-		if utils.CalcSliceHash(file.GetSliceData(target.SliceInfo.SliceHash), target.FileHash, target.SliceNumAddr.SliceNumber) == target.SliceInfo.SliceHash {
+		sliceData, err := file.GetSliceData(target.SliceInfo.SliceHash)
+		if err != nil {
+			utils.ErrorLog("Failed getting slice data", err.Error())
+			return
+		}
+		if utils.CalcSliceHash(sliceData, target.FileHash, target.SliceNumAddr.SliceNumber) == target.SliceInfo.SliceHash {
 			_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspUploadFileSliceData(&target), header.RspUploadFileSlice)
 			// report upload result to SP
 
@@ -265,7 +274,10 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 		return sendSlice(newCtx, requests.ReqUploadFileSliceData(tk, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
 	}
 
-	data := file.GetSliceDataFromTmp(tk.FileHash, tk.SliceOffsetInfo.SliceHash)
+	data, err := file.GetSliceDataFromTmp(tk.FileHash, tk.SliceOffsetInfo.SliceHash)
+	if err != nil {
+		return errors.Wrap(err, "failed get slice data from tmp")
+	}
 	dataStart := 0
 	dataEnd := setting.MAXDATA
 	for {

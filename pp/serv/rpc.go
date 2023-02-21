@@ -681,8 +681,10 @@ func (api *rpcApi) RequestGetOzone(ctx context.Context, param rpc_api.ParamReqGe
 }
 
 func uploadStreamTmpFile(ctx context.Context, fileHash, fileName string, fileSize uint64, walletAddr, pubkey, signature string) {
-	if file.CacheRemoteFileData(fileHash, &protos.SliceOffset{SliceOffsetStart: 0, SliceOffsetEnd: fileSize}, fileName) {
-		p := requests.RequestUploadFile(fileName, fileHash, fileSize, walletAddr, pubkey, signature, false, true)
-		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
+	if err := file.CacheRemoteFileData(fileHash, &protos.SliceOffset{SliceOffsetStart: 0, SliceOffsetEnd: fileSize}, fileName); err != nil {
+		utils.ErrorLog("failed uploading stream tmp file", err.Error())
+		return
 	}
+	p := requests.RequestUploadFile(fileName, fileHash, fileSize, walletAddr, pubkey, signature, false, true)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 }

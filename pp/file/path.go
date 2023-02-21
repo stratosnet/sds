@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
@@ -67,26 +68,23 @@ func GetDownloadPath(fileName string) string {
 	}
 	return filePath
 }
-func getSlicePath(hash string) string {
+func getSlicePath(hash string) (string, error) {
 	if len(hash) < 10 {
-		utils.ErrorLog("this hash is too short")
-		return ""
+		return "", errors.New("wrong size of slice hash")
 	}
 	s1 := string([]rune(hash)[:8])
 	s2 := string([]rune(hash)[8:10])
 	path := filepath.Join(setting.Config.StorehousePath, s1, s2)
 	exist, err := PathExists(path)
 	if err != nil {
-		utils.ErrorLog(err)
-		return ""
+		return "", errors.Wrap(err, "failed checking path")
 	}
 	if !exist {
 		if err = os.MkdirAll(path, os.ModePerm); err != nil {
-			utils.ErrorLog(err)
-			return ""
+			return "", errors.Wrap(err, "failed creating dir")
 		}
 	}
-	return filepath.Join(path, hash)
+	return filepath.Join(path, hash), nil
 }
 
 // pathExists

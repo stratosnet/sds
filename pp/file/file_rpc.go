@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/api/rpc"
-	"github.com/stratosnet/sds/utils"
 )
 
 const NUMBER_OF_UPLOAD_CHAN_BUFFER = 5
@@ -128,7 +128,7 @@ OuterFor:
 	return data
 }
 
-func CacheRemoteFileData(fileHash string, offset *protos.SliceOffset, fileName string) bool {
+func CacheRemoteFileData(fileHash string, offset *protos.SliceOffset, fileName string) error {
 	upSliceMutex.Lock()
 	defer upSliceMutex.Unlock()
 
@@ -142,10 +142,9 @@ func CacheRemoteFileData(fileHash string, offset *protos.SliceOffset, fileName s
 	// send event and open the pipe for coming data
 	SetRemoteFileResult(fileHash, *r)
 
-	fileMg := OpenTmpFile(fileHash, fileName)
-	if fileMg == nil {
-		utils.DebugLog("CacheRemoteFileData exit...")
-		return false
+	fileMg, err := OpenTmpFile(fileHash, fileName)
+	if err != nil {
+		return errors.Wrap(err, "failed opening tem file")
 	}
 	defer func() {
 		_ = fileMg.Close()
@@ -161,10 +160,14 @@ OuterFor:
 		select {
 		case <-ctx.Done():
 			cancel()
-			return false
+			return errors.New("timeout waiting uploaded sub-slice")
 		case subSlice := <-SubscribeGetRemoteFileData(fileHash):
 			metrics.UploadPerformanceLogNow(fileHash + ":RCV_SUBSLICE_RPC:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
-			WriteFile(subSlice, read, fileMg)
+			err = WriteFile(subSlice, read, fileMg)
+			if err != nil {
+				cancel()
+				return errors.Wrap(err, "failed writing file")
+			}
 			read = read + int64(len(subSlice))
 			if read >= int64(offset.SliceOffsetEnd-offset.SliceOffsetStart) {
 				UnsubscribeGetRemoteFileData(fileHash)
@@ -174,7 +177,7 @@ OuterFor:
 		}
 	}
 
-	return true
+	return nil
 }
 
 // SendFileDataBack rpc server feeds file data from remote user to application
@@ -190,15 +193,15 @@ func SendFileDataBack(hash string, content []byte) {
 }
 
 // SaveRemoteFileData application calls this func to send a slice of file data to remote user during download process
-func SaveRemoteFileData(key, fileName string, data []byte, offset uint64) bool {
+func SaveRemoteFileData(key, fileName string, data []byte, offset uint64) error {
 	if data == nil {
-		return false
+		return errors.New("invalid input data")
 	}
 
 	// in case the COMM is broken, gracefully close the download session
 	closing, found := rpcDownSessionClosing.LoadAndDelete(key)
 	if found && closing.(bool) {
-		return false
+		return errors.New("closing session")
 	}
 
 	wmutex.Lock()
@@ -320,7 +323,7 @@ func SetSignature(key string, sig []byte) {
 }
 
 // WaitDownloadSliceDone application waits for remote user to tell that the downloaded slice received
-func WaitDownloadSliceDone(key string) bool {
+func WaitDownloadSliceDone(key string) error {
 	var done bool
 	parentCtx := context.Background()
 	ctx, cancel := context.WithTimeout(parentCtx, RpcWaitTimeout)
@@ -328,10 +331,13 @@ func WaitDownloadSliceDone(key string) bool {
 
 	select {
 	case <-ctx.Done():
-		return false
+		return errors.New("timeout waiting download slice")
 	case done = <-SubscribeDownloadSliceDone(key):
 		UnsubscribeDownloadSliceDone(key)
-		return done
+		if done {
+			return nil
+		}
+		return errors.New("download slice invalid state")
 	}
 }
 
