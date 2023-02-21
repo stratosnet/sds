@@ -126,7 +126,8 @@ func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 func list(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error {
 	ctxEnv, _ := env.(CtxEnv)
 	reqId := uuid.New().String()
-	ctx, _ := context.WithTimeout(ctxEnv.Ctx, IPFS_WAIT_TIMEOUT_LIST)
+	ctx, cancel := context.WithTimeout(ctxEnv.Ctx, IPFS_WAIT_TIMEOUT_LIST)
+	defer cancel()
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
 
 	resultCh := file.SubscribeIpfsFileList(reqId)

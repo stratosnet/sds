@@ -214,8 +214,8 @@ func (bs *BaseServer) startInternalApiServer() error {
 
 func (bs *BaseServer) startIpfsApiServer() error {
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, p2pserver.P2P_SERVER_KEY, bs.p2pServ)
-	ctx = context.WithValue(ctx, network.PP_NETWORK_KEY, bs.ppNetwork)
+	ctx = context.WithValue(ctx, types.P2P_SERVER_KEY, bs.p2pServ)
+	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
 	go StartIpfsServ(ctx)
 	return nil
 }
