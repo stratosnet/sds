@@ -315,7 +315,8 @@ func (m *MultiClient) txBroadcasterLoop() {
 			utils.ErrorLog("couldn't parse gas price", err)
 			return
 		}
-		fee := sdktypes.NewInt64Coin(gasPrice.Denom, gasPrice.Amount.Int64()*int64(gasLimit))
+		feeAmount := gasPrice.Amount.Mul(sdktypes.NewIntFromUint64(gasLimit))
+		fee := sdktypes.NewCoin(gasPrice.Denom, feeAmount)
 		txBuilder.SetFeeAmount(sdktypes.NewCoins(
 			sdktypes.Coin{
 				Denom:  fee.Denom,
