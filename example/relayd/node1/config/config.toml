@@ -25,7 +25,7 @@ max_msg_per_tx = 250
 [blockchain_info]
 chain_id = "testchain_1-1"
 [blockchain_info.transactions]
-gas_price = "100000000000000000000000000wei"
+gas_price = "1000000000wei"
 gas_adjustment = 2.0
 
 [keys]
