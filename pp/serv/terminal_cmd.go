@@ -303,7 +303,7 @@ func (api *terminalCmd) UploadStream(ctx context.Context, param []string) (CmdRe
 	pathStr := file.EscapePath(param)
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	ctx = core.RegisterRemoteReqId(ctx, uuid.New().String())
-	event.RequestUploadStream(ctx, pathStr, nil)
+	event.RequestUploadStream(ctx, pathStr)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
