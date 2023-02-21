@@ -14,11 +14,12 @@ import (
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
 )
 
-// base pp server
+// BaseServer base pp server
 type BaseServer struct {
 	p2pServ     *p2pserver.P2pServer
 	ppNetwork   *network.Network
@@ -27,61 +28,50 @@ type BaseServer struct {
 	monitorServ *httpServer
 }
 
-func (bs *BaseServer) Start() {
+func (bs *BaseServer) Start() error {
 	ctx := context.Background()
 	err := account.GetWalletAddress(ctx)
 	if err != nil {
-		utils.ErrorLog(err)
-		return
+		return err
 	}
 
 	err = bs.startP2pServer()
 	if err != nil {
-		utils.ErrorLog(err)
-		return
+		return err
 	}
 
 	err = bs.startInternalApiServer()
 	if err != nil {
-		utils.ErrorLog(err)
-		return
+		return err
 	}
 
 	err = bs.startRestServer()
 	if err != nil {
-		utils.ErrorLog(err)
-		return
+		return err
 	}
 
 	err = bs.startTrafficLog()
 	if err != nil {
-		utils.ErrorLog(err)
-		return
+		return err
 	}
 
 	err = bs.startIPC()
 	if err != nil {
-		utils.ErrorLog(err)
-		return
+		return err
 	}
 
 	err = bs.startHttpRPC()
 	if err != nil {
-		utils.ErrorLog(err)
-		return
-	}
-
-	err = bs.startMonitor()
-	if err != nil {
-		utils.ErrorLog(err)
-		return
+		return err
 	}
 
 	err = bs.startIpfsApiServer()
 	if err != nil {
 		utils.ErrorLog(err)
-		return
+		return err
 	}
+
+	return bs.startMonitor()
 }
 
 func (bs *BaseServer) startIPC() error {
@@ -101,8 +91,8 @@ func (bs *BaseServer) startIPC() error {
 	}
 
 	ipc := newIPCServer(setting.IpcEndpoint)
-	ctx := context.WithValue(context.Background(), p2pserver.P2P_SERVER_KEY, bs.p2pServ)
-	ctx = context.WithValue(ctx, network.PP_NETWORK_KEY, bs.ppNetwork)
+	ctx := context.WithValue(context.Background(), types.P2P_SERVER_KEY, bs.p2pServ)
+	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
 	if err := ipc.start(rpcAPIs, ctx); err != nil {
 		return err
 	}
@@ -134,8 +124,8 @@ func (bs *BaseServer) startHttpRPC() error {
 	if err := rpcServer.enableRPC(apis(), config); err != nil {
 		return err
 	}
-	ctx := context.WithValue(context.Background(), p2pserver.P2P_SERVER_KEY, bs.p2pServ)
-	ctx = context.WithValue(ctx, network.PP_NETWORK_KEY, bs.ppNetwork)
+	ctx := context.WithValue(context.Background(), types.P2P_SERVER_KEY, bs.p2pServ)
+	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
 	if err := rpcServer.start(ctx); err != nil {
 		return err
 	}
@@ -159,7 +149,9 @@ func (bs *BaseServer) startMonitor() error {
 		return errors.New("wrong configuration for metrics port")
 	}
 
-	metrics.Initialize(setting.Config.MetricsPort)
+	if err = metrics.Initialize(setting.Config.MetricsPort); err != nil {
+		return err
+	}
 
 	if err := monitorServer.setListenAddr("0.0.0.0", port); err != nil {
 		return err
@@ -174,8 +166,8 @@ func (bs *BaseServer) startMonitor() error {
 	if err := monitorServer.enableWS(monitorAPI(), config); err != nil {
 		return err
 	}
-	ctx := context.WithValue(context.Background(), p2pserver.P2P_SERVER_KEY, bs.p2pServ)
-	ctx = context.WithValue(ctx, network.PP_NETWORK_KEY, bs.ppNetwork)
+	ctx := context.WithValue(context.Background(), types.P2P_SERVER_KEY, bs.p2pServ)
+	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
 	if err := monitorServer.start(ctx); err != nil {
 		return err
 	}
@@ -187,23 +179,23 @@ func (bs *BaseServer) startP2pServer() error {
 	bs.p2pServ = &p2pserver.P2pServer{}
 	event.RegisterEventHandle()
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, p2pserver.P2P_SERVER_KEY, bs.p2pServ)
-	bs.p2pServ.AddConnConntextKey(p2pserver.P2P_SERVER_KEY)
+	ctx = context.WithValue(ctx, types.P2P_SERVER_KEY, bs.p2pServ)
+	bs.p2pServ.AddConnConntextKey(types.P2P_SERVER_KEY)
 
 	bs.ppNetwork = &network.Network{}
-	ctx = context.WithValue(ctx, network.PP_NETWORK_KEY, bs.ppNetwork)
-	bs.p2pServ.AddConnConntextKey(network.PP_NETWORK_KEY)
+	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
+	bs.p2pServ.AddConnConntextKey(types.PP_NETWORK_KEY)
 
 	bs.p2pServ.Start(ctx)
-	bs.p2pServ.ConnectToSP(ctx)
+	_, _ = bs.p2pServ.ConnectToSP(ctx) // Ignore error if we can't connect to any SPs
 	bs.ppNetwork.StartPP(ctx)
 	return nil
 }
 
 func (bs *BaseServer) startTrafficLog() error {
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, p2pserver.P2P_SERVER_KEY, bs.p2pServ)
-	ctx = context.WithValue(ctx, network.PP_NETWORK_KEY, bs.ppNetwork)
+	ctx = context.WithValue(ctx, types.P2P_SERVER_KEY, bs.p2pServ)
+	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
 	StartDumpTrafficLog(ctx)
 	return nil
 }
@@ -211,8 +203,8 @@ func (bs *BaseServer) startTrafficLog() error {
 func (bs *BaseServer) startInternalApiServer() error {
 	if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
 		ctx := context.Background()
-		ctx = context.WithValue(ctx, p2pserver.P2P_SERVER_KEY, bs.p2pServ)
-		ctx = context.WithValue(ctx, network.PP_NETWORK_KEY, bs.ppNetwork)
+		ctx = context.WithValue(ctx, types.P2P_SERVER_KEY, bs.p2pServ)
+		ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
 		go api.StartHTTPServ(ctx)
 	} else {
 		utils.ErrorLog("Missing configuration for internal API server")
@@ -231,8 +223,8 @@ func (bs *BaseServer) startIpfsApiServer() error {
 func (bs *BaseServer) startRestServer() error {
 	if setting.Config.RestPort != "" {
 		ctx := context.Background()
-		ctx = context.WithValue(ctx, p2pserver.P2P_SERVER_KEY, bs.p2pServ)
-		ctx = context.WithValue(ctx, network.PP_NETWORK_KEY, bs.ppNetwork)
+		ctx = context.WithValue(ctx, types.P2P_SERVER_KEY, bs.p2pServ)
+		ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
 		go rest.StartHTTPServ(ctx)
 	} else {
 		utils.ErrorLog("Missing configuration for rest port")
@@ -243,7 +235,7 @@ func (bs *BaseServer) startRestServer() error {
 func (bs *BaseServer) Stop() {
 	utils.DebugLogf("BaseServer.Stop ... ")
 	if bs.ipcServ != nil {
-		bs.ipcServ.stop()
+		_ = bs.ipcServ.stop()
 	}
 	if bs.httpRpcServ != nil {
 		bs.httpRpcServ.stop()

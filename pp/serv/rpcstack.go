@@ -99,6 +99,7 @@ func (h *httpServer) setListenAddr(host string, port int) error {
 }
 
 // listenAddr returns the listening address of the server.
+//nolint:unused
 func (h *httpServer) listenAddr() string {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -151,9 +152,17 @@ func (h *httpServer) start(ctx context.Context) error {
 	}
 	h.listener = listener
 	if h.tls {
-		go h.server.ServeTLS(listener, h.cert, h.key)
+		go func() {
+			if err = h.server.ServeTLS(listener, h.cert, h.key); err != nil {
+				utils.ErrorLog(err)
+			}
+		}()
 	} else {
-		go h.server.Serve(listener)
+		go func() {
+			if err = h.server.Serve(listener); err != nil {
+				utils.ErrorLog(err)
+			}
+		}()
 	}
 
 	if h.wsAllowed() {
@@ -233,6 +242,7 @@ func checkPath(r *http.Request, path string) bool {
 }
 
 // validatePrefix checks if 'path' is a valid configuration value for the RPC prefix option.
+//nolint:unused
 func validatePrefix(what, path string) error {
 	if path == "" {
 		return nil
@@ -272,8 +282,8 @@ func (h *httpServer) doStop() {
 		h.wsHandler.Store((*rpcHandler)(nil))
 		wsHandler.server.Stop()
 	}
-	h.server.Shutdown(context.Background())
-	h.listener.Close()
+	_ = h.server.Shutdown(context.Background())
+	_ = h.listener.Close()
 	utils.Log("HTTP server stopped", "endpoint", h.listener.Addr())
 
 	// Clear out everything to allow re-configuring it later.
@@ -336,6 +346,7 @@ func (h *httpServer) enableWS(apis []rpc.API, config wsConfig) error {
 }
 
 // stopWS disables JSON-RPC over WebSocket and also stops the server if it only serves WebSocket.
+//nolint:unused
 func (h *httpServer) stopWS() {
 	h.mu.Lock()
 	defer h.mu.Unlock()

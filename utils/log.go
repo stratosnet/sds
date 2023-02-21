@@ -92,22 +92,23 @@ func NewTrafficLogger(filePath string, enableStd, enableFile bool) *CombinedLogg
 	return TrafficLogger
 }
 
-//Log calls default logger and output info log
+// DumpTraffic Log calls default logger and output info log
 func DumpTraffic(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
 	TrafficLogger.LogDepth(Info, 4, v...)
 }
 
 func GetLastLinesFromTrafficLog(path string, n uint64) []string {
-
 	file, err := os.Open(path)
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	line := ""
-	lines := []string{}
+	var lines []string
 	var cursor int64 = 0
 	stat, _ := file.Stat()
 	filesize := stat.Size()
@@ -116,10 +117,10 @@ func GetLastLinesFromTrafficLog(path string, n uint64) []string {
 		line = ""
 		for {
 			cursor -= 1
-			file.Seek(cursor, io.SeekEnd)
+			_, _ = file.Seek(cursor, io.SeekEnd)
 
 			char := make([]byte, 1)
-			file.Read(char)
+			_, _ = file.Read(char)
 
 			if cursor != -1 && (char[0] == 10 || char[0] == 13) {
 				break
@@ -192,7 +193,7 @@ func (l *Logger) Log(level LogLevel, v ...interface{}) {
 	if l.enabled {
 		l.logger.SetPrefix(l.GetLevelString(level))
 		//l.stdLogger.Println(v...)
-		l.logger.Output(3, fmt.Sprintln(v...))
+		_ = l.logger.Output(3, fmt.Sprintln(v...))
 	}
 }
 
@@ -204,7 +205,7 @@ func (l *Logger) LogDepth(level LogLevel, calldepth int, v ...interface{}) {
 	if l.enabled && l.logger != nil {
 		l.logger.SetPrefix(l.GetLevelString(level))
 		//l.stdLogger.Println(v...)
-		l.logger.Output(calldepth, fmt.Sprintln(v...))
+		_ = l.logger.Output(calldepth, fmt.Sprintln(v...))
 	}
 }
 

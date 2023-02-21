@@ -27,7 +27,6 @@ func main() {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	return
 }
 
 func getRootCmd() *cobra.Command {

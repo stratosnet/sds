@@ -3,7 +3,6 @@ package p2pserver
 import (
 	"context"
 	"math/rand"
-	"sync"
 
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/pp"
@@ -12,14 +11,10 @@ import (
 
 type OptimalSp struct {
 	networkAddr string
-	mtx         sync.Mutex
 }
 
 var (
-	optSp               = &OptimalSp{}
-	minReloadSpInterval = 3
-	maxReloadSpInterval = 900 //15 min
-	retry               = 0
+	optSp = &OptimalSp{}
 )
 
 // ConnectToSP Checks if there is a connection to an SP node. If it doesn't, it attempts to create one with a random SP node.
@@ -52,7 +47,7 @@ func (p *P2pServer) ConnectToSP(ctx context.Context) (newConnection bool, err er
 	return false, errors.New("couldn't connect to any SP node")
 }
 
-// ConnectToOptSP connect if there is a detected optimal SP node.
+// ConfirmOptSP connect if there is a detected optimal SP node.
 func (p *P2pServer) ConfirmOptSP(ctx context.Context, spNetworkAddr string) {
 	pp.DebugLog(ctx, "current sp ", p.mainSpConn.GetName(), " to be altered to new optimal SP ", spNetworkAddr)
 	if p.mainSpConn.GetName() == spNetworkAddr {

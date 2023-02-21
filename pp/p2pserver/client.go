@@ -16,13 +16,11 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// offline offline
 type offline struct {
 	IsSp           bool
 	NetworkAddress string
 }
 
-// initClient
 func (p *P2pServer) initClient() {
 	p.offlineChan = make(chan *offline, 2)
 	p.cachedConnMap = &sync.Map{}
@@ -45,7 +43,6 @@ func (p *P2pServer) NewClientToPp(ctx context.Context, server string, heartbeat 
 	return p.newClient(ctx, server, heartbeat, false, false)
 }
 
-// NewClient
 func (p *P2pServer) newClient(ctx context.Context, server string, heartbeat, reconnect, spconn bool) (*cf.ClientConn, error) {
 	onConnect := cf.OnConnectOption(func(c core.WriteCloser) bool {
 		utils.DebugLog("on connect")
@@ -127,21 +124,19 @@ func (p *P2pServer) newClient(ctx context.Context, server string, heartbeat, rec
 	return conn, nil
 }
 
-// GetConnectionName
 func (p *P2pServer) GetConnectionName(conn core.WriteCloser) string {
 	if conn == nil {
 		return ""
 	}
-	switch conn.(type) {
+	switch conn := conn.(type) {
 	case *core.ServerConn:
-		return conn.(*core.ServerConn).GetName()
+		return conn.GetName()
 	case *cf.ClientConn:
-		return conn.(*cf.ClientConn).GetName()
+		return conn.GetName()
 	}
 	return ""
 }
 
-// GetClientConn
 func (p *P2pServer) GetClientConn(networkAddr string) (*cf.ClientConn, bool) {
 	p.clientMutex.Lock()
 	defer p.clientMutex.Unlock()
@@ -152,7 +147,6 @@ func (p *P2pServer) GetClientConn(networkAddr string) (*cf.ClientConn, bool) {
 	}
 }
 
-// CleanUpConnMap
 func (p *P2pServer) CleanUpConnMap(fileHash string) {
 	p.cachedConnMap.Range(func(k, v interface{}) bool {
 		if strings.HasPrefix(k.(string), fileHash) {
@@ -162,7 +156,6 @@ func (p *P2pServer) CleanUpConnMap(fileHash string) {
 	})
 }
 
-// SetPpClientConn
 func (p *P2pServer) SetPpClientConn(ppConn *cf.ClientConn) {
 	p.ppConn = ppConn
 }
@@ -182,12 +175,12 @@ func (p *P2pServer) GetSpName() string {
 	return p.mainSpConn.GetName()
 }
 
-// StoreUploadConn access function for member downloadConnMap
+// StoreConnToCache access function for member cachedConnMap
 func (p *P2pServer) StoreConnToCache(key string, conn *cf.ClientConn) {
 	p.cachedConnMap.Store(key, conn)
 }
 
-// LoadUploadConn access function for member downloadConnMap
+// LoadConnFromCache access function for member cachedConnMap
 func (p *P2pServer) LoadConnFromCache(key string) (*cf.ClientConn, bool) {
 	if c, ok := p.cachedConnMap.Load(key); ok {
 		return c.(*cf.ClientConn), true
@@ -196,7 +189,7 @@ func (p *P2pServer) LoadConnFromCache(key string) (*cf.ClientConn, bool) {
 	}
 }
 
-// DeleteUploadConn access function for member downloadConnMap
+// DeleteConnFromCache access function for member cachedConnMap
 func (p *P2pServer) DeleteConnFromCache(key string) {
 	p.cachedConnMap.Delete(key)
 }
@@ -212,17 +205,15 @@ func (p *P2pServer) RangeCachedConn(prefix string, rf func(k, v interface{}) boo
 	p.cachedConnMap.Range(rf)
 }
 
-// GetSpConn
 func (p *P2pServer) GetSpConn() *cf.ClientConn {
 	return p.mainSpConn
 }
 
-// GetPpConn
 func (p *P2pServer) GetPpConn() *cf.ClientConn {
 	return p.ppConn
 }
 
-// RecordSpMaintenance, return boolean flag of switching to new SP
+// RecordSpMaintenance return boolean flag of switching to new SP
 func (p *P2pServer) RecordSpMaintenance(spP2pAddress string, recordTime time.Time) bool {
 	if p.SPMaintenanceMap == nil {
 		p.resetSPMaintenanceMap(spP2pAddress, recordTime, MIN_RECONNECT_INTERVAL_THRESHOLD)

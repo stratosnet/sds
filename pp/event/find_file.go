@@ -15,7 +15,6 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// FindMyFileList
 func FindFileList(ctx context.Context, fileName string, walletAddr string, pageId uint64, keyword string, fileType int, isUp bool) {
 	if setting.CheckLogin() {
 		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.FindFileListData(fileName, walletAddr, pageId, keyword,
@@ -23,13 +22,11 @@ func FindFileList(ctx context.Context, fileName string, walletAddr string, pageI
 	}
 }
 
-// ReqFindMyFileList ReqFindMyFileList
 func ReqFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("+++++++++++++++++++++++++++++++++++++++++++++++++++")
 	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
-// RspFindMyFileList
 func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	pp.DebugLog(ctx, "get RspFindMyFileList")
 	var target protos.RspFindMyFileList

@@ -83,7 +83,6 @@ func buildAndSignStdTx(protoConfig client.TxConfig, txBuilder client.TxBuilder, 
 	// Collect list of signatures to do. Must match order of GetSigners() method in cosmos-sdk's stdtx.go
 	var signaturesToDo []relaytypes.SignatureKey
 	signersSeen := make(map[string]bool)
-	var sdkMsgs []sdktypes.Msg
 	for _, msg := range unsignedMsgs {
 		for _, signaturekey := range msg.SignatureKeys {
 			if !signersSeen[signaturekey.Address] {
@@ -91,7 +90,6 @@ func buildAndSignStdTx(protoConfig client.TxConfig, txBuilder client.TxBuilder, 
 				signaturesToDo = append(signaturesToDo, signaturekey)
 			}
 		}
-		sdkMsgs = append(sdkMsgs, msg.Msg)
 	}
 
 	var sigsV2 []signingtypes.SignatureV2

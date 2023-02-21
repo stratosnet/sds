@@ -16,7 +16,7 @@ func (p *Network) RegisterToSP(ctx context.Context, toSP bool) {
 		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqRegisterData(), header.ReqRegister)
 		pp.Log(ctx, "SendMessage(conn, req, header.ReqRegister) to SP")
 	} else {
-		p2pserver.GetP2pServer(ctx).SendMessage(ctx, p2pserver.GetP2pServer(ctx).GetPpConn(), requests.ReqRegisterData(), header.ReqRegister)
+		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, p2pserver.GetP2pServer(ctx).GetPpConn(), requests.ReqRegisterData(), header.ReqRegister)
 		pp.Log(ctx, "SendMessage(conn, req, header.ReqRegister) to PP")
 	}
 }

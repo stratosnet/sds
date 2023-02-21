@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/protos"
@@ -17,6 +16,7 @@ import (
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/encryption"
 	"github.com/stratosnet/sds/utils/encryption/hdkey"
+	"google.golang.org/protobuf/proto"
 )
 
 // UploadSliceTask represents a slice upload task that is in progress
@@ -421,8 +421,7 @@ func CreateUploadSliceTaskStream(ctx context.Context, slice *SliceWithStatus, pp
 		data = file.GetDumpySliceData(uploadTask.FileHash, slice.SliceNumber)
 		sliceTotalSize = uint64(len(data))
 	} else {
-		var sliceName string
-		sliceName = videoSliceInfo.SliceToSegment[slice.SliceNumber]
+		sliceName := videoSliceInfo.SliceToSegment[slice.SliceNumber]
 		slicePath := videoFolder + "/" + sliceName
 		if file.GetFileInfo(slicePath) == nil {
 			return nil, errors.New("wrong file path")

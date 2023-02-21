@@ -75,7 +75,7 @@ func main() {
 				// Handle rsp
 				if err = json.Unmarshal(message, &rsp); err == nil {
 					var res string
-					err = json.Unmarshal(rsp.Result, &res)
+					_ = json.Unmarshal(rsp.Result, &res)
 					subid = res
 					test_step++
 				}

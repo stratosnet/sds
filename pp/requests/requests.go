@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/types/bech32"
-	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
@@ -25,6 +24,7 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/types"
+	"google.golang.org/protobuf/proto"
 )
 
 func ReqRegisterData() *protos.ReqRegister {
@@ -855,7 +855,6 @@ func ReqDowngradeInfo() *protos.ReqGetPPDowngradeInfo {
 	}
 }
 
-// PPMsgHeader
 func PPMsgHeader(data []byte, head string) header.MessageHead {
 	return header.MakeMessageHeader(1, setting.Config.Version.AppVer, uint32(len(data)), head)
 }

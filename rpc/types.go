@@ -30,3 +30,7 @@ type jsonWriter interface {
 	// RemoteAddr returns the peer address of the connection.
 	remoteAddr() string
 }
+
+type ContextKey struct {
+	Key string
+}

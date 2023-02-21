@@ -74,9 +74,7 @@ func (m *AutoCleanMap) pushDelete(wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		select {
-		case <-time.After(m.delay):
-		}
+		time.Sleep(m.delay)
 	}()
 }
 
@@ -153,8 +151,6 @@ func (m *AutoCleanUnsafeMap) pushDelete(wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		select {
-		case <-time.After(m.delay):
-		}
+		time.Sleep(m.delay)
 	}()
 }

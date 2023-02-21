@@ -20,5 +20,5 @@ func Alloc(size uintptr) *[]byte {
 
 // Free free memory space
 func Free(ptr *[]byte) {
-	C.free(unsafe.Pointer(ptr))
+	C.free(unsafe.Pointer(ptr)) //nolint:govet
 }

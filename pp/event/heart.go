@@ -48,7 +48,6 @@ func ReqHBLatencyCheckSpList(ctx context.Context, conn core.WriteCloser) {
 	myClockLatency.AddJobRepeat(time.Second*utils.LatencyCheckSpListTimeout, 1, connectAndRegisterToOptSp(ctx))
 }
 
-// SendLatencyCheckMessageToSPList
 func SendLatencyCheckMessageToSPList(ctx context.Context) {
 	utils.DebugLogf("[SP_LATENCY_CHECK] SendHeartbeatToSPList, num of SPs: %v", len(setting.Config.SPList))
 	if len(setting.Config.SPList) < 2 {
@@ -87,14 +86,14 @@ func checkSingleSpLatency(ctx context.Context, server string, heartbeat bool) {
 			P2PAddressPp:     setting.P2PAddress,
 			NetworkAddressSp: server,
 		}
-		p2pserver.GetP2pServer(ctx).SendMessage(ctx, spConn, pb, header.ReqLatencyCheck)
+		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, spConn, pb, header.ReqLatencyCheck)
 		if p2pserver.GetP2pServer(ctx).GetSpName() != server {
 			p2pserver.GetP2pServer(ctx).StoreBufferedSpConn(spConn)
 		}
 	}
 }
 
-// Request latency measurement from a pp and to a pp
+// ReqLatencyCheckToPp Request latency measurement from a pp and to a pp
 func ReqLatencyCheckToPp(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqLatencyCheck
 	if !requests.UnmarshalData(ctx, &target) {
@@ -105,8 +104,7 @@ func ReqLatencyCheckToPp(ctx context.Context, conn core.WriteCloser) {
 		HbType:       target.HbType,
 		P2PAddressPp: setting.Config.P2PAddress,
 	}
-	p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, response, header.RspLatencyCheck)
-	return
+	_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, response, header.RspLatencyCheck)
 }
 
 func RspHBLatencyCheckSpList(ctx context.Context, _ core.WriteCloser) {

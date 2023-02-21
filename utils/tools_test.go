@@ -26,6 +26,9 @@ func TestECCSignAndVerify(t *testing.T) {
 	masterPriv, ch := hd.ComputeMastersFromSeed(seed)
 	hdPath := "44'/606'/0'/0/0"
 	derivedKey, err := hd.DerivePrivateKeyForPath(masterPriv, ch, hdPath)
+	if err != nil {
+		t.Fatal("couldn't derive private key from seed: " + err.Error())
+	}
 	privateKeyECDSA := crypto.ToECDSAUnsafe(derivedKey[:])
 	privKeyBytes := math.PaddedBigBytes(privateKeyECDSA.D, 32)
 

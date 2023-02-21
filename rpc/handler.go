@@ -76,7 +76,7 @@ func (h *handler) handleBatch(msgs []*jsonrpcMessage) {
 	// Emit error response for empty batches:
 	if len(msgs) == 0 {
 		h.startCallProc(func(cp *callProc) {
-			h.conn.writeJSON(cp.ctx, errorMessage(&invalidRequestError{"empty batch"}))
+			_ = h.conn.writeJSON(cp.ctx, errorMessage(&invalidRequestError{"empty batch"}))
 		})
 		return
 	}
@@ -101,10 +101,10 @@ func (h *handler) handleBatch(msgs []*jsonrpcMessage) {
 		}
 		h.addSubscriptions(cp.notifiers)
 		if len(answers) > 0 {
-			h.conn.writeJSON(cp.ctx, answers)
+			_ = h.conn.writeJSON(cp.ctx, answers)
 		}
 		for _, n := range cp.notifiers {
-			n.activate()
+			_ = n.activate()
 		}
 	})
 }
@@ -118,10 +118,10 @@ func (h *handler) handleMsg(msg *jsonrpcMessage) {
 		answer := h.handleCallMsg(cp, msg)
 		h.addSubscriptions(cp.notifiers)
 		if answer != nil {
-			h.conn.writeJSON(cp.ctx, answer)
+			_ = h.conn.writeJSON(cp.ctx, answer)
 		}
 		for _, n := range cp.notifiers {
-			n.activate()
+			_ = n.activate()
 		}
 	})
 }
@@ -283,9 +283,9 @@ func (h *handler) handleCallMsg(ctx *callProc, msg *jsonrpcMessage) *jsonrpcMess
 				ctx = append(ctx, "errdata", resp.Error.Data)
 			}
 			utils.WarnLog("Served "+msg.Method, ctx)
-		} else {
-			//utils.DebugLog("Served "+msg.Method, ctx)
-		}
+		} /*else {
+			utils.DebugLog("Served "+msg.Method, ctx)
+		}*/
 		return resp
 	case msg.hasValidID():
 		return msg.errorResponse(&invalidRequestError{"invalid request"})

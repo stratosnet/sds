@@ -49,7 +49,7 @@ func PubKeyBytesToAddress(pubKey []byte) types.Address {
 }
 
 func PrivKeyBytesToSdkPrivKey(privKey []byte) cryptotypes.PrivKey {
-	retPrivKey := sdked25519.PrivKey{Key: privKey}
+	retPrivKey := sdked25519.PrivKey{Key: privKey} //nolint:staticcheck
 	return &retPrivKey
 }
 

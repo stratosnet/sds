@@ -15,19 +15,16 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// DeleteFile
 func DeleteFile(ctx context.Context, fileHash string) {
 	if setting.CheckLogin() {
 		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteFileData(fileHash), header.ReqDeleteFile)
 	}
 }
 
-// ReqDeleteFile
 func ReqDeleteFile(ctx context.Context, conn core.WriteCloser) {
 	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
-// RspDeleteFile
 func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeleteFile
 	if requests.UnmarshalData(ctx, &target) {
@@ -47,27 +44,21 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 func ReqDeleteSlice(ctx context.Context, conn core.WriteCloser) {
 	switch conn.(type) {
 	case *cf.ClientConn:
-		{
-			var target protos.ReqDeleteSlice
-			if requests.UnmarshalData(ctx, &target) {
-				if target.P2PAddress == setting.P2PAddress {
-					if file.DeleteSlice(target.SliceHash) != nil {
-						requests.RspDeleteSliceData(target.SliceHash, "failed to delete, file not exist", false)
-					} else {
-						requests.RspDeleteSliceData(target.SliceHash, "delete successfully", true)
-					}
+		var target protos.ReqDeleteSlice
+		if requests.UnmarshalData(ctx, &target) {
+			if target.P2PAddress == setting.P2PAddress {
+				if file.DeleteSlice(target.SliceHash) != nil {
+					requests.RspDeleteSliceData(target.SliceHash, "failed to delete, file not exist", false)
+				} else {
+					requests.RspDeleteSliceData(target.SliceHash, "delete successfully", true)
 				}
 			}
 		}
-
 	default:
 		utils.DebugLog("get a delete msg from client, ERROR!!!!")
-		break
 	}
-
 }
 
-// RspDeleteSlice RspDeleteSlice
 func RspDeleteSlice(ctx context.Context, conn core.WriteCloser) {
 	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }

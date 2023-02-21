@@ -92,8 +92,6 @@ type Client struct {
 
 type reconnectFunc func(ctx context.Context) (ServerCodec, error)
 
-type clientContextKey struct{}
-
 type clientConn struct {
 	codec   ServerCodec
 	handler *handler
@@ -103,11 +101,11 @@ func (c *Client) newClientConn(conn ServerCodec, ctx context.Context) *clientCon
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	ctx = context.WithValue(ctx, clientContextKey{}, c)
+	ctx = context.WithValue(ctx, ContextKey{Key: "conn"}, c)
 
 	// Http connections have already set the scheme
 	if !c.isHTTP() && c.scheme != "" {
-		ctx = context.WithValue(ctx, "scheme", c.scheme)
+		ctx = context.WithValue(ctx, ContextKey{Key: "scheme"}, c.scheme)
 	}
 	handler := newHandler(ctx, conn, c.idgen, c.services)
 	return &clientConn{conn, handler}
@@ -183,10 +181,10 @@ func DialContext(ctx context.Context, rawurl string) (*Client, error) {
 	}
 }
 
-// Client retrieves the client from the context, if any. This can be used to perform
+// ClientFromContext retrieves the client from the context, if any. This can be used to perform
 // 'reverse calls' in a handler method.
 func ClientFromContext(ctx context.Context) (*Client, bool) {
-	client, ok := ctx.Value(clientContextKey{}).(*Client)
+	client, ok := ctx.Value(ContextKey{Key: "conn"}).(*Client)
 	return client, ok
 }
 
@@ -639,7 +637,7 @@ func (c *Client) read(codec ServerCodec) {
 	for {
 		msgs, batch, err := codec.readBatch()
 		if _, ok := err.(*json.SyntaxError); ok {
-			codec.writeJSON(context.Background(), errorMessage(&parseError{err.Error()}))
+			_ = codec.writeJSON(context.Background(), errorMessage(&parseError{err.Error()}))
 		}
 		if err != nil {
 			c.readErr <- err

@@ -24,9 +24,13 @@ func genConfig(cmd *cobra.Command, args []string) error {
 		path = filepath.Join(home, path)
 	}
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	if _, err = os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(filepath.Dir(path), 0700)
 	}
+	if err != nil {
+		return err
+	}
+
 	err = setting.LoadConfig(path)
 	if err != nil {
 		fmt.Println("generating default config file")
@@ -37,6 +41,5 @@ func genConfig(cmd *cobra.Command, args []string) error {
 
 	}
 
-	setting.LoadConfig(path)
-	return nil
+	return setting.LoadConfig(path)
 }
