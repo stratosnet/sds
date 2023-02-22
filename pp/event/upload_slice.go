@@ -238,7 +238,7 @@ func RspReportUploadSliceResult(ctx context.Context, conn core.WriteCloser) {
 }
 
 func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
-	tkDataLen := len(tk.Data)
+	tkDataLen := int(tk.SliceTotalSize)
 	fileHash := tk.FileHash
 	storageP2pAddress := tk.SliceNumAddr.PpInfo.P2PAddress
 	storageNetworkAddress := tk.SliceNumAddr.PpInfo.NetworkAddress
@@ -265,6 +265,7 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 		return sendSlice(newCtx, requests.ReqUploadFileSliceData(tk, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
 	}
 
+	data := file.GetSliceDataFromTmp(tk.FileHash, tk.SliceOffsetInfo.SliceHash)
 	dataStart := 0
 	dataEnd := setting.MAXDATA
 	for {
@@ -296,7 +297,7 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 		upSendCostTimeMap.mux.Unlock()
 		utils.DebugLogf("upSendPacketMap.Store <== K:%v, V:%v]", tkSliceUID, ctStat)
 		if dataEnd < (tkDataLen + 1) {
-			newTask.Data = tk.Data[dataStart:dataEnd]
+			newTask.Data = data[dataStart:dataEnd]
 
 			pp.DebugLogf(newCtx, "Uploading slice data %v-%v (total %v)", dataStart, dataEnd, newTask.SliceTotalSize)
 			err := sendSlice(newCtx, requests.ReqUploadFileSliceData(newTask, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
@@ -307,7 +308,7 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 			dataEnd += setting.MAXDATA
 		} else {
 			pp.DebugLogf(newCtx, "Uploading slice data %v-%v (total %v)", dataStart, tkDataLen, newTask.SliceTotalSize)
-			newTask.Data = tk.Data[dataStart:]
+			newTask.Data = data[dataStart:]
 			return sendSlice(newCtx, requests.ReqUploadFileSliceData(newTask, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
 		}
 	}

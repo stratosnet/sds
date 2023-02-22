@@ -103,32 +103,43 @@ func GetSliceSize(sliceHash string) int64 {
 	}
 
 }
-
-func SaveTmpSliceData(fileHash, sliceHash string, data []byte) error {
-	wmutex.Lock()
-	defer wmutex.Unlock()
-
+func OpenTmpFile(fileHash, fileName string) *os.File {
 	tmpFileFolderPath := getTmpFileFolderPath(fileHash)
 	folderPath := filepath.Join(tmpFileFolderPath)
 	exist, err := PathExists(folderPath)
 	if err != nil {
-		return err
+		return nil
 	}
 	if !exist {
 		if err = os.MkdirAll(folderPath, os.ModePerm); err != nil {
-			return err
+			return nil
 		}
 	}
 
-	fileMg, err := os.OpenFile(getTmpSlicePath(fileHash, sliceHash), os.O_CREATE|os.O_RDWR, 0777)
+	fileMg, err := os.OpenFile(getTmpSlicePath(fileHash, fileName), os.O_CREATE|os.O_RDWR, 0777)
+	if err != nil {
+		return nil
+	}
+	return fileMg
+}
+
+func RenameTmpFile(fileHash, srcFile, dstFile string) error {
+	return os.Rename(getTmpSlicePath(fileHash, srcFile), getTmpSlicePath(fileHash, dstFile))
+}
+
+func SaveTmpSliceData(fileHash, sliceHash string, data []byte) error {
+	wmutex.Lock()
+	defer wmutex.Unlock()
+	fileMg := OpenTmpFile(fileHash, sliceHash)
+	if fileMg == nil {
+		return errors.New("failed open tmp file")
+	}
+
 	defer func() {
 		_ = fileMg.Close()
 	}()
-	if err != nil {
-		return errors.Wrap(err, "error initializing file")
-	}
 
-	_, err = fileMg.Write(data)
+	_, err := fileMg.Write(data)
 	if err != nil {
 		return errors.Wrap(err, "error saving file")
 	}
@@ -155,6 +166,15 @@ func SaveSliceData(data []byte, sliceHash string, offset uint64) bool {
 	return true
 }
 
+func WriteFile(data []byte, offset int64, fileMg *os.File) bool {
+	_, err := fileMg.Seek(offset, 0)
+	if err != nil {
+		return false
+	}
+	_, err = fileMg.Write(data)
+	return err == nil
+}
+
 func SaveFileData(ctx context.Context, data []byte, offset int64, sliceHash, fileName, fileHash, savePath, fileReqId string) bool {
 
 	utils.DebugLog("sliceHash", sliceHash)
@@ -170,27 +190,16 @@ func SaveFileData(ctx context.Context, data []byte, offset int64, sliceHash, fil
 		fileName = fileHash
 	}
 	fileMg, err := os.OpenFile(GetDownloadTmpPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR, 0777)
+	if err != nil {
+		return false
+	}
 	defer func() {
 		_ = fileMg.Close()
 	}()
 	if err != nil {
-		pp.ErrorLog(ctx, "SaveFileData err", err)
-	}
-	if err != nil {
-		pp.ErrorLog(ctx, "error initialize file", err)
 		return false
 	}
-	// _, err = fileMg.WriteAt(data, offset)
-	_, err = fileMg.Seek(offset, 0)
-	if err != nil {
-		pp.ErrorLog(ctx, "error save file", err)
-		return false
-	}
-	_, err = fileMg.Write(data)
-	if err != nil {
-		pp.ErrorLog(ctx, "error writing to file", err)
-	}
-	return true
+	return WriteFile(data, offset, fileMg)
 }
 
 func SaveDownloadProgress(ctx context.Context, sliceHash, fileName, fileHash, savePath, fileReqId string) {

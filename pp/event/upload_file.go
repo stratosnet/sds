@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -75,7 +76,7 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ htt
 	}
 }
 
-func RequestUploadStream(ctx context.Context, path string, _ http.ResponseWriter) {
+func RequestUploadStream(ctx context.Context, path string) {
 	pp.DebugLog(ctx, "______________path", path)
 	if !setting.CheckLogin() {
 		return
@@ -224,6 +225,7 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 
 func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
 	var slices []*protos.SliceHashAddr
+	var filesize uint64
 	for _, slice := range target.PpList {
 		slices = append(slices, &protos.SliceHashAddr{
 			SliceHash:   "",
@@ -233,6 +235,7 @@ func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
 			PpInfo:      slice.PpInfo,
 			SpNodeSign:  slice.SpNodeSign,
 		})
+		filesize = filesize + slice.SliceOffset.SliceOffsetEnd - slice.SliceOffset.SliceOffsetStart
 	}
 
 	// Create upload task
@@ -245,7 +248,14 @@ func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
 	var streamTotalSize int64
 	var hlsInfo file.HlsInfo
 	if target.IsVideoStream {
-		file.VideoToHls(ctx, target.FileHash)
+		if file.IsFileRpcRemote(uploadTask.FileHash) {
+			remotePath := strings.Split(file.GetFilePath(target.FileHash), ":")
+			fileName := remotePath[len(remotePath)-1]
+			file.VideoToHls(ctx, target.FileHash, filepath.Join(setting.GetRootPath(), file.TEMP_FOLDER, target.FileHash, fileName))
+		} else {
+			file.VideoToHls(ctx, target.FileHash, file.GetFilePath(target.FileHash))
+		}
+
 		if hlsInfo, err := file.GetHlsInfo(target.FileHash, uint64(len(target.PpList))); err != nil {
 			pp.ErrorLog(ctx, "Hls transformation failed: ", err)
 			return
