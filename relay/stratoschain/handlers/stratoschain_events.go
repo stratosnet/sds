@@ -533,9 +533,9 @@ func UpdateEffectiveStakeHandler() func(event coretypes.ResultEvent) {
 				continue
 			}
 
-			effectiveStakeAfter, ok := new(big.Int).SetString(event["update_effective_stake.effective_stake_change"], 10)
+			effectiveStakeAfter, ok := new(big.Int).SetString(event["update_effective_stake.effective_stake_after"], 10)
 			if !ok {
-				utils.DebugLog("Invalid effective_stake_change in big integer in the update_effective_stake message from stratos-chain")
+				utils.DebugLog("Invalid effective_stake_after in big integer in the update_effective_stake message from stratos-chain")
 				continue
 			}
 			utils.DebugLogf("network_address: %v, isUnsuspendedDuringUpdate is %v, effectiveStakeAfter: %v",
@@ -554,9 +554,10 @@ func UpdateEffectiveStakeHandler() func(event coretypes.ResultEvent) {
 			updatedPPs = append(updatedPPs, updatedPP)
 		}
 
-		if len(updatedPPs) != initialEventCount {
-			utils.ErrorLogf("updatedEffectiveStake message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
-				len(updatedPPs), initialEventCount-len(processedEvents), len(processedEvents)-len(updatedPPs))
+		if len(updatedPPs) > 0 {
+			utils.ErrorLogf("updatedEffectiveStake message handler is processing events to unsuspend pp "+
+				"(ToBeUnsuspended Events: %v, Invalid Events: %v, Total : %v",
+				len(updatedPPs), initialEventCount-len(processedEvents), initialEventCount)
 		}
 		if len(updatedPPs) == 0 {
 			return
