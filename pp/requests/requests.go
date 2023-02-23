@@ -179,9 +179,9 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress
 
 // RequestUploadFileData assume the PP's current wallet is the owner, otherwise RequestUploadFile() should be used instead
 func RequestUploadFileData(ctx context.Context, paths, storagePath string, isCover, isVideoStream, isEncrypted bool) *protos.ReqUploadFile {
-	info := file.GetFileInfo(paths)
-	if info == nil {
-		pp.ErrorLog(ctx, "wrong filePath")
+	info, err := file.GetFileInfo(paths)
+	if err != nil {
+		pp.ErrorLog(ctx, "wrong filePath", err.Error())
 		return nil
 	}
 	fileName := info.Name()

@@ -113,11 +113,15 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-	if task.SaveTransferData(&target) {
-		// All data has been received
-		SendReportBackupSliceResult(ctx, target.TaskId, target.SliceHash, target.SpP2PAddress, true, false)
-		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspTransferDownloadResultData(target.TaskId, target.SliceHash, target.SpP2PAddress), header.RspTransferDownloadResult)
+
+	err := task.SaveTransferData(&target)
+	if err != nil {
+		utils.ErrorLog("failed saving transfer data", err.Error())
+		return
 	}
+	// All data has been received
+	SendReportBackupSliceResult(ctx, target.TaskId, target.SliceHash, target.SpP2PAddress, true, false)
+	_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspTransferDownloadResultData(target.TaskId, target.SliceHash, target.SpP2PAddress), header.RspTransferDownloadResult)
 }
 
 // RspTransferDownloadResult The receiver PP sends this msg when the download is finished. If successful, we can report the result and delete the file

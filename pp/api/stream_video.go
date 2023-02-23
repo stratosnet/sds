@@ -203,8 +203,9 @@ func GetVideoSlice(w http.ResponseWriter, req *http.Request) {
 
 	utils.DebugLog("Start getting the slice from local storage", body)
 
-	video := file.GetSliceData(sliceHash)
-	if video == nil {
+	video, err := file.GetSliceData(sliceHash)
+	if err != nil {
+		utils.DebugLog("failed get slice data ", err.Error())
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "Could not find the video segment!").ToBytes())
 		return
