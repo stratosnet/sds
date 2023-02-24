@@ -45,7 +45,7 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.6.0
-	github.com/stratosnet/stratos-chain v0.9.1-0.20230203144454-b1f447efc109
+	github.com/stratosnet/stratos-chain v0.9.1-0.20230224000107-41050bd6b092
 	github.com/tendermint/tendermint v0.34.25-0.20221221220620-936221e0a8d9
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	golang.org/x/crypto v0.4.0
