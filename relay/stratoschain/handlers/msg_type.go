@@ -14,4 +14,5 @@ const (
 	MSG_TYPE_FILE_UPLOAD            = "/stratos.sds.v1.MsgFileUpload"
 	MSG_TYPE_VOLUME_REPORT          = "/stratos.pot.v1.MsgVolumeReport"
 	MSG_TYPE_SLASHING_RESOURCE_NODE = "/stratos.pot.v1.MsgSlashingResourceNode"
+	MSG_TYPE_UPDATE_EFFECTIVE_STAKE = "/stratos.register.v1.MsgUpdateEffectiveStake"
 )

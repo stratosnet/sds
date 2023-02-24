@@ -64,4 +64,16 @@ func RspUpdatedStake(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	utils.Logf("get RspUpdatedStakePP, StakeBalance: %v, NodeTier: %v, Weight_Score: %v", target.StakeBalance, target.NodeTier, target.WeightScore)
+
+	// msg is not empty after stake being updated to 0wei
+	stakeBalanceAfter, err := utiltypes.ParseCoinNormalized(target.StakeBalance)
+	if err != nil {
+		return
+	}
+	if len(target.Result.Msg) > 0 &&
+		stakeBalanceAfter.IsZero() &&
+		target.NodeTier == "0" {
+		// change pp state to unbonding
+		setting.State = types.PP_UNBONDING
+	}
 }

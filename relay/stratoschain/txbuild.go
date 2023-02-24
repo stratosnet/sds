@@ -67,6 +67,25 @@ func BuildSlashingResourceNodeMsg(spP2pAddress, spWalletAddress []utiltypes.Addr
 	)
 }
 
+func BuildUpdateEffectiveStakeMsg(spP2pAddress, spWalletAddress []utiltypes.Address, ppP2pAddress utiltypes.Address, newEffectiveStake *big.Int) sdktypes.Msg {
+	var spP2pAddressSdk []types.SdsAddress
+	for _, p2pAddress := range spP2pAddress {
+		spP2pAddressSdk = append(spP2pAddressSdk, p2pAddress[:])
+	}
+	var spWalletAddressSdk []sdktypes.AccAddress
+	for _, walletAddress := range spWalletAddress {
+		spWalletAddressSdk = append(spWalletAddressSdk, walletAddress[:])
+	}
+
+	return registertypes.NewMsgUpdateEffectiveStake(
+		spP2pAddressSdk,
+		spWalletAddressSdk,
+		ppP2pAddress[:],
+		sdktypes.NewIntFromBigInt(newEffectiveStake),
+	)
+
+}
+
 // Stratos-chain 'register' module
 func BuildCreateResourceNodeMsg(moniker string, nodeType registertypes.NodeType, pubKey []byte, stakeAmount utiltypes.Coin, ownerAddress, p2pAddress utiltypes.Address) (sdktypes.Msg, error) {
 	if nodeType == 0 {
