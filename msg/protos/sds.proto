@@ -403,6 +403,8 @@ message ReqUpdatedStakePP {
   string tx_hash = 4;
   string stake_delta = 5;
   string current_stake = 6;
+  string available_token_before = 7;
+  string available_token_after = 8;
 }
 
 message ReqUpdatedStakeSP {

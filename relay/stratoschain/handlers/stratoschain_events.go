@@ -102,6 +102,8 @@ func UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 			"update_resource_node_stake.incr_stake",
 			"update_resource_node_stake.stake_delta",
 			"update_resource_node_stake.current_stake",
+			"update_resource_node_stake.available_token_before",
+			"update_resource_node_stake.available_token_after",
 		}
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
 		key := getCacheKey(requiredAttributes, result)
@@ -114,12 +116,14 @@ func UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 		req := &relayTypes.UpdatedStakePPReq{}
 		for _, event := range processedEvents {
 			req.PPList = append(req.PPList, &protos.ReqUpdatedStakePP{
-				P2PAddress:        event["update_resource_node_stake.network_address"],
-				OzoneLimitChanges: event["update_resource_node_stake.ozone_limit_changes"],
-				IncrStake:         event["update_resource_node_stake.incr_stake"],
-				TxHash:            txHash,
-				StakeDelta:        event["update_resource_node_stake.stake_delta"],
-				CurrentStake:      event["update_resource_node_stake.current_stake"],
+				P2PAddress:           event["update_resource_node_stake.network_address"],
+				OzoneLimitChanges:    event["update_resource_node_stake.ozone_limit_changes"],
+				IncrStake:            event["update_resource_node_stake.incr_stake"],
+				TxHash:               txHash,
+				StakeDelta:           event["update_resource_node_stake.stake_delta"],
+				CurrentStake:         event["update_resource_node_stake.current_stake"],
+				AvailableTokenBefore: event["update_resource_node_stake.available_token_before"],
+				AvailableTokenAfter:  event["update_resource_node_stake.available_token_after"],
 			})
 		}
 
@@ -445,8 +449,6 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 			"slashing.p2p_address",
 			"slashing.suspend",
 			"slashing.amount",
-			"slashing.is_effective_stake_changed",
-			"slashing.effective_stake",
 		}
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
 		key := getCacheKey(requiredAttributes, result)
@@ -467,26 +469,11 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 				utils.DebugLog("Invalid slashed amount in big integer in the slashing message from stratos-chain")
 				continue
 			}
-			isEffectiveStakeChanged, err := strconv.ParseBool(event["slashing.is_effective_stake_changed"])
-			if err != nil {
-				utils.DebugLog("Invalid flag of is_effective_stake_changed in the slashing message from stratos-chain", err)
-				continue
-			}
-			effectiveStake, ok := new(big.Int).SetString(event["slashing.effective_stake"], 10)
-			if !ok {
-				utils.DebugLog("Invalid effective stake in big integer in the slashing message from stratos-chain")
-				continue
-			}
-			utils.DebugLogf("slashed amount is %v, is_effective_stake_changed: %v, "+
-				"current effective stake: %v", slashedAmt.String(),
-				isEffectiveStakeChanged, effectiveStake.String())
 			slashedPP := relayTypes.SlashedPP{
-				P2PAddress:              event["slashing.p2p_address"],
-				QueryFirst:              false,
-				Suspended:               suspended,
-				SlashedAmt:              slashedAmt,
-				IsEffectiveStakeChanged: isEffectiveStakeChanged,
-				EffectiveStake:          effectiveStake,
+				P2PAddress: event["slashing.p2p_address"],
+				QueryFirst: false,
+				Suspended:  suspended,
+				SlashedAmt: slashedAmt,
 			}
 			slashedPPs = append(slashedPPs, slashedPP)
 		}
