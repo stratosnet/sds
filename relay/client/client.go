@@ -22,7 +22,9 @@ import (
 	"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/relay/sds"
 	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/relay/stratoschain/grpc"
 	"github.com/stratosnet/sds/relay/stratoschain/handlers"
+	"github.com/stratosnet/sds/relay/stratoschain/tx"
 	relaytypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
@@ -87,8 +89,8 @@ func (m *MultiClient) loadKeys(spHomePath string) error {
 }
 
 func (m *MultiClient) Start() error {
-	// REST client to send messages to stratos-chain
-	stratoschain.Url = setting.Config.StratosChain.RestServer
+	// GRPC client to send msgs to stratos-chain
+	grpc.URL = setting.Config.StratosChain.GrpcServer
 	// Client to subscribe to stratos-chain events and receive messages via websocket
 	m.stratosWebsocketUrl = setting.Config.StratosChain.WebsocketServer
 
@@ -296,13 +298,13 @@ func (m *MultiClient) txBroadcasterLoop() {
 			utils.ErrorLog("couldn't set tx builder", err)
 			return
 		}
-		txBytes, err := stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.BlockchainInfo.ChainId, unsignedMsgs)
+		txBytes, err := tx.BuildTxBytes(protoConfig, txBuilder, setting.Config.BlockchainInfo.ChainId, unsignedMsgs)
 		if err != nil {
 			utils.ErrorLog("couldn't build tx bytes", err)
 			return
 		}
 
-		gasInfo, err := stratoschain.SimulateTxBytes(txBytes)
+		gasInfo, err := grpc.Simulate(txBytes)
 		if err != nil {
 			utils.ErrorLog("couldn't simulate tx bytes", err)
 			return
@@ -324,13 +326,13 @@ func (m *MultiClient) txBroadcasterLoop() {
 			}),
 		)
 
-		txBytes, err = stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.BlockchainInfo.ChainId, unsignedMsgs)
+		txBytes, err = tx.BuildTxBytes(protoConfig, txBuilder, setting.Config.BlockchainInfo.ChainId, unsignedMsgs)
 		if err != nil {
 			utils.ErrorLog("couldn't build tx bytes", err)
 			return
 		}
 
-		err = stratoschain.BroadcastTxBytes(txBytes, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
+		err = grpc.BroadcastTx(txBytes, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
 		if err != nil {
 			utils.ErrorLog("couldn't broadcast transaction", err)
 			return

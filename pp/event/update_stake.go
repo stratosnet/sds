@@ -12,7 +12,7 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/relay/stratoschain/grpc"
 	"github.com/stratosnet/sds/utils"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 )
@@ -48,7 +48,7 @@ func RspUpdateStake(ctx context.Context, conn core.WriteCloser) {
 
 	setting.State = target.UpdateState
 
-	err := stratoschain.BroadcastTxBytes(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
+	err := grpc.BroadcastTx(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
 	if err != nil {
 		pp.ErrorLog(ctx, "The UpdateStake transaction couldn't be broadcast", err)
 	} else {

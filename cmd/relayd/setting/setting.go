@@ -40,7 +40,7 @@ type broadcast struct {
 }
 
 type stratoschain struct {
-	RestServer        string            `toml:"rest_server"`
+	GrpcServer        string            `toml:"grpc_server"`
 	WebsocketServer   string            `toml:"websocket_server"`
 	ConnectionRetries connectionRetries `toml:"connection_retries"`
 	Broadcast         broadcast         `toml:"broadcast"`
@@ -114,7 +114,7 @@ func defaultConfig() *config {
 			},
 		},
 		StratosChain: stratoschain{
-			RestServer:      "http://127.0.0.1:1317",
+			GrpcServer:      "http://127.0.0.1:9090",
 			WebsocketServer: "127.0.0.1:26657",
 			ConnectionRetries: connectionRetries{
 				Max:           100,

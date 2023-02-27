@@ -10,8 +10,9 @@ import (
 
 	"github.com/pelletier/go-toml"
 	"github.com/pkg/errors"
+
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/relay/stratoschain/grpc"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -173,7 +174,7 @@ func LoadConfig(configPath string) error {
 	IsAuto = Config.AutoRun
 	utils.DebugLogf("AutoRun flag: %v", IsAuto)
 	// todo: we shouldn't call stratoschain package to setup a global variable
-	stratoschain.Url = Config.StratosChainUrl
+	grpc.URL = Config.StratosChainUrl
 
 	// Initialize SPMap
 	for _, sp := range Config.SPList {
