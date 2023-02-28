@@ -8,7 +8,6 @@ import (
 
 	"github.com/stratosnet/sds/cmd/relayd/setting"
 	"github.com/stratosnet/sds/relay/stratoschain/handlers"
-	"github.com/stratosnet/sds/relay/stratoschain/tx"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -31,7 +30,7 @@ func BroadcastTx(txBytes []byte, mode sdktx.BroadcastMode) error {
 	if setting.Config == nil {
 		return nil // If the relayd config is nil, then this is ppd broadcasting a tx. We don't want to call the event handler in this case
 	}
-	events := tx.ProcessEvents(*resp)
+	events := handlers.ProcessEvents(*resp)
 	for msgType, event := range events {
 		if handler, ok := handlers.Handlers[msgType]; ok {
 			go handler(event)

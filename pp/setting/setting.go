@@ -271,7 +271,7 @@ func defaultConfig() *config {
 		IsLimitUploadSpeed:   false,
 		LimitUploadSpeed:     0,
 		ChainId:              "tropos-5",
-		StratosChainUrl:      "http://127.0.0.1:9090",
+		StratosChainUrl:      "127.0.0.1:9090",
 		GasAdjustment:        1.3,
 		RestPort:             "",
 		InternalPort:         "",

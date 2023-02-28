@@ -13,7 +13,7 @@ max = 100
 sleep_duration = 3000 # milliseconds
 
 [stratos_chain]
-grpc_server = "http://127.0.0.1:9090"
+grpc_server = "127.0.0.1:9090"
 websocket_server = "127.0.0.1:26657"
 [stratos_chain.connection_retries]
 max = 100
@@ -23,7 +23,7 @@ channel_size = 2000
 max_msg_per_tx = 250
 
 [blockchain_info]
-chain_id = "testchain_1-1"
+chain_id = "testchain"
 [blockchain_info.transactions]
 gas_price = "1000000000wei"
 gas_adjustment = 2.0

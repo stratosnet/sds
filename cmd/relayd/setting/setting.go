@@ -93,7 +93,7 @@ func LoadConfig(path string) error {
 func defaultConfig() *config {
 	return &config{
 		BlockchainInfo: blockchainInfoConfig{
-			ChainId: "testchain_1-1",
+			ChainId: "testchain",
 			Transactions: transactionsConfig{
 				GasPrice:      "1000000000wei",
 				GasAdjustment: 2.0,
@@ -114,7 +114,7 @@ func defaultConfig() *config {
 			},
 		},
 		StratosChain: stratoschain{
-			GrpcServer:      "http://127.0.0.1:9090",
+			GrpcServer:      "127.0.0.1:9090",
 			WebsocketServer: "127.0.0.1:26657",
 			ConnectionRetries: connectionRetries{
 				Max:           100,
