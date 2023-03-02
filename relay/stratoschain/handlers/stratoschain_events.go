@@ -161,9 +161,8 @@ func UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 			registertypes.AttributeKeyIncrStake,
 			registertypes.AttributeKeyStakeDelta,
 			registertypes.AttributeKeyCurrentStake,
-			"update_resource_node_stake.available_token_before",
-			"update_resource_node_stake.available_token_after",
-
+			registertypes.AttributeKeyAvailableTokenBefore,
+			registertypes.AttributeKeyAvailableTokenAfter,
 		)
 
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
@@ -177,15 +176,14 @@ func UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 		req := &relayTypes.UpdatedStakePPReq{}
 		for _, event := range processedEvents {
 			req.PPList = append(req.PPList, &protos.ReqUpdatedStakePP{
-				P2PAddress:        event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeStake, registertypes.AttributeKeyNetworkAddress)],
-				OzoneLimitChanges: event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeStake, registertypes.AttributeKeyOZoneLimitChanges)],
-				IncrStake:         event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeStake, registertypes.AttributeKeyIncrStake)],
-				TxHash:            txHash,
-				StakeDelta:        event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeStake, registertypes.AttributeKeyStakeDelta)],
-				CurrentStake:      event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeStake, registertypes.AttributeKeyCurrentStake)],
-				AvailableTokenBefore: event["update_resource_node_stake.available_token_before"],
-				AvailableTokenAfter:  event["update_resource_node_stake.available_token_after"],
-
+				P2PAddress:           event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeStake, registertypes.AttributeKeyNetworkAddress)],
+				OzoneLimitChanges:    event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeStake, registertypes.AttributeKeyOZoneLimitChanges)],
+				IncrStake:            event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeStake, registertypes.AttributeKeyIncrStake)],
+				TxHash:               txHash,
+				StakeDelta:           event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeStake, registertypes.AttributeKeyStakeDelta)],
+				CurrentStake:         event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeStake, registertypes.AttributeKeyCurrentStake)],
+				AvailableTokenBefore: event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeStake, registertypes.AttributeKeyAvailableTokenBefore)],
+				AvailableTokenAfter:  event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeStake, registertypes.AttributeKeyAvailableTokenAfter)],
 			})
 		}
 
@@ -571,11 +569,12 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 
 func UpdateEffectiveStakeHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		requiredAttributes := []string{
-			"update_effective_stake.network_address",
-			"update_effective_stake.is_unsuspended",
-			"update_effective_stake.effective_stake_after",
-		}
+		requiredAttributes := GetEventAttributes(registertypes.EventTypeUpdateEffectiveStake,
+			registertypes.AttributeKeyNetworkAddress,
+			registertypes.AttributeKeyIsUnsuspended,
+			registertypes.AttributeKeyEffectiveStakeAfter,
+		)
+
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
 		key := getCacheKey(requiredAttributes, result)
 		if _, ok := cache.Load(key); ok {
@@ -585,19 +584,19 @@ func UpdateEffectiveStakeHandler() func(event coretypes.ResultEvent) {
 		cache.Store(key, true)
 		var updatedPPs []relayTypes.UpdatedEffectiveStakePP
 		for _, event := range processedEvents {
-			isUnsuspendedDuringUpdate, err := strconv.ParseBool(event["update_effective_stake.is_unsuspended"])
+			isUnsuspendedDuringUpdate, err := strconv.ParseBool(event[GetEventAttribute(registertypes.EventTypeUpdateEffectiveStake, registertypes.AttributeKeyIsUnsuspended)])
 			if err != nil {
 				utils.DebugLog("Invalid is_unsuspended boolean in the update_effective_stake message from stratos-chain", err)
 				continue
 			}
 
-			effectiveStakeAfter, ok := new(big.Int).SetString(event["update_effective_stake.effective_stake_after"], 10)
+			effectiveStakeAfter, ok := new(big.Int).SetString(event[GetEventAttribute(registertypes.EventTypeUpdateEffectiveStake, registertypes.AttributeKeyEffectiveStakeAfter)], 10)
 			if !ok {
 				utils.DebugLog("Invalid effective_stake_after in big integer in the update_effective_stake message from stratos-chain")
 				continue
 			}
 			utils.DebugLogf("network_address: %v, isUnsuspendedDuringUpdate is %v, effectiveStakeAfter: %v",
-				event["update_effective_stake.network_address"], isUnsuspendedDuringUpdate, effectiveStakeAfter.String())
+				event[GetEventAttribute(registertypes.EventTypeUpdateEffectiveStake, registertypes.AttributeKeyNetworkAddress)], isUnsuspendedDuringUpdate, effectiveStakeAfter.String())
 
 			if !isUnsuspendedDuringUpdate {
 				// only msg for unsuspended node will be transferred to SP
@@ -605,7 +604,7 @@ func UpdateEffectiveStakeHandler() func(event coretypes.ResultEvent) {
 			}
 
 			updatedPP := relayTypes.UpdatedEffectiveStakePP{
-				P2PAddress:                event["update_effective_stake.network_address"],
+				P2PAddress:                event[GetEventAttribute(registertypes.EventTypeUpdateEffectiveStake, registertypes.AttributeKeyNetworkAddress)],
 				IsUnsuspendedDuringUpdate: isUnsuspendedDuringUpdate,
 				EffectiveStakeAfter:       effectiveStakeAfter,
 			}

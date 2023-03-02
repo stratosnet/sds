@@ -90,7 +90,7 @@ func (u UnsignedMsgBytes) FromBytes() (UnsignedMsg, error) {
 		unsignedMsg.Msg = &msg
 	case "update_effective_stake":
 		msg := registertypes.MsgUpdateEffectiveStake{}
-		err = relay.Cdc.UnmarshalJSON(u.Msg, &msg)
+		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = &msg
 	default:
 		return UnsignedMsg{}, errors.Errorf("Unknown msg type [%v]", u.Type)
