@@ -57,13 +57,14 @@ type downRecvCostTime struct {
 func (dsc *downSendCostTime) StartSendPacket(tkSliceHashKey string) (costTimeStatAfter CostTimeStat) {
 	dsc.mux.Lock()
 	defer dsc.mux.Unlock()
+	costTimeStatBefore := CostTimeStat{}
 	costTimeStatAfter = CostTimeStat{}
 	if val, ok := dsc.dataMap.Load(tkSliceHashKey); ok {
-		costTimeStatBefore := val.(CostTimeStat)
-		costTimeStatAfter.TotalCostTime = costTimeStatBefore.TotalCostTime
-		costTimeStatAfter.PacketCount = costTimeStatBefore.PacketCount + 1
-		dsc.dataMap.Store(tkSliceHashKey, costTimeStatAfter)
+		costTimeStatBefore = val.(CostTimeStat)
 	}
+	costTimeStatAfter.TotalCostTime = costTimeStatBefore.TotalCostTime
+	costTimeStatAfter.PacketCount = costTimeStatBefore.PacketCount + 1
+	dsc.dataMap.Store(tkSliceHashKey, costTimeStatAfter)
 	utils.DebugLogf("--- downSendCostTime.StartSendPacket --- got 1 new packet, packetCountAfter: %d ",
 		costTimeStatAfter.PacketCount)
 	return costTimeStatAfter
@@ -122,9 +123,9 @@ func (drc *downRecvCostTime) AddCostTime(tkSliceHashKey string, costTime int64) 
 	totalCostTime = costTime
 	if val, ok := drc.dataMap.Load(tkSliceHashKey); ok {
 		totalCostTime += val.(int64)
-		if costTime > 0 {
-			drc.dataMap.Store(tkSliceHashKey, totalCostTime)
-		}
+	}
+	if costTime > 0 {
+		drc.dataMap.Store(tkSliceHashKey, totalCostTime)
 	}
 	utils.DebugLogf("--- downRecvCostTime.AddCostTime --- add %d ms from newly received packet, total: %d ms",
 		costTime, totalCostTime)

@@ -150,7 +150,7 @@ func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
 	tkSliceUID := target.TaskId + target.SliceHash
 	totalCostTime, ok := DownSendCostTimeMap.GetCompletedTotalCostTime(tkSliceUID)
 	if !ok {
-		utils.Log("Error, slice not fully sent before receiving this notification")
+		utils.DebugLog("slice not fully sent out")
 		return
 	}
 
@@ -196,7 +196,7 @@ func SendReportBackupSliceResult(ctx context.Context, taskId, sliceHash, spP2pAd
 		PpP2PAddress:       setting.P2PAddress,
 		OpponentP2PAddress: opponentP2PAddress,
 	}
-
+	utils.DebugLogf("---SendReportBackupSliceResult, %v", req)
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqReportBackupSliceResult)
 }
 
