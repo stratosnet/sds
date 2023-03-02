@@ -26,6 +26,9 @@ func BroadcastTx(txBytes []byte, mode sdktx.BroadcastMode) error {
 	if err != nil {
 		return err
 	}
+	if resp.GetTxResponse().Code != 0 {
+		utils.ErrorLogf("Tx failed: [%v]", resp.GetTxResponse().String())
+	}
 
 	if setting.Config == nil {
 		return nil // If the relayd config is nil, then this is ppd broadcasting a tx. We don't want to call the event handler in this case
