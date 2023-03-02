@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/ed25519"
 
+	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -68,7 +69,7 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-
+	setWriteHookForRspTransferSlice(conn)
 	p2pserver.GetP2pServer(ctx).UpdatePP(ctx, &types.PeerInfo{
 		NetworkAddress: target.NewPp.NetworkAddress,
 		P2pAddress:     target.NewPp.P2PAddress,
@@ -219,4 +220,25 @@ func RspReportBackupSliceResult(ctx context.Context, conn core.WriteCloser) {
 
 func handleBackupTransferSend(tkSlice TaskSlice, costTime int64) {
 	DownSendCostTimeMap.FinishSendPacket(tkSlice.TkSliceUID, costTime)
+}
+
+func setWriteHookForRspTransferSlice(conn core.WriteCloser) {
+	switch conn := conn.(type) {
+	case *core.ServerConn:
+		hookBackup := core.WriteHook{
+			Message: header.RspTransferDownload,
+			Fn:      HandleSendPacketCostTime,
+		}
+		var hooks []core.WriteHook
+		hooks = append(hooks, hookBackup)
+		conn.SetWriteHook(hooks)
+	case *cf.ClientConn:
+		hookBackup := cf.WriteHook{
+			Message: header.RspTransferDownload,
+			Fn:      HandleSendPacketCostTime,
+		}
+		var hooks []cf.WriteHook
+		hooks = append(hooks, hookBackup)
+		conn.SetWriteHook(hooks)
+	}
 }

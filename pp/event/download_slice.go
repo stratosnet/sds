@@ -155,30 +155,20 @@ func GetOngoingDownloadTaskCount() int {
 func setWriteHookForRspDownloadSlice(conn core.WriteCloser) {
 	switch conn := conn.(type) {
 	case *core.ServerConn:
-		hookDownload := core.WriteHook{
+		hook := core.WriteHook{
 			Message: header.RspDownloadSlice,
-			Fn:      HandleSendPacketCostTime,
-		}
-		hookBackup := core.WriteHook{
-			Message: header.RspTransferDownload,
 			Fn:      HandleSendPacketCostTime,
 		}
 		var hooks []core.WriteHook
-		hooks = append(hooks, hookDownload)
-		hooks = append(hooks, hookBackup)
+		hooks = append(hooks, hook)
 		conn.SetWriteHook(hooks)
 	case *cf.ClientConn:
-		hookDownload := cf.WriteHook{
+		hook := cf.WriteHook{
 			Message: header.RspDownloadSlice,
 			Fn:      HandleSendPacketCostTime,
 		}
-		hookBackup := cf.WriteHook{
-			Message: header.RspTransferDownload,
-			Fn:      HandleSendPacketCostTime,
-		}
 		var hooks []cf.WriteHook
-		hooks = append(hooks, hookDownload)
-		hooks = append(hooks, hookBackup)
+		hooks = append(hooks, hook)
 		conn.SetWriteHook(hooks)
 	}
 }

@@ -441,7 +441,8 @@ func HandleSendPacketCostTime(packetId, costTime int64) {
 		if len(tkSlice.TkSliceUID) > 0 {
 			PacketIdMap.Delete(packetId)
 		}
-		utils.DebugLogf("HandleSendPacketCostTime, packetId=%v, isUpload=%v, newReport.costTime=%v, ", packetId, tkSlice.IsUpload, costTime)
+		utils.DebugLogf("HandleSendPacketCostTime, packetId=%v, isUpload=%v, isBackupOrTransfer=%v, newReport.costTime=%v, ",
+			packetId, tkSlice.IsUpload, tkSlice.IsBackupOrTransfer, costTime)
 		if tkSlice.IsBackupOrTransfer {
 			go handleBackupTransferSend(tkSlice, costTime)
 		} else if tkSlice.IsUpload {
