@@ -3,8 +3,22 @@ package types
 import (
 	"testing"
 
-	_ "github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/stratos-chain/types"
 )
+
+var sealed = false
+
+func init() {
+	setConfig()
+}
+
+func setConfig() {
+	if !sealed {
+		config := types.GetConfig()
+		config.Seal()
+		sealed = true
+	}
+}
 
 func TestAccountAddressBechConversion(t *testing.T) {
 	hrp := "st"
