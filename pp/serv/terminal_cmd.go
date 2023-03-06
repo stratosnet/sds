@@ -249,15 +249,22 @@ func (api *terminalCmd) Deactivate(ctx context.Context, param []string) (CmdResu
 }
 
 func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, error) {
-	if len(param) < 2 {
-		return CmdResult{Msg: ""}, errors.New("expecting at least 2 params. Input amount of tokens, fee amount and (optional) gas amount")
+	if len(param) < 3 {
+		return CmdResult{Msg: ""}, errors.New("expecting at least 3 params. Input beneficiary, amount of tokens, fee amount and (optional) gas amount")
 	}
 
-	amount, err := utiltypes.ParseCoinNormalized(param[0])
+	beneficiary := param[0]
+	beneficiaryAddr, err := utiltypes.WalletAddressFromBech(beneficiary)
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("invalid beneficiary param. Should be a valid bech32 wallet address" + err.Error())
+	}
+
+	amount, err := utiltypes.ParseCoinNormalized(param[1])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token" + err.Error())
 	}
-	fee, err := utiltypes.ParseCoinNormalized(param[1])
+
+	fee, err := utiltypes.ParseCoinNormalized(param[2])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
 	}
@@ -266,7 +273,7 @@ func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, 
 		Simulate: true,
 	}
 	if len(param) > 2 {
-		gas, err := strconv.ParseUint(param[2], 10, 64)
+		gas, err := strconv.ParseUint(param[3], 10, 64)
 		if err != nil {
 			return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be a positive integer")
 		}
@@ -275,7 +282,7 @@ func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, 
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	if err := event.Prepay(ctx, amount, txFee); err != nil {
+	if err := event.Prepay(ctx, beneficiaryAddr.Bytes(), amount, txFee); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 	return CmdResult{Msg: DefaultMsg}, nil

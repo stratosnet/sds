@@ -4,6 +4,7 @@ import (
 	"context"
 
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
@@ -15,8 +16,8 @@ import (
 )
 
 // Prepay PP node sends a prepay transaction
-func Prepay(ctx context.Context, amount utiltypes.Coin, txFee utiltypes.TxFee) error {
-	prepayReq, err := reqPrepayData(amount, txFee)
+func Prepay(ctx context.Context, beneficiary []byte, amount utiltypes.Coin, txFee utiltypes.TxFee) error {
+	prepayReq, err := reqPrepayData(beneficiary, amount, txFee)
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't build PP prepay request: "+err.Error())
 		return err
