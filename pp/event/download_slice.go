@@ -215,9 +215,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 
 	dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress, fileReqId)
 	if !ok {
-		msg := "current task is stopped！！！！！！！！！！！！！！！！！！！！！！！！！！"
-		pp.DebugLog(ctx, msg)
-		file.SetFailIpfsDownloadResult(fileReqId, msg)
+		pp.DebugLog(ctx, "current task is stopped！！！！！！！！！！！！！！！！！！！！！！！！！！")
 		return
 	}
 
@@ -229,7 +227,6 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 
 	if target.Result.State == protos.ResultState_RES_FAIL {
 		pp.ErrorLog(ctx, target.Result.Msg)
-		file.SetFailIpfsDownloadResult(fileReqId, target.Result.Msg)
 		return
 	}
 

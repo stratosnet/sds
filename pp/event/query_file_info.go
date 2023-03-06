@@ -27,26 +27,21 @@ import (
 // GetFileStorageInfo p to pp. The downloader is assumed the default wallet of this node, if this function is invoked.
 func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, isVideoStream bool, w http.ResponseWriter) {
 	utils.DebugLog("GetFileStorageInfo")
-	fileReqId, _ := getFileReqIdFromContext(ctx)
 
 	if !setting.CheckLogin() {
 		notLogin(w)
 		return
 	}
 	if len(path) < setting.Config.DownloadPathMinLen {
-		msg := "invalid path length"
-		utils.DebugLog(msg)
-		file.SetFailIpfsDownloadResult(fileReqId, msg)
+		utils.DebugLog("invalid path length")
 		return
 	}
 	_, walletAddress, fileHash, _, err := datamesh.ParseFileHandle(path)
 	if err != nil {
-		msg := "please input correct download link, eg: sdm://address/fileHash|filename(optional)"
-		pp.ErrorLog(ctx, msg)
+		pp.ErrorLog(ctx, "please input correct download link, eg: sdm://address/fileHash|filename(optional)")
 		if w != nil {
-			_, _ = w.Write(httpserv.NewJson(nil, setting.FAILCode, msg).ToBytes())
+			_, _ = w.Write(httpserv.NewJson(nil, setting.FAILCode, "please input correct download link, eg:  sdm://address/fileHash|filename(optional)").ToBytes())
 		}
-		file.SetFailIpfsDownloadResult(fileReqId, msg)
 		return
 	}
 	metrics.DownloadPerformanceLogNow(fileHash + ":RCV_CMD_START:")
@@ -59,7 +54,6 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, isVi
 		if w != nil {
 			_, _ = w.Write(httpserv.NewJson(nil, setting.FAILCode, msg).ToBytes())
 		}
-		file.SetFailIpfsDownloadResult(fileReqId, msg)
 		return
 	}
 
@@ -251,16 +245,13 @@ func ReqFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	// PP check whether itself is the storage PP, if not transfer
 	pp.Log(ctx, "get，RspFileStorageInfo")
-	fileReqId, _ := getFileReqIdFromContext(ctx)
 	var target protos.RspFileStorageInfo
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
 
 	if target.Result.State == protos.ResultState_RES_FAIL {
-		msg := "Received fail massage from sp: " + target.Result.Msg
-		pp.ErrorLog(ctx, msg)
-		file.SetFailIpfsDownloadResult(fileReqId, msg)
+		pp.ErrorLog(ctx, "Received fail massage from sp: ", target.Result.Msg)
 		return
 	}
 	metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_STORAGE_INFO_SP:")
@@ -268,7 +259,6 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	// get sp's p2p pubkey
 	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
 	if err != nil {
-		file.SetFailIpfsDownloadResult(fileReqId, err.Error())
 		return
 	}
 
@@ -280,10 +270,10 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	// verify sp node signature
 	msg := utils.GetRspFileStorageInfoNodeSignMessage(target.P2PAddress, target.SpP2PAddress, target.FileHash, header.RspFileStorageInfo)
 	if !types.VerifyP2pSignBytes(spP2pPubkey, target.NodeSign, msg) {
-		file.SetFailIpfsDownloadResult(fileReqId, "failed to verify p2p signature")
 		return
 	}
 
+	fileReqId := core.GetRemoteReqId(ctx)
 	target.ReqId = fileReqId
 	pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, fileReqId)
 	if target.Result.State == protos.ResultState_RES_SUCCESS {

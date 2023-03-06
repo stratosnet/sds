@@ -319,14 +319,11 @@ func sendSlice(ctx context.Context, pb proto.Message, fileHash, p2pAddress, netw
 	key := "upload#" + fileHash + p2pAddress
 	msg := pb.(*protos.ReqUploadFileSlice)
 	metrics.UploadPerformanceLogNow(fileHash + ":SND_FILE_DATA:" + strconv.FormatInt(int64(msg.SliceInfo.SliceOffset.SliceOffsetStart+(msg.SliceNumAddr.SliceNumber-1)*33554432), 10) + ":" + networkAddress)
-	fileReqId, _ := getFileReqIdFromContext(ctx)
-	newCtx := createAndRegisterSliceReqId(ctx, fileReqId)
-	return p2pserver.GetP2pServer(newCtx).SendMessageByCachedConn(newCtx, key, networkAddress, pb, header.ReqUploadFileSlice, HandleSendPacketCostTime)
+	return p2pserver.GetP2pServer(ctx).SendMessageByCachedConn(ctx, key, networkAddress, pb, header.ReqUploadFileSlice, HandleSendPacketCostTime)
 }
 
 func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 	var target protos.UploadSpeedOfProgress
-	fileReqId, _ := getFileReqIdFromContext(ctx)
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
@@ -351,9 +348,6 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 		if file.IsFileRpcRemote(target.FileHash) {
 			file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: rpc.SUCCESS})
 		}
-		file.SetSuccessIpfsUploadFileResult(fileReqId, target.FileHash, progress.Total)
-	} else {
-		file.SetSuccessIpfsUploadDataResult(fileReqId)
 	}
 }
 

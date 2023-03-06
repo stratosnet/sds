@@ -65,12 +65,6 @@ func (bs *BaseServer) Start() error {
 		return err
 	}
 
-	err = bs.startIpfsApiServer()
-	if err != nil {
-		utils.ErrorLog(err)
-		return err
-	}
-
 	return bs.startMonitor()
 }
 
@@ -86,6 +80,12 @@ func (bs *BaseServer) startIPC() error {
 			Namespace: "sdslog",
 			Version:   "1.0",
 			Service:   RpcLogService(),
+			Public:    false,
+		},
+		{
+			Namespace: "remoterpc",
+			Version:   "1.0",
+			Service:   RpcApi(),
 			Public:    false,
 		},
 	}
@@ -209,14 +209,6 @@ func (bs *BaseServer) startInternalApiServer() error {
 	} else {
 		utils.ErrorLog("Missing configuration for internal API server")
 	}
-	return nil
-}
-
-func (bs *BaseServer) startIpfsApiServer() error {
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, types.P2P_SERVER_KEY, bs.p2pServ)
-	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
-	go StartIpfsServ(ctx)
 	return nil
 }
 
