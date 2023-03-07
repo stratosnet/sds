@@ -12,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
 
 	cmds "github.com/ipfs/go-ipfs-cmds"
 	"github.com/ipfs/go-ipfs-cmds/http"
@@ -32,13 +31,6 @@ type ipfsenv struct {
 	httpRpcUrl string
 	requester  requester
 }
-
-const (
-	IPFS_WAIT_TIMEOUT_ADD  = 15 * time.Second
-	IPFS_WAIT_TIMEOUT_GET  = 15 * time.Second
-	IPFS_WAIT_TIMEOUT_LIST = 15 * time.Second
-	TIMEOUT_MESSAGE        = "time out"
-)
 
 const (
 	ipcNamespace      = "remoterpc"
@@ -69,7 +61,10 @@ func ipfsapi(cmd *cobra.Command, args []string) {
 		if ipcEndpointParam != "" {
 			ipcEndpoint = ipcEndpointParam
 		}
-		c, _ := rpc.Dial(ipcEndpoint)
+		c, err := rpc.Dial(ipcEndpoint)
+		if err != nil {
+			panic("failed to dial ipc endpoint")
+		}
 		env.rpcClient = c
 		env.requester = ipcRequester{}
 	} else if rpcModeParam == rpcModeHttpRpc {
@@ -216,13 +211,16 @@ func add(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 	// compose request file upload params
 	paramsFile, err := reqUploadMsg(fileName, hash)
 	if err != nil {
-		return re.CloseWithError(err)
+		return emitError(re, "failed to create request message", err)
 	}
 
 	utils.Log("- request uploading file (method: user_requestUpload)")
 
 	var res rpc_api.Result
 	err = requester.sendRequest(paramsFile, &res, "requestUpload", env)
+	if err != nil {
+		return emitError(re, "failed to send upload file request", err)
+	}
 
 	// Handle result:1 sending the content
 	for res.Return == rpc_api.UPLOAD_DATA {
@@ -239,7 +237,7 @@ func add(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 
 		err = requester.sendRequest(paramsData, &res, "uploadData", env)
 		if err != nil {
-			return re.CloseWithError(err)
+			return emitError(re, "failed to send upload data request", err)
 		}
 	}
 	utils.Log("- uploading is done")
@@ -254,13 +252,13 @@ func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 	utils.Log("- start downloading the file: ", sdmPath)
 	_, _, fileHash, _, err := datamesh.ParseFileHandle(sdmPath)
 	if err != nil {
-		return re.CloseWithError(errors.New("sdm format error"))
+		return emitError(re, "sdm format error", nil)
 	}
 
 	// compose "request file download" request
 	r, err := reqDownloadMsg(fileHash, sdmPath)
 	if err != nil {
-		return re.CloseWithError(err)
+		return emitError(re, "failed to create download msg", err)
 	}
 
 	utils.Log("- request downloading the file (method: user_requestDownload)")
@@ -268,7 +266,7 @@ func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 	var res rpc_api.Result
 	err = requester.sendRequest(r, &res, "requestDownload", env)
 	if err != nil {
-		return re.CloseWithError(err)
+		return emitError(re, "failed to send download file request", err)
 	}
 
 	var fileSize uint64 = 0
@@ -285,13 +283,12 @@ func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 			}
 			if !exist {
 				if err = os.MkdirAll("./download/", 0777); err != nil {
-					return re.CloseWithError(err)
+					return emitError(re, "failed to create download folder", err)
 				}
 			}
 			fileMg, err = os.OpenFile(filepath.Join("./download/", res.FileName), os.O_CREATE|os.O_RDWR, 0777)
 			if err != nil {
-				utils.ErrorLog("error initialize file")
-				return re.CloseWithError(errors.New("can't open file"))
+				return emitError(re, "can't open file", err)
 			}
 		}
 
@@ -309,15 +306,13 @@ func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 			decoded, _ := base64.StdEncoding.DecodeString(res.FileData)
 			if len(decoded) != int(end-start) {
 				errMsg := "Wrong size:" + strconv.Itoa(len(decoded)) + " " + strconv.Itoa(int(end-start))
-				utils.ErrorLog(errMsg)
-				return re.CloseWithError(err)
+				return emitError(re, errMsg, nil)
 			}
 			pieceCount = pieceCount + 1
 
 			_, err = fileMg.WriteAt(decoded, int64(start))
 			if err != nil {
-				utils.ErrorLog("error save file")
-				return re.CloseWithError(errors.New("failed writing file"))
+				return emitError(re, "failed writing file", nil)
 			}
 
 			params = downloadDataMsg(fileHash, res.ReqId)
@@ -326,16 +321,15 @@ func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 		}
 
 		if err != nil {
-			utils.ErrorLog(err)
-			return re.CloseWithError(err)
+			return emitError(re, "failed to send download data request", err)
 		}
 	}
 	if res.Return == rpc_api.SUCCESS {
 		utils.Log("- received response (return: SUCCESS)")
-		return re.Emit(res)
+		return re.Emit("download is done")
 	} else {
 		utils.Log("- received response (return: ", res.Return, ")")
-		return re.CloseWithError(errors.New("failed to download"))
+		return emitError(re, "failed to download", nil)
 	}
 }
 
@@ -349,17 +343,17 @@ func list(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) erro
 	if pageOption, ok := req.Options["page"]; ok {
 		page, ok = pageOption.(uint64)
 		if !ok {
-			return re.CloseWithError(errors.New("page should be positive integer"))
+			return emitError(re, "page should be positive integer", nil)
 		}
 	}
 	params, err := reqListMsg(page)
 	if err != nil {
-		return re.CloseWithError(err)
+		return emitError(re, "failed to create list request", err)
 	}
 	var res rpc_api.FileListResult
 	err = requester.sendRequest(params, &res, "requestList", env)
 	if err != nil {
-		return re.CloseWithError(err)
+		return emitError(re, "failed to send list request", err)
 	}
 	return re.Emit(res)
 }
@@ -512,6 +506,15 @@ func findWallet(folder string) string {
 		return files[0]
 	}
 	return ""
+}
+
+func emitError(re cmds.ResponseEmitter, msg string, err error) error {
+	if err != nil {
+		utils.ErrorLog(msg, err)
+	} else {
+		utils.ErrorLog(msg)
+	}
+	return re.CloseWithError(errors.New(msg))
 }
 
 func wrapJsonRpc(method string, param []byte) []byte {

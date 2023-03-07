@@ -15,11 +15,13 @@ func main() {
 	rootCmd := getRootCmd()
 	nodeCmd := getNodeCmd()
 	terminalCmd := getTerminalCmd()
+	ipfsapiCmd := getIpfsCmd()
 	configCmd := getGenConfigCmd()
 	verCmd := getVersionCmd()
 
 	rootCmd.AddCommand(nodeCmd)
 	rootCmd.AddCommand(terminalCmd)
+	rootCmd.AddCommand(ipfsapiCmd)
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(verCmd)
 
@@ -73,6 +75,21 @@ func getTerminalCmd() *cobra.Command {
 	}
 	execCmd.Flags().BoolP(verboseFlag, "v", false, "output logs")
 	cmd.AddCommand(execCmd)
+	return cmd
+}
+
+func getIpfsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "ipfsapi",
+		Short:   "open ipfsapi attached to node demon",
+		PreRunE: ipfsapiPreRunE,
+		Run:     ipfsapi,
+	}
+	cmd.Flags().StringP(rpcModeFlag, "m", "ipc", "use http rpc or ipc")
+	cmd.Flags().StringP(ipfsPortFlag, "p", "6798", "port")
+	cmd.Flags().StringP(ipcEndpoint, "", "", "ipc endpoint path")
+	cmd.Flags().StringP(httpRpcUrl, "", httpRpcDefaultUrl, "http rpc url")
+
 	return cmd
 }
 
