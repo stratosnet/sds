@@ -11,12 +11,13 @@ import (
 )
 
 type TransferTask struct {
-	IsReceiver       bool
-	DeleteOrigin     bool
-	PpInfo           *protos.PPBaseInfo
-	SliceStorageInfo *protos.SliceStorageInfo
-	FileHash         string
-	SliceNum         uint64
+	IsReceiver         bool
+	DeleteOrigin       bool
+	PpInfo             *protos.PPBaseInfo
+	SliceStorageInfo   *protos.SliceStorageInfo
+	FileHash           string
+	SliceNum           uint64
+	ReceiverP2pAddress string
 }
 
 var rwmutex sync.RWMutex

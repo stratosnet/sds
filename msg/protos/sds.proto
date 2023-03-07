@@ -573,6 +573,7 @@ message ReqFileSliceBackupNotice {
   bool             delete_origin = 7;
   bytes            sign = 8; //signature is signed on 'file_hash#slice_hash#receiver_p2p_address#sender_p2p_address'
   bytes            pubkey = 9;
+  string           to_p2p_address = 10;
 }
 
 // the message that is sent back to sp from both the slice sender pp
@@ -588,6 +589,9 @@ message ReqReportBackupSliceResult {
   uint64     slice_size = 8; //
   PPBaseInfo pp_info = 9;
   string     sp_p2p_address = 10;
+  int64      cost_time = 11;
+  string     pp_p2p_address = 12;
+  string     opponent_p2p_address = 13;
 }
 message RspReportBackupSliceResult {
   string task_id = 1;
