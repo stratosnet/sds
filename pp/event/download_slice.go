@@ -35,12 +35,12 @@ const (
 
 var (
 	downloadRspMap      = &sync.Map{} // K: tkId+sliceHash, V: *QueuedDownloadReportToSP
-	downSendCostTimeMap = &downSendCostTime{
+	DownSendCostTimeMap = &downSendCostTime{
 		dataMap: utils.NewAutoCleanUnsafeMap(30 * time.Minute), // make(map[string]*CostTimeStat), // K: tkId+sliceHash, V: CostTimeStat{TotalCostTime, PacketCount}
 		mux:     sync.Mutex{},
 	}
-	downRecvCostTimeMap = &downRecvCostTime{
-		dataMap: utils.NewAutoCleanUnsafeMap(30 * time.Minute), // make(map[string]int64), // K: tkId+sliceHash, V: CostTimeStat{TotalCostTime, PacketCount}
+	DownRecvCostTimeMap = &downRecvCostTime{
+		dataMap: utils.NewAutoCleanUnsafeMap(30 * time.Minute), // make(map[string]int64), // K: tkId+sliceHash, V: costTime in int64
 		mux:     sync.Mutex{},
 	}
 )
@@ -50,8 +50,92 @@ type downSendCostTime struct {
 	mux     sync.Mutex
 }
 type downRecvCostTime struct {
-	dataMap *utils.AutoCleanUnsafeMap // map[string]int64 // K: tkId+sliceHash, V: CostTimeStat{TotalCostTime, PacketCount}
+	dataMap *utils.AutoCleanUnsafeMap // map[string]int64 // K: tkId+sliceHash, V: costTime in int64
 	mux     sync.Mutex
+}
+
+func (dsc *downSendCostTime) StartSendPacket(tkSliceHashKey string) (costTimeStatAfter CostTimeStat) {
+	dsc.mux.Lock()
+	defer dsc.mux.Unlock()
+	costTimeStatBefore := CostTimeStat{}
+	costTimeStatAfter = CostTimeStat{}
+	if val, ok := dsc.dataMap.Load(tkSliceHashKey); ok {
+		costTimeStatBefore = val.(CostTimeStat)
+	}
+	costTimeStatAfter.TotalCostTime = costTimeStatBefore.TotalCostTime
+	costTimeStatAfter.PacketCount = costTimeStatBefore.PacketCount + 1
+	dsc.dataMap.Store(tkSliceHashKey, costTimeStatAfter)
+	utils.DebugLogf("--- downSendCostTime.StartSendPacket --- got 1 new packet, packetCountAfter: %d ",
+		costTimeStatAfter.PacketCount)
+	return costTimeStatAfter
+}
+
+func (dsc *downSendCostTime) FinishSendPacket(tkSliceHashKey string, costTime int64) (costTimeStatAfter CostTimeStat) {
+	dsc.mux.Lock()
+	defer dsc.mux.Unlock()
+	costTimeStatAfter = CostTimeStat{}
+	if val, ok := dsc.dataMap.Load(tkSliceHashKey); ok {
+		costTimeStatBefore := val.(CostTimeStat)
+		costTimeStatAfter.TotalCostTime = costTimeStatBefore.TotalCostTime + costTime
+		costTimeStatAfter.PacketCount = costTimeStatBefore.PacketCount - 1
+		if costTimeStatAfter.PacketCount >= 0 {
+			dsc.dataMap.Store(tkSliceHashKey, costTimeStatAfter)
+		}
+	}
+	utils.DebugLogf("--- downSendCostTime.FinishSendPacket --- 1 new finished packet at costTime = %d ms, statAfter: %v",
+		costTime, costTimeStatAfter)
+	return costTimeStatAfter
+}
+
+func (dsc *downSendCostTime) CheckSendSliceCompletion(tkSliceHashKey string) bool {
+	dsc.mux.Lock()
+	defer dsc.mux.Unlock()
+	if val, ok := dsc.dataMap.Load(tkSliceHashKey); ok {
+		costTimeStat := val.(CostTimeStat)
+		if costTimeStat.PacketCount == 0 && costTimeStat.TotalCostTime > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (dsc *downSendCostTime) GetCompletedTotalCostTime(tkSliceHashKey string) (int64, bool) {
+	dsc.mux.Lock()
+	defer dsc.mux.Unlock()
+	if val, ok := dsc.dataMap.Load(tkSliceHashKey); ok {
+		costTimeStat := val.(CostTimeStat)
+		if costTimeStat.PacketCount == 0 && costTimeStat.TotalCostTime > 0 {
+			return costTimeStat.TotalCostTime, true
+		}
+	}
+	return int64(0), false
+}
+
+func (dsc *downSendCostTime) DeleteRecord(tkSliceHashKey string) {
+	dsc.mux.Lock()
+	defer dsc.mux.Unlock()
+	dsc.dataMap.Delete(tkSliceHashKey)
+}
+
+func (drc *downRecvCostTime) AddCostTime(tkSliceHashKey string, costTime int64) (totalCostTime int64) {
+	drc.mux.Lock()
+	defer drc.mux.Unlock()
+	totalCostTime = costTime
+	if val, ok := drc.dataMap.Load(tkSliceHashKey); ok {
+		totalCostTime += val.(int64)
+	}
+	if costTime > 0 {
+		drc.dataMap.Store(tkSliceHashKey, totalCostTime)
+	}
+	utils.DebugLogf("--- downRecvCostTime.AddCostTime --- add %d ms from newly received packet, total: %d ms",
+		costTime, totalCostTime)
+	return totalCostTime
+}
+
+func (drc *downRecvCostTime) DeleteRecord(tkSliceHashKey string) {
+	drc.mux.Lock()
+	defer drc.mux.Unlock()
+	drc.dataMap.Delete(tkSliceHashKey)
 }
 
 type QueuedDownloadReportToSP struct {
@@ -180,19 +264,13 @@ func splitSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlic
 func prepareSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlice, tkSliceUID string) (int64, context.Context) {
 	packetId, newCtx := p2pserver.CreateNewContextPacketId(ctx)
 	tkSlice := TaskSlice{
-		TkSliceUID: tkSliceUID,
-		IsUpload:   false,
+		TkSliceUID:         tkSliceUID,
+		IsUpload:           false,
+		IsBackupOrTransfer: false,
 	}
 	PacketIdMap.Store(packetId, tkSlice)
 	utils.DebugLogf("PacketIdMap.Store <==(%v, %v)", packetId, tkSlice)
-	downSendCostTimeMap.mux.Lock()
-	var ctStat = CostTimeStat{}
-	if val, ok := downSendCostTimeMap.dataMap.Load(rsp.TaskId + rsp.SliceInfo.SliceHash); ok {
-		ctStat = val.(CostTimeStat)
-	}
-	ctStat.PacketCount = ctStat.PacketCount + 1
-	downSendCostTimeMap.dataMap.Store(tkSliceUID, ctStat)
-	downSendCostTimeMap.mux.Unlock()
+	ctStat := DownSendCostTimeMap.StartSendPacket(rsp.TaskId + rsp.SliceInfo.SliceHash)
 	utils.DebugLogf("downSendPacketWgMap.Store <== K:%v, V:%v]", tkSliceUID, ctStat)
 	return packetId, newCtx
 }
@@ -231,14 +309,8 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	// add up costTime
-	totalCostTime := costTime
 	tkSlice := target.TaskId + target.SliceInfo.SliceHash
-	downRecvCostTimeMap.mux.Lock()
-	if val, ok := downRecvCostTimeMap.dataMap.Load(tkSlice); ok {
-		totalCostTime += val.(int64)
-	}
-	downRecvCostTimeMap.dataMap.Store(tkSlice, totalCostTime)
-	downRecvCostTimeMap.mux.Unlock()
+	_ = DownRecvCostTimeMap.AddCostTime(tkSlice, costTime)
 
 	if f, ok := task.DownloadFileMap.Load(target.FileHash + fileReqId); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
@@ -349,18 +421,13 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 	}
 	setDownloadSliceSuccess(ctx, target.SliceInfo.SliceHash, dTask)
 	// get total costTime
-	totalCostTime := int64(0)
 	tkSlice := target.TaskId + target.SliceInfo.SliceHash
-	downRecvCostTimeMap.mux.Lock()
-	defer downRecvCostTimeMap.mux.Unlock()
-	if val, ok := downRecvCostTimeMap.dataMap.Load(tkSlice); ok {
-		totalCostTime += val.(int64)
-	}
+	totalCostTime := DownRecvCostTimeMap.AddCostTime(tkSlice, int64(0))
 	reportReq := SendReportDownloadResult(ctx, target, totalCostTime, false)
 	metrics.StoredSliceCount.WithLabelValues("download").Inc()
 	instantInboundSpeed := float64(target.SliceSize) / math.Max(float64(totalCostTime), 1)
 	metrics.InboundSpeed.WithLabelValues(reportReq.OpponentP2PAddress).Set(instantInboundSpeed)
-	downRecvCostTimeMap.dataMap.Delete(tkSlice)
+	DownRecvCostTimeMap.DeleteRecord(tkSlice)
 }
 
 func videoCacheKeep(fileHash, taskID string) {
@@ -552,19 +619,8 @@ func setDownloadSliceFail(ctx context.Context, sliceHash, taskId string, isVideo
 func handleDownloadSend(tkSlice TaskSlice, costTime int64) {
 	var newCostTimeStat = CostTimeStat{}
 	isDownloadFinished := false
-	downSendCostTimeMap.mux.Lock()
-	if val, ok := downSendCostTimeMap.dataMap.Load(tkSlice.TkSliceUID); ok {
-		oriCostTimeStat := val.(CostTimeStat)
-		newCostTimeStat.TotalCostTime = costTime + oriCostTimeStat.TotalCostTime
-		newCostTimeStat.PacketCount = oriCostTimeStat.PacketCount - 1
-		// not counting if CostTimeStat not found from dataMap
-		if newCostTimeStat.PacketCount >= 0 {
-			downSendCostTimeMap.dataMap.Store(tkSlice.TkSliceUID, newCostTimeStat)
-		}
-		// return isDownloadFinished
-		isDownloadFinished = newCostTimeStat.PacketCount == 0
-	}
-	downSendCostTimeMap.mux.Unlock()
+	newCostTimeStat = DownSendCostTimeMap.FinishSendPacket(tkSlice.TkSliceUID, costTime)
+	isDownloadFinished = newCostTimeStat.PacketCount == 0 && newCostTimeStat.TotalCostTime > 0
 	if isDownloadFinished {
 		if val, ok := downloadRspMap.Load(tkSlice.TkSliceUID); ok {
 			queuedReport := val.(QueuedDownloadReportToSP)
@@ -575,6 +631,7 @@ func handleDownloadSend(tkSlice TaskSlice, costTime int64) {
 			// set task status as finished
 			task.DownloadSliceTaskMap.Store(tkSlice.TkSliceUID, true)
 			downloadRspMap.Delete(tkSlice.TkSliceUID)
+			DownSendCostTimeMap.DeleteRecord(tkSlice.TkSliceUID)
 		}
 	}
 }
