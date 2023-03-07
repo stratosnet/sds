@@ -14,7 +14,6 @@ import (
 	"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/relay/stratoschain/grpc"
-	"github.com/stratosnet/sds/relay/stratoschain/tx"
 	relaytypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
@@ -137,7 +136,7 @@ func createAndSimulateTx(txMsg sdktypes.Msg, msgType string, txFee types.TxFee, 
 	}
 
 	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg, SignatureKeys: signatureKeys, Type: msgType}}
-	txBytes, err := tx.BuildTxBytes(protoConfig, txBuilder, setting.Config.ChainId, unsignedMsgs)
+	txBytes, err := stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.ChainId, unsignedMsgs)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +147,7 @@ func createAndSimulateTx(txMsg sdktypes.Msg, msgType string, txFee types.TxFee, 
 			return nil, err
 		}
 		txBuilder.SetGasLimit(uint64(float64(gasInfo.GasUsed) * setting.Config.GasAdjustment))
-		txBytes, err = tx.BuildTxBytes(protoConfig, txBuilder, setting.Config.ChainId, unsignedMsgs)
+		txBytes, err = stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.ChainId, unsignedMsgs)
 		if err != nil {
 			return nil, err
 		}

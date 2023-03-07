@@ -1,4 +1,4 @@
-package tx
+package stratoschain
 
 import (
 	ed25519crypto "crypto/ed25519"
