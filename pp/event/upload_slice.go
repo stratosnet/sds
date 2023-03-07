@@ -449,7 +449,7 @@ func HandleSendPacketCostTime(packetId, costTime int64) {
 }
 
 func handleUploadSend(tkSlice TaskSlice, costTime int64) {
-	var newCostTimeStat = CostTimeStat{}
+	var newCostTimeStat CostTimeStat
 	upSendCostTimeMap.mux.Lock()
 	defer upSendCostTimeMap.mux.Unlock()
 	if val, ok := upSendCostTimeMap.dataMap.Load(tkSlice.TkSliceUID); ok {

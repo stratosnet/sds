@@ -550,7 +550,7 @@ func setDownloadSliceFail(ctx context.Context, sliceHash, taskId string, isVideo
 }
 
 func handleDownloadSend(tkSlice TaskSlice, costTime int64) {
-	var newCostTimeStat = CostTimeStat{}
+	var newCostTimeStat CostTimeStat
 	isDownloadFinished := false
 	downSendCostTimeMap.mux.Lock()
 	if val, ok := downSendCostTimeMap.dataMap.Load(tkSlice.TkSliceUID); ok {
