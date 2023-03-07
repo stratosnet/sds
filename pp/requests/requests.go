@@ -9,11 +9,14 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
+	"google.golang.org/protobuf/proto"
+
+	"github.com/cosmos/cosmos-sdk/types/bech32"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg"
@@ -25,7 +28,6 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/types"
-	"google.golang.org/protobuf/proto"
 )
 
 func ReqRegisterData() *protos.ReqRegister {

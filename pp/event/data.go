@@ -4,17 +4,20 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
-	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+
+	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
+	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
+
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/relay/stratoschain/grpc"
 	relaytypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/stratosnet/sds/utils/types"
-	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 )
 
 func reqActivateData(amount types.Coin, txFee types.TxFee) (*protos.ReqActivatePP, error) {
@@ -36,7 +39,7 @@ func reqActivateData(amount types.Coin, txFee types.TxFee) (*protos.ReqActivateP
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := createAndSimulateTx(txMsg, txFee, "", signatureKeys)
+	txBytes, err := createAndSimulateTx(txMsg, registertypes.TypeMsgCreateResourceNode, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +66,7 @@ func reqUpdateStakeData(stakeDelta types.Coin, txFee types.TxFee, incrStake bool
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := createAndSimulateTx(txMsg, txFee, "", signatureKeys)
+	txBytes, err := createAndSimulateTx(txMsg, registertypes.TypeMsgUpdateResourceNodeStake, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +91,7 @@ func reqDeactivateData(txFee types.TxFee) (*protos.ReqDeactivatePP, error) {
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := createAndSimulateTx(txMsg, txFee, "", signatureKeys)
+	txBytes, err := createAndSimulateTx(txMsg, registertypes.TypeMsgRemoveResourceNode, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +115,7 @@ func reqPrepayData(amount types.Coin, txFee types.TxFee) (*protos.ReqPrepay, err
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := createAndSimulateTx(txMsg, txFee, "", signatureKeys)
+	txBytes, err := createAndSimulateTx(txMsg, sdstypes.TypeMsgPrepay, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -125,21 +128,21 @@ func reqPrepayData(amount types.Coin, txFee types.TxFee) (*protos.ReqPrepay, err
 	return req, nil
 }
 
-func createAndSimulateTx(txMsg sdktypes.Msg, txFee types.TxFee, memo string, signatureKeys []relaytypes.SignatureKey) ([]byte, error) {
+func createAndSimulateTx(txMsg sdktypes.Msg, msgType string, txFee types.TxFee, memo string, signatureKeys []relaytypes.SignatureKey) ([]byte, error) {
 	protoConfig, txBuilder := createTxConfigAndTxBuilder()
 	err := setMsgInfoToTxBuilder(txBuilder, txMsg, txFee.Fee, txFee.Gas, memo)
 	if err != nil {
 		return nil, err
 	}
 
-	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg.(legacytx.LegacyMsg), SignatureKeys: signatureKeys}}
+	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg, SignatureKeys: signatureKeys, Type: msgType}}
 	txBytes, err := stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.ChainId, unsignedMsgs)
 	if err != nil {
 		return nil, err
 	}
 
 	if txFee.Simulate {
-		gasInfo, err := stratoschain.SimulateTxBytes(txBytes)
+		gasInfo, err := grpc.Simulate(txBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -170,7 +173,6 @@ func setMsgInfoToTxBuilder(txBuilder client.TxBuilder, txMsg sdktypes.Msg, fee t
 			Amount: fee.Amount,
 		}),
 	)
-	//txBuilder.SetFeeGranter(tx.FeeGranter())
 	txBuilder.SetGasLimit(gas)
 	txBuilder.SetMemo(memo)
 	return nil

@@ -14,7 +14,7 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/relay/stratoschain/grpc"
 	"github.com/stratosnet/sds/utils"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 )
@@ -22,7 +22,7 @@ import (
 // Activate Inactive PP node becomes active
 func Activate(ctx context.Context, amount utiltypes.Coin, txFee utiltypes.TxFee) error {
 	// Query blockchain to know if this node is already a resource node
-	ppState, _, err := stratoschain.QueryResourceNodeState(setting.P2PAddress)
+	ppState, err := grpc.QueryResourceNodeState(setting.P2PAddress)
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't query node status from the blockchain", err)
 		//return err
@@ -76,7 +76,7 @@ func RspActivate(ctx context.Context, conn core.WriteCloser) {
 
 	switch target.ActivationState {
 	case types.PP_INACTIVE:
-		err := stratoschain.BroadcastTxBytes(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
+		err := grpc.BroadcastTx(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
 		if err != nil {
 			pp.ErrorLog(ctx, "The activation transaction couldn't be broadcast", err)
 		} else {

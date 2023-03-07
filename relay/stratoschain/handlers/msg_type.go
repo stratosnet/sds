@@ -1,5 +1,9 @@
 package handlers
 
+import (
+	"fmt"
+)
+
 const (
 	MSG_TYPE_CREATE_RESOURCE_NODE       = "/stratos.register.v1.MsgCreateResourceNode"
 	MSG_TYPE_UPDATE_RESOURCE_NODE_STAKE = "/stratos.register.v1.MsgUpdateResourceNodeStake"
@@ -16,3 +20,16 @@ const (
 	MSG_TYPE_SLASHING_RESOURCE_NODE = "/stratos.pot.v1.MsgSlashingResourceNode"
 	MSG_TYPE_UPDATE_EFFECTIVE_STAKE = "/stratos.register.v1.MsgUpdateEffectiveStake"
 )
+
+func GetEventAttribute(event, attribute string) string {
+	return fmt.Sprintf("%s.%s", event, attribute)
+}
+
+func GetEventAttributes(event string, attributes ...string) []string {
+	result := make([]string, 0)
+	for _, attr := range attributes {
+		fullAttr := fmt.Sprintf("%s.%s", event, attr)
+		result = append(result, fullAttr)
+	}
+	return result
+}

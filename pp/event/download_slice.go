@@ -617,7 +617,7 @@ func setDownloadSliceFail(ctx context.Context, sliceHash, taskId string, isVideo
 }
 
 func handleDownloadSend(tkSlice TaskSlice, costTime int64) {
-	var newCostTimeStat = CostTimeStat{}
+	var newCostTimeStat CostTimeStat
 	isDownloadFinished := false
 	newCostTimeStat = DownSendCostTimeMap.FinishSendPacket(tkSlice.TkSliceUID, costTime)
 	isDownloadFinished = newCostTimeStat.PacketCount == 0 && newCostTimeStat.TotalCostTime > 0
