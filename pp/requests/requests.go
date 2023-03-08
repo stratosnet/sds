@@ -111,9 +111,11 @@ func ReqGetPPStatusData(initPPList bool) *protos.ReqGetPPStatus {
 	}
 }
 
-func ReqGetWalletOzData(walletAddr, reqId string) *protos.ReqGetWalletOz {
+func ReqGetWalletOzData(walletAddr, reqId string, uploadReq *protos.ReqUploadFile, downloadReq *protos.ReqFileStorageInfo) *protos.ReqGetWalletOz {
 	return &protos.ReqGetWalletOz{
-		WalletAddress: walletAddr,
+		WalletAddress:   walletAddr,
+		UploadRequest:   uploadReq,
+		DownloadRequest: downloadReq,
 	}
 }
 
@@ -194,11 +196,6 @@ func RequestUploadFileData(ctx context.Context, paths, storagePath string, isCov
 	pp.Log(ctx, "fileHash~~~~~~~~~~~~~~~~~~~~~~", fileHash)
 
 	nodeSignMsg := utils.GetReqUploadFileNodeSignMessage(setting.P2PAddress, fileHash, header.ReqUploadFile)
-	walletString := utils.GetFileUploadWalletSignMessage(fileHash, setting.WalletAddress)
-	wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(walletString))
-	if err != nil {
-		return nil
-	}
 	req := &protos.ReqUploadFile{
 		FileInfo: &protos.FileInfo{
 			FileSize:           uint64(info.Size()),
@@ -215,7 +212,6 @@ func RequestUploadFileData(ctx context.Context, paths, storagePath string, isCov
 			RestAddress:    setting.RestAddress,
 		},
 		NodeSign:      types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(nodeSignMsg)),
-		WalletSign:    wsign,
 		WalletPubkey:  setting.WalletPublicKey,
 		IsCover:       isCover,
 		IsVideoStream: isVideoStream,
@@ -258,7 +254,8 @@ func RequestDownloadFile(fileHash, sdmPath, walletAddr string, reqId string, wal
 
 	// path: mesh network address
 	metrics.DownloadPerformanceLogNow(fileHash + ":SND_STORAGE_INFO_SP:")
-	req := ReqFileStorageInfoData(sdmPath, "", "", walletAddr, walletSign, walletPubkey, false, shareRequest)
+	req := ReqFileStorageInfoData(sdmPath, "", "", walletAddr, walletPubkey, false, shareRequest)
+	req.WalletSign = walletSign
 	return req
 }
 
@@ -597,7 +594,7 @@ func ReqTransferDownloadWrongData(notice *protos.ReqFileSliceBackupNotice) *prot
 
 // ReqFileStorageInfoData encode ReqFileStorageInfo message. If it's not a "share request", walletAddr should keep the same
 // as the wallet from the "path".
-func ReqFileStorageInfoData(path, savePath, saveAs, walletAddr string, walletSign, walletPUbkey []byte, isVideoStream bool, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
+func ReqFileStorageInfoData(path, savePath, saveAs, walletAddr string, walletPUbkey []byte, isVideoStream bool, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
 	msg := utils.GetReqFileStorageInfoNodeSignMessage(setting.P2PAddress, path, header.ReqFileStorageInfo)
 	return &protos.ReqFileStorageInfo{
 		FileIndexes: &protos.FileIndexes{
@@ -608,7 +605,6 @@ func ReqFileStorageInfoData(path, savePath, saveAs, walletAddr string, walletSig
 			SaveAs:        saveAs,
 		},
 		NodeSign:      types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
-		WalletSign:    walletSign,
 		WalletPubkey:  walletPUbkey,
 		IsVideoStream: isVideoStream,
 		ShareRequest:  shareRequest,

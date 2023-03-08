@@ -104,10 +104,6 @@ func (api *rpcApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqUplo
 	if utiltypes.VerifyWalletAddr(pubkey, walletAddr) != 0 {
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
-	// verify the signature
-	if !utiltypes.VerifyWalletSign(pubkey, signature, utils.GetFileUploadWalletSignMessage(fileHash, walletAddr)) {
-		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
-	}
 
 	// start to upload file
 	p := requests.RequestUploadFile(fileName, fileHash, uint64(size), walletAddr, pubkey, signature, false, false)
@@ -214,10 +210,6 @@ func (api *rpcApi) RequestUploadStream(ctx context.Context, param rpc_api.ParamR
 
 	// verify if wallet and public key match
 	if utiltypes.VerifyWalletAddr(pubkey, walletAddr) != 0 {
-		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
-	}
-	// verify the signature
-	if !utiltypes.VerifyWalletSign(pubkey, signature, utils.GetFileUploadWalletSignMessage(fileHash, walletAddr)) {
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
@@ -335,12 +327,6 @@ func (api *rpcApi) RequestDownload(ctx context.Context, param rpc_api.ParamReqDo
 
 	// verify if wallet and public key match
 	if utiltypes.VerifyWalletAddrBytes(wpk.Bytes(), wallet) != 0 {
-		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
-	}
-
-	// verify the signature
-	wsigMsg := utils.GetFileDownloadWalletSignMessage(fileHash, wallet)
-	if !utiltypes.VerifyWalletSignBytes(wpk.Bytes(), wsig, wsigMsg) {
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
@@ -582,9 +568,10 @@ func (api *rpcApi) RequestGetShared(ctx context.Context, param rpc_api.ParamReqG
 					return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
 				} else {
 					return rpc_api.Result{
-						Return:   res.Return,
-						ReqId:    reqId,
-						FileHash: res.FileInfo[0].FileHash,
+						Return:         res.Return,
+						ReqId:          reqId,
+						FileHash:       res.FileInfo[0].FileHash,
+						SequenceNumber: res.SequenceNumber,
 					}
 				}
 			}
@@ -609,12 +596,6 @@ func (api *rpcApi) RequestDownloadShared(ctx context.Context, param rpc_api.Para
 	wsig, err := hex.DecodeString(param.Signature)
 	if err != nil {
 		utils.ErrorLog("wrong signature")
-		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
-	}
-
-	// verify the signature
-	wsigMsg := utils.GetFileDownloadShareWalletSignMessage(param.FileHash, param.WalletAddr)
-	if !utiltypes.VerifyWalletSignBytes(wpk.Bytes(), wsig, wsigMsg) {
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
