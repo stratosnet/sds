@@ -57,7 +57,9 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ htt
 	}
 	if isFile {
 		p := requests.RequestUploadFileData(ctx, path, "", false, false, isEncrypted)
-		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
+		if err = ReqGetWalletOzForUpload(ctx, setting.WalletAddress, task.LOCAL_REQID, p); err != nil {
+			pp.ErrorLog(ctx, err)
+		}
 		return
 	}
 
@@ -69,7 +71,9 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ htt
 		case pathString := <-setting.UpChan:
 			pp.DebugLog(ctx, "path string == ", pathString)
 			p := requests.RequestUploadFileData(ctx, pathString, "", false, false, isEncrypted)
-			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
+			if err = ReqGetWalletOzForUpload(ctx, setting.WalletAddress, task.LOCAL_REQID, p); err != nil {
+				pp.ErrorLog(ctx, err)
+			}
 		default:
 			return
 		}
@@ -88,8 +92,8 @@ func RequestUploadStream(ctx context.Context, path string) {
 	}
 	if isFile {
 		p := requests.RequestUploadFileData(ctx, path, "", false, true, false)
-		if p != nil {
-			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
+		if err = ReqGetWalletOzForUpload(ctx, setting.WalletAddress, task.LOCAL_REQID, p); err != nil {
+			pp.ErrorLog(ctx, err)
 		}
 		return
 	} else {

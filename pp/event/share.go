@@ -227,6 +227,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			f := rpc.FileInfo{FileHash: fileInfo.FileHash}
 			rpcResult.Return = rpc.SHARED_DL_START
 			rpcResult.FileInfo = append(rpcResult.FileInfo, f)
+			rpcResult.SequenceNumber = target.SequenceNumber
 			file.SetFileShareResult(target.ShareRequest.WalletAddress+reqId, rpcResult)
 			go func(fileInfo *protos.FileInfo) {
 				if walletSign := file.GetSignatureFromRemote(fileInfo.FileHash); walletSign != nil {
@@ -236,12 +237,13 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			}(fileInfo)
 
 		} else {
-			sig := utils.GetFileDownloadWalletSignMessage(fileInfo.FileHash, setting.WalletAddress)
+			req = requests.ReqFileStorageInfoData(filePath, "", saveAs, setting.WalletAddress, setting.WalletPublicKey, false, target.ShareRequest)
+			sig := utils.GetFileDownloadWalletSignMessage(fileInfo.FileHash, setting.WalletAddress, target.SequenceNumber)
 			sign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(sig))
 			if err != nil {
 				return
 			}
-			req = requests.ReqFileStorageInfoData(filePath, "", saveAs, setting.WalletAddress, sign, setting.WalletPublicKey, false, target.ShareRequest)
+			req.WalletSign = sign
 			p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 		}
 	}
