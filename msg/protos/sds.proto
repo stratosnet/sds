@@ -883,6 +883,7 @@ message RspGetShareFile {
   Result          result = 2;  // if failed, wrong share password
   bool            is_private = 3;
   repeated        FileInfo file_info = 4;
+  string          sequence_number = 5;
 }
 
 message RelayMessage {
@@ -941,11 +942,14 @@ message RspGetPPStatus{
 
 message ReqGetWalletOz {
   string wallet_address = 1;
+  ReqUploadFile upload_request = 2;
+  ReqFileStorageInfo download_request = 3;
 }
 
 message RspGetWalletOz{
   string wallet_oz = 1;
-  string wallet_address = 2;
+  string sequence_number = 2;
+  string wallet_address = 3;
   Result result = 4;
 }
 

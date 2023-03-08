@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"strconv"
 
+	"github.com/stratosnet/sds/pp/requests"
+
 	"github.com/google/uuid"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/metrics"
@@ -367,7 +369,10 @@ func (api *terminalCmd) Download(ctx context.Context, param []string) (CmdResult
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	core.RegisterReqId(ctx, task.LOCAL_REQID)
-	event.GetFileStorageInfo(ctx, param[0], "", saveAs, false, nil)
+	req := requests.ReqFileStorageInfoData(param[0], "", saveAs, setting.WalletAddress, setting.WalletPublicKey, false, nil)
+	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, task.LOCAL_REQID, req); err != nil {
+		return CmdResult{Msg: ""}, err
+	}
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 

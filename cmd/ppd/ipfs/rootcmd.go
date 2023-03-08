@@ -58,8 +58,22 @@ func add(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 	hash := file.GetFileHash(fileName, "")
 	utils.Log("- start uploading the file:", fileName)
 
+	// compose reqOzone for the SN
+	paramReqGetOzone, err := reqOzone()
+	if err != nil {
+		return emitError(re, "failed to create request message", err)
+	}
+
+	utils.Log("- request get ozone (method: user_requestGetOzone)")
+
+	var resOzone rpc_api.GetOzoneResult
+	err = requester.sendRequest(paramReqGetOzone, &resOzone, "requestUpload", env)
+	if err != nil {
+		return emitError(re, "failed to send upload file request", err)
+	}
+
 	// compose request file upload params
-	paramsFile, err := reqUploadMsg(fileName, hash)
+	paramsFile, err := reqUploadMsg(fileName, hash, resOzone.SequenceNumber)
 	if err != nil {
 		return emitError(re, "failed to create request message", err)
 	}
@@ -113,8 +127,22 @@ func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 		return emitError(re, "sdm format error", nil)
 	}
 
+	// compose reqOzone for the SN
+	paramReqGetOzone, err := reqOzone()
+	if err != nil {
+		return emitError(re, "failed to create request message", err)
+	}
+
+	utils.Log("- request get ozone (method: user_requestGetOzone)")
+
+	var resOzone rpc_api.GetOzoneResult
+	err = requester.sendRequest(paramReqGetOzone, &resOzone, "requestUpload", env)
+	if err != nil {
+		return emitError(re, "failed to send upload file request", err)
+	}
+
 	// compose "request file download" request
-	r, err := reqDownloadMsg(fileHash, sdmPath)
+	r, err := reqDownloadMsg(fileHash, sdmPath, resOzone.SequenceNumber)
 	if err != nil {
 		return emitError(re, "failed to create download msg", err)
 	}
@@ -216,7 +244,13 @@ func list(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) erro
 	return re.Emit(res)
 }
 
-func reqUploadMsg(fileName, hash string) (*rpc_api.ParamReqUploadFile, error) {
+func reqOzone() (*rpc_api.ParamReqGetOzone, error) {
+	return &rpc_api.ParamReqGetOzone{
+		WalletAddr: WalletAddress,
+	}, nil
+}
+
+func reqUploadMsg(fileName, hash, sn string) (*rpc_api.ParamReqUploadFile, error) {
 	// file size
 	info, err := file.GetFileInfo(fileName)
 	if info == nil || err != nil {
@@ -230,7 +264,7 @@ func reqUploadMsg(fileName, hash string) (*rpc_api.ParamReqUploadFile, error) {
 	}
 
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress)))
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn)))
 	if err != nil {
 		return nil, err
 	}
@@ -256,7 +290,7 @@ func uploadDataMsg(hash, data string) rpc_api.ParamUploadData {
 	}
 }
 
-func reqDownloadMsg(hash, sdmPath string) (*rpc_api.ParamReqDownloadFile, error) {
+func reqDownloadMsg(hash, sdmPath, sn string) (*rpc_api.ParamReqDownloadFile, error) {
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {
@@ -264,7 +298,7 @@ func reqDownloadMsg(hash, sdmPath string) (*rpc_api.ParamReqDownloadFile, error)
 	}
 
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileDownloadWalletSignMessage(hash, WalletAddress)))
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileDownloadWalletSignMessage(hash, WalletAddress, sn)))
 	if err != nil {
 		return nil, err
 	}

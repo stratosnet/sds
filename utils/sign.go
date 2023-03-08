@@ -1,8 +1,8 @@
 package utils
 
 // GetFileUploadWalletSignMessage upload: wallet sign message for file upload request from the (rpc or cmd) user
-func GetFileUploadWalletSignMessage(fileHash, walletAddr string) string {
-	return fileHash + walletAddr
+func GetFileUploadWalletSignMessage(fileHash, walletAddr, sn string) string {
+	return fileHash + walletAddr + sn
 }
 
 // GetReqUploadFileNodeSignMessage upload: node sign message for upload file request, between uploader pp and sp
@@ -36,8 +36,8 @@ func GetRspUploadFileSliceNodeSignMessage(srcP2pAddr, destP2pAddr, msgTypeStr st
 }
 
 // GetFileDownloadWalletSignMessage download: wallet sign message for download request from the (rpc or cmd) user
-func GetFileDownloadWalletSignMessage(fileHash, walletAddr string) string {
-	return fileHash + walletAddr
+func GetFileDownloadWalletSignMessage(fileHash, walletAddr, sn string) string {
+	return fileHash + walletAddr + sn
 }
 
 // GetReqFileStorageInfoNodeSignMessage download: node sign message for download file request, between downloader pp and sp
@@ -63,12 +63,6 @@ func GetReqDownloadSlicePpNodeSignMessage(srcPpP2pAddr, destPpP2pAddr, sliceHash
 // GetReportDownloadSliceResultPpNodeSignMessage download: node sign message for download slice request, between downloader pp to storage pp
 func GetReportDownloadSliceResultPpNodeSignMessage(p2pAddress, sliceHash, taskId, msgTypeStr string) string {
 	return p2pAddress + sliceHash + taskId + msgTypeStr
-}
-
-// GetFileDownloadShareWalletSignMessage share: wallet sign message for download shared file request from the (rpc or cmd) user
-// this message must be the same as GetFileDownloadWalletSignMessage()
-func GetFileDownloadShareWalletSignMessage(fileHash, walletAddr string) string {
-	return fileHash + walletAddr
 }
 
 // GetFileDownloadShareNodeSignMessage share: node sign message for download shared file request, between pp to sp

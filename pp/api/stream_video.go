@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/stratosnet/sds/pp/requests"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -251,7 +252,11 @@ func getStreamInfo(ctx context.Context, fileHash, ownerWalletAddress string, w h
 		Owner: ownerWalletAddress,
 		Hash:  fileHash,
 	}.String()
-	event.GetFileStorageInfo(ctx, filePath, setting.VIDEOPATH, "", true, w)
+
+	req := requests.ReqFileStorageInfoData(filePath, setting.VIDEOPATH, "", setting.WalletAddress, setting.WalletPublicKey, true, nil)
+	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, task.LOCAL_REQID, req); err != nil {
+		utils.ErrorLog("failed request wallet oz", err.Error())
+	}
 	var fInfo *protos.RspFileStorageInfo
 	start := time.Now().Unix()
 	for {

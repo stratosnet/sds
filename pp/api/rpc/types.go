@@ -117,13 +117,14 @@ type ParamReqGetOzone struct {
 
 // result for all upload and download messages
 type Result struct {
-	Return      string  `json:"return"`
-	ReqId       string  `json:"reqid,omitempty"`
-	OffsetStart *uint64 `json:"offsetstart,omitempty"`
-	OffsetEnd   *uint64 `json:"offsetend,omitempty"`
-	FileHash    string  `json:"filehash,omitempty"`
-	FileName    string  `json:"filename,omitempty"`
-	FileData    string  `json:"filedata,omitempty"`
+	Return         string  `json:"return"`
+	ReqId          string  `json:"reqid,omitempty"`
+	OffsetStart    *uint64 `json:"offsetstart,omitempty"`
+	OffsetEnd      *uint64 `json:"offsetend,omitempty"`
+	FileHash       string  `json:"filehash,omitempty"`
+	FileName       string  `json:"filename,omitempty"`
+	FileData       string  `json:"filedata,omitempty"`
+	SequenceNumber string  `json:"sequencenumber,omitempty"`
 }
 
 type FileListResult struct {
@@ -134,18 +135,20 @@ type FileListResult struct {
 }
 
 type FileShareResult struct {
-	Return      string     `json:"return"`
-	ShareId     string     `json:"shareid,omitempty"`
-	ShareLink   string     `json:"sharelink,omitempty"`
-	FileInfo    []FileInfo `json:"fileinfo,omitempty"`
-	TotalNumber uint64     `json:"totalnumber,omitempty"`
-	PageId      uint64     `json:"page,omitempty"`
+	Return         string     `json:"return"`
+	ShareId        string     `json:"shareid,omitempty"`
+	ShareLink      string     `json:"sharelink,omitempty"`
+	FileInfo       []FileInfo `json:"fileinfo,omitempty"`
+	TotalNumber    uint64     `json:"totalnumber,omitempty"`
+	PageId         uint64     `json:"page,omitempty"`
+	SequenceNumber string     `json:"sequencynumber,omitempty"`
 }
 
 // result for getozone
 type GetOzoneResult struct {
-	Return string `json:"return"`
-	Ozone  string `json:"ozone,omitempty"`
+	Return         string `json:"return"`
+	Ozone          string `json:"ozone,omitempty"`
+	SequenceNumber string `json:"sequencynumber,omitempty"`
 }
 
 // rp: request RegisterNewPP
