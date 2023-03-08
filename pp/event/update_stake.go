@@ -12,7 +12,7 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/relay/stratoschain/grpc"
 	"github.com/stratosnet/sds/utils"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 )
@@ -48,7 +48,7 @@ func RspUpdateStake(ctx context.Context, conn core.WriteCloser) {
 
 	setting.State = target.UpdateState
 
-	err := stratoschain.BroadcastTxBytes(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
+	err := grpc.BroadcastTx(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
 	if err != nil {
 		pp.ErrorLog(ctx, "The UpdateStake transaction couldn't be broadcast", err)
 	} else {
@@ -64,4 +64,16 @@ func RspUpdatedStake(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	utils.Logf("get RspUpdatedStakePP, StakeBalance: %v, NodeTier: %v, Weight_Score: %v", target.StakeBalance, target.NodeTier, target.WeightScore)
+
+	// msg is not empty after stake being updated to 0wei
+	stakeBalanceAfter, err := utiltypes.ParseCoinNormalized(target.StakeBalance)
+	if err != nil {
+		return
+	}
+	if len(target.Result.Msg) > 0 &&
+		stakeBalanceAfter.IsZero() &&
+		target.NodeTier == "0" {
+		// change pp state to unbonding
+		setting.State = types.PP_UNBONDING
+	}
 }

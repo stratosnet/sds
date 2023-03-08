@@ -5,14 +5,18 @@ import (
 	"encoding/hex"
 	"math"
 	"path"
+	"path/filepath"
 	"reflect"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
+	"google.golang.org/protobuf/proto"
+
+	"github.com/cosmos/cosmos-sdk/types/bech32"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg"
@@ -24,7 +28,6 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/types"
-	"google.golang.org/protobuf/proto"
 )
 
 func ReqRegisterData() *protos.ReqRegister {
@@ -117,7 +120,7 @@ func ReqGetWalletOzData(walletAddr, reqId string) *protos.ReqGetWalletOz {
 }
 
 // RequestUploadFile a file from an owner instead from a "path" belongs to PP's default wallet
-func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress, walletPubkey, signature string, isEncrypted bool) *protos.ReqUploadFile {
+func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress, walletPubkey, signature string, isEncrypted, isVideoStream bool) *protos.ReqUploadFile {
 	utils.Log("fileName: ", fileName)
 	encryptionTag := ""
 	if isEncrypted {
@@ -155,7 +158,16 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress
 		WalletSign:    wsig,
 		WalletPubkey:  wpk.Bytes(),
 		IsCover:       false,
-		IsVideoStream: false,
+		IsVideoStream: isVideoStream,
+	}
+
+	if isVideoStream {
+		duration, err := file.GetVideoDuration(filepath.Join(setting.GetRootPath(), file.TEMP_FOLDER, fileHash, fileName))
+		if err != nil {
+			utils.Log("Failed to get the length of the video: ", err)
+			return nil
+		}
+		req.FileInfo.Duration = duration
 	}
 
 	// info
@@ -169,9 +181,9 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress
 
 // RequestUploadFileData assume the PP's current wallet is the owner, otherwise RequestUploadFile() should be used instead
 func RequestUploadFileData(ctx context.Context, paths, storagePath string, isCover, isVideoStream, isEncrypted bool) *protos.ReqUploadFile {
-	info := file.GetFileInfo(paths)
-	if info == nil {
-		pp.ErrorLog(ctx, "wrong filePath")
+	info, err := file.GetFileInfo(paths)
+	if err != nil {
+		pp.ErrorLog(ctx, "wrong filePath", err.Error())
 		return nil
 	}
 	fileName := info.Name()

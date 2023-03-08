@@ -25,15 +25,15 @@ var wmutex sync.RWMutex
 var fileMap = make(map[string]string)
 var infoMutex sync.Mutex
 
-func GetFileInfo(filePath string) os.FileInfo {
+func GetFileInfo(filePath string) (os.FileInfo, error) {
 	infoMutex.Lock()
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		infoMutex.Unlock()
-		return nil
+		return nil, err
 	}
 	infoMutex.Unlock()
-	return fileInfo
+	return fileInfo, nil
 }
 
 func GetFileSuffix(fileName string) string {
@@ -56,12 +56,12 @@ func ClearFileMap(hash string) {
 	delete(fileMap, hash)
 }
 
-func GetFileData(filePath string, offset *protos.SliceOffset) []byte {
+func GetFileData(filePath string, offset *protos.SliceOffset) ([]byte, error) {
 	rmutex.Lock()
 	fin, err := os.Open(filePath)
 	if err != nil {
 		rmutex.Unlock()
-		return nil
+		return nil, errors.Wrap(err, "failed open file")
 	}
 	defer fin.Close()
 	_, _ = fin.Seek(int64(offset.SliceOffsetStart), io.SeekStart)
@@ -69,64 +69,82 @@ func GetFileData(filePath string, offset *protos.SliceOffset) []byte {
 	_, err = fin.Read(data)
 	if err != nil {
 		rmutex.Unlock()
-		return nil
+		return nil, errors.Wrap(err, "failed reading data")
 	}
 	rmutex.Unlock()
 
-	return data
+	return data, nil
 }
 
-func GetSliceDataFromTmp(fileHash, sliceHash string) []byte {
+func GetSliceDataFromTmp(fileHash, sliceHash string) ([]byte, error) {
 	return GetWholeFileData(getTmpSlicePath(fileHash, sliceHash))
 }
 
-func GetSliceData(sliceHash string) []byte {
-	return GetWholeFileData(getSlicePath(sliceHash))
+func GetSliceData(sliceHash string) ([]byte, error) {
+	slicePath, err := getSlicePath(sliceHash)
+	if err != nil {
+		return nil, err
+	}
+	return GetWholeFileData(slicePath)
 }
 
-func GetWholeFileData(filePath string) []byte {
+func GetWholeFileData(filePath string) ([]byte, error) {
 	rmutex.Lock()
 	defer rmutex.Unlock()
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return data
+	return data, nil
 }
 
-func GetSliceSize(sliceHash string) int64 {
-	info := GetFileInfo(getSlicePath(sliceHash))
-	if info != nil {
-		return info.Size()
-	} else {
-		return 0
+func GetSliceSize(sliceHash string) (int64, error) {
+	slicePath, err := getSlicePath(sliceHash)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed getting slice path")
+	}
+	info, err := GetFileInfo(slicePath)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed getting file info")
+	}
+	return info.Size(), nil
+}
+func OpenTmpFile(fileHash, fileName string) (*os.File, error) {
+	tmpFileFolderPath := getTmpFileFolderPath(fileHash)
+	folderPath := filepath.Join(tmpFileFolderPath)
+	exist, err := PathExists(folderPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed checking path")
+	}
+	if !exist {
+		if err = os.MkdirAll(folderPath, os.ModePerm); err != nil {
+			return nil, errors.Wrap(err, "failed creating dir")
+		}
 	}
 
+	fileMg, err := os.OpenFile(getTmpSlicePath(fileHash, fileName), os.O_CREATE|os.O_RDWR, 0777)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed opening file")
+	}
+	return fileMg, nil
+}
+
+func RenameTmpFile(fileHash, srcFile, dstFile string) error {
+	return os.Rename(getTmpSlicePath(fileHash, srcFile), getTmpSlicePath(fileHash, dstFile))
 }
 
 func SaveTmpSliceData(fileHash, sliceHash string, data []byte) error {
 	wmutex.Lock()
 	defer wmutex.Unlock()
+	fileMg, err := OpenTmpFile(fileHash, sliceHash)
 
-	tmpFileFolderPath := getTmpFileFolderPath(fileHash)
-	folderPath := filepath.Join(tmpFileFolderPath)
-	exist, err := PathExists(folderPath)
 	if err != nil {
-		return err
-	}
-	if !exist {
-		if err = os.MkdirAll(folderPath, os.ModePerm); err != nil {
-			return err
-		}
+		return errors.Wrap(err, "failed opening tmp file")
 	}
 
-	fileMg, err := os.OpenFile(getTmpSlicePath(fileHash, sliceHash), os.O_CREATE|os.O_RDWR, 0777)
 	defer func() {
 		_ = fileMg.Close()
 	}()
-	if err != nil {
-		return errors.Wrap(err, "error initializing file")
-	}
 
 	_, err = fileMg.Write(data)
 	if err != nil {
@@ -136,26 +154,41 @@ func SaveTmpSliceData(fileHash, sliceHash string, data []byte) error {
 	return nil
 }
 
-func SaveSliceData(data []byte, sliceHash string, offset uint64) bool {
+func SaveSliceData(data []byte, sliceHash string, offset uint64) error {
 	wmutex.Lock()
 	defer wmutex.Unlock()
-	fileMg, err := os.OpenFile(getSlicePath(sliceHash), os.O_CREATE|os.O_RDWR, 0777)
+	slicePath, err := getSlicePath(sliceHash)
+	if err != nil {
+		return errors.Wrap(err, "failed getting slice path")
+	}
+	fileMg, err := os.OpenFile(slicePath, os.O_CREATE|os.O_RDWR, 0777)
 	defer func() {
 		_ = fileMg.Close()
 	}()
 	if err != nil {
-		utils.ErrorLog("error initialize file")
-		return false
+		return errors.Wrap(err, "failed opening a file")
 	}
 	_, err = fileMg.WriteAt(data, int64(offset))
 	if err != nil {
 		utils.ErrorLog("error save file")
-		return false
+		return errors.Wrap(err, "failed writing data")
 	}
-	return true
+	return nil
 }
 
-func SaveFileData(ctx context.Context, data []byte, offset int64, sliceHash, fileName, fileHash, savePath, fileReqId string) bool {
+func WriteFile(data []byte, offset int64, fileMg *os.File) error {
+	_, err := fileMg.Seek(offset, 0)
+	if err != nil {
+		return errors.Wrap(err, "failed seeking in file")
+	}
+	_, err = fileMg.Write(data)
+	if err != nil {
+		return errors.Wrap(err, "failed writing to file")
+	}
+	return nil
+}
+
+func SaveFileData(ctx context.Context, data []byte, offset int64, sliceHash, fileName, fileHash, savePath, fileReqId string) error {
 
 	utils.DebugLog("sliceHash", sliceHash)
 
@@ -170,27 +203,13 @@ func SaveFileData(ctx context.Context, data []byte, offset int64, sliceHash, fil
 		fileName = fileHash
 	}
 	fileMg, err := os.OpenFile(GetDownloadTmpPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR, 0777)
+	if err != nil {
+		return errors.Wrap(err, "failed opening file")
+	}
 	defer func() {
 		_ = fileMg.Close()
 	}()
-	if err != nil {
-		pp.ErrorLog(ctx, "SaveFileData err", err)
-	}
-	if err != nil {
-		pp.ErrorLog(ctx, "error initialize file", err)
-		return false
-	}
-	// _, err = fileMg.WriteAt(data, offset)
-	_, err = fileMg.Seek(offset, 0)
-	if err != nil {
-		pp.ErrorLog(ctx, "error save file", err)
-		return false
-	}
-	_, err = fileMg.Write(data)
-	if err != nil {
-		pp.ErrorLog(ctx, "error writing to file", err)
-	}
-	return true
+	return WriteFile(data, offset, fileMg)
 }
 
 func SaveDownloadProgress(ctx context.Context, sliceHash, fileName, fileHash, savePath, fileReqId string) {
@@ -321,9 +340,12 @@ func CheckSliceExisting(fileHash, fileName, sliceHash, savePath, fileReqId strin
 }
 
 func DeleteSlice(sliceHash string) error {
-	if err := os.Remove(getSlicePath(sliceHash)); err != nil {
-		utils.ErrorLog("DeleteSlice Remove", err)
-		return err
+	slicePath, err := getSlicePath(sliceHash)
+	if err != nil {
+		return errors.Wrap(err, "failed getting slice path")
+	}
+	if err := os.Remove(slicePath); err != nil {
+		return errors.Wrap(err, "failed removing slice")
 	}
 	return nil
 }

@@ -3,18 +3,21 @@ package task
 import (
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/utils"
 )
 
 type TransferTask struct {
-	IsReceiver       bool
-	DeleteOrigin     bool
-	PpInfo           *protos.PPBaseInfo
-	SliceStorageInfo *protos.SliceStorageInfo
-	FileHash         string
-	SliceNum         uint64
+	IsReceiver         bool
+	DeleteOrigin       bool
+	PpInfo             *protos.PPBaseInfo
+	SliceStorageInfo   *protos.SliceStorageInfo
+	FileHash           string
+	SliceNum           uint64
+	ReceiverP2pAddress string
 }
 
 var rwmutex sync.RWMutex
@@ -56,19 +59,28 @@ func CleanTransferTask(taskId, sliceHash string) {
 
 func GetTransferSliceData(taskId, sliceHash string) []byte {
 	if tTask, ok := GetTransferTask(taskId, sliceHash); ok {
-		data := file.GetSliceData(tTask.SliceStorageInfo.SliceHash)
+		data, err := file.GetSliceData(tTask.SliceStorageInfo.SliceHash)
+		if err != nil {
+			utils.ErrorLog("failed getting slice data", err)
+		}
 		return data
 	}
 	return nil
 }
 
-func SaveTransferData(target *protos.RspTransferDownload) bool {
+func SaveTransferData(target *protos.RspTransferDownload) error {
 	if tTask, ok := GetTransferTask(target.TaskId, target.SliceHash); ok {
-		save := file.SaveSliceData(target.Data, tTask.SliceStorageInfo.SliceHash, target.Offset)
-		if save {
-			return target.SliceSize == uint64(file.GetSliceSize(tTask.SliceStorageInfo.SliceHash))
+		err := file.SaveSliceData(target.Data, tTask.SliceStorageInfo.SliceHash, target.Offset)
+		if err != nil {
+			return errors.Wrap(err, "failed saving slice data")
 		}
-		return false
+		sliceSize, err := file.GetSliceSize(tTask.SliceStorageInfo.SliceHash)
+		if err != nil {
+			return errors.Wrap(err, "failed getting slice size")
+		}
+		if target.SliceSize == uint64(sliceSize) {
+			return nil
+		}
 	}
-	return false
+	return errors.New("failed getting transfer task")
 }

@@ -216,7 +216,11 @@ func CancelDownloadTask(fileHash string) {
 }
 
 func GetDownloadSlice(target *protos.ReqDownloadSlice) *DownloadSliceData {
-	data := file.GetSliceData(target.SliceInfo.SliceHash)
+	data, err := file.GetSliceData(target.SliceInfo.SliceHash)
+	if err != nil {
+		utils.ErrorLog("Failed getting slice data ", err.Error())
+		return nil
+	}
 	rawSize := uint64(len(data))
 	if target.IsEncrypted {
 		encryptedSlice := protos.EncryptedSlice{}
@@ -237,7 +241,7 @@ func GetDownloadSlice(target *protos.ReqDownloadSlice) *DownloadSliceData {
 
 }
 
-func SaveDownloadFile(ctx context.Context, target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo) bool {
+func SaveDownloadFile(ctx context.Context, target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo) error {
 	if fInfo.IsVideoStream {
 		return file.SaveFileData(ctx, target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, target.SliceInfo.SliceHash, fInfo.FileHash, fInfo.SavePath, fInfo.ReqId)
 	} else {
@@ -355,9 +359,9 @@ func CheckFileOver(ctx context.Context, fileHash, filePath string) bool {
 
 	if s, ok := DownloadSpeedOfProgress.Load(fileHash + LOCAL_REQID); ok {
 		sp := s.(*DownloadSP)
-		info := file.GetFileInfo(filePath)
-		if info == nil {
-			return false
+		info, err := file.GetFileInfo(filePath)
+		if err != nil {
+			pp.ErrorLog(ctx, "failed getting file info", err)
 		}
 
 		// TODO calculate fileHash to check if download is finished

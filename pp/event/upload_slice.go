@@ -31,11 +31,11 @@ var (
 	mutexHandleSendCostTime = &sync.Mutex{}
 	//// Maps to record uploading stats
 	PacketIdMap       = &sync.Map{} // K: reqId, V: TaskSlice{tkId+sliceNum, up/down}
-	upSendCostTimeMap = &upSendCostTime{
+	UpSendCostTimeMap = &upSendCostTime{
 		dataMap: utils.NewAutoCleanUnsafeMap(30 * time.Minute), // make(map[string]*CostTimeStat) // K: tkId+sliceNum, V: CostTimeStat{TotalCostTime, PacketCount}
 		mux:     sync.Mutex{},
 	}
-	upRecvCostTimeMap = &upRecvCostTime{
+	UpRecvCostTimeMap = &upRecvCostTime{
 		dataMap: utils.NewAutoCleanUnsafeMap(30 * time.Minute), // make(map[string]int64), // K: tkId+sliceNum, V: TotalCostTime
 		mux:     sync.Mutex{},
 	}
@@ -51,8 +51,9 @@ type upRecvCostTime struct {
 }
 
 type TaskSlice struct {
-	TkSliceUID string
-	IsUpload   bool
+	TkSliceUID         string
+	IsUpload           bool
+	IsBackupOrTransfer bool
 }
 
 type CostTimeStat struct {
@@ -61,9 +62,9 @@ type CostTimeStat struct {
 }
 
 func GetOngoingUploadTaskCount() int {
-	upRecvCostTimeMap.mux.Lock()
-	count := upRecvCostTimeMap.dataMap.Len()
-	upRecvCostTimeMap.mux.Unlock()
+	UpRecvCostTimeMap.mux.Lock()
+	count := UpRecvCostTimeMap.dataMap.Len()
+	UpRecvCostTimeMap.mux.Unlock()
 	return count
 }
 
@@ -111,26 +112,35 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	// add up costTime
 	totalCostTime := costTime
 	tkSlice := target.TaskId + strconv.FormatUint(target.SliceNumAddr.SliceNumber, 10)
-	upRecvCostTimeMap.mux.Lock()
-	if val, ok := upRecvCostTimeMap.dataMap.Load(tkSlice); ok {
+	UpRecvCostTimeMap.mux.Lock()
+	if val, ok := UpRecvCostTimeMap.dataMap.Load(tkSlice); ok {
 		totalCostTime += val.(int64)
 	}
-	upRecvCostTimeMap.dataMap.Store(tkSlice, totalCostTime)
-	upRecvCostTimeMap.mux.Unlock()
+	UpRecvCostTimeMap.dataMap.Store(tkSlice, totalCostTime)
+	UpRecvCostTimeMap.mux.Unlock()
 	timeEntry := time.Now().UnixMicro() - core.TimeRcv
 	_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.UploadSpeedOfProgressData(target.FileHash, uint64(len(target.Data)), (target.SliceNumAddr.SliceNumber-1)*33554432+target.SliceInfo.SliceOffset.SliceOffsetStart, timeEntry), header.UploadSpeedOfProgress)
 
-	if !task.SaveUploadFile(&target) {
+	if err := task.SaveUploadFile(&target); err != nil {
 		// save failed, not handling yet
-		utils.ErrorLog("SaveUploadFile failed")
+		utils.ErrorLog("SaveUploadFile failed", err.Error())
 		return
 	}
-
-	utils.DebugLogf("ReqUploadFileSlice saving slice %v  current_size %v  total_size %v", target.SliceInfo.SliceHash, file.GetSliceSize(target.SliceInfo.SliceHash), target.SliceSize)
-	if file.GetSliceSize(target.SliceInfo.SliceHash) == int64(target.SliceSize) {
+	sliceSize, err := file.GetSliceSize(target.SliceInfo.SliceHash)
+	if err != nil {
+		utils.ErrorLog("Failed getting slice size", err.Error())
+		return
+	}
+	utils.DebugLogf("ReqUploadFileSlice saving slice %v  current_size %v  total_size %v", target.SliceInfo.SliceHash, sliceSize, target.SliceSize)
+	if sliceSize == int64(target.SliceSize) {
 		utils.DebugLog("the slice upload finished", target.SliceInfo.SliceHash)
 		// respond to PP in case the size is correct but actually not success
-		if utils.CalcSliceHash(file.GetSliceData(target.SliceInfo.SliceHash), target.FileHash, target.SliceNumAddr.SliceNumber) == target.SliceInfo.SliceHash {
+		sliceData, err := file.GetSliceData(target.SliceInfo.SliceHash)
+		if err != nil {
+			utils.ErrorLog("Failed getting slice data", err.Error())
+			return
+		}
+		if utils.CalcSliceHash(sliceData, target.FileHash, target.SliceNumAddr.SliceNumber) == target.SliceInfo.SliceHash {
 			_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspUploadFileSliceData(&target), header.RspUploadFileSlice)
 			// report upload result to SP
 
@@ -141,9 +151,9 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 			metrics.StoredSliceCount.WithLabelValues("upload").Inc()
 			instantInboundSpeed := float64(target.SliceSize) / math.Max(float64(totalCostTime), 1)
 			metrics.InboundSpeed.WithLabelValues(reportResultReq.OpponentP2PAddress).Set(instantInboundSpeed)
-			upRecvCostTimeMap.mux.Lock()
-			upRecvCostTimeMap.dataMap.Delete(tkSlice)
-			upRecvCostTimeMap.mux.Unlock()
+			UpRecvCostTimeMap.mux.Lock()
+			UpRecvCostTimeMap.dataMap.Delete(tkSlice)
+			UpRecvCostTimeMap.mux.Unlock()
 			utils.DebugLog("storage PP report to SP upload task finished: ", target.SliceInfo.SliceHash)
 		} else {
 			utils.ErrorLog("newly stored sliceHash is not equal to target sliceHash!")
@@ -172,9 +182,9 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	tkSlice := target.TaskId + strconv.FormatUint(target.SliceNumAddr.SliceNumber, 10)
-	upSendCostTimeMap.mux.Lock()
-	defer upSendCostTimeMap.mux.Unlock()
-	if val, ok := upSendCostTimeMap.dataMap.Load(tkSlice); ok {
+	UpSendCostTimeMap.mux.Lock()
+	defer UpSendCostTimeMap.mux.Unlock()
+	if val, ok := UpSendCostTimeMap.dataMap.Load(tkSlice); ok {
 		ctStat := val.(CostTimeStat)
 		utils.DebugLogf("ctStat is %v", ctStat)
 		if ctStat.PacketCount == 0 && ctStat.TotalCostTime > 0 {
@@ -183,7 +193,7 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 			instantOutboundSpeed := float64(target.SliceSize) / math.Max(float64(ctStat.TotalCostTime), 1)
 			metrics.OutboundSpeed.WithLabelValues(reportReq.OpponentP2PAddress).Set(instantOutboundSpeed)
 
-			upSendCostTimeMap.dataMap.Delete(tkSlice)
+			UpSendCostTimeMap.dataMap.Delete(tkSlice)
 		}
 	} else {
 		utils.DebugLogf("tkSlice [%v] not found in RspUploadFileSlice", tkSlice)
@@ -238,7 +248,7 @@ func RspReportUploadSliceResult(ctx context.Context, conn core.WriteCloser) {
 }
 
 func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
-	tkDataLen := len(tk.Data)
+	tkDataLen := int(tk.SliceTotalSize)
 	fileHash := tk.FileHash
 	storageP2pAddress := tk.SliceNumAddr.PpInfo.P2PAddress
 	storageNetworkAddress := tk.SliceNumAddr.PpInfo.NetworkAddress
@@ -246,8 +256,9 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 	utils.DebugLog("reqID-"+tk.TaskID+" =========", strconv.FormatInt(core.GetReqIdFromContext(ctx), 10))
 	tkSliceUID := tk.TaskID + strconv.FormatUint(tk.SliceNumAddr.SliceNumber, 10)
 	tkSlice := TaskSlice{
-		TkSliceUID: tkSliceUID,
-		IsUpload:   true,
+		TkSliceUID:         tkSliceUID,
+		IsUpload:           true,
+		IsBackupOrTransfer: false,
 	}
 	var ctStat = CostTimeStat{}
 
@@ -258,13 +269,17 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 		PacketIdMap.Store(packetId, tkSlice)
 		utils.DebugLogf("PacketIdMap.Store <==(%v, %v)", packetId, tkSlice)
 		ctStat.PacketCount = ctStat.PacketCount + 1
-		upSendCostTimeMap.mux.Lock()
-		upSendCostTimeMap.dataMap.Store(tkSliceUID, ctStat)
-		upSendCostTimeMap.mux.Unlock()
+		UpSendCostTimeMap.mux.Lock()
+		UpSendCostTimeMap.dataMap.Store(tkSliceUID, ctStat)
+		UpSendCostTimeMap.mux.Unlock()
 		utils.DebugLogf("upSendPacketWgMap.Store <== K:%v, V:%v]", tkSliceUID, ctStat)
 		return sendSlice(newCtx, requests.ReqUploadFileSliceData(tk, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
 	}
 
+	data, err := file.GetSliceDataFromTmp(tk.FileHash, tk.SliceOffsetInfo.SliceHash)
+	if err != nil {
+		return errors.Wrap(err, "failed get slice data from tmp")
+	}
 	dataStart := 0
 	dataEnd := setting.MAXDATA
 	for {
@@ -286,17 +301,17 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 		packetId, newCtx := p2pserver.CreateNewContextPacketId(ctx)
 		PacketIdMap.Store(packetId, tkSlice)
 		utils.DebugLogf("PacketIdMap.Store <==(%v, %v)", packetId, tkSlice)
-		upSendCostTimeMap.mux.Lock()
+		UpSendCostTimeMap.mux.Lock()
 
-		if val, ok := upSendCostTimeMap.dataMap.Load(tk.TaskID + strconv.FormatUint(tk.SliceNumAddr.SliceNumber, 10)); ok {
+		if val, ok := UpSendCostTimeMap.dataMap.Load(tk.TaskID + strconv.FormatUint(tk.SliceNumAddr.SliceNumber, 10)); ok {
 			ctStat = val.(CostTimeStat)
 		}
 		ctStat.PacketCount = ctStat.PacketCount + 1
-		upSendCostTimeMap.dataMap.Store(tkSliceUID, ctStat)
-		upSendCostTimeMap.mux.Unlock()
+		UpSendCostTimeMap.dataMap.Store(tkSliceUID, ctStat)
+		UpSendCostTimeMap.mux.Unlock()
 		utils.DebugLogf("upSendPacketMap.Store <== K:%v, V:%v]", tkSliceUID, ctStat)
 		if dataEnd < (tkDataLen + 1) {
-			newTask.Data = tk.Data[dataStart:dataEnd]
+			newTask.Data = data[dataStart:dataEnd]
 
 			pp.DebugLogf(newCtx, "Uploading slice data %v-%v (total %v)", dataStart, dataEnd, newTask.SliceTotalSize)
 			err := sendSlice(newCtx, requests.ReqUploadFileSliceData(newTask, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
@@ -307,7 +322,7 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 			dataEnd += setting.MAXDATA
 		} else {
 			pp.DebugLogf(newCtx, "Uploading slice data %v-%v (total %v)", dataStart, tkDataLen, newTask.SliceTotalSize)
-			newTask.Data = tk.Data[dataStart:]
+			newTask.Data = data[dataStart:]
 			return sendSlice(newCtx, requests.ReqUploadFileSliceData(newTask, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
 		}
 	}
@@ -426,8 +441,11 @@ func HandleSendPacketCostTime(packetId, costTime int64) {
 		if len(tkSlice.TkSliceUID) > 0 {
 			PacketIdMap.Delete(packetId)
 		}
-		utils.DebugLogf("HandleSendPacketCostTime, packetId=%v, isUpload=%v, newReport.costTime=%v, ", packetId, tkSlice.IsUpload, costTime)
-		if tkSlice.IsUpload {
+		utils.DebugLogf("HandleSendPacketCostTime, packetId=%v, isUpload=%v, isBackupOrTransfer=%v, newReport.costTime=%v, ",
+			packetId, tkSlice.IsUpload, tkSlice.IsBackupOrTransfer, costTime)
+		if tkSlice.IsBackupOrTransfer {
+			go handleBackupTransferSend(tkSlice, costTime)
+		} else if tkSlice.IsUpload {
 			go handleUploadSend(tkSlice, costTime)
 		} else {
 			go handleDownloadSend(tkSlice, costTime)
@@ -436,17 +454,17 @@ func HandleSendPacketCostTime(packetId, costTime int64) {
 }
 
 func handleUploadSend(tkSlice TaskSlice, costTime int64) {
-	var newCostTimeStat = CostTimeStat{}
-	upSendCostTimeMap.mux.Lock()
-	defer upSendCostTimeMap.mux.Unlock()
-	if val, ok := upSendCostTimeMap.dataMap.Load(tkSlice.TkSliceUID); ok {
+	newCostTimeStat := CostTimeStat{}
+	UpSendCostTimeMap.mux.Lock()
+	defer UpSendCostTimeMap.mux.Unlock()
+	if val, ok := UpSendCostTimeMap.dataMap.Load(tkSlice.TkSliceUID); ok {
 		utils.DebugLogf("get TkSliceUID[%v] from dataMap, success", tkSlice.TkSliceUID)
 		oriCostTimeStat := val.(CostTimeStat)
 		newCostTimeStat.TotalCostTime = costTime + oriCostTimeStat.TotalCostTime
 		newCostTimeStat.PacketCount = oriCostTimeStat.PacketCount - 1
 		// not counting if CostTimeStat not found from dataMap
 		if newCostTimeStat.PacketCount >= 0 {
-			upSendCostTimeMap.dataMap.Store(tkSlice.TkSliceUID, newCostTimeStat)
+			UpSendCostTimeMap.dataMap.Store(tkSlice.TkSliceUID, newCostTimeStat)
 			utils.DebugLogf("newCostTimeStat is %v", newCostTimeStat)
 		}
 	} else {

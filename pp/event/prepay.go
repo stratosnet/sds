@@ -10,7 +10,7 @@ import (
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
-	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/relay/stratoschain/grpc"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
@@ -39,7 +39,7 @@ func RspPrepay(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	err := stratoschain.BroadcastTxBytes(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
+	err := grpc.BroadcastTx(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
 	if err != nil {
 		pp.ErrorLog(ctx, "The prepay transaction couldn't be broadcast", err)
 	} else {

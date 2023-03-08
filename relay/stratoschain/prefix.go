@@ -1,4 +1,4 @@
-package prefix
+package stratoschain
 
 import (
 	"github.com/stratosnet/stratos-chain/types"

@@ -53,3 +53,14 @@ type SlashedPPReq struct {
 	PPList []SlashedPP `json:"pp_list"`
 	TxHash string      `json:"tx_hash"`
 }
+
+type UpdatedEffectiveStakePP struct {
+	P2PAddress                string   `json:"p2p_address"`
+	IsUnsuspendedDuringUpdate bool     `json:"is_unsuspended_during_update"`
+	EffectiveStakeAfter       *big.Int `json:"effective_stake_after"`
+}
+
+type UpdatedEffectiveStakePPReq struct {
+	PPList []UpdatedEffectiveStakePP `json:"pp_list"`
+	TxHash string                    `json:"tx_hash"`
+}

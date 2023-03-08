@@ -4,14 +4,15 @@ import (
 	"math/big"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stratosnet/sds/utils/crypto/ed25519"
-
 	"github.com/cosmos/cosmos-sdk/types/bech32"
-	utiltypes "github.com/stratosnet/sds/utils/types"
+
 	"github.com/stratosnet/stratos-chain/types"
 	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
+
+	"github.com/stratosnet/sds/utils/crypto/ed25519"
+	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
 type Traffic struct {
@@ -67,6 +68,25 @@ func BuildSlashingResourceNodeMsg(spP2pAddress, spWalletAddress []utiltypes.Addr
 	)
 }
 
+func BuildUpdateEffectiveStakeMsg(spP2pAddress, spWalletAddress []utiltypes.Address, ppP2pAddress utiltypes.Address, newEffectiveStake *big.Int) sdktypes.Msg {
+	var spP2pAddressSdk []types.SdsAddress
+	for _, p2pAddress := range spP2pAddress {
+		spP2pAddressSdk = append(spP2pAddressSdk, p2pAddress[:])
+	}
+	var spWalletAddressSdk []sdktypes.AccAddress
+	for _, walletAddress := range spWalletAddress {
+		spWalletAddressSdk = append(spWalletAddressSdk, walletAddress[:])
+	}
+
+	return registertypes.NewMsgUpdateEffectiveStake(
+		spP2pAddressSdk,
+		spWalletAddressSdk,
+		ppP2pAddress[:],
+		sdktypes.NewIntFromBigInt(newEffectiveStake),
+	)
+
+}
+
 // Stratos-chain 'register' module
 func BuildCreateResourceNodeMsg(moniker string, nodeType registertypes.NodeType, pubKey []byte, stakeAmount utiltypes.Coin, ownerAddress, p2pAddress utiltypes.Address) (sdktypes.Msg, error) {
 	if nodeType == 0 {
@@ -115,7 +135,7 @@ func BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, s
 	return registertypes.NewMsgUpdateResourceNodeStake(
 		networkAddr[:],
 		ownerAddr[:],
-		&coin,
+		coin,
 		incrStake,
 	)
 }
@@ -128,7 +148,7 @@ func BuildUpdateMetaNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, stake
 	return registertypes.NewMsgUpdateMetaNodeStake(
 		networkAddr[:],
 		ownerAddr[:],
-		&coin,
+		coin,
 		incrStake,
 	)
 }

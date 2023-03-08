@@ -115,9 +115,9 @@ func wrapJsonRpc(method string, param []byte) []byte {
 
 func reqUploadMsg(fileName, hash string) []byte {
 	// file size
-	info := file.GetFileInfo(fileName)
-	if info == nil {
-		utils.ErrorLog("Failed to get file information.")
+	info, err := file.GetFileInfo(fileName)
+	if err != nil {
+		utils.ErrorLog("Failed to get file information.", err.Error())
 		return nil
 	}
 
@@ -215,10 +215,146 @@ func put(cmd *cobra.Command, args []string) error {
 			SliceOffsetStart: *res.OffsetStart,
 			SliceOffsetEnd:   *res.OffsetEnd,
 		}
-		rawData := file.GetFileData(fileName, so)
+		rawData, err := file.GetFileData(fileName, so)
+		if err != nil {
+			utils.ErrorLog("failed reading file data", err.Error())
+			return nil
+		}
 		encoded := base64.StdEncoding.EncodeToString(rawData)
 		r = uploadDataMsg(hash, encoded)
 		utils.Log("- request upload date (method: user_uploadData)")
+		body = httpRequest(r)
+		if body == nil {
+			utils.ErrorLog("json marshal error")
+			return nil
+		}
+
+		// Handle rsp
+		err = json.Unmarshal(body, &rsp)
+		if err != nil {
+			utils.ErrorLog("unmarshal failed")
+			return nil
+		}
+		err = json.Unmarshal(rsp.Result, &res)
+		if err != nil {
+			utils.ErrorLog("unmarshal failed")
+			return nil
+		}
+	}
+	utils.Log("- uploading is done")
+	return nil
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+func reqUploadStreamMsg(fileName, hash string) []byte {
+	// file size
+	info, err := file.GetFileInfo(fileName)
+	if err != nil {
+		utils.ErrorLog("Failed to get file information.", err.Error())
+		return nil
+	}
+
+	// wallet address
+	ret := readWalletKeys(WalletAddress)
+	if !ret {
+		utils.ErrorLog("Failed reading key file.")
+		return nil
+	}
+
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress)))
+	if err != nil {
+		return nil
+	}
+	wpk, err := WalletPublicKey.ToBech()
+	if err != nil {
+		return nil
+	}
+	// param
+	var params = []rpc.ParamReqUploadFile{}
+	params = append(params, rpc.ParamReqUploadFile{
+		FileName:     fileName,
+		FileSize:     int(info.Size()),
+		FileHash:     hash,
+		WalletAddr:   WalletAddress,
+		WalletPubkey: wpk,
+		Signature:    hex.EncodeToString(sign),
+	})
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.ErrorLog("failed marshal param for ReqUploadFile")
+		return nil
+	}
+
+	return wrapJsonRpc("user_requestUploadStream", pm)
+}
+func uploadDataStreamMsg(hash, data string) []byte {
+	var pa = []rpc.ParamUploadData{}
+	pa = append(pa, rpc.ParamUploadData{
+		FileHash: hash,
+		Data:     data,
+	})
+	pm, e := json.Marshal(pa)
+	if e != nil {
+		utils.ErrorLog("json marshal error", e)
+	}
+
+	return wrapJsonRpc("user_uploadDataStream", pm)
+}
+
+// putstream
+func putstream(cmd *cobra.Command, args []string) error {
+	// args[0] is the first param, instead of the subcommand "put"
+	fileName := args[0]
+	hash := file.GetFileHash(args[0], "")
+	utils.Log("- start uploading stream video:", fileName)
+
+	// compose request file upload params
+	r := reqUploadStreamMsg(args[0], hash)
+	if r == nil {
+		return nil
+	}
+
+	utils.Log("- request uploading video file (method: user_requestUploadStream)")
+	// http request-respond
+	body := httpRequest(r)
+	if body == nil {
+		utils.ErrorLog("http no response")
+		return nil
+	}
+
+	// handle: unmarshal response then unmarshal result
+	var rsp jsonrpcMessage
+	err := json.Unmarshal(body, &rsp)
+	if err != nil {
+		utils.ErrorLog("unmarshal failed")
+		return nil
+	}
+
+	var res rpc.Result
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+		utils.ErrorLog("unmarshal failed")
+		return nil
+	}
+
+	// Handle result:1 sending the content
+	for res.Return == rpc.UPLOAD_DATA {
+		utils.Log("- received response (return: UPLOAD_DATA)")
+		// get the data from the file
+		so := &protos.SliceOffset{
+			SliceOffsetStart: *res.OffsetStart,
+			SliceOffsetEnd:   *res.OffsetEnd,
+		}
+		rawData, err := file.GetFileData(fileName, so)
+		if err != nil {
+			utils.ErrorLog("failed getting file data ", err.Error())
+			return nil
+		}
+		encoded := base64.StdEncoding.EncodeToString(rawData)
+		r = uploadDataStreamMsg(hash, encoded)
+		utils.Log("- request upload date (method: user_uploadDataStream)")
 		body = httpRequest(r)
 		if body == nil {
 			utils.ErrorLog("json marshal error")
@@ -1074,7 +1210,11 @@ func main() {
 		Short: "upload a file",
 		RunE:  put,
 	}
-
+	putstreamCmd := &cobra.Command{
+		Use:   "putstream",
+		Short: "upload a file",
+		RunE:  putstream,
+	}
 	getCmd := &cobra.Command{
 		Use:   "get",
 		Short: "download a file",
@@ -1118,6 +1258,7 @@ func main() {
 	}
 
 	rootCmd.AddCommand(putCmd)
+	rootCmd.AddCommand(putstreamCmd)
 	rootCmd.AddCommand(getCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(shareCmd)

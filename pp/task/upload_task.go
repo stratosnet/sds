@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/protos"
@@ -329,9 +330,9 @@ func CreateUploadSliceTaskFile(ctx context.Context, slice *SliceWithStatus, ppIn
 	if !remote {
 		// in case of local file
 		filePath = file.GetFilePath(uploadTask.FileHash)
-		fileInfo := file.GetFileInfo(filePath)
+		fileInfo, err := file.GetFileInfo(filePath)
 		if fileInfo == nil {
-			return nil, errors.New("wrong file path")
+			return nil, errors.Wrap(err, "wrong file path")
 		}
 		fileSize = uint64(fileInfo.Size())
 	} else {
@@ -348,14 +349,29 @@ func CreateUploadSliceTaskFile(ctx context.Context, slice *SliceWithStatus, ppIn
 	}
 
 	var rawData []byte
-
+	var err error
+	tmpFileName := uuid.NewString()
 	if !remote {
 		metrics.UploadPerformanceLogNow(uploadTask.FileHash + ":SND_GET_LOCAL_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
-		rawData = file.GetFileData(filePath, offset)
+		rawData, err = file.GetFileData(filePath, offset)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed getting file data")
+		}
+		if rawData != nil {
+			err = file.SaveTmpSliceData(uploadTask.FileHash, tmpFileName, rawData)
+			if err != nil {
+				return nil, errors.Wrap(err, "filed saving tmp slice data")
+			}
+		}
 		metrics.UploadPerformanceLogNow(uploadTask.FileHash + ":RCV_GET_LOCAL_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
 	} else {
 		metrics.UploadPerformanceLogNow(uploadTask.FileHash + ":SND_GET_REMOTE_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
-		rawData = file.GetRemoteFileData(uploadTask.FileHash, offset)
+		if file.CacheRemoteFileData(uploadTask.FileHash, offset, tmpFileName) == nil {
+			rawData, err = file.GetSliceDataFromTmp(uploadTask.FileHash, tmpFileName)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed getting slice data from tmp")
+			}
+		}
 		metrics.UploadPerformanceLogNow(uploadTask.FileHash + ":RCV_GET_REMOTE_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
 	}
 
@@ -370,6 +386,11 @@ func CreateUploadSliceTaskFile(ctx context.Context, slice *SliceWithStatus, ppIn
 		data, err = encryptSliceData(rawData)
 		if err != nil {
 			return nil, errors.Wrap(err, "Couldn't encrypt slice data")
+		}
+		// write data back to the tmp file
+		err = file.SaveTmpSliceData(uploadTask.FileHash, tmpFileName, data)
+		if err != nil {
+			return nil, err
 		}
 	}
 	dataSize := uint64(len(data))
@@ -395,14 +416,13 @@ func CreateUploadSliceTaskFile(ctx context.Context, slice *SliceWithStatus, ppIn
 		SliceNumAddr:    sliceNumAddr,
 		SliceOffsetInfo: sl,
 		FileCRC:         uploadTask.FileCRC,
-		Data:            data,
 		SliceTotalSize:  dataSize,
 		SpP2pAddress:    uploadTask.SpP2pAddress,
 	}
 
-	err := file.SaveTmpSliceData(uploadTask.FileHash, sliceHash, data)
+	err = file.RenameTmpFile(uploadTask.FileHash, tmpFileName, sliceHash)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed renaming tmp file")
 	}
 	return tk, nil
 }
@@ -412,7 +432,6 @@ func CreateUploadSliceTaskStream(ctx context.Context, slice *SliceWithStatus, pp
 	videoSliceInfo := file.HlsInfoMap[uploadTask.FileHash]
 	var data []byte
 	var sliceTotalSize uint64
-
 	if slice.SliceNumber == 1 {
 		jsonStr, _ := json.Marshal(videoSliceInfo)
 		data = jsonStr
@@ -423,11 +442,15 @@ func CreateUploadSliceTaskStream(ctx context.Context, slice *SliceWithStatus, pp
 	} else {
 		sliceName := videoSliceInfo.SliceToSegment[slice.SliceNumber]
 		slicePath := videoFolder + "/" + sliceName
-		if file.GetFileInfo(slicePath) == nil {
+		fileInfo, err := file.GetFileInfo(slicePath)
+		if err != nil {
 			return nil, errors.New("wrong file path")
 		}
-		data = file.GetWholeFileData(slicePath)
-		sliceTotalSize = uint64(file.GetFileInfo(slicePath).Size())
+		data, err = file.GetWholeFileData(slicePath)
+		if err != nil {
+			return nil, errors.New("failed getting whole file data")
+		}
+		sliceTotalSize = uint64(fileInfo.Size())
 	}
 
 	pp.DebugLog(ctx, "sliceNumber", slice.SliceNumber)
@@ -470,10 +493,10 @@ func GetReuploadSliceTask(ctx context.Context, slice *SliceWithStatus, ppInfo *p
 	pp.DebugLogf(ctx, "  fileHash %s sliceNumber %v, sliceHash %s",
 		uploadTask.FileHash, slice.SliceNumber, slice.SliceHash)
 
-	rawData := file.GetSliceDataFromTmp(uploadTask.FileHash, slice.SliceHash)
+	rawData, err := file.GetSliceDataFromTmp(uploadTask.FileHash, slice.SliceHash)
 
 	if rawData == nil {
-		return nil, errors.Errorf("Failed to find the file slice in temp folder for fileHash %s sliceNumber %v, sliceHash %s",
+		return nil, errors.Wrapf(err, "Failed to find the file slice in temp folder for fileHash %s sliceNumber %v, sliceHash %s",
 			uploadTask.FileHash, slice.SliceNumber, slice.SliceHash)
 	}
 
@@ -504,7 +527,7 @@ func GetReuploadSliceTask(ctx context.Context, slice *SliceWithStatus, ppInfo *p
 	return tk, nil
 }
 
-func SaveUploadFile(target *protos.ReqUploadFileSlice) bool {
+func SaveUploadFile(target *protos.ReqUploadFileSlice) error {
 	return file.SaveSliceData(target.Data, target.SliceInfo.SliceHash, target.SliceInfo.SliceOffset.SliceOffsetStart)
 }
 

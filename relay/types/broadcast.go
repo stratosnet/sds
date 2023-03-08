@@ -1,12 +1,15 @@
 package types
 
 import (
-	"github.com/cosmos/cosmos-sdk/x/auth/legacy/legacytx"
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/relay"
+
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
+
 	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
+
+	"github.com/stratosnet/sds/relay"
 )
 
 const (
@@ -25,8 +28,9 @@ type SignatureKey struct {
 }
 
 type UnsignedMsg struct {
-	Msg           legacytx.LegacyMsg `json:"msg,omitempty"`
-	SignatureKeys []SignatureKey     `json:"signature_keys,omitempty"`
+	Msg           sdktypes.Msg   `json:"msg,omitempty"`
+	SignatureKeys []SignatureKey `json:"signature_keys,omitempty"`
+	Type          string         `json:"type,omitempty"`
 }
 
 type UnsignedMsgBytes struct {
@@ -41,15 +45,16 @@ type UnsignedMsgs struct {
 
 func (u UnsignedMsg) ToBytes() UnsignedMsgBytes {
 	return UnsignedMsgBytes{
-		Msg:           u.Msg.GetSignBytes(),
+		Msg:           relay.ProtoCdc.MustMarshalJSON(u.Msg),
 		SignatureKeys: u.SignatureKeys,
-		Type:          u.Msg.Type(),
+		Type:          u.Type,
 	}
 }
 
 func (u UnsignedMsgBytes) FromBytes() (UnsignedMsg, error) {
 	unsignedMsg := UnsignedMsg{
 		SignatureKeys: u.SignatureKeys,
+		Type:          u.Type,
 	}
 
 	var err error
@@ -57,31 +62,35 @@ func (u UnsignedMsgBytes) FromBytes() (UnsignedMsg, error) {
 	switch u.Type {
 	case "create_meta_node":
 		msg := registertypes.MsgCreateMetaNode{}
-		err = relay.Cdc.UnmarshalJSON(u.Msg, &msg)
+		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = &msg
 	case "meta_node_registration_vote":
 		msg := registertypes.MsgMetaNodeRegistrationVote{}
-		err = relay.Cdc.UnmarshalJSON(u.Msg, &msg)
+		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = &msg
 	case "update_meta_node":
 		msg := registertypes.MsgUpdateMetaNode{}
-		err = relay.Cdc.UnmarshalJSON(u.Msg, &msg)
+		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = &msg
 	case "slashing_resource_node":
 		msg := pottypes.MsgSlashingResourceNode{}
-		err = relay.Cdc.UnmarshalJSON(u.Msg, &msg)
+		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = &msg
 	case "FileUploadTx":
 		msg := sdstypes.MsgFileUpload{}
-		err = relay.Cdc.UnmarshalJSON(u.Msg, &msg)
+		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = &msg
 	case "SdsPrepayTx":
 		msg := sdstypes.MsgPrepay{}
-		err = relay.Cdc.UnmarshalJSON(u.Msg, &msg)
+		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = &msg
 	case "volume_report":
 		msg := pottypes.MsgVolumeReport{}
-		err = relay.Cdc.UnmarshalJSON(u.Msg, &msg)
+		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
+		unsignedMsg.Msg = &msg
+	case "update_effective_stake":
+		msg := registertypes.MsgUpdateEffectiveStake{}
+		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = &msg
 	default:
 		return UnsignedMsg{}, errors.Errorf("Unknown msg type [%v]", u.Type)

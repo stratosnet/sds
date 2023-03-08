@@ -1,6 +1,6 @@
 module github.com/stratosnet/sds
 
-go 1.18
+go 1.19
 
 replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
@@ -24,7 +24,6 @@ require (
 	github.com/glendc/go-external-ip v0.1.0
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.6.0
-	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/ipfs/go-cid v0.3.2
@@ -48,10 +47,11 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.6.0
-	github.com/stratosnet/stratos-chain v0.9.1-0.20230124012052-7e7d42189558
+	github.com/stratosnet/stratos-chain v0.9.1-0.20230302203423-468b0b30571b
 	github.com/tendermint/tendermint v0.34.25-0.20221221220620-936221e0a8d9
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	golang.org/x/crypto v0.4.0
+	google.golang.org/grpc v1.50.1
 	google.golang.org/protobuf v1.28.2-0.20220831092852-f930b1dc76e8
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
 	gopkg.in/yaml.v2 v2.4.0
@@ -119,6 +119,7 @@ require (
 	github.com/gogo/protobuf v1.3.3 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/mock v1.6.0 // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/btree v1.0.0 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
@@ -318,7 +319,6 @@ require (
 	gonum.org/v1/plot v0.0.0-20190515093506-e2840ee46a6b // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221024183307-1bc688fe9f3e // indirect
-	google.golang.org/grpc v1.50.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect

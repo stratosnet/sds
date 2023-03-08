@@ -11,6 +11,7 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/msg/protos"
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
@@ -109,7 +110,7 @@ func (api *rpcApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqUplo
 	}
 
 	// start to upload file
-	p := requests.RequestUploadFile(fileName, fileHash, uint64(size), walletAddr, pubkey, signature, false)
+	p := requests.RequestUploadFile(fileName, fileHash, uint64(size), walletAddr, pubkey, signature, false, false)
 	metrics.UploadPerformanceLogNow(param.FileHash + ":SND_REQ_UPLOAD_SP")
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 
@@ -181,6 +182,114 @@ func (api *rpcApi) UploadData(ctx context.Context, param rpc_api.ParamUploadData
 
 	// second part: let the server decide what will be the next step
 	newctx, cancel := context.WithTimeout(context.Background(), WAIT_TIMEOUT)
+	defer cancel()
+
+	select {
+	case <-newctx.Done():
+		result := &rpc_api.Result{Return: rpc_api.TIME_OUT}
+		return *result
+	// since a slice has been passed to the application, wait for application's reply then return the result back to the rpc client
+	case result := <-file.SubscribeRemoteFileEvent(fileHash):
+		file.UnsubscribeRemoteFileEvent(fileHash)
+		if result != nil {
+			result = ResultHook(result, fileHash)
+			return *result
+		} else {
+			result = &rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+			return *result
+		}
+	}
+}
+
+func (api *rpcApi) RequestUploadStream(ctx context.Context, param rpc_api.ParamReqUploadFile) rpc_api.Result {
+	//metrics.RpcReqCount.WithLabelValues("RequestUpload").Inc()
+	//metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_CLIENT")
+	fileName := param.FileName
+	fileSize := param.FileSize
+	fileHash := param.FileHash
+	walletAddr := param.WalletAddr
+	pubkey := param.WalletPubkey
+	signature := param.Signature
+	size := fileSize
+
+	// verify if wallet and public key match
+	if utiltypes.VerifyWalletAddr(pubkey, walletAddr) != 0 {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+	// verify the signature
+	if !utiltypes.VerifyWalletSign(pubkey, signature, utils.GetFileUploadWalletSignMessage(fileHash, walletAddr)) {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
+	// start to upload file
+	go uploadStreamTmpFile(ctx, fileHash, fileName, uint64(size), walletAddr, pubkey, signature)
+
+	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
+	defer cancel()
+
+	select {
+	case <-ctx.Done():
+		result := &rpc_api.Result{Return: rpc_api.TIME_OUT}
+		return *result
+	// since request for uploading a file has been invoked, wait for application's reply then return the result back to the rpc client
+	case result := <-file.SubscribeRemoteFileEvent(fileHash):
+		file.UnsubscribeRemoteFileEvent(fileHash)
+		if result != nil {
+			result = ResultHook(result, fileHash)
+			return *result
+		} else {
+			result = &rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+			return *result
+		}
+	}
+}
+
+func (api *rpcApi) UploadDataStream(ctx context.Context, param rpc_api.ParamUploadData) rpc_api.Result {
+
+	//metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_SP:")
+
+	content := param.Data
+	fileHash := param.FileHash
+	// content in base64
+	dec, _ := b64.StdEncoding.DecodeString(content)
+
+	file.SendFileDataBack(fileHash, dec)
+
+	// first part: if the amount of bytes server requested haven't been finished,
+	// go on asking from the client
+	FileOffsetMutex.Lock()
+	fo, found := FileOffset[fileHash]
+	FileOffsetMutex.Unlock()
+	if found {
+		if fo.ResourceNodeAsked-fo.RemoteRequested > FILE_DATA_SAFE_SIZE {
+			start := fo.RemoteRequested
+			end := fo.RemoteRequested + FILE_DATA_SAFE_SIZE
+			nr := rpc_api.Result{
+				Return:      rpc_api.UPLOAD_DATA,
+				OffsetStart: &start,
+				OffsetEnd:   &end,
+			}
+
+			FileOffsetMutex.Lock()
+			FileOffset[fileHash].RemoteRequested = fo.RemoteRequested + FILE_DATA_SAFE_SIZE
+			FileOffsetMutex.Unlock()
+			return nr
+		} else {
+			nr := rpc_api.Result{
+				Return:      rpc_api.UPLOAD_DATA,
+				OffsetStart: &fo.RemoteRequested,
+				OffsetEnd:   &fo.ResourceNodeAsked,
+			}
+
+			FileOffsetMutex.Lock()
+			delete(FileOffset, fileHash)
+			FileOffsetMutex.Unlock()
+			return nr
+		}
+	}
+
+	// second part: let the server decide what will be the next step
+	newctx, cancel := context.WithTimeout(context.Background(), 3*WAIT_TIMEOUT)
 	defer cancel()
 
 	select {
@@ -569,4 +678,13 @@ func (api *rpcApi) RequestGetOzone(ctx context.Context, param rpc_api.ParamReqGe
 			}
 		}
 	}
+}
+
+func uploadStreamTmpFile(ctx context.Context, fileHash, fileName string, fileSize uint64, walletAddr, pubkey, signature string) {
+	if err := file.CacheRemoteFileData(fileHash, &protos.SliceOffset{SliceOffsetStart: 0, SliceOffsetEnd: fileSize}, fileName); err != nil {
+		utils.ErrorLog("failed uploading stream tmp file", err.Error())
+		return
+	}
+	p := requests.RequestUploadFile(fileName, fileHash, fileSize, walletAddr, pubkey, signature, false, true)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 }

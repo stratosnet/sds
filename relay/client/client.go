@@ -9,27 +9,31 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/websocket"
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
+
+	tmHttp "github.com/tendermint/tendermint/rpc/client/http"
+	coretypes "github.com/tendermint/tendermint/rpc/core/types"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	"github.com/gorilla/websocket"
-	"github.com/pkg/errors"
+
 	"github.com/stratosnet/sds/cmd/relayd/setting"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/relay/sds"
 	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/relay/stratoschain/grpc"
 	"github.com/stratosnet/sds/relay/stratoschain/handlers"
 	relaytypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/stratosnet/sds/utils/types"
-	tmHttp "github.com/tendermint/tendermint/rpc/client/http"
-	coretypes "github.com/tendermint/tendermint/rpc/core/types"
-	"google.golang.org/protobuf/proto"
 )
 
 type MultiClient struct {
@@ -87,8 +91,8 @@ func (m *MultiClient) loadKeys(spHomePath string) error {
 }
 
 func (m *MultiClient) Start() error {
-	// REST client to send messages to stratos-chain
-	stratoschain.Url = setting.Config.StratosChain.RestServer
+	// GRPC client to send msgs to stratos-chain
+	grpc.URL = setting.Config.StratosChain.GrpcServer
 	// Client to subscribe to stratos-chain events and receive messages via websocket
 	m.stratosWebsocketUrl = setting.Config.StratosChain.WebsocketServer
 
@@ -302,7 +306,7 @@ func (m *MultiClient) txBroadcasterLoop() {
 			return
 		}
 
-		gasInfo, err := stratoschain.SimulateTxBytes(txBytes)
+		gasInfo, err := grpc.Simulate(txBytes)
 		if err != nil {
 			utils.ErrorLog("couldn't simulate tx bytes", err)
 			return
@@ -315,7 +319,8 @@ func (m *MultiClient) txBroadcasterLoop() {
 			utils.ErrorLog("couldn't parse gas price", err)
 			return
 		}
-		fee := sdktypes.NewInt64Coin(gasPrice.Denom, gasPrice.Amount.Int64()*int64(gasLimit))
+		feeAmount := gasPrice.Amount.Mul(sdktypes.NewIntFromUint64(gasLimit))
+		fee := sdktypes.NewCoin(gasPrice.Denom, feeAmount)
 		txBuilder.SetFeeAmount(sdktypes.NewCoins(
 			sdktypes.Coin{
 				Denom:  fee.Denom,
@@ -329,7 +334,7 @@ func (m *MultiClient) txBroadcasterLoop() {
 			return
 		}
 
-		err = stratoschain.BroadcastTxBytes(txBytes, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
+		err = grpc.BroadcastTx(txBytes, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
 		if err != nil {
 			utils.ErrorLog("couldn't broadcast transaction", err)
 			return
@@ -345,8 +350,8 @@ func (m *MultiClient) txBroadcasterLoop() {
 				utils.ErrorLog("The stratos-chain tx broadcaster channel has been closed")
 				return
 			}
-			if msg.Msg.Type() != "slashing_resource_node" { // Not printing slashing messages, since SP can slash up to 500 PPs at once, polluting the logs
-				utils.DebugLogf("Received a new msg of type [%v] to broadcast! ", msg.Msg.Type())
+			if msg.Type != "slashing_resource_node" { // Not printing slashing messages, since SP can slash up to 500 PPs at once, polluting the logs
+				utils.DebugLogf("Received a new msg of type [%v] to broadcast! ", msg.Type)
 			}
 			for i := range msg.SignatureKeys {
 				// For messages coming from SP, add the wallet private key that was loaded on start-up
@@ -450,7 +455,7 @@ func (m *MultiClient) GetSdsWebsocketConn() *websocket.Conn {
 func countMsgsByType(unsignedMsgs []*relaytypes.UnsignedMsg) string {
 	msgCount := make(map[string]int)
 	for _, msg := range unsignedMsgs {
-		msgCount[msg.Msg.Type()]++
+		msgCount[msg.Type]++
 	}
 
 	countString := ""
