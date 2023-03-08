@@ -230,7 +230,10 @@ func add(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 			SliceOffsetStart: *res.OffsetStart,
 			SliceOffsetEnd:   *res.OffsetEnd,
 		}
-		rawData := file.GetFileData(fileName, so)
+		rawData, err := file.GetFileData(fileName, so)
+		if err != nil {
+			return emitError(re, "failed to get data from file", err)
+		}
 		encoded := base64.StdEncoding.EncodeToString(rawData)
 		paramsData := uploadDataMsg(hash, encoded)
 		utils.Log("- request upload date (method: user_uploadData)")
@@ -360,8 +363,8 @@ func list(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) erro
 
 func reqUploadMsg(fileName, hash string) (*rpc_api.ParamReqUploadFile, error) {
 	// file size
-	info := file.GetFileInfo(fileName)
-	if info == nil {
+	info, err := file.GetFileInfo(fileName)
+	if info == nil || err != nil {
 		return nil, errors.New("failed to get file information")
 	}
 
