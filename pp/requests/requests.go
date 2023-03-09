@@ -383,7 +383,7 @@ func ReqUploadSlicesWrong(uploadTask *task.UploadFileTask, spP2pAddress string, 
 
 func ReqReportUploadSliceResultData(target *protos.RspUploadFileSlice, costTime int64) *protos.ReportUploadSliceResult {
 	utils.DebugLog("reqReportUploadSliceResultData____________________", target.SliceSize)
-	msg := utils.GetReportUploadSliceResultPpNodeSignMessage(setting.P2PAddress, target.FileHash, header.ReqReportUploadSliceResult)
+	msg := utils.GetReportUploadSliceResultPpNodeSignMessage(setting.P2PAddress, target.FileHash, target.SliceHash, target.TaskId, header.ReqReportUploadSliceResult)
 	return &protos.ReportUploadSliceResult{
 		TaskId:             target.TaskId,
 		SliceNumAddr:       target.SliceNumAddr,
@@ -404,7 +404,7 @@ func ReqReportUploadSliceResultData(target *protos.RspUploadFileSlice, costTime 
 
 func ReqReportUploadSliceResultDataPP(target *protos.ReqUploadFileSlice, costTime int64) *protos.ReportUploadSliceResult {
 	utils.DebugLog("____________________", target.SliceSize)
-	msg := utils.GetReportUploadSliceResultPpNodeSignMessage(setting.P2PAddress, target.FileHash, header.ReqReportUploadSliceResult)
+	msg := utils.GetReportUploadSliceResultPpNodeSignMessage(setting.P2PAddress, target.FileHash, target.SliceInfo.SliceHash, target.TaskId, header.ReqReportUploadSliceResult)
 	return &protos.ReportUploadSliceResult{
 		TaskId:             target.TaskId,
 		SliceNumAddr:       target.SliceNumAddr,
@@ -425,7 +425,7 @@ func ReqReportUploadSliceResultDataPP(target *protos.ReqUploadFileSlice, costTim
 
 func ReqReportDownloadResultData(target *protos.RspDownloadSlice, costTime int64, isPP bool) *protos.ReqReportDownloadResult {
 	utils.DebugLog("#################################################################", target.SliceInfo.SliceHash)
-	msg := utils.GetReportDownloadSliceResultPpNodeSignMessage(setting.P2PAddress, target.SliceInfo.SliceHash, header.ReqReportDownloadResult)
+	msg := utils.GetReportDownloadSliceResultPpNodeSignMessage(setting.P2PAddress, target.SliceInfo.SliceHash, target.TaskId, header.ReqReportDownloadResult)
 	repReq := &protos.ReqReportDownloadResult{
 		IsPP:                 isPP,
 		DownloaderP2PAddress: target.P2PAddress,
@@ -476,7 +476,7 @@ func ReqReportDownloadResultData(target *protos.RspDownloadSlice, costTime int64
 
 func ReqReportStreamResultData(target *protos.RspDownloadSlice, isPP bool) *protos.ReqReportDownloadResult {
 	utils.DebugLog("#################################################################", target.SliceInfo.SliceHash)
-	msg := utils.GetReportDownloadSliceResultPpNodeSignMessage(setting.P2PAddress, target.SliceInfo.SliceHash, header.ReqReportDownloadResult)
+	msg := utils.GetReportDownloadSliceResultPpNodeSignMessage(setting.P2PAddress, target.SliceInfo.SliceHash, target.TaskId, header.ReqReportDownloadResult)
 	repReq := &protos.ReqReportDownloadResult{
 		IsPP:                 isPP,
 		DownloaderP2PAddress: target.P2PAddress,
