@@ -26,8 +26,8 @@ func GetReqUploadFileSlicePpNodeSignMessage(srcPpP2pAddr, destPpP2pAddr, msgType
 }
 
 // GetReportUploadSliceResultPpNodeSignMessage upload: node sign message for report upload slice result, between storage pp and sp, or uploader pp and sp
-func GetReportUploadSliceResultPpNodeSignMessage(p2pAddr, fileHash, msgTypeStr string) string {
-	return p2pAddr + fileHash + msgTypeStr
+func GetReportUploadSliceResultPpNodeSignMessage(p2pAddr, fileHash, sliceHash, taskId, msgTypeStr string) string {
+	return p2pAddr + fileHash + sliceHash + taskId + msgTypeStr
 }
 
 // GetRspUploadFileSliceNodeSignMessage upload: node sign message for upload slice response, between storage pp and uploader pp
@@ -61,8 +61,8 @@ func GetReqDownloadSlicePpNodeSignMessage(srcPpP2pAddr, destPpP2pAddr, sliceHash
 }
 
 // GetReportDownloadSliceResultPpNodeSignMessage download: node sign message for download slice request, between downloader pp to storage pp
-func GetReportDownloadSliceResultPpNodeSignMessage(p2pAdress, sliceHash, msgTypeStr string) string {
-	return p2pAdress + sliceHash + msgTypeStr
+func GetReportDownloadSliceResultPpNodeSignMessage(p2pAddress, sliceHash, taskId, msgTypeStr string) string {
+	return p2pAddress + sliceHash + taskId + msgTypeStr
 }
 
 // GetFileDownloadShareWalletSignMessage share: wallet sign message for download shared file request from the (rpc or cmd) user
