@@ -123,6 +123,7 @@ type config struct {
 	LimitUploadSpeed     uint64       `toml:"limit_upload_speed"`
 	ChainId              string       `toml:"chain_id"`
 	StratosChainUrl      string       `toml:"stratos_chain_url"`
+	Insecure             bool         `toml:"insecure"`
 	GasAdjustment        float64      `toml:"gas_adjustment"`
 	RestPort             string       `toml:"rest_port"`
 	InternalPort         string       `toml:"internal_port"`
@@ -175,6 +176,7 @@ func LoadConfig(configPath string) error {
 	utils.DebugLogf("AutoRun flag: %v", IsAuto)
 	// todo: we shouldn't call stratoschain package to setup a global variable
 	grpc.URL = Config.StratosChainUrl
+	grpc.INSECURE = Config.Insecure
 
 	// Initialize SPMap
 	for _, sp := range Config.SPList {
@@ -272,6 +274,7 @@ func defaultConfig() *config {
 		LimitUploadSpeed:     0,
 		ChainId:              "tropos-5",
 		StratosChainUrl:      "127.0.0.1:9090",
+		Insecure:             true,
 		GasAdjustment:        1.3,
 		RestPort:             "",
 		InternalPort:         "",
