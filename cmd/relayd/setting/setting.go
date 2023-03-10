@@ -26,6 +26,11 @@ type connectionRetries struct {
 	SleepDuration int `toml:"sleep_duration"`
 }
 
+type grpcConfig struct {
+	Url      string `toml:"url"`
+	Insecure bool   `toml:"insecure"`
+}
+
 type sds struct {
 	ApiPort           string            `toml:"api_port"`
 	ClientPort        string            `toml:"client_port"`
@@ -40,7 +45,7 @@ type broadcast struct {
 }
 
 type stratoschain struct {
-	GrpcServer        string            `toml:"grpc_server"`
+	GrpcServer        grpcConfig        `toml:"grpc_server"`
 	WebsocketServer   string            `toml:"websocket_server"`
 	ConnectionRetries connectionRetries `toml:"connection_retries"`
 	Broadcast         broadcast         `toml:"broadcast"`
@@ -114,7 +119,10 @@ func defaultConfig() *config {
 			},
 		},
 		StratosChain: stratoschain{
-			GrpcServer:      "127.0.0.1:9090",
+			GrpcServer: grpcConfig{
+				Url:      "127.0.0.1:9090",
+				Insecure: true,
+			},
 			WebsocketServer: "127.0.0.1:26657",
 			ConnectionRetries: connectionRetries{
 				Max:           100,
