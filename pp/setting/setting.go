@@ -32,11 +32,12 @@ const (
 	WeightDeductionInterval = 200 // interval for weight deduction in heights
 	PpLatencyCheckInterval  = 60  // interval for checking the latency to next PP
 
-	// MAXDATA max slice size
-	MAXDATA     = 1024 * 1024 * 3
-	HTTPTIMEOUT = 20 // seconds
-	IMAGEPATH   = "./images/"
-	VIDEOPATH   = "./videos"
+	// MAXDATA max size of a piece in a slice
+	MAXDATA        = 1024 * 1024 * 3
+	MAX_SLICE_SIZE = 1024 * 1024 * 32
+	HTTPTIMEOUT    = 20 // seconds
+	IMAGEPATH      = "./images/"
+	VIDEOPATH      = "./videos"
 
 	STREAM_CACHE_MAXSLICE = 2
 
@@ -45,7 +46,8 @@ const (
 
 	DEFAULT_MAX_CONNECTION = 1000
 
-	DEFAULT_MIN_UNSUSPEND_STAKE = "1stos" // 1 stos
+	DEFAULT_MIN_UNSUSPEND_STAKE    = "1stos" // 1 stos
+	SPAM_THRESHOLD_SP_SIGN_LATENCY = 60      //in second
 )
 
 var (

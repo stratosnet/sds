@@ -33,6 +33,8 @@ func RegisterEventHandle() {
 	core.Register(header.ReqFindMyFileList, ReqFindMyFileList)
 	core.Register(header.ReqUploadFileSlice, ReqUploadFileSlice)
 	core.Register(header.RspUploadFile, RspUploadFile)
+	core.Register(header.ReqBackupFileSlice, ReqBackupFileSlice)
+	core.Register(header.RspBackupFileSlice, RspBackupFileSlice)
 	core.Register(header.RspUploadFileSlice, RspUploadFileSlice)
 	core.Register(header.RspUploadSlicesWrong, RspUploadSlicesWrong)
 	core.Register(header.RspReportUploadSliceResult, RspReportUploadSliceResult)
@@ -52,7 +54,6 @@ func RegisterEventHandle() {
 	core.Register(header.RspFileBackupStatus, RspBackupStatus)
 	//core.Register(header.RspReportTransferResult, RspReportTransferResult)
 
-	core.Register(header.RspDownloadSliceWrong, RspDownloadSliceWrong)
 	core.Register(header.RspFileStorageInfo, RspFileStorageInfo)
 	core.Register(header.RspFileReplicaInfo, RspFileReplicaInfo)
 	core.Register(header.RspDownloadFileWrong, RspDownloadFileWrong)
