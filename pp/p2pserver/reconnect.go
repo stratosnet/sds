@@ -9,13 +9,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 )
 
-type OptimalSp struct {
-	networkAddr string
-}
-
-var (
-	optSp = &OptimalSp{}
-)
+var optimalSpNetworkAddr string
 
 // ConnectToSP Checks if there is a connection to an SP node. If it doesn't, it attempts to create one with a random SP node.
 func (p *P2pServer) ConnectToSP(ctx context.Context) (newConnection bool, err error) {
@@ -26,13 +20,16 @@ func (p *P2pServer) ConnectToSP(ctx context.Context) (newConnection bool, err er
 		return false, errors.New("there are no SP nodes in the config file")
 	}
 
-	if optSpNetworkAddr, err := p.GetOptSPAndClear(); err == nil {
-		pp.DebugLog(ctx, "reconnect to detected optimal SP ", optSpNetworkAddr)
-		_ = p.NewClientToMainSp(ctx, optSpNetworkAddr)
+	if optimalSpNetworkAddr != "" {
+		pp.DebugLog(ctx, "reconnect to detected optimal SP ", optimalSpNetworkAddr)
+		_ = p.NewClientToMainSp(ctx, optimalSpNetworkAddr)
+		optimalSpNetworkAddr = ""
+
 		if p.mainSpConn != nil {
 			return true, nil
 		}
 	}
+
 	// Select a random SP node to connect to
 	spListOrder := rand.Perm(len(setting.Config.SPList))
 	for _, index := range spListOrder {
@@ -49,24 +46,11 @@ func (p *P2pServer) ConnectToSP(ctx context.Context) (newConnection bool, err er
 
 // ConfirmOptSP connect if there is a detected optimal SP node.
 func (p *P2pServer) ConfirmOptSP(ctx context.Context, spNetworkAddr string) {
-	pp.DebugLog(ctx, "current sp ", p.mainSpConn.GetName(), " to be altered to new optimal SP ", spNetworkAddr)
 	if p.mainSpConn.GetName() == spNetworkAddr {
 		pp.DebugLog(ctx, "optimal SP already in connection, won't change SP")
 		return
 	}
-	p.setOptSP(spNetworkAddr)
+	pp.DebugLog(ctx, "current sp ", p.mainSpConn.GetName(), " to be altered to new optimal SP ", spNetworkAddr)
+	optimalSpNetworkAddr = spNetworkAddr
 	p.mainSpConn.ClientClose(true)
-}
-
-func (p *P2pServer) GetOptSPAndClear() (string, error) {
-	if len(optSp.networkAddr) > 0 {
-		optSpNetworkAddr := optSp.networkAddr
-		optSp = &OptimalSp{}
-		return optSpNetworkAddr, nil
-	}
-	return "", errors.New("optimal SP not detected")
-}
-
-func (p *P2pServer) setOptSP(spNetworkAddr string) {
-	optSp.networkAddr = spNetworkAddr
 }

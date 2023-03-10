@@ -411,37 +411,37 @@ func (cc *ClientConn) Start() {
 		cc.wg.Add(1)
 		go looper(cc, cc.wg)
 	}
-	var (
-		myClock = clock.NewClock()
-		//handler               = core.GetHandlerFunc(header.ReqHeart)
-		spLatencyCheckHandler = core.GetHandlerFunc(header.ReqSpLatencyCheck)
 
-		spLatencyCheckJobFunc = func() {
-			if !isSpLatencyChecked && spLatencyCheckHandler != nil {
-				cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, spLatencyCheckHandler, time.Now().UnixMilli()}
-				isSpLatencyChecked = true
-			}
-		}
+	myClock := clock.NewClock()
+	//handler               = core.GetHandlerFunc(header.ReqHeart)
+	spLatencyCheckHandler := core.GetHandlerFunc(header.ReqSpLatencyCheck)
 
-		//jobFunc = func() {
-		//	if handler != nil {
-		//		cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
-		//	}
-		//}
-		logFunc = func() {
-			cc.inbound = cc.inboundAtomic.AddAndGetNew(cc.secondReadFlowA)
-			cc.outbound = cc.outboundAtomic.AddAndGetNew(cc.secondWriteFlowA)
-			cc.secondReadFlowB = cc.secondReadAtomB.GetNewAndSetAtomic(cc.secondReadFlowA)
-			cc.secondWriteFlowB = cc.secondWriteAtomB.GetNewAndSetAtomic(cc.secondWriteFlowA)
-			cc.secondReadFlowA = cc.secondReadAtomA.GetNewAndSetAtomic(0)
-			cc.secondWriteFlowA = cc.secondWriteAtomA.GetNewAndSetAtomic(0)
+	spLatencyCheckJobFunc := func() {
+		if !isSpLatencyChecked && spLatencyCheckHandler != nil {
+			cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, spLatencyCheckHandler, time.Now().UnixMilli()}
+			isSpLatencyChecked = true
 		}
-	)
+	}
+
+	//jobFunc = func() {
+	//	if handler != nil {
+	//		cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler}
+	//	}
+	//}
+	logFunc := func() {
+		cc.inbound = cc.inboundAtomic.AddAndGetNew(cc.secondReadFlowA)
+		cc.outbound = cc.outboundAtomic.AddAndGetNew(cc.secondWriteFlowA)
+		cc.secondReadFlowB = cc.secondReadAtomB.GetNewAndSetAtomic(cc.secondReadFlowA)
+		cc.secondWriteFlowB = cc.secondWriteAtomB.GetNewAndSetAtomic(cc.secondWriteFlowA)
+		cc.secondReadFlowA = cc.secondReadAtomA.GetNewAndSetAtomic(0)
+		cc.secondWriteFlowA = cc.secondWriteAtomA.GetNewAndSetAtomic(0)
+	}
+
 	//if !cc.opts.heartClose {
 	//	hbJob, _ := myClock.AddJobRepeat(time.Second*utils.ClientSendHeartTime, 0, jobFunc)
 	//	cc.jobs = append(cc.jobs, hbJob)
 	//}
-	latencyJob, _ := myClock.AddJobRepeat(time.Second*utils.LatencyCheckSpListInterval, 1, spLatencyCheckJobFunc)
+	latencyJob, _ := myClock.AddJobWithInterval(time.Second*utils.LatencyCheckSpListInterval, spLatencyCheckJobFunc)
 	cc.jobs = append(cc.jobs, latencyJob)
 	logJob, _ := myClock.AddJobRepeat(time.Second*1, 0, logFunc)
 	cc.jobs = append(cc.jobs, logJob)

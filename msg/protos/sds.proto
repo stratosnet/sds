@@ -694,6 +694,17 @@ message RspLatencyCheck {
   string sp_index = 4;
 }
 
+message ReqSpStatus {
+  string p2p_address = 1;
+}
+
+message RspSpStatus {
+  string p2p_address = 1;
+  uint32 activation_state = 2;
+  uint64 connection_count = 3;
+  uint64 online_pp_count = 4;
+}
+
 // BP msg ###################
 
 message ReqBLSPublicKey {
