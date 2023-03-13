@@ -250,13 +250,15 @@ func (api *terminalCmd) Deactivate(ctx context.Context, param []string) (CmdResu
 
 func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) < 2 {
-		return CmdResult{Msg: ""}, errors.New("expecting at least 2 params. Input amount of tokens, fee amount and (optional) gas amount")
+		return CmdResult{Msg: ""},
+			errors.New("expecting at least 2 params. Input amount of tokens, fee amount, (optional) beneficiary, and (optional) gas amount")
 	}
 
 	amount, err := utiltypes.ParseCoinNormalized(param[0])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token" + err.Error())
 	}
+
 	fee, err := utiltypes.ParseCoinNormalized(param[1])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
@@ -265,8 +267,30 @@ func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, 
 		Fee:      fee,
 		Simulate: true,
 	}
-	if len(param) > 2 {
-		gas, err := strconv.ParseUint(param[2], 10, 64)
+
+	var beneficiaryAddr utiltypes.Address
+	if len(param) == 2 {
+		// use wallet address as default beneficiary address
+		beneficiaryAddr, _ = utiltypes.WalletAddressFromBech(setting.WalletAddress)
+	} else if len(param) == 3 {
+		// if only have 3 params, then the 3rd param could be beneficiaryAddress OR gas
+		beneficiaryAddr, err = utiltypes.WalletAddressFromBech(param[2])
+		if err != nil {
+			// if the third parameter is not beneficiaryAddress, then it should be gas
+			gas, errGas := strconv.ParseUint(param[2], 10, 64)
+			if errGas != nil {
+				return CmdResult{Msg: ""}, errors.New("invalid third param. Should be a valid bech32 wallet address (beneficiary address) OR a positive integer (gas)")
+			}
+			txFee.Gas = gas
+			txFee.Simulate = false
+		}
+	} else if len(param) == 4 {
+		beneficiaryAddr, err = utiltypes.WalletAddressFromBech(param[2])
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.New("invalid beneficiary param. Should be a valid bech32 wallet address" + err.Error())
+		}
+
+		gas, err := strconv.ParseUint(param[3], 10, 64)
 		if err != nil {
 			return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be a positive integer")
 		}
@@ -275,7 +299,7 @@ func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, 
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	if err := event.Prepay(ctx, amount, txFee); err != nil {
+	if err := event.Prepay(ctx, beneficiaryAddr.Bytes(), amount, txFee); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
