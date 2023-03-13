@@ -189,10 +189,11 @@ func BuildFileUploadMsg(fileHash string, from, reporterAddress, uploaderAddress 
 	)
 }
 
-func BuildPrepayMsg(amount utiltypes.Coin, senderAddress []byte) sdktypes.Msg {
+func BuildPrepayMsg(senderAddress []byte, beneficiaryAddress []byte, amount utiltypes.Coin) sdktypes.Msg {
 	walletPrefix := types.GetConfig().GetBech32AccountAddrPrefix()
 	return sdstypes.NewMsgPrepay(
 		sdktypes.MustBech32ifyAddressBytes(walletPrefix, senderAddress),
+		sdktypes.MustBech32ifyAddressBytes(walletPrefix, beneficiaryAddress),
 		sdktypes.NewCoins(sdktypes.Coin{
 			Denom:  amount.Denom,
 			Amount: amount.Amount,

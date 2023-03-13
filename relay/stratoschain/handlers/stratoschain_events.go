@@ -398,6 +398,7 @@ func PrepayMsgHandler() func(event coretypes.ResultEvent) {
 		utils.Logf("%+v", result)
 		requiredAttributes := GetEventAttributes(sdstypes.EventTypePrepay,
 			sdktypes.AttributeKeySender,
+			sdstypes.AttributeKeyBeneficiary,
 			sdstypes.AttributeKeyPurchasedNoz,
 		)
 
@@ -412,7 +413,7 @@ func PrepayMsgHandler() func(event coretypes.ResultEvent) {
 		req := &relayTypes.PrepaidReq{}
 		for _, event := range processedEvents {
 			req.WalletList = append(req.WalletList, &protos.ReqPrepaid{
-				WalletAddress: event[GetEventAttribute(sdstypes.EventTypePrepay, sdktypes.AttributeKeySender)],
+				WalletAddress: event[GetEventAttribute(sdstypes.EventTypePrepay, sdstypes.AttributeKeyBeneficiary)],
 				PurchasedUoz:  event[GetEventAttribute(sdstypes.EventTypePrepay, sdstypes.AttributeKeyPurchasedNoz)],
 				TxHash:        txHash,
 			})

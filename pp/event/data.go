@@ -103,14 +103,14 @@ func reqDeactivateData(txFee types.TxFee) (*protos.ReqDeactivatePP, error) {
 	return req, nil
 }
 
-func reqPrepayData(amount types.Coin, txFee types.TxFee) (*protos.ReqPrepay, error) {
+func reqPrepayData(beneficiary []byte, amount types.Coin, txFee types.TxFee) (*protos.ReqPrepay, error) {
 	// Create and sign a prepay transaction
 	senderAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	txMsg := stratoschain.BuildPrepayMsg(amount, senderAddress[:])
+	txMsg := stratoschain.BuildPrepayMsg(senderAddress.Bytes(), beneficiary, amount)
 	signatureKeys := []relaytypes.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
