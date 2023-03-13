@@ -82,6 +82,12 @@ func (bs *BaseServer) startIPC() error {
 			Service:   RpcLogService(),
 			Public:    false,
 		},
+		{
+			Namespace: "remoterpc",
+			Version:   "1.0",
+			Service:   RpcApi(),
+			Public:    false,
+		},
 	}
 
 	ipc := newIPCServer(setting.IpcEndpoint)
