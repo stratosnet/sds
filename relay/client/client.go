@@ -30,7 +30,6 @@ import (
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/relay/stratoschain/grpc"
 	"github.com/stratosnet/sds/relay/stratoschain/handlers"
-	"github.com/stratosnet/sds/relay/stratoschain/tx"
 	relaytypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
@@ -302,7 +301,7 @@ func (m *MultiClient) txBroadcasterLoop() {
 			utils.ErrorLog("couldn't set tx builder", err)
 			return
 		}
-		txBytes, err := tx.BuildTxBytes(protoConfig, txBuilder, setting.Config.BlockchainInfo.ChainId, unsignedMsgs)
+		txBytes, err := stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.BlockchainInfo.ChainId, unsignedMsgs)
 		if err != nil {
 			utils.ErrorLog("couldn't build tx bytes", err)
 			return
@@ -330,7 +329,7 @@ func (m *MultiClient) txBroadcasterLoop() {
 			}),
 		)
 
-		txBytes, err = tx.BuildTxBytes(protoConfig, txBuilder, setting.Config.BlockchainInfo.ChainId, unsignedMsgs)
+		txBytes, err = stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.BlockchainInfo.ChainId, unsignedMsgs)
 		if err != nil {
 			utils.ErrorLog("couldn't build tx bytes", err)
 			return
