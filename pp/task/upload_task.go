@@ -518,6 +518,7 @@ func GetReuploadSliceTask(ctx context.Context, slice *SliceWithStatus, ppInfo *p
 			SliceNumber: slice.SliceNumber,
 			SliceOffset: slice.SliceOffset,
 			PpInfo:      ppInfo,
+			SpNodeSign:  slice.SpNodeSign,
 		},
 		SliceOffsetInfo: sl,
 		Data:            data,
