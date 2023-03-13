@@ -417,7 +417,6 @@ func CreateUploadSliceTaskFile(ctx context.Context, slice *SliceWithStatus, ppIn
 		SliceOffsetInfo: sl,
 		FileCRC:         uploadTask.FileCRC,
 		SliceTotalSize:  dataSize,
-		Data:            data,
 		SpP2pAddress:    uploadTask.SpP2pAddress,
 	}
 
@@ -522,6 +521,7 @@ func GetReuploadSliceTask(ctx context.Context, slice *SliceWithStatus, ppInfo *p
 			SpNodeSign:  slice.SpNodeSign,
 		},
 		SliceOffsetInfo: sl,
+		Data:            data,
 		SliceTotalSize:  dataSize,
 		SpP2pAddress:    uploadTask.SpP2pAddress,
 	}
