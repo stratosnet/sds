@@ -187,7 +187,7 @@ func selectAndConnectToOptSp(ctx context.Context) {
 	sort.Slice(candidateSps, func(i, j int) bool {
 		return candidateSps[i].spResponseTimeCost < candidateSps[j].spResponseTimeCost
 	})
-	nSpsConsidered := 3 // Select from top 3 SPs
+	nSpsConsidered := utils.LatencyCheckTopSpsConsidered // Select from top 3 SPs
 	if nSpsConsidered > len(candidateSps) {
 		nSpsConsidered = len(candidateSps)
 	}
