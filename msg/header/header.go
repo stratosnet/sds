@@ -158,6 +158,9 @@ const (
 	// report node status
 	ReqReportNodeStatus = "ReqRNS"
 	RspReportNodeStatus = "RspRNS"
+	// Check status of SP node
+	ReqSpStatus = "ReqSpSta"
+	RspSpStatus = "RspSpSta"
 
 	ReqTransferBLSSignature = "ReqTrBLS"
 	RspTransferBLSSignature = "RspTrBLS"
