@@ -365,6 +365,7 @@ func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileT
 		pp.DebugLogf(ctx, "starting to upload slice %v for file %v", slice.SliceNumber, uploadTask.FileHash)
 		err = UploadFileSlice(ctx, uploadSliceTask)
 		if err != nil {
+			utils.ErrorLogf("Error uploading slice %v: %v", uploadSliceTask.SliceOffsetInfo.SliceHash, err.Error())
 			slice.SetError(err, false, uploadTask)
 			return
 		}
@@ -372,7 +373,6 @@ func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileT
 	}
 }
 
-// UploadPause
 func UploadPause(ctx context.Context, fileHash, reqID string, w http.ResponseWriter) {
 	p2pserver.GetP2pServer(ctx).RangeCachedConn("upload#"+fileHash, func(k, v interface{}) bool {
 		conn := v.(*cf.ClientConn)

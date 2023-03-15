@@ -262,7 +262,13 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 	}
 	var ctStat = CostTimeStat{}
 
+	data, err := file.GetSliceDataFromTmp(tk.FileHash, tk.SliceOffsetInfo.SliceHash)
+	if err != nil {
+		return errors.Wrap(err, "failed to get slice data from tmp")
+	}
+
 	if tkDataLen <= setting.MAXDATA {
+		tk.Data = data
 		tk.SliceOffsetInfo.SliceOffset.SliceOffsetStart = 0
 
 		packetId, newCtx := p2pserver.CreateNewContextPacketId(ctx)
@@ -276,10 +282,6 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 		return sendSlice(newCtx, requests.ReqUploadFileSliceData(tk, storageP2pAddress), fileHash, storageP2pAddress, storageNetworkAddress)
 	}
 
-	data, err := file.GetSliceDataFromTmp(tk.FileHash, tk.SliceOffsetInfo.SliceHash)
-	if err != nil {
-		return errors.Wrap(err, "failed get slice data from tmp")
-	}
 	dataStart := 0
 	dataEnd := setting.MAXDATA
 	for {
