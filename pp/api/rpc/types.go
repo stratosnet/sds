@@ -11,6 +11,7 @@ const (
 	INTERNAL_DATA_FAILURE string = "-9"
 	INTERNAL_COMM_FAILURE string = "-10"
 	WRONG_FILE_INFO       string = "-11"
+	WRONG_WALLET_ADDRESS  string = "-12"
 
 	UPLOAD_DATA     string = "1"
 	DOWNLOAD_OK     string = "2"
@@ -145,4 +146,48 @@ type FileShareResult struct {
 type GetOzoneResult struct {
 	Return string `json:"return"`
 	Ozone  string `json:"ozone,omitempty"`
+}
+
+// rp: request RegisterNewPP
+type ParamReqRP struct {
+	P2PAddr    string `json:"p2paddr"`
+	WalletAddr string `json:"walletaddr"`
+}
+
+type RPResult struct {
+	Return    string `json:"return"`
+	AlreadyPp bool   `json:"alreadypp"`
+}
+
+// activate: request to activate pp node
+type ParamReqActivate struct {
+	Stake string `json:"stake"`
+	Fee   string `json:"fee"`
+	Gas   uint64 `json:"gas"`
+}
+
+type ActivateResult struct {
+	Return          string `json:"return"`
+	ActivationState uint32 `json:"activationstate"`
+}
+
+// prepay: request to buy ozone using token
+type ParamReqPrepay struct {
+	WalletAddr   string `json:"walletaddr"`
+	PrepayAmount string `json:"prepayamount"`
+	Fee          string `json:"fee"`
+	Gas          uint64 `json:"gas"`
+}
+
+type PrepayResult struct {
+	Return string `json:"return"`
+}
+
+// startmining: request to startmining
+type ParamReqStartMining struct {
+	P2PAddr string `json:"p2paddr"`
+}
+
+type StartMiningResult struct {
+	Return string `json:"return"`
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
+	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
@@ -29,8 +30,15 @@ func RspRegisterNewPP(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
+	rpcResult := &rpc.RPResult{}
+	reqId := core.GetRemoteReqId(ctx)
+	if reqId != "" {
+		defer pp.SetRPResult(setting.P2PAddress+setting.WalletAddress+reqId, rpcResult)
+	}
 	pp.Log(ctx, "get RspRegisterNewPP", target.Result.State, target.Result.Msg)
+	rpcResult.AlreadyPp = target.AlreadyPp
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE
 		if target.AlreadyPp {
 			setting.IsPP = true
 			setting.IsPPSyncedWithSP = true
@@ -42,4 +50,5 @@ func RspRegisterNewPP(ctx context.Context, conn core.WriteCloser) {
 	pp.Log(ctx, "registered as PP successfully, you can deposit by `activate` ")
 	setting.IsPP = true
 	setting.IsPPSyncedWithSP = true
+	rpcResult.Return = rpc.SUCCESS
 }
