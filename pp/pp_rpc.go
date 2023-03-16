@@ -2,7 +2,6 @@ package pp
 
 import (
 	"sync"
-	"time"
 
 	"github.com/stratosnet/sds/pp/api/rpc"
 )
