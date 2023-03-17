@@ -150,7 +150,7 @@ type GetOzoneResult struct {
 
 // rp: request RegisterNewPP
 type ParamReqRP struct {
-	P2PAddr    string `json:"p2paddr"`
+	//P2PAddr    string `json:"p2paddr"`
 	WalletAddr string `json:"walletaddr"`
 }
 
@@ -161,9 +161,10 @@ type RPResult struct {
 
 // activate: request to activate pp node
 type ParamReqActivate struct {
-	Stake string `json:"stake"`
-	Fee   string `json:"fee"`
-	Gas   uint64 `json:"gas"`
+	WalletAddr string `json:"walletaddr"`
+	Stake      string `json:"stake"`
+	Fee        string `json:"fee"`
+	Gas        uint64 `json:"gas"`
 }
 
 type ActivateResult struct {
@@ -185,7 +186,8 @@ type PrepayResult struct {
 
 // startmining: request to startmining
 type ParamReqStartMining struct {
-	P2PAddr string `json:"p2paddr"`
+	WalletAddr string `json:"walletaddr"`
+	//P2PAddr    string `json:"p2paddr"`
 }
 
 type StartMiningResult struct {

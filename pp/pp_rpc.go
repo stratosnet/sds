@@ -9,16 +9,16 @@ import (
 var (
 	ALLOW_OWNER_RPC bool
 
-	// key(walletP2PAddress + ppP2PAddress) : value(chan *rpc.Result)
+	// key(walletAddress + P2PAddress + reqId) : value(*rpc.GetRPResult)
 	rpcRPResultMap = &sync.Map{}
 
-	// key(fileHash) : value(chan []byte)
+	// key(walletAddress + reqId) : value(*rpc.GetActivateResult)
 	rpcActivateResultMap = &sync.Map{}
 
-	// key(fileHash + fileReqId) : value(chan *rpc.Result)
+	// key(walletAddress + reqId) : value(*rpc.GetPrepayResult)
 	rpcPrepayResultMap = &sync.Map{}
 
-	// key(fileHash + file) : value(downloadReady)
+	// key(P2PAddress + reqId) : value(*rpc.GetStartMiningResult)
 	rpcStartMiningResultMap = &sync.Map{}
 )
 
