@@ -105,22 +105,39 @@ func (p *Network) ListenOffline(ctx context.Context) {
 	}
 }
 
-func (p *Network) ClearPingTimeSPMap() {
-	p.pingTimeSPMap = &sync.Map{}
+func (p *Network) ClearPingTimeMap(sp bool) {
+	if sp {
+		p.pingTimeSPMap = &sync.Map{}
+	} else {
+		p.pingTimePPMap = &sync.Map{}
+	}
 }
 
-func (p *Network) StorePingTimeSPMap(server string, start int64) {
-	p.pingTimePPMap.Store(server, start)
+func (p *Network) StorePingTimeMap(server string, start int64, sp bool) {
+	if sp {
+		p.pingTimeSPMap.Store(server, start)
+	} else {
+		p.pingTimePPMap.Store(server, start)
+	}
 }
 
-func (p *Network) LoadPingTimeSPMap(key string) (int64, bool) {
-	if start, ok := p.pingTimePPMap.Load(key); ok {
+func (p *Network) LoadPingTimeMap(key string, sp bool) (int64, bool) {
+	chosenMap := p.pingTimePPMap
+	if sp {
+		chosenMap = p.pingTimeSPMap
+	}
+
+	if start, ok := chosenMap.Load(key); ok {
 		return start.(int64), true
 	} else {
 		return 0, false
 	}
 }
 
-func (p *Network) DeletePingTimePPMap(key string) {
-	p.pingTimePPMap.Delete(key)
+func (p *Network) DeletePingTimeMap(key string, sp bool) {
+	if sp {
+		p.pingTimeSPMap.Delete(key)
+	} else {
+		p.pingTimePPMap.Delete(key)
+	}
 }

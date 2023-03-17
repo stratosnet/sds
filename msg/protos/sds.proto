@@ -694,14 +694,27 @@ message RspLatencyCheck {
   string sp_index = 4;
 }
 
-// BP msg ###################
+message ReqSpStatus {
+  string target_p2p_address = 1;
+  string requester_p2p_address = 2;
+  bytes  sign = 3;
+}
 
+message RspSpStatus {
+  string target_p2p_address = 1;
+  string requester_p2p_address = 2;
+  bytes  sign = 3;
+  uint32 activation_state = 4;
+  uint64 connection_count = 5;
+  uint64 online_pp_count = 6;
+}
+
+// get bp BLS public key
 message ReqBLSPublicKey {
   string msg = 1;
   string id = 2;
 }
 
-// get bp BLS public key
 message RspBPBLSPublicKey {
   ReqRegister bp_info = 1;
   int64 code = 2;
@@ -713,7 +726,6 @@ message ReqBalance {
   string wallet_address = 1;
   string id = 2;
 }
-
 
 message RspBalance {
   float balance = 1;
@@ -728,7 +740,6 @@ message ReqTransaction {
   string id = 3;
 }
 
-
 message RspTransaction {
   string rest = 1;
   int64 code = 2;
@@ -741,7 +752,6 @@ message ReqBlockInfo {
   string id = 3;
 }
 
-
 message RspBlockInfo {
   bytes block_info = 1;
   int64 code = 2;
@@ -753,7 +763,6 @@ message ReqBlockCheck{
   int64 block_height = 1;
   string id = 3;
 }
-
 
 message RspBlockCheck {
   repeated BlockCheckInfo block_list = 1;

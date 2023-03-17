@@ -33,9 +33,9 @@ func (p *P2pServer) NewClientToMainSp(ctx context.Context, server string) error 
 	return err
 }
 
-func (p *P2pServer) NewClientToAlternativeSp(ctx context.Context, server string, heartbeat bool) (*cf.ClientConn, error) {
+func (p *P2pServer) NewClientToAlternativeSp(ctx context.Context, server string) (*cf.ClientConn, error) {
 	utils.DebugLog("NewClientToAlternativeSp: to", server)
-	return p.newClient(ctx, server, heartbeat, false, false)
+	return p.newClient(ctx, server, false, false, false)
 }
 
 func (p *P2pServer) NewClientToPp(ctx context.Context, server string, heartbeat bool) (*cf.ClientConn, error) {
