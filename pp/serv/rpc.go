@@ -706,7 +706,7 @@ func uploadStreamTmpFile(ctx context.Context, fileHash, fileName string, fileSiz
 }
 
 func (api *rpcPrivApi) RequestRegisterNewPP(ctx context.Context, param rpc_api.ParamReqRP) rpc_api.RPResult {
-	metrics.RpcReqCount.WithLabelValues("RequestRP").Inc()
+	metrics.RpcReqCount.WithLabelValues("RequestRegisterNewPP").Inc()
 	reqId := uuid.New().String()
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
 	event.RegisterNewPP(ctx)

@@ -625,7 +625,7 @@ func reqRpMsg() []byte {
 	}
 
 	// wrap to the json-rpc message
-	return wrapJsonRpc("owner_requestRP", pm)
+	return wrapJsonRpc("owner_requestRegisterNewPP", pm)
 }
 
 // reqActivateMsg
