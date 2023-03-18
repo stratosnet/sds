@@ -57,5 +57,4 @@ func Ipfsmigrate(cmd *cobra.Command, args []string) {
 			break
 		}
 	}
-	return
 }
