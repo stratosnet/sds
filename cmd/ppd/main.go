@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/stratosnet/sds/cmd/ppd/ipfs"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
@@ -80,16 +81,24 @@ func getTerminalCmd() *cobra.Command {
 
 func getIpfsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "ipfsapi",
-		Short:   "open ipfsapi attached to node demon",
-		PreRunE: ipfsapiPreRunE,
-		Run:     ipfsapi,
+		Use:     "ipfs",
+		Short:   "ipfs api server attached to node demon",
+		PreRunE: ipfs.IpfsapiPreRunE,
+		Run:     ipfs.Ipfsapi,
 	}
-	cmd.Flags().StringP(rpcModeFlag, "m", "ipc", "use http rpc or ipc")
-	cmd.Flags().StringP(ipfsPortFlag, "p", "6798", "port")
-	cmd.Flags().StringP(ipcEndpoint, "", "", "ipc endpoint path")
-	cmd.Flags().StringP(httpRpcUrl, "", httpRpcDefaultUrl, "http rpc url")
 
+	migrateCmd := &cobra.Command{
+		Use:     "migrate",
+		Short:   "migrate ipfs file to sds",
+		PreRunE: ipfs.IpfsapiPreRunE,
+		Run:     ipfs.Ipfsmigrate,
+	}
+
+	cmd.Flags().StringP(ipfs.RpcModeFlag, "m", "ipc", "use http rpc or ipc")
+	cmd.Flags().StringP(ipfs.IpfsPortFlag, "p", "6798", "port")
+	cmd.Flags().StringP(ipfs.IpcEndpoint, "", "", "ipc endpoint path")
+	cmd.Flags().StringP(ipfs.HttpRpcUrl, "", ipfs.HttpRpcDefaultUrl, "http rpc url")
+	cmd.AddCommand(migrateCmd)
 	return cmd
 }
 

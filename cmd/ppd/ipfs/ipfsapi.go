@@ -1,4 +1,4 @@
-package main
+package ipfs
 
 import (
 	"bytes"
@@ -33,15 +33,16 @@ type ipfsenv struct {
 }
 
 const (
-	ipcNamespace      = "remoterpc"
-	httpRpcNamespace  = "user"
-	httpRpcUrl        = "httpRpcUrl"
-	rpcModeFlag       = "rpcMode"
-	rpcModeHttpRpc    = "httpRpc"
-	rpcModeIpc        = "ipc"
-	ipcEndpoint       = "ipcEndpoint"
-	ipfsPortFlag      = "port"
-	httpRpcDefaultUrl = "http://127.0.0.1:8335"
+	IpcNamespace             = "remoterpc"
+	HttpRpcNamespace         = "user"
+	HttpRpcUrl               = "httpRpcUrl"
+	RpcModeFlag              = "rpcMode"
+	RpcModeHttpRpc           = "httpRpc"
+	RpcModeIpc               = "ipc"
+	IpcEndpoint              = "ipcEndpoint"
+	IpfsPortFlag             = "port"
+	HttpRpcDefaultUrl        = "http://127.0.0.1:8335"
+	HOME              string = "home"
 )
 
 var (
@@ -50,13 +51,13 @@ var (
 	WalletAddress    string
 )
 
-func ipfsapi(cmd *cobra.Command, args []string) {
-	portParam, _ := cmd.Flags().GetString(ipfsPortFlag)
-	rpcModeParam, _ := cmd.Flags().GetString(rpcModeFlag)
-	ipcEndpointParam, _ := cmd.Flags().GetString(ipcEndpoint)
-	httpRpcUrl, _ := cmd.Flags().GetString(httpRpcUrl)
+func Ipfsapi(cmd *cobra.Command, args []string) {
+	portParam, _ := cmd.Flags().GetString(IpfsPortFlag)
+	rpcModeParam, _ := cmd.Flags().GetString(RpcModeFlag)
+	ipcEndpointParam, _ := cmd.Flags().GetString(IpcEndpoint)
+	httpRpcUrl, _ := cmd.Flags().GetString(HttpRpcUrl)
 	env := ipfsenv{}
-	if rpcModeParam == rpcModeIpc {
+	if rpcModeParam == RpcModeIpc {
 		ipcEndpoint := setting.IpcEndpoint
 		if ipcEndpointParam != "" {
 			ipcEndpoint = ipcEndpointParam
@@ -67,7 +68,7 @@ func ipfsapi(cmd *cobra.Command, args []string) {
 		}
 		env.rpcClient = c
 		env.requester = ipcRequester{}
-	} else if rpcModeParam == rpcModeHttpRpc {
+	} else if rpcModeParam == RpcModeHttpRpc {
 		env.requester = httpRequester{}
 		env.httpRpcUrl = httpRpcUrl
 	} else {
@@ -85,7 +86,7 @@ func ipfsapi(cmd *cobra.Command, args []string) {
 	}
 }
 
-func ipfsapiPreRunE(cmd *cobra.Command, args []string) error {
+func IpfsapiPreRunE(cmd *cobra.Command, args []string) error {
 	homePath, err := cmd.Flags().GetString(HOME)
 	if err != nil {
 		utils.ErrorLog("failed to get 'home' path for the client")
@@ -114,7 +115,7 @@ func (requester httpRequester) sendRequest(param interface{}, res any, rpcCmd st
 	}
 
 	// wrap to the json-rpc message
-	method := httpRpcNamespace + "_" + rpcCmd
+	method := HttpRpcNamespace + "_" + rpcCmd
 	request := wrapJsonRpc(method, pm)
 
 	if len(request) < 300 {
@@ -167,7 +168,7 @@ func (requester httpRequester) sendRequest(param interface{}, res any, rpcCmd st
 
 func (requester ipcRequester) sendRequest(params interface{}, res any, ipcCmd string, env cmds.Environment) error {
 	ipfsenv, _ := env.(ipfsenv)
-	method := ipcNamespace + "_" + ipcCmd
+	method := IpcNamespace + "_" + ipcCmd
 	err := ipfsenv.rpcClient.Call(res, method, params)
 	if err != nil {
 		return err

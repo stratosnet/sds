@@ -601,6 +601,9 @@ func (api *terminalCmd) MigrateIpfsFile(ctx context.Context, param []string) (Cm
 		fileName = param[1]
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	event.MigrateIpfsFile(ctx, param[0], fileName)
+	err := event.MigrateIpfsFile(ctx, param[0], fileName)
+	if err != nil {
+		return CmdResult{Msg: ""}, err
+	}
 	return CmdResult{Msg: "file downloaded from ipfs, start uploading to sds"}, nil
 }

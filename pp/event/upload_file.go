@@ -31,13 +31,15 @@ import (
 var isCover bool
 
 // MigrateIpfsFile migrate ipfs file to sds
-func MigrateIpfsFile(ctx context.Context, cid, fileName string) {
+func MigrateIpfsFile(ctx context.Context, cid, fileName string) error {
 	filePath, err := ipfs.GetFile(ctx, cid, fileName)
 	if err != nil {
 		pp.ErrorLog(ctx, "failed to fetch the file from ipfs: ", err)
-		return
+		return err
 	}
+	pp.Log(ctx, "file is downloaded in the path"+filePath)
 	RequestUploadFile(ctx, filePath, false, nil)
+	return nil
 }
 
 // RequestUploadFile request to SP for upload file
