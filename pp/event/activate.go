@@ -9,6 +9,7 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
+	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
@@ -63,11 +64,19 @@ func RspActivate(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
+	rpcResult := &rpc.ActivateResult{}
+	reqId := core.GetRemoteReqId(ctx)
+	if reqId != "" {
+		defer pp.SetActivateResult(setting.WalletAddress+reqId, rpcResult)
+	}
+
 	pp.Log(ctx, "get RspActivatePP", target.Result.State, target.Result.Msg)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE
 		return
 	}
 
+	rpcResult.ActivationState = target.ActivationState
 	if target.ActivationState == types.PP_ACTIVE {
 		pp.Log(ctx, "Current node is already active")
 		setting.State = target.ActivationState
@@ -87,6 +96,7 @@ func RspActivate(ctx context.Context, conn core.WriteCloser) {
 	case types.PP_UNBONDING:
 		pp.Log(ctx, "This node is unbonding")
 	}
+	rpcResult.Return = rpc.SUCCESS
 }
 
 // RspActivated Response when this PP node was successfully activated

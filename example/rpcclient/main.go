@@ -245,7 +245,7 @@ func put(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////////////////////////////////
 func reqUploadStreamMsg(fileName, hash string) []byte {
 	// file size
 	info, err := file.GetFileInfo(fileName)
@@ -377,7 +377,7 @@ func putstream(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // getParams
 func reqDownloadMsg(hash, sdmPath string) []byte {
 	// wallet address
@@ -603,6 +603,112 @@ func reqListMsg(page uint64) []byte {
 	return wrapJsonRpc("user_requestList", pm)
 }
 
+// reqRpMsg
+func reqRpMsg() []byte {
+	// wallet address
+	ret := readWalletKeys(WalletAddress)
+	if !ret {
+		utils.ErrorLog("Failed reading key file.")
+		return nil
+	}
+
+	// param
+	params := make([]rpc.ParamReqRP, 0)
+	params = append(params, rpc.ParamReqRP{
+		WalletAddr: WalletAddress,
+	})
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.ErrorLog("failed marshal param for ReqRP")
+		return nil
+	}
+
+	// wrap to the json-rpc message
+	return wrapJsonRpc("owner_requestRegisterNewPP", pm)
+}
+
+// reqActivateMsg
+func reqActivateMsg(stake, fee string, gas uint64) []byte {
+	// wallet address
+	ret := readWalletKeys(WalletAddress)
+	if !ret {
+		utils.ErrorLog("Failed reading key file.")
+		return nil
+	}
+
+	// param
+	params := make([]rpc.ParamReqActivate, 0)
+	params = append(params, rpc.ParamReqActivate{
+		WalletAddr: WalletAddress,
+		Stake:      stake,
+		Fee:        fee,
+		Gas:        gas,
+	})
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.ErrorLog("failed marshal param for ReqActivate")
+		return nil
+	}
+
+	// wrap to the json-rpc message
+	return wrapJsonRpc("owner_requestActivate", pm)
+}
+
+// reqPrepayMsg
+func reqPrepayMsg(prepayAmount, fee string, gasUint64 uint64) []byte {
+	// wallet address
+	ret := readWalletKeys(WalletAddress)
+	if !ret {
+		utils.ErrorLog("Failed reading key file.")
+		return nil
+	}
+
+	// param
+	params := make([]rpc.ParamReqPrepay, 0)
+	params = append(params, rpc.ParamReqPrepay{
+		WalletAddr:   WalletAddress,
+		PrepayAmount: prepayAmount,
+		Fee:          fee,
+		Gas:          gasUint64,
+	})
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.ErrorLog("failed marshal param for ReqPrepay")
+		return nil
+	}
+
+	// wrap to the json-rpc message
+	return wrapJsonRpc("owner_requestPrepay", pm)
+}
+
+// reqStartMiningMsg
+func reqStartMiningMsg() []byte {
+	// wallet address
+	ret := readWalletKeys(WalletAddress)
+	if !ret {
+		utils.ErrorLog("Failed reading key file.")
+		return nil
+	}
+
+	// param
+	params := make([]rpc.ParamReqStartMining, 0)
+	params = append(params, rpc.ParamReqStartMining{
+		WalletAddr: WalletAddress,
+	})
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.ErrorLog("failed marshal param for ReqStartMining")
+		return nil
+	}
+
+	// wrap to the json-rpc message
+	return wrapJsonRpc("owner_requestStartMining", pm)
+}
+
 // printFileList
 func printFileList(res rpc.FileListResult) {
 	if res.Return == rpc.SUCCESS {
@@ -661,7 +767,7 @@ func list(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // reqGetOzoneMsg
 func reqGetOzoneMsg() []byte {
 	// wallet address
@@ -740,7 +846,7 @@ func printSharedFileList(res rpc.FileShareResult) {
 	}
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // reqListShareMsg
 func reqListShareMsg(page uint64) []byte {
 	// wallet address
@@ -1144,7 +1250,7 @@ func getshared(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // httpRequest
 func httpRequest(request []byte) []byte {
 	if len(request) < 300 {
@@ -1257,6 +1363,27 @@ func main() {
 		RunE:  getozone,
 	}
 
+	rpCmd := &cobra.Command{
+		Use:   "rp",
+		Short: "register new pp",
+		RunE:  rp,
+	}
+	activateCmd := &cobra.Command{
+		Use:   "activate",
+		Short: "activate pp",
+		RunE:  activate,
+	}
+	prepayCmd := &cobra.Command{
+		Use:   "prepay",
+		Short: "purchase ozone",
+		RunE:  prepay,
+	}
+	startminingCmd := &cobra.Command{
+		Use:   "startmining",
+		Short: "turn pp to mining status",
+		RunE:  startmining,
+	}
+
 	rootCmd.AddCommand(putCmd)
 	rootCmd.AddCommand(putstreamCmd)
 	rootCmd.AddCommand(getCmd)
@@ -1266,6 +1393,10 @@ func main() {
 	rootCmd.AddCommand(stopsharedCmd)
 	rootCmd.AddCommand(getsharedCmd)
 	rootCmd.AddCommand(getozoneCmd)
+	rootCmd.AddCommand(rpCmd)
+	rootCmd.AddCommand(activateCmd)
+	rootCmd.AddCommand(prepayCmd)
+	rootCmd.AddCommand(startminingCmd)
 
 	combineLogger := utils.NewDefaultLogger("./logs/stdout.log", true, true)
 	combineLogger.SetLogLevel(utils.Info)
@@ -1274,4 +1405,166 @@ func main() {
 	if err != nil {
 		utils.ErrorLog(err)
 	}
+}
+
+// rp
+func rp(cmd *cobra.Command, args []string) error {
+	r := reqRpMsg()
+	if r == nil {
+		return nil
+	}
+	utils.Log("- request register new pp (method: owner_requestRP)")
+	// http request-respond
+	body := httpRequest(r)
+	if body == nil {
+		utils.ErrorLog("json marshal error")
+		return nil
+	}
+
+	// Handle rsp
+	var rsp jsonrpcMessage
+	err := json.Unmarshal(body, &rsp)
+	if err != nil {
+		return nil
+	}
+
+	var res rpc.RPResult
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+		return nil
+	}
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
+	return nil
+}
+
+// activate
+func activate(cmd *cobra.Command, args []string) error {
+	if len(args) != 3 {
+		utils.ErrorLog("wrong number of arguments")
+		return nil
+	}
+	stake := args[0]
+	fee := args[1]
+	gas := args[2]
+	gasUint64, err := strconv.ParseUint(gas, 10, 64)
+	if err != nil {
+		utils.ErrorLog("wrong number of gas")
+		return nil
+	}
+
+	r := reqActivateMsg(stake, fee, gasUint64)
+	if r == nil {
+		return nil
+	}
+	utils.Log("- request register new pp (method: owner_requestActivate)")
+	// http request-respond
+	body := httpRequest(r)
+	if body == nil {
+		utils.ErrorLog("json marshal error")
+		return nil
+	}
+
+	// Handle rsp
+	var rsp jsonrpcMessage
+	err = json.Unmarshal(body, &rsp)
+	if err != nil {
+		return nil
+	}
+
+	var res rpc.ActivateResult
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+		return nil
+	}
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
+	return nil
+}
+
+// prepay
+func prepay(cmd *cobra.Command, args []string) error {
+	if len(args) != 3 {
+		utils.ErrorLog("wrong number of arguments")
+		return nil
+	}
+	prepayAmount := args[0]
+	fee := args[1]
+	gas := args[2]
+	gasUint64, err := strconv.ParseUint(gas, 10, 64)
+	if err != nil {
+		utils.ErrorLog("wrong number of gas")
+		return nil
+	}
+
+	r := reqPrepayMsg(prepayAmount, fee, gasUint64)
+	if r == nil {
+		return nil
+	}
+	utils.Log("- request register new pp (method: owner_requestPrepay)")
+	// http request-respond
+	body := httpRequest(r)
+	if body == nil {
+		utils.ErrorLog("json marshal error")
+		return nil
+	}
+
+	// Handle rsp
+	var rsp jsonrpcMessage
+	err = json.Unmarshal(body, &rsp)
+	if err != nil {
+		return nil
+	}
+
+	var res rpc.PrepayResult
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+		return nil
+	}
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
+	return nil
+}
+
+// startmining
+func startmining(cmd *cobra.Command, args []string) error {
+	r := reqStartMiningMsg()
+	if r == nil {
+		return nil
+	}
+	utils.Log("- request register new pp (method: owner_requestStartMining)")
+	// http request-respond
+	body := httpRequest(r)
+	if body == nil {
+		utils.ErrorLog("json marshal error")
+		return nil
+	}
+
+	// Handle rsp
+	var rsp jsonrpcMessage
+	err := json.Unmarshal(body, &rsp)
+	if err != nil {
+		return nil
+	}
+
+	var res rpc.StartMiningResult
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+		return nil
+	}
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
+	return nil
 }
