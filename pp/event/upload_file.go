@@ -47,28 +47,20 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ htt
 		pp.ErrorLog(ctx, err)
 		return
 	}
-	if isFile {
-		p := requests.RequestUploadFileData(ctx, path, "", false, false, isEncrypted)
-		if err = ReqGetWalletOzForUpload(ctx, setting.WalletAddress, task.LOCAL_REQID, p); err != nil {
-			pp.ErrorLog(ctx, err)
+	if !isFile {
+		var target string
+		if path[len(path)-1:] == "/" {
+			target = path[:len(path)-1] + ".tar.zst"
+		} else {
+			target = path + ".tar.zst"
 		}
-		return
+		file.CreateTarWithZstd(path, target)
+		utils.DebugLog("new path:", target)
+		path = target
 	}
-
-	// is directory
-	pp.DebugLog(ctx, "this is a directory, not file")
-	file.GetAllFiles(path)
-	for {
-		select {
-		case pathString := <-setting.UpChan:
-			pp.DebugLog(ctx, "path string == ", pathString)
-			p := requests.RequestUploadFileData(ctx, pathString, "", false, false, isEncrypted)
-			if err = ReqGetWalletOzForUpload(ctx, setting.WalletAddress, task.LOCAL_REQID, p); err != nil {
-				pp.ErrorLog(ctx, err)
-			}
-		default:
-			return
-		}
+	p := requests.RequestUploadFileData(ctx, path, "", false, false, isEncrypted)
+	if err = ReqGetWalletOzForUpload(ctx, setting.WalletAddress, task.LOCAL_REQID, p); err != nil {
+		pp.ErrorLog(ctx, err)
 	}
 }
 
