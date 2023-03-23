@@ -80,8 +80,14 @@ func Ipfsmigrate(cmd *cobra.Command, args []string) {
 
 	// get file from ips
 	filePath, err := ipfs.GetFile(ctx, args[0], fileName)
+	if err != nil {
+		panic(err)
+	}
 
 	req, err := cli.Parse(ctx, []string{CMD_ADD, filePath}, os.Stdin, RootCmd)
+	if err != nil {
+		panic(err)
+	}
 
 	cliRe, err := cli.NewResponseEmitter(os.Stdout, os.Stderr, req)
 	if err != nil {
