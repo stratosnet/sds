@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -8,7 +9,7 @@ import (
 
 	"github.com/alex023/clock"
 	"github.com/spf13/cobra"
-	"github.com/stratosnet/sds/cmd/ppd/cliutils"
+	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
@@ -69,7 +70,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	}
 
 	wallets := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "wallets", param)
+		return callRpc(c, "wallets", param)
 	}
 
 	getoz := func(line string, param []string) bool {
@@ -78,7 +79,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 			return false
 		}
 		password := console.MyGetPassword("input password", false)
-		return cliutils.CallRpc(c, "getoz", []string{param[0], password})
+		return callRpc(c, "getoz", []string{param[0], password})
 	}
 
 	newwallet := func(line string, param []string) bool {
@@ -101,129 +102,130 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		}
 		password := console.MyGetPassword("input password", false)
 
-		return cliutils.CallRpc(c, "login", []string{param[0], password})
+		return callRpc(c, "login", []string{param[0], password})
 	}
 
 	start := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "start", param)
+		return callRpc(c, "start", param)
 	}
 
 	registerPP := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "registerPP", param)
+		return callRpc(c, "registerPP", param)
 	}
 
 	activate := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "activate", param)
+		return callRpc(c, "activate", param)
 	}
 
 	updateStake := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "updateStake", param)
+		return callRpc(c, "updateStake", param)
 	}
 
 	status := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "status", param)
+		return callRpc(c, "status", param)
 	}
 
 	deactivate := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "deactivate", param)
+		return callRpc(c, "deactivate", param)
 	}
 
 	prepay := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "prepay", param)
+		return callRpc(c, "prepay", param)
 	}
 
 	upload := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "upload", param)
+		return callRpc(c, "upload", param)
 	}
 
 	uploadStream := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "uploadStream", param)
+		return callRpc(c, "uploadStream", param)
 	}
 
 	backupStatus := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "backupStatus", param)
+		return callRpc(c, "backupStatus", param)
 	}
 
 	list := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "list", param)
+		return callRpc(c, "list", param)
 	}
 
 	download := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "download", param)
+		return callRpc(c, "download", param)
 	}
 
 	deleteFn := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "deleteFn", param)
+		return callRpc(c, "deleteFn", param)
 	}
 
 	ver := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "ver", param)
+		return callRpc(c, "ver", param)
 	}
 
 	monitor := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "monitor", param)
+		return callRpc(c, "monitor", param)
 	}
 
 	stopmonitor := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "stopMonitor", param)
+		return callRpc(c, "stopMonitor", param)
 	}
 
 	config := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "config", param)
+		return callRpc(c, "config", param)
 	}
 
 	sharepath := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "sharePath", param)
+		return callRpc(c, "sharePath", param)
 	}
 
 	sharefile := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "shareFile", param)
+		return callRpc(c, "shareFile", param)
 	}
 
 	allshare := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "allShare", param)
+		return callRpc(c, "allShare", param)
 	}
 
 	cancelshare := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "cancelShare", param)
+		return callRpc(c, "cancelShare", param)
 	}
 
 	getsharefile := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "getShareFile", param)
+		return callRpc(c, "getShareFile", param)
 	}
 
 	pauseget := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "pauseGet", param)
+		return callRpc(c, "pauseGet", param)
 	}
 
 	pauseput := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "pausePut", param)
+		return callRpc(c, "pausePut", param)
 	}
 
 	cancelget := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "cancelGet", param)
+		return callRpc(c, "cancelGet", param)
 	}
 	monitortoken := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "monitorToken", param)
+		return callRpc(c, "monitorToken", param)
 	}
 	maintenance := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "maintenance", param)
+		return callRpc(c, "maintenance", param)
 	}
 	downgradeInfo := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "downgradeInfo", param)
+		return callRpc(c, "downgradeInfo", param)
 	}
 	performanceMeasure := func(line string, param []string) bool {
-		return cliutils.CallRpc(c, "performanceMeasure", param)
+		return callRpc(c, "performanceMeasure", param)
 	}
 
-	sub, nc, err := cliutils.SubscribeLog(c)
+	nc := make(chan serv.LogMsg)
+	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription")
 	if err != nil {
 		utils.ErrorLog("can't subscribe:", err)
 		return
 	}
-	defer cliutils.DestroySub(c, sub)
+	defer destroySub(c, sub)
 
-	go cliutils.PrintLogNotification(nc)
+	go printLogNotification(nc)
 
 	console.Mystdin.RegisterProcessFunc("help", help, true)
 	console.Mystdin.RegisterProcessFunc("h", help, true)
@@ -283,8 +285,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 			return
 		}
 
-		cliutils.PrintExitMsg()
-		clock.NewClock().AddJobRepeat(10*time.Second, 0, cliutils.PrintExitMsg)
+		printExitMsg()
+		clock.NewClock().AddJobRepeat(10*time.Second, 0, printExitMsg)
 
 		// disable input buffering
 		_ = exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
@@ -315,4 +317,31 @@ func terminal(cmd *cobra.Command, args []string) {
 
 func terminalPreRunE(cmd *cobra.Command, args []string) error {
 	return loadConfig(cmd)
+}
+
+func callRpc(c *rpc.Client, line string, param []string) bool {
+	var result serv.CmdResult
+	err := c.Call(&result, "sds_"+line, param)
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	fmt.Println(result.Msg)
+	return true
+}
+
+func printLogNotification(nc <-chan serv.LogMsg) {
+	for n := range nc {
+		fmt.Print(n.Msg)
+	}
+}
+
+func destroySub(c *rpc.Client, sub *rpc.ClientSubscription) {
+	var cleanResult interface{}
+	sub.Unsubscribe()
+	_ = c.Call(&cleanResult, "sdslog_cleanUp")
+}
+
+func printExitMsg() {
+	fmt.Println("Press the right bracket ']' to exit")
 }

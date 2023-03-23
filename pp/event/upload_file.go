@@ -18,7 +18,6 @@ import (
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/ipfs"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
@@ -29,18 +28,6 @@ import (
 
 // var m *sync.WaitGroup
 var isCover bool
-
-// MigrateIpfsFile migrate ipfs file to sds
-func MigrateIpfsFile(ctx context.Context, cid, fileName string) error {
-	filePath, err := ipfs.GetFile(ctx, cid, fileName)
-	if err != nil {
-		pp.ErrorLog(ctx, "failed to fetch the file from ipfs: ", err)
-		return err
-	}
-	pp.Log(ctx, "file is downloaded in the path"+filePath)
-	RequestUploadFile(ctx, filePath, false, nil)
-	return nil
-}
 
 // RequestUploadFile request to SP for upload file
 func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ http.ResponseWriter) {

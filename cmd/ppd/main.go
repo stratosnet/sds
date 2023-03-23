@@ -94,10 +94,10 @@ func getIpfsCmd() *cobra.Command {
 		Run:     ipfs.Ipfsmigrate,
 	}
 
-	cmd.Flags().StringP(ipfs.RpcModeFlag, "m", "ipc", "use http rpc or ipc")
-	cmd.Flags().StringP(ipfs.IpfsPortFlag, "p", "6798", "port")
-	cmd.Flags().StringP(ipfs.IpcEndpoint, "", "", "ipc endpoint path")
-	cmd.Flags().StringP(ipfs.HttpRpcUrl, "", ipfs.HttpRpcDefaultUrl, "http rpc url")
+	cmd.PersistentFlags().StringP(ipfs.RpcModeFlag, "m", "ipc", "use http rpc or ipc")
+	cmd.PersistentFlags().StringP(ipfs.IpfsPortFlag, "p", "6798", "port")
+	cmd.PersistentFlags().StringP(ipfs.IpcEndpoint, "", "", "ipc endpoint path")
+	cmd.PersistentFlags().StringP(ipfs.HttpRpcUrl, "", ipfs.HttpRpcDefaultUrl, "http rpc url")
 	cmd.AddCommand(migrateCmd)
 	return cmd
 }

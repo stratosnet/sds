@@ -592,19 +592,3 @@ func (api *terminalCmd) PerformanceMeasure(ctx context.Context, param []string) 
 	metrics.StartLoggingPerformanceData()
 	return CmdResult{Msg: DefaultMsg}, nil
 }
-
-func (api *terminalCmd) MigrateIpfsFile(ctx context.Context, param []string) (CmdResult, error) {
-	if len(param) == 0 {
-		return CmdResult{}, errors.New("input file cid")
-	}
-	fileName := ""
-	if len(param) > 1 && param[1] != "" {
-		fileName = param[1]
-	}
-	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	err := event.MigrateIpfsFile(ctx, param[0], fileName)
-	if err != nil {
-		return CmdResult{Msg: ""}, err
-	}
-	return CmdResult{Msg: "file downloaded from ipfs, start uploading to sds"}, nil
-}
