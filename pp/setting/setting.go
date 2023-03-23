@@ -10,6 +10,7 @@ import (
 
 	"github.com/pelletier/go-toml"
 	"github.com/pkg/errors"
+	"github.com/stratosnet/sds/pp"
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/relay/stratoschain/grpc"
@@ -128,6 +129,7 @@ type config struct {
 	RestPort             string       `toml:"rest_port"`
 	InternalPort         string       `toml:"internal_port"`
 	RpcPort              string       `toml:"rpc_port"`
+	AllowOwnerRpc        bool         `toml:"allow_owner_rpc"`
 	MetricsPort          string       `toml:"metrics_port"`
 	Monitor              MonitorConn  `toml:"monitor"`
 	TrafficLogInterval   uint64       `toml:"traffic_log_interval"`
@@ -177,6 +179,7 @@ func LoadConfig(configPath string) error {
 	// todo: we shouldn't call stratoschain package to setup a global variable
 	grpc.URL = Config.StratosChainUrl
 	grpc.INSECURE = Config.Insecure
+	pp.ALLOW_OWNER_RPC = Config.AllowOwnerRpc
 
 	// Initialize SPMap
 	for _, sp := range Config.SPList {
@@ -280,6 +283,7 @@ func defaultConfig() *config {
 		InternalPort:         "",
 		TrafficLogInterval:   10,
 		SPList:               []SPBaseInfo{{NetworkAddress: "127.0.0.1:8888"}},
+		AllowOwnerRpc:        false,
 	}
 }
 

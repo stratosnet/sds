@@ -281,6 +281,7 @@ func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, 
 			if errGas != nil {
 				return CmdResult{Msg: ""}, errors.New("invalid third param. Should be a valid bech32 wallet address (beneficiary address) OR a positive integer (gas)")
 			}
+			beneficiaryAddr, _ = utiltypes.WalletAddressFromBech(setting.WalletAddress)
 			txFee.Gas = gas
 			txFee.Simulate = false
 		}

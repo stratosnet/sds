@@ -12,11 +12,14 @@ import (
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
+	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/datamesh"
@@ -46,20 +49,33 @@ type FileFetchOffset struct {
 	ResourceNodeAsked uint64
 }
 
-type rpcApi struct {
+type rpcPubApi struct {
 }
 
-func RpcApi() *rpcApi {
-	return &rpcApi{}
+func RpcPubApi() *rpcPubApi {
+	return &rpcPubApi{}
+}
+
+type rpcPrivApi struct {
+}
+
+func RpcPrivApi() *rpcPrivApi {
+	return &rpcPrivApi{}
 }
 
 // apis returns the collection of built-in RPC APIs.
 func apis() []rpc.API {
 	return []rpc.API{
 		{
+			Namespace: "owner",
+			Version:   "1.0",
+			Service:   RpcPrivApi(),
+			Public:    false,
+		},
+		{
 			Namespace: "user",
 			Version:   "1.0",
-			Service:   RpcApi(),
+			Service:   RpcPubApi(),
 			Public:    true,
 		},
 	}
@@ -89,7 +105,7 @@ func ResultHook(r *rpc_api.Result, fileHash string) *rpc_api.Result {
 	return r
 }
 
-func (api *rpcApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqUploadFile) rpc_api.Result {
+func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqUploadFile) rpc_api.Result {
 	metrics.RpcReqCount.WithLabelValues("RequestUpload").Inc()
 	metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_CLIENT")
 	fileName := param.FileName
@@ -136,7 +152,7 @@ func (api *rpcApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqUplo
 	}
 }
 
-func (api *rpcApi) UploadData(ctx context.Context, param rpc_api.ParamUploadData) rpc_api.Result {
+func (api *rpcPubApi) UploadData(ctx context.Context, param rpc_api.ParamUploadData) rpc_api.Result {
 
 	metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_SP:")
 
@@ -201,7 +217,7 @@ func (api *rpcApi) UploadData(ctx context.Context, param rpc_api.ParamUploadData
 	}
 }
 
-func (api *rpcApi) RequestUploadStream(ctx context.Context, param rpc_api.ParamReqUploadFile) rpc_api.Result {
+func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.ParamReqUploadFile) rpc_api.Result {
 	//metrics.RpcReqCount.WithLabelValues("RequestUpload").Inc()
 	//metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_CLIENT")
 	fileName := param.FileName
@@ -244,7 +260,7 @@ func (api *rpcApi) RequestUploadStream(ctx context.Context, param rpc_api.ParamR
 	}
 }
 
-func (api *rpcApi) UploadDataStream(ctx context.Context, param rpc_api.ParamUploadData) rpc_api.Result {
+func (api *rpcPubApi) UploadDataStream(ctx context.Context, param rpc_api.ParamUploadData) rpc_api.Result {
 
 	//metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_SP:")
 
@@ -309,7 +325,7 @@ func (api *rpcApi) UploadDataStream(ctx context.Context, param rpc_api.ParamUplo
 	}
 }
 
-func (api *rpcApi) RequestDownload(ctx context.Context, param rpc_api.ParamReqDownloadFile) rpc_api.Result {
+func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamReqDownloadFile) rpc_api.Result {
 	metrics.RpcReqCount.WithLabelValues("RequestDownload").Inc()
 	_, _, fileHash, _, err := datamesh.ParseFileHandle(param.FileHandle)
 	if err != nil {
@@ -377,7 +393,7 @@ func (api *rpcApi) RequestDownload(ctx context.Context, param rpc_api.ParamReqDo
 	return *result
 }
 
-func (api *rpcApi) DownloadData(ctx context.Context, param rpc_api.ParamDownloadData) rpc_api.Result {
+func (api *rpcPubApi) DownloadData(ctx context.Context, param rpc_api.ParamDownloadData) rpc_api.Result {
 	key := param.FileHash + param.ReqId
 
 	// previous piece was done, tell the caller of remote file driver to move on
@@ -406,7 +422,7 @@ func (api *rpcApi) DownloadData(ctx context.Context, param rpc_api.ParamDownload
 	return *result
 }
 
-func (api *rpcApi) DownloadedFileInfo(ctx context.Context, param rpc_api.ParamDownloadFileInfo) rpc_api.Result {
+func (api *rpcPubApi) DownloadedFileInfo(ctx context.Context, param rpc_api.ParamDownloadFileInfo) rpc_api.Result {
 	metrics.RpcReqCount.WithLabelValues("DownloadedFileInfo").Inc()
 
 	fileSize := param.FileSize
@@ -435,7 +451,7 @@ func (api *rpcApi) DownloadedFileInfo(ctx context.Context, param rpc_api.ParamDo
 	return *result
 }
 
-func (api *rpcApi) RequestList(ctx context.Context, param rpc_api.ParamReqFileList) rpc_api.FileListResult {
+func (api *rpcPubApi) RequestList(ctx context.Context, param rpc_api.ParamReqFileList) rpc_api.FileListResult {
 	metrics.RpcReqCount.WithLabelValues("RequestList").Inc()
 
 	reqId := uuid.New().String()
@@ -462,7 +478,7 @@ func (api *rpcApi) RequestList(ctx context.Context, param rpc_api.ParamReqFileLi
 	}
 }
 
-func (api *rpcApi) RequestShare(ctx context.Context, param rpc_api.ParamReqShareFile) rpc_api.FileShareResult {
+func (api *rpcPubApi) RequestShare(ctx context.Context, param rpc_api.ParamReqShareFile) rpc_api.FileShareResult {
 	metrics.RpcReqCount.WithLabelValues("RequestShare").Inc()
 	reqId := uuid.New().String()
 	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
@@ -488,7 +504,7 @@ func (api *rpcApi) RequestShare(ctx context.Context, param rpc_api.ParamReqShare
 	}
 }
 
-func (api *rpcApi) RequestListShare(ctx context.Context, param rpc_api.ParamReqListShared) rpc_api.FileShareResult {
+func (api *rpcPubApi) RequestListShare(ctx context.Context, param rpc_api.ParamReqListShared) rpc_api.FileShareResult {
 	metrics.RpcReqCount.WithLabelValues("RequestListShare").Inc()
 	reqId := uuid.New().String()
 	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
@@ -514,7 +530,7 @@ func (api *rpcApi) RequestListShare(ctx context.Context, param rpc_api.ParamReqL
 	}
 }
 
-func (api *rpcApi) RequestStopShare(ctx context.Context, param rpc_api.ParamReqStopShare) rpc_api.FileShareResult {
+func (api *rpcPubApi) RequestStopShare(ctx context.Context, param rpc_api.ParamReqStopShare) rpc_api.FileShareResult {
 	metrics.RpcReqCount.WithLabelValues("RequestStopShare").Inc()
 	reqId := uuid.New().String()
 	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
@@ -540,7 +556,7 @@ func (api *rpcApi) RequestStopShare(ctx context.Context, param rpc_api.ParamReqS
 	}
 }
 
-func (api *rpcApi) RequestGetShared(ctx context.Context, param rpc_api.ParamReqGetShared) rpc_api.Result {
+func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamReqGetShared) rpc_api.Result {
 	metrics.RpcReqCount.WithLabelValues("RequestGetShared").Inc()
 	wallet := param.WalletAddr
 	pubkey := param.WalletPubkey
@@ -593,7 +609,7 @@ func (api *rpcApi) RequestGetShared(ctx context.Context, param rpc_api.ParamReqG
 	return rpc_api.Result{Return: rpc_api.TIME_OUT}
 }
 
-func (api *rpcApi) RequestDownloadShared(ctx context.Context, param rpc_api.ParamReqDownloadShared) rpc_api.Result {
+func (api *rpcPubApi) RequestDownloadShared(ctx context.Context, param rpc_api.ParamReqDownloadShared) rpc_api.Result {
 	// wallet pubkey and wallet signature will be carried in sds messages in []byte format
 	wpk, err := utiltypes.WalletPubkeyFromBech(param.WalletPubkey)
 	if err != nil {
@@ -652,7 +668,7 @@ func (api *rpcApi) RequestDownloadShared(ctx context.Context, param rpc_api.Para
 	return *result
 }
 
-func (api *rpcApi) RequestGetOzone(ctx context.Context, param rpc_api.ParamReqGetOzone) rpc_api.GetOzoneResult {
+func (api *rpcPubApi) RequestGetOzone(ctx context.Context, param rpc_api.ParamReqGetOzone) rpc_api.GetOzoneResult {
 	metrics.RpcReqCount.WithLabelValues("RequestGetOzone").Inc()
 	reqId := uuid.New().String()
 	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
@@ -687,4 +703,142 @@ func uploadStreamTmpFile(ctx context.Context, fileHash, fileName string, fileSiz
 	}
 	p := requests.RequestUploadFile(fileName, fileHash, fileSize, walletAddr, pubkey, signature, false, true)
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
+}
+
+func (api *rpcPrivApi) RequestRegisterNewPP(ctx context.Context, param rpc_api.ParamReqRP) rpc_api.RPResult {
+	metrics.RpcReqCount.WithLabelValues("RequestRegisterNewPP").Inc()
+	reqId := uuid.New().String()
+	ctx = core.RegisterRemoteReqId(ctx, reqId)
+	event.RegisterNewPP(ctx)
+	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			result := &rpc_api.RPResult{Return: rpc_api.TIME_OUT}
+			return *result
+		default:
+			result, found := pp.GetRPResult(setting.P2PAddress + setting.WalletAddress + reqId)
+			if result != nil && found {
+				return *result
+			}
+		}
+	}
+}
+
+func (api *rpcPrivApi) RequestActivate(ctx context.Context, param rpc_api.ParamReqActivate) rpc_api.ActivateResult {
+	metrics.RpcReqCount.WithLabelValues("RequestActivate").Inc()
+	stake, err := utiltypes.ParseCoinNormalized(param.Stake)
+	if err != nil {
+		return rpc_api.ActivateResult{Return: rpc_api.WRONG_INPUT}
+	}
+	fee, err := utiltypes.ParseCoinNormalized(param.Fee)
+	if err != nil {
+		return rpc_api.ActivateResult{Return: rpc_api.WRONG_INPUT}
+	}
+
+	txFee := utiltypes.TxFee{
+		Fee:      fee,
+		Gas:      param.Gas,
+		Simulate: false,
+	}
+	reqId := uuid.New().String()
+	ctx = core.RegisterRemoteReqId(ctx, reqId)
+	err = event.Activate(ctx, stake, txFee)
+	if err != nil {
+		return rpc_api.ActivateResult{Return: rpc_api.WRONG_INPUT}
+	}
+
+	//var done = make(chan bool)
+	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			result := &rpc_api.ActivateResult{Return: rpc_api.TIME_OUT}
+			return *result
+		default:
+			result, found := pp.GetActivateResult(setting.WalletAddress + reqId)
+			if result != nil && found {
+				return *result
+			}
+		}
+	}
+}
+
+func (api *rpcPrivApi) RequestPrepay(ctx context.Context, param rpc_api.ParamReqPrepay) rpc_api.PrepayResult {
+	metrics.RpcReqCount.WithLabelValues("RequestPrepay").Inc()
+	beneficiaryAddr, err := utiltypes.WalletAddressFromBech(setting.WalletAddress)
+	if err != nil {
+		return rpc_api.PrepayResult{Return: rpc_api.WRONG_WALLET_ADDRESS}
+	}
+	if len(param.WalletAddr) > 0 {
+		beneficiaryAddr, err = utiltypes.WalletAddressFromBech(param.WalletAddr)
+		if err != nil {
+			return rpc_api.PrepayResult{Return: rpc_api.WRONG_WALLET_ADDRESS}
+		}
+	}
+
+	prepayAmount, err := utiltypes.ParseCoinNormalized(param.PrepayAmount)
+	if err != nil {
+		return rpc_api.PrepayResult{Return: rpc_api.WRONG_INPUT}
+	}
+	fee, err := utiltypes.ParseCoinNormalized(param.Fee)
+	if err != nil {
+		return rpc_api.PrepayResult{Return: rpc_api.WRONG_INPUT}
+	}
+
+	txFee := utiltypes.TxFee{
+		Fee:      fee,
+		Gas:      param.Gas,
+		Simulate: false,
+	}
+	reqId := uuid.New().String()
+	ctx = core.RegisterRemoteReqId(ctx, reqId)
+	err = event.Prepay(ctx, beneficiaryAddr.Bytes(), prepayAmount, txFee)
+	if err != nil {
+		return rpc_api.PrepayResult{Return: rpc_api.WRONG_INPUT}
+	}
+
+	//var done = make(chan bool)
+	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			result := &rpc_api.PrepayResult{Return: rpc_api.TIME_OUT}
+			return *result
+		default:
+			result, found := pp.GetPrepayResult(setting.WalletAddress + reqId)
+			if result != nil && found {
+				return *result
+			}
+		}
+	}
+}
+
+func (api *rpcPrivApi) RequestStartMining(ctx context.Context, param rpc_api.ParamReqStartMining) rpc_api.StartMiningResult {
+	metrics.RpcReqCount.WithLabelValues("RequestStartMining").Inc()
+	reqId := uuid.New().String()
+	ctx = core.RegisterRemoteReqId(ctx, reqId)
+	network.GetPeer(ctx).StartMining(ctx)
+
+	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			result := &rpc_api.StartMiningResult{Return: rpc_api.TIME_OUT}
+			return *result
+		default:
+			result, found := pp.GetStartMiningResult(setting.P2PAddress + reqId)
+			if result != nil && found {
+				return *result
+			}
+		}
+	}
 }

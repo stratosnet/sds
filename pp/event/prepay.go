@@ -4,6 +4,8 @@ import (
 	"context"
 
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
+	"github.com/stratosnet/sds/pp/api/rpc"
+	"github.com/stratosnet/sds/pp/setting"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
@@ -34,9 +36,14 @@ func RspPrepay(ctx context.Context, conn core.WriteCloser) {
 	if !success {
 		return
 	}
-
+	rpcResult := &rpc.PrepayResult{}
+	reqId := core.GetRemoteReqId(ctx)
+	if reqId != "" {
+		defer pp.SetPrepayResult(setting.WalletAddress+reqId, rpcResult)
+	}
 	pp.Log(ctx, "get RspPrepay", target.Result.State, target.Result.Msg)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE
 		return
 	}
 
@@ -46,6 +53,7 @@ func RspPrepay(ctx context.Context, conn core.WriteCloser) {
 	} else {
 		pp.Log(ctx, "The prepay transaction was broadcast")
 	}
+	rpcResult.Return = rpc.SUCCESS
 }
 
 // RspPrepaid Response when this PP node's prepay transaction was successful

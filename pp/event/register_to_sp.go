@@ -7,6 +7,7 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
+	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
@@ -99,10 +100,15 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-
+	rpcResult := &rpc.StartMiningResult{}
+	reqId := core.GetRemoteReqId(ctx)
+	if reqId != "" {
+		defer pp.SetStartMiningResult(setting.P2PAddress+reqId, rpcResult)
+	}
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_MINING_NOT_STARTED)
 		pp.Log(ctx, target.Result.Msg)
+		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE
 		return
 	}
 
@@ -113,4 +119,5 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 	pp.DebugLog(ctx, "Start reporting node status to SP")
 	// trigger 1 stat report immediately
 	network.GetPeer(ctx).ReportNodeStatus(ctx)()
+	rpcResult.Return = rpc.SUCCESS
 }

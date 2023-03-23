@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/stratosnet/sds/metrics"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/account"
 	"github.com/stratosnet/sds/pp/api"
 	"github.com/stratosnet/sds/pp/api/rest"
@@ -85,7 +86,7 @@ func (bs *BaseServer) startIPC() error {
 		{
 			Namespace: "remoterpc",
 			Version:   "1.0",
-			Service:   RpcApi(),
+			Service:   RpcPubApi(),
 			Public:    false,
 		},
 	}
@@ -115,10 +116,16 @@ func (bs *BaseServer) startHttpRPC() error {
 		return err
 	}
 
+	allowModuleList := []string{"user"}
+	// if config
+	if pp.ALLOW_OWNER_RPC {
+		allowModuleList = append(allowModuleList, "owner")
+	}
+
 	var config = httpConfig{
 		CorsAllowedOrigins: []string{""},
 		Vhosts:             []string{"localhost"},
-		Modules:            nil,
+		Modules:            allowModuleList,
 	}
 
 	if err := rpcServer.enableRPC(apis(), config); err != nil {
