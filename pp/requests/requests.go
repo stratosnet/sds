@@ -120,7 +120,7 @@ func ReqGetWalletOzData(walletAddr, reqId string) *protos.ReqGetWalletOz {
 }
 
 // RequestUploadFile a file from an owner instead from a "path" belongs to PP's default wallet
-func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress, walletPubkey, signature string, isEncrypted, isVideoStream bool) *protos.ReqUploadFile {
+func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress, walletPubkey, signature string, isEncrypted, isVideoStream bool, desiredTier uint32, allowHigherTier bool) *protos.ReqUploadFile {
 	utils.Log("fileName: ", fileName)
 	encryptionTag := ""
 	if isEncrypted {
@@ -153,12 +153,14 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress
 			EncryptionTag:      encryptionTag,
 			OwnerWalletAddress: walletAddress,
 		},
-		MyAddress:     setting.GetPPInfo(),
-		NodeSign:      types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(nodeSignMsg)),
-		WalletSign:    wsig,
-		WalletPubkey:  wpk.Bytes(),
-		IsCover:       false,
-		IsVideoStream: isVideoStream,
+		MyAddress:       setting.GetPPInfo(),
+		NodeSign:        types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(nodeSignMsg)),
+		WalletSign:      wsig,
+		WalletPubkey:    wpk.Bytes(),
+		IsCover:         false,
+		IsVideoStream:   isVideoStream,
+		DesiredTier:     desiredTier,
+		AllowHigherTier: allowHigherTier,
 	}
 
 	if isVideoStream {
@@ -180,7 +182,7 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress
 }
 
 // RequestUploadFileData assume the PP's current wallet is the owner, otherwise RequestUploadFile() should be used instead
-func RequestUploadFileData(ctx context.Context, paths, storagePath string, isCover, isVideoStream, isEncrypted bool) *protos.ReqUploadFile {
+func RequestUploadFileData(ctx context.Context, paths, storagePath string, isCover, isVideoStream, isEncrypted bool, desiredTier uint32, allowHigherTier bool) *protos.ReqUploadFile {
 	info, err := file.GetFileInfo(paths)
 	if err != nil {
 		pp.ErrorLog(ctx, "wrong filePath", err.Error())
@@ -216,11 +218,13 @@ func RequestUploadFileData(ctx context.Context, paths, storagePath string, isCov
 			NetworkAddress: setting.NetworkAddress,
 			RestAddress:    setting.RestAddress,
 		},
-		NodeSign:      types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(nodeSignMsg)),
-		WalletSign:    wsign,
-		WalletPubkey:  setting.WalletPublicKey,
-		IsCover:       isCover,
-		IsVideoStream: isVideoStream,
+		NodeSign:        types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(nodeSignMsg)),
+		WalletSign:      wsign,
+		WalletPubkey:    setting.WalletPublicKey,
+		IsCover:         isCover,
+		IsVideoStream:   isVideoStream,
+		DesiredTier:     desiredTier,
+		AllowHigherTier: allowHigherTier,
 	}
 	if isCover {
 		fileSuffix := path.Ext(paths)

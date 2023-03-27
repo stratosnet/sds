@@ -31,17 +31,17 @@ import (
 var isCover bool
 
 // MigrateIpfsFile migrate ipfs file to sds
-func MigrateIpfsFile(ctx context.Context, cid, fileName string) {
+func MigrateIpfsFile(ctx context.Context, cid, fileName string, desiredTier uint32, allowHigherTier bool) {
 	filePath, err := ipfs.GetFile(ctx, cid, fileName)
 	if err != nil {
 		pp.ErrorLog(ctx, "failed to fetch the file from ipfs: ", err)
 		return
 	}
-	RequestUploadFile(ctx, filePath, false, nil)
+	RequestUploadFile(ctx, filePath, false, desiredTier, allowHigherTier)
 }
 
 // RequestUploadFile request to SP for upload file
-func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ http.ResponseWriter) {
+func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, desiredTier uint32, allowHigherTier bool) {
 	pp.DebugLog(ctx, "______________path", path)
 	if !setting.CheckLogin() {
 		return
@@ -56,7 +56,7 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ htt
 		return
 	}
 	if isFile {
-		p := requests.RequestUploadFileData(ctx, path, "", false, false, isEncrypted)
+		p := requests.RequestUploadFileData(ctx, path, "", false, false, isEncrypted, desiredTier, allowHigherTier)
 		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 		return
 	}
@@ -68,7 +68,7 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ htt
 		select {
 		case pathString := <-setting.UpChan:
 			pp.DebugLog(ctx, "path string == ", pathString)
-			p := requests.RequestUploadFileData(ctx, pathString, "", false, false, isEncrypted)
+			p := requests.RequestUploadFileData(ctx, pathString, "", false, false, isEncrypted, desiredTier, allowHigherTier)
 			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 		default:
 			return
@@ -76,7 +76,7 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ htt
 	}
 }
 
-func RequestUploadStream(ctx context.Context, path string) {
+func RequestUploadStream(ctx context.Context, path string, desiredTier uint32, allowHigherTier bool) {
 	pp.DebugLog(ctx, "______________path", path)
 	if !setting.CheckLogin() {
 		return
@@ -87,7 +87,7 @@ func RequestUploadStream(ctx context.Context, path string) {
 		return
 	}
 	if isFile {
-		p := requests.RequestUploadFileData(ctx, path, "", false, true, false)
+		p := requests.RequestUploadFileData(ctx, path, "", false, true, false, desiredTier, allowHigherTier)
 		if p != nil {
 			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 		}

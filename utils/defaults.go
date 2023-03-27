@@ -13,4 +13,7 @@ const (
 	LatencyCheckSpListTimeout    = 3               // in seconds
 	LatencyCheckTopSpsConsidered = 3               // number of SPs
 	StatusReportPunishInterval   = 10000
+
+	PpMinTier = 0
+	PpMaxTier = 3
 )

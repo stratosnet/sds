@@ -2,13 +2,13 @@ package serv
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strconv"
 
 	"github.com/google/uuid"
+	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/pp"
@@ -24,7 +24,8 @@ import (
 )
 
 const (
-	DefaultMsg = "Request Accepted"
+	DefaultMsg               = "Request Accepted"
+	DefaultDesiredUploadTier = 2
 )
 
 type CmdResult struct {
@@ -310,14 +311,41 @@ func (api *terminalCmd) Upload(ctx context.Context, param []string) (CmdResult, 
 	if len(param) == 0 {
 		return CmdResult{}, errors.New("input upload file path")
 	}
-	isEncrypted := false
-	if len(param) > 1 && param[1] == "encrypt" {
-		isEncrypted = true
-	}
+
 	pathStr := file.EscapePath(param[0:1])
 
+	isEncrypted := false
+	if len(param) > 1 {
+		encryptionBool, err := strconv.ParseBool(param[1])
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.Errorf("invalid second param (encryption). Should be true or false: %v ", err.Error())
+		}
+		isEncrypted = encryptionBool
+	}
+
+	desiredTier := uint32(DefaultDesiredUploadTier)
+	if len(param) > 2 {
+		tier, err := strconv.ParseUint(param[2], 10, 32)
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.Errorf("invalid third param (upload tier). Should be an integer: %v ", err.Error())
+		}
+		if tier <= utils.PpMinTier || tier > utils.PpMaxTier {
+			return CmdResult{Msg: ""}, errors.New("invalid third param (upload tier). Should be between 1 and 3")
+		}
+		desiredTier = uint32(tier)
+	}
+
+	allowHigherTier := false
+	if len(param) > 3 {
+		allowHigherTierBool, err := strconv.ParseBool(param[3])
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.Errorf("invalid fourth param (allow higher tiers). Should be true or false: %v ", err.Error())
+		}
+		allowHigherTier = allowHigherTierBool
+	}
+
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	event.RequestUploadFile(ctx, pathStr, isEncrypted, nil)
+	event.RequestUploadFile(ctx, pathStr, isEncrypted, desiredTier, allowHigherTier)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -325,10 +353,32 @@ func (api *terminalCmd) UploadStream(ctx context.Context, param []string) (CmdRe
 	if len(param) == 0 {
 		return CmdResult{}, errors.New("input upload file path")
 	}
-	pathStr := file.EscapePath(param)
+	pathStr := file.EscapePath(param[0:1])
+
+	desiredTier := uint32(DefaultDesiredUploadTier)
+	if len(param) > 1 {
+		tier, err := strconv.ParseUint(param[1], 10, 32)
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.Errorf("invalid second param (upload tier). Should be an integer: %v ", err.Error())
+		}
+		if tier <= utils.PpMinTier || tier > utils.PpMaxTier {
+			return CmdResult{Msg: ""}, errors.New("invalid second param (upload tier). Should be between 1 and 3")
+		}
+		desiredTier = uint32(tier)
+	}
+
+	allowHigherTier := false
+	if len(param) > 2 {
+		allowHigherTierBool, err := strconv.ParseBool(param[2])
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.Errorf("invalid third param (allow higher tiers). Should be true or false: %v ", err.Error())
+		}
+		allowHigherTier = allowHigherTierBool
+	}
+
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	ctx = core.RegisterRemoteReqId(ctx, uuid.New().String())
-	event.RequestUploadStream(ctx, pathStr)
+	event.RequestUploadStream(ctx, pathStr, desiredTier, allowHigherTier)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -594,14 +644,33 @@ func (api *terminalCmd) PerformanceMeasure(ctx context.Context, param []string) 
 }
 
 func (api *terminalCmd) MigrateIpfsFile(ctx context.Context, param []string) (CmdResult, error) {
-	if len(param) == 0 {
-		return CmdResult{}, errors.New("input file cid")
+	if len(param) < 2 {
+		return CmdResult{}, errors.New("input file cid and file name")
 	}
-	fileName := ""
-	if len(param) > 1 && param[1] != "" {
-		fileName = param[1]
+	fileName := param[1]
+
+	desiredTier := uint32(DefaultDesiredUploadTier)
+	if len(param) > 2 {
+		tier, err := strconv.ParseUint(param[2], 10, 32)
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.Errorf("invalid third param (upload tier). Should be an integer: %v ", err.Error())
+		}
+		if tier <= utils.PpMinTier || tier > utils.PpMaxTier {
+			return CmdResult{Msg: ""}, errors.New("invalid third param (upload tier). Should be between 1 and 3")
+		}
+		desiredTier = uint32(tier)
 	}
+
+	allowHigherTier := false
+	if len(param) > 3 {
+		allowHigherTierBool, err := strconv.ParseBool(param[3])
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.Errorf("invalid fourth param (allow higher tiers). Should be true or false: %v ", err.Error())
+		}
+		allowHigherTier = allowHigherTierBool
+	}
+
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	event.MigrateIpfsFile(ctx, param[0], fileName)
+	event.MigrateIpfsFile(ctx, param[0], fileName, desiredTier, allowHigherTier)
 	return CmdResult{Msg: "file downloaded from ipfs, start uploading to sds"}, nil
 }

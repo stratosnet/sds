@@ -114,7 +114,6 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 	walletAddr := param.WalletAddr
 	pubkey := param.WalletPubkey
 	signature := param.Signature
-	size := fileSize
 
 	// verify if wallet and public key match
 	if utiltypes.VerifyWalletAddr(pubkey, walletAddr) != 0 {
@@ -126,7 +125,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 	}
 
 	// start to upload file
-	p := requests.RequestUploadFile(fileName, fileHash, uint64(size), walletAddr, pubkey, signature, false, false)
+	p := requests.RequestUploadFile(fileName, fileHash, uint64(fileSize), walletAddr, pubkey, signature, false, false, param.DesiredTier, param.AllowHigherTier)
 	metrics.UploadPerformanceLogNow(param.FileHash + ":SND_REQ_UPLOAD_SP")
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 
@@ -238,7 +237,7 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 	}
 
 	// start to upload file
-	go uploadStreamTmpFile(ctx, fileHash, fileName, uint64(size), walletAddr, pubkey, signature)
+	go uploadStreamTmpFile(ctx, fileHash, fileName, uint64(size), walletAddr, pubkey, signature, param.DesiredTier, param.AllowHigherTier)
 
 	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
 	defer cancel()
@@ -696,12 +695,12 @@ func (api *rpcPubApi) RequestGetOzone(ctx context.Context, param rpc_api.ParamRe
 	}
 }
 
-func uploadStreamTmpFile(ctx context.Context, fileHash, fileName string, fileSize uint64, walletAddr, pubkey, signature string) {
+func uploadStreamTmpFile(ctx context.Context, fileHash, fileName string, fileSize uint64, walletAddr, pubkey, signature string, desiredTier uint32, allowHigherTier bool) {
 	if err := file.CacheRemoteFileData(fileHash, &protos.SliceOffset{SliceOffsetStart: 0, SliceOffsetEnd: fileSize}, fileName); err != nil {
 		utils.ErrorLog("failed uploading stream tmp file", err.Error())
 		return
 	}
-	p := requests.RequestUploadFile(fileName, fileHash, fileSize, walletAddr, pubkey, signature, false, true)
+	p := requests.RequestUploadFile(fileName, fileHash, fileSize, walletAddr, pubkey, signature, false, true, desiredTier, allowHigherTier)
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 }
 
