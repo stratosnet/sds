@@ -3,6 +3,7 @@ package file
 import (
 	"context"
 	b64 "encoding/base64"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -142,9 +143,10 @@ func CacheRemoteFileData(fileHash string, offset *protos.SliceOffset, fileName s
 	// send event and open the pipe for coming data
 	SetRemoteFileResult(fileHash, *r)
 
+	_, fileName = path.Split(fileName)
 	fileMg, err := OpenTmpFile(fileHash, fileName)
 	if err != nil {
-		return errors.Wrap(err, "failed opening tem file")
+		return errors.Wrap(err, "failed opening temp file")
 	}
 	defer func() {
 		_ = fileMg.Close()
