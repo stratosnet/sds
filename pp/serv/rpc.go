@@ -4,6 +4,7 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"encoding/hex"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -227,6 +228,12 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 	pubkey := param.WalletPubkey
 	signature := param.Signature
 	size := fileSize
+
+	_, name := filepath.Split(fileName)
+	if len(name) > 0 {
+		utils.DebugLogf("fileName is trimmed from %v to %v", fileName, name)
+		fileName = name
+	}
 
 	// verify if wallet and public key match
 	if utiltypes.VerifyWalletAddr(pubkey, walletAddr) != 0 {
