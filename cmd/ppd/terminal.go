@@ -62,8 +62,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"maintenance start <duration>                                   put the node in maintenance mode for the requested duration (in seconds)\n" +
 		"maintenance stop                                               stop the current maintenance\n" +
 		"downgradeinfo                                                  get information of last downgrade happened on this pp node\n" +
-		"performancemeasure                                             turn on performance measurement log for 60 seconds\n" +
-		"migrateipfsfile <cid> <name as>                                migrate ipfs file to sds\n"
+		"performancemeasure                                             turn on performance measurement log for 60 seconds\n"
 
 	help := func(line string, param []string) bool {
 		fmt.Println(helpStr)
@@ -217,9 +216,6 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	performanceMeasure := func(line string, param []string) bool {
 		return callRpc(c, "performanceMeasure", param)
 	}
-	migrateIpfsFile := func(line string, param []string) bool {
-		return callRpc(c, "migrateIpfsFile", param)
-	}
 
 	nc := make(chan serv.LogMsg)
 	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription")
@@ -273,7 +269,6 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("maintenance", maintenance, true)
 	console.Mystdin.RegisterProcessFunc("downgradeinfo", downgradeInfo, true)
 	console.Mystdin.RegisterProcessFunc("performancemeasure", performanceMeasure, true)
-	console.Mystdin.RegisterProcessFunc("migrateipfsfile", migrateIpfsFile, true)
 
 	if isExec {
 		exit := false
