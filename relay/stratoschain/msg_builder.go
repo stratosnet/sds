@@ -28,16 +28,16 @@ func BuildVolumeReportMsg(traffic []*Traffic, reporterAddress, reporterOwnerAddr
 		aggregatedVolume[trafficRecord.WalletAddress] += trafficRecord.Volume
 	}
 
-	var nodesVolume []*pottypes.SingleWalletVolume
+	var nodesVolume []pottypes.SingleWalletVolume
 	for walletAddressString, volume := range aggregatedVolume {
 		_, _, err := bech32.DecodeAndConvert(walletAddressString)
 		if err != nil {
 			return nil, []byte{}, err
 		}
 		volume := sdktypes.NewIntFromUint64(volume)
-		nodesVolume = append(nodesVolume, &pottypes.SingleWalletVolume{
+		nodesVolume = append(nodesVolume, pottypes.SingleWalletVolume{
 			WalletAddress: walletAddressString,
-			Volume:        &volume,
+			Volume:        volume,
 		})
 	}
 
