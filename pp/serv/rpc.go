@@ -127,7 +127,10 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 	}
 
 	// start to upload file
-	p := requests.RequestUploadFile(fileName, fileHash, uint64(size), walletAddr, pubkey, signature, false, false)
+	p, err := requests.RequestUploadFile(fileName, fileHash, uint64(size), walletAddr, pubkey, signature, false, false)
+	if err != nil {
+		return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE}
+	}
 	metrics.UploadPerformanceLogNow(param.FileHash + ":SND_REQ_UPLOAD_SP")
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 
@@ -708,7 +711,11 @@ func uploadStreamTmpFile(ctx context.Context, fileHash, fileName string, fileSiz
 		utils.ErrorLog("failed uploading stream tmp file", err.Error())
 		return
 	}
-	p := requests.RequestUploadFile(fileName, fileHash, fileSize, walletAddr, pubkey, signature, false, true)
+	p, err := requests.RequestUploadFile(fileName, fileHash, fileSize, walletAddr, pubkey, signature, false, true)
+	if err != nil {
+		utils.ErrorLog("failed creating RequestUploadFile", err.Error())
+		return
+	}
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 }
 
