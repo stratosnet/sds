@@ -586,7 +586,7 @@ func (api *terminalCmd) CheckReplica(ctx context.Context, param []string) (CmdRe
 	if len(param) == 2 {
 		ui64, err := strconv.ParseUint(param[1], 10, 64)
 		if err != nil {
-			//panic(err)
+			return CmdResult{Msg: ""}, errors.New("failed to parse the increase number")
 		}
 		fmt.Println(ui64, reflect.TypeOf(ui64))
 
