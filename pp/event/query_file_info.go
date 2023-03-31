@@ -290,6 +290,68 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
+func GetFileReplicaInfo(ctx context.Context, path string, replicaIncreaseNum uint32) {
+	utils.DebugLog("GetFileReplicaInfo")
+
+	if !setting.CheckLogin() {
+		return
+	}
+	if len(path) < setting.Config.DownloadPathMinLen {
+		utils.DebugLog("invalid path length")
+		return
+	}
+	_, _, fileHash, _, err := datamesh.ParseFileHandle(path)
+	if err != nil {
+		pp.ErrorLog(ctx, "please input correct file link, eg: sdm://address/fileHash|filename(optional)")
+		return
+	}
+	pp.DebugLog(ctx, "path:", path)
+
+	// sign the wallet signature by wallet private key
+	wsignMsg := utils.GetFileReplicaInfoWalletSignMessage(fileHash, setting.WalletAddress)
+	wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	if err != nil {
+		return
+	}
+
+	req := requests.ReqFileReplicaInfo(path, setting.WalletAddress, replicaIncreaseNum, wsign, setting.WalletPublicKey)
+	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileReplicaInfo)
+}
+
+func RspFileReplicaInfo(ctx context.Context, conn core.WriteCloser) {
+	pp.Log(ctx, "get，RspGetFileReplicaInfo")
+	var target protos.RspFileReplicaInfo
+	if !requests.UnmarshalData(ctx, &target) {
+		return
+	}
+
+	if target.Result.State == protos.ResultState_RES_FAIL {
+		pp.ErrorLog(ctx, "Received fail massage from sp: ", target.Result.Msg)
+		return
+	}
+
+	// get sp's p2p pubkey
+	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
+	if err != nil {
+		return
+	}
+
+	// verify sp address
+	if !types.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
+		return
+	}
+
+	// verify sp node signature
+	msg := utils.GetRspFileStorageInfoNodeSignMessage(setting.P2PAddress, target.SpP2PAddress, target.FileHash, header.RspFileStorageInfo)
+	if !types.VerifyP2pSignBytes(spP2pPubkey, target.NodeSign, msg) {
+		return
+	}
+
+	pp.Log(ctx, "file hash", target.FileHash)
+	pp.Log(ctx, "file replicas", target.Replicas)
+	pp.Log(ctx, "file expected replicas", target.ExpectedReplicas)
+}
+
 func CheckDownloadPath(path string) bool {
 	_, _, _, _, err := datamesh.ParseFileHandle(path)
 	return err == nil

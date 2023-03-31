@@ -867,6 +867,19 @@ func ReqDowngradeInfo() *protos.ReqGetPPDowngradeInfo {
 	}
 }
 
+func ReqFileReplicaInfo(path, walletAddr string, replicaIncreaseNum uint32, walletSign, walletPUbkey []byte) *protos.ReqFileReplicaInfo {
+	msg := utils.GetFileReplicaInfoNodeSignMessage(setting.P2PAddress, path, header.ReqFileReplicaInfo)
+	return &protos.ReqFileReplicaInfo{
+		P2PAddress:         setting.P2PAddress,
+		WalletAddress:      walletAddr,
+		FilePath:           path,
+		ReplicaIncreaseNum: replicaIncreaseNum,
+		NodeSign:           types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
+		WalletSign:         walletSign,
+		WalletPubkey:       walletPUbkey,
+	}
+}
+
 func PPMsgHeader(data []byte, head string) header.MessageHead {
 	return header.MakeMessageHeader(1, setting.Config.Version.AppVer, uint32(len(data)), head)
 }
