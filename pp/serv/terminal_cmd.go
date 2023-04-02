@@ -642,35 +642,3 @@ func (api *terminalCmd) PerformanceMeasure(ctx context.Context, param []string) 
 	metrics.StartLoggingPerformanceData()
 	return CmdResult{Msg: DefaultMsg}, nil
 }
-
-func (api *terminalCmd) MigrateIpfsFile(ctx context.Context, param []string) (CmdResult, error) {
-	if len(param) < 2 {
-		return CmdResult{}, errors.New("input file cid and file name")
-	}
-	fileName := param[1]
-
-	desiredTier := uint32(DefaultDesiredUploadTier)
-	if len(param) > 2 {
-		tier, err := strconv.ParseUint(param[2], 10, 32)
-		if err != nil {
-			return CmdResult{Msg: ""}, errors.Errorf("invalid third param (upload tier). Should be an integer: %v ", err.Error())
-		}
-		if tier <= utils.PpMinTier || tier > utils.PpMaxTier {
-			return CmdResult{Msg: ""}, errors.New("invalid third param (upload tier). Should be between 1 and 3")
-		}
-		desiredTier = uint32(tier)
-	}
-
-	allowHigherTier := false
-	if len(param) > 3 {
-		allowHigherTierBool, err := strconv.ParseBool(param[3])
-		if err != nil {
-			return CmdResult{Msg: ""}, errors.Errorf("invalid fourth param (allow higher tiers). Should be true or false: %v ", err.Error())
-		}
-		allowHigherTier = allowHigherTierBool
-	}
-
-	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	event.MigrateIpfsFile(ctx, param[0], fileName, desiredTier, allowHigherTier)
-	return CmdResult{Msg: "file downloaded from ipfs, start uploading to sds"}, nil
-}

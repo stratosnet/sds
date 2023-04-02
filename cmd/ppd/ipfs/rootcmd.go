@@ -1,196 +1,46 @@
-package main
+package ipfs
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
-	nethttp "net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 
 	cmds "github.com/ipfs/go-ipfs-cmds"
-	"github.com/ipfs/go-ipfs-cmds/http"
-	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/msg/protos"
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/datamesh"
 	"github.com/stratosnet/sds/utils/types"
 )
 
-type ipfsenv struct {
-	rpcClient  *rpc.Client
-	httpRpcUrl string
-	requester  requester
-}
-
 const (
-	ipcNamespace      = "remoterpc"
-	httpRpcNamespace  = "user"
-	httpRpcUrl        = "httpRpcUrl"
-	rpcModeFlag       = "rpcMode"
-	rpcModeHttpRpc    = "httpRpc"
-	rpcModeIpc        = "ipc"
-	ipcEndpoint       = "ipcEndpoint"
-	ipfsPortFlag      = "port"
-	httpRpcDefaultUrl = "http://127.0.0.1:8335"
+	CMD_ADD  = "add"
+	CMD_GET  = "get"
+	CMD_LIST = "ls"
 )
-
-var (
-	WalletPrivateKey types.AccPrivKey
-	WalletPublicKey  types.AccPubKey
-	WalletAddress    string
-)
-
-func ipfsapi(cmd *cobra.Command, args []string) {
-	portParam, _ := cmd.Flags().GetString(ipfsPortFlag)
-	rpcModeParam, _ := cmd.Flags().GetString(rpcModeFlag)
-	ipcEndpointParam, _ := cmd.Flags().GetString(ipcEndpoint)
-	httpRpcUrl, _ := cmd.Flags().GetString(httpRpcUrl)
-	env := ipfsenv{}
-	if rpcModeParam == rpcModeIpc {
-		ipcEndpoint := setting.IpcEndpoint
-		if ipcEndpointParam != "" {
-			ipcEndpoint = ipcEndpointParam
-		}
-		c, err := rpc.Dial(ipcEndpoint)
-		if err != nil {
-			panic("failed to dial ipc endpoint")
-		}
-		env.rpcClient = c
-		env.requester = ipcRequester{}
-	} else if rpcModeParam == rpcModeHttpRpc {
-		env.requester = httpRequester{}
-		env.httpRpcUrl = httpRpcUrl
-	} else {
-		panic("unsupported rpc mode")
-	}
-
-	config := http.NewServerConfig()
-	config.APIPath = "/api/v0"
-	h := http.NewHandler(env, RootCmd, config)
-
-	// create http rpc server
-	err := nethttp.ListenAndServe(":"+portParam, h)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func ipfsapiPreRunE(cmd *cobra.Command, args []string) error {
-	homePath, err := cmd.Flags().GetString(HOME)
-	if err != nil {
-		utils.ErrorLog("failed to get 'home' path for the client")
-		return err
-	}
-	setting.SetIPCEndpoint(homePath)
-	return nil
-}
-
-type requester interface {
-	sendRequest(param interface{}, res any, rpcCmd string, env cmds.Environment) error
-}
-
-type httpRequester struct{}
-
-type ipcRequester struct{}
-
-func (requester httpRequester) sendRequest(param interface{}, res any, rpcCmd string, env cmds.Environment) error {
-	ipfsenv, _ := env.(ipfsenv)
-	var params []interface{}
-	params = append(params, param)
-	pm, err := json.Marshal(params)
-	if err != nil {
-		utils.ErrorLog("failed marshal param for " + rpcCmd)
-		return nil
-	}
-
-	// wrap to the json-rpc message
-	method := httpRpcNamespace + "_" + rpcCmd
-	request := wrapJsonRpc(method, pm)
-
-	if len(request) < 300 {
-		utils.DebugLog("--> ", string(request))
-	} else {
-		utils.DebugLog("--> ", string(request[:230]), "... \"}]}")
-	}
-
-	// http post
-	req, err := nethttp.NewRequest("POST", ipfsenv.httpRpcUrl, bytes.NewBuffer(request))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("X-Custom-Header", "myvalue")
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &nethttp.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-
-	body, _ := ioutil.ReadAll(resp.Body)
-	if len(body) < 300 {
-		utils.DebugLog("<-- ", string(body))
-	} else {
-		utils.DebugLog("<-- ", string(body[:230]), "... \"}]}")
-	}
-
-	resp.Body.Close()
-
-	if body == nil {
-		utils.ErrorLog("json marshal error")
-		return err
-	}
-
-	// handle rsp
-	var rsp jsonrpcMessage
-	err = json.Unmarshal(body, &rsp)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(rsp.Result, res)
-	if err != nil {
-		utils.ErrorLog("unmarshal failed")
-		return err
-	}
-	return nil
-}
-
-func (requester ipcRequester) sendRequest(params interface{}, res any, ipcCmd string, env cmds.Environment) error {
-	ipfsenv, _ := env.(ipfsenv)
-	method := ipcNamespace + "_" + ipcCmd
-	err := ipfsenv.rpcClient.Call(res, method, params)
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 // Define the root of the commands
 var RootCmd = &cmds.Command{
 	Subcommands: map[string]*cmds.Command{
-		"add": {
+		CMD_ADD: {
 			Arguments: []cmds.Argument{
 				cmds.StringArg("fileName", true, true, "fileName"),
 			},
 			Run: add,
 		},
-		"get": {
+		CMD_GET: {
 			Arguments: []cmds.Argument{
 				cmds.StringArg("sdmPath", true, true, "sdmPath"),
 			},
 			Run: get,
 		},
-		"ls": {
+		CMD_LIST: {
 			Options: []cmds.Option{
 				cmds.Uint64Option("page"),
 			},
@@ -243,8 +93,13 @@ func add(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 			return emitError(re, "failed to send upload data request", err)
 		}
 	}
-	utils.Log("- uploading is done")
-	return re.Emit("uploading is done")
+	if res.Return == rpc_api.SUCCESS {
+		utils.Log("- uploading is done")
+		return re.Emit("uploading is done")
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+		return emitError(re, "failed to upload", nil)
+	}
 }
 
 func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error {
@@ -518,28 +373,4 @@ func emitError(re cmds.ResponseEmitter, msg string, err error) error {
 		utils.ErrorLog(msg)
 	}
 	return re.CloseWithError(errors.New(msg))
-}
-
-func wrapJsonRpc(method string, param []byte) []byte {
-	// compose json-rpc request
-	request := &jsonrpcMessage{
-		Version: "2.0",
-		ID:      1,
-		Method:  method,
-		Params:  json.RawMessage(param),
-	}
-	r, e := json.Marshal(request)
-	if e != nil {
-		utils.ErrorLog("json marshal error", e)
-		return nil
-	}
-	return r
-}
-
-type jsonrpcMessage struct {
-	Version string          `json:"jsonrpc,omitempty"`
-	ID      int             `json:"id,omitempty"`
-	Method  string          `json:"method,omitempty"`
-	Params  json.RawMessage `json:"params,omitempty"`
-	Result  json.RawMessage `json:"result,omitempty"`
 }

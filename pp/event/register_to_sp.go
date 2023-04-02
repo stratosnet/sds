@@ -118,6 +118,6 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 	}
 	pp.DebugLog(ctx, "Start reporting node status to SP")
 	// trigger 1 stat report immediately
-	network.GetPeer(ctx).ReportNodeStatus(ctx)()
+	network.GetPeer(ctx).ReportNodeStatus(ctx)
 	rpcResult.Return = rpc.SUCCESS
 }
