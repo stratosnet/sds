@@ -41,8 +41,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"deactivate <fee> optional<gas>                                 send transaction to stchain to stop being an active PP node\n" +
 		"startmining                                                    start mining\n" +
 		"prepay <amount> <fee> optional<beneficiary> <gas>              prepay stos to get ozone\n" +
-		"put <filepath>                                                 upload file, need to consume ozone\n" +
-		"putstream <filepath>                                           upload video file for streaming, need to consume ozone (alpha version, encode format config impossible)\n" +
+		"put <filepath> <isEncrypted> <nodeTier> <allowHigherTier>      upload file, need to consume ozone. Only filepath is required\n" +
+		"putstream <filepath> <isEncrypted> <nodeTier> <allowHigherTier> upload video file for streaming, need to consume ozone. Only filepath is required (alpha version, encode format config impossible)\n" +
 		"list <filename>                                                query uploaded file by self\n" +
 		"list <page id>                                                 query all files owned by the wallet, paginated\n" +
 		"delete <filehash>                                              delete file\n" +
