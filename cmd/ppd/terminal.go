@@ -216,6 +216,9 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	performanceMeasure := func(line string, param []string) bool {
 		return callRpc(c, "performanceMeasure", param)
 	}
+	checkReplica := func(line string, param []string) bool {
+		return callRpc(c, "checkReplica", param)
+	}
 
 	nc := make(chan serv.LogMsg)
 	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription")
@@ -269,6 +272,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("maintenance", maintenance, true)
 	console.Mystdin.RegisterProcessFunc("downgradeinfo", downgradeInfo, true)
 	console.Mystdin.RegisterProcessFunc("performancemeasure", performanceMeasure, true)
+	console.Mystdin.RegisterProcessFunc("CheckReplica", checkReplica, true)
 
 	if isExec {
 		exit := false

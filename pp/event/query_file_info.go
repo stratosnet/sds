@@ -342,7 +342,7 @@ func RspFileReplicaInfo(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	// verify sp node signature
-	msg := utils.GetRspFileStorageInfoNodeSignMessage(setting.P2PAddress, target.SpP2PAddress, target.FileHash, header.RspFileStorageInfo)
+	msg := utils.GetRspFileReplicaInfoNodeSignMessage(setting.P2PAddress, target.SpP2PAddress, target.FileHash, header.RspFileReplicaInfo)
 	if !types.VerifyP2pSignBytes(spP2pPubkey, target.NodeSign, msg) {
 		return
 	}
