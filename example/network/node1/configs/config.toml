@@ -5,6 +5,7 @@ debug = true
 pp_list_dir = "./peers"
 account_dir = "./accounts"
 storehouse_path = "./storage"
+self_claimed_disk_size = 1099511627776
 download_path = "./download"
 p2p_address = 'stsds1gl9ywg6jdfdgcja70ffum4ectq4fmt26ay4znv'
 p2p_password = 'aaa'
