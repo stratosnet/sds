@@ -144,7 +144,7 @@ func CacheRemoteFileData(fileHash string, offset *protos.SliceOffset, fileName s
 
 	fileMg, err := OpenTmpFile(fileHash, fileName)
 	if err != nil {
-		return errors.Wrap(err, "failed opening tem file")
+		return errors.Wrap(err, "failed opening temp file")
 	}
 	defer func() {
 		_ = fileMg.Close()

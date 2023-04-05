@@ -120,7 +120,7 @@ func ReqGetWalletOzData(walletAddr, reqId string) *protos.ReqGetWalletOz {
 }
 
 // RequestUploadFile a file from an owner instead from a "path" belongs to PP's default wallet
-func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress, walletPubkey, signature string, isEncrypted, isVideoStream bool) *protos.ReqUploadFile {
+func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress, walletPubkey, signature string, isEncrypted, isVideoStream bool) (*protos.ReqUploadFile, error) {
 	utils.Log("fileName: ", fileName)
 	encryptionTag := ""
 	if isEncrypted {
@@ -136,13 +136,13 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress
 	wpk, err := types.WalletPubkeyFromBech(walletPubkey)
 	if err != nil {
 		utils.ErrorLog("wrong wallet pubkey")
-		return nil
+		return nil, errors.New("wrong wallet pubkey")
 	}
 	// decode the hex encoded signature back to []byte which is used in protobuf messages
 	wsig, err := hex.DecodeString(signature)
 	if err != nil {
 		utils.ErrorLog("wrong signature")
-		return nil
+		return nil, errors.New("wrong signature")
 	}
 	req := &protos.ReqUploadFile{
 		FileInfo: &protos.FileInfo{
@@ -165,7 +165,7 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress
 		duration, err := file.GetVideoDuration(filepath.Join(setting.GetRootPath(), file.TEMP_FOLDER, fileHash, fileName))
 		if err != nil {
 			utils.Log("Failed to get the length of the video: ", err)
-			return nil
+			return nil, errors.Wrap(err, "Failed to get the length of the video")
 		}
 		req.FileInfo.Duration = duration
 	}
@@ -176,7 +176,7 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress
 		HasUpload: 0,
 	}
 	task.UploadProgressMap.Store(fileHash, p)
-	return req
+	return req, nil
 }
 
 // RequestUploadFileData assume the PP's current wallet is the owner, otherwise RequestUploadFile() should be used instead
@@ -864,6 +864,19 @@ func ReqDowngradeInfo() *protos.ReqGetPPDowngradeInfo {
 			NetworkAddress: setting.NetworkAddress,
 			RestAddress:    setting.RestAddress,
 		},
+	}
+}
+
+func ReqFileReplicaInfo(path, walletAddr string, replicaIncreaseNum uint32, walletSign, walletPUbkey []byte) *protos.ReqFileReplicaInfo {
+	msg := utils.GetFileReplicaInfoNodeSignMessage(setting.P2PAddress, path, header.ReqFileReplicaInfo)
+	return &protos.ReqFileReplicaInfo{
+		P2PAddress:         setting.P2PAddress,
+		WalletAddress:      walletAddr,
+		FilePath:           path,
+		ReplicaIncreaseNum: replicaIncreaseNum,
+		NodeSign:           types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
+		WalletSign:         walletSign,
+		WalletPubkey:       walletPUbkey,
 	}
 }
 

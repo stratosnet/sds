@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"reflect"
 	"strconv"
 
 	"github.com/google/uuid"
@@ -577,6 +578,26 @@ func (api *terminalCmd) Maintenance(ctx context.Context, param []string) (CmdRes
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
+func (api *terminalCmd) CheckReplica(ctx context.Context, param []string) (CmdResult, error) {
+	if len(param) == 0 {
+		return CmdResult{}, errors.New("input file path, e.g: sdm://account_address/file_hash|filename(optional)")
+	}
+	replicaIncreaseNum := uint32(0)
+	if len(param) == 2 {
+		ui64, err := strconv.ParseUint(param[1], 10, 64)
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.New("failed to parse the increase number")
+		}
+		fmt.Println(ui64, reflect.TypeOf(ui64))
+
+		replicaIncreaseNum = uint32(ui64)
+	}
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
+	core.RegisterReqId(ctx, task.LOCAL_REQID)
+	event.GetFileReplicaInfo(ctx, param[0], replicaIncreaseNum)
+	return CmdResult{Msg: DefaultMsg}, nil
+}
+
 func (api *terminalCmd) DowngradeInfo(ctx context.Context, param []string) (CmdResult, error) {
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	// Parse params
@@ -591,17 +612,4 @@ func (api *terminalCmd) PerformanceMeasure(ctx context.Context, param []string) 
 	// Parse params
 	metrics.StartLoggingPerformanceData()
 	return CmdResult{Msg: DefaultMsg}, nil
-}
-
-func (api *terminalCmd) MigrateIpfsFile(ctx context.Context, param []string) (CmdResult, error) {
-	if len(param) == 0 {
-		return CmdResult{}, errors.New("input file cid")
-	}
-	fileName := ""
-	if len(param) > 1 && param[1] != "" {
-		fileName = param[1]
-	}
-	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	event.MigrateIpfsFile(ctx, param[0], fileName)
-	return CmdResult{Msg: "file downloaded from ipfs, start uploading to sds"}, nil
 }
