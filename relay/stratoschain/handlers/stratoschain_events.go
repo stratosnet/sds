@@ -207,7 +207,6 @@ func UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(registertypes.EventTypeUnbondingResourceNode,
 			registertypes.AttributeKeyResourceNode,
-			registertypes.AttributeKeyOZoneLimitChanges,
 			registertypes.AttributeKeyUnbondingMatureTime,
 			registertypes.AttributeKeyStakeToRemove,
 		)
@@ -224,7 +223,6 @@ func UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 		for _, event := range processedEvents {
 			req.PPList = append(req.PPList, &protos.ReqUnbondingPP{
 				P2PAddress:          event[GetEventAttribute(registertypes.EventTypeUnbondingResourceNode, registertypes.AttributeKeyResourceNode)],
-				OzoneLimitChanges:   event[GetEventAttribute(registertypes.EventTypeUnbondingResourceNode, registertypes.AttributeKeyOZoneLimitChanges)],
 				UnbondingMatureTime: event[GetEventAttribute(registertypes.EventTypeUnbondingResourceNode, registertypes.AttributeKeyUnbondingMatureTime)],
 				TxHash:              txHash,
 				StakeToRemove:       event[GetEventAttribute(registertypes.EventTypeUnbondingResourceNode, registertypes.AttributeKeyStakeToRemove)],
