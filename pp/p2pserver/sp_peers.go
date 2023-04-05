@@ -5,29 +5,55 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
-	"google.golang.org/protobuf/proto"
-
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
+	utiltypes "github.com/stratosnet/sds/utils/types"
+	"google.golang.org/protobuf/proto"
 )
 
-func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb proto.Message, cmd string) error {
-	data, err := proto.Marshal(pb)
+func (p *P2pServer) SignP2pMessage(signMsg []byte) []byte {
+	return utiltypes.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign(signMsg)
+}
 
+func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb proto.Message, cmd string) error {
+	msg := &msg.RelayMsgBuf{
+		MSGSign: msg.MessageSign{
+			P2pPubKey:  setting.P2PPublicKey,
+			P2pAddress: setting.P2PAddress,
+			Signer:     p.SignP2pMessage,
+		},
+	}
+
+	switch cmd {
+	case header.ReqUploadFileSlice:
+		msg.MSGData = pb.(*protos.ReqUploadFileSlice).Data
+		pb.(*protos.ReqUploadFileSlice).Data = nil
+	case header.ReqBackupFileSlice:
+		msg.MSGData = pb.(*protos.ReqBackupFileSlice).Data
+		pb.(*protos.ReqBackupFileSlice).Data = nil
+	case header.RspDownloadSlice:
+		msg.MSGData = pb.(*protos.RspDownloadSlice).Data
+		pb.(*protos.RspDownloadSlice).Data = nil
+	case header.RspTransferDownload:
+		msg.MSGData = pb.(*protos.RspTransferDownload).Data
+		pb.(*protos.RspTransferDownload).Data = nil
+	}
+
+	msg.MSGHead.DataLen = uint32(len(msg.MSGData))
+	body, err := proto.Marshal(pb)
 	if err != nil {
 		pp.ErrorLog(ctx, "error decoding")
 		return errors.New("error decoding")
 	}
-	msg := &msg.RelayMsgBuf{
-		MSGHead: header.MakeMessageHeader(1, setting.Config.Version.AppVer, uint32(len(data)), cmd),
-		MSGData: data,
-	}
+	msg.MSGBody = body
+	msg.MSGHead = header.MakeMessageHeader(1, setting.Config.Version.AppVer, uint32(len(body)), cmd)
 	switch conn := conn.(type) {
 	case *core.ServerConn:
 		return conn.Write(msg, ctx)
@@ -47,11 +73,6 @@ func (p *P2pServer) SendMessageDirectToSPOrViaPP(ctx context.Context, pb proto.M
 }
 
 func (p *P2pServer) SendMessageToSPServer(ctx context.Context, pb proto.Message, cmd string) {
-	//_, err := p.ConnectToSP(ctx)
-	//if err != nil {
-	//	utils.ErrorLog(err)
-	//	return
-	//}
 	if p.mainSpConn != nil {
 		_ = p.SendMessage(ctx, p.mainSpConn, pb, cmd)
 	}
@@ -59,11 +80,17 @@ func (p *P2pServer) SendMessageToSPServer(ctx context.Context, pb proto.Message,
 
 func (p *P2pServer) TransferSendMessageToPPServ(ctx context.Context, addr string, msgBuf *msg.RelayMsgBuf) error {
 	newCtx := core.CreateContextWithParentReqIdAsReqId(ctx)
-	//p.ClientMutex.Lock()
+	msgBuf.MSGSign = msg.MessageSign{
+		P2pPubKey:  setting.P2PPublicKey,
+		P2pAddress: setting.P2PAddress,
+		Signer:     p.SignP2pMessage,
+	}
+
 	if p.connMap[addr] != nil {
 		err := p.connMap[addr].Write(msgBuf, newCtx)
-		//p.ClientMutex.Unlock()
-		utils.DebugLog("conn exist, transfer")
+		if err != nil {
+			utils.DebugLogf("Error writing msg to %s, %v", addr, err.Error())
+		}
 		return err
 	}
 
@@ -86,14 +113,19 @@ func (p *P2pServer) TransferSendMessageToPPServByP2pAddress(ctx context.Context,
 	_ = p.TransferSendMessageToPPServ(ctx, ppInfo.NetworkAddress, msgBuf)
 }
 
-func (p *P2pServer) TransferSendMessageToSPServer(ctx context.Context, msg *msg.RelayMsgBuf) {
+func (p *P2pServer) TransferSendMessageToSPServer(ctx context.Context, message *msg.RelayMsgBuf) {
 	_, err := p.ConnectToSP(ctx)
 	if err != nil {
 		utils.ErrorLog(err)
 		return
 	}
+	message.MSGSign = msg.MessageSign{
+		P2pPubKey:  setting.P2PPublicKey,
+		P2pAddress: setting.P2PAddress,
+		Signer:     p.SignP2pMessage,
+	}
 
-	_ = p.mainSpConn.Write(msg, ctx)
+	_ = p.mainSpConn.Write(message, ctx)
 }
 
 func (p *P2pServer) ReqTransferSendSP(ctx context.Context, conn core.WriteCloser) {

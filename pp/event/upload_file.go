@@ -155,32 +155,6 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
-	if err != nil {
-		pp.ErrorLog(ctx, "failed to get sp pubkey")
-		return
-	}
-
-	// verify sp address
-	if !types.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
-		pp.ErrorLog(ctx, "failed verifying sp's p2p address")
-		return
-	}
-
-	// verify sp node signature
-	nodeSign := target.NodeSign
-	target.NodeSign = nil
-	msg, err := utils.GetRspUploadFileSpNodeSignMessage(target)
-	if err != nil {
-		pp.ErrorLog(ctx, "failed calculating signature from message")
-		return
-	}
-	if !types.VerifyP2pSignBytes(spP2pPubkey, nodeSign, msg) {
-		pp.ErrorLog(ctx, "failed verifying signature from sp")
-		return
-	}
-	target.NodeSign = nodeSign
-
 	if len(target.Slices) != 0 {
 		go startUploadTask(ctx, target)
 	} else {

@@ -20,6 +20,15 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	SIZE_OF_INT16  = 2 // in byte
+	SIZE_OF_UINT16 = 2 // in byte
+	SIZE_OF_INT32  = 4 // in byte
+	SIZE_OF_UINT32 = 4 // in byte
+	SIZE_OF_INT64  = 8 // in byte
+	SIZE_OF_UINT64 = 8 // in byte
+)
+
 func BytesToInt16(b []byte) int16 {
 	bytesBuffer := bytes.NewBuffer(b)
 

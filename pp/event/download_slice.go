@@ -148,14 +148,6 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 			return
 		}
 
-		if target.PpNodeSign == nil {
-			rsp.Data = nil
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "empty signature"
-			_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
-			return
-		}
-
 		if !verifyDownloadSliceSign(&target, slice, rsp) {
 			rsp.Data = nil
 			rsp.Result.State = protos.ResultState_RES_FAIL
@@ -518,25 +510,11 @@ func decryptSliceData(dataToDecrypt []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	return encryption.DecryptAES(key.PrivateKey(), encryptedSlice.Data, encryptedSlice.AesNonce)
+	return encryption.DecryptAES(key.PrivateKey(), encryptedSlice.Data, encryptedSlice.AesNonce, false)
 }
 
 func verifyDownloadSliceSign(target *protos.ReqDownloadSlice, slice *protos.DownloadSliceInfo, rsp *protos.RspDownloadSlice) bool {
-	// verify pp address
-	if !types.VerifyP2pAddrBytes(target.PpP2PPubkey, target.P2PAddress) {
-		utils.ErrorLogf("ppP2pPubkey validation failed, ppP2PAddress:[%v], ppP2PPubKey:[%v]", target.P2PAddress, target.PpP2PPubkey)
-		return false
-	}
-
 	rspfsi := target.RspFileStorageInfo
-
-	// verify node signature from the pp
-	msg := utils.GetReqDownloadSlicePpNodeSignMessage(target.P2PAddress, setting.P2PAddress, slice.SliceStorageInfo.SliceHash, header.ReqDownloadSlice, time.Unix(rspfsi.TimeStamp, 0).String())
-	if !types.VerifyP2pSignString(target.PpP2PPubkey, target.PpNodeSign, msg) {
-		utils.ErrorLog("pp node signature validation failed, msg:", msg)
-		return false
-	}
-
 	spP2pPubkey, err := requests.GetSpPubkey(target.RspFileStorageInfo.SpP2PAddress)
 	if err != nil {
 		utils.ErrorLog("failed to find spP2pPubkey: ", err)

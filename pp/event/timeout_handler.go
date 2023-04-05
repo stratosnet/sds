@@ -18,7 +18,7 @@ type DownloadTimeoutHandler struct {
 
 func (handler *DownloadTimeoutHandler) Handle(ctx context.Context, message *msg.RelayMsgBuf) {
 	target := &protos.ReqDownloadSlice{}
-	if err := proto.Unmarshal(message.MSGData, target); err != nil {
+	if err := proto.Unmarshal(message.MSGBody, target); err != nil {
 		utils.ErrorLog(err)
 		return
 	}
@@ -52,7 +52,7 @@ func (handler *DownloadTimeoutHandler) GetTimeoutMsg(reqMessage *msg.RelayMsgBuf
 
 func (handler *DownloadTimeoutHandler) CanDelete(rspMessage *msg.RelayMsgBuf) bool {
 	var target protos.RspDownloadSlice
-	if !requests.UnmarshalMessageData(rspMessage.MSGData, &target) {
+	if !requests.UnmarshalMessageData(rspMessage.MSGBody, &target) {
 		return false
 	}
 	return target.NeedReport

@@ -8,11 +8,9 @@ import (
 	"io"
 	"math/rand"
 	"net"
-	"reflect"
 	"strconv"
 	"sync"
 	"time"
-	"unsafe"
 
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/core"
@@ -354,7 +352,7 @@ func (cc *ClientConn) handshake() error {
 	cc.sharedKey = sharedPrivKeyBytes
 
 	// Send local p2p address
-	encryptedMsg, err := core.EncryptAndPack(sharedPrivKeyBytes, []byte(cc.GetLocalP2pAddress()))
+	encryptedMsg, err := core.Pack(sharedPrivKeyBytes, []byte(cc.GetLocalP2pAddress()))
 	if err != nil {
 		return err
 	}
@@ -363,7 +361,7 @@ func (cc *ClientConn) handshake() error {
 	}
 
 	// Read remote p2p address
-	p2pAddressBytes, _, err := core.ReadEncryptedHeaderAndBody(cc.spbConn, sharedPrivKeyBytes, utils.MessageBeatLen)
+	p2pAddressBytes, _, err := core.Unpack(cc.spbConn, sharedPrivKeyBytes, utils.MessageBeatLen)
 	if err != nil {
 		return err
 	}
@@ -573,6 +571,9 @@ func (cc *ClientConn) GetIsActive() bool {
 // }
 
 func (cc *ClientConn) Write(message *msg.RelayMsgBuf, ctx context.Context) error {
+	if message.MSGSign.P2pAddress == "" || message.MSGSign.P2pPubKey == nil {
+		return errors.New("missing sign related information")
+	}
 	return asyncWrite(cc, message, ctx)
 }
 
@@ -587,45 +588,25 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 	}()
 
 	sendCh := c.sendCh
-	msgH := make([]byte, utils.MsgHeaderLen)
 	reqId := core.GetReqIdFromContext(ctx)
 	if reqId == 0 {
 		reqId, _ = utils.NextSnowFlakeId()
 		core.InheritRpcLoggerFromParentReqId(ctx, reqId)
 		core.InheritRemoteReqIdFromParentReqId(ctx, reqId)
 	}
-	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, msgH)
-	// msgData := make([]byte, utils.MessageBeatLen)
-	// copy((*msgData)[0:], msgH)
-	// copy((*msgData)[utils.MsgHeaderLen:], m.MSGData)
-	// memory := &msg.RelayMsgBuf{
-	// 	MSGHead: m.MSGHead,
-	// 	MSGData: (*msgData)[0 : m.MSGHead.Len+utils.MsgHeaderLen],
-	// }
 	memory := &msg.RelayMsgBuf{
 		MSGHead:  m.MSGHead,
+		MSGSign:  m.MSGSign,
 		PacketId: core.GetPacketIdFromContext(ctx),
 	}
 	memory.MSGHead.ReqId = reqId
-	memory.Alloc = cmem.Alloc(uintptr(m.MSGHead.Len + utils.MsgHeaderLen))
-	memory.MSGData = (*[1 << 30]byte)(unsafe.Pointer(memory.Alloc))[:m.MSGHead.Len+utils.MsgHeaderLen]
-	(*reflect.SliceHeader)(unsafe.Pointer(&memory.MSGData)).Cap = int(m.MSGHead.Len + utils.MsgHeaderLen)
-	copy(memory.MSGData[0:], msgH)
-	copy(memory.MSGData[utils.MsgHeaderLen:], m.MSGData)
+	memory.PutIntoBuffer(m)
 	sendCh <- memory
-	/*select {
-	case sendCh <- memory:
-		err = nil
-	default:
-		err = utils.ErrWouldBlock
-	}*/
-
 	if err != nil {
 		utils.ErrorLog("asyncWrite error ", err)
 		memory = nil
 		return
 	}
-
 	m.MSGHead.ReqId = reqId
 	core.TimoutMap.Store(ctx, reqId, m)
 
@@ -660,66 +641,69 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 
 	// var msgBuf []byte
 	var msgH header.MessageHead
-	i := 0
+	var msgS msg.MessageSign
 	var lr utils.LimitRate
 	var headerBytes []byte
 	var n int
 	var err error
+	var key []byte
 
+	listenHeader := true
+	i := 0
+	pos := 0
+
+	// this buffer is only used in this loop. Messages need to be copied out of this buffer.
+	msgBuf := make([]byte, utils.MessageBeatLen)
 	for {
+		if cc.encryptMessage {
+			key = cc.sharedKey
+		} else {
+			key = nil
+		}
 		select {
 		case <-cDone: // connection closed
 			Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "closes by conn")
 			return
 		default:
 			recvStart := time.Now().UnixMilli()
-			if msgH.Len == 0 {
-				if cc.encryptMessage {
-					headerBytes, n, err = core.ReadEncryptedHeaderAndBody(spbConn, cc.sharedKey, utils.MessageBeatLen)
-				} else {
-					headerBytes, n, err = core.ReadNonEncryptedHeaderAndBody(spbConn, utils.MessageBeatLen)
-				}
-
+			if listenHeader {
+				// listen to the header
+				headerBytes, n, err = core.Unpack(spbConn, key, utils.MessageBeatLen)
 				cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
 				if err != nil {
 					Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read header err: "+err.Error())
 					return
 				}
-
-				header.DecodeHeader(headerBytes, &msgH)
+				copy(msgBuf[:header.MsgHeaderLen], headerBytes[:header.MsgHeaderLen])
+				msgH.Decode(headerBytes[:header.MsgHeaderLen])
 				if msgH.Version < cc.opts.minAppVer {
-					utils.DetailLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
+					utils.DebugLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
 					continue
 				}
-
-				//when header shows msg length = 0, directly handle msg
-				if msgH.Len == 0 {
-					handler := core.GetHandlerFunc(utils.ByteToString(msgH.Cmd))
-					if handler != nil {
-						handlerCh <- MsgHandler{msg.RelayMsgBuf{}, handler, recvStart}
-					}
-				}
+				// no matter the body is empty or not, message is always handled in the second part, after the signature verified.
+				listenHeader = false
 			} else {
-				// start to process the msg if there is more than just the header to read
-				nonce, dataLen, n, err := core.ReadEncryptionHeader(spbConn)
+				// listen to the second part: body + sign + data. They are concatenated to the header in msgBuf.
+				nonce, secondPartLen, n, err := core.ReadEncryptionHeader(spbConn)
 				cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
 				if err != nil {
 					Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read encrypted header err: "+err.Error())
 					return
 				}
-				if dataLen > utils.MessageBeatLen {
-					Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read encrypted header err: over sized [%v], for cmd [%v]", dataLen, utils.ByteToString(msgH.Cmd))
+				if secondPartLen > utils.MessageBeatLen {
+					Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read encrypted header err: over sized [%v], for cmd [%v]", secondPartLen, utils.ByteToString(msgH.Cmd))
 					return
 				}
 
 				var onereadlen = 1024
-				msgBuf := make([]byte, 0, utils.MessageBeatLen)
+				pos = header.MsgHeaderLen
 				cmd := utils.ByteToString(msgH.Cmd)
-				for ; i < int(dataLen); i = i + n {
-					if int(dataLen)-i < 1024 {
-						onereadlen = int(dataLen) - i
+				for ; i < int(secondPartLen); i = i + n {
+					if int(secondPartLen)-i < 1024 {
+						onereadlen = int(secondPartLen) - i
 					}
-					n, err = io.ReadFull(spbConn, msgBuf[i:i+onereadlen])
+					n, err = io.ReadFull(spbConn, msgBuf[pos:pos+onereadlen])
+					pos += n
 					cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
 					if err != nil {
 						Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read server body err: "+err.Error())
@@ -735,22 +719,37 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					}
 				}
 
-				if uint32(i) == dataLen {
-					var plainBody []byte
+				// handle the second part after all bytes are received
+				if uint32(i) == secondPartLen {
+					posBody := uint32(header.MsgHeaderLen)
+					posSign := posBody + msgH.Len
+					posData := posSign + msg.MsgSignLen
+					var posEnd uint32
 					if cc.encryptMessage {
-						plainBody, err = encryption.DecryptAES(cc.sharedKey, msgBuf[:dataLen], nonce)
+						secondPart, err := encryption.DecryptAES(cc.sharedKey, msgBuf[posBody:posBody+secondPartLen], nonce, true)
 						if err != nil {
 							utils.ErrorLog("client body decryption err", err)
 							return
 						}
+						posEnd = posBody + uint32(len(secondPart))
 					} else {
-						plainBody = msgBuf[:dataLen]
+						posEnd = posBody + secondPartLen
 					}
 
-					message = &msg.RelayMsgBuf{
-						MSGHead: msgH,
-						MSGData: plainBody,
+					// verify signature
+					msgS.Decode(msgBuf[posSign : posSign+msg.MsgSignLen])
+					if err = msgS.Verify(msgBuf[:posSign], cc.remoteP2pAddress); err != nil {
+						Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read err: failed signature verification: "+err.Error())
+						continue
 					}
+					// message body goes to field MSGBody, data goes to field MSGData if it exists
+					message = &msg.RelayMsgBuf{
+						MSGHead: header.CopyMessageHeader(msgH),
+						MSGBody: make([]byte, posSign-posBody),
+						MSGData: make([]byte, posEnd-posData),
+					}
+					copy(message.MSGBody[:], msgBuf[posBody:posSign])
+					copy(message.MSGData[:], msgBuf[posData:posEnd])
 
 					handler := core.GetHandlerFunc(cmd)
 					if handler == nil {
@@ -765,14 +764,12 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 						continue
 					}
 					handlerCh <- MsgHandler{*message, handler, recvStart}
-					msgH.Len = 0
-					msgBuf = nil
-					i = 0
 
+					i = 0
+					listenHeader = true
 				} else {
 					Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "msgH.Len doesn't match the size of data for message: "+utils.ByteToString(msgH.Cmd))
-					msgH.Len = 0
-					msgBuf = nil
+					listenHeader = true
 					return
 				}
 			}
@@ -861,37 +858,29 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 
 	cmd := utils.ByteToString(packet.MSGHead.Cmd)
 
+	var key []byte
 	// pack the header
 	if cc.encryptMessage {
-		// Encrypt and write message header
-		encodedHeader, err = core.EncryptAndPack(cc.sharedKey, packet.MSGData[:utils.MsgHeaderLen])
-		if err != nil {
-			return errors.Wrap(err, "client cannot encrypt header")
-		}
+		key = cc.sharedKey
 	} else {
-		encodedHeader, err = core.Pack(packet.MSGData[:utils.MsgHeaderLen])
-		if err != nil {
-			return errors.Wrap(err, "client cannot pack header")
-		}
+		key = nil
 	}
 
+	// pack the header and send it out
+	encodedHeader, err = core.Pack(key, packet.GetHeader())
+	if err != nil {
+		return errors.Wrap(err, "server cannot encrypt header")
+	}
 	//_ = cc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
 	if err = core.WriteFull(cc.spbConn, encodedHeader); err != nil {
 		return errors.Wrap(err, "client write err")
 	}
 	cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(len(encodedHeader)))
 
-	// pack the message data
-	if cc.encryptMessage {
-		encodedData, err = core.EncryptAndPack(cc.sharedKey, packet.MSGData[utils.MsgHeaderLen:])
-		if err != nil {
-			return errors.Wrap(err, "server cannot encrypt msg")
-		}
-	} else {
-		encodedData, err = core.Pack(packet.MSGData[utils.MsgHeaderLen:])
-		if err != nil {
-			return errors.Wrap(err, "server cannot pack msg")
-		}
+	// pack the second part and send it out
+	encodedData, err = core.Pack(key, packet.GetBytesAfterHeader())
+	if err != nil {
+		return errors.Wrap(err, "server cannot encrypt msg")
 	}
 	writeStart := time.Now()
 	for i := 0; i < len(encodedData); i = i + n {
@@ -919,33 +908,11 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 	}
 	writeEnd := time.Now()
 	costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
-
 	for _, c := range cc.writeHook {
 		if cmd == c.Message && c.Fn != nil {
 			c.Fn(packet.PacketId, costTime)
 		}
 	}
-	cmem.Free(packet.Alloc)
-	return nil
-}
-
-//nolint:unused
-func (cc *ClientConn) writePacketNoEncrypt(packet *msg.RelayMsgBuf) error {
-	var onereadlen = 1024
-	var n int
-	//cmd := utils.ByteToString(packet.MSGHead.Cmd)
-	for i := 0; i < len(packet.MSGData); i = i + n {
-		if len(packet.MSGData)-i < 1024 {
-			onereadlen = len(packet.MSGData) - i
-		}
-		n, err := cc.spbConn.Write(packet.MSGData[i : i+onereadlen])
-		cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(n))
-		if err != nil {
-			utils.ErrorLog("client body err", err)
-			return err
-		}
-	}
-
 	cmem.Free(packet.Alloc)
 	return nil
 }

@@ -72,11 +72,10 @@ message RspStopMaintenance {
 message ReqUploadFile {
   FileInfo file_info = 1;
   PPBaseInfo my_address = 2;
-  bytes node_sign = 3;
-  bytes wallet_sign = 4;
-  bytes wallet_pubkey = 5;
-  bool is_cover = 6;
-  bool is_video_stream = 7;
+  bytes wallet_sign = 3;
+  bytes wallet_pubkey = 4;
+  bool is_cover = 5;
+  bool is_video_stream = 6;
 }
 
 message RspUploadFile {
@@ -103,8 +102,6 @@ message ReqUploadFileSlice {
   SliceOffset     piece_offset = 5;
   string          p2p_address = 6;
   string          wallet_address = 7;
-  bytes           pp_p2p_pubkey = 8;
-  bytes           pp_node_sign = 9;
 }
 
 message RspUploadFileSlice {
@@ -116,8 +113,6 @@ message RspUploadFileSlice {
   string       wallet_address = 6;
   string       task_id = 7;
   string       sp_p2p_address = 8;
-  bytes        pp_p2p_pubkey = 9;
-  bytes        pp_node_sign = 10;
 }
 
 message ReqUploadSlicesWrong {
@@ -147,8 +142,6 @@ message ReqBackupFileSlice {
   SliceOffset     piece_offset = 5;
   string          p2p_address = 6;
   string          wallet_address = 7;
-  bytes           pp_p2p_pubkey = 8;
-  bytes           pp_node_sign = 9;
 }
 
 message RspBackupFileSlice {
@@ -161,8 +154,6 @@ message RspBackupFileSlice {
   uint64       slice_size = 7;
   string       task_id = 8;
   string       sp_p2p_address = 9;
-  bytes        pp_p2p_pubkey = 10;
-  bytes        pp_node_sign = 11;
 }
 message UploadSpeedOfProgress {
   string file_hash = 1; //
@@ -176,14 +167,12 @@ message ReportUploadSliceResult {
   string     file_hash = 2; //
   bool       upload_success = 3;
   bool       isPP = 4; //
-  bytes      pp_node_sign = 5;
-  string     task_id = 6;
-  string     p2p_address = 7;
-  string     wallet_address = 8;
-  string     sp_p2p_address = 9;
-  bytes      pp_p2p_pubkey = 10;
-  int64      cost_time = 11;
-  string     opponent_p2p_address = 12;
+  string     task_id = 5;
+  string     p2p_address = 6;
+  string     wallet_address = 7;
+  string     sp_p2p_address = 8;
+  int64      cost_time = 9;
+  string     opponent_p2p_address = 10;
 }
 
 message RspReportUploadSliceResult {
@@ -224,11 +213,10 @@ message RspFindMyFileList {
 
 message ReqFileStorageInfo {
   FileIndexes     file_indexes = 1;
-  bytes           node_sign = 2;
-  bytes           wallet_sign = 3;
-  bytes           wallet_pubkey = 4;
-  bool            is_video_stream = 5;
-  ReqGetShareFile share_request = 6;
+  bytes           wallet_sign = 2;
+  bytes           wallet_pubkey = 3;
+  bool            is_video_stream = 4;
+  ReqGetShareFile share_request = 5;
 }
 
 message RspFileStorageInfo {
@@ -265,8 +253,6 @@ message ReqDownloadSlice {
   uint64             slice_number = 2;
   string             p2p_address = 3;
   bool               is_video_caching = 4;
-  bytes              pp_p2p_pubkey = 5;
-  bytes              pp_node_sign = 6;
 }
 
 message RspDownloadSlice {
@@ -309,11 +295,10 @@ message ReqReportDownloadResult {
   string wallet_address = 5;
   string pp_p2p_address = 6; // PP's P2P key address
   string pp_wallet_address = 7; // PP's wallet address
-  bytes  node_sign = 8;
-  string task_id = 9;
-  string sp_p2p_address = 10;
-  string opponent_p2p_address = 11;
-  int64  cost_time = 12;
+  string task_id = 8;
+  string sp_p2p_address = 9;
+  string opponent_p2p_address = 10;
+  int64  cost_time = 11;
 }
 
 message RspReportDownloadResult {
@@ -582,8 +567,6 @@ message ReqReportBackupSliceResult {
   PPBaseInfo pp_info = 9;
   string     sp_p2p_address = 10;
   string     p2p_address = 11;
-  bytes      pp_p2p_pubkey = 12;
-  bytes      pp_node_sign = 13;
 }
 message RspReportBackupSliceResult {
   string task_id = 1;
@@ -613,8 +596,6 @@ message ReqTransferDownload {
   ReqFileSliceBackupNotice req_file_slice_backup_notice = 1;
   PPBaseInfo               new_pp = 2;
   string                   p2p_address = 3;
-  bytes                    pp_p2p_pubkey = 4;
-  bytes                    pp_node_sign = 5;
 }
 
 message RspTransferDownload {
@@ -626,8 +607,6 @@ message RspTransferDownload {
   string sp_p2p_address = 6;
   string slice_hash = 7;
   string p2p_address = 8;
-  bytes  pp_p2p_pubkey = 9;
-  bytes  pp_node_sign = 10;
 }
 
 message RspTransferDownloadResult {
@@ -835,12 +814,11 @@ message RspDeleteShare {
 message ReqGetShareFile {
   string keyword = 1; //
   string p2p_address = 2;
-  bytes  node_sign = 3;
-  string wallet_address = 4; //
-  bytes  wallet_pubkey = 5;
-  bytes  wallet_sign = 6;
-  string share_password = 7;//
-  string save_as = 8;
+  string wallet_address = 3; //
+  bytes  wallet_pubkey = 4;
+  bytes  wallet_sign = 5;
+  string share_password = 6;//
+  string save_as = 7;
 }
 
 
