@@ -54,6 +54,7 @@ func RegisterEventHandle() {
 
 	core.Register(header.RspDownloadSliceWrong, RspDownloadSliceWrong)
 	core.Register(header.RspFileStorageInfo, RspFileStorageInfo)
+	core.Register(header.RspFileReplicaInfo, RspFileReplicaInfo)
 	core.Register(header.RspDownloadFileWrong, RspDownloadFileWrong)
 	core.Register(header.ReqClearDownloadTask, ReqClearDownloadTask)
 	core.Register(header.ReqGetHDInfo, ReqGetHDInfo)

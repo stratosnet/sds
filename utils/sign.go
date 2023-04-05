@@ -75,3 +75,18 @@ func GetFileDownloadShareWalletSignMessage(fileHash, walletAddr string) string {
 func GetFileDownloadShareNodeSignMessage(p2pAddr, shareLink, msgTypeStr string) string {
 	return p2pAddr + shareLink + msgTypeStr
 }
+
+// GetFileReplicaInfoWalletSignMessage replica info: wallet sign message for get file replica info request from the (rpc or cmd) user
+func GetFileReplicaInfoWalletSignMessage(fileHash, walletAddr string) string {
+	return fileHash + walletAddr
+}
+
+// GetFileReplicaInfoNodeSignMessage replica info: node sign message for get file replica info request, between pp and sp
+func GetFileReplicaInfoNodeSignMessage(p2pAddr, shareLink, msgTypeStr string) string {
+	return p2pAddr + shareLink + msgTypeStr
+}
+
+// GetRspFileReplicaInfoNodeSignMessage replica info: node sign message for download file response, between sp and pp
+func GetRspFileReplicaInfoNodeSignMessage(ppP2pAddr, spP2PAddress, fileHash, msgTypeStr string) string {
+	return ppP2pAddr + spP2PAddress + fileHash + msgTypeStr
+}
