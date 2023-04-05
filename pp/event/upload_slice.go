@@ -89,7 +89,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	// check if signatures exist
-	if target.PpNodeSign == nil || target.P2PAddress == "" || target.RspUploadFile.TimeStamp == 0 {
+	if target.P2PAddress == "" || target.RspUploadFile.TimeStamp == 0 {
 		rsp := &protos.RspUploadFileSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
@@ -200,14 +200,6 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	metrics.UploadPerformanceLogNow(target.FileHash + ":RCV_RSP_SLICE:" + strconv.FormatInt(int64(target.Slice.SliceNumber), 10))
-	// verify node signature from sp
-	if target.PpNodeSign == nil {
-		return
-	}
-	if err := verifyRspUploadSliceSign(&target); err != nil {
-		utils.ErrorLog("RspUploadFileSlice", err.Error())
-		return
-	}
 
 	pp.DebugLogf(ctx, "get RspUploadFileSlice for file %v  sliceNumber %v  size %v",
 		target.FileHash, target.Slice.SliceNumber, target.Slice.SliceSize)
@@ -256,18 +248,6 @@ func ReqBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
 				Msg:   "sp's upload file response was expired",
-			},
-		}
-		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspBackupFileSlice)
-		return
-	}
-
-	// check if signatures exist
-	if target.PpNodeSign == nil || target.P2PAddress == "" {
-		rsp := &protos.RspUploadFileSlice{
-			Result: &protos.Result{
-				State: protos.ResultState_RES_FAIL,
-				Msg:   "missing signature(s)",
 			},
 		}
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspBackupFileSlice)
@@ -372,14 +352,6 @@ func ReqBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 func RspBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspBackupFileSlice
 	if !requests.UnmarshalData(ctx, &target) {
-		return
-	}
-	// verify node signature from sp
-	if target.PpNodeSign == nil {
-		return
-	}
-	if err := verifyRspBackupSliceSign(&target); err != nil {
-		utils.ErrorLog("RspUploadFileSlice", err.Error())
 		return
 	}
 
@@ -629,19 +601,8 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 }
 
 func verifyUploadSliceSign(target *protos.ReqUploadFileSlice) error {
-	utils.DebugLog(target.P2PAddress, target.PpP2PPubkey)
 	rspUploadFile := target.RspUploadFile
 
-	// verify pp address
-	if !types.VerifyP2pAddrBytes(target.PpP2PPubkey, target.P2PAddress) {
-		return errors.New("failed verifying pp's p2p address")
-	}
-
-	// verify node signature from the pp
-	msg := utils.GetReqUploadFileSlicePpNodeSignMessage(target.P2PAddress, setting.P2PAddress, header.ReqUploadFileSlice, time.Unix(rspUploadFile.TimeStamp, 0).String())
-	if !types.VerifyP2pSignString(target.PpP2PPubkey, target.PpNodeSign, msg) {
-		return errors.New("failed verifying pp's node signature")
-	}
 	spP2pPubkey, err := requests.GetSpPubkey(target.RspUploadFile.SpP2PAddress)
 	if err != nil {
 		return errors.Wrap(err, "failed to get sp pubkey")
@@ -667,20 +628,8 @@ func verifyUploadSliceSign(target *protos.ReqUploadFileSlice) error {
 }
 
 func verifyBackupSliceSign(target *protos.ReqBackupFileSlice) error {
-	utils.DebugLog(target.P2PAddress, target.PpP2PPubkey)
-
 	rspBackupFile := target.RspBackupFile
 
-	// verify pp address
-	if !types.VerifyP2pAddrBytes(target.PpP2PPubkey, target.P2PAddress) {
-		return errors.New("failed verifying pp's p2p address")
-	}
-
-	// verify node signature from the pp
-	msg := utils.GetReqUploadFileSlicePpNodeSignMessage(target.P2PAddress, setting.P2PAddress, header.ReqUploadFileSlice, time.Unix(rspBackupFile.TimeStamp, 0).String())
-	if !types.VerifyP2pSignString(target.PpP2PPubkey, target.PpNodeSign, msg) {
-		return errors.New("failed verifying pp's node signature")
-	}
 	spP2pPubkey, err := requests.GetSpPubkey(target.RspBackupFile.SpP2PAddress)
 	if err != nil {
 		return errors.Wrap(err, "failed to get sp pubkey")
@@ -705,36 +654,6 @@ func verifyBackupSliceSign(target *protos.ReqBackupFileSlice) error {
 	return nil
 }
 
-func verifyRspUploadSliceSign(target *protos.RspUploadFileSlice) error {
-
-	// verify pp address
-	if !types.VerifyP2pAddrBytes(target.PpP2PPubkey, target.P2PAddress) {
-		return errors.New("failed verifying pp's p2p address")
-	}
-
-	// verify node signature from the pp
-	msg := utils.GetRspUploadFileSliceNodeSignMessage(target.P2PAddress, setting.P2PAddress, header.RspUploadFileSlice)
-	if !types.VerifyP2pSignString(target.PpP2PPubkey, target.PpNodeSign, msg) {
-		return errors.New("failed verifying pp's node signature")
-	}
-
-	return nil
-}
-func verifyRspBackupSliceSign(target *protos.RspBackupFileSlice) error {
-
-	// verify pp address
-	if !types.VerifyP2pAddrBytes(target.PpP2PPubkey, target.P2PAddress) {
-		return errors.New("failed verifying pp's p2p address")
-	}
-
-	// verify node signature from the pp
-	msg := utils.GetRspUploadFileSliceNodeSignMessage(target.P2PAddress, setting.P2PAddress, header.RspUploadFileSlice)
-	if !types.VerifyP2pSignString(target.PpP2PPubkey, target.PpNodeSign, msg) {
-		return errors.New("failed verifying pp's node signature")
-	}
-
-	return nil
-}
 func HandleSendPacketCostTime(packetId, costTime int64) {
 	if packetId <= 0 || costTime <= 0 {
 		return

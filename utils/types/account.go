@@ -35,6 +35,10 @@ const (
 	P2pPublicKeyLength = 32
 	// P2pPrivateKeyLength
 	P2pPrivateKeyLength = 64
+
+	P2pAddressBech32Length = 44
+
+	P2pSignatureLength = 64
 )
 
 // Address

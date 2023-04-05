@@ -3,6 +3,7 @@ package requests
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"math"
 	"path"
 	"path/filepath"
@@ -56,13 +57,13 @@ func ReqRegisterDataTR(target *protos.ReqRegister) *msg.RelayMsgBuf {
 		NetworkAddress: setting.NetworkAddress,
 		RestAddress:    setting.RestAddress,
 	}
-	data, err := proto.Marshal(req)
+	body, err := proto.Marshal(req)
 	if err != nil {
 		utils.ErrorLog(err)
 	}
 	return &msg.RelayMsgBuf{
-		MSGHead: PPMsgHeader(data, header.ReqRegister),
-		MSGData: data,
+		MSGHead: PPMsgHeader(uint32(len(body)), header.ReqRegister),
+		MSGBody: body,
 	}
 }
 
@@ -129,7 +130,6 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress
 
 	utils.Log("fileHash: ", fileHash)
 
-	nodeSignMsg := utils.GetReqUploadFileNodeSignMessage(setting.P2PAddress, fileHash, header.ReqUploadFile)
 	file.SaveRemoteFileHash(fileHash, "rpc:"+fileName, fileSize)
 
 	// convert wallet pubkey to []byte which format is to be used in protobuf messages
@@ -154,7 +154,6 @@ func RequestUploadFile(fileName, fileHash string, fileSize uint64, walletAddress
 			OwnerWalletAddress: walletAddress,
 		},
 		MyAddress:     setting.GetPPInfo(),
-		NodeSign:      types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(nodeSignMsg)),
 		WalletSign:    wsig,
 		WalletPubkey:  wpk.Bytes(),
 		IsCover:       false,
@@ -195,7 +194,6 @@ func RequestUploadFileData(ctx context.Context, paths, storagePath string, isCov
 	fileHash := file.GetFileHash(paths, encryptionTag)
 	pp.Log(ctx, "fileHash~~~~~~~~~~~~~~~~~~~~~~", fileHash)
 
-	nodeSignMsg := utils.GetReqUploadFileNodeSignMessage(setting.P2PAddress, fileHash, header.ReqUploadFile)
 	req := &protos.ReqUploadFile{
 		FileInfo: &protos.FileInfo{
 			FileSize:           uint64(info.Size()),
@@ -211,7 +209,6 @@ func RequestUploadFileData(ctx context.Context, paths, storagePath string, isCov
 			NetworkAddress: setting.NetworkAddress,
 			RestAddress:    setting.RestAddress,
 		},
-		NodeSign:      types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(nodeSignMsg)),
 		WalletPubkey:  setting.WalletPublicKey,
 		IsCover:       isCover,
 		IsVideoStream: isVideoStream,
@@ -331,8 +328,6 @@ func RspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 }
 
 func ReqUploadFileSliceData(task *task.UploadSliceTask, destP2pAddr string, pieceOffset *protos.SliceOffset, data []byte) *protos.ReqUploadFileSlice {
-	rspUploadFile := task.RspUploadFile
-	msg := utils.GetReqUploadFileSlicePpNodeSignMessage(setting.P2PAddress, destP2pAddr, header.ReqUploadFileSlice, time.Unix(rspUploadFile.TimeStamp, 0).String())
 	return &protos.ReqUploadFileSlice{
 		RspUploadFile: task.RspUploadFile,
 		SliceNumber:   task.SliceNumber,
@@ -341,13 +336,10 @@ func ReqUploadFileSliceData(task *task.UploadSliceTask, destP2pAddr string, piec
 		WalletAddress: setting.WalletAddress,
 		PieceOffset:   pieceOffset,
 		P2PAddress:    setting.P2PAddress,
-		PpP2PPubkey:   setting.P2PPublicKey,
-		PpNodeSign:    types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
 	}
 }
 
 func RspUploadFileSliceData(target *protos.ReqUploadFileSlice) *protos.RspUploadFileSlice {
-	msg := utils.GetRspUploadFileSliceNodeSignMessage(setting.P2PAddress, target.P2PAddress, header.RspUploadFileSlice)
 	var slice *protos.SliceHashAddr
 	for _, slice = range target.RspUploadFile.Slices {
 		if slice.SliceNumber == target.SliceNumber {
@@ -365,14 +357,10 @@ func RspUploadFileSliceData(target *protos.ReqUploadFileSlice) *protos.RspUpload
 			State: protos.ResultState_RES_SUCCESS,
 		},
 		SpP2PAddress: target.RspUploadFile.SpP2PAddress,
-		PpP2PPubkey:  setting.P2PPublicKey,
-		PpNodeSign:   types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
 	}
 }
 
 func ReqBackupFileSliceData(task *task.UploadSliceTask, destP2pAddr string, pieceOffset *protos.SliceOffset, data []byte) *protos.ReqBackupFileSlice {
-	rspBackupFile := task.RspBackupFile
-	msg := utils.GetReqUploadFileSlicePpNodeSignMessage(setting.P2PAddress, destP2pAddr, header.ReqBackupFileSlice, time.Unix(rspBackupFile.TimeStamp, 0).String())
 	return &protos.ReqBackupFileSlice{
 		RspBackupFile: task.RspBackupFile,
 		SliceNumber:   task.SliceNumber,
@@ -381,13 +369,10 @@ func ReqBackupFileSliceData(task *task.UploadSliceTask, destP2pAddr string, piec
 		WalletAddress: setting.WalletAddress,
 		PieceOffset:   pieceOffset,
 		P2PAddress:    setting.P2PAddress,
-		PpP2PPubkey:   setting.P2PPublicKey,
-		PpNodeSign:    types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
 	}
 }
 
 func RspBackupFileSliceData(target *protos.ReqBackupFileSlice) *protos.RspBackupFileSlice {
-	msg := utils.GetRspUploadFileSliceNodeSignMessage(setting.P2PAddress, target.P2PAddress, header.RspUploadFileSlice)
 	var slice *protos.SliceHashAddr
 	for _, slice = range target.RspBackupFile.Slices {
 		if slice.SliceNumber == target.SliceNumber {
@@ -398,7 +383,6 @@ func RspBackupFileSliceData(target *protos.ReqBackupFileSlice) *protos.RspBackup
 		TaskId:        target.RspBackupFile.TaskId,
 		FileHash:      target.RspBackupFile.FileHash,
 		SliceHash:     target.SliceHash,
-		P2PAddress:    setting.P2PAddress,
 		WalletAddress: target.WalletAddress,
 		Slice:         slice,
 		SliceSize:     slice.SliceOffset.SliceOffsetEnd - slice.SliceOffset.SliceOffsetStart,
@@ -406,8 +390,6 @@ func RspBackupFileSliceData(target *protos.ReqBackupFileSlice) *protos.RspBackup
 			State: protos.ResultState_RES_SUCCESS,
 		},
 		SpP2PAddress: target.RspBackupFile.SpP2PAddress,
-		PpP2PPubkey:  setting.P2PPublicKey,
-		PpNodeSign:   types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
 	}
 }
 func ReqUploadSlicesWrong(uploadTask *task.UploadFileTask, spP2pAddress string, slicesToDownload []*protos.SliceHashAddr, failedSlices []bool) *protos.ReqUploadSlicesWrong {
@@ -425,18 +407,15 @@ func ReqUploadSlicesWrong(uploadTask *task.UploadFileTask, spP2pAddress string, 
 
 func ReqReportUploadSliceResultData(taskId, fileHash, spP2pAddr, opponentP2pAddress string, isPp bool, slice *protos.SliceHashAddr, costTime int64) *protos.ReportUploadSliceResult {
 	utils.DebugLog("reqReportUploadSliceResultData____________________", slice.SliceSize)
-	msg := utils.GetReportUploadSliceResultPpNodeSignMessage(setting.P2PAddress, fileHash, slice.SliceHash, taskId, header.ReqReportUploadSliceResult)
 	return &protos.ReportUploadSliceResult{
 		TaskId:             taskId,
 		Slice:              slice,
 		IsPP:               isPp,
 		UploadSuccess:      true,
 		FileHash:           fileHash,
-		PpNodeSign:         types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
 		P2PAddress:         setting.P2PAddress,
 		WalletAddress:      setting.WalletAddress,
 		SpP2PAddress:       spP2pAddr,
-		PpP2PPubkey:        setting.P2PPublicKey,
 		CostTime:           costTime,
 		OpponentP2PAddress: opponentP2pAddress,
 	}
@@ -444,7 +423,6 @@ func ReqReportUploadSliceResultData(taskId, fileHash, spP2pAddr, opponentP2pAddr
 
 func ReqReportDownloadResultData(target *protos.RspDownloadSlice, costTime int64, isPP bool) *protos.ReqReportDownloadResult {
 	utils.DebugLog("#################################################################", target.SliceInfo.SliceHash)
-	msg := utils.GetReportDownloadSliceResultPpNodeSignMessage(setting.P2PAddress, target.SliceInfo.SliceHash, target.TaskId, header.ReqReportDownloadResult)
 	repReq := &protos.ReqReportDownloadResult{
 		IsPP:                 isPP,
 		DownloaderP2PAddress: target.P2PAddress,
@@ -452,7 +430,6 @@ func ReqReportDownloadResultData(target *protos.RspDownloadSlice, costTime int64
 		PpP2PAddress:         setting.P2PAddress,
 		PpWalletAddress:      setting.WalletAddress,
 		FileHash:             target.FileHash,
-		NodeSign:             types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
 		TaskId:               target.TaskId,
 		SpP2PAddress:         target.SpP2PAddress,
 		CostTime:             costTime,
@@ -495,7 +472,6 @@ func ReqReportDownloadResultData(target *protos.RspDownloadSlice, costTime int64
 
 func ReqReportStreamResultData(target *protos.RspDownloadSlice, isPP bool) *protos.ReqReportDownloadResult {
 	utils.DebugLog("#################################################################", target.SliceInfo.SliceHash)
-	msg := utils.GetReportDownloadSliceResultPpNodeSignMessage(setting.P2PAddress, target.SliceInfo.SliceHash, target.TaskId, header.ReqReportDownloadResult)
 	repReq := &protos.ReqReportDownloadResult{
 		IsPP:                 isPP,
 		DownloaderP2PAddress: target.P2PAddress,
@@ -503,7 +479,6 @@ func ReqReportStreamResultData(target *protos.RspDownloadSlice, isPP bool) *prot
 		PpP2PAddress:         setting.P2PAddress,
 		PpWalletAddress:      setting.WalletAddress,
 		FileHash:             target.FileHash,
-		NodeSign:             types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
 		TaskId:               target.TaskId,
 		SpP2PAddress:         target.SpP2PAddress,
 	}
@@ -542,13 +517,10 @@ func ReqReportStreamResultData(target *protos.RspDownloadSlice, isPP bool) *prot
 }
 
 func ReqDownloadSliceData(target *protos.RspFileStorageInfo, slice *protos.DownloadSliceInfo) *protos.ReqDownloadSlice {
-	msg := utils.GetReqDownloadSlicePpNodeSignMessage(setting.P2PAddress, slice.StoragePpInfo.P2PAddress, slice.SliceStorageInfo.SliceHash, header.ReqDownloadSlice, time.Unix(target.TimeStamp, 0).String())
 	return &protos.ReqDownloadSlice{
 		RspFileStorageInfo: target,
 		SliceNumber:        slice.SliceNumber,
 		P2PAddress:         setting.P2PAddress,
-		PpNodeSign:         types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
-		PpP2PPubkey:        setting.P2PPublicKey,
 	}
 }
 
@@ -572,21 +544,19 @@ func ReqRegisterNewPPData() *protos.ReqRegisterNewPP {
 }
 
 func ReqTransferDownloadData(notice *protos.ReqFileSliceBackupNotice) *msg.RelayMsgBuf {
-	signMsg := utils.GetReqTransferDownloadPpNodeSignMessage(setting.P2PAddress, notice.PpInfo.P2PAddress, notice.SliceStorageInfo.SliceHash, header.ReqTransferDownload)
+
 	protoMsg := &protos.ReqTransferDownload{
 		ReqFileSliceBackupNotice: notice,
 		NewPp:                    setting.GetPPInfo(),
 		P2PAddress:               setting.P2PAddress,
-		PpP2PPubkey:              setting.P2PPublicKey,
-		PpNodeSign:               types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(signMsg)),
 	}
-	data, err := proto.Marshal(protoMsg)
+	body, err := proto.Marshal(protoMsg)
 	if err != nil {
 		utils.ErrorLog(err)
 	}
 	return &msg.RelayMsgBuf{
-		MSGHead: PPMsgHeader(data, header.ReqTransferDownload),
-		MSGData: data,
+		MSGHead: PPMsgHeader(uint32(len(body)), header.ReqTransferDownload),
+		MSGBody: body,
 	}
 }
 
@@ -605,7 +575,6 @@ func ReqTransferDownloadWrongData(notice *protos.ReqFileSliceBackupNotice) *prot
 // ReqFileStorageInfoData encode ReqFileStorageInfo message. If it's not a "share request", walletAddr should keep the same
 // as the wallet from the "path".
 func ReqFileStorageInfoData(path, savePath, saveAs, walletAddr string, walletPUbkey []byte, isVideoStream bool, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
-	msg := utils.GetReqFileStorageInfoNodeSignMessage(setting.P2PAddress, path, header.ReqFileStorageInfo)
 	return &protos.ReqFileStorageInfo{
 		FileIndexes: &protos.FileIndexes{
 			P2PAddress:    setting.P2PAddress,
@@ -614,7 +583,6 @@ func ReqFileStorageInfoData(path, savePath, saveAs, walletAddr string, walletPUb
 			SavePath:      savePath,
 			SaveAs:        saveAs,
 		},
-		NodeSign:      types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
 		WalletPubkey:  walletPUbkey,
 		IsVideoStream: isVideoStream,
 		ShareRequest:  shareRequest,
@@ -668,7 +636,6 @@ func RspTransferDownloadResultData(taskId, sliceHash, spP2pAddress string) *prot
 }
 
 func RspTransferDownload(data []byte, taskId, sliceHash, spP2pAddress string, offset, sliceSize uint64) *protos.RspTransferDownload {
-	msg := utils.GetRspTransferDownloadPpNodeSignMessage(setting.P2PAddress, spP2pAddress, sliceHash, header.ReqUploadFileSlice)
 	return &protos.RspTransferDownload{
 		Data:         data,
 		TaskId:       taskId,
@@ -677,8 +644,6 @@ func RspTransferDownload(data []byte, taskId, sliceHash, spP2pAddress string, of
 		SpP2PAddress: spP2pAddress,
 		SliceHash:    sliceHash,
 		P2PAddress:   setting.P2PAddress,
-		PpP2PPubkey:  setting.P2PPublicKey,
-		PpNodeSign:   types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
 	}
 }
 
@@ -750,11 +715,9 @@ func ReqDeleteShareData(shareID, walletAddr string) *protos.ReqDeleteShare {
 }
 
 func ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr string, walletPubkey []byte) *protos.ReqGetShareFile {
-	msg := utils.GetFileDownloadShareNodeSignMessage(setting.P2PAddress, keyword, header.ReqGetShareFile)
 	return &protos.ReqGetShareFile{
 		Keyword:       keyword,
 		P2PAddress:    setting.P2PAddress,
-		NodeSign:      types.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
 		WalletAddress: walletAddr,
 		WalletPubkey:  walletPubkey,
 		SharePassword: sharePassword,
@@ -859,14 +822,27 @@ func ReqFileReplicaInfo(path, walletAddr string, replicaIncreaseNum uint32, wall
 	}
 }
 
-func PPMsgHeader(data []byte, head string) header.MessageHead {
-	return header.MakeMessageHeader(1, setting.Config.Version.AppVer, uint32(len(data)), head)
+func PPMsgHeader(dataLen uint32, head string) header.MessageHead {
+	return header.MakeMessageHeader(1, setting.Config.Version.AppVer, dataLen, head)
 }
 
 func UnmarshalData(ctx context.Context, target interface{}) bool {
 	msgBuf := core.MessageFromContext(ctx)
-	pp.DebugLogf(ctx, "Received message type = %v msgBuf len = %v", reflect.TypeOf(target), len(msgBuf.MSGData))
-	return UnmarshalMessageData(msgBuf.MSGData, target)
+	pp.DebugLogf(ctx, "Received message type = %v msgBuf len = %v", reflect.TypeOf(target), len(msgBuf.MSGBody))
+	ret := UnmarshalMessageData(msgBuf.MSGBody, target)
+	if ret {
+		switch reflect.TypeOf(target) {
+		case reflect.TypeOf(&protos.ReqUploadFileSlice{}):
+			target.(*protos.ReqUploadFileSlice).Data = msgBuf.MSGData
+		case reflect.TypeOf(&protos.ReqBackupFileSlice{}):
+			target.(*protos.ReqBackupFileSlice).Data = msgBuf.MSGData
+		case reflect.TypeOf(&protos.RspDownloadSlice{}):
+			target.(*protos.RspDownloadSlice).Data = msgBuf.MSGData
+		case reflect.TypeOf(&protos.RspTransferDownload{}):
+			target.(*protos.RspTransferDownload).Data = msgBuf.MSGData
+		}
+	}
+	return ret
 }
 
 func UnmarshalMessageData(data []byte, target interface{}) bool {
@@ -889,7 +865,7 @@ func GetSpPubkey(spP2pAddr string) ([]byte, error) {
 	// find the stored SP public key
 	val, ok := setting.SPMap.Load(spP2pAddr)
 	if !ok {
-		return nil, errors.New("couldn't find sp info by the given SP address")
+		return nil, errors.New(fmt.Sprintf("couldn't find sp info by the given SP address: %s", spP2pAddr))
 	}
 	spInfo, ok := val.(setting.SPBaseInfo)
 	if !ok {

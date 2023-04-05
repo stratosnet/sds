@@ -393,6 +393,9 @@ func getTmpFileFolderPath(fileHash string) string {
 
 func CreateTarWithZstd(source string, target string) error {
 	fi, err := os.Create(target)
+	if err != nil {
+		return err
+	}
 	// Create a new zstd writer
 	zw, err := zstd.NewWriter(fi)
 	if err != nil {

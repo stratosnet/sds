@@ -129,19 +129,8 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	reqNotice.NodeSign = nodeSign
 
 	// verify node sign between PPs
-	if target.PpNodeSign == nil || target.P2PAddress == "" {
+	if target.P2PAddress == "" {
 		utils.ErrorLog(ctx, "")
-		return
-	}
-
-	if !utilstypes.VerifyP2pAddrBytes(target.PpP2PPubkey, target.P2PAddress) {
-		utils.ErrorLogf("ppP2pPubkey validation failed, ppP2PAddress:[%v], ppP2PPubKey:[%v]", target.P2PAddress, target.PpP2PPubkey)
-		return
-	}
-
-	msg := utils.GetReqTransferDownloadPpNodeSignMessage(target.P2PAddress, setting.P2PAddress, target.ReqFileSliceBackupNotice.SliceStorageInfo.SliceHash, header.ReqTransferDownload)
-	if !utilstypes.VerifyP2pSignString(target.PpP2PPubkey, target.PpNodeSign, msg) {
-		utils.ErrorLog("pp node signature validation failed, msg:", msg)
 		return
 	}
 
@@ -207,19 +196,8 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	totalCostTIme := DownRecvCostTimeMap.AddCostTime(target.TaskId+target.SliceHash, costTime)
 
 	// verify node sign between PPs
-	if target.PpNodeSign == nil || target.P2PAddress == "" {
+	if target.P2PAddress == "" {
 		utils.ErrorLog(ctx, "")
-		return
-	}
-
-	if !utilstypes.VerifyP2pAddrBytes(target.PpP2PPubkey, target.P2PAddress) {
-		utils.ErrorLogf("ppP2pPubkey validation failed, ppP2PAddress:[%v], ppP2PPubKey:[%v]", target.P2PAddress, target.PpP2PPubkey)
-		return
-	}
-
-	msg := utils.GetRspTransferDownloadPpNodeSignMessage(target.P2PAddress, target.SpP2PAddress, target.SliceHash, header.ReqUploadFileSlice)
-	if !utilstypes.VerifyP2pSignString(target.PpP2PPubkey, target.PpNodeSign, msg) {
-		utils.ErrorLog("pp node signature validation failed, msg:", msg)
 		return
 	}
 
@@ -275,7 +253,6 @@ func SendReportBackupSliceResult(ctx context.Context, taskId, sliceHash, spP2pAd
 	if !tTask.IsReceiver {
 		opponentP2PAddress = tTask.ReceiverP2pAddress
 	}
-	msg := utils.GetReqReportBackupSliceResultNodeSignMessage(setting.P2PAddress, spP2pAddress, sliceHash, header.ReqReportBackupSliceResult)
 	req := &protos.ReqReportBackupSliceResult{
 		TaskId:             taskId,
 		FileHash:           tTask.FileHash,
@@ -291,8 +268,6 @@ func SendReportBackupSliceResult(ctx context.Context, taskId, sliceHash, spP2pAd
 		PpP2PAddress:       setting.P2PAddress,
 		OpponentP2PAddress: opponentP2PAddress,
 		P2PAddress:         setting.P2PAddress,
-		PpP2PPubkey:        setting.P2PPublicKey,
-		PpNodeSign:         utilstypes.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
 	}
 	utils.DebugLogf("---SendReportBackupSliceResult, %v", req)
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqReportBackupSliceResult)

@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/stratosnet/sds/pp/requests"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/stratosnet/sds/pp/requests"
 
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/ipfs/go-cid"
@@ -355,8 +356,6 @@ func sendReportStreamResult(ctx context.Context, body *StreamReqBody, sliceHash 
 		SliceInfo:     &protos.SliceOffsetInfo{SliceHash: sliceHash},
 		FileHash:      body.FileHash,
 		WalletAddress: setting.WalletAddress,
-		P2PAddress:    body.P2PAddress,
 		TaskId:        body.SliceInfo.TaskId,
-		SpP2PAddress:  body.SpP2pAddress,
 	}, isPP)
 }

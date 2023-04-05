@@ -9,8 +9,6 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/stratosnet/sds/pp/requests"
-
 	"github.com/google/uuid"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/metrics"
@@ -19,6 +17,7 @@ import (
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/network"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"

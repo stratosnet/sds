@@ -3,6 +3,7 @@ package encryption
 import (
 	"crypto/aes"
 	"crypto/cipher"
+
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -24,7 +25,7 @@ func EncryptAES(key, plaintext []byte, nonce uint64) ([]byte, error) {
 	return ciphertext, nil
 }
 
-func DecryptAES(key, ciphertext []byte, nonce uint64) ([]byte, error) {
+func DecryptAES(key, ciphertext []byte, nonce uint64, dstToCiphertext bool) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -37,7 +38,9 @@ func DecryptAES(key, ciphertext []byte, nonce uint64) ([]byte, error) {
 
 	noncePadding := make([]byte, gcm.NonceSize()-8)
 	nonceFull := append(noncePadding, utils.Uint64ToBytes(nonce)...)
-
-	plaintext, err := gcm.Open(nil, nonceFull, ciphertext, nil)
-	return plaintext, err
+	if dstToCiphertext {
+		return gcm.Open(ciphertext[:0], nonceFull, ciphertext, nil)
+	} else {
+		return gcm.Open(nil, nonceFull, ciphertext, nil)
+	}
 }
