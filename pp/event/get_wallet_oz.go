@@ -2,10 +2,6 @@ package event
 
 import (
 	"context"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/datamesh"
-	"github.com/stratosnet/sds/utils/types"
 	"sync"
 
 	"github.com/stratosnet/sds/framework/core"
@@ -16,6 +12,10 @@ import (
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/datamesh"
+	"github.com/stratosnet/sds/utils/types"
 )
 
 var (
@@ -45,6 +45,9 @@ func ReqGetWalletOzForDownload(ctx context.Context, walletAddr, reqId string, do
 func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 	pp.DebugLog(ctx, "get GetWalletOz RSP")
 	var target protos.RspGetWalletOz
+	if err := VerifyMessage(ctx, header.RspGetWalletOz, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, &target) {
 		pp.DebugLog(ctx, "Cannot unmarshal ozone balance data")
 		return

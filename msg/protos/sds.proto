@@ -244,18 +244,16 @@ message ReqFileReplicaInfo {
   string    wallet_address = 2;
   string    file_path = 3;
   uint32    replica_increase_num = 4;
-  bytes     node_sign = 5;
-  bytes     wallet_sign = 6;
-  bytes     wallet_pubkey = 7;
+  bytes     wallet_sign = 5;
+  bytes     wallet_pubkey = 6;
 }
 
 message RspFileReplicaInfo {
   Result    result = 1;
   string    sp_p2p_address = 2;
-  bytes     node_sign = 3; //sp signature
-  string    file_hash = 4;
-  uint32    replicas = 5;
-  uint32    expected_replicas = 6;
+  string    file_hash = 3;
+  uint32    replicas = 4;
+  uint32    expected_replicas = 5;
 }
 
 message ReqDownloadFileWrong {

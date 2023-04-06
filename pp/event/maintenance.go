@@ -15,6 +15,7 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/utils"
 )
 
 const (
@@ -43,6 +44,9 @@ func StopMaintenance(ctx context.Context) error {
 
 func RspStartMaintenance(ctx context.Context, _ core.WriteCloser) {
 	var target protos.RspStartMaintenance
+	if err := VerifyMessage(ctx, header.RspStartMaintenance, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, &target) {
 		pp.DebugLog(ctx, "Cannot unmarshal start maintenance response")
 		return
@@ -61,6 +65,9 @@ func RspStartMaintenance(ctx context.Context, _ core.WriteCloser) {
 
 func RspStopMaintenance(ctx context.Context, _ core.WriteCloser) {
 	var target protos.RspStopMaintenance
+	if err := VerifyMessage(ctx, header.RspStopMaintenance, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, &target) {
 		pp.DebugLog(ctx, "Cannot unmarshal stop maintenance response")
 		return

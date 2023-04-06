@@ -100,6 +100,9 @@ func checkSingleSpLatency(ctx context.Context, server string) {
 // ReqLatencyCheckToPp Request latency measurement from a pp and to a pp
 func ReqLatencyCheckToPp(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqLatencyCheck
+	if err := VerifyMessage(ctx, header.ReqLatencyCheck, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, &target) {
 		utils.ErrorLog("unmarshal error")
 		return
@@ -112,6 +115,10 @@ func ReqLatencyCheckToPp(ctx context.Context, conn core.WriteCloser) {
 }
 
 func RspLatencyCheck(ctx context.Context, _ core.WriteCloser) {
+	var target protos.RspLatencyCheck
+	if err := VerifyMessage(ctx, header.RspLatencyCheck, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	pp.DebugLog(ctx, "get Heartbeat RSP")
 	rspTime := time.Now().UnixNano()
 	var response protos.RspLatencyCheck

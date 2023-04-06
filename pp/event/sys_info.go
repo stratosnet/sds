@@ -6,6 +6,7 @@ import (
 
 	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/pp/p2pserver"
+	"github.com/stratosnet/sds/utils"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
@@ -19,6 +20,9 @@ var job clock.Job              //nolint:unused
 
 func ReqGetHDInfo(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqGetHDInfo
+	if err := VerifyMessage(ctx, header.ReqGetHDInfo, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if requests.UnmarshalData(ctx, &target) {
 
 		if setting.P2PAddress == target.P2PAddress {
@@ -30,7 +34,10 @@ func ReqGetHDInfo(ctx context.Context, conn core.WriteCloser) {
 }
 
 func RspGetHDInfo(ctx context.Context, conn core.WriteCloser) {
-
+	var target protos.RspGetHDInfo
+	if err := VerifyMessage(ctx, header.RspGetHDInfo, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 

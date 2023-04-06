@@ -23,6 +23,10 @@ func FindFileList(ctx context.Context, fileName string, walletAddr string, pageI
 }
 
 func ReqFindMyFileList(ctx context.Context, conn core.WriteCloser) {
+	var target protos.ReqFindMyFileList
+	if err := VerifyMessage(ctx, header.ReqFindMyFileList, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	utils.DebugLog("+++++++++++++++++++++++++++++++++++++++++++++++++++")
 	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
@@ -30,6 +34,9 @@ func ReqFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	pp.DebugLog(ctx, "get RspFindMyFileList")
 	var target protos.RspFindMyFileList
+	if err := VerifyMessage(ctx, header.RspFindMyFileList, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	rpcResult := &rpc.FileListResult{}
 
 	// fail to unmarshal data, not able to determine if and which RPC client this is from, let the client timeout

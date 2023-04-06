@@ -22,11 +22,18 @@ func DeleteFile(ctx context.Context, fileHash string) {
 }
 
 func ReqDeleteFile(ctx context.Context, conn core.WriteCloser) {
+	var target protos.ReqDeleteFile
+	if err := VerifyMessage(ctx, header.ReqDeleteFile, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
 func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeleteFile
+	if err := VerifyMessage(ctx, header.RspDeleteFile, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if requests.UnmarshalData(ctx, &target) {
 		if target.P2PAddress == setting.P2PAddress {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
@@ -42,6 +49,10 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 
 // ReqDeleteSlice delete slice sp-pp  or pp-p only works if sent from server to client
 func ReqDeleteSlice(ctx context.Context, conn core.WriteCloser) {
+	var target protos.ReqDeleteSlice
+	if err := VerifyMessage(ctx, header.ReqDeleteSlice, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	switch conn.(type) {
 	case *cf.ClientConn:
 		var target protos.ReqDeleteSlice
@@ -60,5 +71,9 @@ func ReqDeleteSlice(ctx context.Context, conn core.WriteCloser) {
 }
 
 func RspDeleteSlice(ctx context.Context, conn core.WriteCloser) {
+	var target protos.RspDeleteSlice
+	if err := VerifyMessage(ctx, header.RspDeleteSlice, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }

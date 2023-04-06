@@ -12,7 +12,6 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/types"
 )
 
 func CheckAndSendRetryMessage(ctx context.Context, dTask *task.DownloadTask) {
@@ -35,31 +34,10 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 	// PP check whether itself is the storage PP, if not transfer
 	pp.Log(ctx, "get，RspDownloadFileWrong")
 	var target protos.RspFileStorageInfo
+	if err := VerifyMessage(ctx, header.RspDownloadFileWrong, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if requests.UnmarshalData(ctx, &target) {
-
-		spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
-		if err != nil {
-			return
-		}
-
-		// verify sp address
-		if !types.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
-			return
-		}
-
-		// verify sp node signature
-		nodeSign := target.NodeSign
-		target.NodeSign = nil
-		msg, err := utils.GetRspFileStorageInfoNodeSignMessage(&target)
-		if err != nil {
-			utils.ErrorLog("failed calculating signature from message")
-			return
-		}
-		if !types.VerifyP2pSignBytes(spP2pPubkey, nodeSign, msg) {
-			utils.ErrorLog("failed verifying signature from sp")
-			return
-		}
-		target.NodeSign = nodeSign
 
 		fileReqId, found := getFileReqIdFromContext(ctx)
 		if !found {

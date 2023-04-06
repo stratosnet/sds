@@ -10,6 +10,11 @@ func GetFileUploadWalletSignMessage(fileHash, walletAddr, sn string) string {
 	return fileHash + walletAddr + sn
 }
 
+// GetFileDownloadWalletSignMessage download: wallet sign message for download request from the (rpc or cmd) user
+func GetFileDownloadWalletSignMessage(fileHash, walletAddr, sn string) string {
+	return fileHash + walletAddr + sn
+}
+
 // GetRspUploadFileSpNodeSignMessage upload: node sign message for upload file response, between sp and uploader pp, the dest pp verify this too
 func GetRspUploadFileSpNodeSignMessage(rspMsg *protos.RspUploadFile) ([]byte, error) {
 	msg, err := proto.Marshal(rspMsg)
@@ -37,11 +42,6 @@ func GetReqBackupSliceNoticeSpNodeSignMessage(reqMsg *protos.ReqFileSliceBackupN
 	return CalcHashBytes(msg), nil
 }
 
-// GetFileDownloadWalletSignMessage download: wallet sign message for download request from the (rpc or cmd) user
-func GetFileDownloadWalletSignMessage(fileHash, walletAddr, sn string) string {
-	return fileHash + walletAddr + sn
-}
-
 // GetRspFileStorageInfoNodeSignMessage download: node sign message for download file response, between sp and downloader pp
 func GetRspFileStorageInfoNodeSignMessage(rspMsg *protos.RspFileStorageInfo) ([]byte, error) {
 	msg, err := proto.Marshal(rspMsg)
@@ -54,14 +54,4 @@ func GetRspFileStorageInfoNodeSignMessage(rspMsg *protos.RspFileStorageInfo) ([]
 // GetFileReplicaInfoWalletSignMessage replica info: wallet sign message for get file replica info request from the (rpc or cmd) user
 func GetFileReplicaInfoWalletSignMessage(fileHash, walletAddr string) string {
 	return fileHash + walletAddr
-}
-
-// GetFileReplicaInfoNodeSignMessage replica info: node sign message for get file replica info request, between pp and sp
-func GetFileReplicaInfoNodeSignMessage(p2pAddr, shareLink, msgTypeStr string) string {
-	return p2pAddr + shareLink + msgTypeStr
-}
-
-// GetRspFileReplicaInfoNodeSignMessage replica info: node sign message for download file response, between sp and pp
-func GetRspFileReplicaInfoNodeSignMessage(ppP2pAddr, spP2PAddress, fileHash, msgTypeStr string) string {
-	return ppP2pAddr + spP2PAddress + fileHash + msgTypeStr
 }
