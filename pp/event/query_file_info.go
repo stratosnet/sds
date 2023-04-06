@@ -22,7 +22,6 @@ import (
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/datamesh"
 	"github.com/stratosnet/sds/utils/httpserv"
-	"github.com/stratosnet/sds/utils/types"
 )
 
 var (
@@ -86,6 +85,9 @@ func ClearFileInfoAndDownloadTask(ctx context.Context, fileHash string, fileReqI
 
 func ReqClearDownloadTask(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqClearDownloadTask
+	if err := VerifyMessage(ctx, header.ReqClearDownloadTask, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if requests.UnmarshalData(ctx, &target) {
 		task.DeleteDownloadTask(target.WalletAddress, target.WalletAddress, "")
 	}
@@ -235,6 +237,10 @@ func GetSliceInfoBySliceNumber(fInfo *protos.RspFileStorageInfo, sliceNumber uin
 
 // ReqFileStorageInfo  P-PP , PP-SP
 func ReqFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
+	var target protos.ReqFileStorageInfo
+	if err := VerifyMessage(ctx, header.ReqFileStorageInfo, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	utils.Log("pp get ReqFileStorageInfo directly transfer to SP")
 	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
@@ -244,6 +250,9 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	// PP check whether itself is the storage PP, if not transfer
 	pp.Log(ctx, "get，RspFileStorageInfo")
 	var target protos.RspFileStorageInfo
+	if err := VerifyMessage(ctx, header.RspFileStorageInfo, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
@@ -265,30 +274,6 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		pp.ErrorLog(ctx, "file download response doesn't match the request")
 		return
 	}
-	// get sp's p2p pubkey
-	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
-	if err != nil {
-		return
-	}
-
-	// verify sp address
-	if !types.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
-		return
-	}
-
-	// verify sp node signature
-	nodeSign := target.NodeSign
-	target.NodeSign = nil
-	msg, err := utils.GetRspFileStorageInfoNodeSignMessage(&target)
-	if err != nil {
-		pp.ErrorLog(ctx, "failed calculating signature from message")
-		return
-	}
-	if !types.VerifyP2pSignBytes(spP2pPubkey, nodeSign, msg) {
-		pp.ErrorLog(ctx, "failed verifying signature from sp")
-		return
-	}
-	target.NodeSign = nodeSign
 
 	var newTarget protos.RspFileStorageInfo
 	newTarget = target

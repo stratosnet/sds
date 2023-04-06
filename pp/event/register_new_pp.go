@@ -12,6 +12,7 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/utils"
 )
 
 // RegisterNewPP P-SP P register to become PP
@@ -25,6 +26,9 @@ func RegisterNewPP(ctx context.Context) {
 func RspRegisterNewPP(ctx context.Context, conn core.WriteCloser) {
 	pp.Log(ctx, "get RspRegisterNewPP")
 	var target protos.RspRegisterNewPP
+	if err := VerifyMessage(ctx, header.RspRegisterNewPP, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}

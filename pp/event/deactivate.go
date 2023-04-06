@@ -13,6 +13,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/utils"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
@@ -31,6 +32,10 @@ func Deactivate(ctx context.Context, txFee utiltypes.TxFee) error {
 // RspDeactivate Response to asking the SP node to deactivate this PP node
 func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeactivatePP
+	if err := VerifyMessage(ctx, header.RspDeactivatePP, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
+
 	success := requests.UnmarshalData(ctx, &target)
 	if !success {
 		return

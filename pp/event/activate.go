@@ -58,6 +58,10 @@ func Activate(ctx context.Context, amount utiltypes.Coin, txFee utiltypes.TxFee)
 // RspActivate Response to asking the SP node to activate this PP node
 func RspActivate(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspActivatePP
+	if err := VerifyMessage(ctx, header.RspActivatePP, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
+
 	success := requests.UnmarshalData(ctx, &target)
 	if !success {
 		return

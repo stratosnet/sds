@@ -14,7 +14,6 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
-	utilstypes "github.com/stratosnet/sds/utils/types"
 	"github.com/tendermint/tendermint/types/time"
 )
 
@@ -23,6 +22,9 @@ import (
 func ReqFileSliceBackupNotice(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("get ReqFileSliceBackupNotice")
 	target := &protos.ReqFileSliceBackupNotice{}
+	if err := VerifyMessage(ctx, header.ReqFileSliceBackupNotice, target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, target) {
 		return
 	}
@@ -38,30 +40,6 @@ func ReqFileSliceBackupNotice(ctx context.Context, conn core.WriteCloser) {
 		utils.DebugLog("Ignoring slice backup notice because this node already owns the file")
 		return
 	}
-	// get sp's p2p pubkey
-	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
-	if err != nil {
-		return
-	}
-
-	// verify sp address
-	if !utilstypes.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
-		return
-	}
-
-	// verify sp node signature
-	nodeSign := target.NodeSign
-	target.NodeSign = nil
-	msg, err := utils.GetReqBackupSliceNoticeSpNodeSignMessage(target)
-	if err != nil {
-		utils.ErrorLog(ctx, "failed calculating signature from message")
-		return
-	}
-	if !utilstypes.VerifyP2pSignBytes(spP2pPubkey, nodeSign, msg) {
-		utils.ErrorLog(ctx, "failed verifying signature from sp")
-		return
-	}
-	target.NodeSign = nodeSign
 
 	if !task.CheckTransfer(target) {
 		utils.DebugLog("CheckTransfer failed")
@@ -79,7 +57,7 @@ func ReqFileSliceBackupNotice(ctx context.Context, conn core.WriteCloser) {
 	task.AddTransferTask(target.TaskId, target.SliceStorageInfo.SliceHash, tTask)
 
 	//if the connection returns error, send a ReqTransferDownloadWrong message to sp to report the failure
-	err = p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServ(ctx, target.PpInfo.NetworkAddress, requests.ReqTransferDownloadData(target))
+	err := p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServ(ctx, target.PpInfo.NetworkAddress, requests.ReqTransferDownloadData(target))
 	if err != nil {
 		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqTransferDownloadWrongData(target), header.ReqTransferDownloadWrong)
 	}
@@ -89,6 +67,9 @@ func ReqFileSliceBackupNotice(ctx context.Context, conn core.WriteCloser) {
 func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get ReqTransferDownload")
 	var target protos.ReqTransferDownload
+	if err := VerifyMessage(ctx, header.ReqTransferDownload, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
@@ -97,37 +78,6 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	// SPAM check
 	if time.Now().Unix()-reqNotice.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
 		utils.ErrorLog(ctx, "the slice backup request from sp was expired")
-		return
-	}
-
-	// get sp's p2p pubkey
-	spP2pPubkey, err := requests.GetSpPubkey(reqNotice.SpP2PAddress)
-	if err != nil {
-		return
-	}
-
-	// verify sp address
-	if !utilstypes.VerifyP2pAddrBytes(spP2pPubkey, reqNotice.SpP2PAddress) {
-		return
-	}
-
-	// verify sp node signature
-	nodeSign := reqNotice.NodeSign
-	reqNotice.NodeSign = nil
-	signmsg, err := utils.GetReqBackupSliceNoticeSpNodeSignMessage(reqNotice)
-	if err != nil {
-		utils.ErrorLog(ctx, "failed calculating signature from message")
-		return
-	}
-	if !utilstypes.VerifyP2pSignBytes(spP2pPubkey, nodeSign, signmsg) {
-		utils.ErrorLog(ctx, "failed verifying signature from sp")
-		return
-	}
-	reqNotice.NodeSign = nodeSign
-
-	// verify node sign between PPs
-	if target.P2PAddress == "" {
-		utils.ErrorLog(ctx, "")
 		return
 	}
 
@@ -173,6 +123,9 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspTransferDownload")
 	var target protos.RspTransferDownload
+	if err := VerifyMessage(ctx, header.RspTransferDownload, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
@@ -197,6 +150,9 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspTransferDownloadResult")
 	var target protos.RspTransferDownloadResult
+	if err := VerifyMessage(ctx, header.RspTransferDownloadResult, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
@@ -245,6 +201,9 @@ func SendReportBackupSliceResult(ctx context.Context, taskId, sliceHash, spP2pAd
 func RspReportBackupSliceResult(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspReportBackupSliceResult")
 	var target protos.RspReportBackupSliceResult
+	if err := VerifyMessage(ctx, header.RspReportBackupSliceResult, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}

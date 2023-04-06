@@ -115,6 +115,9 @@ func ReqBackupStatus(ctx context.Context, fileHash string) {
 func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 	pp.DebugLog(ctx, "get RspUploadFile")
 	target := &protos.RspUploadFile{}
+	if err := VerifyMessage(ctx, header.RspUploadFile, target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, target) {
 		pp.ErrorLog(ctx, "unmarshal error")
 		return
@@ -175,6 +178,9 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 	pp.DebugLog(ctx, "get RspBackupStatus")
 	target := &protos.RspBackupStatus{}
+	if err := VerifyMessage(ctx, header.RspFileBackupStatus, target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, target) {
 		pp.ErrorLog(ctx, "unmarshal error")
 		return
@@ -197,20 +203,6 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 		pp.ErrorLog(ctx, "failed verifying sp's p2p address")
 		return
 	}
-
-	// verify sp node signature
-	nodeSign := target.NodeSign
-	target.NodeSign = nil
-	msg, err := utils.GetRspBackupFileSpNodeSignMessage(target)
-	if err != nil {
-		pp.ErrorLog(ctx, "failed calculating signature from message")
-		return
-	}
-	if !types.VerifyP2pSignBytes(spP2pPubkey, nodeSign, msg) {
-		pp.ErrorLog(ctx, "failed verifying signature from sp")
-		return
-	}
-	target.NodeSign = nodeSign
 
 	if target.Result.State == protos.ResultState_RES_FAIL {
 		pp.Log(ctx, "Backup status check failed", target.Result.Msg)

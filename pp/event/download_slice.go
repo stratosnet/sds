@@ -13,7 +13,6 @@ import (
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/pp/p2pserver"
-	"github.com/stratosnet/sds/utils/types"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/stratosnet/sds/framework/core"
@@ -94,6 +93,9 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("ReqDownloadSlice reqID =========", core.GetReqIdFromContext(ctx))
 	utils.Log("ReqDownloadSlice", conn)
 	var target protos.ReqDownloadSlice
+	if err := VerifyMessage(ctx, header.ReqDownloadSlice, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if requests.UnmarshalData(ctx, &target) {
 		// SPAM check
 		if time.Now().Unix()-target.RspFileStorageInfo.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
@@ -106,29 +108,6 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 			_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
 			return
 		}
-
-		// verify sp node signature
-		spP2pPubkey, err := requests.GetSpPubkey(target.RspFileStorageInfo.SpP2PAddress)
-		if err != nil {
-			return
-		}
-
-		if !types.VerifyP2pAddrBytes(spP2pPubkey, target.RspFileStorageInfo.SpP2PAddress) {
-			return
-		}
-
-		nodeSign := target.RspFileStorageInfo.NodeSign
-		target.RspFileStorageInfo.NodeSign = nil
-		msg, err := utils.GetRspFileStorageInfoNodeSignMessage(target.RspFileStorageInfo)
-		if err != nil {
-			pp.ErrorLog(ctx, "failed calculating signature from message")
-			return
-		}
-		if !types.VerifyP2pSignBytes(spP2pPubkey, nodeSign, msg) {
-			pp.ErrorLog(ctx, "failed verifying signature from sp")
-			return
-		}
-		target.RspFileStorageInfo.NodeSign = nodeSign
 
 		var slice *protos.DownloadSliceInfo
 		for _, slice = range target.RspFileStorageInfo.SliceInfo {
@@ -148,7 +127,7 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 			return
 		}
 
-		if !verifyDownloadSliceSign(&target, slice, rsp) {
+		if !verifyDownloadSliceHash(&target, slice, rsp) {
 			rsp.Data = nil
 			rsp.Result.State = protos.ResultState_RES_FAIL
 			rsp.Result.Msg = "signature validation failed"
@@ -238,6 +217,9 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	costTime := core.GetRecvCostTimeFromContext(ctx)
 	pp.DebugLog(ctx, "get RspDownloadSlice, cost time: ", costTime)
 	var target protos.RspDownloadSlice
+	if err := VerifyMessage(ctx, header.RspDownloadSlice, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
@@ -475,6 +457,9 @@ func SendReqDownloadSlice(ctx context.Context, fileHash string, sliceInfo *proto
 func RspReportDownloadResult(ctx context.Context, conn core.WriteCloser) {
 	pp.DebugLog(ctx, "get RspReportDownloadResult")
 	var target protos.RspReportDownloadResult
+	if err := VerifyMessage(ctx, header.RspReportDownloadResult, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if requests.UnmarshalData(ctx, &target) {
 		pp.DebugLog(ctx, "result", target.Result.State, target.Result.Msg)
 	}
@@ -513,35 +498,7 @@ func decryptSliceData(dataToDecrypt []byte) ([]byte, error) {
 	return encryption.DecryptAES(key.PrivateKey(), encryptedSlice.Data, encryptedSlice.AesNonce, false)
 }
 
-func verifyDownloadSliceSign(target *protos.ReqDownloadSlice, slice *protos.DownloadSliceInfo, rsp *protos.RspDownloadSlice) bool {
-	rspfsi := target.RspFileStorageInfo
-	spP2pPubkey, err := requests.GetSpPubkey(target.RspFileStorageInfo.SpP2PAddress)
-	if err != nil {
-		utils.ErrorLog("failed to find spP2pPubkey: ", err)
-		return false
-	}
-
-	// verify sp address
-	if !types.VerifyP2pAddrBytes(spP2pPubkey, target.RspFileStorageInfo.SpP2PAddress) {
-		utils.ErrorLogf("spP2pPubkey validation failed, spP2PAddress:[%v], spP2PPubKey:[%v]", target.RspFileStorageInfo.SpP2PAddress, spP2pPubkey)
-		return false
-	}
-
-	// verify sp node signature
-	nodeSign := rspfsi.NodeSign
-	rspfsi.NodeSign = nil
-	signmsg, err := utils.GetRspFileStorageInfoNodeSignMessage(rspfsi)
-	utils.DebugLog("nodeSign:", nodeSign)
-	if err != nil {
-		utils.ErrorLog("failed calculating signature from message")
-		return false
-	}
-	if !types.VerifyP2pSignBytes(spP2pPubkey, nodeSign, signmsg) {
-		utils.ErrorLog("failed verifying signature from sp")
-		return false
-	}
-	rspfsi.NodeSign = nodeSign
-
+func verifyDownloadSliceHash(target *protos.ReqDownloadSlice, slice *protos.DownloadSliceInfo, rsp *protos.RspDownloadSlice) bool {
 	return slice.SliceStorageInfo.SliceHash == utils.CalcSliceHash(rsp.Data, target.RspFileStorageInfo.FileHash, target.SliceNumber)
 }
 

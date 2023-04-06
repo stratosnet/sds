@@ -10,6 +10,11 @@ func GetFileUploadWalletSignMessage(fileHash, walletAddr, sn string) string {
 	return fileHash + walletAddr + sn
 }
 
+// GetFileDownloadWalletSignMessage download: wallet sign message for download request from the (rpc or cmd) user
+func GetFileDownloadWalletSignMessage(fileHash, walletAddr, sn string) string {
+	return fileHash + walletAddr + sn
+}
+
 // GetRspUploadFileSpNodeSignMessage upload: node sign message for upload file response, between sp and uploader pp, the dest pp verify this too
 func GetRspUploadFileSpNodeSignMessage(rspMsg *protos.RspUploadFile) ([]byte, error) {
 	msg, err := proto.Marshal(rspMsg)
@@ -35,11 +40,6 @@ func GetReqBackupSliceNoticeSpNodeSignMessage(reqMsg *protos.ReqFileSliceBackupN
 		return nil, err
 	}
 	return CalcHashBytes(msg), nil
-}
-
-// GetFileDownloadWalletSignMessage download: wallet sign message for download request from the (rpc or cmd) user
-func GetFileDownloadWalletSignMessage(fileHash, walletAddr, sn string) string {
-	return fileHash + walletAddr + sn
 }
 
 // GetRspFileStorageInfoNodeSignMessage download: node sign message for download file response, between sp and downloader pp
