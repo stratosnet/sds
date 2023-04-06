@@ -3,7 +3,6 @@ package event
 // Author j
 import (
 	"context"
-	"crypto/ed25519"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
@@ -15,6 +14,8 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
+	utilstypes "github.com/stratosnet/sds/utils/types"
+	"github.com/tendermint/tendermint/types/time"
 )
 
 // ReqFileSliceBackupNotice An SP node wants this PP node to fetch the specified slice from the PP node who stores it.
@@ -27,16 +28,40 @@ func ReqFileSliceBackupNotice(ctx context.Context, conn core.WriteCloser) {
 	}
 	utils.DebugLog("target = ", target)
 
+	// SPAM check
+	if time.Now().Unix()-target.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
+		utils.ErrorLog(ctx, "the slice backup request from sp was expired")
+		return
+	}
+
 	if target.PpInfo.P2PAddress == setting.P2PAddress {
 		utils.DebugLog("Ignoring slice backup notice because this node already owns the file")
 		return
 	}
-
-	signMessage := target.FileHash + "#" + target.SliceStorageInfo.SliceHash + "#" + target.SpP2PAddress
-	if !ed25519.Verify(target.Pubkey, []byte(signMessage), target.Sign) {
-		utils.ErrorLog("Invalid slice backup notice signature")
+	// get sp's p2p pubkey
+	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
+	if err != nil {
 		return
 	}
+
+	// verify sp address
+	if !utilstypes.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
+		return
+	}
+
+	// verify sp node signature
+	nodeSign := target.NodeSign
+	target.NodeSign = nil
+	msg, err := utils.GetReqBackupSliceNoticeSpNodeSignMessage(target)
+	if err != nil {
+		utils.ErrorLog(ctx, "failed calculating signature from message")
+		return
+	}
+	if !utilstypes.VerifyP2pSignBytes(spP2pPubkey, nodeSign, msg) {
+		utils.ErrorLog(ctx, "failed verifying signature from sp")
+		return
+	}
+	target.NodeSign = nodeSign
 
 	if !task.CheckTransfer(target) {
 		utils.DebugLog("CheckTransfer failed")
@@ -54,7 +79,7 @@ func ReqFileSliceBackupNotice(ctx context.Context, conn core.WriteCloser) {
 	task.AddTransferTask(target.TaskId, target.SliceStorageInfo.SliceHash, tTask)
 
 	//if the connection returns error, send a ReqTransferDownloadWrong message to sp to report the failure
-	err := p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServ(ctx, target.PpInfo.NetworkAddress, requests.ReqTransferDownloadData(target))
+	err = p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServ(ctx, target.PpInfo.NetworkAddress, requests.ReqTransferDownloadData(target))
 	if err != nil {
 		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqTransferDownloadWrongData(target), header.ReqTransferDownloadWrong)
 	}
@@ -68,6 +93,55 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
+	reqNotice := target.ReqFileSliceBackupNotice
+	// SPAM check
+	if time.Now().Unix()-reqNotice.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
+		utils.ErrorLog(ctx, "the slice backup request from sp was expired")
+		return
+	}
+
+	// get sp's p2p pubkey
+	spP2pPubkey, err := requests.GetSpPubkey(reqNotice.SpP2PAddress)
+	if err != nil {
+		return
+	}
+
+	// verify sp address
+	if !utilstypes.VerifyP2pAddrBytes(spP2pPubkey, reqNotice.SpP2PAddress) {
+		return
+	}
+
+	// verify sp node signature
+	nodeSign := reqNotice.NodeSign
+	reqNotice.NodeSign = nil
+	signmsg, err := utils.GetReqBackupSliceNoticeSpNodeSignMessage(reqNotice)
+	if err != nil {
+		utils.ErrorLog(ctx, "failed calculating signature from message")
+		return
+	}
+	if !utilstypes.VerifyP2pSignBytes(spP2pPubkey, nodeSign, signmsg) {
+		utils.ErrorLog(ctx, "failed verifying signature from sp")
+		return
+	}
+	reqNotice.NodeSign = nodeSign
+
+	// verify node sign between PPs
+	if target.PpNodeSign == nil || target.P2PAddress == "" {
+		utils.ErrorLog(ctx, "")
+		return
+	}
+
+	if !utilstypes.VerifyP2pAddrBytes(target.PpP2PPubkey, target.P2PAddress) {
+		utils.ErrorLogf("ppP2pPubkey validation failed, ppP2PAddress:[%v], ppP2PPubKey:[%v]", target.P2PAddress, target.PpP2PPubkey)
+		return
+	}
+
+	msg := utils.GetReqTransferDownloadPpNodeSignMessage(target.P2PAddress, setting.P2PAddress, target.ReqFileSliceBackupNotice.SliceStorageInfo.SliceHash, header.ReqTransferDownload)
+	if !utilstypes.VerifyP2pSignString(target.PpP2PPubkey, target.PpNodeSign, msg) {
+		utils.ErrorLog("pp node signature validation failed, msg:", msg)
+		return
+	}
+
 	p2pserver.GetP2pServer(ctx).UpdatePP(ctx, &types.PeerInfo{
 		NetworkAddress: target.NewPp.NetworkAddress,
 		P2pAddress:     target.NewPp.P2PAddress,
@@ -78,29 +152,29 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	})
 	tTask := task.TransferTask{
 		IsReceiver:       false,
-		DeleteOrigin:     target.DeleteOrigin,
-		PpInfo:           target.OriginalPp,
-		SliceStorageInfo: target.SliceStorageInfo,
-		FileHash:         target.FileHash,
-		SliceNum:         target.SliceNum,
+		DeleteOrigin:     reqNotice.DeleteOrigin,
+		PpInfo:           reqNotice.PpInfo,
+		SliceStorageInfo: reqNotice.SliceStorageInfo,
+		FileHash:         reqNotice.FileHash,
+		SliceNum:         reqNotice.SliceNumber,
 	}
-	task.AddTransferTask(target.TaskId, target.SliceStorageInfo.SliceHash, tTask)
+	task.AddTransferTask(reqNotice.TaskId, reqNotice.SliceStorageInfo.SliceHash, tTask)
 
-	sliceHash := target.SliceStorageInfo.SliceHash
-	sliceData := task.GetTransferSliceData(target.TaskId, target.SliceStorageInfo.SliceHash)
+	sliceHash := reqNotice.SliceStorageInfo.SliceHash
+	sliceData := task.GetTransferSliceData(reqNotice.TaskId, reqNotice.SliceStorageInfo.SliceHash)
 	sliceDataLen := len(sliceData)
-	utils.DebugLogf("sliceDataLen = %v  TaskId = %v", sliceDataLen, target.TaskId)
+	utils.DebugLogf("sliceDataLen = %v  TaskId = %v", sliceDataLen, reqNotice.TaskId)
 
 	dataStart := 0
 	dataEnd := setting.MAXDATA
 	for {
 		if dataEnd > sliceDataLen {
-			_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspTransferDownload(sliceData[dataStart:], target.TaskId, sliceHash,
-				target.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
+			_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspTransferDownload(sliceData[dataStart:], reqNotice.TaskId, sliceHash,
+				reqNotice.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 			return
 		}
-		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspTransferDownload(sliceData[dataStart:dataEnd], target.TaskId, sliceHash,
-			target.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
+		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspTransferDownload(sliceData[dataStart:dataEnd], reqNotice.TaskId, sliceHash,
+			reqNotice.SpP2PAddress, uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 		dataStart += setting.MAXDATA
 		dataEnd += setting.MAXDATA
 	}
@@ -111,6 +185,23 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspTransferDownload")
 	var target protos.RspTransferDownload
 	if !requests.UnmarshalData(ctx, &target) {
+		return
+	}
+
+	// verify node sign between PPs
+	if target.PpNodeSign == nil || target.P2PAddress == "" {
+		utils.ErrorLog(ctx, "")
+		return
+	}
+
+	if !utilstypes.VerifyP2pAddrBytes(target.PpP2PPubkey, target.P2PAddress) {
+		utils.ErrorLogf("ppP2pPubkey validation failed, ppP2PAddress:[%v], ppP2PPubKey:[%v]", target.P2PAddress, target.PpP2PPubkey)
+		return
+	}
+
+	msg := utils.GetRspTransferDownloadPpNodeSignMessage(target.P2PAddress, target.SpP2PAddress, target.SliceHash, header.ReqUploadFileSlice)
+	if !utilstypes.VerifyP2pSignString(target.PpP2PPubkey, target.PpNodeSign, msg) {
+		utils.ErrorLog("pp node signature validation failed, msg:", msg)
 		return
 	}
 
@@ -155,6 +246,7 @@ func SendReportBackupSliceResult(ctx context.Context, taskId, sliceHash, spP2pAd
 	if !ok {
 		return
 	}
+	msg := utils.GetReqReportBackupSliceResultNodeSignMessage(setting.P2PAddress, spP2pAddress, sliceHash, header.ReqReportBackupSliceResult)
 	req := &protos.ReqReportBackupSliceResult{
 		TaskId:        taskId,
 		FileHash:      tTask.FileHash,
@@ -166,6 +258,9 @@ func SendReportBackupSliceResult(ctx context.Context, taskId, sliceHash, spP2pAd
 		SliceSize:     tTask.SliceStorageInfo.SliceSize,
 		PpInfo:        setting.GetPPInfo(),
 		SpP2PAddress:  spP2pAddress,
+		P2PAddress:    setting.P2PAddress,
+		PpP2PPubkey:   setting.P2PPublicKey,
+		PpNodeSign:    utilstypes.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign([]byte(msg)),
 	}
 
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqReportBackupSliceResult)

@@ -23,17 +23,23 @@ func (handler *DownloadTimeoutHandler) Handle(ctx context.Context, message *msg.
 		return
 	}
 
-	dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress, task.LOCAL_REQID)
+	dTask, ok := task.GetDownloadTask(target.RspFileStorageInfo.FileHash, target.RspFileStorageInfo.WalletAddress, task.LOCAL_REQID)
 	if !ok {
 		return
 	}
 
-	if _, ok := dTask.SuccessSlice[target.SliceInfo.SliceHash]; ok {
+	var slice *protos.DownloadSliceInfo
+	for _, slice = range target.RspFileStorageInfo.SliceInfo {
+		if slice.SliceNumber == target.SliceNumber {
+			break
+		}
+	}
+	if _, ok := dTask.SuccessSlice[slice.SliceStorageInfo.SliceHash]; ok {
 		return
 	}
 
 	newCtx := core.CreateContextWithParentReqId(ctx, message.MSGHead.ReqId)
-	setDownloadSliceFail(newCtx, target.SliceInfo.SliceHash, target.TaskId, target.IsVideoCaching, dTask)
+	setDownloadSliceFail(newCtx, slice.SliceStorageInfo.SliceHash, target.RspFileStorageInfo.TaskId, target.IsVideoCaching, dTask)
 }
 
 func (handler *DownloadTimeoutHandler) GetDuration() time.Duration {

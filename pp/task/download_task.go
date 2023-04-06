@@ -215,14 +215,15 @@ func CancelDownloadTask(fileHash string) {
 	file.DeleteDirectory(fileHash)
 }
 
-func GetDownloadSlice(target *protos.ReqDownloadSlice) *DownloadSliceData {
-	data, err := file.GetSliceData(target.SliceInfo.SliceHash)
+func GetDownloadSlice(target *protos.ReqDownloadSlice, slice *protos.DownloadSliceInfo) *DownloadSliceData {
+	data, err := file.GetSliceData(slice.SliceStorageInfo.SliceHash)
 	if err != nil {
 		utils.ErrorLog("Failed getting slice data ", err.Error())
 		return nil
 	}
 	rawSize := uint64(len(data))
-	if target.IsEncrypted {
+	encrypted := target.RspFileStorageInfo.EncryptionTag != ""
+	if encrypted {
 		encryptedSlice := protos.EncryptedSlice{}
 		err := proto.Unmarshal(data, &encryptedSlice)
 		if err == nil {

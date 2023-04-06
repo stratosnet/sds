@@ -48,11 +48,18 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 		}
 
 		// verify sp node signature
-		msg := utils.GetRspFileStorageInfoNodeSignMessage(target.P2PAddress, target.SpP2PAddress, target.FileHash, header.RspFileStorageInfo)
-		if !types.VerifyP2pSignBytes(spP2pPubkey, target.NodeSign, msg) {
-			pp.ErrorLog(ctx, "sp node signature validation failed, msg: ", msg)
+		nodeSign := target.NodeSign
+		target.NodeSign = nil
+		msg, err := utils.GetRspFileStorageInfoNodeSignMessage(&target)
+		if err != nil {
+			utils.ErrorLog("failed calculating signature from message")
 			return
 		}
+		if !types.VerifyP2pSignBytes(spP2pPubkey, nodeSign, msg) {
+			utils.ErrorLog("failed verifying signature from sp")
+			return
+		}
+		target.NodeSign = nodeSign
 
 		fileReqId, found := getFileReqIdFromContext(ctx)
 		if !found {
@@ -80,7 +87,7 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 				if file.CheckSliceExisting(target.FileHash, target.FileName, slice.SliceStorageInfo.SliceHash, target.SavePath, fileReqId) {
 					pp.Log(ctx, "slice exist already,", slice.SliceStorageInfo.SliceHash)
 					setDownloadSliceSuccess(ctx, slice.SliceStorageInfo.SliceHash, dTask)
-					task.DownloadProgress(ctx, target.FileHash, fileReqId, slice.SliceStorageInfo.SliceSize)
+					task.DownloadProgress(ctx, target.FileHash, fileReqId, slice.SliceOffset.SliceOffsetEnd-slice.SliceOffset.SliceOffsetStart)
 				} else {
 					pp.DebugLog(ctx, "request download data")
 					req := requests.ReqDownloadSliceData(&target, slice)

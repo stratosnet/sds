@@ -91,6 +91,8 @@ const (
 	RspUploadFile              = "RspUpl"
 	ReqUploadFileSlice         = "ReqUpLFS"
 	RspUploadFileSlice         = "RspUpLFS"
+	ReqBackupFileSlice         = "ReqBULFS"
+	RspBackupFileSlice         = "RspBULFS"
 	ReqUploadSlicesWrong       = "ReqUSW"
 	RspUploadSlicesWrong       = "RspUSW"
 	ReqReportUploadSliceResult = "ReqUFR"
@@ -115,6 +117,7 @@ const (
 	RspFileStorageInfo      = "RspQDLF"
 	ReqDownloadSlice        = "ReqDLFS"
 	RspDownloadSlice        = "RspDLFS"
+	ReqRedownloadSlice      = "ReqReDLS"
 	ReqReportDownloadResult = "ReqDLRep" // request to download result report
 	RspReportDownloadResult = "RspDLRep" // response to download result report
 	ReqDownloadTaskInfo     = "ReqDLTI"

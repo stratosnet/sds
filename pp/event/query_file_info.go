@@ -5,6 +5,7 @@ import (
 	"context"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/stratosnet/sds/framework/core"
@@ -22,6 +23,10 @@ import (
 	"github.com/stratosnet/sds/utils/datamesh"
 	"github.com/stratosnet/sds/utils/httpserv"
 	"github.com/stratosnet/sds/utils/types"
+)
+
+var (
+	requestDownloadMap = &sync.Map{}
 )
 
 // GetFileStorageInfo p to pp. The downloader is assumed the default wallet of this node, if this function is invoked.
@@ -243,12 +248,23 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
+	// SPAM check
+	if time.Now().Unix()-target.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
+		pp.ErrorLog(ctx, "sp's upload file response was expired")
+		return
+	}
+
 	if target.Result.State == protos.ResultState_RES_FAIL {
 		pp.ErrorLog(ctx, "Received fail massage from sp: ", target.Result.Msg)
 		return
 	}
 	metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_STORAGE_INFO_SP:")
 
+	// check if this is the response from an earlier request of mine
+	if fh, found := requestDownloadMap.LoadAndDelete(requests.GetReqIdFromMessage(ctx)); !found || target.FileHash != fh {
+		pp.ErrorLog(ctx, "file download response doesn't match the request")
+		return
+	}
 	// get sp's p2p pubkey
 	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
 	if err != nil {
@@ -261,22 +277,32 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	// verify sp node signature
-	msg := utils.GetRspFileStorageInfoNodeSignMessage(target.P2PAddress, target.SpP2PAddress, target.FileHash, header.RspFileStorageInfo)
-	if !types.VerifyP2pSignBytes(spP2pPubkey, target.NodeSign, msg) {
+	nodeSign := target.NodeSign
+	target.NodeSign = nil
+	msg, err := utils.GetRspFileStorageInfoNodeSignMessage(&target)
+	if err != nil {
+		pp.ErrorLog(ctx, "failed calculating signature from message")
 		return
 	}
+	if !types.VerifyP2pSignBytes(spP2pPubkey, nodeSign, msg) {
+		pp.ErrorLog(ctx, "failed verifying signature from sp")
+		return
+	}
+	target.NodeSign = nodeSign
 
+	var newTarget protos.RspFileStorageInfo
+	newTarget = target
 	fileReqId := core.GetRemoteReqId(ctx)
-	target.ReqId = fileReqId
+	newTarget.ReqId = fileReqId
 	pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, fileReqId)
 	if target.Result.State == protos.ResultState_RES_SUCCESS {
-		task.CleanDownloadFileAndConnMap(ctx, target.FileHash, target.ReqId)
-		task.DownloadFileMap.Store(target.FileHash+target.ReqId, &target)
-		task.AddDownloadTask(&target)
+		task.CleanDownloadFileAndConnMap(ctx, target.FileHash, fileReqId)
+		task.DownloadFileMap.Store(target.FileHash+fileReqId, &newTarget)
+		task.AddDownloadTask(&newTarget)
 		if target.IsVideoStream {
 			return
 		}
-		DownloadFileSlice(ctx, &target)
+		DownloadFileSlice(ctx, &target, fileReqId)
 	} else {
 		file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
 		pp.Log(ctx, "failed to download，", target.Result.Msg)
@@ -286,4 +312,10 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 func CheckDownloadPath(path string) bool {
 	_, _, _, _, err := datamesh.ParseFileHandle(path)
 	return err == nil
+}
+
+func StoreDownloadReqId(ctx context.Context, fileHash string) context.Context {
+	ctx = core.CreateContextWithReqId(ctx, requests.GetReqIdFromMessage(ctx))
+	requestDownloadMap.Store(core.GetReqIdFromContext(ctx), fileHash)
+	return ctx
 }
