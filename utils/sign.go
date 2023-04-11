@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"github.com/golang/protobuf/proto"
 	"github.com/stratosnet/sds/msg/protos"
+	"google.golang.org/protobuf/proto"
 )
 
 // GetFileUploadWalletSignMessage upload: wallet sign message for file upload request from the (rpc or cmd) user

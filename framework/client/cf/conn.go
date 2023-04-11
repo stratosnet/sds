@@ -769,7 +769,6 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					listenHeader = true
 				} else {
 					Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "msgH.Len doesn't match the size of data for message: "+utils.ByteToString(msgH.Cmd))
-					listenHeader = true
 					return
 				}
 			}

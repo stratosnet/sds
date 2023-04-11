@@ -208,5 +208,4 @@ func (h *MessageHead) Decode(packet []byte) {
 	h.ReqId = int64(utils.BytesToUInt64(packet[i : i+utils.SIZE_OF_UINT64]))
 	i += utils.SIZE_OF_UINT64
 	h.Version = utils.BytesToUint16(packet[i : i+utils.SIZE_OF_UINT16])
-	i += utils.SIZE_OF_UINT16
 }

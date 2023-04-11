@@ -276,15 +276,33 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	var newTarget protos.RspFileStorageInfo
-	newTarget = target
+	newTarget := &protos.RspFileStorageInfo{
+		VisitCer:      target.VisitCer,
+		P2PAddress:    target.P2PAddress,
+		WalletAddress: target.WalletAddress,
+		SliceInfo:     target.SliceInfo,
+		FileHash:      target.FileHash,
+		FileName:      target.FileName,
+		Result:        target.Result,
+		ReqId:         target.ReqId,
+		SavePath:      target.SavePath,
+		FileSize:      target.FileSize,
+		IsVideoStream: target.IsVideoStream,
+		RestAddress:   target.RestAddress,
+		NodeSign:      target.NodeSign,
+		SpP2PAddress:  target.SpP2PAddress,
+		EncryptionTag: target.EncryptionTag,
+		TaskId:        target.TaskId,
+		TimeStamp:     target.TimeStamp,
+	}
+
 	fileReqId := core.GetRemoteReqId(ctx)
 	newTarget.ReqId = fileReqId
 	pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, fileReqId)
 	if target.Result.State == protos.ResultState_RES_SUCCESS {
 		task.CleanDownloadFileAndConnMap(ctx, target.FileHash, fileReqId)
-		task.DownloadFileMap.Store(target.FileHash+fileReqId, &newTarget)
-		task.AddDownloadTask(&newTarget)
+		task.DownloadFileMap.Store(target.FileHash+fileReqId, newTarget)
+		task.AddDownloadTask(newTarget)
 		if target.IsVideoStream {
 			return
 		}
