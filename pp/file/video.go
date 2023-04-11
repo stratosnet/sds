@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"math"
 	"os"
 	"os/exec"
@@ -74,7 +73,7 @@ func GetHlsInfo(fileHash string, maxSliceCount uint64) (*HlsInfo, error) {
 	videoTmpFolder := GetVideoTmpFolder(fileHash)
 	totalSize := int64(0)
 
-	files, err := ioutil.ReadDir(videoTmpFolder)
+	files, err := os.ReadDir(videoTmpFolder)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +105,9 @@ func GetHlsInfo(fileHash string, maxSliceCount uint64) (*HlsInfo, error) {
 		hlsInfo.SegmentToSlice[f.Name()] = currSliceNumber
 		hlsInfo.SliceToSegment[currSliceNumber] = f.Name()
 		currSliceNumber += 1
-		totalSize += f.Size()
+
+		fInfo, _ := f.Info()
+		totalSize += fInfo.Size()
 	}
 	hlsInfo.TotalSize = totalSize
 	return hlsInfo, nil
@@ -114,7 +115,7 @@ func GetHlsInfo(fileHash string, maxSliceCount uint64) (*HlsInfo, error) {
 
 func LoadHlsInfo(fileHash, sliceHash, savePath string) *HlsInfo {
 	slicePath := GetDownloadTmpPath(fileHash, sliceHash, savePath)
-	data, err := ioutil.ReadFile(slicePath)
+	data, err := os.ReadFile(slicePath)
 	if err != nil {
 		utils.ErrorLog(err)
 		return nil

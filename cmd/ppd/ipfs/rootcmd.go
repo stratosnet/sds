@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -355,7 +354,7 @@ func readWalletKeys(wallet string) bool {
 		return false
 	}
 
-	keyjson, err := ioutil.ReadFile(filepath.Join("./accounts/", WalletAddress+".json"))
+	keyjson, err := os.ReadFile(filepath.Join("./accounts/", WalletAddress+".json"))
 	if utils.CheckError(err) {
 		utils.ErrorLog("getPublicKey ioutil.ReadFile", err)
 		return false

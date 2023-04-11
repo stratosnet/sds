@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -290,7 +290,7 @@ func getStreamInfo(ctx context.Context, fileHash, ownerWalletAddress string, w h
 }
 
 func verifyStreamReqBody(req *http.Request) (*StreamReqBody, error) {
-	body, err := ioutil.ReadAll(req.Body)
+	body, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {

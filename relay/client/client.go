@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -70,7 +70,7 @@ func NewClient(spHomePath string) (*MultiClient, error) {
 }
 
 func (m *MultiClient) loadKeys(spHomePath string) error {
-	walletJson, err := ioutil.ReadFile(filepath.Join(spHomePath, setting.Config.Keys.WalletPath))
+	walletJson, err := os.ReadFile(filepath.Join(spHomePath, setting.Config.Keys.WalletPath))
 	if err != nil {
 		return err
 	}

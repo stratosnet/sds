@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -118,7 +117,7 @@ func SetupP2PKey() error {
 		}
 	}
 
-	p2pKeyFile, err := ioutil.ReadFile(filepath.Join(setting.Config.AccountDir, setting.Config.P2PAddress+".json"))
+	p2pKeyFile, err := os.ReadFile(filepath.Join(setting.Config.AccountDir, setting.Config.P2PAddress+".json"))
 	if err != nil {
 		return errors.New("couldn't read P2P key file: " + err.Error())
 	}

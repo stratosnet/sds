@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -81,7 +81,7 @@ func readWalletKeys(wallet string) bool {
 		return false
 	}
 
-	keyjson, err := ioutil.ReadFile(filepath.Join("./account/", WalletAddress+".json"))
+	keyjson, err := os.ReadFile(filepath.Join("./account/", WalletAddress+".json"))
 	if utils.CheckError(err) {
 		utils.ErrorLog("getPublicKey ioutil.ReadFile", err)
 		return false
@@ -1293,7 +1293,7 @@ func httpRequest(request []byte) []byte {
 		panic(err)
 	}
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	if len(body) < 300 {
 		utils.DebugLog("<-- ", string(body))
 	} else {

@@ -3,8 +3,8 @@ package event
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -102,7 +102,7 @@ func HTTPDownloadSliceFun(httpRsp *HTTPRsp, write http.ResponseWriter, reqID str
 	target := httpRsp.Data.(*protos.RspDownloadSlice)
 	slicePath := file.GetDownloadTmpPath(target.FileHash, target.SliceInfo.SliceHash, target.SavePath)
 	if target.Result.State == protos.ResultState_RES_SUCCESS {
-		video, err := ioutil.ReadFile(slicePath)
+		video, err := os.ReadFile(slicePath)
 		if err != nil {
 			write.WriteHeader(setting.FAILCode)
 			_, _ = write.Write(httpserv.NewJson(nil, setting.FAILCode, err.Error()).ToBytes())

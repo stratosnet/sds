@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -60,7 +60,7 @@ func (api *terminalCmd) Getoz(ctx context.Context, param []string) (CmdResult, e
 			continue
 		}
 		pp.Log(ctx, "find file: "+filepath.Join(setting.Config.AccountDir, fileName))
-		keyjson, err := ioutil.ReadFile(filepath.Join(setting.Config.AccountDir, fileName))
+		keyjson, err := os.ReadFile(filepath.Join(setting.Config.AccountDir, fileName))
 		if utils.CheckError(err) {
 			pp.ErrorLog(ctx, "getPublicKey ioutil.ReadFile", err)
 			fmt.Println(err)

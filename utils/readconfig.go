@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"io/ioutil"
+	"os"
 	"strconv"
 
 	"github.com/pelletier/go-toml/v2"
@@ -9,7 +9,7 @@ import (
 )
 
 func LoadYamlConfig(s interface{}, path string) error {
-	file, err := ioutil.ReadFile(path)
+	file, err := os.ReadFile(path)
 	if err != nil {
 		MyLogger.ErrorLog(err)
 		return err
@@ -22,7 +22,7 @@ func LoadYamlConfig(s interface{}, path string) error {
 }
 
 func LoadTomlConfig(s interface{}, path string) error {
-	file, err := ioutil.ReadFile(path)
+	file, err := os.ReadFile(path)
 	if err != nil {
 		MyLogger.ErrorLog(err)
 		return err
@@ -39,7 +39,7 @@ func WriteTomlConfig(data interface{}, filePath string) error {
 	if err != nil {
 		MyLogger.ErrorLog("Error while Marshaling.", err)
 	}
-	return ioutil.WriteFile(filePath, tomlData, 0644)
+	return os.WriteFile(filePath, tomlData, 0644)
 }
 
 func ParseTomlValue(data string) (interface{}, error) {

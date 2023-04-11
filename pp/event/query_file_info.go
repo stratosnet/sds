@@ -3,8 +3,8 @@ package event
 // Author j
 import (
 	"context"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -113,7 +113,7 @@ func GetVideoSlice(ctx context.Context, sliceInfo *protos.DownloadSliceInfo, fIn
 	if file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceHash, fInfo.SavePath, fInfo.ReqId) {
 		utils.Log("slice exist already,", sliceHash)
 		slicePath := file.GetDownloadTmpPath(fInfo.FileHash, sliceHash, fInfo.SavePath)
-		video, _ := ioutil.ReadFile(slicePath)
+		video, _ := os.ReadFile(slicePath)
 		_, _ = w.Write(video)
 	} else {
 		req := requests.ReqDownloadSliceData(fInfo, sliceInfo)

@@ -3,7 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -324,7 +324,7 @@ func DoneDownload(ctx context.Context, fileHash, fileName, savePath string) {
 				pp.ErrorLog(ctx, "err5>>>", err)
 			}
 			var img []byte
-			img, err = ioutil.ReadAll(f)
+			img, err = io.ReadAll(f)
 			if err != nil {
 				pp.ErrorLog(ctx, "img err6>>>", err)
 			}

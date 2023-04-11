@@ -2,7 +2,6 @@ package file
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -111,7 +110,7 @@ func IsFile(f string) (bool, error) {
 // GetAllFiles get all files in directory and all sub-directory recursively
 func GetAllFiles(pathname string) {
 	utils.DebugLogf("pathname: %v", pathname)
-	rd, _ := ioutil.ReadDir(pathname)
+	rd, _ := os.ReadDir(pathname)
 	utils.DebugLogf("%v files in %v", len(rd), pathname)
 	if len(rd) == 0 {
 		// empty folder

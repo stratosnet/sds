@@ -6,7 +6,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -94,7 +93,7 @@ func GetSliceData(sliceHash string) ([]byte, error) {
 func GetWholeFileData(filePath string) ([]byte, error) {
 	rmutex.Lock()
 	defer rmutex.Unlock()
-	data, err := ioutil.ReadFile(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}

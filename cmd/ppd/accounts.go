@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -115,7 +115,7 @@ func createAccounts(cmd *cobra.Command, args []string) error {
 }
 
 func findp2pKeyFiles() []string {
-	files, _ := ioutil.ReadDir(setting.Config.AccountDir)
+	files, _ := os.ReadDir(setting.Config.AccountDir)
 	var p2pkeyfiles []string
 	for _, file := range files {
 		fileName := file.Name()
