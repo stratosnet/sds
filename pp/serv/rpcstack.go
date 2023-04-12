@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"sort"
@@ -99,6 +98,7 @@ func (h *httpServer) setListenAddr(host string, port int) error {
 }
 
 // listenAddr returns the listening address of the server.
+//
 //nolint:unused
 func (h *httpServer) listenAddr() string {
 	h.mu.Lock()
@@ -242,6 +242,7 @@ func checkPath(r *http.Request, path string) bool {
 }
 
 // validatePrefix checks if 'path' is a valid configuration value for the RPC prefix option.
+//
 //nolint:unused
 func validatePrefix(what, path string) error {
 	if path == "" {
@@ -346,6 +347,7 @@ func (h *httpServer) enableWS(apis []rpc.API, config wsConfig) error {
 }
 
 // stopWS disables JSON-RPC over WebSocket and also stops the server if it only serves WebSocket.
+//
 //nolint:unused
 func (h *httpServer) stopWS() {
 	h.mu.Lock()
@@ -455,7 +457,7 @@ func (h *virtualHostHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 var gzPool = sync.Pool{
 	New: func() interface{} {
-		w := gzip.NewWriter(ioutil.Discard)
+		w := gzip.NewWriter(io.Discard)
 		return w
 	},
 }

@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -81,7 +81,7 @@ func readWalletKeys(wallet string) bool {
 		return false
 	}
 
-	keyjson, err := ioutil.ReadFile(filepath.Join("./account/", WalletAddress+".json"))
+	keyjson, err := os.ReadFile(filepath.Join("./account/", WalletAddress+".json"))
 	if utils.CheckError(err) {
 		utils.ErrorLog("getPublicKey ioutil.ReadFile", err)
 		return false
@@ -113,7 +113,7 @@ func wrapJsonRpc(method string, param []byte) []byte {
 	return r
 }
 
-func reqUploadMsg(fileName, hash string) []byte {
+func reqUploadMsg(fileName, hash, sn string) []byte {
 	// file size
 	info, err := file.GetFileInfo(fileName)
 	if err != nil {
@@ -129,7 +129,7 @@ func reqUploadMsg(fileName, hash string) []byte {
 	}
 
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress)))
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn)))
 	if err != nil {
 		return nil
 	}
@@ -173,13 +173,18 @@ func uploadDataMsg(hash, data string) []byte {
 
 // put
 func put(cmd *cobra.Command, args []string) error {
+	sn, err := handleGetOzone()
+	if err != nil {
+		return err
+	}
+
 	// args[0] is the first param, instead of the subcommand "put"
 	fileName := args[0]
 	hash := file.GetFileHash(args[0], "")
 	utils.Log("- start uploading the file:", fileName)
 
 	// compose request file upload params
-	r := reqUploadMsg(args[0], hash)
+	r := reqUploadMsg(args[0], hash, sn)
 	if r == nil {
 		return nil
 	}
@@ -194,7 +199,7 @@ func put(cmd *cobra.Command, args []string) error {
 
 	// handle: unmarshal response then unmarshal result
 	var rsp jsonrpcMessage
-	err := json.Unmarshal(body, &rsp)
+	err = json.Unmarshal(body, &rsp)
 	if err != nil {
 		utils.ErrorLog("unmarshal failed")
 		return nil
@@ -246,7 +251,7 @@ func put(cmd *cobra.Command, args []string) error {
 }
 
 // ///////////////////////////////////////////////////////////////////////////////////////
-func reqUploadStreamMsg(fileName, hash string) []byte {
+func reqUploadStreamMsg(fileName, hash, sn string) []byte {
 	// file size
 	info, err := file.GetFileInfo(fileName)
 	if err != nil {
@@ -262,7 +267,7 @@ func reqUploadStreamMsg(fileName, hash string) []byte {
 	}
 
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress)))
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn)))
 	if err != nil {
 		return nil
 	}
@@ -305,13 +310,18 @@ func uploadDataStreamMsg(hash, data string) []byte {
 
 // putstream
 func putstream(cmd *cobra.Command, args []string) error {
+	sn, err := handleGetOzone()
+	if err != nil {
+		return err
+	}
+
 	// args[0] is the first param, instead of the subcommand "put"
 	fileName := args[0]
 	hash := file.GetFileHash(args[0], "")
 	utils.Log("- start uploading stream video:", fileName)
 
 	// compose request file upload params
-	r := reqUploadStreamMsg(args[0], hash)
+	r := reqUploadStreamMsg(args[0], hash, sn)
 	if r == nil {
 		return nil
 	}
@@ -326,7 +336,7 @@ func putstream(cmd *cobra.Command, args []string) error {
 
 	// handle: unmarshal response then unmarshal result
 	var rsp jsonrpcMessage
-	err := json.Unmarshal(body, &rsp)
+	err = json.Unmarshal(body, &rsp)
 	if err != nil {
 		utils.ErrorLog("unmarshal failed")
 		return nil
@@ -379,7 +389,7 @@ func putstream(cmd *cobra.Command, args []string) error {
 
 // //////////////////////////////////////////////////////////////////////////////////////////////////////////
 // getParams
-func reqDownloadMsg(hash, sdmPath string) []byte {
+func reqDownloadMsg(hash, sdmPath, sn string) []byte {
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {
@@ -388,7 +398,7 @@ func reqDownloadMsg(hash, sdmPath string) []byte {
 	}
 
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileDownloadWalletSignMessage(hash, WalletAddress)))
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileDownloadWalletSignMessage(hash, WalletAddress, sn)))
 	if err != nil {
 		return nil
 	}
@@ -457,7 +467,10 @@ func downloadedFileInfoMsg(fileHash string, fileSize uint64, reqid string) []byt
 
 // get
 func get(cmd *cobra.Command, args []string) error {
-
+	sn, err := handleGetOzone()
+	if err != nil {
+		return err
+	}
 	// args[0] is the fileHash
 	sdmPath := args[0]
 	utils.Log("- start downloading the file: ", sdmPath)
@@ -468,7 +481,7 @@ func get(cmd *cobra.Command, args []string) error {
 	}
 
 	// compose "request file download" request
-	r := reqDownloadMsg(fileHash, sdmPath)
+	r := reqDownloadMsg(fileHash, sdmPath, sn)
 	if r == nil {
 		return nil
 	}
@@ -793,43 +806,50 @@ func reqGetOzoneMsg() []byte {
 	return wrapJsonRpc("user_requestGetOzone", pm)
 }
 
-// getozone
-func getozone(cmd *cobra.Command, args []string) error {
-	// compose "request file download" request
+func handleGetOzone() (string, error) {
+	// compose "request get ozone" request
 	r := reqGetOzoneMsg()
 	if r == nil {
-		return nil
+		return "", errors.New("failed composing message")
 	}
+
 	utils.Log("- request ozone balance (method: user_requestGetOzone)")
 	// http request-respond
 	body := httpRequest(r)
 	if body == nil {
 		utils.ErrorLog("json marshal error")
-		return nil
+		return "", errors.New("failed request")
 	}
 
 	// Handle rsp
 	var rsp jsonrpcMessage
 	err := json.Unmarshal(body, &rsp)
 	if err != nil {
-		return nil
+		return "", errors.New("failed unmarshal response")
 	}
 
 	var res rpc.GetOzoneResult
 	err = json.Unmarshal(rsp.Result, &res)
 	if err != nil {
 		utils.ErrorLog("unmarshal failed")
-		return nil
+		return "", errors.New("failed unmarshal result")
 	}
 	if res.Return == rpc.SUCCESS {
 		utils.Log("- received response (return: SUCCESS)")
 		ozone, _ := strconv.ParseFloat(res.Ozone, 64)
 		utils.Log("OZONE balance: ", ozone/1000000000.0)
+		utils.Log("SN:            ", res.SequenceNumber)
 	} else {
 		utils.Log("- received response (return: ", res.Return, ")")
 	}
 
-	return nil
+	return res.SequenceNumber, nil
+}
+
+// getozone
+func getozone(cmd *cobra.Command, args []string) error {
+	_, err := handleGetOzone()
+	return err
 }
 
 // printSharedFileList
@@ -1076,7 +1096,7 @@ func reqGetSharedMsg(shareLink string) []byte {
 }
 
 // reqDownloadSharedMsg
-func reqDownloadSharedMsg(fileHash, reqId string) []byte {
+func reqDownloadSharedMsg(fileHash, reqId, sn string) []byte {
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {
@@ -1085,7 +1105,7 @@ func reqDownloadSharedMsg(fileHash, reqId string) []byte {
 	}
 
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileDownloadShareWalletSignMessage(fileHash, WalletAddress)))
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileDownloadWalletSignMessage(fileHash, WalletAddress, sn)))
 	if err != nil {
 		return nil
 	}
@@ -1151,7 +1171,7 @@ func getshared(cmd *cobra.Command, args []string) error {
 	fileHash := res.FileHash
 
 	// compose second request: download
-	r = reqDownloadSharedMsg(fileHash, res.ReqId)
+	r = reqDownloadSharedMsg(fileHash, res.ReqId, res.SequenceNumber)
 	utils.Log("- request downloading shared file (method: user_requestDownloadShared)")
 	// http request-respond
 	body = httpRequest(r)
@@ -1273,7 +1293,7 @@ func httpRequest(request []byte) []byte {
 		panic(err)
 	}
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	if len(body) < 300 {
 		utils.DebugLog("<-- ", string(body))
 	} else {

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/stratosnet/sds/framework/client/cf"
@@ -26,8 +27,10 @@ import (
 	"github.com/stratosnet/sds/utils/types"
 )
 
-// var m *sync.WaitGroup
-var isCover bool
+var (
+	isCover          bool
+	requestUploadMap = &sync.Map{}
+)
 
 // RequestUploadFile request to SP for upload file
 func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ http.ResponseWriter) {
@@ -44,24 +47,23 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ htt
 		pp.ErrorLog(ctx, err)
 		return
 	}
-	if isFile {
-		p := requests.RequestUploadFileData(ctx, path, "", false, false, isEncrypted)
-		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
-		return
-	}
-
-	// is directory
-	pp.DebugLog(ctx, "this is a directory, not file")
-	file.GetAllFiles(path)
-	for {
-		select {
-		case pathString := <-setting.UpChan:
-			pp.DebugLog(ctx, "path string == ", pathString)
-			p := requests.RequestUploadFileData(ctx, pathString, "", false, false, isEncrypted)
-			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
-		default:
+	if !isFile {
+		var target string
+		if path[len(path)-1:] == "/" {
+			target = path[:len(path)-1] + ".tar.zst"
+		} else {
+			target = path + ".tar.zst"
+		}
+		if err = file.CreateTarWithZstd(path, target); err != nil {
+			pp.ErrorLog(ctx, "failed packing the files in the path, ", err.Error())
 			return
 		}
+		utils.DebugLog("new path:", target)
+		path = target
+	}
+	p := requests.RequestUploadFileData(ctx, path, "", false, false, isEncrypted)
+	if err = ReqGetWalletOzForUpload(ctx, setting.WalletAddress, task.LOCAL_REQID, p); err != nil {
+		pp.ErrorLog(ctx, err)
 	}
 }
 
@@ -77,8 +79,8 @@ func RequestUploadStream(ctx context.Context, path string) {
 	}
 	if isFile {
 		p := requests.RequestUploadFileData(ctx, path, "", false, true, false)
-		if p != nil {
-			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
+		if err = ReqGetWalletOzForUpload(ctx, setting.WalletAddress, task.LOCAL_REQID, p); err != nil {
+			pp.ErrorLog(ctx, err)
 		}
 		return
 	} else {
@@ -101,15 +103,31 @@ func ReqBackupStatus(ctx context.Context, fileHash string) {
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqFileBackupStatus)
 }
 
-// RspUploadFile response of upload file event
+// RspUploadFile response of upload file event, SP -> upgrader, upgrader -> dest PP
 func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 	pp.DebugLog(ctx, "get RspUploadFile")
 	target := &protos.RspUploadFile{}
+	if err := VerifyMessage(ctx, header.RspUploadFile, target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, target) {
 		pp.ErrorLog(ctx, "unmarshal error")
 		return
 	}
+
 	metrics.UploadPerformanceLogNow(target.FileHash + ":RCV_RSP_UPLOAD_SP")
+
+	// SPAM check
+	if time.Now().Unix()-target.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
+		pp.ErrorLog(ctx, "sp's upload file response was expired")
+		return
+	}
+
+	// verify if this is the response from earlier request from me
+	if fh, found := requestUploadMap.LoadAndDelete(requests.GetReqIdFromMessage(ctx)); !found || target.FileHash != fh {
+		pp.ErrorLog(ctx, "file upload response doesn't match the request")
+		return
+	}
 
 	// upload file to PP based on the PP info provided by SP
 	if target.Result == nil {
@@ -132,26 +150,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
-	if err != nil {
-		pp.ErrorLog(ctx, "failed to get sp pubkey")
-		return
-	}
-
-	// verify sp address
-	if !types.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
-		pp.ErrorLog(ctx, "failed verifying sp's p2p address")
-		return
-	}
-
-	// verify sp node signature
-	msg := utils.GetRspUploadFileSpNodeSignMessage(setting.P2PAddress, target.SpP2PAddress, target.FileHash, header.RspUploadFile)
-	if !types.VerifyP2pSignBytes(spP2pPubkey, target.NodeSign, msg) {
-		pp.ErrorLog(ctx, "failed verifying sp's node signature")
-		return
-	}
-
-	if len(target.PpList) != 0 {
+	if len(target.Slices) != 0 {
 		go startUploadTask(ctx, target)
 	} else {
 		pp.Log(ctx, "file upload successful！  fileHash", target.FileHash)
@@ -171,8 +170,29 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 	pp.DebugLog(ctx, "get RspBackupStatus")
 	target := &protos.RspBackupStatus{}
+	if err := VerifyMessage(ctx, header.RspFileBackupStatus, target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, target) {
 		pp.ErrorLog(ctx, "unmarshal error")
+		return
+	}
+
+	// SPAM check
+	if time.Now().Unix()-target.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
+		pp.ErrorLog(ctx, "sp's backup file response was expired,", time.Now().Unix(), ",", target.TimeStamp)
+		return
+	}
+
+	spP2pPubkey, err := requests.GetSpPubkey(target.SpP2PAddress)
+	if err != nil {
+		pp.ErrorLog(ctx, "failed to get sp pubkey")
+		return
+	}
+
+	// verify sp address
+	if !types.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
+		pp.ErrorLog(ctx, "failed verifying sp's p2p address")
 		return
 	}
 
@@ -188,17 +208,17 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	if len(target.PpList) == 0 {
+	if len(target.Slices) == 0 {
 		ScheduleReqBackupStatus(ctx, target.FileHash)
 		return
 	}
 
 	pp.Logf(ctx, "Start re-uploading slices for the file  %s", target.FileHash)
 	totalSize := int64(0)
-	for _, slice := range target.PpList {
+	for _, slice := range target.Slices {
 		totalSize += int64(slice.GetSliceSize())
 	}
-	uploadTask := task.CreateUploadFileTask(target.FileHash, target.TaskId, target.SpP2PAddress, false, false, target.Sign, target.PpList, protos.UploadType_BACKUP)
+	uploadTask := task.CreateBackupFileTask(target)
 	p2pserver.GetP2pServer(ctx).CleanUpConnMap("upload#" + target.FileHash)
 	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
 
@@ -213,22 +233,8 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 }
 
 func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
-	var slices []*protos.SliceHashAddr
-	var filesize uint64
-	for _, slice := range target.PpList {
-		slices = append(slices, &protos.SliceHashAddr{
-			SliceHash:   "",
-			SliceNumber: slice.SliceNumber,
-			SliceSize:   slice.SliceOffset.SliceOffsetEnd - slice.SliceOffset.SliceOffsetStart,
-			SliceOffset: slice.SliceOffset,
-			PpInfo:      slice.PpInfo,
-			SpNodeSign:  slice.SpNodeSign,
-		})
-		filesize = filesize + slice.SliceOffset.SliceOffsetEnd - slice.SliceOffset.SliceOffsetStart
-	}
-
 	// Create upload task
-	uploadTask := task.CreateUploadFileTask(target.FileHash, target.TaskId, target.SpP2PAddress, target.IsEncrypted, target.IsVideoStream, target.NodeSign, slices, protos.UploadType_NEW_UPLOAD)
+	uploadTask := task.CreateUploadFileTask(target)
 
 	p2pserver.GetP2pServer(ctx).CleanUpConnMap(target.FileHash)
 	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
@@ -237,7 +243,7 @@ func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
 	var streamTotalSize int64
 	var hlsInfo file.HlsInfo
 	if target.IsVideoStream {
-		if file.IsFileRpcRemote(uploadTask.FileHash) {
+		if file.IsFileRpcRemote(uploadTask.RspUploadFile.FileHash) {
 			remotePath := strings.Split(file.GetFilePath(target.FileHash), ":")
 			fileName := remotePath[len(remotePath)-1]
 			file.VideoToHls(ctx, target.FileHash, filepath.Join(setting.GetRootPath(), file.TEMP_FOLDER, target.FileHash, fileName))
@@ -245,7 +251,7 @@ func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
 			file.VideoToHls(ctx, target.FileHash, file.GetFilePath(target.FileHash))
 		}
 
-		if hlsInfo, err := file.GetHlsInfo(target.FileHash, uint64(len(target.PpList))); err != nil {
+		if hlsInfo, err := file.GetHlsInfo(target.FileHash, uint64(len(target.Slices))); err != nil {
 			pp.ErrorLog(ctx, "Hls transformation failed: ", err)
 			return
 		} else {
@@ -259,7 +265,7 @@ func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
 			jsonStr, _ := json.Marshal(hlsInfo)
 			progress.Total = streamTotalSize + int64(len(jsonStr))
 		}
-		progress.HasUpload = (target.TotalSlice - int64(len(target.PpList))) * 32 * 1024 * 1024
+		progress.HasUpload = (target.TotalSlice - int64(len(target.Slices))) * setting.MAX_SLICE_SIZE
 	}
 
 	// Start uploading
@@ -285,7 +291,7 @@ func startUploadingFileSlices(ctx context.Context, fileHash string) {
 
 	task.UploadFileTaskMap.Delete(fileHash)
 
-	if fileTask.IsVideoStream {
+	if fileTask.RspUploadFile.IsVideoStream {
 		file.DeleteTmpHlsFolder(ctx, fileHash)
 	}
 }
@@ -318,7 +324,7 @@ func waitForUploadFinished(ctx context.Context, uploadTask *task.UploadFileTask)
 			if !uploadTask.CanRetry() {
 				return errors.New("max upload retry count reached")
 			}
-			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqUploadSlicesWrong(uploadTask, uploadTask.SpP2pAddress, slicesToReDownload, failedSlices), header.ReqUploadSlicesWrong)
+			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqUploadSlicesWrong(uploadTask, uploadTask.RspUploadFile.SpP2PAddress, slicesToReDownload, failedSlices), header.ReqUploadSlicesWrong)
 		}
 
 		// Start uploading to next destination
@@ -343,21 +349,31 @@ func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileT
 		switch uploadTask.Type {
 		case protos.UploadType_NEW_UPLOAD:
 			uploadSliceTask, err = task.CreateUploadSliceTask(ctx, slice, destination.PpInfo, uploadTask)
+			if err != nil {
+				slice.SetError(err, true, uploadTask)
+				return
+			}
+			pp.DebugLogf(ctx, "starting to upload slice %v for file %v", slice.Slice.SliceNumber, uploadTask.RspUploadFile.FileHash)
+			err = UploadFileSlice(ctx, uploadSliceTask)
+			if err != nil {
+				utils.ErrorLogf("Error uploading slice %v: %v", uploadSliceTask.SliceHash, err.Error())
+				slice.SetError(err, false, uploadTask)
+				return
+			}
 		case protos.UploadType_BACKUP:
 			uploadSliceTask, err = task.GetReuploadSliceTask(ctx, slice, destination.PpInfo, uploadTask)
-		}
-		if err != nil {
-			slice.SetError(err, true, uploadTask)
-			return
+			if err != nil {
+				slice.SetError(err, true, uploadTask)
+				return
+			}
+			pp.DebugLogf(ctx, "starting to backup slice %v for file %v", slice.Slice.SliceNumber, uploadTask.RspUploadFile.FileHash)
+			err = BackupFileSlice(ctx, uploadSliceTask)
+			if err != nil {
+				slice.SetError(err, false, uploadTask)
+				return
+			}
 		}
 
-		pp.DebugLogf(ctx, "starting to upload slice %v for file %v", slice.SliceNumber, uploadTask.FileHash)
-		err = UploadFileSlice(ctx, uploadSliceTask)
-		if err != nil {
-			utils.ErrorLogf("Error uploading slice %v: %v", uploadSliceTask.SliceOffsetInfo.SliceHash, err.Error())
-			slice.SetError(err, false, uploadTask)
-			return
-		}
 		slice.SetStatus(task.SLICE_STATUS_FINISHED, uploadTask)
 	}
 }
@@ -372,4 +388,10 @@ func UploadPause(ctx context.Context, fileHash, reqID string, w http.ResponseWri
 	p2pserver.GetP2pServer(ctx).CleanUpConnMap(fileHash)
 	task.UploadFileTaskMap.Delete(fileHash)
 	task.UploadProgressMap.Delete(fileHash)
+}
+
+func StoreUploadReqId(ctx context.Context, fileHash string) context.Context {
+	ctx = core.CreateContextWithReqId(ctx, requests.GetReqIdFromMessage(ctx))
+	requestUploadMap.Store(core.GetReqIdFromContext(ctx), fileHash)
+	return ctx
 }

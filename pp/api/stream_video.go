@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/stratosnet/sds/pp/requests"
 
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/ipfs/go-cid"
@@ -251,7 +253,11 @@ func getStreamInfo(ctx context.Context, fileHash, ownerWalletAddress string, w h
 		Owner: ownerWalletAddress,
 		Hash:  fileHash,
 	}.String()
-	event.GetFileStorageInfo(ctx, filePath, setting.VIDEOPATH, "", true, w)
+
+	req := requests.ReqFileStorageInfoData(filePath, setting.VIDEOPATH, "", setting.WalletAddress, setting.WalletPublicKey, true, nil)
+	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, task.LOCAL_REQID, req); err != nil {
+		utils.ErrorLog("failed request wallet oz", err.Error())
+	}
 	var fInfo *protos.RspFileStorageInfo
 	start := time.Now().Unix()
 	for {
@@ -284,7 +290,7 @@ func getStreamInfo(ctx context.Context, fileHash, ownerWalletAddress string, w h
 }
 
 func verifyStreamReqBody(req *http.Request) (*StreamReqBody, error) {
-	body, err := ioutil.ReadAll(req.Body)
+	body, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
 
 	if err != nil {
@@ -350,8 +356,6 @@ func sendReportStreamResult(ctx context.Context, body *StreamReqBody, sliceHash 
 		SliceInfo:     &protos.SliceOffsetInfo{SliceHash: sliceHash},
 		FileHash:      body.FileHash,
 		WalletAddress: setting.WalletAddress,
-		P2PAddress:    body.P2PAddress,
 		TaskId:        body.SliceInfo.TaskId,
-		SpP2PAddress:  body.SpP2pAddress,
 	}, isPP)
 }

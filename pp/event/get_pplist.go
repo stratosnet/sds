@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
@@ -13,6 +14,10 @@ import (
 
 func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspGetPPList
+	if err := VerifyMessage(ctx, header.RspGetPPList, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
+
 	if !requests.UnmarshalData(ctx, &target) {
 		utils.ErrorLog("Couldn't unmarshal protobuf to protos.RspGetPPList")
 		return

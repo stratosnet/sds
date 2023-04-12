@@ -42,15 +42,15 @@ func TestAESEncryption(t *testing.T) {
 		t.Fatal("The encrypted message should not equl the original message")
 	}
 
-	plaintext, err := DecryptAES(key, ciphertext, 42)
+	plaintext, err := DecryptAES(key, ciphertext, 42, false)
 	if err != nil {
 		t.Fatal("Couldn't decrypt message" + err.Error())
 	}
-	_, err = DecryptAES(wrongKey, ciphertext, 42)
+	_, err = DecryptAES(wrongKey, ciphertext, 42, false)
 	if err == nil {
 		t.Fatal("Using the wrong key should make it impossible to decrypt the message")
 	}
-	_, err = DecryptAES(key, ciphertext, 666)
+	_, err = DecryptAES(key, ciphertext, 666, false)
 	if err == nil {
 		t.Fatal("Using the wrong nonce should make it impossible to decrypt the message")
 	}

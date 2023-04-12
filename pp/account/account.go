@@ -3,8 +3,7 @@ package account
 import (
 	"context"
 	"errors"
-	"io/fs"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/stratosnet/sds/pp"
@@ -44,7 +43,7 @@ func CreateWallet(ctx context.Context, password, name, mnemonic, hdPath string) 
 }
 
 func GetWalletAddress(ctx context.Context) error {
-	files, err := ioutil.ReadDir(setting.Config.AccountDir)
+	files, err := os.ReadDir(setting.Config.AccountDir)
 
 	if len(files) == 0 {
 		return errors.New("account Dir is empty")
@@ -72,7 +71,7 @@ func GetWalletAddress(ctx context.Context) error {
 }
 
 func getPublicKey(ctx context.Context, filePath, password string) bool {
-	keyjson, err := ioutil.ReadFile(filePath)
+	keyjson, err := os.ReadFile(filePath)
 	if utils.CheckError(err) {
 		pp.ErrorLog(ctx, "getPublicKey ioutil.ReadFile", err)
 		return false
@@ -92,7 +91,7 @@ func getPublicKey(ctx context.Context, filePath, password string) bool {
 
 // Wallets get all wallets
 func Wallets(ctx context.Context) []string {
-	files, _ := ioutil.ReadDir(setting.Config.AccountDir)
+	files, _ := os.ReadDir(setting.Config.AccountDir)
 	var wallets []string
 	for _, file := range files {
 		fileName := file.Name()
@@ -111,14 +110,14 @@ func Wallets(ctx context.Context) []string {
 	return wallets
 }
 
-func GetWallets(ctx context.Context, walletAddress string, password string) ([]fs.FileInfo, error) {
+func GetWallets(ctx context.Context, walletAddress string, password string) ([]os.DirEntry, error) {
 	pp.DebugLog(ctx, "walletAddress = ", walletAddress)
 	if walletAddress == "" {
 		pp.ErrorLog(ctx, "please input wallet address")
 		return nil, errors.New("please input wallet address")
 	}
 
-	files, _ := ioutil.ReadDir(setting.Config.AccountDir)
+	files, _ := os.ReadDir(setting.Config.AccountDir)
 	if len(files) == 0 {
 		pp.ErrorLog(ctx, "wrong account or password")
 		return nil, errors.New("wrong account or password")

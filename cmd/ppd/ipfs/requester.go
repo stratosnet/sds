@@ -3,7 +3,7 @@ package ipfs
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	nethttp "net/http"
 
 	cmds "github.com/ipfs/go-ipfs-cmds"
@@ -52,7 +52,7 @@ func (requester httpRequester) sendRequest(param interface{}, res any, rpcCmd st
 		return err
 	}
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	if len(body) < 300 {
 		utils.DebugLog("<-- ", string(body))
 	} else {

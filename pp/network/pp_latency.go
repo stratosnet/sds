@@ -33,14 +33,14 @@ func (p *Network) StartLatencyCheckToPp(ctx context.Context, NetworkAddr string)
 	pb := &protos.ReqLatencyCheck{
 		HbType: protos.HeartbeatType_LATENCY_CHECK_PP,
 	}
-	data, err := proto.Marshal(pb)
+	body, err := proto.Marshal(pb)
 	if err != nil {
 		return err
 	}
 
 	msgRelay := &msg.RelayMsgBuf{
-		MSGHead: header.MakeMessageHeader(1, setting.Config.Version.AppVer, uint32(len(data)), header.ReqLatencyCheck),
-		MSGData: data,
+		MSGHead: header.MakeMessageHeader(1, setting.Config.Version.AppVer, uint32(len(body)), header.ReqLatencyCheck),
+		MSGBody: body,
 	}
 
 	return p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServ(ctx, NetworkAddr, msgRelay)

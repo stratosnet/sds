@@ -32,11 +32,12 @@ const (
 	WeightDeductionInterval = 200 // interval for weight deduction in heights
 	PpLatencyCheckInterval  = 60  // interval for checking the latency to next PP
 
-	// MAXDATA max slice size
-	MAXDATA     = 1024 * 1024 * 3
-	HTTPTIMEOUT = 20 // seconds
-	IMAGEPATH   = "./images/"
-	VIDEOPATH   = "./videos"
+	// MAXDATA max size of a piece in a slice
+	MAXDATA        = 1024 * 1024 * 3
+	MAX_SLICE_SIZE = 1024 * 1024 * 32
+	HTTPTIMEOUT    = 20 // seconds
+	IMAGEPATH      = "./images/"
+	VIDEOPATH      = "./videos"
 
 	STREAM_CACHE_MAXSLICE = 2
 
@@ -45,7 +46,8 @@ const (
 
 	DEFAULT_MAX_CONNECTION = 1000
 
-	DEFAULT_MIN_UNSUSPEND_STAKE = "1stos" // 1 stos
+	DEFAULT_MIN_UNSUSPEND_STAKE    = "1stos" // 1 stos
+	SPAM_THRESHOLD_SP_SIGN_LATENCY = 60      //in second
 )
 
 var (
@@ -110,6 +112,7 @@ type config struct {
 	PPListDir            string       `toml:"pp_list_dir"`
 	AccountDir           string       `toml:"account_dir"`
 	StorehousePath       string       `toml:"storehouse_path"`
+	SelfClaimedDiskSize  uint64       `toml:"self_claimed_disk_size"`
 	DownloadPath         string       `toml:"download_path"`
 	P2PAddress           string       `toml:"p2p_address"`
 	P2PPassword          string       `toml:"p2p_password"`
@@ -263,6 +266,7 @@ func defaultConfig() *config {
 		PPListDir:            "./peers",
 		AccountDir:           "./accounts",
 		StorehousePath:       "./storage",
+		SelfClaimedDiskSize:  1099511627776, // 1TB by default
 		DownloadPath:         "./download",
 		P2PAddress:           "",
 		P2PPassword:          "",
@@ -333,4 +337,12 @@ func formalizePath() (err error) {
 		}
 	}
 	return nil
+}
+
+func GetDiskSizeSoftCap(actualTotal uint64) uint64 {
+	selfClaimedDiskSize := Config.SelfClaimedDiskSize
+	if selfClaimedDiskSize < actualTotal {
+		return selfClaimedDiskSize
+	}
+	return actualTotal
 }

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/requests"
@@ -14,6 +15,10 @@ import (
 
 func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspGetSPList
+	if err := VerifyMessage(ctx, header.RspGetSPList, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
+
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}

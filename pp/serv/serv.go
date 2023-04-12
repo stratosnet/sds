@@ -184,7 +184,7 @@ func (bs *BaseServer) startMonitor() error {
 
 func (bs *BaseServer) startP2pServer() error {
 	bs.p2pServ = &p2pserver.P2pServer{}
-	event.RegisterEventHandle()
+	event.RegisterAllEventHandlers()
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, types.P2P_SERVER_KEY, bs.p2pServ)
 	bs.p2pServ.AddConnConntextKey(types.P2P_SERVER_KEY)

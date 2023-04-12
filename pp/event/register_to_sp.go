@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
@@ -13,11 +14,16 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
+	"github.com/stratosnet/sds/utils"
 )
 
 // ReqRegister if get this, must be PP
 func ReqRegister(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqRegister
+	if err := VerifyMessage(ctx, header.ReqRegister, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
+
 	if requests.UnmarshalData(ctx, &target) {
 		p2pserver.GetP2pServer(ctx).UpdatePP(ctx, &types.PeerInfo{
 			NetworkAddress: target.Address.NetworkAddress,
@@ -58,6 +64,9 @@ func ReqRegister(ctx context.Context, conn core.WriteCloser) {
 func RspRegister(ctx context.Context, conn core.WriteCloser) {
 	pp.Log(ctx, "get RspRegister", conn)
 	var target protos.RspRegister
+	if err := VerifyMessage(ctx, header.RspRegister, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
@@ -97,6 +106,9 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 func RspMining(ctx context.Context, conn core.WriteCloser) {
 	pp.DebugLog(ctx, "get RspMining", conn)
 	var target protos.RspMining
+	if err := VerifyMessage(ctx, header.RspMining, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}

@@ -3,7 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -215,14 +215,15 @@ func CancelDownloadTask(fileHash string) {
 	file.DeleteDirectory(fileHash)
 }
 
-func GetDownloadSlice(target *protos.ReqDownloadSlice) *DownloadSliceData {
-	data, err := file.GetSliceData(target.SliceInfo.SliceHash)
+func GetDownloadSlice(target *protos.ReqDownloadSlice, slice *protos.DownloadSliceInfo) *DownloadSliceData {
+	data, err := file.GetSliceData(slice.SliceStorageInfo.SliceHash)
 	if err != nil {
 		utils.ErrorLog("Failed getting slice data ", err.Error())
 		return nil
 	}
 	rawSize := uint64(len(data))
-	if target.IsEncrypted {
+	encrypted := target.RspFileStorageInfo.EncryptionTag != ""
+	if encrypted {
 		encryptedSlice := protos.EncryptedSlice{}
 		err := proto.Unmarshal(data, &encryptedSlice)
 		if err == nil {
@@ -323,7 +324,7 @@ func DoneDownload(ctx context.Context, fileHash, fileName, savePath string) {
 				pp.ErrorLog(ctx, "err5>>>", err)
 			}
 			var img []byte
-			img, err = ioutil.ReadAll(f)
+			img, err = io.ReadAll(f)
 			if err != nil {
 				pp.ErrorLog(ctx, "img err6>>>", err)
 			}
