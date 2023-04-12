@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/stratosnet/sds/framework/client/cf"
@@ -28,8 +27,7 @@ import (
 )
 
 var (
-	isCover          bool
-	requestUploadMap = &sync.Map{}
+	isCover bool
 )
 
 // RequestUploadFile request to SP for upload file
@@ -120,12 +118,6 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 	// SPAM check
 	if time.Now().Unix()-target.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
 		pp.ErrorLog(ctx, "sp's upload file response was expired")
-		return
-	}
-
-	// verify if this is the response from earlier request from me
-	if fh, found := requestUploadMap.LoadAndDelete(requests.GetReqIdFromMessage(ctx)); !found || target.FileHash != fh {
-		pp.ErrorLog(ctx, "file upload response doesn't match the request")
 		return
 	}
 
@@ -388,10 +380,4 @@ func UploadPause(ctx context.Context, fileHash, reqID string, w http.ResponseWri
 	p2pserver.GetP2pServer(ctx).CleanUpConnMap(fileHash)
 	task.UploadFileTaskMap.Delete(fileHash)
 	task.UploadProgressMap.Delete(fileHash)
-}
-
-func StoreUploadReqId(ctx context.Context, fileHash string) context.Context {
-	ctx = core.CreateContextWithReqId(ctx, requests.GetReqIdFromMessage(ctx))
-	requestUploadMap.Store(core.GetReqIdFromContext(ctx), fileHash)
-	return ctx
 }

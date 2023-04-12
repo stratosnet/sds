@@ -328,18 +328,20 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err
 	}()
 
 	sendCh := c.(*ServerConn).sendCh
-	reqId := GetReqIdFromContext(ctx)
-	if reqId == 0 {
-		reqId, _ = utils.NextSnowFlakeId()
-		InheritRpcLoggerFromParentReqId(ctx, reqId)
-		InheritRemoteReqIdFromParentReqId(ctx, reqId)
+	if m.MSGHead.ReqId == 0 {
+		reqId := GetReqIdFromContext(ctx)
+		if reqId == 0 {
+			reqId, _ = utils.NextSnowFlakeId()
+			InheritRpcLoggerFromParentReqId(ctx, reqId)
+			InheritRemoteReqIdFromParentReqId(ctx, reqId)
+		}
+		m.MSGHead.ReqId = reqId
 	}
 	memory := &message.RelayMsgBuf{
 		MSGHead:  m.MSGHead,
 		MSGSign:  m.MSGSign,
 		PacketId: GetPacketIdFromContext(ctx),
 	}
-	memory.MSGHead.ReqId = reqId
 	memory.PutIntoBuffer(m)
 	sendCh <- memory
 	if err != nil {
