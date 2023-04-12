@@ -4,6 +4,7 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"encoding/hex"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -125,7 +126,10 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 	}
 
 	// start to upload file
-	p := requests.RequestUploadFile(fileName, fileHash, uint64(fileSize), walletAddr, pubkey, signature, false, false, param.DesiredTier, param.AllowHigherTier)
+	p, err := requests.RequestUploadFile(fileName, fileHash, uint64(fileSize), walletAddr, pubkey, signature, false, false, param.DesiredTier, param.AllowHigherTier)
+	if err != nil {
+		return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE}
+	}
 	metrics.UploadPerformanceLogNow(param.FileHash + ":SND_REQ_UPLOAD_SP")
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 
@@ -226,6 +230,12 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 	pubkey := param.WalletPubkey
 	signature := param.Signature
 	size := fileSize
+
+	_, name := filepath.Split(fileName)
+	if len(name) > 0 {
+		utils.DebugLogf("fileName is trimmed from %v to %v", fileName, name)
+		fileName = name
+	}
 
 	// verify if wallet and public key match
 	if utiltypes.VerifyWalletAddr(pubkey, walletAddr) != 0 {
@@ -700,7 +710,11 @@ func uploadStreamTmpFile(ctx context.Context, fileHash, fileName string, fileSiz
 		utils.ErrorLog("failed uploading stream tmp file", err.Error())
 		return
 	}
-	p := requests.RequestUploadFile(fileName, fileHash, fileSize, walletAddr, pubkey, signature, false, true, desiredTier, allowHigherTier)
+	p, err := requests.RequestUploadFile(fileName, fileHash, fileSize, walletAddr, pubkey, signature, false, true, desiredTier, allowHigherTier)
+	if err != nil {
+		utils.ErrorLog("failed creating RequestUploadFile", err.Error())
+		return
+	}
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 }
 

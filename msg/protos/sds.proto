@@ -233,6 +233,25 @@ message RspFileStorageInfo {
   string encryption_tag = 15;
 }
 
+message ReqFileReplicaInfo {
+  string    p2p_address = 1;
+  string    wallet_address = 2;
+  string    file_path = 3;
+  uint32    replica_increase_num = 4;
+  bytes     node_sign = 5;
+  bytes     wallet_sign = 6;
+  bytes     wallet_pubkey = 7;
+}
+
+message RspFileReplicaInfo {
+  Result    result = 1;
+  string    sp_p2p_address = 2;
+  bytes     node_sign = 3; //sp signature
+  string    file_hash = 4;
+  uint32    replicas = 5;
+  uint32    expected_replicas = 6;
+}
+
 message ReqDownloadFileWrong {
   FileIndexes         file_indexes = 1;
   string              file_hash = 2;

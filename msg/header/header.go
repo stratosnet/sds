@@ -35,7 +35,7 @@ func GetMessageHeader(tag int16, varsion uint16, length uint32, cmd string, reqI
 	copy(data[22:24], utils.Uint16ToBytes(varsion))
 }
 
-//cmd, 8 bytes string, exceeded will be truncate
+// cmd, 8 bytes string, exceeded will be truncate
 const (
 	ReqGetPPList          = "ReqGPPL" // request to get pp list
 	RspGetPPList          = "RspGPPL" // response to get pp list
@@ -140,6 +140,8 @@ const (
 	RspReportBackupSliceResult = "RspRBSR"
 	ReqFileBackupStatus        = "ReqFBSt"
 	RspFileBackupStatus        = "RspFBSt"
+	ReqFileReplicaInfo         = "ReqFRpIn"
+	RspFileReplicaInfo         = "RspFRpIn"
 
 	ReqShareLink    = "ReqSL"
 	RspShareLink    = "RspSL"
