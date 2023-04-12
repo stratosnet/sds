@@ -3,7 +3,7 @@ package serv
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -17,6 +17,7 @@ import (
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/network"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
@@ -60,7 +61,7 @@ func (api *terminalCmd) Getoz(ctx context.Context, param []string) (CmdResult, e
 			continue
 		}
 		pp.Log(ctx, "find file: "+filepath.Join(setting.Config.AccountDir, fileName))
-		keyjson, err := ioutil.ReadFile(filepath.Join(setting.Config.AccountDir, fileName))
+		keyjson, err := os.ReadFile(filepath.Join(setting.Config.AccountDir, fileName))
 		if utils.CheckError(err) {
 			pp.ErrorLog(ctx, "getPublicKey ioutil.ReadFile", err)
 			fmt.Println(err)
@@ -417,7 +418,10 @@ func (api *terminalCmd) Download(ctx context.Context, param []string) (CmdResult
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	core.RegisterReqId(ctx, task.LOCAL_REQID)
-	event.GetFileStorageInfo(ctx, param[0], "", saveAs, false, nil)
+	req := requests.ReqFileStorageInfoData(param[0], "", saveAs, setting.WalletAddress, setting.WalletPublicKey, false, nil)
+	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, task.LOCAL_REQID, req); err != nil {
+		return CmdResult{Msg: ""}, err
+	}
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 

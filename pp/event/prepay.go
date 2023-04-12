@@ -14,6 +14,7 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/relay/stratoschain/grpc"
+	"github.com/stratosnet/sds/utils"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
@@ -32,6 +33,9 @@ func Prepay(ctx context.Context, beneficiary []byte, amount utiltypes.Coin, txFe
 // RspPrepay Response to asking the SP node to send a prepay transaction
 func RspPrepay(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspPrepay
+	if err := VerifyMessage(ctx, header.RspPrepay, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	success := requests.UnmarshalData(ctx, &target)
 	if !success {
 		return
@@ -58,5 +62,9 @@ func RspPrepay(ctx context.Context, conn core.WriteCloser) {
 
 // RspPrepaid Response when this PP node's prepay transaction was successful
 func RspPrepaid(ctx context.Context, conn core.WriteCloser) {
+	var target protos.RspPrepaid
+	if err := VerifyMessage(ctx, header.RspPrepaid, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	pp.Log(ctx, "The prepay transaction has been executed")
 }

@@ -1,16 +1,18 @@
 package file
 
 import (
+	"archive/tar"
 	"context"
 	"encoding/csv"
+	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"sync"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
@@ -91,7 +93,7 @@ func GetSliceData(sliceHash string) ([]byte, error) {
 func GetWholeFileData(filePath string) ([]byte, error) {
 	rmutex.Lock()
 	defer rmutex.Unlock()
-	data, err := ioutil.ReadFile(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -386,4 +388,111 @@ func getTmpSlicePath(fileHash, sliceHash string) string {
 
 func getTmpFileFolderPath(fileHash string) string {
 	return filepath.Join(setting.GetRootPath(), TEMP_FOLDER, fileHash)
+}
+
+func CreateTarWithZstd(source string, target string) error {
+	fi, err := os.Create(target)
+	if err != nil {
+		return err
+	}
+	// Create a new zstd writer
+	zw, err := zstd.NewWriter(fi)
+	if err != nil {
+		return err
+	}
+	defer zw.Close()
+
+	// Create a new tar writer
+	tw := tar.NewWriter(zw)
+	defer tw.Close()
+
+	// Walk the directory and add each file to the tar archive
+	err = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		// Get the header info for the file
+		header, err := tar.FileInfoHeader(info, info.Name())
+		if err != nil {
+			return err
+		}
+		// Set the header's name to the relative path within the directory
+		relPath, err := filepath.Rel(source, path)
+		if err != nil {
+			return err
+		}
+		header.Name = relPath
+		// Write the header to the tar archive
+		if err := tw.WriteHeader(header); err != nil {
+			return err
+		}
+		// If the file is a regular file, write its contents to the tar archive
+		if info.Mode().IsRegular() {
+			file, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+			if _, err := io.Copy(tw, file); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func ExtractTarWithZstd(source string, target string) error {
+	// Open the zstd file for reading
+	file, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Create a new zstd reader
+	zr, err := zstd.NewReader(file)
+	if err != nil {
+		return err
+	}
+	defer zr.Close()
+
+	// Create a new tar reader
+	tr := tar.NewReader(zr)
+
+	// Extract each file from the tar archive
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+		if err != nil {
+			return err
+		}
+		// Get the absolute path of the file to be extracted
+		targetPath := filepath.Join(target, header.Name)
+		// Create the file or directory
+		switch header.Typeflag {
+		case tar.TypeDir:
+			err = os.MkdirAll(targetPath, os.FileMode(header.Mode))
+			if err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			file, err := os.OpenFile(targetPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(header.Mode))
+			if err != nil {
+				return err
+			}
+			defer file.Close()
+			if _, err := io.Copy(file, tr); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("unsupported file type '%v' in tar archive", header.Typeflag)
+		}
+	}
+	return nil
 }

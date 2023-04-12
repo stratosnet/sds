@@ -75,6 +75,10 @@ func CalcHash(data []byte) string {
 	return hex.EncodeToString(crypto.Keccak256(data))
 }
 
+func CalcHashBytes(data []byte) []byte {
+	return crypto.Keccak256(data)
+}
+
 func CalcSliceHash(data []byte, fileHash string, sliceNumber uint64) string {
 	fileCid, _ := cid.Decode(fileHash)
 	fileKeccak256 := fileCid.Hash()

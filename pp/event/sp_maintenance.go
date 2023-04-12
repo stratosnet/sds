@@ -6,6 +6,7 @@ import (
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
@@ -14,6 +15,9 @@ import (
 
 func RspSpUnderMaintenance(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspSpUnderMaintenance
+	if err := VerifyMessage(ctx, header.RspSpUnderMaintenance, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}

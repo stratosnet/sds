@@ -5,35 +5,10 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// MessageHead
-type MessageHead struct {
-	Tag     int16
-	Len     uint32
-	Cmd     []byte //8 byte
-	ReqId   int64  //8 byte
-	Version uint16
-}
-
-// MakeMessageHeader
-func MakeMessageHeader(tag int16, version uint16, length uint32, cmd string) MessageHead {
-	var cmdByte = []byte(cmd)[:8]
-	return MessageHead{
-		Tag:     tag,
-		Len:     length,
-		Cmd:     cmdByte,
-		Version: version,
-	}
-}
-
-// GetMessageHeader
-func GetMessageHeader(tag int16, varsion uint16, length uint32, cmd string, reqId int64, data []byte) {
-	var cmdByte = []byte(cmd)[:8]
-	copy(data[0:2], utils.Int16ToBytes(tag))
-	copy(data[2:6], utils.Uint32ToBytes(length))
-	copy(data[6:14], cmdByte)
-	copy(data[14:22], utils.Uint64ToBytes(uint64(reqId)))
-	copy(data[22:24], utils.Uint16ToBytes(varsion))
-}
+const (
+	MsgHeaderLen   = 28 // in bytes
+	CommandTypeLen = 8
+)
 
 // cmd, 8 bytes string, exceeded will be truncate
 const (
@@ -91,6 +66,8 @@ const (
 	RspUploadFile              = "RspUpl"
 	ReqUploadFileSlice         = "ReqUpLFS"
 	RspUploadFileSlice         = "RspUpLFS"
+	ReqBackupFileSlice         = "ReqBULFS"
+	RspBackupFileSlice         = "RspBULFS"
 	ReqUploadSlicesWrong       = "ReqUSW"
 	RspUploadSlicesWrong       = "RspUSW"
 	ReqReportUploadSliceResult = "ReqUFR"
@@ -115,6 +92,7 @@ const (
 	RspFileStorageInfo      = "RspQDLF"
 	ReqDownloadSlice        = "ReqDLFS"
 	RspDownloadSlice        = "RspDLFS"
+	ReqRedownloadSlice      = "ReqReDLS"
 	ReqReportDownloadResult = "ReqDLRep" // request to download result report
 	RspReportDownloadResult = "RspDLRep" // response to download result report
 	ReqDownloadTaskInfo     = "ReqDLTI"
@@ -171,10 +149,63 @@ const (
 	RspSpUnderMaintenance = "RspMtnc"
 )
 
-func DecodeHeader(packet []byte, msgH *MessageHead) {
-	msgH.Tag = utils.BytesToInt16(packet[:2])
-	msgH.Len = utils.BytesToUInt32(packet[2:6])
-	msgH.Cmd = packet[6:14]
-	msgH.ReqId = int64(utils.BytesToUInt64(packet[14:22]))
-	msgH.Version = utils.BytesToUint16(packet[22:24])
+// MessageHead every field in this struct shall be fixed length. Please change MsgHeaderLen when modifying this struct.
+type MessageHead struct {
+	Tag     int16
+	Len     uint32
+	DataLen uint32
+	Cmd     []byte //8 byte
+	ReqId   int64  //8 byte
+	Version uint16
+}
+
+func MakeMessageHeader(tag int16, version uint16, length uint32, cmd string) MessageHead {
+	var cmdByte = []byte(cmd)[:CommandTypeLen]
+	return MessageHead{
+		Tag:     tag,
+		Len:     length,
+		Cmd:     cmdByte,
+		Version: version,
+	}
+}
+
+func CopyMessageHeader(mh MessageHead) MessageHead {
+	cmdByte := make([]byte, CommandTypeLen)
+	copy(cmdByte, mh.Cmd[:CommandTypeLen])
+	return MessageHead{
+		Tag:     mh.Tag,
+		Len:     mh.Len,
+		DataLen: mh.DataLen,
+		Cmd:     cmdByte,
+		ReqId:   mh.ReqId,
+		Version: mh.Version,
+	}
+
+}
+
+func (h *MessageHead) Encode(data []byte) int {
+	var cmdByte = h.Cmd[:CommandTypeLen]
+	var i = 0
+	i += copy(data[i:], utils.Int16ToBytes(h.Tag))
+	i += copy(data[i:], utils.Uint32ToBytes(h.Len))
+	i += copy(data[i:], utils.Uint32ToBytes(h.DataLen))
+	i += copy(data[i:], cmdByte)
+	i += copy(data[i:], utils.Uint64ToBytes(uint64(h.ReqId)))
+	i += copy(data[i:], utils.Uint16ToBytes(h.Version))
+	return i
+}
+
+func (h *MessageHead) Decode(packet []byte) {
+	var i = 0
+	h.Tag = utils.BytesToInt16(packet[i : i+utils.SIZE_OF_INT16])
+	i += utils.SIZE_OF_INT16
+	h.Len = utils.BytesToUInt32(packet[i : i+utils.SIZE_OF_UINT32])
+	i += utils.SIZE_OF_UINT32
+	h.DataLen = utils.BytesToUInt32(packet[i : i+utils.SIZE_OF_UINT32])
+	i += utils.SIZE_OF_UINT32
+	h.Cmd = packet[i : i+CommandTypeLen]
+	i += len(h.Cmd)
+	h.ReqId = int64(utils.BytesToUInt64(packet[i : i+utils.SIZE_OF_UINT64]))
+	i += utils.SIZE_OF_UINT64
+	h.Version = utils.BytesToUint16(packet[i : i+utils.SIZE_OF_UINT16])
 }

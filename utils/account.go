@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -281,7 +280,7 @@ func WriteKeyFile(file string, content []byte) error {
 	}
 	// Atomic write: create a temporary hidden file first
 	// then move it into place. TempFile assigns mode 0600.
-	f, err := ioutil.TempFile(filepath.Dir(file), "."+filepath.Base(file)+".tmp")
+	f, err := os.CreateTemp(filepath.Dir(file), "."+filepath.Base(file)+".tmp")
 	if err != nil {
 		return err
 	}
@@ -394,7 +393,7 @@ type AccountKey struct {
 
 // ChangePassword
 func ChangePassword(walletAddress, dir, auth string, key *AccountKey) error {
-	files, _ := ioutil.ReadDir(dir)
+	files, _ := os.ReadDir(dir)
 	if len(files) == 0 {
 		ErrorLog("not exist")
 		return nil
