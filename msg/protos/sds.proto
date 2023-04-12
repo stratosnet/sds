@@ -692,16 +692,14 @@ message RspLatencyCheck {
 message ReqSpStatus {
   string target_p2p_address = 1;
   string requester_p2p_address = 2;
-  bytes  sign = 3;
 }
 
 message RspSpStatus {
   string target_p2p_address = 1;
   string requester_p2p_address = 2;
-  bytes  sign = 3;
-  uint32 activation_state = 4;
-  uint64 connection_count = 5;
-  uint64 online_pp_count = 6;
+  uint32 activation_state = 3;
+  uint64 connection_count = 4;
+  uint64 online_pp_count = 5;
 }
 
 // get bp BLS public key
