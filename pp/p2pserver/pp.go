@@ -2,7 +2,9 @@ package p2pserver
 
 import (
 	"context"
+	"errors"
 	"net"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -13,6 +15,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
+	utilstypes "github.com/stratosnet/sds/utils/types"
 )
 
 const (
@@ -40,6 +43,8 @@ type P2pServer struct {
 	quitChMap       map[types.ContextKey]chan bool
 	peerList        types.PeerList
 	bufferedSpConns []*cf.ClientConn
+
+	p2pPrivKey utilstypes.P2pPrivKey
 
 	// client conn
 	// offlineChan
@@ -75,6 +80,21 @@ func (p *P2pServer) SetPPServer(pp *core.Server) {
 
 func (p *P2pServer) GetMainSpConn() *cf.ClientConn {
 	return p.mainSpConn
+}
+
+func (p *P2pServer) Init() error {
+	p2pKeyFile, err := os.ReadFile(filepath.Join(setting.Config.AccountDir, setting.Config.P2PAddress+".json"))
+	if err != nil {
+		return errors.New("couldn't read P2P key file: " + err.Error())
+	}
+
+	p2pKey, err := utils.DecryptKey(p2pKeyFile, setting.Config.P2PPassword)
+	if err != nil {
+		return errors.New("couldn't decrypt P2P key file: " + err.Error())
+	}
+
+	p.p2pPrivKey = utilstypes.BytesToP2pPrivKey(p2pKey.PrivateKey)
+	return nil
 }
 
 func (p *P2pServer) StartListenServer(ctx context.Context, port string) {

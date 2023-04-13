@@ -37,8 +37,6 @@ var P2PAddress string
 
 var P2PPublicKey []byte
 
-var P2PPrivateKey []byte
-
 var SPMap = &sync.Map{}
 
 var MonitorInitialToken string

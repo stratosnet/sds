@@ -14,12 +14,11 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
-	utiltypes "github.com/stratosnet/sds/utils/types"
 	"google.golang.org/protobuf/proto"
 )
 
 func (p *P2pServer) SignP2pMessage(signMsg []byte) []byte {
-	return utiltypes.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign(signMsg)
+	return p.p2pPrivKey.Sign(signMsg)
 }
 
 func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb proto.Message, cmd string) error {

@@ -75,8 +75,6 @@ func ReqMiningData() *protos.ReqMining {
 			NetworkAddress: setting.NetworkAddress,
 			RestAddress:    setting.RestAddress,
 		},
-		PublicKey: setting.P2PPublicKey,
-		Sign:      setting.GetSign(setting.P2PAddress),
 	}
 }
 
@@ -538,7 +536,6 @@ func ReqRegisterNewPPData() *protos.ReqRegisterNewPP {
 		MacAddress:     sysInfo.MacAddress,
 		Version:        uint32(setting.Config.Version.AppVer),
 		PubKey:         setting.P2PPublicKey,
-		Sign:           setting.GetSign(setting.P2PAddress),
 		NetworkAddress: setting.NetworkAddress,
 	}
 }
@@ -567,7 +564,6 @@ func ReqTransferDownloadWrongData(notice *protos.ReqFileSliceBackupNotice) *prot
 		OriginalPp:       notice.PpInfo,
 		SliceStorageInfo: notice.SliceStorageInfo,
 		FileHash:         notice.FileHash,
-		Sign:             notice.NodeSign,
 		SpP2PAddress:     notice.SpP2PAddress,
 	}
 }
@@ -605,7 +601,6 @@ func ReqDownloadFileWrongData(fInfo *protos.RspFileStorageInfo, dTask *task.Down
 			SavePath:      fInfo.SavePath,
 		},
 		FileHash:      fInfo.FileHash,
-		Sign:          fInfo.NodeSign,
 		IsVideoStream: fInfo.IsVideoStream,
 		FailedSlices:  failedSlices,
 		FailedPpNodes: failedPPNodes,
@@ -652,7 +647,6 @@ func ReqDeleteFileData(fileHash string) *protos.ReqDeleteFile {
 		FileHash:      fileHash,
 		P2PAddress:    setting.P2PAddress,
 		WalletAddress: setting.WalletAddress,
-		Sign:          setting.GetSign(setting.P2PAddress + fileHash),
 	}
 }
 
