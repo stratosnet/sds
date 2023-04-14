@@ -8,6 +8,7 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/requests"
+	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/types"
 	"google.golang.org/protobuf/proto"
@@ -196,4 +197,12 @@ func RspFileStorageInfoVerifier(ctx context.Context, target interface{}) error {
 			return errors.New("field of RspUploadFile is not found in the message")
 		}
 	}
+}
+
+func SpP2pAddressVerifier(ctx context.Context, target interface{}) error {
+	p2paddress := core.GetSrcP2pAddrFromContext(ctx)
+	if _, ok := setting.SPMap.Load(p2paddress); !ok {
+		return errors.New("Source p2p address is not in the SP list")
+	}
+	return nil
 }

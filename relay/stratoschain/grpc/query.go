@@ -5,7 +5,7 @@ import (
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
+	"github.com/pkg/errors"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 
 	pptypes "github.com/stratosnet/sds/pp/types"
@@ -76,4 +76,29 @@ func QueryResourceNodeState(p2pAddress string) (state relaytypes.ResourceNodeSta
 
 	state.Tokens = resourceNode.Tokens.BigInt()
 	return state, nil
+}
+
+func QueryMetaNode(p2pAddress string) (err error) {
+	conn, err := CreateGrpcConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	client := registertypes.NewQueryClient(conn)
+	ctx := context.Background()
+	req := registertypes.QueryMetaNodeRequest{NetworkAddr: p2pAddress}
+	resp, err := client.MetaNode(ctx, &req)
+	if err != nil {
+		return err
+	}
+
+	metaNode := resp.GetNode()
+	if metaNode.GetNetworkAddress() != p2pAddress {
+		return errors.New("")
+	}
+
+	if metaNode.Suspend {
+		return errors.New("")
+	}
+	return nil
 }
