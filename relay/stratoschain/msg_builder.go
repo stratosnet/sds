@@ -88,9 +88,14 @@ func BuildUpdateEffectiveStakeMsg(spP2pAddress, spWalletAddress []utiltypes.Addr
 }
 
 // Stratos-chain 'register' module
-func BuildCreateResourceNodeMsg(moniker string, nodeType registertypes.NodeType, pubKey []byte, stakeAmount utiltypes.Coin, ownerAddress, p2pAddress utiltypes.Address) (sdktypes.Msg, error) {
+func BuildCreateResourceNodeMsg(nodeType registertypes.NodeType, pubKey []byte, stakeAmount utiltypes.Coin, ownerAddress, p2pAddress utiltypes.Address) (sdktypes.Msg, error) {
 	if nodeType == 0 {
 		nodeType = registertypes.STORAGE
+	}
+
+	moniker, err := p2pAddress.P2pAddressToBech()
+	if err != nil {
+		return nil, err
 	}
 
 	pk := ed25519.PubKeyBytesToSdkPubKey(pubKey)

@@ -45,6 +45,8 @@ type P2pServer struct {
 	bufferedSpConns []*cf.ClientConn
 
 	p2pPrivKey utilstypes.P2pPrivKey
+	p2pPubKey  utilstypes.P2pPubKey
+	p2pAddress utilstypes.Address
 
 	// client conn
 	// offlineChan
@@ -94,7 +96,9 @@ func (p *P2pServer) Init() error {
 	}
 
 	p.p2pPrivKey = utilstypes.BytesToP2pPrivKey(p2pKey.PrivateKey)
-	return nil
+	p.p2pPubKey = p.p2pPrivKey.PubKey()
+	p.p2pAddress, err = utilstypes.P2pAddressFromBech(setting.Config.P2PAddress)
+	return err
 }
 
 func (p *P2pServer) StartListenServer(ctx context.Context, port string) {
@@ -139,7 +143,7 @@ func (p *P2pServer) newServer(ctx context.Context) *core.Server {
 		core.BufferSizeOption(10000),
 		core.LogOpenOption(true),
 		core.MinAppVersionOption(setting.Config.Version.MinAppVer),
-		core.P2pAddressOption(setting.P2PAddress),
+		core.P2pAddressOption(p.GetP2PAddress()),
 		core.MaxConnectionsOption(maxConnection),
 		core.ContextKVOption(ckv),
 	)

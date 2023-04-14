@@ -6,10 +6,8 @@ import (
 	"time"
 
 	externalip "github.com/glendc/go-external-ip"
-	"github.com/stratosnet/sds/msg/protos"
 	ppTypes "github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/types"
 )
 
 var IsPP = false
@@ -33,29 +31,9 @@ var NetworkAddress string
 
 var RestAddress string
 
-var P2PAddress string
-
-var P2PPublicKey []byte
-
 var SPMap = &sync.Map{}
 
 var MonitorInitialToken string
-
-func GetNetworkID() types.NetworkID {
-	return types.NetworkID{
-		P2pAddress:     P2PAddress,
-		NetworkAddress: NetworkAddress,
-	}
-}
-
-func GetPPInfo() *protos.PPBaseInfo {
-	return &protos.PPBaseInfo{
-		P2PAddress:     P2PAddress,
-		WalletAddress:  WalletAddress,
-		NetworkAddress: NetworkAddress,
-		RestAddress:    RestAddress,
-	}
-}
 
 // SetMyNetworkAddress set the PP's NetworkAddress according to the internal/external config in config file and the network config from OS
 func SetMyNetworkAddress() {
