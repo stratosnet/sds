@@ -952,6 +952,7 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			ctxWithRecvStart := core.CreateContextWithRecvStartTime(ctxWithParentReqId, recvStart)
 			ctx = core.CreateContextWithMessage(ctxWithRecvStart, &msg)
 			ctx = core.CreateContextWithNetID(ctx, netID)
+			ctx = core.CreateContextWithSrcP2pAddr(ctx, c.(*ClientConn).remoteP2pAddress)
 			log = utils.ByteToString(msgHandler.message.MSGHead.Cmd)
 			handler(ctx, c)
 		}

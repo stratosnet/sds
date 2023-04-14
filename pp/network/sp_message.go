@@ -35,11 +35,9 @@ func (p *Network) GetPPStatusFromSP(ctx context.Context) {
 }
 
 // GetPPStatusInitPPList P node get node status
-func (p *Network) GetPPStatusInitPPList(ctx context.Context) func() {
-	return func() {
-		pp.DebugLogf(ctx, "SendMessage(client.spConn, req, header.ReqGetPPStatus)")
-		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqGetPPStatusData(ctx, true), header.ReqGetPPStatus)
-	}
+func (p *Network) GetPPStatusInitPPList(ctx context.Context) {
+	pp.DebugLogf(ctx, "SendMessage(client.spConn, req, header.ReqGetPPStatus)")
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqGetPPStatusData(ctx, true), header.ReqGetPPStatus)
 }
 
 // GetSPList node get spList
