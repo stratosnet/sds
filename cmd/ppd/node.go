@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime/debug"
 	"syscall"
 
 	"github.com/pkg/errors"
@@ -31,6 +32,7 @@ var BaseServer = &serv.BaseServer{}
 func nodePP(cmd *cobra.Command, args []string) error {
 	registerDenoms()
 
+	debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_2)
 	err := BaseServer.Start()
 	defer BaseServer.Stop()
 	if err != nil {

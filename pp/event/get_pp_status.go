@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -27,6 +28,16 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	pp.DebugLogf(ctx, "get GetPPStatus RSP, activation status = %v", target.IsActive)
+	switch target.OngoingTier {
+	case 0:
+		debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_0)
+	case 1:
+		debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_1)
+	case 2:
+		debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_2)
+	default:
+		debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_2)
+	}
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.ErrorLog(target.Result.Msg)
 		if strings.Contains(target.Result.Msg, "Please register first") {
