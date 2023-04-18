@@ -615,9 +615,8 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 
 func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	var (
-		spbConn net.Conn
-		cDone   <-chan struct{}
-		// setHeartBeatFunc func(int64)
+		spbConn   net.Conn
+		cDone     <-chan struct{}
 		onMessage onMessageFunc
 		handlerCh chan MsgHandler
 		message   *msg.RelayMsgBuf
@@ -639,7 +638,6 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 		}
 	}()
 
-	// var msgBuf []byte
 	var msgH header.MessageHead
 	var msgS msg.MessageSign
 	var lr utils.LimitRate
@@ -666,6 +664,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			return
 		default:
 			recvStart := time.Now().UnixMilli()
+			_ = spbConn.SetDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
 			if listenHeader {
 				// listen to the header
 				headerBytes, n, err = core.Unpack(spbConn, key, utils.MessageBeatLen)
@@ -695,13 +694,15 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					return
 				}
 
-				var onereadlen = 1024
+				onereadlen := 1024
 				pos = header.MsgHeaderLen
 				cmd := utils.ByteToString(msgH.Cmd)
+
 				for ; i < int(secondPartLen); i = i + n {
 					if int(secondPartLen)-i < 1024 {
 						onereadlen = int(secondPartLen) - i
 					}
+					_ = spbConn.SetDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
 					n, err = io.ReadFull(spbConn, msgBuf[pos:pos+onereadlen])
 					pos += n
 					cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
@@ -772,7 +773,6 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					return
 				}
 			}
-			// setHeartBeatFunc(time.Now().UnixNano())
 		}
 	}
 }
@@ -791,39 +791,6 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 		if p := recover(); p != nil {
 			Mylog(cc.opts.logOpen, LOG_MODULE_WRITELOOP, fmt.Sprintf("panics: %v", p))
 		}
-		// OuterFor:
-		// 	for {
-		// 		select {
-		// 		case packet = <-sendCh:
-		// 			if packet != nil {
-		// 				var onereadlen = 1024
-		// 				var n int
-		// 				// Mylog(cc.opts.logOpen,"msgLen", len(packet.MSGData))
-		// 				for i := 0; i < len(packet.MSGData); i = i + n {
-		// 					// Mylog(cc.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
-		// 					if len(packet.MSGData)-i < 1024 {
-		// 						onereadlen = len(packet.MSGData) - i
-		// 						// Mylog(cc.opts.logOpen,"onereadlen:", onereadlen)
-		// 					}
-		// 					n, err = spbConn.Write(packet.MSGData[i : i+onereadlen])
-		// 					// Mylog(cc.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
-		// 					// Mylog(cc.opts.logOpen,"i+onereadlen:", i+onereadlen)
-		// 					if err != nil {
-		// 						utils.ErrorLog("client body err", err)
-		// 						return
-		// 					}
-		// 				}
-		// 				runtime.SetFinalizer(packet, func(item *msg.RelayMsgBuf) {
-		// 					if item != nil {
-		// 						cmem.Free(packet.Alloc)
-		// 						item = nil
-		// 					}
-		// 				})
-		// 			}
-		// 		default:
-		// 			break OuterFor
-		// 		}
-		// 	}
 		wg.Done()
 
 		if !cc.is_active {
@@ -870,7 +837,7 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 	if err != nil {
 		return errors.Wrap(err, "server cannot encrypt header")
 	}
-	//_ = cc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
+	_ = cc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
 	if err = core.WriteFull(cc.spbConn, encodedHeader); err != nil {
 		return errors.Wrap(err, "client write err")
 	}
@@ -888,7 +855,7 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 			onereadlen = len(encodedData) - i
 			// Mylog(cc.opts.logOpen,"onereadlen:", onereadlen)
 		}
-		//_ = cc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
+		_ = cc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
 		n, err = cc.spbConn.Write(encodedData[i : i+onereadlen])
 		cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(n))
 		// Mylog(cc.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
@@ -929,7 +896,7 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	handlerCh = c.(*ClientConn).handlerCh
 	netID = c.(*ClientConn).netid
 	ctx = c.(*ClientConn).ctx
-	var log string = "handler start"
+	log := "handler start"
 	defer func() {
 		if p := recover(); p != nil {
 			Mylog(cc.opts.logOpen, LOG_MODULE_HANDLELOOP, "panic when handle message ("+log+") panic info: ", p)
