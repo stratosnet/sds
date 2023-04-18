@@ -29,8 +29,6 @@ require (
 	github.com/ipfs/go-cid v0.3.2
 	github.com/ipfs/go-ipfs-cmds v0.8.2
 	github.com/ipfs/go-ipfs-files v0.2.0
-	github.com/ipfs/go-libipfs v0.3.0
-	github.com/ipfs/go-log v1.0.5
 	github.com/ipfs/interface-go-ipfs-core v0.7.0
 	github.com/ipfs/kubo v0.17.0
 	github.com/mattn/go-sqlite3 v1.14.9
@@ -47,7 +45,7 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.6.0
-	github.com/stratosnet/stratos-chain v0.9.1-0.20230313140945-83fbbf3f8f73
+	github.com/stratosnet/stratos-chain v0.9.1-0.20230412005248-2381c2948ccc
 	github.com/tendermint/tendermint v0.34.25-0.20221221220620-936221e0a8d9
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	golang.org/x/crypto v0.4.0
@@ -173,6 +171,8 @@ require (
 	github.com/ipfs/go-ipld-git v0.1.1 // indirect
 	github.com/ipfs/go-ipld-legacy v0.1.1 // indirect
 	github.com/ipfs/go-ipns v0.3.0 // indirect
+	github.com/ipfs/go-libipfs v0.3.0 // indirect
+	github.com/ipfs/go-log v1.0.5 // indirect
 	github.com/ipfs/go-log/v2 v2.5.1 // indirect
 	github.com/ipfs/go-merkledag v0.6.0 // indirect
 	github.com/ipfs/go-metrics-interface v0.0.1 // indirect

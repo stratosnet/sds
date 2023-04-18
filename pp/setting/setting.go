@@ -3,11 +3,13 @@ package setting
 import (
 	ed25519crypto "crypto/ed25519"
 	"encoding/hex"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
 
+	"github.com/alecthomas/units"
 	"github.com/pelletier/go-toml"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/pp"
@@ -48,6 +50,11 @@ const (
 
 	DEFAULT_MIN_UNSUSPEND_STAKE    = "1stos" // 1 stos
 	SPAM_THRESHOLD_SP_SIGN_LATENCY = 60      //in second
+
+	SOFT_RAM_LIMIT_TIER_0    = int64(3 * units.GiB)
+	SOFT_RAM_LIMIT_TIER_1    = int64(7 * units.GiB)
+	SOFT_RAM_LIMIT_TIER_2    = int64(15 * units.GiB)
+	SOFT_RAM_LIMIT_UNLIMITED = math.MaxInt64
 )
 
 var (
