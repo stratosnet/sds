@@ -304,6 +304,9 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		task.DownloadFileMap.Store(target.FileHash+fileReqId, newTarget)
 		task.AddDownloadTask(newTarget)
 		if target.IsVideoStream {
+			if strCh, ok := task.VideoCacheChannelMap.Load(fileReqId); ok {
+				strCh.(chan string) <- target.FileHash
+			}
 			return
 		}
 		DownloadFileSlice(ctx, &target, fileReqId)

@@ -850,6 +850,7 @@ message ReqGetShareFile {
   bytes  wallet_sign = 5;
   string share_password = 6;//
   string save_as = 7;
+  bool   is_video_stream = 8;
 }
 
 
@@ -859,6 +860,7 @@ message RspGetShareFile {
   bool            is_private = 3;
   repeated        FileInfo file_info = 4;
   string          sequence_number = 5;
+  bool            is_video_stream = 6;
 }
 
 message RelayMessage {

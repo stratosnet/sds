@@ -56,6 +56,8 @@ var DownloadEncryptedSlices = &sync.Map{}
 
 var VideoCacheTaskMap = &sync.Map{}
 
+var VideoCacheChannelMap = utils.NewAutoCleanMap(5 * time.Minute)
+
 var reCount int
 
 type VideoCacheTask struct {
