@@ -53,7 +53,7 @@ func reqActivateData(amount types.Coin, txFee types.TxFee) (*protos.ReqActivateP
 	return req, nil
 }
 
-func reqUpdateStakeData(stakeDelta types.Coin, txFee types.TxFee, incrStake bool) (*protos.ReqUpdateStakePP, error) {
+func reqUpdateStakeData(stakeDelta types.Coin, txFee types.TxFee) (*protos.ReqUpdateStakePP, error) {
 	// Create and sign transaction to update stake for existing resource node
 	networkAddr := ed25519.PubKeyBytesToAddress(setting.P2PPublicKey)
 	ownerAddr, err := secp256k1.PubKeyToAddress(setting.WalletPublicKey)
@@ -61,7 +61,7 @@ func reqUpdateStakeData(stakeDelta types.Coin, txFee types.TxFee, incrStake bool
 		return nil, err
 	}
 
-	txMsg := stratoschain.BuildUpdateResourceNodeStakeMsg(networkAddr, *ownerAddr, stakeDelta, incrStake)
+	txMsg := stratoschain.BuildUpdateResourceNodeStakeMsg(networkAddr, *ownerAddr, stakeDelta)
 	signatureKeys := []relaytypes.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
