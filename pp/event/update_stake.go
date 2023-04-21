@@ -19,7 +19,7 @@ import (
 
 // UpdateStake Update stake of node
 func UpdateStake(ctx context.Context, stakeDelta utiltypes.Coin, txFee utiltypes.TxFee, incrStake bool) error {
-	updateStakeReq, err := reqUpdateStakeData(stakeDelta, txFee, incrStake)
+	updateStakeReq, err := reqUpdateStakeData(ctx, stakeDelta, txFee, incrStake)
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't build update PP stake request: "+err.Error())
 		return err

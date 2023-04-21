@@ -2,9 +2,9 @@ package serv
 
 import (
 	"context"
-	"errors"
 	"strconv"
 
+	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/account"
@@ -184,6 +184,9 @@ func (bs *BaseServer) startMonitor() error {
 
 func (bs *BaseServer) startP2pServer() error {
 	bs.p2pServ = &p2pserver.P2pServer{}
+	if err := bs.p2pServ.Init(); err != nil {
+		return errors.Wrap(err, "failed init p2p server ")
+	}
 	event.RegisterAllEventHandlers()
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, types.P2P_SERVER_KEY, bs.p2pServ)

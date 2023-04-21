@@ -62,7 +62,7 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, isVi
 		return
 	}
 
-	req := requests.ReqFileStorageInfoData(path, savePath, saveAs, setting.WalletAddress, setting.WalletPublicKey, isVideoStream, nil)
+	req := requests.ReqFileStorageInfoData(ctx, path, savePath, saveAs, setting.WalletAddress, setting.WalletPublicKey, isVideoStream, nil)
 	metrics.DownloadPerformanceLogNow(fileHash + ":SND_STORAGE_INFO_SP:")
 	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 }
@@ -74,7 +74,7 @@ func ClearFileInfoAndDownloadTask(ctx context.Context, fileHash string, fileReqI
 		req := &protos.ReqClearDownloadTask{
 			WalletAddress: setting.WalletAddress,
 			FileHash:      fileHash,
-			P2PAddress:    setting.P2PAddress,
+			P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress(),
 		}
 		p2pServer := p2pserver.GetP2pServer(ctx)
 		_ = p2pServer.SendMessage(ctx, p2pServer.GetPpConn(), req, header.ReqClearDownloadTask)
@@ -116,7 +116,7 @@ func GetVideoSlice(ctx context.Context, sliceInfo *protos.DownloadSliceInfo, fIn
 		video, _ := os.ReadFile(slicePath)
 		_, _ = w.Write(video)
 	} else {
-		req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
+		req := requests.ReqDownloadSliceData(ctx, fInfo, sliceInfo)
 		newCtx := createAndRegisterSliceReqId(ctx, fInfo.ReqId)
 		utils.Log("Send request for downloading slice: ", sliceInfo.SliceStorageInfo.SliceHash)
 		SendReqDownloadSlice(newCtx, fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
@@ -153,7 +153,7 @@ func GetVideoSlices(ctx context.Context, fInfo *protos.RspFileStorageInfo, dTask
 		for _, sliceInfo := range videoCacheTask.Slices {
 			if !file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceInfo.SliceStorageInfo.SliceHash, fInfo.SavePath, fInfo.ReqId) {
 
-				req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
+				req := requests.ReqDownloadSliceData(ctx, fInfo, sliceInfo)
 				newCtx := createAndRegisterSliceReqId(ctx, fInfo.ReqId)
 				req.IsVideoCaching = true
 				SendReqDownloadSlice(newCtx, fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
@@ -193,7 +193,7 @@ func cacheSlice(ctx context.Context, videoCacheTask *task.VideoCacheTask, fInfo 
 			setDownloadSliceSuccess(ctx, sliceInfo.SliceStorageInfo.SliceHash, dTask)
 			videoCacheTask.DownloadCh <- true
 		} else {
-			req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
+			req := requests.ReqDownloadSliceData(ctx, fInfo, sliceInfo)
 			newCtx := createAndRegisterSliceReqId(ctx, fInfo.ReqId)
 			req.IsVideoCaching = true
 			SendReqDownloadSlice(newCtx, fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
@@ -207,7 +207,7 @@ func GetHlsInfo(ctx context.Context, fInfo *protos.RspFileStorageInfo) *file.Hls
 	sliceInfo := GetSliceInfoBySliceNumber(fInfo, uint64(1))
 	sliceHash := sliceInfo.SliceStorageInfo.SliceHash
 	if !file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceHash, fInfo.SavePath, fInfo.ReqId) {
-		req := requests.ReqDownloadSliceData(fInfo, sliceInfo)
+		req := requests.ReqDownloadSliceData(ctx, fInfo, sliceInfo)
 		newCtx := createAndRegisterSliceReqId(ctx, fInfo.ReqId)
 		SendReqDownloadSlice(newCtx, fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
 
@@ -337,7 +337,7 @@ func GetFileReplicaInfo(ctx context.Context, path string, replicaIncreaseNum uin
 		return
 	}
 
-	req := requests.ReqFileReplicaInfo(path, setting.WalletAddress, replicaIncreaseNum, wsign, setting.WalletPublicKey)
+	req := requests.ReqFileReplicaInfo(path, setting.WalletAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress(), replicaIncreaseNum, wsign, setting.WalletPublicKey)
 	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileReplicaInfo)
 }
 

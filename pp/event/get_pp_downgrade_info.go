@@ -30,7 +30,7 @@ func RspGetPPDowngradeInfo(ctx context.Context, conn core.WriteCloser) {
 }
 
 func ReqGetPPDowngradeInfo(ctx context.Context) error {
-	req := requests.ReqDowngradeInfo()
+	req := requests.ReqDowngradeInfo(ctx)
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqGetPPDowngradeInfo)
 	return nil
 }
