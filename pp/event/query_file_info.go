@@ -5,7 +5,6 @@ import (
 	"context"
 	"net/http"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/stratosnet/sds/framework/core"
@@ -23,10 +22,6 @@ import (
 	"github.com/stratosnet/sds/utils/datamesh"
 	"github.com/stratosnet/sds/utils/httpserv"
 	"github.com/stratosnet/sds/utils/types"
-)
-
-var (
-	requestDownloadMap = &sync.Map{}
 )
 
 // GetFileStorageInfo p to pp. The downloader is assumed the default wallet of this node, if this function is invoked.
@@ -270,12 +265,6 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	}
 	metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_STORAGE_INFO_SP:")
 
-	// check if this is the response from an earlier request of mine
-	if fh, found := requestDownloadMap.LoadAndDelete(requests.GetReqIdFromMessage(ctx)); !found || target.FileHash != fh {
-		pp.ErrorLog(ctx, "file download response doesn't match the request")
-		return
-	}
-
 	newTarget := &protos.RspFileStorageInfo{
 		VisitCer:      target.VisitCer,
 		P2PAddress:    target.P2PAddress,
@@ -364,10 +353,4 @@ func RspFileReplicaInfo(ctx context.Context, conn core.WriteCloser) {
 func CheckDownloadPath(path string) bool {
 	_, _, _, _, err := datamesh.ParseFileHandle(path)
 	return err == nil
-}
-
-func StoreDownloadReqId(ctx context.Context, fileHash string) context.Context {
-	ctx = core.CreateContextWithReqId(ctx, requests.GetReqIdFromMessage(ctx))
-	requestDownloadMap.Store(core.GetReqIdFromContext(ctx), fileHash)
-	return ctx
 }

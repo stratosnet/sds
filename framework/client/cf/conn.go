@@ -588,18 +588,20 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 	}()
 
 	sendCh := c.sendCh
-	reqId := core.GetReqIdFromContext(ctx)
-	if reqId == 0 {
-		reqId, _ = utils.NextSnowFlakeId()
-		core.InheritRpcLoggerFromParentReqId(ctx, reqId)
-		core.InheritRemoteReqIdFromParentReqId(ctx, reqId)
+	if m.MSGHead.ReqId == 0 {
+		reqId := core.GetReqIdFromContext(ctx)
+		if reqId == 0 {
+			reqId, _ = utils.NextSnowFlakeId()
+			core.InheritRpcLoggerFromParentReqId(ctx, reqId)
+			core.InheritRemoteReqIdFromParentReqId(ctx, reqId)
+		}
+		m.MSGHead.ReqId = reqId
 	}
 	memory := &msg.RelayMsgBuf{
 		MSGHead:  m.MSGHead,
 		MSGSign:  m.MSGSign,
 		PacketId: core.GetPacketIdFromContext(ctx),
 	}
-	memory.MSGHead.ReqId = reqId
 	memory.PutIntoBuffer(m)
 	sendCh <- memory
 	if err != nil {
@@ -607,8 +609,7 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 		memory = nil
 		return
 	}
-	m.MSGHead.ReqId = reqId
-	core.TimoutMap.Store(ctx, reqId, m)
+	core.TimoutMap.Store(ctx, m.MSGHead.ReqId, m)
 
 	return
 }
