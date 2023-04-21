@@ -98,7 +98,7 @@ func ScheduleReqBackupStatus(ctx context.Context, fileHash string) {
 func ReqBackupStatus(ctx context.Context, fileHash string) {
 	p := &protos.ReqBackupStatus{
 		FileHash: fileHash,
-		Address:  setting.GetPPInfo(),
+		Address:  p2pserver.GetP2pServer(ctx).GetPPInfo(),
 	}
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqFileBackupStatus)
 }
@@ -324,7 +324,7 @@ func waitForUploadFinished(ctx context.Context, uploadTask *task.UploadFileTask)
 			if !uploadTask.CanRetry() {
 				return errors.New("max upload retry count reached")
 			}
-			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqUploadSlicesWrong(uploadTask, uploadTask.RspUploadFile.SpP2PAddress, slicesToReDownload, failedSlices), header.ReqUploadSlicesWrong)
+			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqUploadSlicesWrong(ctx, uploadTask, uploadTask.RspUploadFile.SpP2PAddress, slicesToReDownload, failedSlices), header.ReqUploadSlicesWrong)
 		}
 
 		// Start uploading to next destination

@@ -19,7 +19,7 @@ import (
 // RegisterNewPP P-SP P register to become PP
 func RegisterNewPP(ctx context.Context) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqRegisterNewPPData(), header.ReqRegisterNewPP)
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqRegisterNewPPData(ctx), header.ReqRegisterNewPP)
 	}
 }
 
@@ -37,7 +37,7 @@ func RspRegisterNewPP(ctx context.Context, conn core.WriteCloser) {
 	rpcResult := &rpc.RPResult{}
 	reqId := core.GetRemoteReqId(ctx)
 	if reqId != "" {
-		defer pp.SetRPResult(setting.P2PAddress+setting.WalletAddress+reqId, rpcResult)
+		defer pp.SetRPResult(p2pserver.GetP2pServer(ctx).GetP2PAddress()+setting.WalletAddress+reqId, rpcResult)
 	}
 	pp.Log(ctx, "get RspRegisterNewPP", target.Result.State, target.Result.Msg)
 	rpcResult.AlreadyPp = target.AlreadyPp

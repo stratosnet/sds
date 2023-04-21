@@ -14,19 +14,44 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
-	utiltypes "github.com/stratosnet/sds/utils/types"
+	utilstypes "github.com/stratosnet/sds/utils/types"
 	"google.golang.org/protobuf/proto"
 )
 
 func (p *P2pServer) SignP2pMessage(signMsg []byte) []byte {
-	return utiltypes.BytesToP2pPrivKey(setting.P2PPrivateKey).Sign(signMsg)
+	return p.p2pPrivKey.Sign(signMsg)
+}
+
+func (p *P2pServer) GetP2PPublicKey() []byte {
+	return p.p2pPubKey.Bytes()
+}
+
+func (p *P2pServer) GetP2PAddress() string {
+	addr, err := p.p2pAddress.P2pAddressToBech()
+	if err != nil {
+		return ""
+	}
+	return addr
+}
+
+func (p *P2pServer) GetPPInfo() *protos.PPBaseInfo {
+	return &protos.PPBaseInfo{
+		P2PAddress:     p.GetP2PAddress(),
+		WalletAddress:  setting.WalletAddress,
+		NetworkAddress: setting.NetworkAddress,
+		RestAddress:    setting.RestAddress,
+	}
+}
+
+func (p *P2pServer) GetP2PAddrInTypeAddress() utilstypes.Address {
+	return p.p2pAddress
 }
 
 func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb proto.Message, cmd string) error {
 	msg := &msg.RelayMsgBuf{
 		MSGSign: msg.MessageSign{
-			P2pPubKey:  setting.P2PPublicKey,
-			P2pAddress: setting.P2PAddress,
+			P2pPubKey:  p.GetP2PPublicKey(),
+			P2pAddress: p.GetP2PAddress(),
 			Signer:     p.SignP2pMessage,
 		},
 	}
@@ -81,8 +106,8 @@ func (p *P2pServer) SendMessageToSPServer(ctx context.Context, pb proto.Message,
 func (p *P2pServer) TransferSendMessageToPPServ(ctx context.Context, addr string, msgBuf *msg.RelayMsgBuf) error {
 	newCtx := core.CreateContextWithParentReqIdAsReqId(ctx)
 	msgBuf.MSGSign = msg.MessageSign{
-		P2pPubKey:  setting.P2PPublicKey,
-		P2pAddress: setting.P2PAddress,
+		P2pPubKey:  p.GetP2PPublicKey(),
+		P2pAddress: p.GetP2PAddress(),
 		Signer:     p.SignP2pMessage,
 	}
 
@@ -120,8 +145,8 @@ func (p *P2pServer) TransferSendMessageToSPServer(ctx context.Context, message *
 		return
 	}
 	message.MSGSign = msg.MessageSign{
-		P2pPubKey:  setting.P2PPublicKey,
-		P2pAddress: setting.P2PAddress,
+		P2pPubKey:  p.GetP2PPublicKey(),
+		P2pAddress: p.GetP2PAddress(),
 		Signer:     p.SignP2pMessage,
 	}
 

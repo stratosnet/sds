@@ -17,7 +17,7 @@ import (
 
 func DeleteFile(ctx context.Context, fileHash string) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteFileData(fileHash), header.ReqDeleteFile)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteFileData(fileHash, p2pserver.GetP2pServer(ctx).GetP2PAddress()), header.ReqDeleteFile)
 	}
 }
 
@@ -35,7 +35,7 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
 	}
 	if requests.UnmarshalData(ctx, &target) {
-		if target.P2PAddress == setting.P2PAddress {
+		if target.P2PAddress == p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				pp.Log(ctx, "delete success ", target.Result.Msg)
 			} else {
@@ -57,11 +57,12 @@ func ReqDeleteSlice(ctx context.Context, conn core.WriteCloser) {
 	case *cf.ClientConn:
 		var target protos.ReqDeleteSlice
 		if requests.UnmarshalData(ctx, &target) {
-			if target.P2PAddress == setting.P2PAddress {
+			p2pAddress := p2pserver.GetP2pServer(ctx).GetP2PAddress()
+			if target.P2PAddress == p2pAddress {
 				if file.DeleteSlice(target.SliceHash) != nil {
-					requests.RspDeleteSliceData(target.SliceHash, "failed to delete, file not exist", false)
+					requests.RspDeleteSliceData(target.SliceHash, "failed to delete, file not exist", p2pAddress, false)
 				} else {
-					requests.RspDeleteSliceData(target.SliceHash, "delete successfully", true)
+					requests.RspDeleteSliceData(target.SliceHash, "delete successfully", p2pAddress, true)
 				}
 			}
 		}

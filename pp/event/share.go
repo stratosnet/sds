@@ -21,19 +21,19 @@ import (
 
 func GetAllShareLink(ctx context.Context, walletAddr string, page uint64) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqShareLinkData(walletAddr, page), header.ReqShareLink)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqShareLinkData(walletAddr, p2pserver.GetP2pServer(ctx).GetP2PAddress(), page), header.ReqShareLink)
 	}
 }
 
 func GetReqShareFile(ctx context.Context, fileHash, pathHash, walletAddr string, shareTime int64, isPrivate bool) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqShareFileData(fileHash, pathHash, walletAddr, isPrivate, shareTime), header.ReqShareFile)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqShareFileData(fileHash, pathHash, walletAddr, p2pserver.GetP2pServer(ctx).GetP2PAddress(), isPrivate, shareTime), header.ReqShareFile)
 	}
 }
 
 func DeleteShare(ctx context.Context, shareID, walletAddress string) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteShareData(shareID, walletAddress), header.ReqDeleteShare)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteShareData(shareID, walletAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress()), header.ReqDeleteShare)
 	}
 }
 
@@ -65,7 +65,7 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 		defer file.SetFileShareResult(target.WalletAddress+reqId, rpcResult)
 	}
 
-	if target.P2PAddress != setting.P2PAddress {
+	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return
@@ -133,7 +133,7 @@ func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 		defer file.SetFileShareResult(target.WalletAddress+reqId, rpcResult)
 	}
 
-	if target.P2PAddress != setting.P2PAddress {
+	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return
@@ -177,7 +177,7 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 		defer file.SetFileShareResult(target.WalletAddress+reqId, rpcResult)
 	}
 
-	if target.P2PAddress != setting.P2PAddress {
+	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return
@@ -195,7 +195,7 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAddr string, walletPubkey []byte) {
 	pp.DebugLog(ctx, "GetShareFile for file ", keyword)
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr, walletPubkey), header.ReqGetShareFile)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr, p2pserver.GetP2pServer(ctx).GetP2PAddress(), walletPubkey), header.ReqGetShareFile)
 	}
 }
 
@@ -225,7 +225,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 		defer file.SetFileShareResult(target.ShareRequest.WalletAddress+reqId, rpcResult)
 	}
 
-	if target.ShareRequest.P2PAddress != setting.P2PAddress {
+	if target.ShareRequest.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.ShareRequest.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return
@@ -259,13 +259,13 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			file.SetFileShareResult(target.ShareRequest.WalletAddress+reqId, rpcResult)
 			go func(fileInfo *protos.FileInfo) {
 				if walletSign := file.GetSignatureFromRemote(fileInfo.FileHash); walletSign != nil {
-					req = requests.RequestDownloadFile(fileInfo.FileHash, filePath, target.ShareRequest.WalletAddress, reqId, walletSign, target.ShareRequest.WalletPubkey, target.ShareRequest)
+					req = requests.RequestDownloadFile(ctx, fileInfo.FileHash, filePath, target.ShareRequest.WalletAddress, reqId, walletSign, target.ShareRequest.WalletPubkey, target.ShareRequest)
 					p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 				}
 			}(fileInfo)
 
 		} else {
-			req = requests.ReqFileStorageInfoData(filePath, "", saveAs, setting.WalletAddress, setting.WalletPublicKey, false, target.ShareRequest)
+			req = requests.ReqFileStorageInfoData(ctx, filePath, "", saveAs, setting.WalletAddress, setting.WalletPublicKey, false, target.ShareRequest)
 			sig := utils.GetFileDownloadWalletSignMessage(fileInfo.FileHash, setting.WalletAddress, target.SequenceNumber)
 			sign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(sig))
 			if err != nil {
