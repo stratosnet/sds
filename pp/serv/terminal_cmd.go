@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/stratosnet/sds/framework/core"
@@ -296,6 +297,21 @@ func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, 
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
 }
+func (api *terminalCmd) validateUploadPath(pathStr string) error {
+	if strings.HasSuffix(pathStr, "/.") {
+		return errors.New("the input path is not allowed")
+	}
+	if strings.HasSuffix(pathStr, "/..") {
+		return errors.New("the input path is not allowed")
+	}
+	if strings.HasPrefix(pathStr, "/etc") {
+		return errors.New("files in system folders are not permitted to upload")
+	}
+	if strings.HasPrefix(pathStr, "/boot") {
+		return errors.New("files in system folders are not permitted to upload")
+	}
+	return nil
+}
 
 func (api *terminalCmd) Upload(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) == 0 {
@@ -306,6 +322,9 @@ func (api *terminalCmd) Upload(ctx context.Context, param []string) (CmdResult, 
 		isEncrypted = true
 	}
 	pathStr := file.EscapePath(param[0:1])
+	if err := api.validateUploadPath(pathStr); err != nil {
+		return CmdResult{}, err
+	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	event.RequestUploadFile(ctx, pathStr, isEncrypted, nil)
@@ -317,6 +336,10 @@ func (api *terminalCmd) UploadStream(ctx context.Context, param []string) (CmdRe
 		return CmdResult{}, errors.New("input upload file path")
 	}
 	pathStr := file.EscapePath(param)
+	if err := api.validateUploadPath(pathStr); err != nil {
+		return CmdResult{}, err
+	}
+
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	ctx = core.RegisterRemoteReqId(ctx, uuid.New().String())
 	event.RequestUploadStream(ctx, pathStr)
