@@ -44,12 +44,12 @@ func RspUpdateStake(ctx context.Context, conn core.WriteCloser) {
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		return
 	}
-
-	if target.UpdateState == types.PP_INACTIVE {
-		pp.Log(ctx, "Current node isn't active yet")
-	}
-
 	setting.State = target.UpdateState
+
+	if target.UpdateState != types.PP_ACTIVE {
+		pp.Log(ctx, "Current node isn't activated now")
+		return
+	}
 
 	err := grpc.BroadcastTx(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
 	if err != nil {

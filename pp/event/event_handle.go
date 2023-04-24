@@ -42,6 +42,7 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspUpdateStakePP, RspUpdateStake, nil)
 	registerEvent(header.RspUpdatedStakePP, RspUpdatedStake, nil)
 	registerEvent(header.RspDeactivatePP, RspDeactivate, nil)
+	registerEvent(header.RspUnbondingPP, RspUnbondingPP, nil)
 	registerEvent(header.RspDeactivatedPP, RspDeactivated, nil)
 	registerEvent(header.RspPrepay, RspPrepay, nil)
 	registerEvent(header.RspPrepaid, RspPrepaid, nil)
