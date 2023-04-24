@@ -2,12 +2,16 @@ package event
 
 import (
 	"context"
+	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
+	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/types"
 	"google.golang.org/protobuf/proto"
@@ -41,13 +45,22 @@ func verifyRspUploadFile(msg *protos.RspUploadFile) error {
 }
 
 // RspUploadFileVerifier task level verifier for all messages carrying RspUploadFile in a uploading task
-func RspUploadFileVerifier(ctx context.Context, target interface{}) error {
+func RspUploadFileVerifier(ctx context.Context, cmd string, target interface{}) error {
+	err := verifyReqId(ctx, cmd)
+	if err != nil {
+		return err
+	}
 	msgBuf := core.MessageFromContext(ctx)
 	if err := proto.Unmarshal(msgBuf.MSGBody, target.(proto.Message)); err != nil {
 		return errors.Wrap(err, "protobuf Unmarshal error")
 	}
 	// RspUploadFile itself
 	if reflect.TypeOf(target) == reflect.TypeOf(&protos.RspUploadFile{}) {
+		// from sp, verify the p2p address
+		err := verifySpP2pAddress(ctx, cmd)
+		if err != nil {
+			return err
+		}
 		return verifyRspUploadFile(target.(*protos.RspUploadFile))
 	} else {
 		// other types carrying a RspUploadFile
@@ -87,7 +100,11 @@ func verifyRspBackupStatus(msg *protos.RspBackupStatus) error {
 }
 
 // RspBackupStatusVerifier task level verifier for all messages carrying RspBackupStatus in a backup task
-func RspBackupStatusVerifier(ctx context.Context, target interface{}) error {
+func RspBackupStatusVerifier(ctx context.Context, cmd string, target interface{}) error {
+	err := verifyReqId(ctx, cmd)
+	if err != nil {
+		return err
+	}
 	msgBuf := core.MessageFromContext(ctx)
 	if err := proto.Unmarshal(msgBuf.MSGBody, target.(proto.Message)); err != nil {
 		return errors.Wrap(err, "protobuf Unmarshal error")
@@ -133,7 +150,7 @@ func verifyReqFileSliceBackupNotice(msg *protos.ReqFileSliceBackupNotice) error 
 }
 
 // ReqFileSliceBackupNoticeVerifier task level verifier for all messages carrying ReqFileSliceBackupNotice in a transfer task
-func ReqFileSliceBackupNoticeVerifier(ctx context.Context, target interface{}) error {
+func ReqFileSliceBackupNoticeVerifier(ctx context.Context, cmd string, target interface{}) error {
 	msgBuf := core.MessageFromContext(ctx)
 	if err := proto.Unmarshal(msgBuf.MSGBody, target.(proto.Message)); err != nil {
 		return errors.Wrap(err, "protobuf Unmarshal error")
@@ -179,13 +196,23 @@ func verifyRspFileStorageInfo(msg *protos.RspFileStorageInfo) error {
 }
 
 // RspFileStorageInfoVerifier task level verifier for all messages carrying RspFileStorageInfo in a download task
-func RspFileStorageInfoVerifier(ctx context.Context, target interface{}) error {
+func RspFileStorageInfoVerifier(ctx context.Context, cmd string, target interface{}) error {
+	err := verifyReqId(ctx, cmd)
+	if err != nil {
+		return err
+	}
 	msgBuf := core.MessageFromContext(ctx)
 	if err := proto.Unmarshal(msgBuf.MSGBody, target.(proto.Message)); err != nil {
 		return errors.Wrap(err, "protobuf Unmarshal error")
 	}
+
 	// RspUploadFile itself
 	if reflect.TypeOf(target) == reflect.TypeOf(&protos.RspFileStorageInfo{}) {
+		// from sp, verify the p2p address
+		err := verifySpP2pAddress(ctx, cmd)
+		if err != nil {
+			return err
+		}
 		return verifyRspFileStorageInfo(target.(*protos.RspFileStorageInfo))
 	} else {
 		// other types carrying a RspUploadFile
@@ -196,4 +223,38 @@ func RspFileStorageInfoVerifier(ctx context.Context, target interface{}) error {
 			return errors.New("field of RspUploadFile is not found in the message")
 		}
 	}
+}
+
+func verifySpP2pAddress(ctx context.Context, cmd string) error {
+	p2pAddress := core.GetSrcP2pAddrFromContext(ctx)
+	if _, ok := setting.SPMap.Load(p2pAddress); !ok {
+		return errors.New(fmt.Sprintf("Source p2p address(%s) in a (%s) type message is not in the SP list", p2pAddress, cmd))
+	}
+	return nil
+}
+
+func verifyReqId(ctx context.Context, cmd string) error {
+	reqCmd, found := p2pserver.GetP2pServer(ctx).LoadReqId(requests.GetReqIdFromMessage(ctx))
+	if !found {
+		return errors.New("no previous request for this rsp found")
+	}
+	if strings.Compare(strings.Replace(reqCmd, "Req", "Rsp", 1), cmd) != 0 {
+		return errors.New("message types don't match")
+	}
+	return nil
+}
+
+func PpRspVerifier(ctx context.Context, cmd string, target interface{}) error {
+	return verifyReqId(ctx, cmd)
+}
+
+func SpRspVerifier(ctx context.Context, cmd string, target interface{}) error {
+	if err := verifySpP2pAddress(ctx, cmd); err != nil {
+		return err
+	}
+	return verifyReqId(ctx, cmd)
+}
+
+func SpAddressVerifier(ctx context.Context, cmd string, target interface{}) error {
+	return verifySpP2pAddress(ctx, cmd)
 }

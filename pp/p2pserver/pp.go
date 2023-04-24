@@ -2,7 +2,9 @@ package p2pserver
 
 import (
 	"context"
+	"errors"
 	"net"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -13,6 +15,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
+	utilstypes "github.com/stratosnet/sds/utils/types"
 )
 
 const (
@@ -40,6 +43,10 @@ type P2pServer struct {
 	quitChMap       map[types.ContextKey]chan bool
 	peerList        types.PeerList
 	bufferedSpConns []*cf.ClientConn
+
+	p2pPrivKey utilstypes.P2pPrivKey
+	p2pPubKey  utilstypes.P2pPubKey
+	p2pAddress utilstypes.Address
 
 	// client conn
 	// offlineChan
@@ -75,6 +82,23 @@ func (p *P2pServer) SetPPServer(pp *core.Server) {
 
 func (p *P2pServer) GetMainSpConn() *cf.ClientConn {
 	return p.mainSpConn
+}
+
+func (p *P2pServer) Init() error {
+	p2pKeyFile, err := os.ReadFile(filepath.Join(setting.Config.AccountDir, setting.Config.P2PAddress+".json"))
+	if err != nil {
+		return errors.New("couldn't read P2P key file: " + err.Error())
+	}
+
+	p2pKey, err := utils.DecryptKey(p2pKeyFile, setting.Config.P2PPassword)
+	if err != nil {
+		return errors.New("couldn't decrypt P2P key file: " + err.Error())
+	}
+
+	p.p2pPrivKey = utilstypes.BytesToP2pPrivKey(p2pKey.PrivateKey)
+	p.p2pPubKey = p.p2pPrivKey.PubKey()
+	p.p2pAddress, err = utilstypes.P2pAddressFromBech(setting.Config.P2PAddress)
+	return err
 }
 
 func (p *P2pServer) StartListenServer(ctx context.Context, port string) {
@@ -119,7 +143,7 @@ func (p *P2pServer) newServer(ctx context.Context) *core.Server {
 		core.BufferSizeOption(10000),
 		core.LogOpenOption(true),
 		core.MinAppVersionOption(setting.Config.Version.MinAppVer),
-		core.P2pAddressOption(setting.P2PAddress),
+		core.P2pAddressOption(p.GetP2PAddress()),
 		core.MaxConnectionsOption(maxConnection),
 		core.ContextKVOption(ckv),
 	)

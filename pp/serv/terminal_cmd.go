@@ -357,7 +357,7 @@ func (api *terminalCmd) Download(ctx context.Context, param []string) (CmdResult
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	core.RegisterReqId(ctx, task.LOCAL_REQID)
-	req := requests.ReqFileStorageInfoData(param[0], "", saveAs, setting.WalletAddress, setting.WalletPublicKey, false, nil)
+	req := requests.ReqFileStorageInfoData(ctx, param[0], "", saveAs, setting.WalletAddress, setting.WalletPublicKey, false, nil)
 	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, task.LOCAL_REQID, req); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
