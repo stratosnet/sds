@@ -108,7 +108,7 @@ func BuildCreateResourceNodeMsg(nodeType registertypes.NodeType, pubKey []byte, 
 			Amount: stakeAmount.Amount,
 		},
 		ownerAddress[:],
-		&registertypes.Description{
+		registertypes.Description{
 			Moniker: moniker,
 		},
 		uint32(nodeType),
@@ -125,14 +125,14 @@ func BuildCreateMetaNodeMsg(moniker string, pubKey []byte, stakeAmount utiltypes
 			Amount: stakeAmount.Amount,
 		},
 		ownerAddress[:],
-		&registertypes.Description{
+		registertypes.Description{
 			Moniker: moniker,
 		},
 	)
 }
 
 // Stratos-chain 'register' module
-func BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, stakeDelta utiltypes.Coin, incrStake bool) sdktypes.Msg {
+func BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, stakeDelta utiltypes.Coin) sdktypes.Msg {
 	coin := sdktypes.Coin{
 		Denom:  stakeDelta.Denom,
 		Amount: stakeDelta.Amount,
@@ -141,7 +141,6 @@ func BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, s
 		networkAddr[:],
 		ownerAddr[:],
 		coin,
-		incrStake,
 	)
 }
 
