@@ -747,7 +747,7 @@ message RspBlockInfo {
 
 message ReqBlockCheck{
   int64 block_height = 1;
-  string id = 3;
+  string id = 2;
 }
 
 message RspBlockCheck {
