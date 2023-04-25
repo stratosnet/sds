@@ -81,5 +81,7 @@ func RspUpdatedStake(ctx context.Context, conn core.WriteCloser) {
 		target.NodeTier == "0" {
 		// change pp state to unbonding
 		setting.State = types.PP_UNBONDING
+		pp.Log(ctx, "All tokens are being unbonded(taking around 180 days to complete)"+
+			"\n --- This node will be forced to suspend very soon! ---")
 	}
 }
