@@ -1,11 +1,13 @@
 package event
 
 import (
+	"context"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-
+	"github.com/stratosnet/sds/pp/p2pserver"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
 
@@ -20,18 +22,15 @@ import (
 	"github.com/stratosnet/sds/utils/types"
 )
 
-func reqActivateData(amount types.Coin, txFee types.TxFee) (*protos.ReqActivatePP, error) {
+func reqActivateData(ctx context.Context, amount types.Coin, txFee types.TxFee) (*protos.ReqActivatePP, error) {
 	// Create and sign transaction to add new resource node
 	ownerAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
 	if err != nil {
 		return nil, err
 	}
-	p2pAddress, err := types.P2pAddressFromBech(setting.P2PAddress)
-	if err != nil {
-		return nil, err
-	}
 
-	txMsg, err := stratoschain.BuildCreateResourceNodeMsg(setting.P2PAddress, registertypes.STORAGE, setting.P2PPublicKey, amount, ownerAddress, p2pAddress)
+	p2pAddress := p2pserver.GetP2pServer(ctx).GetP2PAddrInTypeAddress()
+	txMsg, err := stratoschain.BuildCreateResourceNodeMsg(registertypes.STORAGE, p2pserver.GetP2pServer(ctx).GetP2PPublicKey(), amount, ownerAddress, p2pAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -46,22 +45,23 @@ func reqActivateData(amount types.Coin, txFee types.TxFee) (*protos.ReqActivateP
 
 	req := &protos.ReqActivatePP{
 		Tx:            txBytes,
-		PpInfo:        setting.GetPPInfo(),
+		PpInfo:        p2pserver.GetP2pServer(ctx).GetPPInfo(),
 		AlreadyActive: false,
 		InitialStake:  amount.String(),
 	}
 	return req, nil
 }
 
-func reqUpdateStakeData(stakeDelta types.Coin, txFee types.TxFee, incrStake bool) (*protos.ReqUpdateStakePP, error) {
+
+func reqUpdateStakeData(ctx context.Context, stakeDelta types.Coin, txFee types.TxFee) (*protos.ReqUpdateStakePP, error) {
 	// Create and sign transaction to update stake for existing resource node
-	networkAddr := ed25519.PubKeyBytesToAddress(setting.P2PPublicKey)
+	networkAddr := ed25519.PubKeyBytesToAddress(p2pserver.GetP2pServer(ctx).GetP2PPublicKey())
 	ownerAddr, err := secp256k1.PubKeyToAddress(setting.WalletPublicKey)
 	if err != nil {
 		return nil, err
 	}
 
-	txMsg := stratoschain.BuildUpdateResourceNodeStakeMsg(networkAddr, *ownerAddr, stakeDelta, incrStake)
+	txMsg := stratoschain.BuildUpdateResourceNodeStakeMsg(networkAddr, *ownerAddr, stakeDelta)
 	signatureKeys := []relaytypes.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
@@ -73,14 +73,14 @@ func reqUpdateStakeData(stakeDelta types.Coin, txFee types.TxFee, incrStake bool
 
 	req := &protos.ReqUpdateStakePP{
 		Tx:         txBytes,
-		P2PAddress: setting.P2PAddress,
+		P2PAddress: p2pserver.GetP2pServer(ctx).GetP2PAddress(),
 	}
 	return req, nil
 }
 
-func reqDeactivateData(txFee types.TxFee) (*protos.ReqDeactivatePP, error) {
+func reqDeactivateData(ctx context.Context, txFee types.TxFee) (*protos.ReqDeactivatePP, error) {
 	// Create and sign transaction to remove a resource node
-	nodeAddress := ed25519.PubKeyBytesToAddress(setting.P2PPublicKey)
+	nodeAddress := ed25519.PubKeyBytesToAddress(p2pserver.GetP2pServer(ctx).GetP2PPublicKey())
 	ownerAddress, err := secp256k1.PubKeyToAddress(setting.WalletPublicKey)
 	if err != nil {
 		return nil, err
@@ -98,12 +98,12 @@ func reqDeactivateData(txFee types.TxFee) (*protos.ReqDeactivatePP, error) {
 
 	req := &protos.ReqDeactivatePP{
 		Tx:         txBytes,
-		P2PAddress: setting.P2PAddress,
+		P2PAddress: p2pserver.GetP2pServer(ctx).GetP2PAddress(),
 	}
 	return req, nil
 }
 
-func reqPrepayData(beneficiary []byte, amount types.Coin, txFee types.TxFee) (*protos.ReqPrepay, error) {
+func reqPrepayData(ctx context.Context, beneficiary []byte, amount types.Coin, txFee types.TxFee) (*protos.ReqPrepay, error) {
 	// Create and sign a prepay transaction
 	senderAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
 	if err != nil {
@@ -122,7 +122,7 @@ func reqPrepayData(beneficiary []byte, amount types.Coin, txFee types.TxFee) (*p
 
 	req := &protos.ReqPrepay{
 		Tx:            txBytes,
-		P2PAddress:    setting.P2PAddress,
+		P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress(),
 		WalletAddress: setting.WalletAddress,
 	}
 	return req, nil

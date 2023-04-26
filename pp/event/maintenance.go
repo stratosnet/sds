@@ -29,14 +29,14 @@ var (
 
 // StartMaintenance sends a request to SP to temporarily put the current node into maintenance mode
 func StartMaintenance(ctx context.Context, duration uint64) error {
-	req := requests.ReqStartMaintenance(duration)
+	req := requests.ReqStartMaintenance(ctx, duration)
 	pp.Log(ctx, "Sending maintenance start request to SP!")
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqStartMaintenance)
 	return nil
 }
 
 func StopMaintenance(ctx context.Context) error {
-	req := requests.ReqStopMaintenance()
+	req := requests.ReqStopMaintenance(ctx)
 	pp.Log(ctx, "Sending maintenance stop request to SP!")
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqStopMaintenance)
 	return nil

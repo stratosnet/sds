@@ -88,9 +88,14 @@ func BuildUpdateEffectiveStakeMsg(spP2pAddress, spWalletAddress []utiltypes.Addr
 }
 
 // Stratos-chain 'register' module
-func BuildCreateResourceNodeMsg(moniker string, nodeType registertypes.NodeType, pubKey []byte, stakeAmount utiltypes.Coin, ownerAddress, p2pAddress utiltypes.Address) (sdktypes.Msg, error) {
+func BuildCreateResourceNodeMsg(nodeType registertypes.NodeType, pubKey []byte, stakeAmount utiltypes.Coin, ownerAddress, p2pAddress utiltypes.Address) (sdktypes.Msg, error) {
 	if nodeType == 0 {
 		nodeType = registertypes.STORAGE
+	}
+
+	moniker, err := p2pAddress.P2pAddressToBech()
+	if err != nil {
+		return nil, err
 	}
 
 	pk := ed25519.PubKeyBytesToSdkPubKey(pubKey)
@@ -103,7 +108,7 @@ func BuildCreateResourceNodeMsg(moniker string, nodeType registertypes.NodeType,
 			Amount: stakeAmount.Amount,
 		},
 		ownerAddress[:],
-		&registertypes.Description{
+		registertypes.Description{
 			Moniker: moniker,
 		},
 		uint32(nodeType),
@@ -120,14 +125,14 @@ func BuildCreateMetaNodeMsg(moniker string, pubKey []byte, stakeAmount utiltypes
 			Amount: stakeAmount.Amount,
 		},
 		ownerAddress[:],
-		&registertypes.Description{
+		registertypes.Description{
 			Moniker: moniker,
 		},
 	)
 }
 
 // Stratos-chain 'register' module
-func BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, stakeDelta utiltypes.Coin, incrStake bool) sdktypes.Msg {
+func BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, stakeDelta utiltypes.Coin) sdktypes.Msg {
 	coin := sdktypes.Coin{
 		Denom:  stakeDelta.Denom,
 		Amount: stakeDelta.Amount,
@@ -136,7 +141,6 @@ func BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, s
 		networkAddr[:],
 		ownerAddr[:],
 		coin,
-		incrStake,
 	)
 }
 

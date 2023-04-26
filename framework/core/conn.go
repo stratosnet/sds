@@ -328,18 +328,20 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err
 	}()
 
 	sendCh := c.(*ServerConn).sendCh
-	reqId := GetReqIdFromContext(ctx)
-	if reqId == 0 {
-		reqId, _ = utils.NextSnowFlakeId()
-		InheritRpcLoggerFromParentReqId(ctx, reqId)
-		InheritRemoteReqIdFromParentReqId(ctx, reqId)
+	if m.MSGHead.ReqId == 0 {
+		reqId := GetReqIdFromContext(ctx)
+		if reqId == 0 {
+			reqId, _ = utils.NextSnowFlakeId()
+			InheritRpcLoggerFromParentReqId(ctx, reqId)
+			InheritRemoteReqIdFromParentReqId(ctx, reqId)
+		}
+		m.MSGHead.ReqId = reqId
 	}
 	memory := &message.RelayMsgBuf{
 		MSGHead:  m.MSGHead,
 		MSGSign:  m.MSGSign,
 		PacketId: GetPacketIdFromContext(ctx),
 	}
-	memory.MSGHead.ReqId = reqId
 	memory.PutIntoBuffer(m)
 	sendCh <- memory
 	if err != nil {
@@ -447,9 +449,11 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 	var n int
 	var err error
 	var key []byte
+
 	listenHeader := true
 	i := 0
 	pos := 0
+
 	msgBuf := make([]byte, utils.MessageBeatLen)
 	for {
 		if sc.encryptMessage {
@@ -568,7 +572,6 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					return
 				}
 			}
-			// setHeartBeatFunc(time.Now().UnixNano())
 		}
 	}
 }
@@ -699,9 +702,8 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 
 func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 	var (
-		cDone <-chan struct{}
-		sDone <-chan struct{}
-		// timerCh      chan *OnTimeOut
+		cDone     <-chan struct{}
+		sDone     <-chan struct{}
 		handlerCh chan MsgHandler
 		netID     int64
 		ctx       context.Context
@@ -711,7 +713,6 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 
 	cDone = c.(*ServerConn).ctx.Done()
 	sDone = c.(*ServerConn).belong.ctx.Done()
-	// timerCh = c.(*ServerConn).timerCh
 	handlerCh = c.(*ServerConn).handlerCh
 	netID = c.(*ServerConn).netid
 	ctx = c.(*ServerConn).ctx
@@ -743,6 +744,7 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 					ctxWithRecvStart := CreateContextWithRecvStartTime(ctxWithReqId, recvStart)
 					ctx := CreateContextWithMessage(ctxWithRecvStart, &msg)
 					ctx = CreateContextWithNetID(ctx, netID)
+					ctx = CreateContextWithSrcP2pAddr(ctx, sc.remoteP2pAddress)
 					log = utils.ByteToString(msgHandler.message.MSGHead.Cmd)
 					handler(ctx, c)
 				})

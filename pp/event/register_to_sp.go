@@ -33,7 +33,7 @@ func ReqRegister(ctx context.Context, conn core.WriteCloser) {
 			NetId:          core.NetIDFromContext(ctx),
 			Status:         types.PEER_CONNECTED,
 		})
-		p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, requests.ReqRegisterDataTR(&target))
+		p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, requests.ReqRegisterDataTR(ctx, &target))
 
 		// IPProt := strings.Split(target.Address.NetworkAddress, ":")
 		// ip := ""
@@ -71,7 +71,7 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	pp.Log(ctx, "target.RspRegister", target.P2PAddress)
-	if target.P2PAddress != setting.P2PAddress {
+	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 		pp.Log(ctx, "transfer RspRegister to: ", target.P2PAddress)
 		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		return
@@ -115,7 +115,7 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 	rpcResult := &rpc.StartMiningResult{}
 	reqId := core.GetRemoteReqId(ctx)
 	if reqId != "" {
-		defer pp.SetStartMiningResult(setting.P2PAddress+reqId, rpcResult)
+		defer pp.SetStartMiningResult(p2pserver.GetP2pServer(ctx).GetP2PAddress()+reqId, rpcResult)
 	}
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_MINING_NOT_STARTED)

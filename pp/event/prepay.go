@@ -20,7 +20,7 @@ import (
 
 // Prepay PP node sends a prepay transaction
 func Prepay(ctx context.Context, beneficiary []byte, amount utiltypes.Coin, txFee utiltypes.TxFee) error {
-	prepayReq, err := reqPrepayData(beneficiary, amount, txFee)
+	prepayReq, err := reqPrepayData(ctx, beneficiary, amount, txFee)
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't build PP prepay request: "+err.Error())
 		return err

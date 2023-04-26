@@ -37,7 +37,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"registerpeer                                                   register peer to index node\n" +
 		"rp                                                             register peer to index node\n" +
 		"activate <amount> <fee> optional<gas>                          send transaction to stchain to become an active PP node\n" +
-		"updateStake <stakeDelta> <fee> optional<gas> <isIncrStake>     send transaction to stchain to update active pp's stake\n" +
+		"updateStake <stakeDelta> <fee> optional<gas>                   send transaction to stchain to update active pp's stake\n" +
 		"deactivate <fee> optional<gas>                                 send transaction to stchain to stop being an active PP node\n" +
 		"startmining                                                    start mining\n" +
 		"prepay <amount> <fee> optional<beneficiary> <gas>              prepay stos to get ozone\n" +

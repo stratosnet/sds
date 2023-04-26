@@ -19,6 +19,7 @@ const (
 	packetIDCtxKey    ctxkey = "packetId"
 	parentReqIDCtxKey ctxkey = "parentReqId"
 	recvStartKey      ctxkey = "recvStartTime"
+	srcP2pAddrCtxKey  ctxkey = "srcP2pAddr"
 )
 
 var (
@@ -123,6 +124,15 @@ func GetParentReqIdFromContext(ctx context.Context) int64 {
 	return parentReqId
 }
 
+func GetSrcP2pAddrFromContext(ctx context.Context) string {
+	if ctx == nil || ctx.Value(srcP2pAddrCtxKey) == nil {
+		return ""
+	}
+
+	srcP2pAddress := ctx.Value(srcP2pAddrCtxKey).(string)
+	return srcP2pAddress
+}
+
 func CreateContextWithReqId(ctx context.Context, reqId int64) context.Context {
 	return context.WithValue(ctx, reqIDCtxKey, reqId)
 }
@@ -145,4 +155,8 @@ func CreateContextWithParentReqIdAsReqId(ctx context.Context) context.Context {
 		return context.WithValue(ctx, reqIDCtxKey, parentReqId)
 	}
 	return ctx
+}
+
+func CreateContextWithSrcP2pAddr(ctx context.Context, srcP2pAddress string) context.Context {
+	return context.WithValue(ctx, srcP2pAddrCtxKey, srcP2pAddress)
 }
