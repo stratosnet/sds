@@ -149,13 +149,16 @@ func (p *P2pServer) TransferSendMessageToPPServ(ctx context.Context, addr string
 		requestMap.Store(reqId, cmd)
 	}
 
+	p.clientMutex.Lock()
 	if p.connMap[addr] != nil {
 		err := p.connMap[addr].Write(msgBuf, newCtx)
+		p.clientMutex.Unlock()
 		if err != nil {
 			utils.DebugLogf("Error writing msg to %s, %v", addr, err.Error())
 		}
 		return err
 	}
+	p.clientMutex.Unlock()
 
 	utils.DebugLog("new conn, connect and transfer")
 	newClient, err := p.NewClientToPp(ctx, addr, false)
