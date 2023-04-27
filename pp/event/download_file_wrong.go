@@ -53,7 +53,7 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 				return
 			}
 			dTask.RefreshTask(&target)
-			if target.IsVideoStream {
+			if utils.IsVideoStream(target.FileHash) {
 				return
 			}
 			if _, ok := task.DownloadSpeedOfProgress.Load(target.FileHash + fileReqId); !ok {

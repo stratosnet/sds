@@ -191,7 +191,12 @@ func RequestUploadFileData(ctx context.Context, paths, storagePath string, isCov
 	if isEncrypted {
 		encryptionTag = utils.GetRandomString(8)
 	}
-	fileHash := file.GetFileHash(paths, encryptionTag)
+	fileHash := ""
+	if isVideoStream {
+		fileHash = file.GetFileHashForVideoStream(paths, encryptionTag)
+	} else {
+		fileHash = file.GetFileHash(paths, encryptionTag)
+	}
 	pp.Log(ctx, "fileHash~~~~~~~~~~~~~~~~~~~~~~", fileHash)
 
 	req := &protos.ReqUploadFile{
@@ -251,7 +256,7 @@ func RequestDownloadFile(fileHash, sdmPath, walletAddr string, reqId string, wal
 
 	// path: mesh network address
 	metrics.DownloadPerformanceLogNow(fileHash + ":SND_STORAGE_INFO_SP:")
-	req := ReqFileStorageInfoData(sdmPath, "", "", walletAddr, walletPubkey, false, shareRequest)
+	req := ReqFileStorageInfoData(sdmPath, "", "", walletAddr, walletPubkey, shareRequest)
 	req.WalletSign = walletSign
 	return req
 }
@@ -574,7 +579,7 @@ func ReqTransferDownloadWrongData(notice *protos.ReqFileSliceBackupNotice) *prot
 
 // ReqFileStorageInfoData encode ReqFileStorageInfo message. If it's not a "share request", walletAddr should keep the same
 // as the wallet from the "path".
-func ReqFileStorageInfoData(path, savePath, saveAs, walletAddr string, walletPUbkey []byte, isVideoStream bool, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
+func ReqFileStorageInfoData(path, savePath, saveAs, walletAddr string, walletPUbkey []byte, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
 	return &protos.ReqFileStorageInfo{
 		FileIndexes: &protos.FileIndexes{
 			P2PAddress:    setting.P2PAddress,
@@ -583,9 +588,8 @@ func ReqFileStorageInfoData(path, savePath, saveAs, walletAddr string, walletPUb
 			SavePath:      savePath,
 			SaveAs:        saveAs,
 		},
-		WalletPubkey:  walletPUbkey,
-		IsVideoStream: isVideoStream,
-		ShareRequest:  shareRequest,
+		WalletPubkey: walletPUbkey,
+		ShareRequest: shareRequest,
 	}
 }
 
@@ -606,7 +610,6 @@ func ReqDownloadFileWrongData(fInfo *protos.RspFileStorageInfo, dTask *task.Down
 		},
 		FileHash:      fInfo.FileHash,
 		Sign:          fInfo.NodeSign,
-		IsVideoStream: fInfo.IsVideoStream,
 		FailedSlices:  failedSlices,
 		FailedPpNodes: failedPPNodes,
 	}
@@ -722,7 +725,6 @@ func ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr string, wall
 		WalletPubkey:  walletPubkey,
 		SharePassword: sharePassword,
 		SaveAs:        saveAs,
-		IsVideoStream: isVideoStream,
 	}
 }
 

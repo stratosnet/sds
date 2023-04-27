@@ -50,6 +50,13 @@ func GetFileHash(filePath, encryptionTag string) string {
 	return filehash
 }
 
+func GetFileHashForVideoStream(filePath, encryptionTag string) string {
+	filehash := utils.CalcFileHashForVideoStream(filePath, encryptionTag)
+	utils.DebugLog("filehash", filehash)
+	fileMap[filehash] = filePath
+	return filehash
+}
+
 func GetFilePath(hash string) string {
 	return fileMap[hash]
 }

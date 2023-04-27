@@ -30,7 +30,7 @@ var (
 )
 
 // GetFileStorageInfo p to pp. The downloader is assumed the default wallet of this node, if this function is invoked.
-func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, isVideoStream bool, w http.ResponseWriter) {
+func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, w http.ResponseWriter) {
 	utils.DebugLog("GetFileStorageInfo")
 
 	if !setting.CheckLogin() {
@@ -62,7 +62,7 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, isVi
 		return
 	}
 
-	req := requests.ReqFileStorageInfoData(path, savePath, saveAs, setting.WalletAddress, setting.WalletPublicKey, isVideoStream, nil)
+	req := requests.ReqFileStorageInfoData(path, savePath, saveAs, setting.WalletAddress, setting.WalletPublicKey, nil)
 	metrics.DownloadPerformanceLogNow(fileHash + ":SND_STORAGE_INFO_SP:")
 	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 }
@@ -127,9 +127,9 @@ func GetVideoSlice(ctx context.Context, sliceInfo *protos.DownloadSliceInfo, fIn
 	}
 }
 
-func GetVideoSlices(ctx context.Context, fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask) {
+func GetVideoSlices(ctx context.Context, fInfo *protos.RspFileStorageInfo, fileReqId string) {
+	dTask, _ := task.GetDownloadTask(fInfo.FileHash, setting.WalletAddress, fileReqId)
 	slices := make([]*protos.DownloadSliceInfo, len(fInfo.SliceInfo))
-
 	// reverse order to download start from last slice
 	for i := 0; i < len(fInfo.SliceInfo); i++ {
 		idx := uint64(len(fInfo.SliceInfo)) - fInfo.SliceInfo[i].SliceNumber
@@ -276,6 +276,12 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
+	savePath := target.SavePath
+	isVideoStream := utils.IsVideoStream(target.FileHash)
+	if savePath == "" && isVideoStream {
+		savePath = setting.VIDEOPATH
+	}
+
 	newTarget := &protos.RspFileStorageInfo{
 		VisitCer:      target.VisitCer,
 		P2PAddress:    target.P2PAddress,
@@ -287,7 +293,6 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		ReqId:         target.ReqId,
 		SavePath:      target.SavePath,
 		FileSize:      target.FileSize,
-		IsVideoStream: target.IsVideoStream,
 		RestAddress:   target.RestAddress,
 		NodeSign:      target.NodeSign,
 		SpP2PAddress:  target.SpP2PAddress,
@@ -303,13 +308,14 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		task.CleanDownloadFileAndConnMap(ctx, target.FileHash, fileReqId)
 		task.DownloadFileMap.Store(target.FileHash+fileReqId, newTarget)
 		task.AddDownloadTask(newTarget)
-		if target.IsVideoStream {
+		if isVideoStream {
 			if strCh, ok := task.VideoCacheChannelMap.Load(fileReqId); ok {
 				strCh.(chan string) <- target.FileHash
 			}
-			return
+			GetVideoSlices(ctx, newTarget, fileReqId)
+		} else {
+			DownloadFileSlice(ctx, newTarget, fileReqId)
 		}
-		DownloadFileSlice(ctx, &target, fileReqId)
 	} else {
 		file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
 		pp.Log(ctx, "failed to download，", target.Result.Msg)

@@ -215,8 +215,7 @@ message ReqFileStorageInfo {
   FileIndexes     file_indexes = 1;
   bytes           wallet_sign = 2;
   bytes           wallet_pubkey = 3;
-  bool            is_video_stream = 4;
-  ReqGetShareFile share_request = 5;
+  ReqGetShareFile share_request = 4;
 }
 
 message RspFileStorageInfo {
@@ -230,13 +229,12 @@ message RspFileStorageInfo {
   string req_id = 8;
   string save_path = 9;
   uint64 file_size = 10;
-  bool   is_video_stream = 11;
-  string rest_address = 12;
-  bytes  node_sign = 13; //sp signature
-  string sp_p2p_address = 14;
-  string encryption_tag = 15;
-  string task_id = 16;
-  int64  time_stamp = 17;
+  string rest_address = 11;
+  bytes  node_sign = 12; //sp signature
+  string sp_p2p_address = 13;
+  string encryption_tag = 14;
+  string task_id = 15;
+  int64  time_stamp = 16;
 }
 
 message ReqFileReplicaInfo {
@@ -260,9 +258,8 @@ message ReqDownloadFileWrong {
   FileIndexes         file_indexes = 1;
   string              file_hash = 2;
   bytes               sign = 3;
-  bool                is_video_stream = 4;
-  repeated string     failed_slices = 5;
-  repeated PPBaseInfo failed_pp_nodes = 6;
+  repeated string     failed_slices = 4;
+  repeated PPBaseInfo failed_pp_nodes = 5;
 }
 
 message ReqDownloadSlice {
@@ -850,7 +847,6 @@ message ReqGetShareFile {
   bytes  wallet_sign = 5;
   string share_password = 6;//
   string save_as = 7;
-  bool   is_video_stream = 8;
 }
 
 
@@ -860,7 +856,6 @@ message RspGetShareFile {
   bool            is_private = 3;
   repeated        FileInfo file_info = 4;
   string          sequence_number = 5;
-  bool            is_video_stream = 6;
 }
 
 message RelayMessage {

@@ -10,9 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stratosnet/sds/pp/requests"
-	"github.com/stratosnet/sds/pp/types"
-
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/google/uuid"
 	"github.com/ipfs/go-cid"
@@ -22,8 +19,10 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/pp/types"
 
 	//"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/utils"
@@ -44,7 +43,9 @@ type StreamReqBody struct {
 	Sign          []byte
 	SavePath      string
 	FileReqId     string
+	FileTimestamp int64
 	SliceInfo     *protos.DownloadSliceInfo
+	SliceInfos    []*protos.DownloadSliceInfo
 }
 
 type StreamInfo struct {
@@ -78,9 +79,6 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	task.VideoCacheTaskMap.Delete(fileHash)
-	task.DownloadFileMap.Delete(fileHash + reqId)
-
 	fileHashCh := make(chan string)
 	task.VideoCacheChannelMap.Store(reqId, fileHashCh)
 
@@ -88,24 +86,12 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 		Owner: ownerWalletAddress,
 		Hash:  fileHash,
 	}.String()
-	fileReq := requests.ReqFileStorageInfoData(filePath, setting.VIDEOPATH, "", setting.WalletAddress, setting.WalletPublicKey, true, nil)
+	fileReq := requests.ReqFileStorageInfoData(filePath, setting.VIDEOPATH, "", setting.WalletAddress, setting.WalletPublicKey, nil)
 	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, reqId, fileReq); err != nil {
 		utils.ErrorLog("failed request wallet oz", err.Error())
 	}
 
 	streamInfo, err := getStreamInfo(ctx, reqId, fileHashCh)
-	if err != nil {
-		w.WriteHeader(setting.FAILCode)
-		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
-		return
-	}
-	dTask, ok := task.GetDownloadTask(fileHash, setting.WalletAddress, reqId)
-	if !ok {
-		w.WriteHeader(setting.FAILCode)
-		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "Failed to retrieve download task info").ToBytes())
-		return
-	}
-	event.GetVideoSlices(ctx, streamInfo.FileInfo, dTask)
 	ret, _ := json.Marshal(streamInfo)
 	_, _ = w.Write(ret)
 }
@@ -133,14 +119,6 @@ func streamSharedVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	fileHash := streamInfo.FileInfo.FileHash
-	dTask, ok := task.GetDownloadTask(fileHash, setting.WalletAddress, reqId)
-	if !ok {
-		w.WriteHeader(setting.FAILCode)
-		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "Failed to retrieve download task info").ToBytes())
-		return
-	}
-	event.GetVideoSlices(ctx, streamInfo.FileInfo, dTask)
 	ret, _ := json.Marshal(streamInfo)
 	_, _ = w.Write(ret)
 }
@@ -163,7 +141,7 @@ func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 		Owner: ownerWalletAddress,
 		Hash:  fileHash,
 	}.String()
-	fileReq := requests.ReqFileStorageInfoData(filePath, setting.VIDEOPATH, "", setting.WalletAddress, setting.WalletPublicKey, true, nil)
+	fileReq := requests.ReqFileStorageInfoData(filePath, setting.VIDEOPATH, "", setting.WalletAddress, setting.WalletPublicKey, nil)
 	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, reqId, fileReq); err != nil {
 		utils.ErrorLog("failed request wallet oz", err.Error())
 	}
@@ -206,6 +184,8 @@ func streamVideoP2P(w http.ResponseWriter, req *http.Request) {
 		ReqId:         body.FileReqId,
 		SpP2PAddress:  body.SpP2pAddress,
 		WalletAddress: setting.WalletAddress,
+		TimeStamp:     body.FileTimestamp,
+		SliceInfo:     body.SliceInfos,
 	}
 
 	event.GetVideoSlice(ctx, body.SliceInfo, fInfo, w)
@@ -344,6 +324,10 @@ func getStreamInfo(ctx context.Context, reqId string, fileHashChan <-chan string
 
 	if fInfo == nil {
 		return nil, errors.New("http stream video failed to get file storage info!")
+	}
+
+	if !utils.IsVideoStream(fInfo.FileHash) {
+		return nil, errors.New("the file was not uploaded as video stream")
 	}
 
 	fInfo.ReqId = reqId

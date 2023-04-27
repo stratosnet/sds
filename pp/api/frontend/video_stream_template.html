@@ -50,7 +50,9 @@
                 spP2pAddress: streamInfo.FileInfo.sp_p2p_address,
                 savePath: streamInfo.FileInfo.save_path,
                 fileReqId: streamInfo.FileInfo.req_id,
-                sliceInfo
+                fileTimeStamp: streamInfo.FileInfo.time_stamp,
+                sliceInfo,
+                sliceInfos: streamInfo.FileInfo.slice_info,
             })
             return options;
         };

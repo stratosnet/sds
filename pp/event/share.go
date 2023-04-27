@@ -266,20 +266,14 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			}(fileInfo)
 
 		} else {
-			savePath := ""
-			fileHash := target.FileInfo[0].FileHash
-			if target.IsVideoStream {
-				savePath = setting.VIDEOPATH
-				task.VideoCacheTaskMap.Delete(fileHash)
-			}
-			req = requests.ReqFileStorageInfoData(filePath, savePath, saveAs, setting.WalletAddress, setting.WalletPublicKey, target.IsVideoStream, target.ShareRequest)
+			req = requests.ReqFileStorageInfoData(filePath, "", saveAs, setting.WalletAddress, setting.WalletPublicKey, target.ShareRequest)
 			sig := utils.GetFileDownloadWalletSignMessage(fileInfo.FileHash, setting.WalletAddress, target.SequenceNumber)
 			sign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(sig))
 			if err != nil {
 				return
 			}
 			req.WalletSign = sign
-			ctx = StoreDownloadReqId(ctx, fileHash)
+			ctx = StoreDownloadReqId(ctx, fileInfo.FileHash)
 			p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 		}
 	}
