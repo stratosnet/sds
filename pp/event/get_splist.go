@@ -49,6 +49,11 @@ func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
 		setting.SPMap = &sync.Map{}
 		updateSpMap(target.SpList, setting.SPMap)
 		setting.Config.SPList = nil
+		setting.SPMap.Range(func(k, v interface{}) bool {
+			sp := v.(*setting.SPBaseInfo)
+			setting.Config.SPList = append(setting.Config.SPList, *sp)
+			return true
+		})
 		if err := setting.FlushConfig(); err != nil {
 			utils.ErrorLog("Couldn't write config with updated SP list to yaml file", err)
 		}
