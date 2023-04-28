@@ -273,7 +273,6 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 				return
 			}
 			req.WalletSign = sign
-			ctx = StoreDownloadReqId(ctx, fileInfo.FileHash)
 			p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 		}
 	}
