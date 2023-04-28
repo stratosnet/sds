@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"testing"
 
+	"github.com/ipfs/go-cid"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/setting"
@@ -55,7 +56,7 @@ func setup(t *testing.T) (*StreamReqBody, string, []byte) {
 
 	data := []byte("some kind of data")
 	reqBody := &StreamReqBody{
-		FileHash:     utils.CalcFileHashFromData(md5.New().Sum(data)),
+		FileHash:     utils.CalcFileHashFromData(md5.New().Sum(data), cid.Raw),
 		P2PAddress:   "d4c3b2a1",
 		SpP2pAddress: spP2pAddrString,
 		Sign:         nil,

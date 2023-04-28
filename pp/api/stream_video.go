@@ -143,7 +143,7 @@ func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 		Owner: ownerWalletAddress,
 		Hash:  fileHash,
 	}.String()
-	fileReq := requests.ReqFileStorageInfoData(filePath, setting.VIDEOPATH, "", setting.WalletAddress, setting.WalletPublicKey, nil)
+	fileReq := requests.ReqFileStorageInfoData(ctx, filePath, setting.VIDEOPATH, "", setting.WalletAddress, setting.WalletPublicKey, nil)
 	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, reqId, fileReq); err != nil {
 		utils.ErrorLog("failed request wallet oz", err.Error())
 	}

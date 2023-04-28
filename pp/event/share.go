@@ -266,7 +266,11 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			}(fileInfo)
 
 		} else {
-			req = requests.ReqFileStorageInfoData(ctx, filePath, "", saveAs, setting.WalletAddress, setting.WalletPublicKey, target.ShareRequest)
+			savePath := ""
+			if utils.IsVideoStream(fileInfo.FileHash) {
+				savePath = setting.VIDEOPATH
+			}
+			req = requests.ReqFileStorageInfoData(ctx, filePath, savePath, saveAs, setting.WalletAddress, setting.WalletPublicKey, target.ShareRequest)
 			sig := utils.GetFileDownloadWalletSignMessage(fileInfo.FileHash, setting.WalletAddress, target.SequenceNumber)
 			sign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(sig))
 			if err != nil {
