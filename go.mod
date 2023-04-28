@@ -31,6 +31,7 @@ require (
 	github.com/ipfs/go-ipfs-files v0.2.0
 	github.com/ipfs/interface-go-ipfs-core v0.7.0
 	github.com/ipfs/kubo v0.17.0
+	github.com/klauspost/compress v1.15.12
 	github.com/mattn/go-sqlite3 v1.14.9
 	github.com/multiformats/go-multibase v0.1.1
 	github.com/multiformats/go-multihash v0.2.1
@@ -45,7 +46,7 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.6.0
-	github.com/stratosnet/stratos-chain v0.9.1-0.20230412005248-2381c2948ccc
+	github.com/stratosnet/stratos-chain v0.9.1-0.20230419193542-6947c1379f2a
 	github.com/tendermint/tendermint v0.34.25-0.20221221220620-936221e0a8d9
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	golang.org/x/crypto v0.4.0
@@ -192,7 +193,6 @@ require (
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5 // indirect
 	github.com/keybase/go-keychain v0.0.0-20190712205309-48d3d31d256d // indirect
-	github.com/klauspost/compress v1.15.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.1.2 // indirect
 	github.com/koron/go-ssdp v0.0.3 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect

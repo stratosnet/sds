@@ -23,7 +23,7 @@ import (
 // Activate Inactive PP node becomes active
 func Activate(ctx context.Context, amount utiltypes.Coin, txFee utiltypes.TxFee) error {
 	// Query blockchain to know if this node is already a resource node
-	ppState, err := grpc.QueryResourceNodeState(setting.P2PAddress)
+	ppState, err := grpc.QueryResourceNodeState(p2pserver.GetP2pServer(ctx).GetP2PAddress())
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't query node status from the blockchain", err)
 		//return err
@@ -34,11 +34,11 @@ func Activate(ctx context.Context, amount utiltypes.Coin, txFee utiltypes.TxFee)
 	case types.PP_ACTIVE:
 		pp.Log(ctx, "This node is already active on the blockchain. Waiting for SP node to confirm...")
 		activateReq = &protos.ReqActivatePP{
-			PpInfo:        setting.GetPPInfo(),
+			PpInfo:        p2pserver.GetP2pServer(ctx).GetPPInfo(),
 			AlreadyActive: true,
 		}
 	default:
-		activateReq, err = reqActivateData(amount, txFee)
+		activateReq, err = reqActivateData(ctx, amount, txFee)
 		if err != nil {
 			pp.ErrorLog(ctx, "Couldn't build PP activate request", err)
 			return err

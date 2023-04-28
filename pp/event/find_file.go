@@ -17,8 +17,8 @@ import (
 
 func FindFileList(ctx context.Context, fileName string, walletAddr string, pageId uint64, keyword string, fileType int, isUp bool) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.FindFileListData(fileName, walletAddr, pageId, keyword,
-			protos.FileSortType(fileType), isUp), header.ReqFindMyFileList)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.FindFileListData(fileName, walletAddr, p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+			pageId, keyword, protos.FileSortType(fileType), isUp), header.ReqFindMyFileList)
 	}
 }
 
@@ -50,7 +50,7 @@ func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 		defer file.SetFileListResult(target.WalletAddress+reqId, rpcResult)
 	}
 
-	if target.P2PAddress != setting.P2PAddress {
+	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return

@@ -8,7 +8,7 @@ const (
 	WriteTimeOut                 = 360             // in seconds
 	HandshakeTimeOut             = 5               // in seconds
 	MessageBeatLen               = 4 * 1024 * 1024 // in bytes
-	LatencyCheckSpListInterval   = 1800            // in seconds
+	LatencyCheckSpListInterval   = 24 * 3600       // in seconds
 	LatencyCheckSpListTimeout    = 3               // in seconds
 	LatencyCheckTopSpsConsidered = 3               // number of SPs
 	StatusReportPunishInterval   = 10000

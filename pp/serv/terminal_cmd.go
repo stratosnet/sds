@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -155,8 +156,8 @@ func (api *terminalCmd) Activate(ctx context.Context, param []string) (CmdResult
 
 func (api *terminalCmd) UpdateStake(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) < 3 {
-		return CmdResult{Msg: ""}, errors.New("expecting at least 3 params. Input amount of stakeDelta, fee amount, " +
-			"(optional) gas amount and flag of incrStake(0 for desc, 1 for incr)")
+		return CmdResult{Msg: ""}, errors.New("expecting at least 2 params. Input amount of stakeDelta, fee amount, " +
+			"(optional) gas amount")
 	}
 
 	stakeDelta, err := utiltypes.ParseCoinNormalized(param[0])
@@ -180,9 +181,8 @@ func (api *terminalCmd) UpdateStake(ctx context.Context, param []string) (CmdRes
 		Fee:      fee,
 		Simulate: true,
 	}
-	lastParamIndex := 2
-	if len(param) > 3 {
-		lastParamIndex = 3
+
+	if len(param) == 3 {
 		gas, err := strconv.ParseUint(param[2], 10, 64)
 		if err != nil {
 			return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be a positive integer")
@@ -191,22 +191,12 @@ func (api *terminalCmd) UpdateStake(ctx context.Context, param []string) (CmdRes
 		txFee.Simulate = false
 	}
 
-	incrStake, err := strconv.ParseBool(param[lastParamIndex])
-	if err != nil {
-		return CmdResult{Msg: ""}, errors.New("invalid flag for stake change. 0 for desc, 1 for incr")
-	}
-
-	/*if setting.State != types.PP_ACTIVE {
-		//fmt.Println("PP node not activated yet")
-		return CmdResult{Msg: "PP node not activated yet"}, nil
-	}*/
-
 	if !setting.IsPP {
 		return CmdResult{Msg: "register as a PP node first"}, nil
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	if err := event.UpdateStake(ctx, stakeDelta, txFee, incrStake); err != nil {
+	if err := event.UpdateStake(ctx, stakeDelta, txFee); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
@@ -308,6 +298,21 @@ func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, 
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
 }
+func (api *terminalCmd) validateUploadPath(pathStr string) error {
+	if strings.HasSuffix(pathStr, "/.") {
+		return errors.New("the input path is not allowed")
+	}
+	if strings.HasSuffix(pathStr, "/..") {
+		return errors.New("the input path is not allowed")
+	}
+	if strings.HasPrefix(pathStr, "/etc") {
+		return errors.New("files in system folders are not permitted to upload")
+	}
+	if strings.HasPrefix(pathStr, "/boot") {
+		return errors.New("files in system folders are not permitted to upload")
+	}
+	return nil
+}
 
 func (api *terminalCmd) Upload(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) == 0 {
@@ -315,6 +320,9 @@ func (api *terminalCmd) Upload(ctx context.Context, param []string) (CmdResult, 
 	}
 
 	pathStr := file.EscapePath(param[0:1])
+	if err := api.validateUploadPath(pathStr); err != nil {
+		return CmdResult{}, err
+	}
 
 	isEncrypted := false
 	if len(param) > 1 {
@@ -355,7 +363,10 @@ func (api *terminalCmd) UploadStream(ctx context.Context, param []string) (CmdRe
 	if len(param) == 0 {
 		return CmdResult{}, errors.New("input upload file path")
 	}
-	pathStr := file.EscapePath(param[0:1])
+	pathStr := file.EscapePath(param)
+	if err := api.validateUploadPath(pathStr); err != nil {
+		return CmdResult{}, err
+	}
 
 	desiredTier := uint32(DefaultDesiredUploadTier)
 	if len(param) > 1 {
@@ -418,7 +429,7 @@ func (api *terminalCmd) Download(ctx context.Context, param []string) (CmdResult
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	core.RegisterReqId(ctx, task.LOCAL_REQID)
-	req := requests.ReqFileStorageInfoData(param[0], "", saveAs, setting.WalletAddress, setting.WalletPublicKey, false, nil)
+	req := requests.ReqFileStorageInfoData(ctx, param[0], "", saveAs, setting.WalletAddress, setting.WalletPublicKey, false, nil)
 	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, task.LOCAL_REQID, req); err != nil {
 		return CmdResult{Msg: ""}, err
 	}

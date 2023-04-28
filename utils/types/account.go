@@ -493,3 +493,8 @@ func (p P2pPrivKey) Sign(b []byte) []byte {
 func (p P2pPrivKey) PubKey() P2pPubKey {
 	return BytesToP2pPubKey(crypto.PrivKey(ed25519.PrivKey(p.Bytes())).PubKey().Bytes())
 }
+
+// Address generate an Address from a P2pPrivKey
+func (p P2pPrivKey) Address() Address {
+	return BytesToAddress(crypto.PrivKey(ed25519.PrivKey(p.Bytes())).PubKey().Address().Bytes())
+}

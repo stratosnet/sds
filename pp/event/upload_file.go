@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/stratosnet/sds/framework/client/cf"
@@ -28,8 +27,7 @@ import (
 )
 
 var (
-	isCover          bool
-	requestUploadMap = &sync.Map{}
+	isCover bool
 )
 
 // RequestUploadFile request to SP for upload file
@@ -98,7 +96,7 @@ func ScheduleReqBackupStatus(ctx context.Context, fileHash string) {
 func ReqBackupStatus(ctx context.Context, fileHash string) {
 	p := &protos.ReqBackupStatus{
 		FileHash: fileHash,
-		Address:  setting.GetPPInfo(),
+		Address:  p2pserver.GetP2pServer(ctx).GetPPInfo(),
 	}
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqFileBackupStatus)
 }
@@ -120,12 +118,6 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 	// SPAM check
 	if time.Now().Unix()-target.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
 		pp.ErrorLog(ctx, "sp's upload file response was expired")
-		return
-	}
-
-	// verify if this is the response from earlier request from me
-	if fh, found := requestUploadMap.LoadAndDelete(requests.GetReqIdFromMessage(ctx)); !found || target.FileHash != fh {
-		pp.ErrorLog(ctx, "file upload response doesn't match the request")
 		return
 	}
 
@@ -324,7 +316,7 @@ func waitForUploadFinished(ctx context.Context, uploadTask *task.UploadFileTask)
 			if !uploadTask.CanRetry() {
 				return errors.New("max upload retry count reached")
 			}
-			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqUploadSlicesWrong(uploadTask, uploadTask.RspUploadFile.SpP2PAddress, slicesToReDownload, failedSlices), header.ReqUploadSlicesWrong)
+			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqUploadSlicesWrong(ctx, uploadTask, uploadTask.RspUploadFile.SpP2PAddress, slicesToReDownload, failedSlices), header.ReqUploadSlicesWrong)
 		}
 
 		// Start uploading to next destination
@@ -388,10 +380,4 @@ func UploadPause(ctx context.Context, fileHash, reqID string, w http.ResponseWri
 	p2pserver.GetP2pServer(ctx).CleanUpConnMap(fileHash)
 	task.UploadFileTaskMap.Delete(fileHash)
 	task.UploadProgressMap.Delete(fileHash)
-}
-
-func StoreUploadReqId(ctx context.Context, fileHash string) context.Context {
-	ctx = core.CreateContextWithReqId(ctx, requests.GetReqIdFromMessage(ctx))
-	requestUploadMap.Store(core.GetReqIdFromContext(ctx), fileHash)
-	return ctx
 }
