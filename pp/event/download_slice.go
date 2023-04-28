@@ -201,7 +201,7 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 		}
 
 		sliceTaskId := slice.TaskId
-		rsp := requests.RspDownloadSliceData(&target, slice)
+		rsp := requests.RspDownloadSliceData(ctx, &target, slice)
 		setWriteHookForRspDownloadSlice(conn)
 		if task.DownloadSliceTaskMap.HashKey(sliceTaskId + slice.SliceStorageInfo.SliceHash) {
 			rsp.Data = nil
@@ -459,14 +459,14 @@ func videoCacheKeep(fileHash, taskID string) {
 // SendReportDownloadResult  PP-SP OR StoragePP-SP
 func SendReportDownloadResult(ctx context.Context, target *protos.RspDownloadSlice, costTime int64, isPP bool) *protos.ReqReportDownloadResult {
 	pp.DebugLog(ctx, "ReportDownloadResult report result target.fileHash = ", target.FileHash)
-	req := requests.ReqReportDownloadResultData(target, costTime, isPP)
+	req := requests.ReqReportDownloadResultData(ctx, target, costTime, isPP)
 	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqReportDownloadResult)
 	return req
 }
 
 // SendReportStreamingResult  P-SP OR PP-SP
 func SendReportStreamingResult(ctx context.Context, target *protos.RspDownloadSlice, isPP bool) {
-	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqReportStreamResultData(target, isPP), header.ReqReportDownloadResult)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqReportStreamResultData(ctx, target, isPP), header.ReqReportDownloadResult)
 }
 
 func DownloadFileSlice(ctx context.Context, target *protos.RspFileStorageInfo, reqId string) {
@@ -495,7 +495,7 @@ func DownloadFileSlice(ctx context.Context, target *protos.RspFileStorageInfo, r
 				setDownloadSliceSuccess(ctx, slice.SliceStorageInfo.SliceHash, dTask)
 			} else {
 				pp.DebugLog(ctx, "request download data")
-				req := requests.ReqDownloadSliceData(target, slice)
+				req := requests.ReqDownloadSliceData(ctx, target, slice)
 				newCtx := createAndRegisterSliceReqId(ctx, reqId)
 				SendReqDownloadSlice(newCtx, target.FileHash, slice, req, reqId)
 			}

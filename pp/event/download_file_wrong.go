@@ -68,7 +68,7 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 					task.DownloadProgress(ctx, target.FileHash, fileReqId, slice.SliceOffset.SliceOffsetEnd-slice.SliceOffset.SliceOffsetStart)
 				} else {
 					pp.DebugLog(ctx, "request download data")
-					req := requests.ReqDownloadSliceData(&target, slice)
+					req := requests.ReqDownloadSliceData(ctx, &target, slice)
 					newCtx := createAndRegisterSliceReqId(ctx, fileReqId)
 					SendReqDownloadSlice(newCtx, target.FileHash, slice, req, fileReqId)
 				}

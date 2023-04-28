@@ -123,7 +123,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 	}
 
 	// start to upload file
-	p, err := requests.RequestUploadFile(fileName, fileHash, uint64(size), walletAddr, pubkey, signature, false, false)
+	p, err := requests.RequestUploadFile(ctx, fileName, fileHash, uint64(size), walletAddr, pubkey, signature, false, false)
 	if err != nil {
 		return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE}
 	}
@@ -359,7 +359,7 @@ func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamRe
 	reqId := uuid.New().String()
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
 	// request for downloading file
-	req := requests.RequestDownloadFile(fileHash, param.FileHandle, wallet, reqId, wsig, wpk.Bytes(), nil)
+	req := requests.RequestDownloadFile(ctx, fileHash, param.FileHandle, wallet, reqId, wsig, wpk.Bytes(), nil)
 	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 
 	key := fileHash + reqId
@@ -692,7 +692,7 @@ func uploadStreamTmpFile(ctx context.Context, fileHash, fileName string, fileSiz
 		utils.ErrorLog("failed uploading stream tmp file", err.Error())
 		return
 	}
-	p, err := requests.RequestUploadFile(fileName, fileHash, fileSize, walletAddr, pubkey, signature, false, true)
+	p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, false, true)
 	if err != nil {
 		utils.ErrorLog("failed creating RequestUploadFile", err.Error())
 		return
@@ -714,7 +714,7 @@ func (api *rpcPrivApi) RequestRegisterNewPP(ctx context.Context, param rpc_api.P
 			result := &rpc_api.RPResult{Return: rpc_api.TIME_OUT}
 			return *result
 		default:
-			result, found := pp.GetRPResult(setting.P2PAddress + setting.WalletAddress + reqId)
+			result, found := pp.GetRPResult(setting.Config.P2PAddress + setting.WalletAddress + reqId)
 			if result != nil && found {
 				return *result
 			}
@@ -830,7 +830,7 @@ func (api *rpcPrivApi) RequestStartMining(ctx context.Context, param rpc_api.Par
 			result := &rpc_api.StartMiningResult{Return: rpc_api.TIME_OUT}
 			return *result
 		default:
-			result, found := pp.GetStartMiningResult(setting.P2PAddress + reqId)
+			result, found := pp.GetStartMiningResult(setting.Config.P2PAddress + reqId)
 			if result != nil && found {
 				return *result
 			}

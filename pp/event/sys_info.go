@@ -25,8 +25,8 @@ func ReqGetHDInfo(ctx context.Context, conn core.WriteCloser) {
 	}
 	if requests.UnmarshalData(ctx, &target) {
 
-		if setting.P2PAddress == target.P2PAddress {
-			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.RspGetHDInfoData(), header.RspGetHDInfo)
+		if p2pserver.GetP2pServer(ctx).GetP2PAddress() == target.P2PAddress {
+			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.RspGetHDInfoData(p2pserver.GetP2pServer(ctx).GetP2PAddress()), header.RspGetHDInfo)
 		} else {
 			p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		}
@@ -44,12 +44,12 @@ func RspGetHDInfo(ctx context.Context, conn core.WriteCloser) {
 //nolint:unused
 func reportDHInfo(ctx context.Context) func() {
 	return func() {
-		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.RspGetHDInfoData(), header.RspGetHDInfo)
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.RspGetHDInfoData(p2pserver.GetP2pServer(ctx).GetP2PAddress()), header.RspGetHDInfo)
 	}
 }
 
 func reportDHInfoToPP(ctx context.Context) {
-	_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, p2pserver.GetP2pServer(ctx).GetPpConn(), requests.RspGetHDInfoData(), header.RspGetHDInfo)
+	_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, p2pserver.GetP2pServer(ctx).GetPpConn(), requests.RspGetHDInfoData(p2pserver.GetP2pServer(ctx).GetP2PAddress()), header.RspGetHDInfo)
 }
 
 //nolint:unused
@@ -57,6 +57,6 @@ func startReportDHInfo(ctx context.Context) {
 	if job != nil {
 		job.Cancel()
 	}
-	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.RspGetHDInfoData(), header.RspGetHDInfo)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.RspGetHDInfoData(p2pserver.GetP2pServer(ctx).GetP2PAddress()), header.RspGetHDInfo)
 	job, _ = myClock.AddJobRepeat(time.Second*setting.REPORTDHTIME, 0, reportDHInfo(ctx))
 }

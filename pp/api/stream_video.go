@@ -10,6 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/stratosnet/sds/pp/p2pserver"
+	"github.com/stratosnet/sds/pp/requests"
+
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/google/uuid"
 	"github.com/ipfs/go-cid"
@@ -19,7 +22,6 @@ import (
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
@@ -86,7 +88,7 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 		Owner: ownerWalletAddress,
 		Hash:  fileHash,
 	}.String()
-	fileReq := requests.ReqFileStorageInfoData(filePath, setting.VIDEOPATH, "", setting.WalletAddress, setting.WalletPublicKey, nil)
+	fileReq := requests.ReqFileStorageInfoData(ctx, filePath, setting.VIDEOPATH, "", setting.WalletAddress, setting.WalletPublicKey, nil)
 	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, reqId, fileReq); err != nil {
 		utils.ErrorLog("failed request wallet oz", err.Error())
 	}
@@ -243,7 +245,7 @@ func GetVideoSlice(w http.ResponseWriter, req *http.Request) {
 		utils.DebugLog("Found task info ", body)
 		downloadTask := dlTask.(*task.DownloadTask)
 		ppInfo := downloadTask.SliceInfo[sliceHash].StoragePpInfo
-		if ppInfo.P2PAddress != setting.P2PAddress {
+		if ppInfo.P2PAddress != p2pserver.GetP2pServer(req.Context()).GetP2PAddress() {
 			utils.DebugLog("Current P2PAddress does not have the requested slice")
 			targetAddress := ppInfo.RestAddress
 			redirectURL := fmt.Sprintf("http://%s/videoSlice/%s", targetAddress, sliceHash)

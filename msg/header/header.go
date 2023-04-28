@@ -92,15 +92,12 @@ const (
 	RspFileStorageInfo      = "RspQDLF"
 	ReqDownloadSlice        = "ReqDLFS"
 	RspDownloadSlice        = "RspDLFS"
-	ReqRedownloadSlice      = "ReqReDLS"
 	ReqReportDownloadResult = "ReqDLRep" // request to download result report
 	RspReportDownloadResult = "RspDLRep" // response to download result report
 	ReqDownloadTaskInfo     = "ReqDLTI"
 	RspDownloadTaskInfo     = "RspDLTI"
 	ReqDownloadFileWrong    = "ReqDFW"
 	RspDownloadFileWrong    = "RspDFW"
-	ReqDownloadSliceWrong   = "ReqDSW"
-	RspDownloadSliceWrong   = "RspDSW"
 	ReqClearDownloadTask    = "ReqCDT"
 
 	// register new pp

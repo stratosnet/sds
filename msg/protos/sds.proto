@@ -44,8 +44,6 @@ message RspRegister {
 
 message ReqMining {
   PPBaseInfo address = 1;
-  bytes public_key = 2; // publickey
-  bytes sign = 3; //signature
 }
 
 message RspMining {
@@ -257,9 +255,8 @@ message RspFileReplicaInfo {
 message ReqDownloadFileWrong {
   FileIndexes         file_indexes = 1;
   string              file_hash = 2;
-  bytes               sign = 3;
-  repeated string     failed_slices = 4;
-  repeated PPBaseInfo failed_pp_nodes = 5;
+  repeated string     failed_slices = 3;
+  repeated PPBaseInfo failed_pp_nodes = 4;
 }
 
 message ReqDownloadSlice {
@@ -337,8 +334,7 @@ message ReqRegisterNewPP {
   string  mac_address = 8;
   uint32  version = 9;
   bytes   pub_key = 10;
-  bytes   sign = 11;
-  string  network_address = 12;
+  string  network_address = 11;
 }
 
 message RspRegisterNewPP {
@@ -493,7 +489,6 @@ message ReqDeleteFile {
   string p2p_address = 1;
   string wallet_address = 2;
   string file_hash = 3;
-  bytes  sign = 4;
 }
 
 message RspDeleteFile {
@@ -642,7 +637,6 @@ message ReqTransferDownloadWrong {
   SliceStorageInfo  slice_storage_info = 4;
   string            file_hash = 5;
   string            sp_p2p_address = 6;
-  bytes             sign = 7;
 }
 
 // sp - pp get storage info
@@ -662,7 +656,6 @@ message RspGetHDInfo {
 message ReqDeleteSlice {
   string p2p_address = 1;
   string slice_hash = 2; //
-  // bytes  sign = 3; //SP signature  wallet address + hash
 }
 
 message RspDeleteSlice {
@@ -689,16 +682,14 @@ message RspLatencyCheck {
 message ReqSpStatus {
   string target_p2p_address = 1;
   string requester_p2p_address = 2;
-  bytes  sign = 3;
 }
 
 message RspSpStatus {
   string target_p2p_address = 1;
   string requester_p2p_address = 2;
-  bytes  sign = 3;
-  uint32 activation_state = 4;
-  uint64 connection_count = 5;
-  uint64 online_pp_count = 6;
+  uint32 activation_state = 3;
+  uint64 connection_count = 4;
+  uint64 online_pp_count = 5;
 }
 
 // get bp BLS public key
@@ -753,7 +744,7 @@ message RspBlockInfo {
 
 message ReqBlockCheck{
   int64 block_height = 1;
-  string id = 3;
+  string id = 2;
 }
 
 message RspBlockCheck {
