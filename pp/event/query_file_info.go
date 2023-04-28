@@ -280,7 +280,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		FileName:      target.FileName,
 		Result:        target.Result,
 		ReqId:         target.ReqId,
-		SavePath:      target.SavePath,
+		SavePath:      savePath,
 		FileSize:      target.FileSize,
 		RestAddress:   target.RestAddress,
 		NodeSign:      target.NodeSign,
