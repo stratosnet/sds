@@ -94,6 +94,12 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 	}
 
 	streamInfo, err := getStreamInfo(ctx, reqId, fileHashCh)
+	if err != nil {
+		w.WriteHeader(setting.FAILCode)
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
+		return
+	}
+
 	ret, _ := json.Marshal(streamInfo)
 	_, _ = w.Write(ret)
 }
