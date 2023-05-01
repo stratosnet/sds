@@ -1,8 +1,6 @@
 package setting
 
 import (
-	ed25519crypto "crypto/ed25519"
-	"encoding/hex"
 	"math"
 	"os"
 	"path/filepath"
@@ -209,12 +207,6 @@ func CheckLogin() bool {
 		return false
 	}
 	return true
-}
-
-func GetSign(str string) []byte {
-	sign := ed25519crypto.Sign(P2PPrivateKey, []byte(str))
-	utils.DebugLog("GetSign == ", hex.EncodeToString(sign))
-	return sign
 }
 
 func SetConfig(key string, value interface{}) error {

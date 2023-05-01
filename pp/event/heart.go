@@ -87,7 +87,7 @@ func checkSingleSpLatency(ctx context.Context, server string) {
 		network.GetPeer(ctx).StorePingTimeMap(server, start, true)
 		pb := &protos.ReqLatencyCheck{
 			HbType:           protos.HeartbeatType_LATENCY_CHECK,
-			P2PAddressPp:     setting.P2PAddress,
+			P2PAddressPp:     p2pserver.GetP2pServer(ctx).GetP2PAddress(),
 			NetworkAddressSp: server,
 		}
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, spConn, pb, header.ReqLatencyCheck)

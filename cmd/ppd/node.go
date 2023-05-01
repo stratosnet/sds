@@ -7,16 +7,14 @@ import (
 	"runtime/debug"
 	"syscall"
 
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/console"
-	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 	"github.com/stratosnet/stratos-chain/types"
 )
@@ -119,19 +117,6 @@ func SetupP2PKey() error {
 		}
 	}
 
-	p2pKeyFile, err := os.ReadFile(filepath.Join(setting.Config.AccountDir, setting.Config.P2PAddress+".json"))
-	if err != nil {
-		return errors.New("couldn't read P2P key file: " + err.Error())
-	}
-
-	p2pKey, err := utils.DecryptKey(p2pKeyFile, setting.Config.P2PPassword)
-	if err != nil {
-		return errors.New("couldn't decrypt P2P key file: " + err.Error())
-	}
-
-	setting.P2PAddress = setting.Config.P2PAddress
-	setting.P2PPrivateKey = p2pKey.PrivateKey
-	setting.P2PPublicKey = ed25519.PrivKeyBytesToPubKeyBytes(setting.P2PPrivateKey)
 	return nil
 }
 

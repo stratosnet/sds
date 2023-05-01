@@ -46,9 +46,11 @@ func (p *P2pServer) ConnectToSP(ctx context.Context) (newConnection bool, err er
 
 // ConfirmOptSP connect if there is a detected optimal SP node.
 func (p *P2pServer) ConfirmOptSP(ctx context.Context, spNetworkAddr string) {
-	if p.mainSpConn.GetName() == spNetworkAddr {
-		pp.DebugLog(ctx, "optimal SP already in connection, won't change SP")
-		return
+	if p.mainSpConn != nil {
+		if p.mainSpConn.GetName() == spNetworkAddr {
+			pp.DebugLog(ctx, "optimal SP already in connection, won't change SP")
+			return
+		}
 	}
 	pp.DebugLog(ctx, "current sp ", p.mainSpConn.GetName(), " to be altered to new optimal SP ", spNetworkAddr)
 	optimalSpNetworkAddr = spNetworkAddr

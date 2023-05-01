@@ -130,7 +130,7 @@ func TrafficInfoToMonitorClient(t TrafficInfo) {
 // CreateInitialToken the initial token is used to generate all following tokens
 func CreateInitialToken() string {
 	epoch := strconv.FormatInt(time.Now().Unix(), 10)
-	return utils.CalcHash([]byte(epoch + setting.P2PAddress))
+	return utils.CalcHash([]byte(epoch + setting.Config.P2PAddress))
 }
 
 // calculateToken
@@ -270,7 +270,7 @@ func (api *monitorApi) GetNodeDetails(ctx context.Context, param ParamMonitor) (
 	return &MonitorResult{
 		Return:      "0",
 		MessageType: MSG_GET_NODE_DETAILS,
-		NodeDetails: &NodeDetails{Id: "1", Address: setting.P2PAddress},
+		NodeDetails: &NodeDetails{Id: "1", Address: setting.Config.P2PAddress},
 	}, nil
 }
 

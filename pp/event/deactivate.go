@@ -19,7 +19,7 @@ import (
 
 // Deactivate Request that an active PP node becomes inactive
 func Deactivate(ctx context.Context, txFee utiltypes.TxFee) error {
-	deactivateReq, err := reqDeactivateData(txFee)
+	deactivateReq, err := reqDeactivateData(ctx, txFee)
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't build PP deactivate request: "+err.Error())
 		return err
