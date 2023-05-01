@@ -61,8 +61,15 @@ func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-// RspDeactivated. Response when this PP node was successfully deactivated
+// RspUnbondingPP. Response when this PP node unbonded all its stake
+func RspUnbondingPP(ctx context.Context, conn core.WriteCloser) {
+	setting.State = types.PP_UNBONDING
+	pp.Log(ctx, "Deactivation submitted, all tokens are being unbonded(taking around 180 days to complete)"+
+		"\n --- This node will be forced to suspend very soon! ---")
+}
+
+// RspDeactivated. Response when this PP node was successfully deactivated after threshold period (180 days)
 func RspDeactivated(ctx context.Context, conn core.WriteCloser) {
 	setting.State = types.PP_INACTIVE
-	pp.Log(ctx, "This PP node is now inactive")
+	pp.Log(ctx, "This PP node is now deactivated")
 }
