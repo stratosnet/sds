@@ -1,5 +1,5 @@
 BUILDDIR ?= $(CURDIR)/target
-TEST_DOCKER_REPO=sds-e2e
+TEST_DOCKER_REPO=sds-rsnode
 
 BUILD_TARGETS := build install
 
@@ -20,8 +20,8 @@ build-mac: go.sum
 build-windows: go.sum
 	GOOS=windows GOARCH=amd64 $(MAKE) build
 
-build-docker-e2e:
-	@docker build -f tests/e2e/Dockerfile -t ${TEST_DOCKER_REPO}:$(shell git rev-parse --short HEAD) --build-arg uid=$(shell id -u) --build-arg gid=$(shell id -g) .
+build-docker:
+	@docker build -f Dockerfile -t ${TEST_DOCKER_REPO}:$(shell git rev-parse --short HEAD) --build-arg uid=$(shell id -u) --build-arg gid=$(shell id -g) .
 	@docker tag ${TEST_DOCKER_REPO}:$(shell git rev-parse --short HEAD) ${TEST_DOCKER_REPO}:$(shell git rev-parse --abbrev-ref HEAD | sed 's#/#_#g')
 	@docker tag ${TEST_DOCKER_REPO}:$(shell git rev-parse --short HEAD) ${TEST_DOCKER_REPO}:latest
 
@@ -37,4 +37,4 @@ coverage:
 lint:
 	golangci-lint run
 
-.PHONY: build-linux build-mac build clean coverage lint
+.PHONY: build-linux build-mac build-docker build clean coverage lint
