@@ -619,6 +619,10 @@ func RspGetHDInfoData(p2pAddress string) *protos.RspGetHDInfo {
 		diskStats.Total = setting.GetDiskSizeSoftCap(diskStats.Total)
 		rsp.DiskSize = diskStats.Total
 		rsp.DiskFree = diskStats.Free
+	} else {
+		utils.ErrorLog("Can't fetch disk usage statistics", err)
+		rsp.DiskSize = uint64(0)
+		rsp.DiskFree = uint64(0)
 	}
 
 	return rsp
@@ -722,6 +726,8 @@ func ReqNodeStatusData(p2pAddress string) *protos.ReqReportNodeStatus {
 		diskStat.RootTotal = int64(info.Total)
 	} else {
 		utils.ErrorLog("Can't fetch disk usage statistics", err)
+		diskStat.RootUsed = int64(-1)
+		diskStat.RootTotal = int64(-1)
 	}
 
 	// TODO Bandwidth
