@@ -340,7 +340,7 @@ func formalizePath() (err error) {
 
 func GetDiskSizeSoftCap(actualTotal uint64) uint64 {
 	selfClaimedDiskSize := Config.SelfClaimedDiskSize
-	if selfClaimedDiskSize < actualTotal {
+	if selfClaimedDiskSize != 0 && selfClaimedDiskSize < actualTotal {
 		return selfClaimedDiskSize
 	}
 	return actualTotal
