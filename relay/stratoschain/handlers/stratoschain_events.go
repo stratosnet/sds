@@ -158,7 +158,6 @@ func UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(registertypes.EventTypeUpdateResourceNodeStake,
 			registertypes.AttributeKeyNetworkAddress,
 			registertypes.AttributeKeyOZoneLimitChanges,
-			registertypes.AttributeKeyIncrStake,
 			registertypes.AttributeKeyStakeDelta,
 			registertypes.AttributeKeyCurrentStake,
 			registertypes.AttributeKeyAvailableTokenBefore,
