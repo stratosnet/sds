@@ -380,7 +380,7 @@ func (api *terminalCmd) Download(ctx context.Context, param []string) (CmdResult
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	core.RegisterReqId(ctx, task.LOCAL_REQID)
-	req := requests.ReqFileStorageInfoData(ctx, param[0], "", saveAs, setting.WalletAddress, setting.WalletPublicKey, false, nil)
+	req := requests.ReqFileStorageInfoData(ctx, param[0], "", saveAs, setting.WalletAddress, setting.WalletPublicKey, nil)
 	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, task.LOCAL_REQID, req); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
@@ -515,9 +515,9 @@ func (api *terminalCmd) GetShareFile(ctx context.Context, param []string) (CmdRe
 		return CmdResult{Msg: ""}, errors.New("input share link and retrieval secret key(if any)")
 	}
 	if len(param) < 2 {
-		event.GetShareFile(ctx, param[0], "", "", setting.WalletAddress, setting.WalletPublicKey)
+		event.GetShareFile(ctx, param[0], "", "", setting.WalletAddress, setting.WalletPublicKey, false)
 	} else {
-		event.GetShareFile(ctx, param[0], param[1], "", setting.WalletAddress, setting.WalletPublicKey)
+		event.GetShareFile(ctx, param[0], param[1], "", setting.WalletAddress, setting.WalletPublicKey, false)
 	}
 
 	return CmdResult{Msg: DefaultMsg}, nil

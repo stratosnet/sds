@@ -149,7 +149,12 @@ func RequestUploadFileData(ctx context.Context, paths, storagePath string, isCov
 	if isEncrypted {
 		encryptionTag = utils.GetRandomString(8)
 	}
-	fileHash := file.GetFileHash(paths, encryptionTag)
+	fileHash := ""
+	if isVideoStream {
+		fileHash = file.GetFileHashForVideoStream(paths, encryptionTag)
+	} else {
+		fileHash = file.GetFileHash(paths, encryptionTag)
+	}
 	pp.Log(ctx, "fileHash~~~~~~~~~~~~~~~~~~~~~~", fileHash)
 
 	req := &protos.ReqUploadFile{
@@ -204,7 +209,7 @@ func RequestDownloadFile(ctx context.Context, fileHash, sdmPath, walletAddr stri
 
 	// path: mesh network address
 	metrics.DownloadPerformanceLogNow(fileHash + ":SND_STORAGE_INFO_SP:")
-	req := ReqFileStorageInfoData(ctx, sdmPath, "", "", walletAddr, walletPubkey, false, shareRequest)
+	req := ReqFileStorageInfoData(ctx, sdmPath, "", "", walletAddr, walletPubkey, shareRequest)
 	req.WalletSign = walletSign
 	return req
 }
@@ -525,7 +530,7 @@ func ReqTransferDownloadWrongData(ctx context.Context, notice *protos.ReqFileSli
 
 // ReqFileStorageInfoData encode ReqFileStorageInfo message. If it's not a "share request", walletAddr should keep the same
 // as the wallet from the "path".
-func ReqFileStorageInfoData(ctx context.Context, path, savePath, saveAs, walletAddr string, walletPUbkey []byte, isVideoStream bool, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
+func ReqFileStorageInfoData(ctx context.Context, path, savePath, saveAs, walletAddr string, walletPUbkey []byte, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
 	return &protos.ReqFileStorageInfo{
 		FileIndexes: &protos.FileIndexes{
 			P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress(),
@@ -534,9 +539,8 @@ func ReqFileStorageInfoData(ctx context.Context, path, savePath, saveAs, walletA
 			SavePath:      savePath,
 			SaveAs:        saveAs,
 		},
-		WalletPubkey:  walletPUbkey,
-		IsVideoStream: isVideoStream,
-		ShareRequest:  shareRequest,
+		WalletPubkey: walletPUbkey,
+		ShareRequest: shareRequest,
 	}
 }
 
@@ -556,7 +560,6 @@ func ReqDownloadFileWrongData(fInfo *protos.RspFileStorageInfo, dTask *task.Down
 			SavePath:      fInfo.SavePath,
 		},
 		FileHash:      fInfo.FileHash,
-		IsVideoStream: fInfo.IsVideoStream,
 		FailedSlices:  failedSlices,
 		FailedPpNodes: failedPPNodes,
 	}
@@ -663,7 +666,7 @@ func ReqDeleteShareData(shareID, walletAddr, p2pAddress string) *protos.ReqDelet
 	}
 }
 
-func ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr, p2pAddress string, walletPubkey []byte) *protos.ReqGetShareFile {
+func ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr, p2pAddress string, walletPubkey []byte, isVideoStream bool) *protos.ReqGetShareFile {
 	return &protos.ReqGetShareFile{
 		Keyword:       keyword,
 		P2PAddress:    p2pAddress,

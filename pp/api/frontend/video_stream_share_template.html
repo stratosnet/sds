@@ -26,10 +26,10 @@
 <script>
     const url = "localhost"
     const internalPort = 9303 //corresponds to the InternalPort in the config of pp node
-    const fileHash = "v05ahm57b40ficclv3mibfap7668f5i544d7frgg";
-    const ownerWalletAddress = "st1pwptrzhvenhz8pu8jt6x99e4r02vcz8vrw5gkd";
+    const shareLink = ""
+    const sharePassword = ""
     let streamInfo;
-    httpGetAsync(`http://${url}:${internalPort}/streamVideoStorageInfo/${ownerWalletAddress}/${fileHash}`, function(responseText) {
+    httpGetAsync(`http://${url}:${internalPort}/streamSharedVideoStorageInfo/${shareLink}?password=${sharePassword}`, function(responseText) {
         streamInfo = JSON.parse(responseText);
         playVideo();
     })

@@ -469,7 +469,9 @@ func CreateUploadSliceTaskStream(ctx context.Context, slice *SliceWithStatus, pp
 	}
 	slice.Slice.SliceOffset = offset
 	tk := &UploadSliceTask{
-		SliceNumber: slice.Slice.SliceNumber,
+		RspUploadFile: uploadTask.RspUploadFile,
+		SliceNumber:   slice.Slice.SliceNumber,
+		SliceHash:     sliceHash,
 	}
 
 	err := file.SaveTmpSliceData(fileHash, sliceHash, data)

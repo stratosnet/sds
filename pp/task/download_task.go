@@ -54,7 +54,9 @@ var DownloadSliceProgress = &sync.Map{}
 // This is used because slices can only be decrypted after being fully downloaded
 var DownloadEncryptedSlices = &sync.Map{}
 
-var VideoCacheTaskMap = &sync.Map{}
+var VideoCacheTaskMap = utils.NewAutoCleanMap(5 * time.Minute)
+
+var VideoCacheChannelMap = utils.NewAutoCleanMap(5 * time.Minute)
 
 var reCount int
 
@@ -243,7 +245,7 @@ func GetDownloadSlice(target *protos.ReqDownloadSlice, slice *protos.DownloadSli
 }
 
 func SaveDownloadFile(ctx context.Context, target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo) error {
-	if fInfo.IsVideoStream {
+	if utils.IsVideoStream(fInfo.FileHash) {
 		return file.SaveFileData(ctx, target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, target.SliceInfo.SliceHash, fInfo.FileHash, fInfo.SavePath, fInfo.ReqId)
 	} else {
 		metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_SLICE_DATA:" + strconv.FormatInt(int64(target.SliceInfo.SliceOffset.SliceOffsetStart+(target.SliceNumber-1)*33554432), 10) + ":")
