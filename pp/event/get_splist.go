@@ -50,8 +50,8 @@ func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
 		updateSpMap(target.SpList, setting.SPMap)
 		setting.Config.SPList = nil
 		setting.SPMap.Range(func(k, v interface{}) bool {
-			sp := v.(*setting.SPBaseInfo)
-			setting.Config.SPList = append(setting.Config.SPList, *sp)
+			sp := v.(setting.SPBaseInfo)
+			setting.Config.SPList = append(setting.Config.SPList, sp)
 			return true
 		})
 		if err := setting.FlushConfig(); err != nil {
@@ -63,7 +63,7 @@ func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
 
 func updateSpMap(lst []*protos.SPBaseInfo, mp *sync.Map) {
 	for _, spInList := range lst {
-		spInMap := &setting.SPBaseInfo{
+		spInMap := setting.SPBaseInfo{
 			P2PAddress:     spInList.P2PAddress,
 			P2PPublicKey:   spInList.P2PPubKey,
 			NetworkAddress: spInList.NetworkAddress,

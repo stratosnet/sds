@@ -131,7 +131,7 @@ func TestSpListCheckChange(t *testing.T) {
 		t.Fatal("Number of items is wrong")
 	}
 	testTmpSpInfo, ok := testMap.Load(testSpListInfo2.P2PAddress)
-	if !ok || testTmpSpInfo.(*setting.SPBaseInfo).P2PPublicKey != TEST_P2P_PubKey_TEM {
+	if !ok || testTmpSpInfo.(setting.SPBaseInfo).P2PPublicKey != TEST_P2P_PubKey_TEM {
 		t.Fatal("Entry is not updated:")
 	}
 
