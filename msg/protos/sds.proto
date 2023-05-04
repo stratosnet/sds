@@ -387,12 +387,11 @@ message RspUpdateStakePP {
 message ReqUpdatedStakePP {
   string p2p_address = 1;
   string ozone_limit_changes = 2;
-  string incr_stake = 3; // true/false
-  string tx_hash = 4;
-  string stake_delta = 5;
-  string current_stake = 6;
-  string available_token_before = 7;
-  string available_token_after = 8;
+  string tx_hash = 3;
+  string stake_delta = 4;
+  string current_stake = 5;
+  string available_token_before = 6;
+  string available_token_after = 7;
 }
 
 message ReqUpdatedStakeSP {
