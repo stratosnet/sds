@@ -158,7 +158,6 @@ func UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(registertypes.EventTypeUpdateResourceNodeStake,
 			registertypes.AttributeKeyNetworkAddress,
 			registertypes.AttributeKeyOZoneLimitChanges,
-			registertypes.AttributeKeyIncrStake,
 			registertypes.AttributeKeyStakeDelta,
 			registertypes.AttributeKeyCurrentStake,
 			registertypes.AttributeKeyAvailableTokenBefore,
@@ -178,7 +177,6 @@ func UpdateResourceNodeStakeMsgHandler() func(event coretypes.ResultEvent) {
 			req.PPList = append(req.PPList, &protos.ReqUpdatedStakePP{
 				P2PAddress:           event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeStake, registertypes.AttributeKeyNetworkAddress)],
 				OzoneLimitChanges:    event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeStake, registertypes.AttributeKeyOZoneLimitChanges)],
-				IncrStake:            event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeStake, registertypes.AttributeKeyIncrStake)],
 				TxHash:               txHash,
 				StakeDelta:           event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeStake, registertypes.AttributeKeyStakeDelta)],
 				CurrentStake:         event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeStake, registertypes.AttributeKeyCurrentStake)],
