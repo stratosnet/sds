@@ -80,7 +80,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	// spam check after verified the sp's response
-	if time.Now().Unix()-target.RspUploadFile.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
+	if time.Now().Unix()-target.RspUploadFile.TimeStamp > target.RspUploadFile.TotalSlice*setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
 		rsp := &protos.RspUploadFileSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
