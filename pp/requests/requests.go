@@ -32,6 +32,8 @@ import (
 	"github.com/stratosnet/sds/utils/types"
 )
 
+const INVALID_DISK_USAGE_STAT = int64(-1)
+
 func ReqRegisterData(ctx context.Context) *protos.ReqRegister {
 	return &protos.ReqRegister{
 		Address:   p2pserver.GetP2pServer(ctx).GetPPInfo(),
@@ -617,8 +619,12 @@ func RspGetHDInfoData(p2pAddress string) *protos.RspGetHDInfo {
 	diskStats, err := utils.GetDiskUsage(setting.Config.StorehousePath)
 	if err == nil {
 		diskStats.Total = setting.GetDiskSizeSoftCap(diskStats.Total)
-		rsp.DiskSize = diskStats.Total
-		rsp.DiskFree = diskStats.Free
+		rsp.DiskSize = int64(diskStats.Total)
+		rsp.DiskFree = int64(diskStats.Free)
+	} else {
+		utils.ErrorLog("Can't fetch disk usage statistics", err)
+		rsp.DiskSize = INVALID_DISK_USAGE_STAT
+		rsp.DiskFree = INVALID_DISK_USAGE_STAT
 	}
 
 	return rsp
@@ -722,6 +728,8 @@ func ReqNodeStatusData(p2pAddress string) *protos.ReqReportNodeStatus {
 		diskStat.RootTotal = int64(info.Total)
 	} else {
 		utils.ErrorLog("Can't fetch disk usage statistics", err)
+		diskStat.RootUsed = INVALID_DISK_USAGE_STAT
+		diskStat.RootTotal = INVALID_DISK_USAGE_STAT
 	}
 
 	// TODO Bandwidth
