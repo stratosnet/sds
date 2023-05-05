@@ -645,8 +645,8 @@ message ReqGetHDInfo {
 }
 
 message RspGetHDInfo {
-  uint64 disk_size = 1;
-  uint64 disk_free = 2 ;
+  int64 disk_size = 1;
+  int64 disk_free = 2 ;
   string p2p_address = 3;
   string wallet_address = 4;
 }
