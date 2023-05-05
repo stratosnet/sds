@@ -30,6 +30,10 @@ func RspReportNodeStatus(ctx context.Context, conn core.WriteCloser) {
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_SUSPENDED_STATE)
 	}
 
+	if len(target.Result.Msg) > 0 {
+		utils.ErrorLogf("[ERROR] Received response of node status report from SP: \n%v\n", target.Result.Msg)
+	}
+
 	if state := network.GetPeer(ctx).GetStateFromFsm(); state.Id == network.STATE_REGISTERING {
 		utils.DebugLog("@#@#@#@#@#@#@#@#@#@#@#@#@#@#")
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_FIRST_STATUS)
