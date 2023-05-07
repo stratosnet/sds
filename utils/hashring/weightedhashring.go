@@ -8,25 +8,22 @@ package hashring
 
 import (
 	"fmt"
-	"math"
-	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/HuKeping/rbtree"
+	"github.com/google/uuid"
 	"github.com/stratosnet/sds/utils"
 )
 
-// Node
 type WeightedNode struct {
-	ID   string
-	Host string
-	Rest string
-	Tier uint32
-	Data *sync.Map
+	ID     string
+	Host   string
+	Rest   string
+	Copies uint32 // Number of copies in the hashring
+	Data   *sync.Map
 }
 
-// nodeKey
 func (n *WeightedNode) nodeKey() string {
 	return n.ID + "#" + n.Host
 }
@@ -47,7 +44,6 @@ func (vwn *VWeightedNode) Less(than rbtree.Item) bool {
 	return vwn.Index < than.(*VWeightedNode).Index
 }
 
-// HashRing
 type WeightedHashRing struct {
 	VRing           *rbtree.Rbtree
 	NRing           *rbtree.Rbtree
@@ -59,39 +55,12 @@ type WeightedHashRing struct {
 	sync.Mutex
 }
 
-// virtualKey
-func (r *WeightedHashRing) virtualKey(nodeID string, index uint32) string {
-	return "node#" + nodeID + "#" + strconv.FormatUint(uint64(index), 10)
-}
-
-// hashKey
-func (r *WeightedHashRing) hashKey(key string) string {
-	return utils.CalcHash([]byte(key))
-}
-
-// hashTOCRC32
-func (r *WeightedHashRing) hashToCRC32(hashInString string) uint32 {
-	return utils.CalcCRC32([]byte(hashInString))
-}
-
-// CalcIndex
-func (r *WeightedHashRing) CalcIndex(key string) uint32 {
-	return r.hashToCRC32(r.hashKey(key))
-}
-
-// AddNode
 func (r *WeightedHashRing) AddNode(node *WeightedNode) {
-
 	r.Lock()
-
 	defer r.Unlock()
 
-	// calc numOfCopies with node tier, WeightedNode should have at least 1 copy
-	numOfCopies := getNumOfCopies(node.Tier)
-	//utils.DebugLogf("for node %v (Tier=%v), numOfCopies is %v", node.ID, node.Tier, numOfCopies)
-	var i uint32
-	for i = 0; i < uint32(numOfCopies); i++ {
-		index := r.CalcIndex(r.virtualKey(node.ID, i))
+	for i := uint32(0); i < node.Copies; i++ {
+		index := calcIndex(virtualKey(node.ID, i))
 		//utils.DebugLogf("---- index is %v", index)
 		r.VRing.Insert(&VWeightedNode{Index: index, NodeID: node.ID})
 	}
@@ -104,12 +73,6 @@ func (r *WeightedHashRing) AddNode(node *WeightedNode) {
 	r.NodeCount++
 }
 
-func getNumOfCopies(nodeTier uint32) float64 {
-	// numOfCopies = nodeTier ^ 2
-	return math.Round(math.Pow(float64(nodeTier), 2))
-}
-
-// RemoveNode
 func (r *WeightedHashRing) RemoveNode(nodeID string) bool {
 	r.Lock()
 	defer r.Unlock()
@@ -120,14 +83,8 @@ func (r *WeightedHashRing) RemoveNode(nodeID string) bool {
 	}
 	node := val.(*WeightedNode)
 
-	var numberOfNode uint32 = 1
-	if r.NumberOfVirtual > 0 {
-		numberOfNode = r.NumberOfVirtual
-	}
-
-	var i uint32
-	for i = 0; i < numberOfNode; i++ {
-		index := r.CalcIndex(r.virtualKey(node.ID, i))
+	for i := uint32(0); i < node.Copies; i++ {
+		index := calcIndex(virtualKey(node.ID, i))
 		r.VRing.Delete(&VWeightedNode{Index: index, NodeID: node.ID})
 	}
 
@@ -139,6 +96,28 @@ func (r *WeightedHashRing) RemoveNode(nodeID string) bool {
 	r.NodeCount--
 
 	return true
+}
+
+func (r *WeightedHashRing) UpdateCopies(nodeID string, updatedCopies uint32) {
+	node := r.Node(nodeID)
+	if node == nil || node.Copies == updatedCopies {
+		return
+	}
+
+	// Add missing copies
+	for i := node.Copies; i < updatedCopies; i++ {
+		index := calcIndex(virtualKey(nodeID, i))
+		r.VRing.Insert(&VWeightedNode{Index: index, NodeID: nodeID})
+	}
+
+	// Remove surplus copies
+	for i := updatedCopies; i < node.Copies; i++ {
+		index := calcIndex(virtualKey(nodeID, i))
+		r.VRing.Delete(&VWeightedNode{Index: index, NodeID: nodeID})
+	}
+
+	node.Copies = updatedCopies
+	r.Nodes.Store(nodeID, node)
 }
 
 func (r *WeightedHashRing) Node(ID string) *WeightedNode {
@@ -175,41 +154,45 @@ func (r *WeightedHashRing) SetOnline(ID string) {
 
 // RandomGetNodes return random nodes from the hashring
 func (r *WeightedHashRing) RandomGetNodes(num int) []*WeightedNode {
-
 	if r.NodeOkCount <= 0 {
 		return nil
 	}
 
 	if r.NodeOkCount < uint32(num) {
-		num = int(r.NodeOkCount)
+		// Return all online nodes
+		var nodes []*WeightedNode
+		r.Nodes.Range(func(key, value interface{}) bool {
+			id := key.(string)
+			node := value.(*WeightedNode)
+			if r.IsOnline(id) {
+				nodes = append(nodes, node)
+			}
+			return true
+		})
+		return nodes
 	}
 
 	nodes := make([]*WeightedNode, num)
-
-	ids := make([]string, 0)
-	r.NodeStatus.Range(func(key, value interface{}) bool {
-		id := key.(string)
-		ok := value.(bool)
-		if ok {
-			ids = append(ids, id)
+	taken := make(map[string]bool)
+	for i := 0; i < num; i++ {
+		_, nodeID := r.GetNode(uuid.New().String())
+		if taken[nodeID] {
+			i--
+			continue
 		}
-		return true
-	})
-
-	indexes := utils.GenerateRandomNumber(0, len(ids), num)
-
-	for i, idx := range indexes {
-		if node, ok := r.Nodes.Load(ids[idx]); ok {
-			nodes[i] = node.(*WeightedNode)
+		taken[nodeID] = true
+		if !r.IsOnline(nodeID) {
+			i--
+			continue
 		}
+		nodes[i] = r.Node(nodeID)
 	}
-
 	return nodes
 }
 
 // GetNode calculates an index from the given key, and returns a node selected using this index
 func (r *WeightedHashRing) GetNode(key string) (uint32, string) {
-	keyIndex := r.CalcIndex(key)
+	keyIndex := calcIndex(key)
 	//utils.DebugLogf("calc key index is %v", keyIndex)
 	return r.GetNodeByIndex(keyIndex)
 }
@@ -217,7 +200,6 @@ func (r *WeightedHashRing) GetNode(key string) (uint32, string) {
 // GetNodeExcludedNodeIDs calculates an index from the given key, and returns a node selected using this index.
 // The nodes with IDs specified by NodeIDs will be excluded. If setOffline is true, the excluded nodes will become offline.
 func (r *WeightedHashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string, setOffline bool) (uint32, string) {
-
 	if len(NodeIDs) <= 0 {
 		return r.GetNode(key)
 	}
@@ -294,7 +276,6 @@ func (r *WeightedHashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
 	return up, down
 }
 
-// GetNodeByIndex
 func (r *WeightedHashRing) GetNodeByIndex(keyIndex uint32) (uint32, string) {
 
 	if r.VRing.Len() <= 0 {
@@ -361,7 +342,6 @@ func (r *WeightedHashRing) TraversalNRing() {
 	})
 }
 
-// NewHashRing
 func NewWeightedHashRing() *WeightedHashRing {
 	r := new(WeightedHashRing)
 	r.Nodes = new(sync.Map)

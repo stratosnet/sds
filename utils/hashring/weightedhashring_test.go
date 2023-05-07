@@ -20,7 +20,7 @@ func TestWHRTrend(t *testing.T) {
 	start := time.Now()
 	numNode := 100
 	for i := 1; i <= numNode; i++ {
-		tmpVWN := &WeightedNode{ID: "stsdsp2p1faej5w4q6hgnt0ft598dlm408g4p747ymg5jq6_" + strconv.Itoa(i), Host: "127.0.0.1:18092_" + strconv.Itoa(i), Rest: "127.0.0.1:18092_" + strconv.Itoa(i), Tier: uint32(i)}
+		tmpVWN := &WeightedNode{ID: "stsdsp2p1faej5w4q6hgnt0ft598dlm408g4p747ymg5jq6_" + strconv.Itoa(i), Host: "127.0.0.1:18092_" + strconv.Itoa(i), Rest: "127.0.0.1:18092_" + strconv.Itoa(i), Copies: uint32(i * i)}
 		testRing.AddNode(tmpVWN)
 		testRing.NodeStatus.Store(tmpVWN.ID, true)
 	}
@@ -66,11 +66,11 @@ func TestGetNodeExcludedNodeIDsWeightedHashring(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		id := "ID#" + strconv.FormatInt(int64(i), 10)
 		ring.AddNode(&WeightedNode{
-			ID:   id,
-			Host: "",
-			Rest: "",
-			Tier: 1,
-			Data: nil,
+			ID:     id,
+			Host:   "",
+			Rest:   "",
+			Copies: 1,
+			Data:   nil,
 		})
 		ring.SetOnline(id)
 	}
@@ -97,4 +97,56 @@ func TestGetNodeExcludedNodeIDsWeightedHashring(t *testing.T) {
 	if ring.NodeOkCount != 1 {
 		t.Fatalf("Wrong NodeOkCount [%v] (expected [%v])", ring.NodeOkCount, 1)
 	}
+}
+
+/*
+BenchmarkWeightedRandomGetNodes/100_of_10000-16         	    3674	    291901 ns/op
+BenchmarkWeightedRandomGetNodes/500_of_10000-16         	     776	   1465892 ns/op
+BenchmarkWeightedRandomGetNodes/1000_of_10000-16        	     392	   3056415 ns/op
+BenchmarkWeightedRandomGetNodes/5000_of_10000-16        	      40	  26610405 ns/op
+BenchmarkWeightedRandomGetNodes/100_of_100000-16        	    3063	    391340 ns/op
+BenchmarkWeightedRandomGetNodes/500_of_100000-16        	     582	   1968920 ns/op
+BenchmarkWeightedRandomGetNodes/1000_of_100000-16       	     292	   4039905 ns/op
+BenchmarkWeightedRandomGetNodes/5000_of_100000-16       	      60	  20707943 ns/op
+*/
+func BenchmarkWeightedRandomGetNodes(b *testing.B) {
+	tests := []struct {
+		name          string
+		hashringCount int
+		nodeCount     int
+	}{
+		{"100 of 10000", 10000, 100},
+		{"500 of 10000", 10000, 500},
+		{"1000 of 10000", 10000, 1000},
+		{"5000 of 10000", 10000, 5000},
+		{"100 of 100000", 100000, 100},
+		{"500 of 100000", 100000, 500},
+		{"1000 of 100000", 100000, 1000},
+		{"5000 of 100000", 100000, 5000},
+	}
+	for _, t := range tests {
+		ring := createRandomWeightedHashring(t.hashringCount)
+		b.Run(t.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				ring.RandomGetNodes(t.nodeCount)
+			}
+		})
+	}
+}
+
+func createRandomWeightedHashring(count int) *WeightedHashRing {
+	ring := NewWeightedHashRing()
+
+	for i := 0; i < count; i++ {
+		id := "ID#" + strconv.FormatInt(int64(i), 10)
+		ring.AddNode(&WeightedNode{
+			ID:     id,
+			Host:   "",
+			Rest:   "",
+			Copies: 1,
+			Data:   nil,
+		})
+		ring.SetOnline(id)
+	}
+	return ring
 }
