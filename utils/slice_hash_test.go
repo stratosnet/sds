@@ -3,10 +3,12 @@ package utils
 import (
 	"crypto/rand"
 	"testing"
+
+	"github.com/ipfs/go-cid"
 )
 
 func BenchmarkSliceHash(b *testing.B) {
-	fileHash := CalcFileHashFromData([]byte("fileData"))
+	fileHash := CalcFileHashFromData([]byte("fileData"), cid.Raw)
 
 	//prepare data
 	sliceCnt := 1000

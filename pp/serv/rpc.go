@@ -574,7 +574,7 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 	key := param.WalletAddr + reqId
 
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
-	event.GetShareFile(reqCtx, param.ShareLink, "", "", param.WalletAddr, wpk.Bytes())
+	event.GetShareFile(reqCtx, param.ShareLink, "", "", param.WalletAddr, wpk.Bytes(), false)
 
 	// the application gives FileShareResult type of result
 	var res *rpc_api.FileShareResult

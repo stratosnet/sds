@@ -18,10 +18,18 @@ import (
 )
 
 const hashLen = 20
+const videoCodec = 0x72
 
 var hashCidPrefix = cid.Prefix{
 	Version:  1,
 	Codec:    85,
+	MhType:   27,
+	MhLength: 20,
+}
+
+var hashCidPrefixForVideoStream = cid.Prefix{
+	Version:  1,
+	Codec:    114,
 	MhType:   27,
 	MhLength: 20,
 }
@@ -68,7 +76,16 @@ func CalcFileHash(filePath, encryptionTag string) string {
 		return ""
 	}
 	data := append([]byte(encryptionTag), CalcFileMD5(filePath)...)
-	return CalcFileHashFromData(data)
+	return CalcFileHashFromData(data, cid.Raw)
+}
+
+func CalcFileHashForVideoStream(filePath, encryptionTag string) string {
+	if filePath == "" {
+		Log(errors.New("CalcFileHash: missing file path"))
+		return ""
+	}
+	data := append([]byte(encryptionTag), CalcFileMD5(filePath)...)
+	return CalcFileHashFromData(data, videoCodec)
 }
 
 func CalcHash(data []byte) string {
@@ -105,9 +122,9 @@ func uint64ToBytes(n uint64) []byte {
 	return byteBuf.Bytes()
 }
 
-func CalcFileHashFromData(data []byte) string {
+func CalcFileHashFromData(data []byte, codec uint64) string {
 	fileHash, _ := mh.Sum(data, mh.KECCAK_256, hashLen)
-	fileCid := cid.NewCidV1(cid.Raw, fileHash)
+	fileCid := cid.NewCidV1(codec, fileHash)
 	encoder, _ := mbase.NewEncoder(mbase.Base32hex)
 	return fileCid.Encode(encoder)
 }
@@ -119,5 +136,15 @@ func VerifyHash(hash string) bool {
 	}
 
 	prefix := fileCid.Prefix()
-	return prefix == hashCidPrefix
+	return prefix == hashCidPrefix || prefix == hashCidPrefixForVideoStream
+}
+
+func IsVideoStream(hash string) bool {
+	fileCid, err := cid.Decode(hash)
+	if err != nil {
+		return false
+	}
+
+	prefix := fileCid.Prefix()
+	return prefix.Codec == videoCodec
 }

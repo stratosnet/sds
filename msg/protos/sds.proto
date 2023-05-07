@@ -215,8 +215,7 @@ message ReqFileStorageInfo {
   FileIndexes     file_indexes = 1;
   bytes           wallet_sign = 2;
   bytes           wallet_pubkey = 3;
-  bool            is_video_stream = 4;
-  ReqGetShareFile share_request = 5;
+  ReqGetShareFile share_request = 4;
 }
 
 message RspFileStorageInfo {
@@ -230,13 +229,12 @@ message RspFileStorageInfo {
   string req_id = 8;
   string save_path = 9;
   uint64 file_size = 10;
-  bool   is_video_stream = 11;
-  string rest_address = 12;
-  bytes  node_sign = 13; //sp signature
-  string sp_p2p_address = 14;
-  string encryption_tag = 15;
-  string task_id = 16;
-  int64  time_stamp = 17;
+  string rest_address = 11;
+  bytes  node_sign = 12; //sp signature
+  string sp_p2p_address = 13;
+  string encryption_tag = 14;
+  string task_id = 15;
+  int64  time_stamp = 16;
 }
 
 message ReqFileReplicaInfo {
@@ -259,9 +257,8 @@ message RspFileReplicaInfo {
 message ReqDownloadFileWrong {
   FileIndexes         file_indexes = 1;
   string              file_hash = 2;
-  bool                is_video_stream = 3;
-  repeated string     failed_slices = 4;
-  repeated PPBaseInfo failed_pp_nodes = 5;
+  repeated string     failed_slices = 3;
+  repeated PPBaseInfo failed_pp_nodes = 4;
 }
 
 message ReqDownloadSlice {
@@ -392,12 +389,11 @@ message RspUpdateStakePP {
 message ReqUpdatedStakePP {
   string p2p_address = 1;
   string ozone_limit_changes = 2;
-  string incr_stake = 3; // true/false
-  string tx_hash = 4;
-  string stake_delta = 5;
-  string current_stake = 6;
-  string available_token_before = 7;
-  string available_token_after = 8;
+  string tx_hash = 3;
+  string stake_delta = 4;
+  string current_stake = 5;
+  string available_token_before = 6;
+  string available_token_after = 7;
 }
 
 message ReqUpdatedStakeSP {
@@ -651,8 +647,8 @@ message ReqGetHDInfo {
 }
 
 message RspGetHDInfo {
-  uint64 disk_size = 1;
-  uint64 disk_free = 2 ;
+  int64 disk_size = 1;
+  int64 disk_free = 2 ;
   string p2p_address = 3;
   string wallet_address = 4;
 }

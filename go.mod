@@ -11,6 +11,7 @@ replace (
 
 require (
 	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
+	github.com/alecthomas/units v0.0.0-20210927113745-59d0afb8317a
 	github.com/alex023/clock v0.0.0-20191208111215-c265f1b2ab18
 	github.com/bgadrian/go-mnemonic v0.0.0-20170924142112-3188dc747a1b
 	github.com/bsipos/thist v1.0.0
@@ -46,7 +47,7 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.6.0
-	github.com/stratosnet/stratos-chain v0.9.1-0.20230419193542-6947c1379f2a
+	github.com/stratosnet/stratos-chain v0.9.1-0.20230502165409-9d32e8baad0f
 	github.com/tendermint/tendermint v0.34.25-0.20221221220620-936221e0a8d9
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	golang.org/x/crypto v0.4.0
@@ -67,7 +68,6 @@ require (
 	github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6 // indirect
 	github.com/Stebalien/go-bitfield v0.0.1 // indirect
 	github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af // indirect
-	github.com/alecthomas/units v0.0.0-20210927113745-59d0afb8317a // indirect
 	github.com/alexbrainman/goissue34681 v0.0.0-20191006012335-3fc7a47baff5 // indirect
 	github.com/armon/go-metrics v0.4.0 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect

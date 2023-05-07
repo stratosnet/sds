@@ -183,7 +183,7 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	if requests.UnmarshalData(ctx, &target) {
 		// SPAM check
 		if time.Now().Unix()-target.RspFileStorageInfo.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
-			rsp := &protos.RspUploadFileSlice{
+			rsp := &protos.RspDownloadSlice{
 				Result: &protos.Result{
 					State: protos.ResultState_RES_FAIL,
 					Msg:   "sp's download file response was expired",
@@ -341,7 +341,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 		} else {
 			receiveSliceAndProgress(ctx, &target, fInfo, dTask, costTime)
 		}
-		if !fInfo.IsVideoStream {
+		if !utils.IsVideoStream(fInfo.FileHash) {
 			task.DownloadProgress(ctx, target.FileHash, fileReqId, uint64(len(target.Data)))
 		}
 	} else {
@@ -431,9 +431,10 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 	target.Result = &protos.Result{
 		State: protos.ResultState_RES_SUCCESS,
 	}
-	if fInfo.IsVideoStream && !target.IsVideoCaching {
+	isVideoStream := utils.IsVideoStream(fInfo.FileHash)
+	if isVideoStream && !target.IsVideoCaching {
 		putData(ctx, HTTPDownloadSlice, target)
-	} else if fInfo.IsVideoStream && target.IsVideoCaching {
+	} else if isVideoStream && target.IsVideoCaching {
 		videoCacheKeep(fInfo.FileHash, target.TaskId)
 	}
 	setDownloadSliceSuccess(ctx, target.SliceInfo.SliceHash, dTask)

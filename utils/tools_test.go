@@ -8,6 +8,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/go-bip39"
+	"github.com/ipfs/go-cid"
 	"github.com/stratosnet/sds/utils/crypto"
 	"github.com/stratosnet/sds/utils/crypto/math"
 )
@@ -74,7 +75,7 @@ func TestCid(t *testing.T) {
 			t.Fatal("cannot generate random data", err)
 		}
 
-		fileHash := CalcFileHashFromData(fileData[:])
+		fileHash := CalcFileHashFromData(fileData[:], cid.Raw)
 		sliceHash := CalcSliceHash(sliceData[:], fileHash, uint64(i))
 
 		if !VerifyHash(fileHash) {
@@ -103,7 +104,7 @@ func TestCidLargeFile(t *testing.T) {
 
 	start := time.Now()
 	data := append([]byte(encryptionTag), md5.New().Sum(fileContent)...)
-	filehash := CalcFileHashFromData(data)
+	filehash := CalcFileHashFromData(data, cid.Raw)
 
 	elapsed := time.Since(start)
 	t.Log(filehash)
