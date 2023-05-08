@@ -712,8 +712,7 @@ func ReqNodeStatusData(p2pAddress string) *protos.ReqReportNodeStatus {
 		memStat.MemUsed = int64(virtualMem.Used)
 		memStat.MemTotal = int64(virtualMem.Total)
 	} else {
-		utils.ErrorLog(
-			"Can't fetch memory statistics when reporting node status, this might cause score deduction", err)
+		utils.ErrorLog("Can't fetch memory statistics when reporting node status", err)
 		memStat.MemUsed = INVALID_STAT
 		memStat.MemTotal = INVALID_STAT
 	}
@@ -723,7 +722,7 @@ func ReqNodeStatusData(p2pAddress string) *protos.ReqReportNodeStatus {
 		memStat.SwapMemUsed = int64(swapMemory.Used)
 		memStat.SwapMemTotal = int64(swapMemory.Total)
 	} else {
-		utils.ErrorLog("Can't fetch swap memory statistics", err)
+		utils.ErrorLog("Can't fetch swap memory statistics when reporting node status", err)
 		memStat.SwapMemUsed = INVALID_STAT
 		memStat.SwapMemTotal = INVALID_STAT
 	}
