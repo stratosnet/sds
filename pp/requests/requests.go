@@ -32,7 +32,7 @@ import (
 	"github.com/stratosnet/sds/utils/types"
 )
 
-const INVALID_DISK_USAGE_STAT = int64(-1)
+const INVALID_STAT = int64(-1)
 
 func ReqRegisterData(ctx context.Context) *protos.ReqRegister {
 	return &protos.ReqRegister{
@@ -623,8 +623,8 @@ func RspGetHDInfoData(p2pAddress string) *protos.RspGetHDInfo {
 		rsp.DiskFree = int64(diskStats.Free)
 	} else {
 		utils.ErrorLog("Can't fetch disk usage statistics", err)
-		rsp.DiskSize = INVALID_DISK_USAGE_STAT
-		rsp.DiskFree = INVALID_DISK_USAGE_STAT
+		rsp.DiskSize = INVALID_STAT
+		rsp.DiskFree = INVALID_STAT
 	}
 
 	return rsp
@@ -706,30 +706,39 @@ func ReqNodeStatusData(p2pAddress string) *protos.ReqReportNodeStatus {
 	cpuStat := &protos.CpuStat{NumCores: int64(coreNum), TotalUsedPercent: math.Round(cpuPercent*100) / 100}
 
 	// Memory physical + swap
-	virtualMem, _ := mem.VirtualMemory()
-	virtualUsedMem := virtualMem.Used
-	virtualTotalMem := virtualMem.Total
+	memStat := &protos.MemoryStat{}
+	virtualMem, err := mem.VirtualMemory()
+	if err == nil {
+		memStat.MemUsed = int64(virtualMem.Used)
+		memStat.MemTotal = int64(virtualMem.Total)
+	} else {
+		utils.ErrorLog("Can't fetch memory statistics when reporting node status", err)
+		memStat.MemUsed = INVALID_STAT
+		memStat.MemTotal = INVALID_STAT
+	}
 
-	swapMemory, _ := mem.SwapMemory()
-	swapUsedMem := swapMemory.Used
-	swapTotalMem := swapMemory.Total
-	memStat := &protos.MemoryStat{
-		MemUsed: int64(virtualUsedMem), MemTotal: int64(virtualTotalMem),
-		SwapMemUsed: int64(swapUsedMem), SwapMemTotal: int64(swapTotalMem),
+	swapMemory, err := mem.SwapMemory()
+	if err == nil {
+		memStat.SwapMemUsed = int64(swapMemory.Used)
+		memStat.SwapMemTotal = int64(swapMemory.Total)
+	} else {
+		utils.ErrorLog("Can't fetch swap memory statistics when reporting node status", err)
+		memStat.SwapMemUsed = INVALID_STAT
+		memStat.SwapMemTotal = INVALID_STAT
 	}
 
 	// Disk usage statistics
 	diskStat := &protos.DiskStat{}
-
 	info, err := utils.GetDiskUsage(setting.Config.StorehousePath)
 	if err == nil {
 		diskStat.RootUsed = int64(info.Used)
 		info.Total = setting.GetDiskSizeSoftCap(info.Total)
 		diskStat.RootTotal = int64(info.Total)
 	} else {
-		utils.ErrorLog("Can't fetch disk usage statistics", err)
-		diskStat.RootUsed = INVALID_DISK_USAGE_STAT
-		diskStat.RootTotal = INVALID_DISK_USAGE_STAT
+		utils.ErrorLog(
+			"Can't fetch disk usage statistics when reporting node status, this might cause score deduction", err)
+		diskStat.RootUsed = INVALID_STAT
+		diskStat.RootTotal = INVALID_STAT
 	}
 
 	// TODO Bandwidth
