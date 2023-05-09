@@ -113,11 +113,8 @@ func RspActivated(ctx context.Context, conn core.WriteCloser) {
 	utils.Log("get RspActivatedPP", target.Result.State, target.Result.Msg)
 
 	setting.State = types.PP_ACTIVE
-	network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_ACTIVATE)
+	network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_ACTIVATED)
 	utils.Log("This PP node is now active")
 
-	// if autorun = true, move to next state and bond pp to sp
-	if setting.IsAuto {
-		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_START_MINING)
-	}
+	ReqStateChange(ctx, conn)
 }

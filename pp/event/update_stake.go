@@ -57,6 +57,8 @@ func RspUpdateStake(ctx context.Context, conn core.WriteCloser) {
 	} else {
 		pp.Log(ctx, "The UpdateStake transaction was broadcast")
 	}
+
+	ReqStateChange(ctx, conn)
 }
 
 // RspUpdatedStake Response when this PP node's stake was successfully updated
