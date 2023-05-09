@@ -25,8 +25,6 @@ import (
 )
 
 var (
-	//// ProgressMap required by API
-	//ProgressMap             = &sync.Map{}
 	mutexHandleSendCostTime = &sync.Mutex{}
 	//// Maps to record uploading stats
 	PacketIdMap       = &sync.Map{} // K: reqId, V: TaskSlice{tkId+sliceNum, up/down}
@@ -38,6 +36,9 @@ var (
 		dataMap: utils.NewAutoCleanUnsafeMap(30 * time.Minute), // make(map[string]int64), // K: tkId+sliceNum, V: TotalCostTime
 		mux:     sync.Mutex{},
 	}
+
+	uploadSliceSpamCheckMap = utils.NewAutoCleanMap(setting.SPAM_THRESHOLD_SLICE_OPERATIONS)
+	backupSliceSpamCheckMap = utils.NewAutoCleanMap(setting.SPAM_THRESHOLD_SLICE_OPERATIONS)
 )
 
 type upSendCostTime struct {
@@ -79,38 +80,42 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	// spam check after verified the sp's response
-	if time.Now().Unix()-target.RspUploadFile.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
-		rsp := &protos.RspUploadFileSlice{
-			Result: &protos.Result{
-				State: protos.ResultState_RES_FAIL,
-				Msg:   "sp's upload file response was expired",
-			},
-		}
-		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
-		return
-	}
-
-	// check if signatures exist
-	if target.P2PAddress == "" || target.RspUploadFile.TimeStamp == 0 {
-		rsp := &protos.RspUploadFileSlice{
-			Result: &protos.Result{
-				State: protos.ResultState_RES_FAIL,
-				Msg:   "missing information for verification",
-			},
-		}
-		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
-		return
-	}
-
-	// setting local variables
-	fileHash := target.RspUploadFile.FileHash
+	rspUploadFile := target.RspUploadFile
 	var slice *protos.SliceHashAddr
-	for _, slice = range target.RspUploadFile.Slices {
+	for _, slice = range rspUploadFile.Slices {
 		if slice.SliceNumber == target.SliceNumber {
 			break
 		}
 	}
+
+	if target.PieceOffset.SliceOffsetStart >= slice.SliceSize || target.PieceOffset.SliceOffsetStart%setting.MAXDATA != 0 {
+		rsp := &protos.RspUploadFileSlice{
+			Result: &protos.Result{
+				State: protos.ResultState_RES_FAIL,
+				Msg:   "the offset of the piece in slice is wrong",
+			},
+		}
+		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
+		return
+	}
+
+	// spam check
+	key := rspUploadFile.TaskId + strconv.FormatInt(int64(target.SliceNumber), 10) + strconv.FormatInt(int64(target.PieceOffset.SliceOffsetStart), 10)
+	if _, ok := uploadSliceSpamCheckMap.Load(key); ok {
+		rsp := &protos.RspUploadFileSlice{
+			Result: &protos.Result{
+				State: protos.ResultState_RES_FAIL,
+				Msg:   "do not spam uploading file slices",
+			},
+		}
+		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
+		return
+	} else {
+		var a any
+		uploadSliceSpamCheckMap.Store(key, a)
+	}
+
+	fileHash := rspUploadFile.FileHash
 	newSlice := slice
 	sliceSizeFromMsg := slice.SliceOffset.SliceOffsetEnd - slice.SliceOffset.SliceOffsetStart
 
@@ -127,7 +132,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 
 	// add up costTime
 	totalCostTime := costTime
-	tkSlice := target.RspUploadFile.TaskId + strconv.FormatUint(target.SliceNumber, 10)
+	tkSlice := rspUploadFile.TaskId + strconv.FormatUint(target.SliceNumber, 10)
 	UpRecvCostTimeMap.mux.Lock()
 	if val, ok := UpRecvCostTimeMap.dataMap.Load(tkSlice); ok {
 		totalCostTime += val.(int64)
@@ -239,16 +244,20 @@ func ReqBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	// spam check after verified the sp's response
-	if time.Now().Unix()-target.RspBackupFile.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
+	// spam check
+	key := target.RspBackupFile.TaskId + strconv.FormatInt(int64(target.SliceNumber), 10)
+	if _, ok := backupSliceSpamCheckMap.Load(key); ok {
 		rsp := &protos.RspUploadFileSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
-				Msg:   "sp's upload file response was expired",
+				Msg:   "do not spam backing up file slices",
 			},
 		}
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspBackupFileSlice)
 		return
+	} else {
+		var a any
+		backupSliceSpamCheckMap.Store(key, a)
 	}
 
 	// setting local variables

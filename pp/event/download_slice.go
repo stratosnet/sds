@@ -42,6 +42,8 @@ var (
 		dataMap: utils.NewAutoCleanUnsafeMap(30 * time.Minute), // make(map[string]int64), // K: tkId+sliceHash, V: costTime in int64
 		mux:     sync.Mutex{},
 	}
+
+	downloadSliceSpamCheckMap = utils.NewAutoCleanMap(setting.SPAM_THRESHOLD_SLICE_OPERATIONS)
 )
 
 type downSendCostTime struct {
@@ -180,59 +182,65 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	if err := VerifyMessage(ctx, header.ReqDownloadSlice, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
 	}
-	if requests.UnmarshalData(ctx, &target) {
-		// SPAM check
-		if time.Now().Unix()-target.RspFileStorageInfo.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
-			rsp := &protos.RspDownloadSlice{
-				Result: &protos.Result{
-					State: protos.ResultState_RES_FAIL,
-					Msg:   "sp's download file response was expired",
-				},
-			}
-			_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
-			return
-		}
-
-		var slice *protos.DownloadSliceInfo
-		for _, slice = range target.RspFileStorageInfo.SliceInfo {
-			if slice.SliceNumber == target.SliceNumber {
-				break
-			}
-		}
-
-		sliceTaskId := slice.TaskId
-		rsp := requests.RspDownloadSliceData(ctx, &target, slice)
-		setWriteHookForRspDownloadSlice(conn)
-		if task.DownloadSliceTaskMap.HashKey(sliceTaskId + slice.SliceStorageInfo.SliceHash) {
-			rsp.Data = nil
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "duplicate request for the same slice in the same download task"
-			_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
-			return
-		}
-
-		if !verifyDownloadSliceHash(&target, slice, rsp) {
-			rsp.Data = nil
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = "signature validation failed"
-			_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
-			return
-		}
-
-		if rsp.SliceSize == 0 {
-			utils.DebugLog("cannot find slice, sliceHash: ", slice.SliceStorageInfo.SliceHash)
-			rsp.Result.State = protos.ResultState_RES_FAIL
-			rsp.Result.Msg = LOSE_SLICE_MSG
-			_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
-			return
-		}
-
-		splitSendDownloadSliceData(ctx, rsp, conn)
-
-		//SendReportDownloadResult(ctx, rsp, end.Sub(start).Milliseconds(), true)
-
-		//task.DownloadSliceTaskMap.Store(target.TaskId+target.SliceInfo.SliceHash, true)
+	if !requests.UnmarshalData(ctx, &target) {
+		return
 	}
+
+	// spam check
+	key := target.RspFileStorageInfo.TaskId + strconv.FormatInt(int64(target.SliceNumber), 10)
+	if _, ok := downloadSliceSpamCheckMap.Load(key); ok {
+		rsp := &protos.RspUploadFileSlice{
+			Result: &protos.Result{
+				State: protos.ResultState_RES_FAIL,
+				Msg:   "do not spam downloading file slices",
+			},
+		}
+		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
+		return
+	} else {
+		var a any
+		downloadSliceSpamCheckMap.Store(key, a)
+	}
+
+	var slice *protos.DownloadSliceInfo
+	for _, slice = range target.RspFileStorageInfo.SliceInfo {
+		if slice.SliceNumber == target.SliceNumber {
+			break
+		}
+	}
+
+	sliceTaskId := slice.TaskId
+	rsp := requests.RspDownloadSliceData(ctx, &target, slice)
+	setWriteHookForRspDownloadSlice(conn)
+	if task.DownloadSliceTaskMap.HashKey(sliceTaskId + slice.SliceStorageInfo.SliceHash) {
+		rsp.Data = nil
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "duplicate request for the same slice in the same download task"
+		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
+		return
+	}
+
+	if !verifyDownloadSliceHash(&target, slice, rsp) {
+		rsp.Data = nil
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = "signature validation failed"
+		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
+		return
+	}
+
+	if rsp.SliceSize == 0 {
+		utils.DebugLog("cannot find slice, sliceHash: ", slice.SliceStorageInfo.SliceHash)
+		rsp.Result.State = protos.ResultState_RES_FAIL
+		rsp.Result.Msg = LOSE_SLICE_MSG
+		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
+		return
+	}
+
+	splitSendDownloadSliceData(ctx, rsp, conn)
+
+	//SendReportDownloadResult(ctx, rsp, end.Sub(start).Milliseconds(), true)
+
+	//task.DownloadSliceTaskMap.Store(target.TaskId+target.SliceInfo.SliceHash, true)
 }
 
 func splitSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlice, conn core.WriteCloser) {
@@ -511,7 +519,7 @@ func SendReqDownloadSlice(ctx context.Context, fileHash string, sliceInfo *proto
 
 	networkAddress := sliceInfo.StoragePpInfo.NetworkAddress
 	key := "download#" + fileHash + sliceInfo.StoragePpInfo.P2PAddress + fileReqId
-	metrics.UploadPerformanceLogNow(fileHash + ":SND_REQ_SLICE_DATA:" + strconv.FormatInt(int64(sliceInfo.SliceOffset.SliceOffsetStart+(req.SliceNumber-1)*33554432), 10) + ":" + networkAddress)
+	metrics.UploadPerformanceLogNow(fileHash + ":SND_REQ_SLICE_DATA:" + strconv.FormatInt(int64(sliceInfo.SliceOffset.SliceOffsetStart+(req.SliceNumber-1)*setting.MAX_SLICE_SIZE), 10) + ":" + networkAddress)
 	err := p2pserver.GetP2pServer(ctx).SendMessageByCachedConn(ctx, key, networkAddress, req, header.ReqDownloadSlice, nil)
 	if err != nil {
 		pp.ErrorLogf(ctx, "Failed to create connection with %v: %v", networkAddress, utils.FormatError(err))

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/alecthomas/units"
 	"github.com/pelletier/go-toml"
@@ -46,8 +47,10 @@ const (
 
 	DEFAULT_MAX_CONNECTION = 1000
 
-	DEFAULT_MIN_UNSUSPEND_STAKE    = "1stos" // 1 stos
-	SPAM_THRESHOLD_SP_SIGN_LATENCY = 60      //in second
+	DEFAULT_MIN_UNSUSPEND_STAKE = "1stos" // 1 stos
+
+	SPAM_THRESHOLD_SP_SIGN_LATENCY  = 60 // in second
+	SPAM_THRESHOLD_SLICE_OPERATIONS = 6 * time.Hour
 
 	SOFT_RAM_LIMIT_TIER_0    = int64(3 * units.GiB)
 	SOFT_RAM_LIMIT_TIER_1    = int64(7 * units.GiB)
