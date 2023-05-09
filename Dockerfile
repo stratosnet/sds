@@ -1,4 +1,4 @@
-FROM golang:1.18-alpine AS build-env
+FROM golang:1.19-alpine AS build-env
 
 # Set up dependencies
 ENV PACKAGES curl make git libc-dev bash gcc linux-headers eudev-dev python3
@@ -38,4 +38,4 @@ COPY --from=build-env /go/bin/relayd /usr/bin/relayd
 COPY entrypoint.sh /usr/bin/entrypoint.sh
 RUN chmod +x /usr/bin/entrypoint.sh
 ENTRYPOINT ["/usr/bin/entrypoint.sh"]
-CMD ["ppd"]
+CMD ["ppd start"]
