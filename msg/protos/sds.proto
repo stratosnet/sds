@@ -458,6 +458,16 @@ message RspUnbondingSP {
   Result result = 1;
 }
 
+message ReqWithdrawnStakeSP {
+  string p2p_address = 1;
+  string unbonding_mature_time = 2;
+  string tx_hash = 3;
+}
+
+message RspWithdrawnStakeSP {
+  Result result = 1;
+}
+
 message ReqDeactivatedSP {
   string p2p_address = 1;
 }
