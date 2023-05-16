@@ -3,6 +3,7 @@ package event
 // Author j
 import (
 	"context"
+	"strconv"
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
@@ -16,6 +17,10 @@ import (
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 	"github.com/tendermint/tendermint/types/time"
+)
+
+var (
+	transferSliceSpamCheckMap = utils.NewAutoCleanMap(setting.SPAM_THRESHOLD_SLICE_OPERATIONS)
 )
 
 // ReqFileSliceBackupNotice An SP node wants this PP node to fetch the specified slice from the PP node who stores it.
@@ -78,10 +83,21 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	setWriteHookForRspTransferSlice(conn)
 
 	reqNotice := target.ReqFileSliceBackupNotice
-	// SPAM check
-	if time.Now().Unix()-reqNotice.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
-		utils.ErrorLog(ctx, "the slice backup request from sp was expired")
+
+	// spam check
+	key := reqNotice.TaskId + strconv.FormatInt(int64(reqNotice.SliceNumber), 10)
+	if _, ok := transferSliceSpamCheckMap.Load(key); ok {
+		rsp := &protos.RspUploadFileSlice{
+			Result: &protos.Result{
+				State: protos.ResultState_RES_FAIL,
+				Msg:   "do not spam transferring file slices",
+			},
+		}
+		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspTransferDownload)
 		return
+	} else {
+		var a any
+		transferSliceSpamCheckMap.Store(key, a)
 	}
 
 	p2pserver.GetP2pServer(ctx).UpdatePP(ctx, &types.PeerInfo{
