@@ -31,7 +31,7 @@ var (
 )
 
 // RequestUploadFile request to SP for upload file
-func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ http.ResponseWriter) {
+func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, desiredTier uint32, allowHigherTier bool) {
 	pp.DebugLog(ctx, "______________path", path)
 	if !setting.CheckLogin() {
 		return
@@ -59,13 +59,13 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, _ htt
 		utils.DebugLog("new path:", target)
 		path = target
 	}
-	p := requests.RequestUploadFileData(ctx, path, "", false, false, isEncrypted)
+	p := requests.RequestUploadFileData(ctx, path, "", false, false, isEncrypted, desiredTier, allowHigherTier)
 	if err = ReqGetWalletOzForUpload(ctx, setting.WalletAddress, task.LOCAL_REQID, p); err != nil {
 		pp.ErrorLog(ctx, err)
 	}
 }
 
-func RequestUploadStream(ctx context.Context, path string) {
+func RequestUploadStream(ctx context.Context, path string, desiredTier uint32, allowHigherTier bool) {
 	pp.DebugLog(ctx, "______________path", path)
 	if !setting.CheckLogin() {
 		return
@@ -76,7 +76,7 @@ func RequestUploadStream(ctx context.Context, path string) {
 		return
 	}
 	if isFile {
-		p := requests.RequestUploadFileData(ctx, path, "", false, true, false)
+		p := requests.RequestUploadFileData(ctx, path, "", false, true, false, desiredTier, allowHigherTier)
 		if err = ReqGetWalletOzForUpload(ctx, setting.WalletAddress, task.LOCAL_REQID, p); err != nil {
 			pp.ErrorLog(ctx, err)
 		}

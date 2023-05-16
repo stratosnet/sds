@@ -52,7 +52,6 @@ func reqActivateData(ctx context.Context, amount types.Coin, txFee types.TxFee) 
 	return req, nil
 }
 
-
 func reqUpdateStakeData(ctx context.Context, stakeDelta types.Coin, txFee types.TxFee) (*protos.ReqUpdateStakePP, error) {
 	// Create and sign transaction to update stake for existing resource node
 	networkAddr := ed25519.PubKeyBytesToAddress(p2pserver.GetP2pServer(ctx).GetP2PPublicKey())

@@ -22,12 +22,14 @@ const (
 
 // upload: request upload file
 type ParamReqUploadFile struct {
-	FileName     string `json:"filename"`
-	FileSize     int    `json:"filesize"`
-	FileHash     string `json:"filehash"`
-	WalletAddr   string `json:"walletaddr"`
-	WalletPubkey string `json:"walletpubkey"`
-	Signature    string `json:"signature"`
+	FileName        string `json:"filename"`
+	FileSize        int    `json:"filesize"`
+	FileHash        string `json:"filehash"`
+	WalletAddr      string `json:"walletaddr"`
+	WalletPubkey    string `json:"walletpubkey"`
+	Signature       string `json:"signature"`
+	DesiredTier     uint32 `json:"desired_tier"`
+	AllowHigherTier bool   `json:"allow_higher_tier"`
 }
 
 // upload: upload file data
