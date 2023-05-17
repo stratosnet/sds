@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+//for future protoc-gen-go requirement
+option go_package = "github.com/stratosnet/sds/msg/protos";
+
+package protos;
+// j
+import "sds_comm.proto";
+
+// upload -----------------------------------
+
+
+
+message Uploaded {
+  string reporter_address = 1;
+  string uploader_address = 2;
+  string file_hash = 3;
+  string tx_hash = 4;
+}
+
+message ReqActivatedPP {
+  string p2p_address = 1;
+  string p2p_pubkey = 2;
+  string ozone_limit_changes = 3; // positive
+  string tx_hash = 4;
+  string initial_stake = 5;
+}
+
+message ReqActivatedSP {
+  string p2p_address = 1;
+  string ozone_limit_changes = 2; // positive
+  string tx_hash = 3;
+}
+
+message RspActivatedPP {
+  Result result = 1;
+}
+
+message ReqUpdatedStakePP {
+  string p2p_address = 1;
+  string ozone_limit_changes = 2;
+  string incr_stake = 3; // true/false
+  string tx_hash = 4;
+  string stake_delta = 5;
+  string current_stake = 6;
+  string available_token_before = 7;
+  string available_token_after = 8;
+}
+
+message ReqUpdatedStakeSP {
+  string p2p_address = 1;
+  string ozone_limit_changes = 2;
+  string incr_stake = 3; // true/false
+  string tx_hash = 4;
+}
+
+message RspUpdatedStakePP {
+  Result result = 1;
+  string stake_balance = 2;
+  string node_tier = 3;
+  string weight_score = 4;
+}
+
+message RspPPRegisteredToSP {
+  Result result = 1;
+}
+
+message ReqDeactivatedPP {
+  string p2p_address = 1;
+  string tx_hash = 2;
+}
+
+message RspDeactivatedPP {
+  Result result = 1;
+}
+
+message ReqWithdrawnStakeSP {
+  string p2p_address = 1;
+  string unbonding_mature_time = 2;
+  string tx_hash = 3;
+}
+
+message RspWithdrawnStakeSP {
+  Result result = 1;
+}
+
+message ReqDeactivatedSP {
+  string p2p_address = 1;
+}
+
+message RspDeactivatedSP {
+  Result result = 1;
+}
+
+message ReqPrepaid {
+  string wallet_address = 1;
+  string purchased_uoz = 2;
+  string tx_hash = 3;
+}
+
+message RspPrepaid {
+  Result result = 1;
+}
+
+message RelayMessage {
+  string type = 1;
+  bytes data = 2;
+}

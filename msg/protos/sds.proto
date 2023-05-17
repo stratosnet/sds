@@ -178,14 +178,6 @@ message RspReportUploadSliceResult {
   SliceHashAddr slice = 2;
 }
 
-message Uploaded {
-  string reporter_address = 1;
-  string uploader_address = 2;
-  string file_hash = 3;
-  string tx_hash = 4;
-}
-
-
 message ReqFindMyFileList {
   string p2p_address = 1;
   string wallet_address = 2;
@@ -358,24 +350,6 @@ message RspActivatePP {
   bytes  tx = 3;
 }
 
-message ReqActivatedPP {
-  string p2p_address = 1;
-  string p2p_pubkey = 2;
-  string ozone_limit_changes = 3; // positive
-  string tx_hash = 4;
-  string initial_stake = 5;
-}
-
-message ReqActivatedSP {
-  string p2p_address = 1;
-  string ozone_limit_changes = 2; // positive
-  string tx_hash = 3;
-}
-
-message RspActivatedPP {
-  Result result = 1;
-}
-
 message ReqUpdateStakePP {
   bytes tx = 1;
   string p2p_address = 2;
@@ -387,31 +361,6 @@ message RspUpdateStakePP {
   bytes  tx = 3;
 }
 
-message ReqUpdatedStakePP {
-  string p2p_address = 1;
-  string ozone_limit_changes = 2;
-  string incr_stake = 3; // true/false
-  string tx_hash = 4;
-  string stake_delta = 5;
-  string current_stake = 6;
-  string available_token_before = 7;
-  string available_token_after = 8;
-}
-
-message ReqUpdatedStakeSP {
-  string p2p_address = 1;
-  string ozone_limit_changes = 2;
-  string incr_stake = 3; // true/false
-  string tx_hash = 4;
-}
-
-message RspUpdatedStakePP {
-  Result result = 1;
-  string stake_balance = 2;
-  string node_tier = 3;
-  string weight_score = 4;
-}
-
 message ReqDeactivatePP {
   bytes tx = 1;
   string p2p_address = 2;
@@ -421,10 +370,6 @@ message RspDeactivatePP {
   Result result = 1;
   uint32 activation_state = 2;
   bytes  tx = 3;
-}
-
-message RspPPRegisteredToSP {
-  Result result = 1;
 }
 
 message ReqUnbondingPP {
@@ -439,15 +384,6 @@ message RspUnbondingPP {
   Result result = 1;
 }
 
-message ReqDeactivatedPP {
-  string p2p_address = 1;
-  string tx_hash = 2;
-}
-
-message RspDeactivatedPP {
-  Result result = 1;
-}
-
 message ReqUnbondingSP {
   string p2p_address = 1;
   string ozone_limit_changes = 2; // negative
@@ -455,24 +391,6 @@ message ReqUnbondingSP {
 }
 
 message RspUnbondingSP {
-  Result result = 1;
-}
-
-message ReqWithdrawnStakeSP {
-  string p2p_address = 1;
-  string unbonding_mature_time = 2;
-  string tx_hash = 3;
-}
-
-message RspWithdrawnStakeSP {
-  Result result = 1;
-}
-
-message ReqDeactivatedSP {
-  string p2p_address = 1;
-}
-
-message RspDeactivatedSP {
   Result result = 1;
 }
 
@@ -486,17 +404,6 @@ message RspPrepay {
   Result result = 1;
   bytes  tx = 2;
 }
-
-message ReqPrepaid {
-  string wallet_address = 1;
-  string purchased_uoz = 2;
-  string tx_hash = 3;
-}
-
-message RspPrepaid {
-  Result result = 1;
-}
-
 
 message ReqDeleteFile {
   string p2p_address = 1;
@@ -862,11 +769,6 @@ message RspGetShareFile {
   string          sequence_number = 5;
 }
 
-message RelayMessage {
-  string type = 1;
-  bytes data = 2;
-}
-
 message ReqTransferBLSSignature {
   string epoch = 1;
   bytes  pub_key = 2;
@@ -929,22 +831,10 @@ message RspGetWalletOz{
   Result result = 4;
 }
 
-enum PPState {
-  OFFLINE = 0;
-  ONLINE = 1;
-  SUSPEND = 2;
-  MAINTENANCE = 3;
-}
-
 message RspBadVersion{
   int32  version = 1;
   int32  minimum_version = 2;
   string command = 3;
-}
-
-enum SpMaintenanceType {
-  CONSENSUS = 0;
-  OTHER = 1;
 }
 
 message RspSpUnderMaintenance{

@@ -156,3 +156,15 @@ message BandwidthStat {
     int64 used = 1;
     int64 total = 2;
 }
+
+enum PPState {
+    OFFLINE = 0;
+    ONLINE = 1;
+    SUSPEND = 2;
+    MAINTENANCE = 3;
+}
+
+enum SpMaintenanceType {
+    CONSENSUS = 0;
+    OTHER = 1;
+}
