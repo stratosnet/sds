@@ -400,7 +400,6 @@ func MetaNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(registertypes.EventTypeMetaNodeRegistrationVote,
 			registertypes.AttributeKeyCandidateNetworkAddress,
 			registertypes.AttributeKeyCandidateStatus,
-			registertypes.AttributeKeyIsPassingVote,
 		)
 
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
@@ -417,17 +416,6 @@ func MetaNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
 
 			if event[GetEventAttribute(registertypes.EventTypeMetaNodeRegistrationVote, registertypes.AttributeKeyCandidateStatus)] != stakingTypes.BondStatusBonded {
 				utils.DebugLogf("Indexing node vote handler: The candidate [%v] needs more votes before being considered active", candidateNetworkAddr)
-				continue
-			}
-
-			isPassingVote, err := strconv.ParseBool(event[GetEventAttribute(registertypes.EventTypeMetaNodeRegistrationVote, registertypes.AttributeKeyIsPassingVote)])
-			if err != nil {
-				utils.DebugLog("Indexing node vote handler: Invalid isPassingVote boolean in the meta_node_reg_vote message from stratos-chain")
-				continue
-			}
-
-			if !isPassingVote {
-				// skip if not passing vote
 				continue
 			}
 
