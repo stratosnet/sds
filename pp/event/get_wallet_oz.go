@@ -47,6 +47,7 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspGetWalletOz
 	if err := VerifyMessage(ctx, header.RspGetWalletOz, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		pp.DebugLog(ctx, "Cannot unmarshal ozone balance data")
