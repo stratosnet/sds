@@ -72,14 +72,14 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspPrepaid, RspPrepaid, SpAddressVerifier)
 
 	// pp--(*req*)--pp--(*rsp*)--pp
-	registerEvent(header.ReqUploadFileSlice, ReqUploadFileSlice, RspUploadFileVerifier)
+	registerEvent(header.ReqUploadFileSlice, ReqUploadFileSlice, RspUploadFileWithNoReqIdVerifier)
 	registerEvent(header.RspUploadFileSlice, RspUploadFileSlice, PpRspVerifier)
-	registerEvent(header.ReqBackupFileSlice, ReqBackupFileSlice, RspBackupStatusVerifier)
+	registerEvent(header.ReqBackupFileSlice, ReqBackupFileSlice, RspBackupStatusWithNoReqIdVerifier)
 	registerEvent(header.RspBackupFileSlice, RspBackupFileSlice, PpRspVerifier)
-	registerEvent(header.ReqDownloadSlice, ReqDownloadSlice, RspFileStorageInfoVerifier)
+	registerEvent(header.ReqDownloadSlice, ReqDownloadSlice, RspFileStorageInfoWithNoReqIdVerifier)
 	registerEvent(header.RspDownloadSlice, RspDownloadSlice, PpRspVerifier)
 	registerEvent(header.ReqTransferDownload, ReqTransferDownload, ReqFileSliceBackupNoticeVerifier)
-	registerEvent(header.RspTransferDownload, RspTransferDownload, PpRspVerifier)
+	registerEvent(header.RspTransferDownload, RspTransferDownload, nil)
 	registerEvent(header.ReqLatencyCheck, ReqLatencyCheckToPp, nil) // shared with pp-sp-pp version
 
 	// pp--(*msg*)--pp

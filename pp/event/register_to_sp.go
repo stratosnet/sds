@@ -22,6 +22,7 @@ func ReqRegister(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqRegister
 	if err := VerifyMessage(ctx, header.ReqRegister, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 
 	if requests.UnmarshalData(ctx, &target) {
@@ -66,6 +67,7 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspRegister
 	if err := VerifyMessage(ctx, header.RspRegister, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return

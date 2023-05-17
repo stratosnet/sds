@@ -34,6 +34,7 @@ func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeactivatePP
 	if err := VerifyMessage(ctx, header.RspDeactivatePP, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 
 	success := requests.UnmarshalData(ctx, &target)

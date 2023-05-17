@@ -17,6 +17,7 @@ func RspSpUnderMaintenance(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspSpUnderMaintenance
 	if err := VerifyMessage(ctx, header.RspSpUnderMaintenance, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return

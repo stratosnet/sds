@@ -181,6 +181,7 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqDownloadSlice
 	if err := VerifyMessage(ctx, header.ReqDownloadSlice, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -305,6 +306,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDownloadSlice
 	if err := VerifyMessage(ctx, header.RspDownloadSlice, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -535,6 +537,7 @@ func RspReportDownloadResult(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspReportDownloadResult
 	if err := VerifyMessage(ctx, header.RspReportDownloadResult, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if requests.UnmarshalData(ctx, &target) {
 		pp.DebugLog(ctx, "result", target.Result.State, target.Result.Msg)
