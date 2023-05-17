@@ -22,6 +22,7 @@ func ReqGetHDInfo(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqGetHDInfo
 	if err := VerifyMessage(ctx, header.ReqGetHDInfo, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if requests.UnmarshalData(ctx, &target) {
 

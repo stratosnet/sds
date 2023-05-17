@@ -16,6 +16,7 @@ func RspReportNodeStatus(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspReportNodeStatus
 	if err := VerifyMessage(ctx, header.RspReportNodeStatus, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
