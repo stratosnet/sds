@@ -94,7 +94,8 @@ func (api *terminalCmd) Start(ctx context.Context, param []string) (CmdResult, e
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 
 	switch state := network.GetPeer(ctx).GetStateFromFsm(); state.Id {
-	case network.STATE_NOT_MINING:
+	case network.STATE_NOT_REGISTERED:
+	case network.STATE_SUSPENDED:
 	case network.STATE_NOT_ACTIVATED, network.STATE_INIT, network.STATE_NOT_CREATED:
 		return CmdResult{Msg: ""}, errors.New("register and activate the node before start mining")
 	default:

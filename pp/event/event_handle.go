@@ -40,6 +40,7 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspRegister, RspRegister, SpRspVerifier)
 	registerEvent(header.RspActivatePP, RspActivate, SpRspVerifier)
 	registerEvent(header.RspUpdateStakePP, RspUpdateStake, SpRspVerifier)
+	registerEvent(header.RspStateChangePP, RspStateChange, SpRspVerifier)
 	registerEvent(header.RspDeactivatePP, RspDeactivate, SpRspVerifier)
 	registerEvent(header.RspUnbondingPP, RspUnbondingPP, SpRspVerifier)
 	registerEvent(header.RspPrepay, RspPrepay, SpRspVerifier)

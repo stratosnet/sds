@@ -58,10 +58,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	formatRspGetPPStatus(ctx, &target)
 
 	if target.IsActive == ppTypes.PP_ACTIVE {
-		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_ACTIVATE)
-		if setting.IsAuto {
-			network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATUS_ONLINE)
-		}
+		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_ACTIVATED)
 	} else {
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATUS_INACTIVE)
 	}
@@ -69,8 +66,8 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	if target.InitPpList {
 		network.GetPeer(ctx).InitPPList(ctx)
 	} else {
-		if target.State == int32(protos.PPState_ONLINE) {
-			network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATUS_ONLINE)
+		if target.State == int32(protos.PPState_SUSPEND) {
+			network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATUS_SUSPEND)
 		}
 	}
 }
