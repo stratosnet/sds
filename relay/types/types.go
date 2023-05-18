@@ -64,3 +64,8 @@ type UpdatedEffectiveStakePPReq struct {
 	PPList []UpdatedEffectiveStakePP `json:"pp_list"`
 	TxHash string                    `json:"tx_hash"`
 }
+
+type WithdrawnStakeSPReq struct {
+	SPList []*protos.ReqWithdrawnStakeSP `json:"sp_list"`
+	TxHash string                        `json:"tx_hash"`
+}
