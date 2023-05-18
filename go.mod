@@ -47,11 +47,7 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.6.0
-<<<<<<< HEAD
-	github.com/stratosnet/stratos-chain v0.9.1-0.20230502165409-9d32e8baad0f
-=======
-	github.com/stratosnet/stratos-chain v0.9.1-0.20230517153155-2a8c7ddc2c4f
->>>>>>> 7ca69d1 (fix/qb1840: vote pool opti (#405))
+	github.com/stratosnet/stratos-chain v0.9.1-0.20230516154126-a190fc082e73
 	github.com/tendermint/tendermint v0.34.25-0.20221221220620-936221e0a8d9
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	golang.org/x/crypto v0.4.0

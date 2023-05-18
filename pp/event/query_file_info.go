@@ -232,17 +232,6 @@ func GetSliceInfoBySliceNumber(fInfo *protos.RspFileStorageInfo, sliceNumber uin
 	return nil
 }
 
-// ReqFileStorageInfo  P-PP , PP-SP
-func ReqFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
-	var target protos.ReqFileStorageInfo
-	if err := VerifyMessage(ctx, header.ReqFileStorageInfo, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
-		return
-	}
-	utils.Log("pp get ReqFileStorageInfo directly transfer to SP")
-	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
-}
-
 // RspFileStorageInfo SP-PP , PP-P
 func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	// PP check whether itself is the storage PP, if not transfer

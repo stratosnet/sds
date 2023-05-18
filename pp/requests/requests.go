@@ -634,21 +634,6 @@ func RspGetHDInfoData(p2pAddress string) *protos.RspGetHDInfo {
 	return rsp
 }
 
-func RspDeleteSliceData(sliceHash, msg, p2pAddress string, result bool) *protos.RspDeleteSlice {
-	state := protos.ResultState_RES_SUCCESS
-	if !result {
-		state = protos.ResultState_RES_FAIL
-	}
-	return &protos.RspDeleteSlice{
-		P2PAddress: p2pAddress,
-		SliceHash:  sliceHash,
-		Result: &protos.Result{
-			State: state,
-			Msg:   msg,
-		},
-	}
-}
-
 func ReqShareLinkData(walletAddr, p2pAddress string, page uint64) *protos.ReqShareLink {
 	return &protos.ReqShareLink{
 		P2PAddress:    p2pAddress,

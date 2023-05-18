@@ -23,6 +23,7 @@ func RspStateChange(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspStateChangePP
 	if err := VerifyMessage(ctx, header.RspStateChangePP, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if setting.IsAuto && target.UpdateState == uint32(protos.PPState_OFFLINE) {
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATE_OFFLINE)

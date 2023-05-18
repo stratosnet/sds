@@ -369,30 +369,6 @@ message RspStateChangePP {
   uint32 update_state = 2;
 }
 
-message ReqUpdatedStakePP {
-  string p2p_address = 1;
-  string ozone_limit_changes = 2;
-  string tx_hash = 3;
-  string stake_delta = 4;
-  string current_stake = 5;
-  string available_token_before = 6;
-  string available_token_after = 7;
-}
-
-message ReqUpdatedStakeSP {
-  string p2p_address = 1;
-  string ozone_limit_changes = 2;
-  string incr_stake = 3; // true/false
-  string tx_hash = 4;
-}
-
-message RspUpdatedStakePP {
-  Result result = 1;
-  string stake_balance = 2;
-  string node_tier = 3;
-  string weight_score = 4;
-}
-
 message ReqDeactivatePP {
   bytes tx = 1;
   string p2p_address = 2;
@@ -602,19 +578,6 @@ message RspGetHDInfo {
   int64 disk_free = 2 ;
   string p2p_address = 3;
   string wallet_address = 4;
-}
-
-// sp
-message ReqDeleteSlice {
-  string p2p_address = 1;
-  string slice_hash = 2; //
-}
-
-message RspDeleteSlice {
-  string p2p_address = 1;
-  string slice_hash = 2;
-  string file_hash = 3;
-  Result result = 4;
 }
 
 message ReqLatencyCheck {
