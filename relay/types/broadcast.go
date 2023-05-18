@@ -72,6 +72,14 @@ func (u UnsignedMsgBytes) FromBytes() (UnsignedMsg, error) {
 		msg := registertypes.MsgUpdateMetaNode{}
 		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = &msg
+	case "update_meta_node_stake":
+		msg := registertypes.MsgUpdateMetaNodeStake{}
+		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
+		unsignedMsg.Msg = &msg
+	case "withdraw_meta_node_registration_stake":
+		msg := registertypes.MsgWithdrawMetaNodeRegistrationStake{}
+		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
+		unsignedMsg.Msg = &msg
 	case "slashing_resource_node":
 		msg := pottypes.MsgSlashingResourceNode{}
 		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)

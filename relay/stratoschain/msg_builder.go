@@ -181,6 +181,13 @@ func BuildMetaNodeRegistrationVoteMsg(candidateNetworkAddress, candidateOwnerAdd
 	)
 }
 
+func BuildWithdrawMetaNodeRegistrationStakeMsg(networkAddress, ownerAddress utiltypes.Address) sdktypes.Msg {
+	return registertypes.NewMsgWithdrawMetaNodeRegistrationStake(
+		networkAddress[:],
+		ownerAddress[:],
+	)
+}
+
 // Stratos-chain 'sds' module
 func BuildFileUploadMsg(fileHash string, from, reporterAddress, uploaderAddress []byte) sdktypes.Msg {
 	walletPrefix := types.GetConfig().GetBech32AccountAddrPrefix()

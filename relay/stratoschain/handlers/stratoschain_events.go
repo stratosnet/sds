@@ -43,6 +43,7 @@ func init() {
 	Handlers[MSG_TYPE_CREATE_META_NODE] = CreateMetaNodeMsgHandler()
 	Handlers[MSG_TYPE_UPDATE_META_NODE_STAKE] = UpdateMetaNodeStakeMsgHandler()
 	Handlers[MSG_TYPE_REMOVE_META_NODE] = UnbondingMetaNodeMsgHandler()
+	Handlers[MSG_TYPE_WITHDRAWN_META_NODE_REG_STAKE] = WithdrawnStakeHandler()
 	//Handlers["complete_unbonding_meta_node"] = CompleteUnbondingMetaNodeMsgHandler()
 	Handlers[MSG_TYPE_META_NODE_REG_VOTE] = MetaNodeVoteMsgHandler()
 	Handlers[MSG_TYPE_PREPAY] = PrepayMsgHandler()
@@ -338,6 +339,55 @@ func UnbondingMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
 		utils.Logf("%+v", result)
 	}
 }
+
+func WithdrawnStakeHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
+		requiredAttributes := GetEventAttributes(registertypes.EventTypeWithdrawMetaNodeRegistrationStake,
+			registertypes.AttributeKeyNetworkAddress,
+			registertypes.AttributeKeyUnbondingMatureTime,
+		)
+
+		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
+		key := getCacheKey(requiredAttributes, result)
+		if _, ok := cache.Load(key); ok {
+			utils.DebugLogf("Event withdraw_meta_node_reg_stake was already handled for tx [%v]. Ignoring...", txHash)
+			return
+		}
+		cache.Store(key, true)
+
+		req := &relayTypes.WithdrawnStakeSPReq{}
+		for _, event := range processedEvents {
+			networkAddr := event[GetEventAttribute(registertypes.EventTypeWithdrawMetaNodeRegistrationStake, registertypes.AttributeKeyNetworkAddress)]
+			unbondingMatureTime := event[GetEventAttribute(registertypes.EventTypeWithdrawMetaNodeRegistrationStake, registertypes.AttributeKeyUnbondingMatureTime)]
+
+			if len(networkAddr) == 0 || len(unbondingMatureTime) == 0 {
+				continue
+			}
+
+			req.SPList = append(req.SPList, &protos.ReqWithdrawnStakeSP{
+				P2PAddress:          networkAddr,
+				UnbondingMatureTime: unbondingMatureTime,
+				TxHash:              txHash,
+			})
+		}
+
+		if len(req.SPList) != initialEventCount {
+			utils.ErrorLogf("Indexing node vote message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+				len(req.SPList), initialEventCount-len(processedEvents), len(processedEvents)-len(req.SPList))
+		}
+		if len(req.SPList) == 0 {
+			return
+		}
+
+		err := postToSP("/chain/withdrawn", req)
+		if err != nil {
+			utils.ErrorLog(err)
+			return
+		}
+	}
+
+}
+
 func CompleteUnbondingMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		// TODO
@@ -365,7 +415,7 @@ func MetaNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
 			candidateNetworkAddr := event[GetEventAttribute(registertypes.EventTypeMetaNodeRegistrationVote, registertypes.AttributeKeyCandidateNetworkAddress)]
 
 			if event[GetEventAttribute(registertypes.EventTypeMetaNodeRegistrationVote, registertypes.AttributeKeyCandidateStatus)] != stakingTypes.BondStatusBonded {
-				utils.ErrorLogf("Indexing node vote handler: The candidate [%v] needs more votes before being considered active", candidateNetworkAddr)
+				utils.DebugLogf("Indexing node vote handler: The candidate [%v] needs more votes before being considered active", candidateNetworkAddr)
 				continue
 			}
 
