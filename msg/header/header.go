@@ -84,9 +84,6 @@ const (
 	ReqGetHDInfo = "ReqHDI"
 	RspGetHDInfo = "RspHDI"
 
-	ReqDeleteSlice = "ReqDLS"
-	RspDeleteSlice = "RspDLS"
-
 	//  download
 	ReqFileStorageInfo      = "ReqQDLF"
 	RspFileStorageInfo      = "RspQDLF"

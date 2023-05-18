@@ -97,18 +97,6 @@ func RegisterAllEventHandlers() {
 	// to be used
 	registerEvent(header.ReqGetHDInfo, ReqGetHDInfo, nil)
 	registerEvent(header.RspGetHDInfo, RspGetHDInfo, nil)
-	registerEvent(header.ReqDeleteSlice, ReqDeleteSlice, nil)
-	registerEvent(header.RspDeleteSlice, RspDeleteSlice, nil)
-
-	// re-route
-	registerEvent(header.ReqDeleteFile, ReqDeleteFile, nil)
-	registerEvent(header.ReqFindMyFileList, ReqFindMyFileList, nil)
-	registerEvent(header.ReqFileStorageInfo, ReqFileStorageInfo, nil)
-	registerEvent(header.ReqRegister, ReqRegister, nil)
-	registerEvent(header.ReqShareLink, ReqShareLink, nil)
-	registerEvent(header.ReqShareFile, ReqShareFile, nil)
-	registerEvent(header.ReqDeleteShare, ReqDeleteShare, nil)
-	registerEvent(header.ReqGetShareFile, ReqGetShareFile, nil)
 
 	core.RegisterTimeoutHandler(header.ReqDownloadSlice, &DownloadTimeoutHandler{})
 }

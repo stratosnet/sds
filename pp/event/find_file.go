@@ -22,16 +22,6 @@ func FindFileList(ctx context.Context, fileName string, walletAddr string, pageI
 	}
 }
 
-func ReqFindMyFileList(ctx context.Context, conn core.WriteCloser) {
-	var target protos.ReqFindMyFileList
-	if err := VerifyMessage(ctx, header.ReqFindMyFileList, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
-		return
-	}
-	utils.DebugLog("+++++++++++++++++++++++++++++++++++++++++++++++++++")
-	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
-}
-
 func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	pp.DebugLog(ctx, "get RspFindMyFileList")
 	var target protos.RspFindMyFileList

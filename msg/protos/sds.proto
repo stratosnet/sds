@@ -572,19 +572,6 @@ message RspGetHDInfo {
   string wallet_address = 4;
 }
 
-// sp
-message ReqDeleteSlice {
-  string p2p_address = 1;
-  string slice_hash = 2; //
-}
-
-message RspDeleteSlice {
-  string p2p_address = 1;
-  string slice_hash = 2;
-  string file_hash = 3;
-  Result result = 4;
-}
-
 message ReqLatencyCheck {
   HeartbeatType hb_type = 1;
   string p2p_address_pp = 2;
