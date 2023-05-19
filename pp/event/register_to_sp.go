@@ -13,52 +13,8 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 )
-
-// ReqRegister if get this, must be PP
-func ReqRegister(ctx context.Context, conn core.WriteCloser) {
-	var target protos.ReqRegister
-	if err := VerifyMessage(ctx, header.ReqRegister, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
-	}
-
-	if requests.UnmarshalData(ctx, &target) {
-		p2pserver.GetP2pServer(ctx).UpdatePP(ctx, &types.PeerInfo{
-			NetworkAddress: target.Address.NetworkAddress,
-			P2pAddress:     target.Address.P2PAddress,
-			RestAddress:    target.Address.RestAddress,
-			WalletAddress:  target.Address.WalletAddress,
-			NetId:          core.NetIDFromContext(ctx),
-			Status:         types.PEER_CONNECTED,
-		})
-		p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, requests.ReqRegisterDataTR(ctx, &target))
-
-		// IPProt := strings.Split(target.Address.NetworkAddress, ":")
-		// ip := ""
-		// port := ""
-		// if len(IPProt) > 1 {
-		// 	ip = IPProt[0]
-		// 	port = IPProt[1]
-		// }
-		// if ip == "127.0.0.1" {
-		//
-		// 	utils.DebugLog("user didn't config network address")
-		// 	utils.DebugLog("target", target)
-		// 	req := target
-		// 	req.Address = &protos.PPBaseInfo{
-		// 		WalletAddress:  target.Address.WalletAddress,
-		// 		NetworkAddress: conn.(*core.ServerConn).GetIP() + ":" + port,
-		// 	}
-		// 	utils.DebugLog("req", req)
-		// 	SendMessageToSPServer(&req, header.ReqRegister)
-		// } else {
-		// 	// transfer to SP
-		// 	transferSendMessageToSPServer(reqRegisterDataTR(&target))
-		// }
-	}
-}
 
 // RspRegister  PP -> SP, SP -> PP, PP -> P
 func RspRegister(ctx context.Context, conn core.WriteCloser) {
@@ -66,6 +22,7 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspRegister
 	if err := VerifyMessage(ctx, header.RspRegister, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return

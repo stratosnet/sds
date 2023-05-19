@@ -34,6 +34,7 @@ func RspUpdateStake(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspUpdateStakePP
 	if err := VerifyMessage(ctx, header.RspUpdatedStakePP, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	success := requests.UnmarshalData(ctx, &target)
 	if !success {
@@ -66,6 +67,7 @@ func RspUpdatedStake(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspUpdatedStakePP
 	if err := VerifyMessage(ctx, header.RspUpdatedStakePP, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	success := requests.UnmarshalData(ctx, &target)
 	if !success {

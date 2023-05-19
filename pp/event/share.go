@@ -38,21 +38,12 @@ func DeleteShare(ctx context.Context, shareID, walletAddress string) {
 	}
 }
 
-func ReqShareLink(ctx context.Context, conn core.WriteCloser) {
-	var target protos.ReqShareLink
-	if err := VerifyMessage(ctx, header.ReqShareLink, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
-	}
-	// pp send to SP
-	utils.DebugLog("ReqShareLinkReqShareLinkReqShareLinkReqShareLink")
-	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
-}
-
 func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 	pp.DebugLog(ctx, "RspShareLink(ctx context.Context, conn core.WriteCloser) {RspShareLink(ctx context.Context, conn core.WriteCloser) {")
 	var target protos.RspShareLink
 	if err := VerifyMessage(ctx, header.RspShareLink, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	rpcResult := &rpc.FileShareResult{}
 
@@ -109,19 +100,11 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-func ReqShareFile(ctx context.Context, conn core.WriteCloser) {
-	var target protos.ReqShareFile
-	if err := VerifyMessage(ctx, header.ReqShareFile, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
-	}
-	// pp send to SP
-	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
-}
-
 func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspShareFile
 	if err := VerifyMessage(ctx, header.RspShareFile, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	rpcResult := &rpc.FileShareResult{}
 
@@ -153,19 +136,11 @@ func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-func ReqDeleteShare(ctx context.Context, conn core.WriteCloser) {
-	var target protos.ReqDeleteShare
-	if err := VerifyMessage(ctx, header.ReqDeleteShare, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
-	}
-	// pp send to SP
-	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
-}
-
 func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeleteShare
 	if err := VerifyMessage(ctx, header.RspDeleteShare, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	rpcResult := &rpc.FileShareResult{}
 
@@ -200,20 +175,11 @@ func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAdd
 	}
 }
 
-func ReqGetShareFile(ctx context.Context, conn core.WriteCloser) {
-	var target protos.ReqGetShareFile
-	if err := VerifyMessage(ctx, header.ReqGetShareFile, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
-	}
-	// pp send to SP
-	pp.DebugLog(ctx, "ReqGetShareFile: transferring message to SP server")
-	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
-}
-
 func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	var target protos.RspGetShareFile
 	if err := VerifyMessage(ctx, header.RspGetShareFile, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	rpcResult := &rpc.FileShareResult{}
 	if !requests.UnmarshalData(ctx, &target) {

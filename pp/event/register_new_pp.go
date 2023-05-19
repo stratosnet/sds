@@ -29,6 +29,7 @@ func RspRegisterNewPP(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspRegisterNewPP
 	if err := VerifyMessage(ctx, header.RspRegisterNewPP, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return

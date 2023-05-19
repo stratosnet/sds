@@ -83,6 +83,7 @@ func ReqClearDownloadTask(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqClearDownloadTask
 	if err := VerifyMessage(ctx, header.ReqClearDownloadTask, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if requests.UnmarshalData(ctx, &target) {
 		task.DeleteDownloadTask(target.WalletAddress, target.WalletAddress, "")
@@ -231,16 +232,6 @@ func GetSliceInfoBySliceNumber(fInfo *protos.RspFileStorageInfo, sliceNumber uin
 	return nil
 }
 
-// ReqFileStorageInfo  P-PP , PP-SP
-func ReqFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
-	var target protos.ReqFileStorageInfo
-	if err := VerifyMessage(ctx, header.ReqFileStorageInfo, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
-	}
-	utils.Log("pp get ReqFileStorageInfo directly transfer to SP")
-	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
-}
-
 // RspFileStorageInfo SP-PP , PP-P
 func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	// PP check whether itself is the storage PP, if not transfer
@@ -248,6 +239,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspFileStorageInfo
 	if err := VerifyMessage(ctx, header.RspFileStorageInfo, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -344,6 +336,7 @@ func RspFileReplicaInfo(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspFileReplicaInfo
 	if err := VerifyMessage(ctx, header.RspFileReplicaInfo, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
