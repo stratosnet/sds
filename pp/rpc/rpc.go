@@ -1,10 +1,11 @@
-package serv
+package rpc
 
 import (
 	"context"
 	b64 "encoding/base64"
 	"encoding/hex"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/datamesh"
@@ -65,7 +67,7 @@ func RpcPrivApi() *rpcPrivApi {
 }
 
 // apis returns the collection of built-in RPC APIs.
-func apis() []rpc.API {
+func Apis() []rpc.API {
 	return []rpc.API{
 		{
 			Namespace: "owner",
@@ -238,7 +240,7 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
-	// start to upload file
+	// Start to upload file
 	go uploadStreamTmpFile(ctx, fileHash, fileName, uint64(size), walletAddr, pubkey, signature, param.DesiredTier, param.AllowHigherTier)
 
 	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
@@ -382,6 +384,51 @@ func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamRe
 		} else {
 			// end of the session
 			file.CleanFileHash(key)
+		}
+	}
+
+	return *result
+}
+
+func (api *rpcPubApi) RequestDownloadData(ctx context.Context, param rpc_api.ParamReqDownloadData) rpc_api.Result {
+	reqId := uuid.New().String()
+	ctx = core.RegisterRemoteReqId(ctx, reqId)
+	// request for downloading file
+	var fInfo *protos.RspFileStorageInfo
+	if f, ok := task.DownloadFileMap.Load(param.FileHash + reqId); ok {
+		fInfo = f.(*protos.RspFileStorageInfo)
+	}
+	req := &protos.ReqDownloadSlice{
+		RspFileStorageInfo: fInfo,
+		SliceNumber:        param.SliceNumber,
+		P2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+	}
+	networkAddress := param.NetworkAddress
+	msgKey := "download#" + param.FileHash + strconv.FormatUint(param.SliceNumber, 10) + param.P2PAddress + param.ReqId
+	p2pserver.GetP2pServer(ctx).SendMessageByCachedConn(ctx, msgKey, networkAddress, req, header.ReqDownloadSlice, nil)
+
+	key := param.FileHash + strconv.FormatUint(param.SliceNumber, 10) + param.ReqId
+
+	// previous piece was done, tell the caller of remote file driver to move on
+	file.SetDownloadSliceDone(key)
+
+	// wait for result: DOWNLOAD_OK or DL_OK_ASK_INFO
+	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
+	defer cancel()
+	var result *rpc_api.Result
+
+	select {
+	case <-ctx.Done():
+		file.CleanFileHash(key)
+		result = &rpc_api.Result{Return: rpc_api.TIME_OUT}
+	// told application that last piece has been done, wait here for the next piece or other event and send this back to rpc client
+	case result = <-file.SubscribeRemoteFileEvent(key):
+		file.UnsubscribeRemoteFileEvent(key)
+		if result == nil || !(result.Return == rpc_api.DOWNLOAD_OK || result.Return == rpc_api.DL_OK_ASK_INFO) {
+			file.CleanFileHash(key)
+		}
+		if result != nil {
+			result.FileName = ""
 		}
 	}
 
@@ -632,7 +679,7 @@ func (api *rpcPubApi) RequestDownloadShared(ctx context.Context, param rpc_api.P
 
 	file.SetSignature(param.FileHash, wsig)
 
-	// start from here, the control flow follows that of download file
+	// Start from here, the control flow follows that of download file
 	key := fileHash + param.ReqId
 
 	var result *rpc_api.Result

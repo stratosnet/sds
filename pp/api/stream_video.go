@@ -2,16 +2,15 @@ package api
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
-	"time"
-
-	"github.com/stratosnet/sds/pp/p2pserver"
-	"github.com/stratosnet/sds/pp/requests"
 
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/google/uuid"
@@ -20,19 +19,20 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	rpctypes "github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/p2pserver"
+	"github.com/stratosnet/sds/pp/rpc"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
 
-	//"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/utils"
+	utiled25519 "github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/datamesh"
 	"github.com/stratosnet/sds/utils/httpserv"
 	utiltypes "github.com/stratosnet/sds/utils/types"
-	//tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
-	utiled25519 "github.com/stratosnet/sds/utils/crypto/ed25519"
 )
 
 type StreamReqBody struct {
@@ -81,19 +81,28 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	fileHashCh := make(chan string)
-	task.VideoCacheChannelMap.Store(reqId, fileHashCh)
+	sn, err := handleGetOzone(ctx, ownerWalletAddress)
+	if err != nil {
+		w.WriteHeader(setting.FAILCode)
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get ozone").ToBytes())
+		return
+	}
 
-	filePath := datamesh.DataMeshId{
+	sdmPath := datamesh.DataMeshId{
 		Owner: ownerWalletAddress,
 		Hash:  fileHash,
 	}.String()
-	fileReq := requests.ReqFileStorageInfoData(ctx, filePath, "", "", setting.WalletAddress, setting.WalletPublicKey, nil)
-	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, reqId, fileReq); err != nil {
-		utils.ErrorLog("failed request wallet oz", err.Error())
+
+	r := reqDownloadMsg(fileHash, sdmPath, sn)
+	res := rpc.RpcPubApi().RequestDownload(ctx, r)
+
+	if res.Return != rpctypes.DL_OK_ASK_INFO {
+		w.WriteHeader(setting.FAILCode)
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get file storage info").ToBytes())
+		return
 	}
 
-	streamInfo, err := getStreamInfo(ctx, reqId, fileHashCh)
+	streamInfo, err := getStreamInfo(ctx, fileHash, reqId)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
@@ -114,13 +123,17 @@ func streamSharedVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	shareLink, password, _ := parseShareLink(req.RequestURI)
+	shareLink, _, _ := parseShareLink(req.RequestURI)
+	r := reqGetSharedMsg(shareLink)
+	res := rpc.RpcPubApi().RequestGetShared(ctx, r)
 
-	fileHashCh := make(chan string)
-	task.VideoCacheChannelMap.Store(reqId, fileHashCh)
+	if res.Return != rpctypes.DL_OK_ASK_INFO {
+		w.WriteHeader(setting.FAILCode)
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get file storage info").ToBytes())
+		return
+	}
 
-	event.GetShareFile(ctx, shareLink, password, "", setting.WalletAddress, setting.WalletPublicKey, true)
-	streamInfo, err := getStreamInfo(ctx, reqId, fileHashCh)
+	streamInfo, err := getStreamInfo(ctx, res.FileHash, reqId)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
@@ -142,19 +155,28 @@ func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 
 	task.DownloadFileMap.Delete(fileHash + reqId)
 
-	fileHashCh := make(chan string)
-	task.VideoCacheChannelMap.Store(reqId, fileHashCh)
+	sn, err := handleGetOzone(ctx, ownerWalletAddress)
+	if err != nil {
+		w.WriteHeader(setting.FAILCode)
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get ozone").ToBytes())
+		return
+	}
 
-	filePath := datamesh.DataMeshId{
+	sdmPath := datamesh.DataMeshId{
 		Owner: ownerWalletAddress,
 		Hash:  fileHash,
 	}.String()
-	fileReq := requests.ReqFileStorageInfoData(ctx, filePath, "", "", setting.WalletAddress, setting.WalletPublicKey, nil)
-	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, reqId, fileReq); err != nil {
-		utils.ErrorLog("failed request wallet oz", err.Error())
+
+	r := reqDownloadMsg(fileHash, sdmPath, sn)
+	res := rpc.RpcPubApi().RequestDownload(ctx, r)
+
+	if res.Return != rpctypes.DL_OK_ASK_INFO {
+		w.WriteHeader(setting.FAILCode)
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get file storage info").ToBytes())
+		return
 	}
 
-	streamInfo, err := getStreamInfo(ctx, reqId, fileHashCh)
+	streamInfo, err := getStreamInfo(ctx, fileHash, reqId)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
@@ -196,7 +218,17 @@ func streamVideoP2P(w http.ResponseWriter, req *http.Request) {
 		SliceInfo:     body.SliceInfos,
 	}
 
-	event.GetVideoSlice(ctx, body.SliceInfo, fInfo, w)
+	r := reqDownloadDataMsg(fInfo, body.SliceInfo, body.FileReqId)
+	res := rpc.RpcPubApi().RequestDownloadData(ctx, r)
+
+	if res.Return != rpctypes.DOWNLOAD_OK {
+		w.WriteHeader(setting.FAILCode)
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get video slice").ToBytes())
+		return
+	}
+
+	decoded, _ := base64.StdEncoding.DecodeString(res.FileData)
+	w.Write(decoded)
 }
 
 func streamVideoHttp(w http.ResponseWriter, req *http.Request) {
@@ -317,17 +349,11 @@ func parseSliceHash(reqURL *url.URL) string {
 	return reqPath[strings.LastIndex(reqPath, "/")+1:]
 }
 
-func getStreamInfo(ctx context.Context, reqId string, fileHashChan <-chan string) (*StreamInfo, error) {
+func getStreamInfo(ctx context.Context, fileHash, reqId string) (*StreamInfo, error) {
 	var fInfo *protos.RspFileStorageInfo
-	select {
-	case fileHash := <-fileHashChan:
-		if f, ok := task.DownloadFileMap.Load(fileHash + reqId); ok {
-			fInfo = f.(*protos.RspFileStorageInfo)
-			utils.DebugLog("Received file storage info from sp ", fInfo)
-		}
-		break
-	case <-time.After(time.Second * setting.HTTPTIMEOUT):
-		break
+	if f, ok := task.DownloadFileMap.Load(fileHash + reqId); ok {
+		fInfo = f.(*protos.RspFileStorageInfo)
+		utils.DebugLog("Received file storage info from sp ", fInfo)
 	}
 
 	if fInfo == nil {
@@ -339,10 +365,10 @@ func getStreamInfo(ctx context.Context, reqId string, fileHashChan <-chan string
 	}
 
 	fInfo.ReqId = reqId
-	hlsInfo := event.GetHlsInfo(ctx, fInfo)
+	hlsInfo := getHlsInfo(ctx, fInfo, reqId)
 	segmentToSliceInfo := make(map[string]*protos.DownloadSliceInfo, 0)
 	for segment := range hlsInfo.SegmentToSlice {
-		segmentInfo := event.GetVideoSliceInfo(ctx, segment, fInfo)
+		segmentInfo := getVideoSliceInfo(segment, fInfo, hlsInfo)
 		segmentToSliceInfo[segment] = segmentInfo
 	}
 	StreamInfo := &StreamInfo{
@@ -422,4 +448,86 @@ func sendReportStreamResult(ctx context.Context, body *StreamReqBody, sliceHash 
 		WalletAddress: setting.WalletAddress,
 		TaskId:        body.SliceInfo.TaskId,
 	}, isPP)
+}
+
+func getHlsInfo(ctx context.Context, fInfo *protos.RspFileStorageInfo, reqId string) *file.HlsInfo {
+	sliceInfo := getSliceInfoBySliceNumber(fInfo, uint64(1))
+	sliceHash := sliceInfo.SliceStorageInfo.SliceHash
+
+	r := reqDownloadDataMsg(fInfo, sliceInfo, reqId)
+	res := rpc.RpcPubApi().RequestDownloadData(ctx, r)
+
+	if res.Return != rpctypes.DOWNLOAD_OK {
+		return nil
+	}
+
+	if file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceHash, fInfo.SavePath, fInfo.ReqId) {
+		return file.LoadHlsInfo(fInfo.FileHash, sliceHash, fInfo.SavePath)
+	}
+	return nil
+}
+
+func getVideoSliceInfo(sliceName string, fInfo *protos.RspFileStorageInfo, hlsInfo *file.HlsInfo) *protos.DownloadSliceInfo {
+	var sliceNumber uint64
+	sliceNumber = hlsInfo.SegmentToSlice[sliceName]
+	sliceInfo := getSliceInfoBySliceNumber(fInfo, sliceNumber)
+	return sliceInfo
+}
+
+func getSliceInfoBySliceNumber(fInfo *protos.RspFileStorageInfo, sliceNumber uint64) *protos.DownloadSliceInfo {
+	for _, slice := range fInfo.SliceInfo {
+		if slice.SliceNumber == sliceNumber {
+			return slice
+		}
+	}
+	return nil
+}
+
+func reqDownloadMsg(hash, sdmPath, sn string) rpctypes.ParamReqDownloadFile {
+	// param
+	sign, _ := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetFileDownloadWalletSignMessage(hash, setting.WalletAddress, sn)))
+
+	return rpctypes.ParamReqDownloadFile{
+		FileHandle:   sdmPath,
+		WalletAddr:   setting.WalletAddress,
+		WalletPubkey: string(setting.WalletPublicKey),
+		Signature:    hex.EncodeToString(sign),
+	}
+}
+
+func reqDownloadDataMsg(fInfo *protos.RspFileStorageInfo, sliceInfo *protos.DownloadSliceInfo, reqId string) rpctypes.ParamReqDownloadData {
+	return rpctypes.ParamReqDownloadData{
+		FileHash:       fInfo.FileHash,
+		ReqId:          reqId,
+		SliceNumber:    sliceInfo.SliceNumber,
+		NetworkAddress: sliceInfo.StoragePpInfo.NetworkAddress,
+		P2PAddress:     sliceInfo.StoragePpInfo.P2PAddress,
+		WalletAddr:     fInfo.WalletAddress,
+	}
+}
+
+func reqGetSharedMsg(shareLink string) rpctypes.ParamReqGetShared {
+	return rpctypes.ParamReqGetShared{
+		WalletAddr:   setting.WalletAddress,
+		WalletPubkey: string(setting.WalletPublicKey),
+		ShareLink:    shareLink,
+	}
+}
+
+func handleGetOzone(ctx context.Context, walletAddress string) (string, error) {
+	utils.Log("- request ozone balance (method: user_requestGetOzone)")
+	res := rpc.RpcPubApi().RequestGetOzone(ctx, rpctypes.ParamReqGetOzone{
+		WalletAddr: walletAddress,
+	})
+
+	if res.Return == rpctypes.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+		ozone, _ := strconv.ParseFloat(res.Ozone, 64)
+		utils.Log("OZONE balance: ", ozone/1000000000.0)
+		utils.Log("SN:            ", res.SequenceNumber)
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
+
+	return res.SequenceNumber, nil
 }

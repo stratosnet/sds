@@ -2,7 +2,6 @@ package task
 
 import (
 	"context"
-	"encoding/json"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -335,15 +334,7 @@ type UploadProgress struct {
 // UploadProgressMap Map of the progress for ongoing uploads
 var UploadProgressMap = &sync.Map{} // map[string]*UploadProgress
 
-func CreateUploadSliceTask(ctx context.Context, slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
-	if uploadTask.RspUploadFile.IsVideoStream {
-		return CreateUploadSliceTaskStream(ctx, slice, ppInfo, uploadTask)
-	} else {
-		return CreateUploadSliceTaskFile(ctx, slice, ppInfo, uploadTask)
-	}
-}
-
-func CreateUploadSliceTaskFile(ctx context.Context, slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
+func CreateUploadSliceTask(ctx context.Context, slice *SliceWithStatus, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
 	pp.DebugLogf(ctx, "sliceNumber %v  offsetStart = %v  offsetEnd = %v", slice.Slice.SliceNumber, slice.Slice.SliceOffset.SliceOffsetStart, slice.Slice.SliceOffset.SliceOffsetEnd)
 	startOffset := slice.Slice.SliceOffset.SliceOffsetStart
 	endOffset := slice.Slice.SliceOffset.SliceOffsetEnd
@@ -379,15 +370,9 @@ func CreateUploadSliceTaskFile(ctx context.Context, slice *SliceWithStatus, ppIn
 	tmpFileName := uuid.NewString()
 	if !remote {
 		metrics.UploadPerformanceLogNow(fileHash + ":SND_GET_LOCAL_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
-		rawData, err = file.GetFileData(filePath, offset)
+		rawData, err = file.GetWholeFileData(file.GetTmpSlicePath(fileHash, strconv.FormatUint(slice.Slice.SliceNumber, 10)))
 		if err != nil {
 			return nil, errors.Wrap(err, "failed getting file data")
-		}
-		if rawData != nil {
-			err = file.SaveTmpSliceData(fileHash, tmpFileName, rawData)
-			if err != nil {
-				return nil, errors.Wrap(err, "filed saving tmp slice data")
-			}
 		}
 		metrics.UploadPerformanceLogNow(fileHash + ":RCV_GET_LOCAL_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
 	} else {
@@ -429,54 +414,6 @@ func CreateUploadSliceTaskFile(ctx context.Context, slice *SliceWithStatus, ppIn
 	err = file.RenameTmpFile(fileHash, tmpFileName, sliceHash)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed renaming tmp file")
-	}
-	return tk, nil
-}
-
-func CreateUploadSliceTaskStream(ctx context.Context, slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
-	fileHash := uploadTask.RspUploadFile.FileHash
-	videoFolder := file.GetVideoTmpFolder(fileHash)
-	videoSliceInfo := file.HlsInfoMap[fileHash]
-	var data []byte
-	var sliceTotalSize uint64
-	if slice.Slice.SliceNumber == 1 {
-		jsonStr, _ := json.Marshal(videoSliceInfo)
-		data = jsonStr
-		sliceTotalSize = uint64(len(data))
-	} else if slice.Slice.SliceNumber < videoSliceInfo.StartSliceNumber {
-		data = file.GetDumpySliceData(fileHash, slice.Slice.SliceNumber)
-		sliceTotalSize = uint64(len(data))
-	} else {
-		sliceName := videoSliceInfo.SliceToSegment[slice.Slice.SliceNumber]
-		slicePath := videoFolder + "/" + sliceName
-		fileInfo, err := file.GetFileInfo(slicePath)
-		if err != nil {
-			return nil, errors.New("wrong file path")
-		}
-		data, err = file.GetWholeFileData(slicePath)
-		if err != nil {
-			return nil, errors.New("failed getting whole file data")
-		}
-		sliceTotalSize = uint64(fileInfo.Size())
-	}
-
-	pp.DebugLog(ctx, "sliceNumber", slice.Slice.SliceNumber)
-
-	sliceHash := utils.CalcSliceHash(data, fileHash, slice.Slice.SliceNumber)
-	offset := &protos.SliceOffset{
-		SliceOffsetStart: uint64(0),
-		SliceOffsetEnd:   sliceTotalSize,
-	}
-	slice.Slice.SliceOffset = offset
-	tk := &UploadSliceTask{
-		RspUploadFile: uploadTask.RspUploadFile,
-		SliceNumber:   slice.Slice.SliceNumber,
-		SliceHash:     sliceHash,
-	}
-
-	err := file.SaveTmpSliceData(fileHash, sliceHash, data)
-	if err != nil {
-		return nil, err
 	}
 	return tk, nil
 }

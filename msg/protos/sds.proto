@@ -86,12 +86,10 @@ message RspUploadFile {
   int64  total_slice = 5;
   Result result = 6; // accept upload or not
   string owner_wallet_address = 7;
-  bool   is_video_stream = 8;
-  uint64 video_slice_duration = 9;
-  bool   is_encrypted = 10;
-  string sp_p2p_address = 11;
-  bytes  node_sign = 12;
-  int64  time_stamp = 13;
+  bool   is_encrypted = 8;
+  string sp_p2p_address = 9;
+  bytes  node_sign = 10;
+  int64  time_stamp = 11;
 }
 
 message ReqUploadFileSlice {
@@ -265,7 +263,6 @@ message ReqDownloadSlice {
   RspFileStorageInfo rsp_file_storage_info = 1;
   uint64             slice_number = 2;
   string             p2p_address = 3;
-  bool               is_video_caching = 4;
 }
 
 message RspDownloadSlice {

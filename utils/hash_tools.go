@@ -18,7 +18,7 @@ import (
 )
 
 const hashLen = 20
-const videoCodec = 0x72
+const VIDEO_CODEC = 0x72
 
 var hashCidPrefix = cid.Prefix{
 	Version:  1,
@@ -85,7 +85,7 @@ func CalcFileHashForVideoStream(filePath, encryptionTag string) string {
 		return ""
 	}
 	data := append([]byte(encryptionTag), CalcFileMD5(filePath)...)
-	return CalcFileHashFromData(data, videoCodec)
+	return CalcFileHashFromData(data, VIDEO_CODEC)
 }
 
 func CalcHash(data []byte) string {
@@ -140,11 +140,18 @@ func VerifyHash(hash string) bool {
 }
 
 func IsVideoStream(hash string) bool {
-	fileCid, err := cid.Decode(hash)
+	code, err := GetCodecFromFileHash(hash)
 	if err != nil {
 		return false
 	}
+	return code == VIDEO_CODEC
+}
 
-	prefix := fileCid.Prefix()
-	return prefix.Codec == videoCodec
+func GetCodecFromFileHash(hash string) (uint64, error) {
+	fileCid, err := cid.Decode(hash)
+	if err != nil {
+		return 0, err
+	}
+
+	return fileCid.Prefix().Codec, nil
 }

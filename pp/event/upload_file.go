@@ -4,12 +4,13 @@ package event
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/metrics"
@@ -231,37 +232,32 @@ func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
 	p2pserver.GetP2pServer(ctx).CleanUpConnMap(target.FileHash)
 	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
 
-	// Video Hls transformation and upload progress update
-	var streamTotalSize int64
-	var hlsInfo file.HlsInfo
-	if target.IsVideoStream {
-		if file.IsFileRpcRemote(uploadTask.RspUploadFile.FileHash) {
-			remotePath := strings.Split(file.GetFilePath(target.FileHash), ":")
-			fileName := remotePath[len(remotePath)-1]
-			file.VideoToHls(ctx, target.FileHash, filepath.Join(setting.GetRootPath(), file.TEMP_FOLDER, target.FileHash, fileName))
-		} else {
-			file.VideoToHls(ctx, target.FileHash, file.GetFilePath(target.FileHash))
-		}
-
-		if hlsInfo, err := file.GetHlsInfo(target.FileHash, uint64(len(target.Slices))); err != nil {
-			pp.ErrorLog(ctx, "Hls transformation failed: ", err)
-			return
-		} else {
-			streamTotalSize = hlsInfo.TotalSize
-			file.HlsInfoMap[target.FileHash] = hlsInfo
-		}
+	totalSize, err := preUpload(ctx, target)
+	if err != nil {
+		pp.ErrorLog(ctx, "received error when prepare file before upload: ", err)
 	}
+
 	if prg, ok := task.UploadProgressMap.Load(target.FileHash); ok {
 		progress := prg.(*task.UploadProgress)
-		if target.IsVideoStream {
-			jsonStr, _ := json.Marshal(hlsInfo)
-			progress.Total = streamTotalSize + int64(len(jsonStr))
-		}
+		progress.Total = totalSize
 		progress.HasUpload = (target.TotalSlice - int64(len(target.Slices))) * setting.MAX_SLICE_SIZE
 	}
 
 	// Start uploading
 	startUploadingFileSlices(ctx, target.FileHash)
+}
+
+func preUpload(ctx context.Context, fInfo *protos.RspUploadFile) (int64, error) {
+	codec, err := utils.GetCodecFromFileHash(fInfo.FileHash)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to get codec from file hash")
+	}
+	switch codec {
+	case utils.VIDEO_CODEC:
+		return StreamFileHandler{}.PreUpload(ctx, fInfo)
+	default:
+		return RawFileHandler{}.PreUpload(ctx, fInfo)
+	}
 }
 
 func startUploadingFileSlices(ctx context.Context, fileHash string) {
@@ -282,10 +278,6 @@ func startUploadingFileSlices(ctx context.Context, fileHash string) {
 	}
 
 	task.UploadFileTaskMap.Delete(fileHash)
-
-	if fileTask.RspUploadFile.IsVideoStream {
-		file.DeleteTmpHlsFolder(ctx, fileHash)
-	}
 }
 
 func waitForUploadFinished(ctx context.Context, uploadTask *task.UploadFileTask) error {
@@ -340,7 +332,7 @@ func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileT
 		var err error
 		switch uploadTask.Type {
 		case protos.UploadType_NEW_UPLOAD:
-			uploadSliceTask, err = task.CreateUploadSliceTask(ctx, slice, destination.PpInfo, uploadTask)
+			uploadSliceTask, err = task.CreateUploadSliceTask(ctx, slice, uploadTask)
 			if err != nil {
 				slice.SetError(err, true, uploadTask)
 				return
@@ -380,4 +372,90 @@ func UploadPause(ctx context.Context, fileHash, reqID string, w http.ResponseWri
 	p2pserver.GetP2pServer(ctx).CleanUpConnMap(fileHash)
 	task.UploadFileTaskMap.Delete(fileHash)
 	task.UploadProgressMap.Delete(fileHash)
+}
+
+type FileHandler interface {
+	PreUpload(ctx context.Context, fInfo *protos.RspUploadFile) (int64, error)
+}
+
+type StreamFileHandler struct {
+}
+
+type RawFileHandler struct {
+}
+
+func (StreamFileHandler) PreUpload(ctx context.Context, fInfo *protos.RspUploadFile) (int64, error) {
+	fileHash := fInfo.FileHash
+	if file.IsFileRpcRemote(fileHash) {
+		remotePath := strings.Split(file.GetFilePath(fileHash), ":")
+		fileName := remotePath[len(remotePath)-1]
+		file.VideoToHls(ctx, fileHash, filepath.Join(setting.GetRootPath(), file.TEMP_FOLDER, fileHash, fileName))
+	} else {
+		file.VideoToHls(ctx, fileHash, file.GetFilePath(fileHash))
+	}
+
+	hlsInfo, err := file.GetHlsInfo(fInfo.FileHash, uint64(len(fInfo.Slices)))
+	if err != nil {
+		pp.ErrorLog(ctx, "Hls transformation failed: ", err)
+		return 0, err
+	}
+	videoFolder := file.GetVideoTmpFolder(fileHash)
+
+	var totalSize int64
+	for _, slice := range fInfo.Slices {
+		var data []byte
+		var sliceSize int64
+		if slice.SliceNumber == 1 {
+			jsonStr, _ := json.Marshal(hlsInfo)
+			data = jsonStr
+			sliceSize = int64(len(data))
+		} else if slice.SliceNumber < hlsInfo.StartSliceNumber {
+			data = file.GetDumpySliceData(fileHash, slice.SliceNumber)
+			sliceSize = int64(len(data))
+		} else {
+			sliceName := hlsInfo.SliceToSegment[slice.SliceNumber]
+			slicePath := videoFolder + "/" + sliceName
+			fileInfo, err := file.GetFileInfo(slicePath)
+			if err != nil {
+				return 0, errors.New("wrong file path")
+			}
+			data, err = file.GetWholeFileData(slicePath)
+			if err != nil {
+				return 0, errors.New("failed getting whole file data")
+			}
+			sliceSize = fileInfo.Size()
+		}
+		totalSize += sliceSize
+		err := file.SaveTmpSliceData(fileHash, strconv.FormatUint(slice.SliceNumber, 10), data)
+		if err != nil {
+			return 0, err
+		}
+	}
+	file.DeleteTmpHlsFolder(ctx, fileHash)
+	return totalSize, nil
+}
+
+func (RawFileHandler) PreUpload(ctx context.Context, fInfo *protos.RspUploadFile) (int64, error) {
+	fileHash := fInfo.FileHash
+	filePath := file.GetFilePath(fileHash)
+	fileInfo, err := file.GetFileInfo(filePath)
+	if fileInfo == nil {
+		return 0, errors.Wrap(err, "wrong file path")
+	}
+
+	for _, slice := range fInfo.Slices {
+
+		rawData, err := file.GetFileData(filePath, slice.SliceOffset)
+
+		if err != nil {
+			return 0, errors.Wrap(err, "failed getting file data")
+		}
+		if rawData != nil {
+			err = file.SaveTmpSliceData(fileHash, strconv.FormatUint(slice.SliceNumber, 10), rawData)
+			if err != nil {
+				return 0, errors.Wrap(err, "filed saving tmp slice data")
+			}
+		}
+	}
+	return fileInfo.Size(), nil
 }

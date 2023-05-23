@@ -1,4 +1,4 @@
-package serv
+package rpc
 
 import (
 	"compress/gzip"
@@ -18,19 +18,19 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// httpConfig is the JSON-RPC/HTTP configuration.
-type httpConfig struct {
+// HttpConfig is the JSON-RPC/HTTP configuration.
+type HttpConfig struct {
 	Modules            []string
 	CorsAllowedOrigins []string
 	Vhosts             []string
 	prefix             string // path prefix on which to mount http handler
 }
 
-// wsConfig is the JSON-RPC/Websocket configuration
-type wsConfig struct {
+// WsConfig is the JSON-RPC/Websocket configuration
+type WsConfig struct {
 	Origins []string
 	Modules []string
-	prefix  string // path prefix on which to mount ws handler
+	Prefix  string // path Prefix on which to mount ws handler
 }
 
 type rpcHandler struct {
@@ -38,7 +38,7 @@ type rpcHandler struct {
 	server *rpc.Server
 }
 
-type httpServer struct {
+type HttpServer struct {
 	timeouts rpc.HTTPTimeouts
 	mux      http.ServeMux // registered handlers go here
 
@@ -53,14 +53,14 @@ type httpServer struct {
 
 	// HTTP RPC handler things.
 
-	httpConfig  httpConfig
+	httpConfig  HttpConfig
 	httpHandler atomic.Value // *rpcHandler
 
 	// WebSocket handler things.
-	wsConfig  wsConfig
+	wsConfig  WsConfig
 	wsHandler atomic.Value // *rpcHandler
 
-	// These are set by setListenAddr.
+	// These are set by SetListenAddr.
 	endpoint string
 	host     string
 	port     int
@@ -68,23 +68,23 @@ type httpServer struct {
 	handlerNames map[string]string
 }
 
-func newHTTPServer(timeouts rpc.HTTPTimeouts) *httpServer {
-	h := &httpServer{timeouts: timeouts, handlerNames: make(map[string]string)}
+func NewHTTPServer(timeouts rpc.HTTPTimeouts) *HttpServer {
+	h := &HttpServer{timeouts: timeouts, handlerNames: make(map[string]string)}
 
 	h.httpHandler.Store((*rpcHandler)(nil))
 	h.wsHandler.Store((*rpcHandler)(nil))
 	return h
 }
 
-func (h *httpServer) enableTLS(cert, key string) {
+func (h *HttpServer) EnableTLS(cert, key string) {
 	h.tls = true
 	h.cert = cert
 	h.key = key
 }
 
-// setListenAddr configures the listening address of the server.
+// SetListenAddr configures the listening address of the server.
 // The address can only be set while the server isn't running.
-func (h *httpServer) setListenAddr(host string, port int) error {
+func (h *HttpServer) SetListenAddr(host string, port int) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -97,10 +97,10 @@ func (h *httpServer) setListenAddr(host string, port int) error {
 	return nil
 }
 
-// listenAddr returns the listening address of the server.
+// ListenAddr returns the listening address of the server.
 //
 //nolint:unused
-func (h *httpServer) listenAddr() string {
+func (h *HttpServer) ListenAddr() string {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -110,8 +110,8 @@ func (h *httpServer) listenAddr() string {
 	return h.endpoint
 }
 
-// start starts the HTTP server if it is enabled and not already running.
-func (h *httpServer) start(ctx context.Context) error {
+// Start starts the HTTP server if it is enabled and not already running.
+func (h *HttpServer) Start(ctx context.Context) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -128,7 +128,7 @@ func (h *httpServer) start(ctx context.Context) error {
 	}
 
 	if h.timeouts != (rpc.HTTPTimeouts{}) {
-		CheckTimeouts(&h.timeouts)
+		checkTimeouts(&h.timeouts)
 		h.server.ReadTimeout = h.timeouts.ReadTimeout
 		h.server.WriteTimeout = h.timeouts.WriteTimeout
 		h.server.IdleTimeout = h.timeouts.IdleTimeout
@@ -167,8 +167,8 @@ func (h *httpServer) start(ctx context.Context) error {
 
 	if h.wsAllowed() {
 		url := fmt.Sprintf("ws://%v", listener.Addr())
-		if h.wsConfig.prefix != "" {
-			url += h.wsConfig.prefix
+		if h.wsConfig.Prefix != "" {
+			url += h.wsConfig.Prefix
 		}
 		utils.Log("WebSocket enabled", "url", url)
 	}
@@ -179,7 +179,7 @@ func (h *httpServer) start(ctx context.Context) error {
 	// Log http endpoint.
 	utils.Log("HTTP server started",
 		"endpoint", listener.Addr(),
-		"prefix", h.httpConfig.prefix,
+		"Prefix", h.httpConfig.prefix,
 		"cors", strings.Join(h.httpConfig.CorsAllowedOrigins, ","),
 		"vhosts", strings.Join(h.httpConfig.Vhosts, ","),
 	)
@@ -201,11 +201,11 @@ func (h *httpServer) start(ctx context.Context) error {
 	return nil
 }
 
-func (h *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *HttpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// check if ws request and serve if ws enabled
 	ws := h.wsHandler.Load().(*rpcHandler)
 	if ws != nil && isWebsocket(r) {
-		if checkPath(r, h.wsConfig.prefix) {
+		if checkPath(r, h.wsConfig.Prefix) {
 			ws.ServeHTTP(w, r)
 		}
 		return
@@ -231,17 +231,17 @@ func (h *httpServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 }
 
-// checkPath checks whether a given request URL matches a given path prefix.
+// checkPath checks whether a given request URL matches a given path Prefix.
 func checkPath(r *http.Request, path string) bool {
-	// if no prefix has been specified, request URL must be on root
+	// if no Prefix has been specified, request URL must be on root
 	if path == "" {
 		return r.URL.Path == "/"
 	}
-	// otherwise, check to make sure prefix matches
+	// otherwise, check to make sure Prefix matches
 	return len(r.URL.Path) >= len(path) && r.URL.Path[:len(path)] == path
 }
 
-// validatePrefix checks if 'path' is a valid configuration value for the RPC prefix option.
+// validatePrefix checks if 'path' is a valid configuration value for the RPC Prefix option.
 //
 //nolint:unused
 func validatePrefix(what, path string) error {
@@ -249,25 +249,25 @@ func validatePrefix(what, path string) error {
 		return nil
 	}
 	if path[0] != '/' {
-		return fmt.Errorf(`%s RPC path prefix %q does not contain leading "/"`, what, path)
+		return fmt.Errorf(`%s RPC path Prefix %q does not contain leading "/"`, what, path)
 	}
 	if strings.ContainsAny(path, "?#") {
 		// This is just to avoid confusion. While these would match correctly (i.e. they'd
 		// match if URL-escaped into path), it's not easy to understand for users when
 		// setting that on the command line.
-		return fmt.Errorf("%s RPC path prefix %q contains URL meta-characters", what, path)
+		return fmt.Errorf("%s RPC path Prefix %q contains URL meta-characters", what, path)
 	}
 	return nil
 }
 
-// stop shuts down the HTTP server.
-func (h *httpServer) stop() {
+// Stop shuts down the HTTP server.
+func (h *HttpServer) Stop() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.doStop()
 }
 
-func (h *httpServer) doStop() {
+func (h *HttpServer) doStop() {
 	if h.listener == nil {
 		return // not running
 	}
@@ -292,8 +292,8 @@ func (h *httpServer) doStop() {
 	h.server, h.listener = nil, nil
 }
 
-// enableRPC turns on JSON-RPC over HTTP on the server.
-func (h *httpServer) enableRPC(apis []rpc.API, config httpConfig) error {
+// EnableRPC turns on JSON-RPC over HTTP on the server.
+func (h *HttpServer) EnableRPC(apis []rpc.API, config HttpConfig) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -315,7 +315,7 @@ func (h *httpServer) enableRPC(apis []rpc.API, config httpConfig) error {
 }
 
 // disableRPC stops the HTTP RPC handler. This is internal, the caller must hold h.mu.
-func (h *httpServer) disableRPC() bool {
+func (h *HttpServer) disableRPC() bool {
 	handler := h.httpHandler.Load().(*rpcHandler)
 	if handler != nil {
 		h.httpHandler.Store((*rpcHandler)(nil))
@@ -324,8 +324,8 @@ func (h *httpServer) disableRPC() bool {
 	return handler != nil
 }
 
-// enableWS turns on JSON-RPC over WebSocket on the server.
-func (h *httpServer) enableWS(apis []rpc.API, config wsConfig) error {
+// EnableWS turns on JSON-RPC over WebSocket on the server.
+func (h *HttpServer) EnableWS(apis []rpc.API, config WsConfig) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -349,7 +349,7 @@ func (h *httpServer) enableWS(apis []rpc.API, config wsConfig) error {
 // stopWS disables JSON-RPC over WebSocket and also stops the server if it only serves WebSocket.
 //
 //nolint:unused
-func (h *httpServer) stopWS() {
+func (h *HttpServer) stopWS() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -361,7 +361,7 @@ func (h *httpServer) stopWS() {
 }
 
 // disableWS disables the WebSocket handler. This is internal, the caller must hold h.mu.
-func (h *httpServer) disableWS() bool {
+func (h *HttpServer) disableWS() bool {
 	ws := h.wsHandler.Load().(*rpcHandler)
 	if ws != nil {
 		h.wsHandler.Store((*rpcHandler)(nil))
@@ -371,12 +371,12 @@ func (h *httpServer) disableWS() bool {
 }
 
 // rpcAllowed returns true when JSON-RPC over HTTP is enabled.
-func (h *httpServer) rpcAllowed() bool {
+func (h *HttpServer) rpcAllowed() bool {
 	return h.httpHandler.Load().(*rpcHandler) != nil
 }
 
 // wsAllowed returns true when JSON-RPC over WebSocket is enabled.
-func (h *httpServer) wsAllowed() bool {
+func (h *HttpServer) wsAllowed() bool {
 	return h.wsHandler.Load().(*rpcHandler) != nil
 }
 
@@ -390,7 +390,7 @@ func isWebsocket(r *http.Request) bool {
 func NewHTTPHandlerStack(srv http.Handler, cors []string, vhosts []string) http.Handler {
 	// Wrap the CORS-handler within a host-handler
 	handler := newCorsHandler(srv, cors)
-	handler = newVHostHandler(vhosts, handler)
+	handler = NewVHostHandler(vhosts, handler)
 	return newGzipHandler(handler)
 }
 
@@ -417,7 +417,7 @@ type virtualHostHandler struct {
 	next   http.Handler
 }
 
-func newVHostHandler(vhosts []string, next http.Handler) http.Handler {
+func NewVHostHandler(vhosts []string, next http.Handler) http.Handler {
 	vhostMap := make(map[string]struct{})
 	for _, allowedHost := range vhosts {
 		vhostMap[strings.ToLower(allowedHost)] = struct{}{}
@@ -495,7 +495,7 @@ func newGzipHandler(next http.Handler) http.Handler {
 	})
 }
 
-type ipcServer struct {
+type IpcServer struct {
 	endpoint string
 
 	mu       sync.Mutex
@@ -503,12 +503,12 @@ type ipcServer struct {
 	srv      *rpc.Server
 }
 
-func newIPCServer(endpoint string) *ipcServer {
-	return &ipcServer{endpoint: endpoint}
+func NewIPCServer(endpoint string) *IpcServer {
+	return &IpcServer{endpoint: endpoint}
 }
 
-// Start starts the httpServer's http.server
-func (is *ipcServer) start(apis []rpc.API, ctx context.Context) error {
+// Start starts the HttpServer's http.server
+func (is *IpcServer) Start(apis []rpc.API, ctx context.Context) error {
 	is.mu.Lock()
 	defer is.mu.Unlock()
 
@@ -525,7 +525,7 @@ func (is *ipcServer) start(apis []rpc.API, ctx context.Context) error {
 	return nil
 }
 
-func (is *ipcServer) stop() error {
+func (is *IpcServer) Stop() error {
 	is.mu.Lock()
 	defer is.mu.Unlock()
 

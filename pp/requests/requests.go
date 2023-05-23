@@ -238,7 +238,6 @@ func RspDownloadSliceData(ctx context.Context, target *protos.ReqDownloadSlice, 
 		Result:            &protos.Result{State: protos.ResultState_RES_SUCCESS, Msg: ""},
 		IsEncrypted:       target.RspFileStorageInfo.EncryptionTag != "",
 		SpP2PAddress:      target.RspFileStorageInfo.SpP2PAddress,
-		IsVideoCaching:    target.IsVideoCaching,
 		StorageP2PAddress: p2pserver.GetP2pServer(ctx).GetP2PAddress(),
 		SliceNumber:       target.SliceNumber,
 	}

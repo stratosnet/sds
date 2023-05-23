@@ -1,4 +1,4 @@
-package serv
+package rpc
 
 import (
 	"net"
@@ -20,7 +20,7 @@ func StartHTTPEndpoint(endpoint string, timeouts rpc.HTTPTimeouts, handler http.
 		return nil, nil, err
 	}
 	// make sure timeout values are meaningful
-	CheckTimeouts(&timeouts)
+	checkTimeouts(&timeouts)
 	// Bundle and start the HTTP server
 	httpSrv := &http.Server{
 		Handler:      handler,
@@ -55,8 +55,8 @@ func checkModuleAvailability(modules []string, apis []rpc.API) (bad, available [
 	return bad, available
 }
 
-// CheckTimeouts ensures that timeout values are meaningful
-func CheckTimeouts(timeouts *rpc.HTTPTimeouts) {
+// checkTimeouts ensures that timeout values are meaningful
+func checkTimeouts(timeouts *rpc.HTTPTimeouts) {
 	if timeouts.ReadTimeout < time.Second {
 		utils.WarnLog("Sanitizing invalid HTTP read timeout", "provided", timeouts.ReadTimeout, "updated", rpc.DefaultHTTPTimeouts.ReadTimeout)
 		timeouts.ReadTimeout = rpc.DefaultHTTPTimeouts.ReadTimeout
