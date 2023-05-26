@@ -92,7 +92,7 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		rsp := &protos.RspUploadFileSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
-				Msg:   "do not spam transferring file slices",
+				Msg:   "failed transferring file slice, re-transfer",
 			},
 		}
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspTransferDownload)

@@ -106,7 +106,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		rsp := &protos.RspUploadFileSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
-				Msg:   "do not spam uploading file slices",
+				Msg:   "failed uploading file slice, re-upload",
 			},
 		}
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
@@ -253,7 +253,7 @@ func ReqBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 		rsp := &protos.RspUploadFileSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
-				Msg:   "do not spam backing up file slices",
+				Msg:   "failed backing up file slice, re-backup",
 			},
 		}
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspBackupFileSlice)
