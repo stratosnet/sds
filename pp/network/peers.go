@@ -89,10 +89,8 @@ func (p *Network) ListenOffline(ctx context.Context) {
 		select {
 		case offline := <-p2pserver.GetP2pServer(ctx).ReadOfflineChan():
 			if offline.IsSp {
-				if setting.IsPP {
-					utils.DebugLogf("SP %v is offline", offline.NetworkAddress)
-					p.reloadConnectSP(ctx)
-				}
+				utils.DebugLogf("SP %v is offline", offline.NetworkAddress)
+				p.reloadConnectSP(ctx)
 			} else {
 				p2pserver.GetP2pServer(ctx).PPDisconnected(ctx, "", offline.NetworkAddress)
 				p.InitPPList(ctx)
