@@ -83,6 +83,10 @@ func (r *WeightedHashRing) RemoveNode(nodeID string) bool {
 	}
 	node := val.(*WeightedNode)
 
+	if r.IsOnline(nodeID) {
+		r.NodeOkCount--
+	}
+
 	for i := uint32(0); i < node.Copies; i++ {
 		index := calcIndex(virtualKey(node.ID, i))
 		r.VRing.Delete(&VWeightedNode{Index: index, NodeID: node.ID})

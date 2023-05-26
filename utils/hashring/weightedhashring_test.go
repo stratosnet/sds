@@ -8,6 +8,7 @@ import (
 	"github.com/bsipos/thist"
 	"github.com/google/uuid"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stretchr/testify/assert"
 )
 
 func init() {
@@ -97,6 +98,31 @@ func TestGetNodeExcludedNodeIDsWeightedHashring(t *testing.T) {
 	if ring.NodeOkCount != 1 {
 		t.Fatalf("Wrong NodeOkCount [%v] (expected [%v])", ring.NodeOkCount, 1)
 	}
+}
+
+func TestWeightedHashringNodeCount(t *testing.T) {
+	ring := NewWeightedHashRing()
+	assert.Equal(t, uint32(0), ring.NodeCount)
+	assert.Equal(t, uint32(0), ring.NodeOkCount)
+
+	ring.AddNode(&WeightedNode{ID: "node1"})
+	ring.AddNode(&WeightedNode{ID: "node2"})
+	ring.AddNode(&WeightedNode{ID: "node3"})
+	assert.Equal(t, uint32(3), ring.NodeCount)
+	assert.Equal(t, uint32(0), ring.NodeOkCount)
+
+	ring.SetOnline("node1")
+	ring.SetOnline("node2")
+	ring.SetOnline("node3")
+	assert.Equal(t, uint32(3), ring.NodeCount)
+	assert.Equal(t, uint32(3), ring.NodeOkCount)
+
+	ring.RemoveNode("node1")
+	ring.SetOffline("node2")
+	ring.SetOffline("node3")
+	ring.RemoveNode("node3")
+	assert.Equal(t, uint32(1), ring.NodeCount)
+	assert.Equal(t, uint32(0), ring.NodeOkCount)
 }
 
 /*

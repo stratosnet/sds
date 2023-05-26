@@ -95,6 +95,10 @@ func (r *HashRing) RemoveNode(nodeID string) bool {
 	}
 	node := val.(*Node)
 
+	if r.IsOnline(nodeID) {
+		r.NodeOkCount--
+	}
+
 	var numberOfNode uint32 = 1
 	if r.NumberOfVirtual > 0 {
 		numberOfNode = r.NumberOfVirtual
