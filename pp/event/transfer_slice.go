@@ -89,7 +89,7 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	// spam check
 	key := reqNotice.TaskId + strconv.FormatInt(int64(reqNotice.SliceNumber), 10)
 	if _, ok := transferSliceSpamCheckMap.Load(key); ok {
-		rsp := &protos.RspUploadFileSlice{
+		rsp := &protos.RspTransferDownload{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
 				Msg:   "failed transferring file slice, re-transfer",

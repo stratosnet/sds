@@ -250,7 +250,7 @@ func ReqBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 	// spam check
 	key := target.RspBackupFile.TaskId + strconv.FormatInt(int64(target.SliceNumber), 10)
 	if _, ok := backupSliceSpamCheckMap.Load(key); ok {
-		rsp := &protos.RspUploadFileSlice{
+		rsp := &protos.RspBackupFileSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
 				Msg:   "failed backing up file slice, re-backup",
@@ -274,7 +274,7 @@ func ReqBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 	sliceSizeFromMsg := slice.SliceOffset.SliceOffsetEnd - slice.SliceOffset.SliceOffsetStart
 
 	if slice.PpInfo.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
-		rsp := &protos.RspUploadFileSlice{
+		rsp := &protos.RspBackupFileSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
 				Msg:   "mismatch between p2p address in the request and node p2p address.",
