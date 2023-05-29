@@ -2,9 +2,7 @@ package event
 
 import (
 	"context"
-	"math/rand"
 	"sync"
-	"time"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
@@ -14,11 +12,6 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/relay/stratoschain/grpc"
 	"github.com/stratosnet/sds/utils"
-)
-
-const (
-	SPLIST_INTERVAL_BASE = 60 // In second
-	SPLIST_MAX_JITTER    = 10 // In second
 )
 
 func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
@@ -31,7 +24,6 @@ func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-	defer network.GetPeer(ctx).ScheduleReloadSPlist(ctx, time.Second*time.Duration(SPLIST_INTERVAL_BASE+rand.Intn(SPLIST_MAX_JITTER)))
 	utils.DebugLog("get GetSPList RSP", target.SpList)
 
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
