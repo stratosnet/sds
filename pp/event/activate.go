@@ -104,14 +104,14 @@ func RspActivate(ctx context.Context, conn core.WriteCloser) {
 	rpcResult.Return = rpc.SUCCESS
 }
 
-// RspActivated Response when this PP node was successfully activated
-func RspActivated(ctx context.Context, conn core.WriteCloser) {
+// NoticeActivatedPP Notice when this PP node was successfully activated
+func NoticeActivatedPP(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspActivatePP
 	success := requests.UnmarshalData(ctx, &target)
 	if !success {
 		return
 	}
-	utils.Log("get RspActivatedPP", target.Result.State, target.Result.Msg)
+	utils.Log("get NoticeActivatedPP", target.Result.State, target.Result.Msg)
 
 	setting.State = types.PP_ACTIVE
 	network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_ACTIVATED)

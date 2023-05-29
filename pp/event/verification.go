@@ -154,9 +154,9 @@ func RspBackupStatusWithNoReqIdVerifier(ctx context.Context, cmd string, target 
 	}
 }
 
-func verifyReqFileSliceBackupNotice(msg *protos.ReqFileSliceBackupNotice) error {
+func verifyNoticeFileSliceBackup(msg *protos.NoticeFileSliceBackup) error {
 	if msg == nil {
-		return errors.New("ReqFileSliceBackupNotice msg is empty")
+		return errors.New("NoticeFileSliceBackup msg is empty")
 	}
 	if msg.SpP2PAddress == "" || msg.NodeSign == nil {
 		return errors.New("key information is missing")
@@ -170,7 +170,7 @@ func verifyReqFileSliceBackupNotice(msg *protos.ReqFileSliceBackupNotice) error 
 	}
 	nodeSign := msg.NodeSign
 	msg.NodeSign = nil
-	signmsg, err := utils.GetReqBackupSliceNoticeSpNodeSignMessage(msg)
+	signmsg, err := utils.GetNoticeFileSliceBackupSpNodeSignMessage(msg)
 	if err != nil {
 		return errors.New("failed getting sp's sign message")
 	}
@@ -180,22 +180,22 @@ func verifyReqFileSliceBackupNotice(msg *protos.ReqFileSliceBackupNotice) error 
 	return nil
 }
 
-// ReqFileSliceBackupNoticeVerifier task level verifier for all messages carrying ReqFileSliceBackupNotice in a transfer task
-func ReqFileSliceBackupNoticeVerifier(ctx context.Context, cmd string, target interface{}) error {
+// NoticeFileSliceBackupVerifier task level verifier for all messages carrying NoticeFileSliceBackup in a transfer task
+func NoticeFileSliceBackupVerifier(ctx context.Context, cmd string, target interface{}) error {
 	msgBuf := core.MessageFromContext(ctx)
 	if err := proto.Unmarshal(msgBuf.MSGBody, target.(proto.Message)); err != nil {
 		return errors.Wrap(err, "protobuf Unmarshal error")
 	}
-	// ReqFileSliceBackupNotice itself
-	if reflect.TypeOf(target) == reflect.TypeOf(&protos.ReqFileSliceBackupNotice{}) {
-		return verifyReqFileSliceBackupNotice(target.(*protos.ReqFileSliceBackupNotice))
+	// NoticeFileSliceBackup itself
+	if reflect.TypeOf(target) == reflect.TypeOf(&protos.NoticeFileSliceBackup{}) {
+		return verifyNoticeFileSliceBackup(target.(*protos.NoticeFileSliceBackup))
 	} else {
-		// other types carrying a ReqFileSliceBackupNotice
-		field := reflect.ValueOf(target).Elem().FieldByName("ReqFileSliceBackupNotice")
+		// other types carrying a NoticeFileSliceBackup
+		field := reflect.ValueOf(target).Elem().FieldByName("NoticeFileSliceBackup")
 		if field.IsValid() {
-			return verifyReqFileSliceBackupNotice(field.Interface().(*protos.ReqFileSliceBackupNotice))
+			return verifyNoticeFileSliceBackup(field.Interface().(*protos.NoticeFileSliceBackup))
 		} else {
-			return errors.New("field of ReqFileSliceBackupNotice is not found in the message")
+			return errors.New("field of NoticeFileSliceBackup is not found in the message")
 		}
 	}
 }

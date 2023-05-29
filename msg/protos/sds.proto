@@ -360,6 +360,13 @@ message RspUpdateStakePP {
   bytes  tx = 3;
 }
 
+message NoticeUpdatedStakePP {
+  Result result = 1;
+  string stake_balance = 2;
+  string node_tier = 3;
+  string weight_score = 4;
+}
+
 message ReqStateChangePP {
   string p2p_address = 1;
 }
@@ -380,15 +387,11 @@ message RspDeactivatePP {
   bytes  tx = 3;
 }
 
-message ReqUnbondingPP {
-  string p2p_address = 1;
-  string ozone_limit_changes = 2; // negative
-  string unbonding_mature_time = 3;
-  string tx_hash = 4;
-  string stake_to_remove = 5;
+message NoticeUnbondingPP {
+  Result result = 1;
 }
 
-message RspUnbondingPP {
+message NoticeDeactivatedPP {
   Result result = 1;
 }
 
@@ -478,7 +481,7 @@ message RspReportTransferResult {
 
 // the message that is sent to the pp which will pull the
 // slice from another pp which stores the file slice
-message ReqFileSliceBackupNotice {
+message NoticeFileSliceBackup {
   string           task_id = 1;
   string           file_hash = 2;
   SliceStorageInfo slice_storage_info = 3;
@@ -535,9 +538,9 @@ message RspBackupStatus {
 }
 
 message ReqTransferDownload {
-  ReqFileSliceBackupNotice req_file_slice_backup_notice = 1;
-  PPBaseInfo               new_pp = 2;
-  string                   p2p_address = 3;
+  NoticeFileSliceBackup notice_file_slice_backup = 1;
+  PPBaseInfo            new_pp = 2;
+  string                p2p_address = 3;
 }
 
 message RspTransferDownload {
@@ -832,7 +835,7 @@ message RspBadVersion{
   string command = 3;
 }
 
-message RspSpUnderMaintenance{
+message NoticeSpUnderMaintenance{
   string sp_p2p_address = 1;
   int32  maintenance_type = 2;
 }

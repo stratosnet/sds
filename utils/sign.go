@@ -24,7 +24,6 @@ func GetRspUploadFileSpNodeSignMessage(rspMsg *protos.RspUploadFile) ([]byte, er
 	return CalcHashBytes(msg), nil
 }
 
-// GetRspBackupFileSpNodeSignMessage
 func GetRspBackupFileSpNodeSignMessage(rspMsg *protos.RspBackupStatus) ([]byte, error) {
 	msg, err := proto.Marshal(rspMsg)
 	if err != nil {
@@ -33,8 +32,7 @@ func GetRspBackupFileSpNodeSignMessage(rspMsg *protos.RspBackupStatus) ([]byte, 
 	return CalcHashBytes(msg), nil
 }
 
-// GetReqBackupSliceNoticeSpNodeSignMessage
-func GetReqBackupSliceNoticeSpNodeSignMessage(reqMsg *protos.ReqFileSliceBackupNotice) ([]byte, error) {
+func GetNoticeFileSliceBackupSpNodeSignMessage(reqMsg *protos.NoticeFileSliceBackup) ([]byte, error) {
 	msg, err := proto.Marshal(reqMsg)
 	if err != nil {
 		return nil, err

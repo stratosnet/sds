@@ -23,12 +23,12 @@ var (
 	transferSliceSpamCheckMap = utils.NewAutoCleanMap(setting.SPAM_THRESHOLD_SLICE_OPERATIONS)
 )
 
-// ReqFileSliceBackupNotice An SP node wants this PP node to fetch the specified slice from the PP node who stores it.
+// NoticeFileSliceBackup An SP node wants this PP node to fetch the specified slice from the PP node who stores it.
 // Both backups and transfers use the same method
-func ReqFileSliceBackupNotice(ctx context.Context, conn core.WriteCloser) {
-	utils.DebugLog("get ReqFileSliceBackupNotice")
-	target := &protos.ReqFileSliceBackupNotice{}
-	if err := VerifyMessage(ctx, header.ReqFileSliceBackupNotice, target); err != nil {
+func NoticeFileSliceBackup(ctx context.Context, conn core.WriteCloser) {
+	utils.DebugLog("get NoticeFileSliceBackup")
+	target := &protos.NoticeFileSliceBackup{}
+	if err := VerifyMessage(ctx, header.NoticeFileSliceBackup, target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
@@ -84,10 +84,10 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	}
 	setWriteHookForRspTransferSlice(conn)
 
-	reqNotice := target.ReqFileSliceBackupNotice
+	noticeFileSliceBackup := target.NoticeFileSliceBackup
 
 	// spam check
-	key := reqNotice.TaskId + strconv.FormatInt(int64(reqNotice.SliceNumber), 10)
+	key := noticeFileSliceBackup.TaskId + strconv.FormatInt(int64(noticeFileSliceBackup.SliceNumber), 10)
 	if _, ok := transferSliceSpamCheckMap.Load(key); ok {
 		rsp := &protos.RspUploadFileSlice{
 			Result: &protos.Result{
@@ -112,21 +112,21 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	})
 	tTask := task.TransferTask{
 		IsReceiver:         false,
-		DeleteOrigin:       reqNotice.DeleteOrigin,
-		PpInfo:             reqNotice.PpInfo,
-		SliceStorageInfo:   reqNotice.SliceStorageInfo,
-		FileHash:           reqNotice.FileHash,
-		SliceNum:           reqNotice.SliceNumber,
+		DeleteOrigin:       noticeFileSliceBackup.DeleteOrigin,
+		PpInfo:             noticeFileSliceBackup.PpInfo,
+		SliceStorageInfo:   noticeFileSliceBackup.SliceStorageInfo,
+		FileHash:           noticeFileSliceBackup.FileHash,
+		SliceNum:           noticeFileSliceBackup.SliceNumber,
 		ReceiverP2pAddress: target.NewPp.P2PAddress,
 	}
-	task.AddTransferTask(reqNotice.TaskId, reqNotice.SliceStorageInfo.SliceHash, tTask)
+	task.AddTransferTask(noticeFileSliceBackup.TaskId, noticeFileSliceBackup.SliceStorageInfo.SliceHash, tTask)
 
-	sliceHash := reqNotice.SliceStorageInfo.SliceHash
-	sliceData := task.GetTransferSliceData(reqNotice.TaskId, reqNotice.SliceStorageInfo.SliceHash)
+	sliceHash := noticeFileSliceBackup.SliceStorageInfo.SliceHash
+	sliceData := task.GetTransferSliceData(noticeFileSliceBackup.TaskId, noticeFileSliceBackup.SliceStorageInfo.SliceHash)
 	sliceDataLen := len(sliceData)
-	utils.DebugLogf("sliceDataLen = %v  TaskId = %v", sliceDataLen, reqNotice.TaskId)
+	utils.DebugLogf("sliceDataLen = %v  TaskId = %v", sliceDataLen, noticeFileSliceBackup.TaskId)
 
-	tkSliceUID := reqNotice.TaskId + sliceHash
+	tkSliceUID := noticeFileSliceBackup.TaskId + sliceHash
 	dataStart := 0
 	dataEnd := setting.MAXDATA
 	for {
@@ -140,14 +140,14 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		utils.DebugLogf("PacketIdMap.Store <==(%v, %v)", packetId, tkSlice)
 		costTimeStat := DownSendCostTimeMap.StartSendPacket(tkSliceUID)
 		utils.DebugLogf("--- DownSendCostTimeMap.StartSendPacket--- taskId %v, sliceHash %v, costTimeStatAfter %v",
-			reqNotice.TaskId, sliceHash, costTimeStat)
+			noticeFileSliceBackup.TaskId, sliceHash, costTimeStat)
 		if dataEnd > sliceDataLen {
-			_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspTransferDownload(sliceData[dataStart:], reqNotice.TaskId, sliceHash,
-				reqNotice.SpP2PAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress(), uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
+			_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspTransferDownload(sliceData[dataStart:], noticeFileSliceBackup.TaskId, sliceHash,
+				noticeFileSliceBackup.SpP2PAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress(), uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 			return
 		}
-		_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspTransferDownload(sliceData[dataStart:dataEnd], reqNotice.TaskId, sliceHash,
-			reqNotice.SpP2PAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress(), uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
+		_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspTransferDownload(sliceData[dataStart:dataEnd], noticeFileSliceBackup.TaskId, sliceHash,
+			noticeFileSliceBackup.SpP2PAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress(), uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 		dataStart += setting.MAXDATA
 		dataEnd += setting.MAXDATA
 	}

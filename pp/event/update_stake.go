@@ -32,7 +32,7 @@ func UpdateStake(ctx context.Context, stakeDelta utiltypes.Coin, txFee utiltypes
 // RspUpdateStake Response to asking the SP node to update stake this node
 func RspUpdateStake(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspUpdateStakePP
-	if err := VerifyMessage(ctx, header.RspUpdatedStakePP, &target); err != nil {
+	if err := VerifyMessage(ctx, header.RspUpdateStakePP, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
@@ -62,10 +62,10 @@ func RspUpdateStake(ctx context.Context, conn core.WriteCloser) {
 	ReqStateChange(ctx, conn)
 }
 
-// RspUpdatedStake Response when this PP node's stake was successfully updated
-func RspUpdatedStake(ctx context.Context, conn core.WriteCloser) {
-	var target protos.RspUpdatedStakePP
-	if err := VerifyMessage(ctx, header.RspUpdatedStakePP, &target); err != nil {
+// NoticeUpdatedStake Notice when this PP node's stake was successfully updated
+func NoticeUpdatedStake(ctx context.Context, conn core.WriteCloser) {
+	var target protos.NoticeUpdatedStakePP
+	if err := VerifyMessage(ctx, header.NoticeUpdatedStakePP, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
@@ -73,7 +73,7 @@ func RspUpdatedStake(ctx context.Context, conn core.WriteCloser) {
 	if !success {
 		return
 	}
-	utils.Logf("get RspUpdatedStakePP, StakeBalance: %v, NodeTier: %v, Weight_Score: %v", target.StakeBalance, target.NodeTier, target.WeightScore)
+	utils.Logf("get NoticeUpdatedStakePP, StakeBalance: %v, NodeTier: %v, Weight_Score: %v", target.StakeBalance, target.NodeTier, target.WeightScore)
 
 	// msg is not empty after stake being updated to 0wei
 	stakeBalanceAfter, err := utiltypes.ParseCoinNormalized(target.StakeBalance)

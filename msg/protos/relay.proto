@@ -54,24 +54,17 @@ message ReqUpdatedStakeSP {
   string tx_hash = 4;
 }
 
-message RspUpdatedStakePP {
-  Result result = 1;
-  string stake_balance = 2;
-  string node_tier = 3;
-  string weight_score = 4;
-}
-
-message RspPPRegisteredToSP {
-  Result result = 1;
-}
-
 message ReqDeactivatedPP {
   string p2p_address = 1;
   string tx_hash = 2;
 }
 
-message RspDeactivatedPP {
-  Result result = 1;
+message ReqUnbondingPP {
+  string p2p_address = 1;
+  string ozone_limit_changes = 2; // negative
+  string unbonding_mature_time = 3;
+  string tx_hash = 4;
+  string stake_to_remove = 5;
 }
 
 message ReqWithdrawnStakeSP {
@@ -96,10 +89,6 @@ message ReqPrepaid {
   string wallet_address = 1;
   string purchased_uoz = 2;
   string tx_hash = 3;
-}
-
-message RspPrepaid {
-  Result result = 1;
 }
 
 message RelayMessage {
