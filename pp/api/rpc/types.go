@@ -50,10 +50,10 @@ type ParamReqDownloadFile struct {
 type ParamReqDownloadData struct {
 	FileHash       string `json:"filehash"`
 	ReqId          string `json:"reqid"`
+	SliceHash      string `json:"slicehash"`
 	SliceNumber    uint64 `json:"slicenumber"`
 	NetworkAddress string `json:"networkaddress"`
 	P2PAddress     string `json:"p2pAddress"`
-	WalletAddr     string `json:"walletaddr"`
 }
 
 // download: download file data
