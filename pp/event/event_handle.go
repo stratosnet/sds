@@ -72,14 +72,14 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspPrepaid, RspPrepaid, SpAddressVerifier)
 
 	// pp--(*req*)--pp--(*rsp*)--pp
-	registerEvent(header.ReqUploadFileSlice, ReqUploadFileSlice, RspUploadFileVerifier)
+	registerEvent(header.ReqUploadFileSlice, ReqUploadFileSlice, RspUploadFileWithNoReqIdVerifier)
 	registerEvent(header.RspUploadFileSlice, RspUploadFileSlice, PpRspVerifier)
-	registerEvent(header.ReqBackupFileSlice, ReqBackupFileSlice, RspBackupStatusVerifier)
+	registerEvent(header.ReqBackupFileSlice, ReqBackupFileSlice, RspBackupStatusWithNoReqIdVerifier)
 	registerEvent(header.RspBackupFileSlice, RspBackupFileSlice, PpRspVerifier)
-	registerEvent(header.ReqDownloadSlice, ReqDownloadSlice, RspFileStorageInfoVerifier)
+	registerEvent(header.ReqDownloadSlice, ReqDownloadSlice, RspFileStorageInfoWithNoReqIdVerifier)
 	registerEvent(header.RspDownloadSlice, RspDownloadSlice, PpRspVerifier)
 	registerEvent(header.ReqTransferDownload, ReqTransferDownload, ReqFileSliceBackupNoticeVerifier)
-	registerEvent(header.RspTransferDownload, RspTransferDownload, PpRspVerifier)
+	registerEvent(header.RspTransferDownload, RspTransferDownload, nil)
 	registerEvent(header.ReqLatencyCheck, ReqLatencyCheckToPp, nil) // shared with pp-sp-pp version
 
 	// pp--(*msg*)--pp
@@ -99,29 +99,6 @@ func RegisterAllEventHandlers() {
 	// to be used
 	registerEvent(header.ReqGetHDInfo, ReqGetHDInfo, nil)
 	registerEvent(header.RspGetHDInfo, RspGetHDInfo, nil)
-	registerEvent(header.ReqDeleteSlice, ReqDeleteSlice, nil)
-	registerEvent(header.RspDeleteSlice, RspDeleteSlice, nil)
-
-	// re-route
-	registerEvent(header.ReqDeleteFile, ReqDeleteFile, nil)
-	registerEvent(header.ReqFindMyFileList, ReqFindMyFileList, nil)
-	registerEvent(header.ReqFileStorageInfo, ReqFileStorageInfo, nil)
-	registerEvent(header.ReqRegister, ReqRegister, nil)
-	registerEvent(header.ReqShareLink, ReqShareLink, nil)
-	registerEvent(header.RspShareLink, RspShareLink, nil)
-	registerEvent(header.ReqShareFile, ReqShareFile, nil)
-	registerEvent(header.RspShareFile, RspShareFile, nil)
-	registerEvent(header.ReqDeleteShare, ReqDeleteShare, nil)
-	registerEvent(header.RspDeleteShare, RspDeleteShare, nil)
-	registerEvent(header.ReqGetShareFile, ReqGetShareFile, nil)
-	registerEvent(header.RspGetShareFile, RspGetShareFile, nil)
-	registerEvent(header.ReqSpLatencyCheck, ReqSpLatencyCheck, nil)
-	registerEvent(header.ReqLatencyCheck, ReqLatencyCheckToPp, nil)
-	registerEvent(header.RspLatencyCheck, RspLatencyCheck, nil)
-	registerEvent(header.ReqDeleteFile, ReqDeleteFile, nil)
-	registerEvent(header.RspDeleteFile, RspDeleteFile, nil)
-	registerEvent(header.RspBadVersion, RspBadVersion, nil)
-	registerEvent(header.RspSpUnderMaintenance, RspSpUnderMaintenance, nil)
 
 	core.RegisterTimeoutHandler(header.ReqDownloadSlice, &DownloadTimeoutHandler{})
 }

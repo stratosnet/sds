@@ -74,6 +74,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqUploadFileSlice
 	if err := VerifyMessage(ctx, header.ReqUploadFileSlice, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 
 	if !requests.UnmarshalData(ctx, &target) {
@@ -194,6 +195,7 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspUploadFileSlice
 	if err := VerifyMessage(ctx, header.RspUploadFileSlice, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -239,6 +241,7 @@ func ReqBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqBackupFileSlice
 	if err := VerifyMessage(ctx, header.ReqBackupFileSlice, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -349,6 +352,7 @@ func RspBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspBackupFileSlice
 	if err := VerifyMessage(ctx, header.RspBackupFileSlice, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -392,6 +396,7 @@ func RspUploadSlicesWrong(ctx context.Context, _ core.WriteCloser) {
 	var target protos.RspUploadSlicesWrong
 	if err := VerifyMessage(ctx, header.RspUploadSlicesWrong, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -428,6 +433,7 @@ func RspReportUploadSliceResult(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspReportUploadSliceResult
 	if err := VerifyMessage(ctx, header.RspReportUploadSliceResult, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -582,6 +588,7 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 	var target protos.UploadSpeedOfProgress
 	if err := VerifyMessage(ctx, header.UploadSpeedOfProgress, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return

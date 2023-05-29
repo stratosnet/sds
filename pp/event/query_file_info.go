@@ -86,6 +86,7 @@ func ReqClearDownloadTask(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqClearDownloadTask
 	if err := VerifyMessage(ctx, header.ReqClearDownloadTask, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if requests.UnmarshalData(ctx, &target) {
 		task.DeleteDownloadTask(target.WalletAddress, target.WalletAddress, "")
@@ -109,6 +110,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspFileStorageInfo
 	if err := VerifyMessage(ctx, header.RspFileStorageInfo, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -196,6 +198,7 @@ func RspFileReplicaInfo(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspFileReplicaInfo
 	if err := VerifyMessage(ctx, header.RspFileReplicaInfo, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return

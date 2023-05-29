@@ -108,6 +108,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 	target := &protos.RspUploadFile{}
 	if err := VerifyMessage(ctx, header.RspUploadFile, target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, target) {
 		pp.ErrorLog(ctx, "unmarshal error")
@@ -165,6 +166,7 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 	target := &protos.RspBackupStatus{}
 	if err := VerifyMessage(ctx, header.RspFileBackupStatus, target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, target) {
 		pp.ErrorLog(ctx, "unmarshal error")

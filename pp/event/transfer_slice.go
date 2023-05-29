@@ -30,6 +30,7 @@ func ReqFileSliceBackupNotice(ctx context.Context, conn core.WriteCloser) {
 	target := &protos.ReqFileSliceBackupNotice{}
 	if err := VerifyMessage(ctx, header.ReqFileSliceBackupNotice, target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, target) {
 		return
@@ -76,6 +77,7 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqTransferDownload
 	if err := VerifyMessage(ctx, header.ReqTransferDownload, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -158,6 +160,7 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspTransferDownload
 	if err := VerifyMessage(ctx, header.RspTransferDownload, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -186,6 +189,7 @@ func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspTransferDownloadResult
 	if err := VerifyMessage(ctx, header.RspTransferDownloadResult, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -251,6 +255,7 @@ func RspReportBackupSliceResult(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspReportBackupSliceResult
 	if err := VerifyMessage(ctx, header.RspReportBackupSliceResult, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
