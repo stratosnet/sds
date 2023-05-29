@@ -349,9 +349,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 		} else {
 			receiveSliceAndProgress(ctx, &target, fInfo, dTask, costTime)
 		}
-		if !utils.IsVideoStream(fInfo.FileHash) {
-			task.DownloadProgress(ctx, target.FileHash, fileReqId, uint64(len(target.Data)))
-		}
+		task.DownloadProgress(ctx, target.FileHash, fileReqId, uint64(len(target.Data)))
 	} else {
 		utils.DebugLog("DownloadFileMap doesn't have entry with file hash", target.FileHash)
 	}
@@ -439,7 +437,6 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 	target.Result = &protos.Result{
 		State: protos.ResultState_RES_SUCCESS,
 	}
-	downloadKeep(fInfo.FileHash, fInfo.WalletAddress, fInfo.ReqId, target.TaskId)
 	setDownloadSliceSuccess(ctx, target.SliceInfo.SliceHash, dTask)
 	// get total costTime
 	tkSlice := target.TaskId + target.SliceInfo.SliceHash
@@ -449,14 +446,6 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 	instantInboundSpeed := float64(target.SliceSize) / math.Max(float64(totalCostTime), 1)
 	metrics.InboundSpeed.WithLabelValues(reportReq.OpponentP2PAddress).Set(instantInboundSpeed)
 	DownRecvCostTimeMap.DeleteRecord(tkSlice)
-}
-
-func downloadKeep(fileHash, walletAddress, fileReqId, taskId string) {
-	utils.DebugLogf("download keep fileHash = %v  taskID = %v", fileHash, taskId)
-	if ing, ok := task.DownloadTaskMap.Load(fileHash + walletAddress + fileReqId); ok {
-		ING := ing.(*task.DownloadTask)
-		ING.DownloadCh <- true
-	}
 }
 
 // SendReportDownloadResult  PP-SP OR StoragePP-SP
@@ -489,66 +478,23 @@ func DownloadFileSlice(ctx context.Context, target *protos.RspFileStorageInfo, r
 	if !file.CheckFileExisting(ctx, target.FileHash, target.FileName, target.SavePath, target.EncryptionTag, reqId) {
 		pp.Log(ctx, "download starts: ")
 		task.DownloadSpeedOfProgress.Store(target.FileHash+reqId, sp)
-		if len(dTask.SlicesToDownload) > dTask.MaxSliceNum {
-			go downSlice(ctx, target, dTask, reqId)
-			for i := 0; i < dTask.MaxSliceNum; i++ {
-				dTask.DownloadCh <- true
-			}
-		} else {
-			for _, sliceHash := range dTask.SlicesToDownload {
-				sliceInfo := dTask.SliceInfo[sliceHash]
-				if !file.CheckSliceExisting(target.FileHash, target.FileName, sliceHash, target.SavePath, reqId) {
-
-					req := requests.ReqDownloadSliceData(ctx, target, sliceInfo)
-					newCtx := createAndRegisterSliceReqId(ctx, reqId)
-					SendReqDownloadSlice(newCtx, target.FileHash, sliceInfo, req, reqId)
-				} else {
-					pp.Log(ctx, "slice exist already,", sliceInfo.SliceStorageInfo.SliceHash)
-					task.DownloadProgress(ctx, target.FileHash, reqId, sliceInfo.SliceOffset.SliceOffsetEnd-sliceInfo.SliceOffset.SliceOffsetStart)
-					task.CleanDownloadTask(ctx, target.FileHash, sliceHash, setting.WalletAddress, reqId)
-					setDownloadSliceSuccess(ctx, sliceHash, dTask)
-				}
-			}
-			utils.DebugLog("all slices of the task have begun downloading")
-			_, ok := <-dTask.DownloadCh
-			if ok {
-				close(dTask.DownloadCh)
+		for _, slice := range target.SliceInfo {
+			pp.DebugLog(ctx, "taskid ======= ", slice.TaskId)
+			if file.CheckSliceExisting(target.FileHash, target.FileName, slice.SliceStorageInfo.SliceHash, target.SavePath, reqId) {
+				pp.Log(ctx, "slice exist already,", slice.SliceStorageInfo.SliceHash)
+				task.DownloadProgress(ctx, target.FileHash, reqId, slice.SliceOffset.SliceOffsetEnd-slice.SliceOffset.SliceOffsetStart)
+				task.CleanDownloadTask(ctx, target.FileHash, slice.SliceStorageInfo.SliceHash, target.WalletAddress, reqId)
+				setDownloadSliceSuccess(ctx, slice.SliceStorageInfo.SliceHash, dTask)
+			} else {
+				pp.DebugLog(ctx, "request download data")
+				req := requests.ReqDownloadSliceData(ctx, target, slice)
+				newCtx := createAndRegisterSliceReqId(ctx, reqId)
+				SendReqDownloadSlice(newCtx, target.FileHash, slice, req, reqId)
 			}
 		}
 	} else {
 		pp.Log(ctx, "file exists already!")
 		task.DeleteDownloadTask(target.FileHash, target.WalletAddress, target.ReqId)
-	}
-}
-
-func downSlice(ctx context.Context, fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask, fileReqId string) {
-	for goon := range dTask.DownloadCh {
-		if !goon {
-			continue
-		}
-
-		if len(dTask.SlicesToDownload) == 0 {
-			utils.DebugLog("all slices of the task have begun downloading")
-			if _, ok := <-dTask.DownloadCh; ok {
-				close(dTask.DownloadCh)
-			}
-			return
-		}
-		sliceHash := dTask.SlicesToDownload[0]
-		sliceInfo := dTask.SliceInfo[sliceHash]
-		utils.DebugLog("start Download!!!!!", sliceInfo.SliceNumber)
-		if file.CheckSliceExisting(fInfo.FileHash, fInfo.FileName, sliceInfo.SliceStorageInfo.SliceHash, fInfo.SavePath, fileReqId) {
-			utils.DebugLog("slice exist already ", sliceInfo.SliceNumber)
-			task.CleanDownloadTask(ctx, fInfo.FileHash, sliceInfo.SliceStorageInfo.SliceHash, setting.WalletAddress, fileReqId)
-			setDownloadSliceSuccess(ctx, sliceInfo.SliceStorageInfo.SliceHash, dTask)
-			dTask.DownloadCh <- true
-		} else {
-			req := requests.ReqDownloadSliceData(ctx, fInfo, sliceInfo)
-			newCtx := createAndRegisterSliceReqId(ctx, fInfo.ReqId)
-			SendReqDownloadSlice(newCtx, fInfo.FileHash, sliceInfo, req, fInfo.ReqId)
-		}
-
-		dTask.SlicesToDownload = append(dTask.SlicesToDownload[:0], dTask.SlicesToDownload[0+1:]...)
 	}
 }
 
@@ -623,7 +569,6 @@ func setDownloadSliceSuccess(ctx context.Context, sliceHash string, dTask *task.
 
 func setDownloadSliceFail(ctx context.Context, sliceHash, taskId, fileReqId string, dTask *task.DownloadTask) {
 	dTask.AddFailedSlice(sliceHash)
-	downloadKeep(dTask.FileHash, dTask.WalletAddress, fileReqId, taskId)
 	CheckAndSendRetryMessage(ctx, dTask)
 }
 

@@ -23,6 +23,10 @@ func (handler *DownloadTimeoutHandler) Handle(ctx context.Context, message *msg.
 		return
 	}
 
+	if target.RspFileStorageInfo == nil {
+		return
+	}
+
 	dTask, ok := task.GetDownloadTask(target.RspFileStorageInfo.FileHash, target.RspFileStorageInfo.WalletAddress, task.LOCAL_REQID)
 	if !ok {
 		return

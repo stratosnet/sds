@@ -122,6 +122,16 @@ func LoadHlsInfo(fileHash, sliceHash, savePath string) *HlsInfo {
 	return &hlsInfo
 }
 
+func LoadHlsInfoFromData(data []byte) (*HlsInfo, error) {
+	var hlsInfo HlsInfo
+	err := json.Unmarshal(data, &hlsInfo)
+	if err != nil {
+		utils.ErrorLog(err)
+		return nil, err
+	}
+	return &hlsInfo, nil
+}
+
 func DeleteTmpHlsFolder(ctx context.Context, fileHash string) {
 	err := os.RemoveAll(GetVideoTmpFolder(fileHash))
 	if err != nil {

@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/protos"
@@ -367,7 +366,7 @@ func CreateUploadSliceTask(ctx context.Context, slice *SliceWithStatus, uploadTa
 
 	var rawData []byte
 	var err error
-	tmpFileName := uuid.NewString()
+	tmpFileName := strconv.FormatUint(slice.Slice.SliceNumber, 10)
 	if !remote {
 		metrics.UploadPerformanceLogNow(fileHash + ":SND_GET_LOCAL_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
 		rawData, err = file.GetWholeFileData(file.GetTmpSlicePath(fileHash, strconv.FormatUint(slice.Slice.SliceNumber, 10)))

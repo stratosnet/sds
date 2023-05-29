@@ -317,7 +317,7 @@ func putstream(cmd *cobra.Command, args []string) error {
 
 	// args[0] is the first param, instead of the subcommand "put"
 	fileName := args[0]
-	hash := file.GetFileHash(args[0], "")
+	hash := file.GetFileHashForVideoStream(args[0], "")
 	utils.Log("- start uploading stream video:", fileName)
 
 	// compose request file upload params

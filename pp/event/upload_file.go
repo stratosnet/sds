@@ -226,13 +226,14 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 }
 
 func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
+	totalSize, err := preUpload(ctx, target)
+
 	// Create upload task
 	uploadTask := task.CreateUploadFileTask(target)
 
 	p2pserver.GetP2pServer(ctx).CleanUpConnMap(target.FileHash)
 	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
 
-	totalSize, err := preUpload(ctx, target)
 	if err != nil {
 		pp.ErrorLog(ctx, "received error when prepare file before upload: ", err)
 	}
@@ -240,7 +241,7 @@ func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
 	if prg, ok := task.UploadProgressMap.Load(target.FileHash); ok {
 		progress := prg.(*task.UploadProgress)
 		progress.Total = totalSize
-		progress.HasUpload = (target.TotalSlice - int64(len(target.Slices))) * setting.MAX_SLICE_SIZE
+		//progress.HasUpload = (target.TotalSlice - int64(len(target.Slices))) * setting.MAX_SLICE_SIZE
 	}
 
 	// Start uploading
@@ -248,15 +249,16 @@ func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
 }
 
 func preUpload(ctx context.Context, fInfo *protos.RspUploadFile) (int64, error) {
+	file.DeleteTmpFileSlices(ctx, fInfo.FileHash)
 	codec, err := utils.GetCodecFromFileHash(fInfo.FileHash)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to get codec from file hash")
 	}
 	switch codec {
 	case utils.VIDEO_CODEC:
-		return StreamFileHandler{}.PreUpload(ctx, fInfo)
+		return UploadStreamFileHandler{}.PreUpload(ctx, fInfo)
 	default:
-		return RawFileHandler{}.PreUpload(ctx, fInfo)
+		return UploadRawFileHandler{}.PreUpload(ctx, fInfo)
 	}
 }
 
@@ -374,17 +376,17 @@ func UploadPause(ctx context.Context, fileHash, reqID string, w http.ResponseWri
 	task.UploadProgressMap.Delete(fileHash)
 }
 
-type FileHandler interface {
+type UploadFileHandler interface {
 	PreUpload(ctx context.Context, fInfo *protos.RspUploadFile) (int64, error)
 }
 
-type StreamFileHandler struct {
+type UploadStreamFileHandler struct {
 }
 
-type RawFileHandler struct {
+type UploadRawFileHandler struct {
 }
 
-func (StreamFileHandler) PreUpload(ctx context.Context, fInfo *protos.RspUploadFile) (int64, error) {
+func (UploadStreamFileHandler) PreUpload(ctx context.Context, fInfo *protos.RspUploadFile) (int64, error) {
 	fileHash := fInfo.FileHash
 	if file.IsFileRpcRemote(fileHash) {
 		remotePath := strings.Split(file.GetFilePath(fileHash), ":")
@@ -425,6 +427,9 @@ func (StreamFileHandler) PreUpload(ctx context.Context, fInfo *protos.RspUploadF
 			}
 			sliceSize = fileInfo.Size()
 		}
+		slice.SliceSize = uint64(sliceSize)
+		slice.SliceOffset.SliceOffsetStart = 0
+		slice.SliceOffset.SliceOffsetEnd = slice.SliceSize
 		totalSize += sliceSize
 		err := file.SaveTmpSliceData(fileHash, strconv.FormatUint(slice.SliceNumber, 10), data)
 		if err != nil {
@@ -435,7 +440,7 @@ func (StreamFileHandler) PreUpload(ctx context.Context, fInfo *protos.RspUploadF
 	return totalSize, nil
 }
 
-func (RawFileHandler) PreUpload(ctx context.Context, fInfo *protos.RspUploadFile) (int64, error) {
+func (UploadRawFileHandler) PreUpload(ctx context.Context, fInfo *protos.RspUploadFile) (int64, error) {
 	fileHash := fInfo.FileHash
 	filePath := file.GetFilePath(fileHash)
 	fileInfo, err := file.GetFileInfo(filePath)

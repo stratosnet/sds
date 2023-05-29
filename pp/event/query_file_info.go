@@ -122,12 +122,6 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	}
 	metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_STORAGE_INFO_SP:")
 
-	savePath := target.SavePath
-	isVideoStream := utils.IsVideoStream(target.FileHash)
-	if savePath == "" && isVideoStream {
-		savePath = setting.VIDEOPATH
-	}
-
 	newTarget := &protos.RspFileStorageInfo{
 		VisitCer:      target.VisitCer,
 		P2PAddress:    target.P2PAddress,
@@ -137,7 +131,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		FileName:      target.FileName,
 		Result:        target.Result,
 		ReqId:         target.ReqId,
-		SavePath:      savePath,
+		SavePath:      target.SavePath,
 		FileSize:      target.FileSize,
 		RestAddress:   target.RestAddress,
 		NodeSign:      target.NodeSign,
@@ -154,6 +148,10 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		task.CleanDownloadFileAndConnMap(ctx, target.FileHash, fileReqId)
 		task.DownloadFileMap.Store(target.FileHash+fileReqId, newTarget)
 		task.AddDownloadTask(newTarget)
+		if utils.IsVideoStream(target.FileHash) {
+			file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.DOWNLOAD_OK, FileHash: target.FileHash})
+			return
+		}
 		DownloadFileSlice(ctx, newTarget, fileReqId)
 	} else {
 		file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})

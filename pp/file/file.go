@@ -203,7 +203,7 @@ func SaveFileData(ctx context.Context, data []byte, offset int64, sliceHash, fil
 
 	if IsFileRpcRemote(fileHash + fileReqId) {
 		// write to rpc
-		return SaveRemoteFileData(fileHash+fileReqId, fileName, data, uint64(offset))
+		return SaveRemoteSliceData(sliceHash+fileReqId, fileHash+fileReqId, fileName, data, uint64(offset))
 	}
 	wmutex.Lock()
 	defer wmutex.Unlock()
@@ -374,14 +374,7 @@ func DeleteTmpFileSlices(ctx context.Context, fileHash string) {
 	}
 }
 
-func CheckFilePathEx(fileHash, fileName, savePath string) bool {
-	filePath := ""
-	if savePath == "" {
-		filePath = filepath.Join(setting.Config.DownloadPath, fileName)
-	} else {
-		filePath = filepath.Join(setting.Config.DownloadPath, savePath, fileName)
-	}
-	utils.DebugLog("filePath", filePath)
+func CheckFilePathEx(filePath string) bool {
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0777)
 	defer func() {
 		_ = file.Close()

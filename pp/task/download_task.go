@@ -64,18 +64,15 @@ type VideoCacheTask struct {
 
 // DownloadTask signal task convert sliceHash list to map
 type DownloadTask struct {
-	WalletAddress    string
-	FileHash         string
-	VisitCer         string
-	SliceInfo        map[string]*protos.DownloadSliceInfo
-	FailedSlice      map[string]bool
-	SuccessSlice     map[string]bool
-	FailedPPNodes    map[string]*protos.PPBaseInfo
-	SlicesToDownload []string
-	SliceCount       int
-	taskMutex        sync.RWMutex
-	DownloadCh       chan bool
-	MaxSliceNum      int
+	WalletAddress string
+	FileHash      string
+	VisitCer      string
+	SliceInfo     map[string]*protos.DownloadSliceInfo
+	FailedSlice   map[string]bool
+	SuccessSlice  map[string]bool
+	FailedPPNodes map[string]*protos.PPBaseInfo
+	SliceCount    int
+	taskMutex     sync.RWMutex
 }
 
 func (task *DownloadTask) SetSliceSuccess(sliceHash string) {
@@ -131,28 +128,15 @@ func AddDownloadTask(target *protos.RspFileStorageInfo) {
 		key := dlSliceInfo.SliceStorageInfo.SliceHash
 		SliceInfoMap[key] = dlSliceInfo
 	}
-
-	SlicesToDownload := make([]string, len(target.SliceInfo))
-	for i := 0; i < len(target.SliceInfo); i++ {
-		// reverse order to download start from last slice
-		idx := uint64(len(target.SliceInfo)) - target.SliceInfo[i].SliceNumber
-		SlicesToDownload[idx] = target.SliceInfo[i].SliceStorageInfo.SliceHash
-	}
-
-	maxSlice := getMaxDownloadSlice(target.FileHash)
-
 	dTask := &DownloadTask{
-		WalletAddress:    target.WalletAddress,
-		FileHash:         target.FileHash,
-		VisitCer:         target.VisitCer,
-		SliceInfo:        SliceInfoMap,
-		FailedSlice:      make(map[string]bool),
-		SuccessSlice:     make(map[string]bool),
-		FailedPPNodes:    make(map[string]*protos.PPBaseInfo),
-		SliceCount:       len(target.SliceInfo),
-		SlicesToDownload: SlicesToDownload,
-		DownloadCh:       make(chan bool, maxSlice),
-		MaxSliceNum:      maxSlice,
+		WalletAddress: target.WalletAddress,
+		FileHash:      target.FileHash,
+		VisitCer:      target.VisitCer,
+		SliceInfo:     SliceInfoMap,
+		FailedSlice:   make(map[string]bool),
+		SuccessSlice:  make(map[string]bool),
+		FailedPPNodes: make(map[string]*protos.PPBaseInfo),
+		SliceCount:    len(target.SliceInfo),
 	}
 	DownloadTaskMap.Store((target.FileHash + target.WalletAddress + target.ReqId), dTask)
 	metrics.TaskCount.WithLabelValues("download").Inc()
@@ -257,13 +241,9 @@ func GetDownloadSlice(target *protos.ReqDownloadSlice, slice *protos.DownloadSli
 }
 
 func SaveDownloadFile(ctx context.Context, target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo) error {
-	if utils.IsVideoStream(fInfo.FileHash) {
-		return file.SaveFileData(ctx, target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, target.SliceInfo.SliceHash, fInfo.FileHash, fInfo.SavePath, fInfo.ReqId)
-	} else {
-		metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_SLICE_DATA:" + strconv.FormatInt(int64(target.SliceInfo.SliceOffset.SliceOffsetStart+(target.SliceNumber-1)*33554432), 10) + ":")
-		defer metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_SAVE_DATA:" + strconv.FormatInt(int64(target.SliceInfo.SliceOffset.SliceOffsetStart+(target.SliceNumber-1)*33554432), 10) + ":")
-		return file.SaveFileData(ctx, target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, fInfo.SavePath, fInfo.ReqId)
-	}
+	metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_SLICE_DATA:" + strconv.FormatInt(int64(target.SliceInfo.SliceOffset.SliceOffsetStart+(target.SliceNumber-1)*33554432), 10) + ":")
+	defer metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_SAVE_DATA:" + strconv.FormatInt(int64(target.SliceInfo.SliceOffset.SliceOffsetStart+(target.SliceNumber-1)*33554432), 10) + ":")
+	return file.SaveFileData(ctx, target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, fInfo.SavePath, fInfo.ReqId)
 }
 
 // checkAgain only used by local file downloading session
@@ -468,14 +448,4 @@ func addSeqNum2FileName(filePath string, seq int) string {
 	}
 
 	return addSeqNum2FileName(filePath, seq+1)
-}
-
-func getMaxDownloadSlice(fileHash string) int {
-	codec, _ := utils.GetCodecFromFileHash(fileHash)
-	switch codec {
-	case utils.VIDEO_CODEC:
-		return setting.STREAM_CACHE_MAXSLICE
-	default:
-		return setting.FILE_SLICE_DOWNLOAD_BATCH_SIZE
-	}
 }

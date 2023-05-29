@@ -192,6 +192,14 @@ func SendFileDataBack(hash string, content []byte) {
 	}
 }
 
+func SaveRemoteSliceData(sliceKey, fileKey, fileName string, data []byte, offset uint64) error {
+	if _, found := rpcFileEventChan.Load(sliceKey); found {
+		return SaveRemoteFileData(sliceKey, fileName, data, offset)
+	} else {
+		return SaveRemoteFileData(fileKey, fileName, data, offset)
+	}
+}
+
 // SaveRemoteFileData application calls this func to send a slice of file data to remote user during download process
 func SaveRemoteFileData(key, fileName string, data []byte, offset uint64) error {
 	if data == nil {
@@ -204,8 +212,9 @@ func SaveRemoteFileData(key, fileName string, data []byte, offset uint64) error 
 		return errors.New("closing session")
 	}
 
-	wmutex.Lock()
-	defer wmutex.Unlock()
+	//TODO investigate
+	//wmutex.Lock()
+	//defer wmutex.Unlock()
 	// 1. send the event rpc.DOWNLOAD_OK
 	offsetend := offset + uint64(len(data))
 	result := rpc.Result{
