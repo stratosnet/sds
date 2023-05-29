@@ -28,7 +28,9 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, w ht
 	utils.DebugLog("GetFileStorageInfo")
 
 	if !setting.CheckLogin() {
-		notLogin(w)
+		if w != nil {
+			_, _ = w.Write(httpserv.NewJson(nil, setting.FAILCode, "login first").ToBytes())
+		}
 		return
 	}
 	if len(path) < setting.Config.DownloadPathMinLen {
@@ -74,7 +76,9 @@ func ClearFileInfoAndDownloadTask(ctx context.Context, fileHash string, fileReqI
 		_ = p2pServer.SendMessage(ctx, p2pServer.GetPpConn(), req, header.ReqClearDownloadTask)
 		_, _ = w.Write([]byte("ok"))
 	} else {
-		notLogin(w)
+		if w != nil {
+			_, _ = w.Write(httpserv.NewJson(nil, setting.FAILCode, "login first").ToBytes())
+		}
 	}
 }
 

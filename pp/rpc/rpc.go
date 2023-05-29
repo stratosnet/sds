@@ -406,7 +406,10 @@ func (api *rpcPubApi) RequestDownloadSliceData(ctx context.Context, param rpc_ap
 	}
 	networkAddress := param.NetworkAddress
 	msgKey := "download#" + param.FileHash + strconv.FormatUint(param.SliceNumber, 10) + param.P2PAddress + param.ReqId
-	p2pserver.GetP2pServer(ctx).SendMessageByCachedConn(ctx, msgKey, networkAddress, req, header.ReqDownloadSlice, nil)
+	err := p2pserver.GetP2pServer(ctx).SendMessageByCachedConn(ctx, msgKey, networkAddress, req, header.ReqDownloadSlice, nil)
+	if err != nil {
+		return rpc_api.Result{Return: rpc_api.INTERNAL_COMM_FAILURE}
+	}
 
 	key := param.SliceHash + param.ReqId
 
