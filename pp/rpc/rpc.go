@@ -413,25 +413,16 @@ func (api *rpcPubApi) RequestDownloadSliceData(ctx context.Context, param rpc_ap
 
 	key := param.SliceHash + param.ReqId
 
-	// wait for result: DOWNLOAD_OK or DL_OK_ASK_INFO
+	// wait for result: DOWNLOAD_OK
 	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
 	defer cancel()
 	var result *rpc_api.Result
 
 	select {
 	case <-ctx.Done():
-		file.CleanFileHash(key)
 		result = &rpc_api.Result{Return: rpc_api.TIME_OUT}
-	// told application that last piece has been done, wait here for the next piece or other event and send this back to rpc client
-	case result = <-file.SubscribeRemoteFileEvent(key):
-		file.UnsubscribeRemoteFileEvent(key)
-		file.SetDownloadSliceDone(key)
-		if result == nil || !(result.Return == rpc_api.DOWNLOAD_OK || result.Return == rpc_api.DL_OK_ASK_INFO) {
-			file.CleanFileHash(key)
-		}
-		if result != nil {
-			result.FileName = ""
-		}
+	case result = <-file.SubscribeRemoteSliceEvent(key):
+		file.UnsubscribeRemoteSliceEvent(key)
 	}
 
 	return *result
