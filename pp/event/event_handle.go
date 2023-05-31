@@ -62,7 +62,7 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspShareFile, RspShareFile, SpRspVerifier)
 	registerEvent(header.RspGetShareFile, RspGetShareFile, SpRspVerifier)
 	registerEvent(header.RspDeleteShare, RspDeleteShare, SpRspVerifier)
-	registerEvent(header.RspLatencyCheck, RspLatencyCheck, SpRspVerifier)
+	registerEvent(header.RspSpLatencyCheck, RspSpLatencyCheck, SpRspVerifier)
 	registerEvent(header.RspDeleteFile, RspDeleteFile, SpRspVerifier)
 
 	// not_pp---sp--(*rsp*)--pp
@@ -79,7 +79,8 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspDownloadSlice, RspDownloadSlice, PpRspVerifier)
 	registerEvent(header.ReqTransferDownload, ReqTransferDownload, NoticeFileSliceBackupVerifier)
 	registerEvent(header.RspTransferDownload, RspTransferDownload, nil)
-	registerEvent(header.ReqLatencyCheck, ReqLatencyCheckToPp, nil) // shared with pp-sp-pp version
+	registerEvent(header.ReqPpLatencyCheck, ReqPpLatencyCheck, nil)
+	registerEvent(header.RspPpLatencyCheck, RspPpLatencyCheck, PpRspVerifier)
 
 	// pp--(*msg*)--pp
 	registerEvent(header.ReqClearDownloadTask, ReqClearDownloadTask, nil)

@@ -34,10 +34,4 @@ func RspGetPPList(ctx context.Context, conn core.WriteCloser) {
 		utils.ErrorLog("Error when saving PP List", err)
 	}
 
-	//shouldRegisterToSP := setting.IsAuto && !setting.IsLoginToSP &&
-	//	(setting.State == types.PP_ACTIVE)
-	//
-	//if shouldRegisterToSP {
-	//	network.GetPeer(ctx).StartRegisterToSp(ctx)
-	//}
 }

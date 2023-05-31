@@ -37,7 +37,8 @@ func (p *Network) StartPP(ctx context.Context) {
 	p.pingTimeSPMap = &sync.Map{}
 	p.InitFsm()
 	p.StartGetSPList(ctx)()
-	p.StartPpLatencyCheck(ctx)
+	p.ScheduleSpLatencyCheck(ctx)
+	p.SchedulePpLatencyCheck(ctx)
 	p.StartStatusReportToSP(ctx)
 	go p.ListenOffline(ctx)
 }

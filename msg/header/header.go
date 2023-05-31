@@ -115,11 +115,13 @@ const (
 	ReqGetShareFile = "ReqGSF"
 	RspGetShareFile = "RspGSF"
 
-	// heartbeat
-	ReqLatencyCheck = "ReqLaten"
-	RspLatencyCheck = "RspLaten"
-	// test sp latency
+	// latency check
 	ReqSpLatencyCheck = "ReqSpLat"
+	RspSpLatencyCheck = "RspSpLat"
+
+	ReqPpLatencyCheck = "ReqPpLat"
+	RspPpLatencyCheck = "RspPpLat"
+
 	// report node status
 	ReqReportNodeStatus = "ReqRNS"
 	RspReportNodeStatus = "RspRNS"

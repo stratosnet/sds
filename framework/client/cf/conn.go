@@ -33,7 +33,6 @@ var (
 	limitUploadSpeed     uint64
 	isLimitDownloadSpeed bool
 	isLimitUploadSpeed   bool
-	isSpLatencyChecked   bool
 )
 
 const (
@@ -412,14 +411,6 @@ func (cc *ClientConn) Start() {
 
 	myClock := clock.NewClock()
 	//handler               = core.GetHandlerFunc(header.ReqHeart)
-	spLatencyCheckHandler := core.GetHandlerFunc(header.ReqSpLatencyCheck)
-
-	spLatencyCheckJobFunc := func() {
-		if !isSpLatencyChecked && spLatencyCheckHandler != nil {
-			cc.handlerCh <- MsgHandler{msg.RelayMsgBuf{}, spLatencyCheckHandler, time.Now().UnixMilli()}
-			isSpLatencyChecked = true
-		}
-	}
 
 	//jobFunc = func() {
 	//	if handler != nil {
@@ -439,8 +430,7 @@ func (cc *ClientConn) Start() {
 	//	hbJob, _ := myClock.AddJobRepeat(time.Second*utils.ClientSendHeartTime, 0, jobFunc)
 	//	cc.jobs = append(cc.jobs, hbJob)
 	//}
-	latencyJob, _ := myClock.AddJobWithInterval(time.Second*utils.LatencyCheckSpListInterval, spLatencyCheckJobFunc)
-	cc.jobs = append(cc.jobs, latencyJob)
+
 	logJob, _ := myClock.AddJobRepeat(time.Second*1, 0, logFunc)
 	cc.jobs = append(cc.jobs, logJob)
 }
@@ -462,7 +452,6 @@ func (cc *ClientConn) ClientClose(closeLowLayerConn bool) {
 		if closeLowLayerConn {
 			cc.spbConn.Close()
 		}
-
 		metrics.ConnNumbers.WithLabelValues("client").Dec()
 
 		// cancel readLoop, writeLoop and handleLoop go-routines.

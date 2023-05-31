@@ -583,15 +583,25 @@ message RspGetHDInfo {
   string wallet_address = 4;
 }
 
-message ReqLatencyCheck {
-  HeartbeatType hb_type = 1;
+message ReqSpLatencyCheck {
   string p2p_address_pp = 2;
   string network_address_sp = 3;
   string sp_index = 4;
 }
 
-message RspLatencyCheck {
-  HeartbeatType hb_type = 1;
+message RspSpLatencyCheck {
+  string p2p_address_pp = 2;
+  string network_address_sp = 3;
+  string sp_index = 4;
+}
+
+message ReqPpLatencyCheck {
+  string p2p_address_pp = 2;
+  string network_address_sp = 3;
+  string sp_index = 4;
+}
+
+message RspPpLatencyCheck {
   string p2p_address_pp = 2;
   string network_address_sp = 3;
   string sp_index = 4;
