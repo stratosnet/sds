@@ -15,6 +15,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	ppTypes "github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/environment"
 )
 
 // RspGetPPStatus
@@ -29,16 +30,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	pp.DebugLogf(ctx, "get GetPPStatus RSP, activation status = %v", target.IsActive)
-	switch target.OngoingTier {
-	case 0:
-		debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_0)
-	case 1:
-		debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_1)
-	case 2:
-		debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_2)
-	default:
-		debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_2)
-	}
+	setSoftMemoryCap(target.OngoingTier)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.ErrorLog(target.Result.Msg)
 		if strings.Contains(target.Result.Msg, "Please register first") {
@@ -108,4 +100,30 @@ func formatRspGetPPStatus(ctx context.Context, response *protos.RspGetPPStatus) 
 	pp.Logf(ctx, "*** current node status ***\n"+
 		"Activation: %v | Mining: %v | Initial tier: %v | Ongoing tier: %v | Weight score: %v",
 		activation, state, response.InitTier, response.OngoingTier, response.WeightScore)
+}
+
+func setSoftMemoryCap(tier uint32) {
+	if environment.IsDev() {
+		switch tier {
+		case 0:
+			debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_0_DEV)
+		case 1:
+			debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_1_DEV)
+		case 2:
+			debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_2_DEV)
+		default:
+			debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_2_DEV)
+		}
+	} else {
+		switch tier {
+		case 0:
+			debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_0)
+		case 1:
+			debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_1)
+		case 2:
+			debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_2)
+		default:
+			debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_2)
+		}
+	}
 }
