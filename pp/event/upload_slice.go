@@ -482,7 +482,6 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 		var pb proto.Message
 		var cmd string
 		utils.DebugLogf("upSendPacketWgMap.Store <== K:%v, V:%v]", tkSliceUID, ctStat)
-		p2pAddress := p2pserver.GetP2pServer(ctx).GetP2PAddress()
 		if tk.Type == protos.UploadType_BACKUP {
 			pb = requests.ReqBackupFileSliceData(ctx, tk, pieceOffset, data)
 			cmd = header.ReqBackupFileSlice
@@ -490,7 +489,7 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 			pb = requests.ReqUploadFileSliceData(ctx, tk, pieceOffset, data)
 			cmd = header.ReqUploadFileSlice
 		}
-		return sendSlice(newCtx, pb, fileHash, p2pAddress, cmd, storageNetworkAddress)
+		return sendSlice(newCtx, pb, fileHash, storageP2pAddress, cmd, storageNetworkAddress)
 	}
 
 	dataStart := 0
