@@ -25,7 +25,6 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
-
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}

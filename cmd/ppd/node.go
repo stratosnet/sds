@@ -60,11 +60,6 @@ func nodePreRunE(cmd *cobra.Command, args []string) error {
 	trafficLogger := utils.NewTrafficLogger(setting.TrafficLogPath, false, true)
 	trafficLogger.SetLogLevel(utils.Info)
 
-	err = utils.InitIdWorker()
-	if err != nil {
-		return errors.Wrap(err, "Couldn't initialize id worker")
-	}
-
 	err = SetupP2PKey()
 	if err != nil {
 		return errors.Wrap(err, "Couldn't setup PP node")

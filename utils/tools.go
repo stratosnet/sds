@@ -21,6 +21,8 @@ import (
 )
 
 const (
+	SIZE_OF_INT8   = 1
+	SIZE_OF_UINT8  = 1
 	SIZE_OF_INT16  = 2 // in byte
 	SIZE_OF_UINT16 = 2 // in byte
 	SIZE_OF_INT32  = 4 // in byte
@@ -99,6 +101,14 @@ func Uint32ToBytes(n uint32) []byte {
 }
 
 func Uint16ToBytes(n uint16) []byte {
+	x := n
+
+	bytesBuffer := bytes.NewBuffer([]byte{})
+	_ = binary.Write(bytesBuffer, binary.BigEndian, x)
+	return bytesBuffer.Bytes()
+}
+
+func Uint8ToBytes(n uint8) []byte {
 	x := n
 
 	bytesBuffer := bytes.NewBuffer([]byte{})

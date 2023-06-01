@@ -2,6 +2,7 @@ package p2pserver
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -49,19 +50,19 @@ func (p *P2pServer) GetPPInfo() *protos.PPBaseInfo {
 	}
 }
 
-func (p *P2pServer) LoadReqId(reqId int64) (string, bool) {
-	cmd, found := requestMap.Load(reqId)
+func (p *P2pServer) LoadReqId(reqId int64) (uint8, bool) {
+	msgTypeId, found := requestMap.Load(reqId)
 	if !found {
-		return "", found
+		return header.MSG_ID_INVALIDE, found
 	}
-	return cmd.(string), found
+	return msgTypeId.(uint8), found
 }
 
 func (p *P2pServer) GetP2PAddrInTypeAddress() utilstypes.Address {
 	return p.p2pAddress
 }
 
-func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb proto.Message, cmd string) error {
+func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb proto.Message, cmd header.MsgType) error {
 	msgBuf := &msg.RelayMsgBuf{
 		MSGSign: msg.MessageSign{
 			P2pPubKey:  p.GetP2PPublicKey(),
@@ -70,30 +71,30 @@ func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb p
 		},
 	}
 
-	switch cmd {
-	case header.ReqUploadFileSlice:
+	switch cmd.Id {
+	case header.MSG_ID_REQ_UPLOAD_FILESLICE:
 		msgBuf.MSGData = pb.(*protos.ReqUploadFileSlice).Data
 		pb.(*protos.ReqUploadFileSlice).Data = nil
-	case header.ReqBackupFileSlice:
+	case header.MSG_ID_REQ_BACKUP_FILESLICE:
 		msgBuf.MSGData = pb.(*protos.ReqBackupFileSlice).Data
 		pb.(*protos.ReqBackupFileSlice).Data = nil
-	case header.RspDownloadSlice:
+	case header.MSG_ID_RSP_DOWNLOAD_SLICE:
 		msgBuf.MSGData = pb.(*protos.RspDownloadSlice).Data
 		pb.(*protos.RspDownloadSlice).Data = nil
-	case header.RspTransferDownload:
+	case header.MSG_ID_RSP_TRANSFE_RDOWNLOAD:
 		msgBuf.MSGData = pb.(*protos.RspTransferDownload).Data
 		pb.(*protos.RspTransferDownload).Data = nil
 	}
 
-	if strings.HasPrefix(cmd, "Req") {
+	if strings.HasPrefix(cmd.Name, "Req") {
 		reqId := core.GetReqIdFromContext(ctx)
 		if reqId == 0 {
-			reqId, _ = utils.NextSnowFlakeId()
+			reqId = core.GenerateNewReqId(cmd.Id)
 			core.InheritRpcLoggerFromParentReqId(ctx, reqId)
 			core.InheritRemoteReqIdFromParentReqId(ctx, reqId)
 		}
 		msgBuf.MSGHead.ReqId = reqId
-		requestMap.Store(reqId, cmd)
+		requestMap.Store(reqId, cmd.Id)
 	}
 
 	msgBuf.MSGHead.DataLen = uint32(len(msgBuf.MSGData))
@@ -116,7 +117,7 @@ func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb p
 	}
 }
 
-func (p *P2pServer) SendMessageDirectToSPOrViaPP(ctx context.Context, pb proto.Message, cmd string) {
+func (p *P2pServer) SendMessageDirectToSPOrViaPP(ctx context.Context, pb proto.Message, cmd header.MsgType) {
 	if p.mainSpConn != nil {
 		_ = p.SendMessage(ctx, p.mainSpConn, pb, cmd)
 	} else {
@@ -124,7 +125,7 @@ func (p *P2pServer) SendMessageDirectToSPOrViaPP(ctx context.Context, pb proto.M
 	}
 }
 
-func (p *P2pServer) SendMessageToSPServer(ctx context.Context, pb proto.Message, cmd string) {
+func (p *P2pServer) SendMessageToSPServer(ctx context.Context, pb proto.Message, cmd header.MsgType) {
 	if p.mainSpConn != nil {
 		_ = p.SendMessage(ctx, p.mainSpConn, pb, cmd)
 	}
@@ -132,21 +133,24 @@ func (p *P2pServer) SendMessageToSPServer(ctx context.Context, pb proto.Message,
 
 func (p *P2pServer) TransferSendMessageToPPServ(ctx context.Context, addr string, msgBuf *msg.RelayMsgBuf) error {
 	newCtx := core.CreateContextWithParentReqIdAsReqId(ctx)
-	cmd := string(msgBuf.MSGHead.Cmd)
+	cmd := header.GetMsgTypeFromId(msgBuf.MSGHead.Cmd)
+	if cmd == nil {
+		return errors.New(fmt.Sprintf("invalid message type %d", msgBuf.MSGHead.Cmd))
+	}
 	msgBuf.MSGSign = msg.MessageSign{
 		P2pPubKey:  p.GetP2PPublicKey(),
 		P2pAddress: p.GetP2PAddress(),
 		Signer:     p.SignP2pMessage,
 	}
-	if strings.HasPrefix(cmd, "Req") {
+	if strings.HasPrefix(cmd.Name, "Req") {
 		reqId := core.GetReqIdFromContext(ctx)
 		if reqId == 0 {
-			reqId, _ = utils.NextSnowFlakeId()
+			reqId = core.GenerateNewReqId(msgBuf.MSGHead.Cmd)
 			core.InheritRpcLoggerFromParentReqId(ctx, reqId)
 			core.InheritRemoteReqIdFromParentReqId(ctx, reqId)
 		}
 		msgBuf.MSGHead.ReqId = reqId
-		requestMap.Store(reqId, cmd)
+		requestMap.Store(reqId, cmd.Id)
 	}
 
 	p.clientMutex.Lock()
@@ -224,15 +228,15 @@ func (p *P2pServer) setWriteHook(conn *cf.ClientConn, callback func(packetId, co
 	if conn != nil {
 		var hooks []cf.WriteHook
 		hook := cf.WriteHook{
-			Message: header.ReqUploadFileSlice,
-			Fn:      callback,
+			MessageId: header.ReqUploadFileSlice.Id,
+			Fn:        callback,
 		}
 		hooks = append(hooks, hook)
 		conn.SetWriteHook(hooks)
 	}
 }
 
-func (p *P2pServer) SendMessageByCachedConn(ctx context.Context, key string, netAddr string, pb proto.Message, cmd string, fn func(packetId, costTime int64)) error {
+func (p *P2pServer) SendMessageByCachedConn(ctx context.Context, key string, netAddr string, pb proto.Message, cmd header.MsgType, fn func(packetId, costTime int64)) error {
 	// use the cached conn to send the message
 	if conn, ok := p.LoadConnFromCache(key); ok {
 		if fn != nil {
@@ -257,7 +261,7 @@ func (p *P2pServer) SendMessageByCachedConn(ctx context.Context, key string, net
 		pp.DebugLog(ctx, "SendMessage(conn, pb, header.ReqUploadFileSlice) ", conn)
 		p.StoreConnToCache(key, conn)
 	} else {
-		pp.ErrorLog(ctx, "Fail to send upload slice request to "+netAddr)
+		pp.ErrorLog(ctx, "Fail to send upload slice request to "+netAddr+", "+err.Error())
 	}
 	return err
 }
