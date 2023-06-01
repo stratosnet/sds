@@ -27,6 +27,7 @@ internal_port = '9301'
 rpc_port = '9401'
 allow_owner_rpc = false
 metrics_port = '9601'
+ui_port = '9701'
 traffic_log_interval = 10
 max_connection = 1000
 [version]

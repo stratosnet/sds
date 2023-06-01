@@ -145,6 +145,7 @@ type config struct {
 	RpcPort              string       `toml:"rpc_port"`
 	AllowOwnerRpc        bool         `toml:"allow_owner_rpc"`
 	MetricsPort          string       `toml:"metrics_port"`
+	UIPort               string       `toml:"ui_port"`
 	Monitor              MonitorConn  `toml:"monitor"`
 	TrafficLogInterval   uint64       `toml:"traffic_log_interval"`
 	MaxConnection        int          `toml:"max_connection"`
@@ -290,6 +291,7 @@ func defaultConfig() *config {
 		GasAdjustment:        1.3,
 		RestPort:             "",
 		InternalPort:         "",
+		UIPort:               "",
 		TrafficLogInterval:   10,
 		SPList:               []SPBaseInfo{{NetworkAddress: "127.0.0.1:8888"}},
 		AllowOwnerRpc:        false,
