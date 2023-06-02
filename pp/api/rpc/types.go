@@ -167,7 +167,7 @@ type RPResult struct {
 // activate: request to activate pp node
 type ParamReqActivate struct {
 	WalletAddr string `json:"walletaddr"`
-	Stake      string `json:"stake"`
+	Deposit    string `json:"deposit"`
 	Fee        string `json:"fee"`
 	Gas        uint64 `json:"gas"`
 }

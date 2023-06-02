@@ -132,16 +132,19 @@ ppd terminal
 ```
 
 #### Registering to a Meta Node
+
 Your resource node needs to register to a meta node before doing anything else.  
 In the `ppd terminal` command-line terminal, input one of the two following identical commands:
+
 ```bash
 rp
 # or
 registerpeer
 ```
 
-#### Uploading/Downloading files without staking
-You do not need to stake anything if you just want to upload/download files.
+#### Uploading/Downloading files without deposit
+
+You do not need to deposit anything if you just want to upload/download files.
 After registering your resource node(`rp` subcommand), purchase enough `ozone` using the `prepay` subcommand.
 Then, use `put` or `get` subcommands to upload/download files.
 
@@ -154,23 +157,29 @@ Then, use `put` or `get` subcommands to upload/download files.
     
     get <sdm://account/filehash> [saveAs] 
     ```
-This is a quick way for users to upload/download their files. Resource node can go offline at any time without being punished.
+
+This is a quick way for users to upload/download their files. Resource node can go offline at any time without being
+punished.
 On the other hand, since the resource node is not activated, users will not receive mining rewards(`utros`).
 
+#### Activating the Resource Node by Deposit
 
-#### Activating the Resource Node by Staking
-You can activate your resource node by staking an amount of tokens. After it is activated successfully,
-your resource node starts to receive tasks from meta nodes and thus gaining mining rewards automatically.  
+You can activate your resource node by deposit an amount of tokens. After it is activated successfully,
+your resource node starts to receive tasks from meta nodes and thus gaining mining rewards automatically.
 
 Use this command in the `ppd terminal` command-line terminal:
+
 ```bash
 activate <amount> <fee> [gas]
 ```
-> `amount` is the amount of tokens you want to stake. 1stos = 10^9gwei = 10^18wei.
+
+> `amount` is the amount of tokens you want to deposit. 1stos = 10^9gwei = 10^18wei.
 >
-> `fee` is the amount of tokens to pay as a fee for the activation transaction. 10000wei would work. it will use default value if not provide.
+> `fee` is the amount of tokens to pay as a fee for the activation transaction. 10000wei would work. it will use default
+> value if not provide.
 >
-> `gas` is the amount of gas to pay for the transaction. 1000000 would be a safe number. it will use default value if not provide.
+> `gas` is the amount of gas to pay for the transaction. 1000000 would be a safe number. it will use default value if
+> not provide.
 
 
 ## What to Do With a Running Resource Node?
@@ -184,17 +193,17 @@ You can find more details about these subcommands at `ppd terminal` [subcommands
 status
 ```
 
-### Update stake of an active resource node
+### Update deposit of an active resource node
 
 ```shell
-updateStake <stakeDelta> <fee> [gas] <isIncrStake> 
+updateDeposit <depositDelta> <fee> [gas]
 ```
-> `stakeDelta` is the absolute amount of difference between the original and the updated stake. It should be a positive valid
-   token, in the unit of `stos`/`gwei`/`wei`.
+
+> `depositDelta` is the absolute amount of difference between the original and the updated deposit. It should be a
+> positive valid
+> token, in the unit of `stos`/`gwei`/`wei`.
 >
-> `isIncrStake` is a boolean flag with `false` for decreasing the original stake and `true` for increasing the original stake.
->
-> When a resource node is suspended, use this command to update its state and re-start mining by increasing its stake.
+> When a resource node is suspended, use this command to update its state and re-start mining by increasing its deposit.
 
 ### Purchase Ozone
 

@@ -723,7 +723,7 @@ func (api *rpcPrivApi) RequestRegisterNewPP(ctx context.Context, param rpc_api.P
 
 func (api *rpcPrivApi) RequestActivate(ctx context.Context, param rpc_api.ParamReqActivate) rpc_api.ActivateResult {
 	metrics.RpcReqCount.WithLabelValues("RequestActivate").Inc()
-	stake, err := utiltypes.ParseCoinNormalized(param.Stake)
+	deposit, err := utiltypes.ParseCoinNormalized(param.Deposit)
 	if err != nil {
 		return rpc_api.ActivateResult{Return: rpc_api.WRONG_INPUT}
 	}
@@ -739,7 +739,7 @@ func (api *rpcPrivApi) RequestActivate(ctx context.Context, param rpc_api.ParamR
 	}
 	reqId := uuid.New().String()
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
-	err = event.Activate(ctx, stake, txFee)
+	err = event.Activate(ctx, deposit, txFee)
 	if err != nil {
 		return rpc_api.ActivateResult{Return: rpc_api.WRONG_INPUT}
 	}

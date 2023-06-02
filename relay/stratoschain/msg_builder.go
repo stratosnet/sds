@@ -68,7 +68,7 @@ func BuildSlashingResourceNodeMsg(spP2pAddress, spWalletAddress []utiltypes.Addr
 	)
 }
 
-func BuildUpdateEffectiveStakeMsg(spP2pAddress, spWalletAddress []utiltypes.Address, ppP2pAddress utiltypes.Address, newEffectiveStake *big.Int) sdktypes.Msg {
+func BuildUpdateEffectiveDepositMsg(spP2pAddress, spWalletAddress []utiltypes.Address, ppP2pAddress utiltypes.Address, newEffectiveDeposit *big.Int) sdktypes.Msg {
 	var spP2pAddressSdk []types.SdsAddress
 	for _, p2pAddress := range spP2pAddress {
 		spP2pAddressSdk = append(spP2pAddressSdk, p2pAddress[:])
@@ -82,13 +82,13 @@ func BuildUpdateEffectiveStakeMsg(spP2pAddress, spWalletAddress []utiltypes.Addr
 		spP2pAddressSdk,
 		spWalletAddressSdk,
 		ppP2pAddress[:],
-		sdktypes.NewIntFromBigInt(newEffectiveStake),
+		sdktypes.NewIntFromBigInt(newEffectiveDeposit),
 	)
 
 }
 
 // Stratos-chain 'register' module
-func BuildCreateResourceNodeMsg(nodeType registertypes.NodeType, pubKey []byte, stakeAmount utiltypes.Coin, ownerAddress, p2pAddress utiltypes.Address) (sdktypes.Msg, error) {
+func BuildCreateResourceNodeMsg(nodeType registertypes.NodeType, pubKey []byte, depositAmount utiltypes.Coin, ownerAddress, p2pAddress utiltypes.Address) (sdktypes.Msg, error) {
 	if nodeType == 0 {
 		nodeType = registertypes.STORAGE
 	}
@@ -104,8 +104,8 @@ func BuildCreateResourceNodeMsg(nodeType registertypes.NodeType, pubKey []byte, 
 		p2pAddress[:],
 		pk,
 		sdktypes.Coin{
-			Denom:  stakeAmount.Denom,
-			Amount: stakeAmount.Amount,
+			Denom:  depositAmount.Denom,
+			Amount: depositAmount.Amount,
 		},
 		ownerAddress[:],
 		registertypes.Description{
@@ -115,14 +115,14 @@ func BuildCreateResourceNodeMsg(nodeType registertypes.NodeType, pubKey []byte, 
 	)
 }
 
-func BuildCreateMetaNodeMsg(moniker string, pubKey []byte, stakeAmount utiltypes.Coin, ownerAddress, p2pAddress utiltypes.Address) (sdktypes.Msg, error) {
+func BuildCreateMetaNodeMsg(moniker string, pubKey []byte, depositAmount utiltypes.Coin, ownerAddress, p2pAddress utiltypes.Address) (sdktypes.Msg, error) {
 	pk := ed25519.PubKeyBytesToSdkPubKey(pubKey)
 	return registertypes.NewMsgCreateMetaNode(
 		p2pAddress[:],
 		pk,
 		sdktypes.Coin{
-			Denom:  stakeAmount.Denom,
-			Amount: stakeAmount.Amount,
+			Denom:  depositAmount.Denom,
+			Amount: depositAmount.Amount,
 		},
 		ownerAddress[:],
 		registertypes.Description{
@@ -132,10 +132,10 @@ func BuildCreateMetaNodeMsg(moniker string, pubKey []byte, stakeAmount utiltypes
 }
 
 // Stratos-chain 'register' module
-func BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, stakeDelta utiltypes.Coin) sdktypes.Msg {
+func BuildUpdateResourceNodeDepositMsg(networkAddr, ownerAddr utiltypes.Address, depositDelta utiltypes.Coin) sdktypes.Msg {
 	coin := sdktypes.Coin{
-		Denom:  stakeDelta.Denom,
-		Amount: stakeDelta.Amount,
+		Denom:  depositDelta.Denom,
+		Amount: depositDelta.Amount,
 	}
 	return registertypes.NewMsgUpdateResourceNodeDeposit(
 		networkAddr[:],
@@ -144,16 +144,16 @@ func BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, s
 	)
 }
 
-func BuildUpdateMetaNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, stakeDelta utiltypes.Coin, incrStake bool) sdktypes.Msg {
+func BuildUpdateMetaNodeDepositMsg(networkAddr, ownerAddr utiltypes.Address, depositDelta utiltypes.Coin, incrDeposit bool) sdktypes.Msg {
 	coin := sdktypes.Coin{
-		Denom:  stakeDelta.Denom,
-		Amount: stakeDelta.Amount,
+		Denom:  depositDelta.Denom,
+		Amount: depositDelta.Amount,
 	}
 	return registertypes.NewMsgUpdateMetaNodeDeposit(
 		networkAddr[:],
 		ownerAddr[:],
 		coin,
-		incrStake,
+		incrDeposit,
 	)
 }
 
@@ -181,7 +181,7 @@ func BuildMetaNodeRegistrationVoteMsg(candidateNetworkAddress, candidateOwnerAdd
 	)
 }
 
-func BuildWithdrawMetaNodeRegistrationStakeMsg(networkAddress, ownerAddress utiltypes.Address) sdktypes.Msg {
+func BuildWithdrawMetaNodeRegistrationDepositMsg(networkAddress, ownerAddress utiltypes.Address) sdktypes.Msg {
 	return registertypes.NewMsgWithdrawMetaNodeRegistrationDeposit(
 		networkAddress[:],
 		ownerAddress[:],

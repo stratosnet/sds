@@ -72,11 +72,11 @@ func (u UnsignedMsgBytes) FromBytes() (UnsignedMsg, error) {
 		msg := registertypes.MsgUpdateMetaNode{}
 		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = &msg
-	case "update_meta_node_stake":
+	case "update_meta_node_deposit":
 		msg := registertypes.MsgUpdateMetaNodeDeposit{}
 		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = &msg
-	case "withdraw_meta_node_registration_stake":
+	case "withdraw_meta_node_registration_deposit":
 		msg := registertypes.MsgWithdrawMetaNodeRegistrationDeposit{}
 		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = &msg
@@ -96,7 +96,7 @@ func (u UnsignedMsgBytes) FromBytes() (UnsignedMsg, error) {
 		msg := pottypes.MsgVolumeReport{}
 		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = &msg
-	case "update_effective_stake":
+	case "update_effective_deposit":
 		msg := registertypes.MsgUpdateEffectiveDeposit{}
 		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = &msg

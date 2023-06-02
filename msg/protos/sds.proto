@@ -340,7 +340,7 @@ message ReqActivatePP {
   bytes      tx = 1;
   PPBaseInfo pp_info = 2;
   bool       already_active = 3;
-  string     initial_stake = 4;
+  string     initial_deposit = 4;
 }
 
 message RspActivatePP {
@@ -349,20 +349,20 @@ message RspActivatePP {
   bytes  tx = 3;
 }
 
-message ReqUpdateStakePP {
+message ReqUpdateDepositPP {
   bytes tx = 1;
   string p2p_address = 2;
 }
 
-message RspUpdateStakePP {
+message RspUpdateDepositPP {
   Result result = 1;
   uint32 update_state = 2;
   bytes  tx = 3;
 }
 
-message NoticeUpdatedStakePP {
+message NoticeUpdatedDepositPP {
   Result result = 1;
-  string stake_balance = 2;
+  string deposit_balance = 2;
   string node_tier = 3;
   string weight_score = 4;
 }
