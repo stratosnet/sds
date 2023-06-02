@@ -78,7 +78,7 @@ func BuildUpdateEffectiveStakeMsg(spP2pAddress, spWalletAddress []utiltypes.Addr
 		spWalletAddressSdk = append(spWalletAddressSdk, walletAddress[:])
 	}
 
-	return registertypes.NewMsgUpdateEffectiveStake(
+	return registertypes.NewMsgUpdateEffectiveDeposit(
 		spP2pAddressSdk,
 		spWalletAddressSdk,
 		ppP2pAddress[:],
@@ -137,7 +137,7 @@ func BuildUpdateResourceNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, s
 		Denom:  stakeDelta.Denom,
 		Amount: stakeDelta.Amount,
 	}
-	return registertypes.NewMsgUpdateResourceNodeStake(
+	return registertypes.NewMsgUpdateResourceNodeDeposit(
 		networkAddr[:],
 		ownerAddr[:],
 		coin,
@@ -149,7 +149,7 @@ func BuildUpdateMetaNodeStakeMsg(networkAddr, ownerAddr utiltypes.Address, stake
 		Denom:  stakeDelta.Denom,
 		Amount: stakeDelta.Amount,
 	}
-	return registertypes.NewMsgUpdateMetaNodeStake(
+	return registertypes.NewMsgUpdateMetaNodeDeposit(
 		networkAddr[:],
 		ownerAddr[:],
 		coin,
@@ -182,7 +182,7 @@ func BuildMetaNodeRegistrationVoteMsg(candidateNetworkAddress, candidateOwnerAdd
 }
 
 func BuildWithdrawMetaNodeRegistrationStakeMsg(networkAddress, ownerAddress utiltypes.Address) sdktypes.Msg {
-	return registertypes.NewMsgWithdrawMetaNodeRegistrationStake(
+	return registertypes.NewMsgWithdrawMetaNodeRegistrationDeposit(
 		networkAddress[:],
 		ownerAddress[:],
 	)
