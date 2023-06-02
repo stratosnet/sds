@@ -31,11 +31,11 @@ const (
 	RspActivatePP     = "RspActvp" // response to activate a PP node
 	NoticeActivatedPP = "NotActdp" // notice when a PP node was successfully activated
 
-	ReqUpdateStakePP     = "ReqUpp"   // request to update stake for a PP node
-	RspUpdateStakePP     = "RspUpp"   // response to update stake for a PP node
-	NoticeUpdatedStakePP = "NotUptdp" // notice when a PP node's stake  was successfully updated
-	ReqStateChangePP     = "ReqSCpp"
-	RspStateChangePP     = "RspSCpp"
+	ReqUpdateDepositPP     = "ReqUpp"   // request to update deposit for a PP node
+	RspUpdateDepositPP     = "RspUpp"   // response to update deposit for a PP node
+	NoticeUpdatedDepositPP = "NotUptdp" // notice when a PP node's deposit  was successfully updated
+	ReqStateChangePP       = "ReqSCpp"
+	RspStateChangePP       = "RspSCpp"
 
 	ReqDeactivatePP     = "ReqDctvp" // request to deactivate a PP node
 	RspDeactivatePP     = "RspDctvp" // response to deactivate a PP node

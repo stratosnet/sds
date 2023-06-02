@@ -155,23 +155,23 @@ func (api *terminalCmd) Activate(ctx context.Context, param []string) (CmdResult
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) UpdateStake(ctx context.Context, param []string) (CmdResult, error) {
+func (api *terminalCmd) UpdateDeposit(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) < 3 {
-		return CmdResult{Msg: ""}, errors.New("expecting at least 2 params. Input amount of stakeDelta, fee amount, " +
+		return CmdResult{Msg: ""}, errors.New("expecting at least 2 params. Input amount of depositDelta, fee amount, " +
 			"(optional) gas amount")
 	}
 
-	stakeDelta, err := utiltypes.ParseCoinNormalized(param[0])
+	depositDelta, err := utiltypes.ParseCoinNormalized(param[0])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token")
 	}
-	minUnsuspendStake, err := utiltypes.ParseCoinNormalized(setting.DEFAULT_MIN_UNSUSPEND_STAKE)
+	minUnsuspendDeposit, err := utiltypes.ParseCoinNormalized(setting.DEFAULT_MIN_UNSUSPEND_DEPOSIT)
 	if err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 
-	if stakeDelta.IsLT(minUnsuspendStake) {
-		return CmdResult{Msg: ""}, errors.New("the minimum value to update stake is " + minUnsuspendStake.String())
+	if depositDelta.IsLT(minUnsuspendDeposit) {
+		return CmdResult{Msg: ""}, errors.New("the minimum value to update deposit is " + minUnsuspendDeposit.String())
 	}
 
 	fee, err := utiltypes.ParseCoinNormalized(param[1])
@@ -197,7 +197,7 @@ func (api *terminalCmd) UpdateStake(ctx context.Context, param []string) (CmdRes
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	if err := event.UpdateStake(ctx, stakeDelta, txFee); err != nil {
+	if err := event.UpdateDeposit(ctx, depositDelta, txFee); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 	return CmdResult{Msg: DefaultMsg}, nil

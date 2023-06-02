@@ -39,7 +39,7 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspReportNodeStatus, RspReportNodeStatus, SpRspVerifier)
 	registerEvent(header.RspRegister, RspRegister, SpRspVerifier)
 	registerEvent(header.RspActivatePP, RspActivate, SpRspVerifier)
-	registerEvent(header.RspUpdateStakePP, RspUpdateStake, SpRspVerifier)
+	registerEvent(header.RspUpdateDepositPP, RspUpdateDeposit, SpRspVerifier)
 	registerEvent(header.RspStateChangePP, RspStateChange, SpRspVerifier)
 	registerEvent(header.RspDeactivatePP, RspDeactivate, SpRspVerifier)
 	registerEvent(header.NoticeUnbondingPP, NoticeUnbondingPP, SpRspVerifier)
@@ -67,7 +67,7 @@ func RegisterAllEventHandlers() {
 
 	// not_pp---sp--(*rsp*)--pp
 	registerEvent(header.NoticeActivatedPP, NoticeActivatedPP, SpAddressVerifier)
-	registerEvent(header.NoticeUpdatedStakePP, NoticeUpdatedStake, SpAddressVerifier)
+	registerEvent(header.NoticeUpdatedDepositPP, NoticeUpdatedDeposit, SpAddressVerifier)
 	registerEvent(header.NoticeDeactivatedPP, NoticeDeactivatedPP, SpAddressVerifier)
 
 	// pp--(*req*)--pp--(*rsp*)--pp
