@@ -65,7 +65,7 @@ func reqUpdateStakeData(ctx context.Context, stakeDelta types.Coin, txFee types.
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := createAndSimulateTx(txMsg, registertypes.TypeMsgUpdateResourceNodeStake, txFee, "", signatureKeys)
+	txBytes, err := createAndSimulateTx(txMsg, registertypes.TypeMsgUpdateResourceNodeDeposit, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
