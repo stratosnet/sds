@@ -9,7 +9,7 @@ import (
 
 	"github.com/alex023/clock"
 	"github.com/spf13/cobra"
-	rpcserv "github.com/stratosnet/sds/pp/rpc"
+	"github.com/stratosnet/sds/pp/namespace"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
@@ -223,7 +223,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		return callRpc(c, "checkReplica", param)
 	}
 
-	nc := make(chan rpcserv.LogMsg)
+	nc := make(chan namespace.LogMsg)
 	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription")
 	if err != nil {
 		utils.ErrorLog("can't subscribe:", err)
@@ -337,7 +337,7 @@ func callRpc(c *rpc.Client, line string, param []string) bool {
 	return true
 }
 
-func printLogNotification(nc <-chan rpcserv.LogMsg) {
+func printLogNotification(nc <-chan namespace.LogMsg) {
 	for n := range nc {
 		fmt.Print(n.Msg)
 	}

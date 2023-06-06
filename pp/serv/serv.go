@@ -12,9 +12,9 @@ import (
 	"github.com/stratosnet/sds/pp/api/rest"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/namespace"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
-	rpcserv "github.com/stratosnet/sds/pp/rpc"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/rpc"
@@ -25,9 +25,9 @@ import (
 type BaseServer struct {
 	p2pServ     *p2pserver.P2pServer
 	ppNetwork   *network.Network
-	ipcServ     *rpcserv.IpcServer
-	httpRpcServ *rpcserv.HttpServer
-	monitorServ *rpcserv.HttpServer
+	ipcServ     *namespace.IpcServer
+	httpRpcServ *namespace.HttpServer
+	monitorServ *namespace.HttpServer
 }
 
 func (bs *BaseServer) Start() error {
@@ -81,18 +81,18 @@ func (bs *BaseServer) startIPC() error {
 		{
 			Namespace: "sdslog",
 			Version:   "1.0",
-			Service:   rpcserv.RpcLogService(),
+			Service:   namespace.RpcLogService(),
 			Public:    false,
 		},
 		{
 			Namespace: "remoterpc",
 			Version:   "1.0",
-			Service:   rpcserv.RpcPubApi(),
+			Service:   namespace.RpcPubApi(),
 			Public:    false,
 		},
 	}
 
-	ipc := rpcserv.NewIPCServer(setting.IpcEndpoint)
+	ipc := namespace.NewIPCServer(setting.IpcEndpoint)
 	ctx := context.WithValue(context.Background(), types.P2P_SERVER_KEY, bs.p2pServ)
 	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
 	if err := ipc.Start(rpcAPIs, ctx); err != nil {
@@ -107,7 +107,7 @@ func (bs *BaseServer) startIPC() error {
 
 func (bs *BaseServer) startHttpRPC() error {
 	file.RpcWaitTimeout = rpc.DefaultHTTPTimeouts.IdleTimeout
-	rpcServer := rpcserv.NewHTTPServer(rpc.DefaultHTTPTimeouts)
+	rpcServer := namespace.NewHTTPServer(rpc.DefaultHTTPTimeouts)
 	port, err := strconv.Atoi(setting.Config.RpcPort)
 	if err != nil {
 		return err
@@ -123,13 +123,13 @@ func (bs *BaseServer) startHttpRPC() error {
 		allowModuleList = append(allowModuleList, "owner")
 	}
 
-	var config = rpcserv.HttpConfig{
+	var config = namespace.HttpConfig{
 		CorsAllowedOrigins: []string{""},
 		Vhosts:             []string{"localhost"},
 		Modules:            allowModuleList,
 	}
 
-	if err := rpcServer.EnableRPC(rpcserv.Apis(), config); err != nil {
+	if err := rpcServer.EnableRPC(namespace.Apis(), config); err != nil {
 		return err
 	}
 	ctx := context.WithValue(context.Background(), types.P2P_SERVER_KEY, bs.p2pServ)
@@ -143,7 +143,7 @@ func (bs *BaseServer) startHttpRPC() error {
 }
 
 func (bs *BaseServer) startMonitor() error {
-	monitorServer := rpcserv.NewHTTPServer(rpc.DefaultHTTPTimeouts)
+	monitorServer := namespace.NewHTTPServer(rpc.DefaultHTTPTimeouts)
 	if setting.Config.Monitor.TLS {
 		monitorServer.EnableTLS(setting.Config.Monitor.Cert, setting.Config.Monitor.Key)
 	}
@@ -165,7 +165,7 @@ func (bs *BaseServer) startMonitor() error {
 		return err
 	}
 
-	var config = rpcserv.WsConfig{
+	var config = namespace.WsConfig{
 		Origins: []string{},
 		Modules: []string{},
 		Prefix:  "",

@@ -1,4 +1,4 @@
-package rpc
+package namespace
 
 import (
 	"compress/gzip"

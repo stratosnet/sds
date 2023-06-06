@@ -22,8 +22,8 @@ import (
 	rpctypes "github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/namespace"
 	"github.com/stratosnet/sds/pp/p2pserver"
-	"github.com/stratosnet/sds/pp/rpc"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
@@ -92,7 +92,7 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 	}.String()
 
 	r := reqDownloadMsg(fileHash, sdmPath, sn)
-	res := rpc.RpcPubApi().RequestDownload(ctx, r)
+	res := namespace.RpcPubApi().RequestDownload(ctx, r)
 
 	if res.Return != rpctypes.DOWNLOAD_OK {
 		w.WriteHeader(setting.FAILCode)
@@ -131,7 +131,7 @@ func streamSharedVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 
 	shareLink, _, _ := parseShareLink(req.RequestURI)
 	reqGetSharedMsg := reqGetSharedMsg(shareLink)
-	res := rpc.RpcPubApi().RequestGetShared(ctx, reqGetSharedMsg)
+	res := namespace.RpcPubApi().RequestGetShared(ctx, reqGetSharedMsg)
 
 	if res.Return != rpctypes.SHARED_DL_START {
 		w.WriteHeader(setting.FAILCode)
@@ -141,7 +141,7 @@ func streamSharedVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 
 	fileHash := res.FileHash
 	reqDownloadShared := reqDownloadShared(fileHash, sn, res.ReqId)
-	res = rpc.RpcPubApi().RequestDownloadShared(ctx, reqDownloadShared)
+	res = namespace.RpcPubApi().RequestDownloadShared(ctx, reqDownloadShared)
 	if res.Return != rpctypes.DOWNLOAD_OK {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get file storage info").ToBytes())
@@ -182,7 +182,7 @@ func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 	}.String()
 
 	r := reqDownloadMsg(fileHash, sdmPath, sn)
-	res := rpc.RpcPubApi().RequestDownload(ctx, r)
+	res := namespace.RpcPubApi().RequestDownload(ctx, r)
 
 	if res.Return != rpctypes.DOWNLOAD_OK {
 		w.WriteHeader(setting.FAILCode)
@@ -446,7 +446,7 @@ func getSliceData(ctx context.Context, fInfo *protos.RspFileStorageInfo, sliceIn
 	}
 
 	r := reqDownloadDataMsg(fInfo, sliceInfo)
-	res := rpc.RpcPubApi().RequestDownloadSliceData(ctx, r)
+	res := namespace.RpcPubApi().RequestDownloadSliceData(ctx, r)
 
 	if res.Return != rpctypes.DOWNLOAD_OK {
 		return nil, errors.New("failed to get video slice")
@@ -597,7 +597,7 @@ func reqDownloadShared(fileHash, sn, reqId string) rpctypes.ParamReqDownloadShar
 
 func handleGetOzone(ctx context.Context, walletAddress string) (string, error) {
 	utils.Log("- request ozone balance (method: user_requestGetOzone)")
-	res := rpc.RpcPubApi().RequestGetOzone(ctx, rpctypes.ParamReqGetOzone{
+	res := namespace.RpcPubApi().RequestGetOzone(ctx, rpctypes.ParamReqGetOzone{
 		WalletAddr: walletAddress,
 	})
 
