@@ -25,6 +25,7 @@ type UploadSliceTask struct {
 	SliceNumber   uint64
 	SliceHash     string
 	Type          protos.UploadType
+	Data          []byte
 }
 
 const (
@@ -333,7 +334,8 @@ type UploadProgress struct {
 // UploadProgressMap Map of the progress for ongoing uploads
 var UploadProgressMap = &sync.Map{} // map[string]*UploadProgress
 
-func CreateUploadSliceTask(ctx context.Context, slice *SliceWithStatus, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
+func CreateUploadSliceTask(ctx context.Context, slice *SliceWithStatus, uploadTask *UploadFileTask,
+	sliceDataAccessor func(fileHash string, slice *protos.SliceHashAddr) ([]byte, error)) (*UploadSliceTask, error) {
 	pp.DebugLogf(ctx, "sliceNumber %v  offsetStart = %v  offsetEnd = %v", slice.Slice.SliceNumber, slice.Slice.SliceOffset.SliceOffsetStart, slice.Slice.SliceOffset.SliceOffsetEnd)
 	startOffset := slice.Slice.SliceOffset.SliceOffsetStart
 	endOffset := slice.Slice.SliceOffset.SliceOffsetEnd
@@ -369,9 +371,15 @@ func CreateUploadSliceTask(ctx context.Context, slice *SliceWithStatus, uploadTa
 	tmpFileName := strconv.FormatUint(slice.Slice.SliceNumber, 10)
 	if !remote {
 		metrics.UploadPerformanceLogNow(fileHash + ":SND_GET_LOCAL_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
-		rawData, err = file.GetWholeFileData(file.GetTmpSlicePath(fileHash, strconv.FormatUint(slice.Slice.SliceNumber, 10)))
+		rawData, err = sliceDataAccessor(fileHash, slice.Slice)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed getting file data")
+		}
+		if rawData != nil {
+			err = file.SaveTmpSliceData(fileHash, tmpFileName, rawData)
+			if err != nil {
+				return nil, errors.Wrap(err, "filed saving tmp slice data")
+			}
 		}
 		metrics.UploadPerformanceLogNow(fileHash + ":RCV_GET_LOCAL_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
 	} else {
@@ -405,6 +413,7 @@ func CreateUploadSliceTask(ctx context.Context, slice *SliceWithStatus, uploadTa
 	}
 	sliceHash := utils.CalcSliceHash(data, fileHash, slice.Slice.SliceNumber)
 	tk := &UploadSliceTask{
+		Data:          data,
 		RspUploadFile: uploadTask.RspUploadFile,
 		SliceHash:     sliceHash,
 		SliceNumber:   slice.Slice.SliceNumber,
@@ -417,16 +426,18 @@ func CreateUploadSliceTask(ctx context.Context, slice *SliceWithStatus, uploadTa
 	return tk, nil
 }
 
-func GetReuploadSliceTask(ctx context.Context, slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
+func GetReuploadSliceTask(ctx context.Context, slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask,
+	sliceDataAccessor func(fileHash string, slice *protos.SliceHashAddr) ([]byte, error)) (*UploadSliceTask, error) {
 	fileHash := uploadTask.RspBackupFile.FileHash
 	pp.DebugLogf(ctx, "  fileHash %s sliceNumber %v, sliceHash %s", fileHash, slice.Slice.SliceNumber, slice.Slice.SliceHash)
 
-	rawData, err := file.GetSliceDataFromTmp(fileHash, slice.Slice.SliceHash)
+	rawData, err := sliceDataAccessor(fileHash, slice.Slice)
 	if rawData == nil {
 		return nil, errors.Wrapf(err, "Failed to find the file slice in temp folder for fileHash %s sliceNumber %v, sliceHash %s",
 			fileHash, slice.Slice.SliceNumber, slice.Slice.SliceHash)
 	}
 	tk := &UploadSliceTask{
+		Data:        rawData,
 		SliceNumber: slice.Slice.SliceNumber,
 	}
 	return tk, nil

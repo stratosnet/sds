@@ -462,9 +462,9 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 	}
 	var ctStat = CostTimeStat{}
 
-	data, err := file.GetSliceDataFromTmp(fileHash, tk.SliceHash)
-	if err != nil {
-		return errors.Wrap(err, "failed to get slice data from tmp")
+	data := tk.Data
+	if data == nil {
+		return errors.New("failed to get slice data from task")
 	}
 
 	if tkDataLen <= setting.MAXDATA {

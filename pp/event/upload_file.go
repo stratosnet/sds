@@ -224,21 +224,31 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 	task.UploadProgressMap.Store(target.FileHash, p)
 
 	// Start uploading
-	startUploadingFileSlices(ctx, target.FileHash)
+	sliceDataAccessor := func(fileHash string, slice *protos.SliceHashAddr) ([]byte, error) {
+		return file.GetSliceDataFromTmp(fileHash, slice.SliceHash)
+	}
+
+	startUploadingFileSlices(ctx, target.FileHash, sliceDataAccessor)
 }
 
 func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
-	totalSize, err := preUpload(ctx, target)
+	uploadFileHandler, err := getUploadFileHandler(target.FileHash)
+	if err != nil {
+		pp.ErrorLog(ctx, "received error when get upload file handler: ", err)
+		return
+	}
+
+	totalSize, err := uploadFileHandler.PreUpload(ctx, target)
+	if err != nil {
+		pp.ErrorLog(ctx, "received error when prepare file before upload: ", err)
+		return
+	}
 
 	// Create upload task
 	uploadTask := task.CreateUploadFileTask(target)
 
 	p2pserver.GetP2pServer(ctx).CleanUpConnMap(target.FileHash)
 	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
-
-	if err != nil {
-		pp.ErrorLog(ctx, "received error when prepare file before upload: ", err)
-	}
 
 	if prg, ok := task.UploadProgressMap.Load(target.FileHash); ok {
 		progress := prg.(*task.UploadProgress)
@@ -247,24 +257,24 @@ func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
 	}
 
 	// Start uploading
-	startUploadingFileSlices(ctx, target.FileHash)
+	startUploadingFileSlices(ctx, target.FileHash, uploadFileHandler.GetSliceData)
 }
 
-func preUpload(ctx context.Context, fInfo *protos.RspUploadFile) (int64, error) {
-	file.DeleteTmpFileSlices(ctx, fInfo.FileHash)
-	codec, err := utils.GetCodecFromFileHash(fInfo.FileHash)
+func getUploadFileHandler(fileHash string) (UploadFileHandler, error) {
+	codec, err := utils.GetCodecFromFileHash(fileHash)
 	if err != nil {
-		return 0, errors.Wrap(err, "failed to get codec from file hash")
+		return nil, errors.Wrap(err, "failed to get codec from file hash")
 	}
 	switch codec {
 	case utils.VIDEO_CODEC:
-		return UploadStreamFileHandler{}.PreUpload(ctx, fInfo)
+		return UploadStreamFileHandler{}, nil
 	default:
-		return UploadRawFileHandler{}.PreUpload(ctx, fInfo)
+		return UploadRawFileHandler{}, nil
 	}
 }
 
-func startUploadingFileSlices(ctx context.Context, fileHash string) {
+func startUploadingFileSlices(ctx context.Context, fileHash string,
+	sliceDataAccessor func(fileHash string, slice *protos.SliceHashAddr) ([]byte, error)) {
 	value, ok := task.UploadFileTaskMap.Load(fileHash)
 	if !ok {
 		pp.ErrorLogf(ctx, "File upload task cannot be found for file %v", fileHash)
@@ -275,7 +285,7 @@ func startUploadingFileSlices(ctx context.Context, fileHash string) {
 	// Send signals to start slice uploads
 	fileTask.SignalNewDestinations()
 
-	err := waitForUploadFinished(ctx, fileTask)
+	err := waitForUploadFinished(ctx, fileTask, sliceDataAccessor)
 	if err != nil {
 		pp.ErrorLog(ctx, "File upload task will be cancelled: ", utils.FormatError(err))
 		return
@@ -284,7 +294,8 @@ func startUploadingFileSlices(ctx context.Context, fileHash string) {
 	task.UploadFileTaskMap.Delete(fileHash)
 }
 
-func waitForUploadFinished(ctx context.Context, uploadTask *task.UploadFileTask) error {
+func waitForUploadFinished(ctx context.Context, uploadTask *task.UploadFileTask,
+	sliceDataAccessor func(fileHash string, slice *protos.SliceHashAddr) ([]byte, error)) error {
 	for {
 		// Wait until a new destination can be uploaded to, or until some time has passed
 		select {
@@ -318,12 +329,13 @@ func waitForUploadFinished(ctx context.Context, uploadTask *task.UploadFileTask)
 		// Start uploading to next destination
 		nextDestination := uploadTask.NextDestination()
 		if nextDestination != nil {
-			go uploadSlicesToDestination(ctx, uploadTask, nextDestination)
+			go uploadSlicesToDestination(ctx, uploadTask, nextDestination, sliceDataAccessor)
 		}
 	}
 }
 
-func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileTask, destination *task.SlicesPerDestination) {
+func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileTask, destination *task.SlicesPerDestination,
+	sliceDataAccessor func(fileHash string, slice *protos.SliceHashAddr) ([]byte, error)) {
 	defer func() {
 		uploadTask.UpChan <- true
 	}()
@@ -336,7 +348,7 @@ func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileT
 		var err error
 		switch uploadTask.Type {
 		case protos.UploadType_NEW_UPLOAD:
-			uploadSliceTask, err = task.CreateUploadSliceTask(ctx, slice, uploadTask)
+			uploadSliceTask, err = task.CreateUploadSliceTask(ctx, slice, uploadTask, sliceDataAccessor)
 			if err != nil {
 				slice.SetError(err, true, uploadTask)
 				return
@@ -349,7 +361,7 @@ func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileT
 				return
 			}
 		case protos.UploadType_BACKUP:
-			uploadSliceTask, err = task.GetReuploadSliceTask(ctx, slice, destination.PpInfo, uploadTask)
+			uploadSliceTask, err = task.GetReuploadSliceTask(ctx, slice, destination.PpInfo, uploadTask, sliceDataAccessor)
 			if err != nil {
 				slice.SetError(err, true, uploadTask)
 				return
@@ -380,6 +392,7 @@ func UploadPause(ctx context.Context, fileHash, reqID string, w http.ResponseWri
 
 type UploadFileHandler interface {
 	PreUpload(ctx context.Context, fInfo *protos.RspUploadFile) (int64, error)
+	GetSliceData(fileHash string, slice *protos.SliceHashAddr) ([]byte, error)
 }
 
 type UploadStreamFileHandler struct {
@@ -442,6 +455,10 @@ func (UploadStreamFileHandler) PreUpload(ctx context.Context, fInfo *protos.RspU
 	return totalSize, nil
 }
 
+func (UploadStreamFileHandler) GetSliceData(fileHash string, slice *protos.SliceHashAddr) ([]byte, error) {
+	return file.GetWholeFileData(file.GetTmpSlicePath(fileHash, strconv.FormatUint(slice.SliceNumber, 10)))
+}
+
 func (UploadRawFileHandler) PreUpload(ctx context.Context, fInfo *protos.RspUploadFile) (int64, error) {
 	fileHash := fInfo.FileHash
 	filePath := file.GetFilePath(fileHash)
@@ -450,19 +467,10 @@ func (UploadRawFileHandler) PreUpload(ctx context.Context, fInfo *protos.RspUplo
 		return 0, errors.Wrap(err, "wrong file path")
 	}
 
-	for _, slice := range fInfo.Slices {
-
-		rawData, err := file.GetFileData(filePath, slice.SliceOffset)
-
-		if err != nil {
-			return 0, errors.Wrap(err, "failed getting file data")
-		}
-		if rawData != nil {
-			err = file.SaveTmpSliceData(fileHash, strconv.FormatUint(slice.SliceNumber, 10), rawData)
-			if err != nil {
-				return 0, errors.Wrap(err, "filed saving tmp slice data")
-			}
-		}
-	}
 	return fileInfo.Size(), nil
+}
+
+func (UploadRawFileHandler) GetSliceData(fileHash string, slice *protos.SliceHashAddr) ([]byte, error) {
+	filePath := file.GetFilePath(fileHash)
+	return file.GetFileData(filePath, slice.SliceOffset)
 }
