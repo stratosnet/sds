@@ -38,12 +38,6 @@ enum MsgType {
     DEFAULT = 0;
 }
 
-enum HeartbeatType {
-    REGULAR_HEARTBEAT = 0;
-    LATENCY_CHECK = 1;
-    LATENCY_CHECK_PP = 2;
-}
-
 message PPBaseInfo {
      string p2p_address = 1;
      string wallet_address = 2;

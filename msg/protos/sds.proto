@@ -337,7 +337,7 @@ message ReqActivatePP {
   bytes      tx = 1;
   PPBaseInfo pp_info = 2;
   bool       already_active = 3;
-  string     initial_stake = 4;
+  string     initial_deposit = 4;
 }
 
 message RspActivatePP {
@@ -346,15 +346,22 @@ message RspActivatePP {
   bytes  tx = 3;
 }
 
-message ReqUpdateStakePP {
+message ReqUpdateDepositPP {
   bytes tx = 1;
   string p2p_address = 2;
 }
 
-message RspUpdateStakePP {
+message RspUpdateDepositPP {
   Result result = 1;
   uint32 update_state = 2;
   bytes  tx = 3;
+}
+
+message NoticeUpdatedDepositPP {
+  Result result = 1;
+  string deposit_balance = 2;
+  string node_tier = 3;
+  string weight_score = 4;
 }
 
 message ReqStateChangePP {
@@ -377,15 +384,11 @@ message RspDeactivatePP {
   bytes  tx = 3;
 }
 
-message ReqUnbondingPP {
-  string p2p_address = 1;
-  string ozone_limit_changes = 2; // negative
-  string unbonding_mature_time = 3;
-  string tx_hash = 4;
-  string stake_to_remove = 5;
+message NoticeUnbondingPP {
+  Result result = 1;
 }
 
-message RspUnbondingPP {
+message NoticeDeactivatedPP {
   Result result = 1;
 }
 
@@ -475,7 +478,7 @@ message RspReportTransferResult {
 
 // the message that is sent to the pp which will pull the
 // slice from another pp which stores the file slice
-message ReqFileSliceBackupNotice {
+message NoticeFileSliceBackup {
   string           task_id = 1;
   string           file_hash = 2;
   SliceStorageInfo slice_storage_info = 3;
@@ -532,9 +535,9 @@ message RspBackupStatus {
 }
 
 message ReqTransferDownload {
-  ReqFileSliceBackupNotice req_file_slice_backup_notice = 1;
-  PPBaseInfo               new_pp = 2;
-  string                   p2p_address = 3;
+  NoticeFileSliceBackup notice_file_slice_backup = 1;
+  PPBaseInfo            new_pp = 2;
+  string                p2p_address = 3;
 }
 
 message RspTransferDownload {
@@ -577,15 +580,25 @@ message RspGetHDInfo {
   string wallet_address = 4;
 }
 
-message ReqLatencyCheck {
-  HeartbeatType hb_type = 1;
+message ReqSpLatencyCheck {
   string p2p_address_pp = 2;
   string network_address_sp = 3;
   string sp_index = 4;
 }
 
-message RspLatencyCheck {
-  HeartbeatType hb_type = 1;
+message RspSpLatencyCheck {
+  string p2p_address_pp = 2;
+  string network_address_sp = 3;
+  string sp_index = 4;
+}
+
+message ReqPpLatencyCheck {
+  string p2p_address_pp = 2;
+  string network_address_sp = 3;
+  string sp_index = 4;
+}
+
+message RspPpLatencyCheck {
   string p2p_address_pp = 2;
   string network_address_sp = 3;
   string sp_index = 4;
@@ -829,7 +842,7 @@ message RspBadVersion{
   string command = 3;
 }
 
-message RspSpUnderMaintenance{
+message NoticeSpUnderMaintenance{
   string sp_p2p_address = 1;
   int32  maintenance_type = 2;
 }

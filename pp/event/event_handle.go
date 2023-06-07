@@ -39,10 +39,10 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspReportNodeStatus, RspReportNodeStatus, SpRspVerifier)
 	registerEvent(header.RspRegister, RspRegister, SpRspVerifier)
 	registerEvent(header.RspActivatePP, RspActivate, SpRspVerifier)
-	registerEvent(header.RspUpdateStakePP, RspUpdateStake, SpRspVerifier)
+	registerEvent(header.RspUpdateDepositPP, RspUpdateDeposit, SpRspVerifier)
 	registerEvent(header.RspStateChangePP, RspStateChange, SpRspVerifier)
 	registerEvent(header.RspDeactivatePP, RspDeactivate, SpRspVerifier)
-	registerEvent(header.RspUnbondingPP, RspUnbondingPP, SpRspVerifier)
+	registerEvent(header.NoticeUnbondingPP, NoticeUnbondingPP, SpRspVerifier)
 	registerEvent(header.RspPrepay, RspPrepay, SpRspVerifier)
 	registerEvent(header.RspMining, RspMining, SpRspVerifier)
 	registerEvent(header.RspStartMaintenance, RspStartMaintenance, SpRspVerifier)
@@ -62,14 +62,13 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspShareFile, RspShareFile, SpRspVerifier)
 	registerEvent(header.RspGetShareFile, RspGetShareFile, SpRspVerifier)
 	registerEvent(header.RspDeleteShare, RspDeleteShare, SpRspVerifier)
-	registerEvent(header.RspLatencyCheck, RspLatencyCheck, SpRspVerifier)
+	registerEvent(header.RspSpLatencyCheck, RspSpLatencyCheck, SpRspVerifier)
 	registerEvent(header.RspDeleteFile, RspDeleteFile, SpRspVerifier)
 
 	// not_pp---sp--(*rsp*)--pp
-	registerEvent(header.RspActivatedPP, RspActivated, SpAddressVerifier)
-	registerEvent(header.RspUpdatedStakePP, RspUpdatedStake, SpAddressVerifier)
-	registerEvent(header.RspDeactivatedPP, RspDeactivated, SpAddressVerifier)
-	registerEvent(header.RspPrepaid, RspPrepaid, SpAddressVerifier)
+	registerEvent(header.NoticeActivatedPP, NoticeActivatedPP, SpAddressVerifier)
+	registerEvent(header.NoticeUpdatedDepositPP, NoticeUpdatedDeposit, SpAddressVerifier)
+	registerEvent(header.NoticeDeactivatedPP, NoticeDeactivatedPP, SpAddressVerifier)
 
 	// pp--(*req*)--pp--(*rsp*)--pp
 	registerEvent(header.ReqUploadFileSlice, ReqUploadFileSlice, RspUploadFileWithNoReqIdVerifier)
@@ -78,17 +77,18 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspBackupFileSlice, RspBackupFileSlice, PpRspVerifier)
 	registerEvent(header.ReqDownloadSlice, ReqDownloadSlice, RspFileStorageInfoWithNoReqIdVerifier)
 	registerEvent(header.RspDownloadSlice, RspDownloadSlice, PpRspVerifier)
-	registerEvent(header.ReqTransferDownload, ReqTransferDownload, ReqFileSliceBackupNoticeVerifier)
+	registerEvent(header.ReqTransferDownload, ReqTransferDownload, NoticeFileSliceBackupVerifier)
 	registerEvent(header.RspTransferDownload, RspTransferDownload, nil)
-	registerEvent(header.ReqLatencyCheck, ReqLatencyCheckToPp, nil) // shared with pp-sp-pp version
+	registerEvent(header.ReqPpLatencyCheck, ReqPpLatencyCheck, nil)
+	registerEvent(header.RspPpLatencyCheck, RspPpLatencyCheck, PpRspVerifier)
 
 	// pp--(*msg*)--pp
 	registerEvent(header.ReqClearDownloadTask, ReqClearDownloadTask, nil)
 	registerEvent(header.UploadSpeedOfProgress, UploadSpeedOfProgress, nil)
 
 	// sp--(*msg*)--pp
-	registerEvent(header.ReqFileSliceBackupNotice, ReqFileSliceBackupNotice, ReqFileSliceBackupNoticeVerifier)
-	registerEvent(header.RspSpUnderMaintenance, RspSpUnderMaintenance, SpAddressVerifier)
+	registerEvent(header.NoticeFileSliceBackup, NoticeFileSliceBackup, NoticeFileSliceBackupVerifier)
+	registerEvent(header.NoticeSpUnderMaintenance, NoticeSpUnderMaintenance, SpAddressVerifier)
 
 	// pp1--(req)--pp2--(rspa)--pp1--(*rspb*)--pp2
 	registerEvent(header.RspTransferDownloadResult, RspTransferDownloadResult, nil)

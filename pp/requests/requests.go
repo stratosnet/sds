@@ -505,12 +505,12 @@ func ReqRegisterNewPPData(ctx context.Context) *protos.ReqRegisterNewPP {
 	}
 }
 
-func ReqTransferDownloadData(ctx context.Context, notice *protos.ReqFileSliceBackupNotice) *msg.RelayMsgBuf {
+func ReqTransferDownloadData(ctx context.Context, notice *protos.NoticeFileSliceBackup) *msg.RelayMsgBuf {
 
 	protoMsg := &protos.ReqTransferDownload{
-		ReqFileSliceBackupNotice: notice,
-		NewPp:                    p2pserver.GetP2pServer(ctx).GetPPInfo(),
-		P2PAddress:               p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+		NoticeFileSliceBackup: notice,
+		NewPp:                 p2pserver.GetP2pServer(ctx).GetPPInfo(),
+		P2PAddress:            p2pserver.GetP2pServer(ctx).GetP2PAddress(),
 	}
 	body, err := proto.Marshal(protoMsg)
 	if err != nil {
@@ -522,7 +522,7 @@ func ReqTransferDownloadData(ctx context.Context, notice *protos.ReqFileSliceBac
 	}
 }
 
-func ReqTransferDownloadWrongData(ctx context.Context, notice *protos.ReqFileSliceBackupNotice) *protos.ReqTransferDownloadWrong {
+func ReqTransferDownloadWrongData(ctx context.Context, notice *protos.NoticeFileSliceBackup) *protos.ReqTransferDownloadWrong {
 	return &protos.ReqTransferDownloadWrong{
 		TaskId:           notice.TaskId,
 		NewPp:            p2pserver.GetP2pServer(ctx).GetPPInfo(),

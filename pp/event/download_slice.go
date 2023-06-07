@@ -193,7 +193,7 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 		rsp := &protos.RspDownloadSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
-				Msg:   "do not spam downloading file slices",
+				Msg:   "failed downloading file slice, re-download",
 			},
 		}
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)

@@ -12,10 +12,11 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func (p *Network) StartPpLatencyCheck(ctx context.Context) {
+func (p *Network) SchedulePpLatencyCheck(ctx context.Context) {
 	p.ppPeerClock.AddJobRepeat(time.Second*setting.PpLatencyCheckInterval, 0, p.LatencyOfNextPp(ctx))
 }
 
+// LatencyOfNextPp only when the Latency is 0 which means not measured, the measurement is started.
 func (p *Network) LatencyOfNextPp(ctx context.Context) func() {
 	return func() {
 		list, _, _ := p2pserver.GetP2pServer(ctx).GetPPList(ctx)
@@ -27,19 +28,18 @@ func (p *Network) LatencyOfNextPp(ctx context.Context) func() {
 	}
 }
 
+// StartLatencyCheckToPp send pp latency check message to measure the latency
 func (p *Network) StartLatencyCheckToPp(ctx context.Context, NetworkAddr string) error {
 	start := time.Now().UnixNano()
 	p.pingTimePPMap.Store(NetworkAddr, start)
-	pb := &protos.ReqLatencyCheck{
-		HbType: protos.HeartbeatType_LATENCY_CHECK_PP,
-	}
+	pb := &protos.ReqPpLatencyCheck{}
 	body, err := proto.Marshal(pb)
 	if err != nil {
 		return err
 	}
 
 	msgRelay := &msg.RelayMsgBuf{
-		MSGHead: header.MakeMessageHeader(1, setting.Config.Version.AppVer, uint32(len(body)), header.ReqLatencyCheck),
+		MSGHead: header.MakeMessageHeader(1, setting.Config.Version.AppVer, uint32(len(body)), header.ReqPpLatencyCheck),
 		MSGBody: body,
 	}
 

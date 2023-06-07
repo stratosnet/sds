@@ -70,6 +70,7 @@ func (p *P2pServer) newClient(ctx context.Context, server string, heartbeat, rec
 				}
 			}
 		}
+
 		if p.mainSpConn != nil {
 			if c.(*cf.ClientConn).GetIsActive() && p.mainSpConn.GetName() == c.(*cf.ClientConn).GetName() {
 				utils.DebugLog("lost SP conn, name: ", p.mainSpConn.GetName(), " netId is ", p.mainSpConn.GetNetID())

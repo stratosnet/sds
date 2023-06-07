@@ -47,15 +47,18 @@ const (
 
 	DEFAULT_MAX_CONNECTION = 1000
 
-	DEFAULT_MIN_UNSUSPEND_STAKE = "1stos" // 1 stos
+	DEFAULT_MIN_UNSUSPEND_DEPOSIT = "1stos" // 1 stos
 
 	SPAM_THRESHOLD_SP_SIGN_LATENCY  = 60 // in second
 	SPAM_THRESHOLD_SLICE_OPERATIONS = 6 * time.Hour
 
-	SOFT_RAM_LIMIT_TIER_0    = int64(3 * units.GiB)
-	SOFT_RAM_LIMIT_TIER_1    = int64(7 * units.GiB)
-	SOFT_RAM_LIMIT_TIER_2    = int64(15 * units.GiB)
-	SOFT_RAM_LIMIT_UNLIMITED = math.MaxInt64
+	SOFT_RAM_LIMIT_TIER_0     = int64(3 * units.GiB)
+	SOFT_RAM_LIMIT_TIER_1     = int64(7 * units.GiB)
+	SOFT_RAM_LIMIT_TIER_2     = int64(15 * units.GiB)
+	SOFT_RAM_LIMIT_UNLIMITED  = math.MaxInt64
+	SOFT_RAM_LIMIT_TIER_0_DEV = int64(300 * units.MiB)
+	SOFT_RAM_LIMIT_TIER_1_DEV = int64(500 * units.MiB)
+	SOFT_RAM_LIMIT_TIER_2_DEV = int64(700 * units.MiB)
 )
 
 var (

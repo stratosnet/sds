@@ -26,7 +26,7 @@ var transferTaskMap = make(map[string]TransferTask)
 
 // CheckTransfer check whether can transfer
 // todo:
-func CheckTransfer(target *protos.ReqFileSliceBackupNotice) bool {
+func CheckTransfer(target *protos.NoticeFileSliceBackup) bool {
 	return true
 }
 

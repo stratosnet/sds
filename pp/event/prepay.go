@@ -60,13 +60,3 @@ func RspPrepay(ctx context.Context, conn core.WriteCloser) {
 	}
 	rpcResult.Return = rpc.SUCCESS
 }
-
-// RspPrepaid Response when this PP node's prepay transaction was successful
-func RspPrepaid(ctx context.Context, conn core.WriteCloser) {
-	var target protos.RspPrepaid
-	if err := VerifyMessage(ctx, header.RspPrepaid, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
-		return
-	}
-	pp.Log(ctx, "The prepay transaction has been executed")
-}

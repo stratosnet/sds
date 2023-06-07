@@ -36,8 +36,9 @@ func (p *Network) StartPP(ctx context.Context) {
 	p.pingTimePPMap = &sync.Map{}
 	p.pingTimeSPMap = &sync.Map{}
 	p.InitFsm()
-	p.GetSPList(ctx)()
-	p.StartPpLatencyCheck(ctx)
+	p.StartGetSPList(ctx)()
+	p.ScheduleSpLatencyCheck(ctx)
+	p.SchedulePpLatencyCheck(ctx)
 	p.StartStatusReportToSP(ctx)
 	go p.ListenOffline(ctx)
 }
@@ -89,10 +90,8 @@ func (p *Network) ListenOffline(ctx context.Context) {
 		select {
 		case offline := <-p2pserver.GetP2pServer(ctx).ReadOfflineChan():
 			if offline.IsSp {
-				if setting.IsPP {
-					utils.DebugLogf("SP %v is offline", offline.NetworkAddress)
-					p.reloadConnectSP(ctx)
-				}
+				utils.DebugLogf("SP %v is offline", offline.NetworkAddress)
+				p.reloadConnectSP(ctx)
 			} else {
 				p2pserver.GetP2pServer(ctx).PPDisconnected(ctx, "", offline.NetworkAddress)
 				p.InitPPList(ctx)

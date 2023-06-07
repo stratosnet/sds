@@ -27,33 +27,23 @@ const (
 	ReqRegister = "ReqReg" // request to register
 	RspRegister = "RspReg" // response to register
 
-	ReqActivatePP  = "ReqActvp" // request to activate a PP node
-	RspActivatePP  = "RspActvp" // response to activate a PP node
-	ReqActivatedPP = "ReqActdp" // request when a PP node was successfully activated
+	ReqActivatePP     = "ReqActvp" // request to activate a PP node
+	RspActivatePP     = "RspActvp" // response to activate a PP node
+	NoticeActivatedPP = "NotActdp" // notice when a PP node was successfully activated
 
-	ReqActivatedSP = "ReqActds" // request when a SP node was successfully activated
-	RspActivatedPP = "RspActdp" // response when a PP node was successfully activated
-
-	ReqUpdateStakePP  = "ReqUpp" // request to update stake for a PP node
-	RspUpdateStakePP  = "RspUpp" // response to update stake for a PP node
-	ReqStateChangePP  = "ReqSCpp"
-	RspStateChangePP  = "RspSCpp"
-	ReqUpdatedStakePP = "ReqUptdp" // request when a PP node's stake was successfully updated
-	ReqUpdatedStakeSP = "ReqUptds" // request when a SP node's stake was successfully updated
-	RspUpdatedStakePP = "RspUptdp" // response when a PP node's stake  was successfully updated
+	ReqUpdateDepositPP     = "ReqUpp"   // request to update deposit for a PP node
+	RspUpdateDepositPP     = "RspUpp"   // response to update deposit for a PP node
+	NoticeUpdatedDepositPP = "NotUptdp" // notice when a PP node's deposit  was successfully updated
+	ReqStateChangePP       = "ReqSCpp"
+	RspStateChangePP       = "RspSCpp"
 
 	ReqDeactivatePP     = "ReqDctvp" // request to deactivate a PP node
 	RspDeactivatePP     = "RspDctvp" // response to deactivate a PP node
-	ReqUnbondingPP      = "ReqUbdp"  // request to unbonding a PP node
-	RspUnbondingPP      = "RspUbdp"  // response to unbonding a PP node
-	ReqDeactivatedPP    = "ReqDctdp" // request when a PP node was successfully deactivated
-	RspDeactivatedPP    = "RspDctdp" // response when a PP node was successfully deactivated
-	RspPPRegisteredToSP = "Rspbdsp"  // response when a PP node was successfully registered to SP
+	NoticeUnbondingPP   = "NotUbdp"  // notice to unbonding a PP node
+	NoticeDeactivatedPP = "NotDctdp" // notice when a PP node was successfully deactivated
 
-	ReqPrepay  = "ReqPrpay" // request for a PP node sending a prepay transaction
-	RspPrepay  = "RspPrpay" // response for a PP node sending a prepay transaction
-	ReqPrepaid = "ReqPrpad" // request when a PP node prepay transaction was successful
-	RspPrepaid = "RspPrpad" // response when a PP node prepay transaction was successful
+	ReqPrepay = "ReqPrpay" // request for a PP node sending a prepay transaction
+	RspPrepay = "RspPrpay" // response for a PP node sending a prepay transaction
 
 	ReqMining = "ReqMin" // request to mining
 	RspMining = "RspMin" //  response to mining
@@ -75,7 +65,6 @@ const (
 	ReqReportUploadSliceResult = "ReqUFR"
 	RspReportUploadSliceResult = "RspUFR"
 	UploadSpeedOfProgress      = "USOP"
-	Uploaded                   = "Uploaded"
 
 	ReqFindMyFileList = "ReqFFL"
 	RspFindMyFileList = "RspFFL"
@@ -104,7 +93,7 @@ const (
 	RspRegisterNewPP = "RspRgNPP"
 
 	// backup and transfer
-	ReqFileSliceBackupNotice   = "ReqFBNot"
+	NoticeFileSliceBackup      = "NotFSB"
 	ReqTransferDownload        = "ReqTdl"
 	RspTransferDownload        = "RspTdl"
 	ReqTransferDownloadWrong   = "ReqTDW"
@@ -126,11 +115,13 @@ const (
 	ReqGetShareFile = "ReqGSF"
 	RspGetShareFile = "RspGSF"
 
-	// heartbeat
-	ReqLatencyCheck = "ReqLaten"
-	RspLatencyCheck = "RspLaten"
-	// test sp latency
+	// latency check
 	ReqSpLatencyCheck = "ReqSpLat"
+	RspSpLatencyCheck = "RspSpLat"
+
+	ReqPpLatencyCheck = "ReqPpLat"
+	RspPpLatencyCheck = "RspPpLat"
+
 	// report node status
 	ReqReportNodeStatus = "ReqRNS"
 	RspReportNodeStatus = "RspRNS"
@@ -141,8 +132,8 @@ const (
 	ReqTransferBLSSignature = "ReqTrBLS"
 	RspTransferBLSSignature = "RspTrBLS"
 
-	RspBadVersion         = "RspBdVer"
-	RspSpUnderMaintenance = "RspMtnc"
+	RspBadVersion            = "RspBdVer"
+	NoticeSpUnderMaintenance = "NotMtnc"
 )
 
 // MessageHead every field in this struct shall be fixed length. Please change MsgHeaderLen when modifying this struct.

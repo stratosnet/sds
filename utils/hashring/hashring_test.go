@@ -3,6 +3,8 @@ package hashring
 import (
 	"strconv"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetNodeExcludedNodeIDs(t *testing.T) {
@@ -30,6 +32,31 @@ func TestGetNodeExcludedNodeIDs(t *testing.T) {
 	if ring.NodeOkCount != 1 {
 		t.Fatalf("Wrong NodeOkCount [%v] (expected [%v])", ring.NodeOkCount, 1)
 	}
+}
+
+func TestHashringNodeCount(t *testing.T) {
+	ring := New(10)
+	assert.Equal(t, uint32(0), ring.NodeCount)
+	assert.Equal(t, uint32(0), ring.NodeOkCount)
+
+	ring.AddNode(&Node{ID: "node1"})
+	ring.AddNode(&Node{ID: "node2"})
+	ring.AddNode(&Node{ID: "node3"})
+	assert.Equal(t, uint32(3), ring.NodeCount)
+	assert.Equal(t, uint32(0), ring.NodeOkCount)
+
+	ring.SetOnline("node1")
+	ring.SetOnline("node2")
+	ring.SetOnline("node3")
+	assert.Equal(t, uint32(3), ring.NodeCount)
+	assert.Equal(t, uint32(3), ring.NodeOkCount)
+
+	ring.RemoveNode("node1")
+	ring.SetOffline("node2")
+	ring.SetOffline("node3")
+	ring.RemoveNode("node3")
+	assert.Equal(t, uint32(1), ring.NodeCount)
+	assert.Equal(t, uint32(0), ring.NodeOkCount)
 }
 
 /*

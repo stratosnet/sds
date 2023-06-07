@@ -80,10 +80,6 @@ func (p *P2pServer) SetPPServer(pp *core.Server) {
 	p.server = pp
 }
 
-func (p *P2pServer) GetMainSpConn() *cf.ClientConn {
-	return p.mainSpConn
-}
-
 func (p *P2pServer) Init() error {
 	p2pKeyFile, err := os.ReadFile(filepath.Join(setting.Config.AccountDir, setting.Config.P2PAddress+".json"))
 	if err != nil {

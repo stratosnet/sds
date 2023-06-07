@@ -17,22 +17,22 @@ import (
 	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
-// UpdateStake Update stake of node
-func UpdateStake(ctx context.Context, stakeDelta utiltypes.Coin, txFee utiltypes.TxFee) error {
-	updateStakeReq, err := reqUpdateStakeData(ctx, stakeDelta, txFee)
+// UpdateDeposit Update deposit of node
+func UpdateDeposit(ctx context.Context, depositDelta utiltypes.Coin, txFee utiltypes.TxFee) error {
+	updateDepositReq, err := reqUpdateDepositData(ctx, depositDelta, txFee)
 	if err != nil {
-		pp.ErrorLog(ctx, "Couldn't build update PP stake request: "+err.Error())
+		pp.ErrorLog(ctx, "Couldn't build update PP deposit request: "+err.Error())
 		return err
 	}
-	pp.Log(ctx, "Sending update stake message to SP! "+updateStakeReq.P2PAddress)
-	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, updateStakeReq, header.ReqUpdateStakePP)
+	pp.Log(ctx, "Sending update deposit message to SP! "+updateDepositReq.P2PAddress)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, updateDepositReq, header.ReqUpdateDepositPP)
 	return nil
 }
 
-// RspUpdateStake Response to asking the SP node to update stake this node
-func RspUpdateStake(ctx context.Context, conn core.WriteCloser) {
-	var target protos.RspUpdateStakePP
-	if err := VerifyMessage(ctx, header.RspUpdatedStakePP, &target); err != nil {
+// RspUpdateDeposit Response to asking the SP node to update deposit this node
+func RspUpdateDeposit(ctx context.Context, conn core.WriteCloser) {
+	var target protos.RspUpdateDepositPP
+	if err := VerifyMessage(ctx, header.RspUpdateDepositPP, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
@@ -41,7 +41,7 @@ func RspUpdateStake(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	pp.Log(ctx, "get RspUpdateStakePP", target.Result.State, target.Result.Msg)
+	pp.Log(ctx, "get RspUpdateDepositPP", target.Result.State, target.Result.Msg)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		return
 	}
@@ -54,18 +54,18 @@ func RspUpdateStake(ctx context.Context, conn core.WriteCloser) {
 
 	err := grpc.BroadcastTx(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
 	if err != nil {
-		pp.ErrorLog(ctx, "The UpdateStake transaction couldn't be broadcast", err)
+		pp.ErrorLog(ctx, "The UpdateDeposit transaction couldn't be broadcast", err)
 	} else {
-		pp.Log(ctx, "The UpdateStake transaction was broadcast")
+		pp.Log(ctx, "The UpdateDeposit transaction was broadcast")
 	}
 
 	ReqStateChange(ctx, conn)
 }
 
-// RspUpdatedStake Response when this PP node's stake was successfully updated
-func RspUpdatedStake(ctx context.Context, conn core.WriteCloser) {
-	var target protos.RspUpdatedStakePP
-	if err := VerifyMessage(ctx, header.RspUpdatedStakePP, &target); err != nil {
+// NoticeUpdatedDeposit Notice when this PP node's deposit was successfully updated
+func NoticeUpdatedDeposit(ctx context.Context, conn core.WriteCloser) {
+	var target protos.NoticeUpdatedDepositPP
+	if err := VerifyMessage(ctx, header.NoticeUpdatedDepositPP, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
@@ -73,15 +73,15 @@ func RspUpdatedStake(ctx context.Context, conn core.WriteCloser) {
 	if !success {
 		return
 	}
-	utils.Logf("get RspUpdatedStakePP, StakeBalance: %v, NodeTier: %v, Weight_Score: %v", target.StakeBalance, target.NodeTier, target.WeightScore)
+	utils.Logf("get NoticeUpdatedDepositPP, DepositBalance: %v, NodeTier: %v, Weight_Score: %v", target.DepositBalance, target.NodeTier, target.WeightScore)
 
-	// msg is not empty after stake being updated to 0wei
-	stakeBalanceAfter, err := utiltypes.ParseCoinNormalized(target.StakeBalance)
+	// msg is not empty after deposit being updated to 0wei
+	depositBalanceAfter, err := utiltypes.ParseCoinNormalized(target.DepositBalance)
 	if err != nil {
 		return
 	}
 	if len(target.Result.Msg) > 0 &&
-		stakeBalanceAfter.IsZero() &&
+		depositBalanceAfter.IsZero() &&
 		target.NodeTier == "0" {
 		// change pp state to unbonding
 		setting.State = types.PP_UNBONDING
