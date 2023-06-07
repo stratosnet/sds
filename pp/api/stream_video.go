@@ -460,7 +460,7 @@ func getSliceData(ctx context.Context, fInfo *protos.RspFileStorageInfo, sliceIn
 	defer func() {
 		_ = fileMg.Close()
 	}()
-	file.WriteFile(decoded, 0, fileMg)
+	_ = file.WriteFile(decoded, 0, fileMg)
 	return decoded, nil
 }
 
