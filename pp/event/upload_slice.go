@@ -562,7 +562,6 @@ func BackupFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 	var slice *protos.SliceHashAddr
 	utils.DebugLog("tk.SliceNumber:", tk.SliceNumber)
-	utils.DebugLog(tk)
 	for _, slice = range tk.RspUploadFile.Slices {
 		utils.DebugLogf("slice.SliceNumber: %d", slice.SliceNumber)
 		if slice.SliceNumber == tk.SliceNumber {
