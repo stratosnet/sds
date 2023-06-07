@@ -27,7 +27,6 @@ internal_port = '9301'
 rpc_port = '9401'
 allow_owner_rpc = false
 metrics_port = '9601'
-ui_port = '9701'
 traffic_log_interval = 10
 max_connection = 1000
 [version]
@@ -40,6 +39,10 @@ tls = false
 cert = ''
 key = ''
 port = '9501'
+
+[web_server]
+path = "./web"
+port = "9701"
 
 [[sp_list]]
 p2p_address = 'stsds1cw8qhgsxddak8hh8gs7veqmy5ku8f8za6qlq64'

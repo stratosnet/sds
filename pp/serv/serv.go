@@ -2,8 +2,6 @@ package serv
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -20,7 +18,6 @@ import (
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/web"
 )
 
 // BaseServer base pp server
@@ -65,11 +62,6 @@ func (bs *BaseServer) Start() error {
 	}
 
 	err = bs.startHttpRPC()
-	if err != nil {
-		return err
-	}
-
-	err = bs.startUIServer()
 	if err != nil {
 		return err
 	}
@@ -239,32 +231,6 @@ func (bs *BaseServer) startRestServer() error {
 	} else {
 		utils.ErrorLog("Missing configuration for rest port")
 	}
-	return nil
-}
-
-func (bs *BaseServer) startUIServer() error {
-	if setting.Config.UIPort == "" {
-		utils.ErrorLog("Missing configuration for UI port")
-		return nil
-	}
-	_, err := strconv.ParseUint(setting.Config.UIPort, 10, 64)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse UI port configuration")
-	}
-
-	handler := web.AssetHandler("", "build")
-
-	mux := http.NewServeMux()
-	mux.Handle("/", handler)
-	mux.Handle("/*filepath", handler)
-
-	go func() {
-		utils.Log("Starting UI Server...")
-		err := http.ListenAndServe(fmt.Sprintf(":%v", setting.Config.UIPort), mux)
-		if err != nil {
-			utils.ErrorLog("Error in UI server when listening for traffic", err)
-		}
-	}()
 	return nil
 }
 
