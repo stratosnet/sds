@@ -842,7 +842,7 @@ message RspGetWalletOz{
 message RspBadVersion{
   int32  version = 1;
   int32  minimum_version = 2;
-  string command = 3;
+  uint32 command = 3;
 }
 
 message NoticeSpUnderMaintenance{

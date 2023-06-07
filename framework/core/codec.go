@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stratosnet/sds/msg"
+	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -23,15 +24,11 @@ const (
 )
 
 var (
-	messageRegistry map[string]HandlerFunc
+	messageRegistry [header.NUMBER_MESSAGE_TYPES]HandlerFunc
 )
 
-func init() {
-	messageRegistry = map[string]HandlerFunc{}
-}
-
-func Register(cmd string, handler func(context.Context, WriteCloser)) {
-	messageRegistry[cmd] = handler
+func Register(cmd header.MsgType, handler func(context.Context, WriteCloser)) {
+	messageRegistry[cmd.Id] = handler
 }
 
 type Handler interface {
@@ -44,12 +41,11 @@ func (f HandlerFunc) Handle(ctx context.Context, c WriteCloser) {
 	f(ctx, c)
 }
 
-func GetHandlerFunc(msgType string) HandlerFunc {
-	entry, ok := messageRegistry[msgType]
-	if !ok {
+func GetHandlerFunc(id uint8) HandlerFunc {
+	if id >= header.NUMBER_MESSAGE_TYPES {
 		return nil
 	}
-	return entry
+	return messageRegistry[id]
 }
 
 func CreateContextWithMessage(ctx context.Context, message *msg.RelayMsgBuf) context.Context {
@@ -159,4 +155,18 @@ func CreateContextWithParentReqIdAsReqId(ctx context.Context) context.Context {
 
 func CreateContextWithSrcP2pAddr(ctx context.Context, srcP2pAddress string) context.Context {
 	return context.WithValue(ctx, srcP2pAddrCtxKey, srcP2pAddress)
+}
+
+func reqIdFromSnowFlake(snowflake int64, msgid uint8) int64 {
+	// lsb of snowflake is replaced by msg id without losing the uniqueness. There are still 8 bits in the
+	// second-lowest byte for sequence number.
+	return int64((uint64(snowflake) & 0xFFFFFFFFFFFF0000) | (uint64(snowflake) & 0xFF << 8) | uint64(msgid))
+}
+
+func GenerateNewReqId(msgid uint8) int64 {
+	snowFlake, err := utils.NextSnowFlakeId()
+	if err != nil {
+		utils.FatalLogfAndExit(-3, "Fatal error: "+err.Error())
+	}
+	return reqIdFromSnowFlake(snowFlake, msgid)
 }

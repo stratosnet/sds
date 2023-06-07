@@ -769,8 +769,8 @@ func ReqFileReplicaInfo(path, walletAddr, p2pAddress string, replicaIncreaseNum 
 	}
 }
 
-func PPMsgHeader(dataLen uint32, head string) header.MessageHead {
-	return header.MakeMessageHeader(1, setting.Config.Version.AppVer, dataLen, head)
+func PPMsgHeader(dataLen uint32, msgType header.MsgType) header.MessageHead {
+	return header.MakeMessageHeader(1, setting.Config.Version.AppVer, dataLen, msgType)
 }
 
 func UnmarshalData(ctx context.Context, target interface{}) bool {

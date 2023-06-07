@@ -64,7 +64,7 @@ func setup(t *testing.T) (*StreamReqBody, string, []byte) {
 	}
 	sliceHash := utils.CalcSliceHash(data, reqBody.FileHash, reqBody.SliceInfo.SliceNumber)
 
-	toSign := []byte(reqBody.P2PAddress + reqBody.FileHash + header.ReqDownloadSlice)
+	toSign := []byte(reqBody.P2PAddress + reqBody.FileHash + header.ReqDownloadSlice.Name)
 	signature := ed25519crypto.Sign(spP2pPrivateKey, toSign)
 	reqBody.Sign = signature
 

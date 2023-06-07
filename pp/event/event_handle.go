@@ -8,27 +8,26 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 )
 
-type VerifierFunc func(context.Context, string, interface{}) error
+type VerifierFunc func(context.Context, header.MsgType, interface{}) error
 
 var (
-	veirfierMap map[string]VerifierFunc
+	veirfierMap [header.NUMBER_MESSAGE_TYPES]VerifierFunc
 )
 
-func registerEvent(cmd string, hf core.HandlerFunc, vf VerifierFunc) {
-	core.Register(cmd, hf)
-	veirfierMap[cmd] = vf
+func registerEvent(msgType header.MsgType, hf core.HandlerFunc, vf VerifierFunc) {
+	core.Register(msgType, hf)
+	veirfierMap[msgType.Id] = vf
 }
-func VerifyMessage(ctx context.Context, cmd string, target interface{}) error {
-	verifier, ok := veirfierMap[cmd]
-	if !ok || verifier == nil {
+func VerifyMessage(ctx context.Context, msgType header.MsgType, target interface{}) error {
+	verifier := veirfierMap[msgType.Id]
+	if verifier == nil {
 		return nil
 	}
-	return verifier(ctx, cmd, target)
+	return verifier(ctx, msgType, target)
 }
 
 // RegisterAllEventHandler
 func RegisterAllEventHandlers() {
-	veirfierMap = map[string]VerifierFunc{}
 
 	// pp--(req)--sp--(*rsp*)--pp
 	registerEvent(header.RspGetPPList, RspGetPPList, SpRspVerifier)

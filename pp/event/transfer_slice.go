@@ -278,16 +278,16 @@ func setWriteHookForRspTransferSlice(conn core.WriteCloser) {
 	switch conn := conn.(type) {
 	case *core.ServerConn:
 		hookBackup := core.WriteHook{
-			Message: header.RspTransferDownload,
-			Fn:      HandleSendPacketCostTime,
+			MessageId: header.RspTransferDownload.Id,
+			Fn:        HandleSendPacketCostTime,
 		}
 		var hooks []core.WriteHook
 		hooks = append(hooks, hookBackup)
 		conn.SetWriteHook(hooks)
 	case *cf.ClientConn:
 		hookBackup := cf.WriteHook{
-			Message: header.RspTransferDownload,
-			Fn:      HandleSendPacketCostTime,
+			MessageId: header.RspTransferDownload.Id,
+			Fn:        HandleSendPacketCostTime,
 		}
 		var hooks []cf.WriteHook
 		hooks = append(hooks, hookBackup)
