@@ -25,7 +25,7 @@ type MsgType struct {
 }
 
 const (
-	MSG_ID_INVALIDE uint8 = iota
+	MSG_ID_INVALID uint8 = iota
 
 	MSG_ID_REQ_GET_PPLIST
 	MSG_ID_RSP_GET_PPLIST
@@ -520,7 +520,7 @@ func GetRspIdFromReqId(reqId uint8) uint8 {
 	case MSG_ID_REQ_TRANSFER_BLS_SIGNATURE:
 		return MSG_ID_RSP_TRANSFER_BLS_SIGNATURE
 	default:
-		return MSG_ID_INVALIDE
+		return MSG_ID_INVALID
 	}
 }
 

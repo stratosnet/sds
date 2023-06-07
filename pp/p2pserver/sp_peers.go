@@ -53,7 +53,7 @@ func (p *P2pServer) GetPPInfo() *protos.PPBaseInfo {
 func (p *P2pServer) LoadReqId(reqId int64) (uint8, bool) {
 	msgTypeId, found := requestMap.Load(reqId)
 	if !found {
-		return header.MSG_ID_INVALIDE, found
+		return header.MSG_ID_INVALID, found
 	}
 	return msgTypeId.(uint8), found
 }
