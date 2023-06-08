@@ -480,7 +480,7 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 			SliceOffsetEnd:   uint64(tkDataLen),
 		}
 		var pb proto.Message
-		var cmd string
+		var cmd header.MsgType
 		utils.DebugLogf("upSendPacketWgMap.Store <== K:%v, V:%v]", tkSliceUID, ctStat)
 		if tk.Type == protos.UploadType_BACKUP {
 			pb = requests.ReqBackupFileSliceData(ctx, tk, pieceOffset, data)
@@ -489,7 +489,7 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 			pb = requests.ReqUploadFileSliceData(ctx, tk, pieceOffset, data)
 			cmd = header.ReqUploadFileSlice
 		}
-		return sendSlice(newCtx, pb, fileHash, storageP2pAddress, cmd, storageNetworkAddress)
+		return sendSlice(newCtx, pb, fileHash, storageP2pAddress, storageNetworkAddress, cmd)
 	}
 
 	dataStart := 0
@@ -511,7 +511,7 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 		UpSendCostTimeMap.dataMap.Store(tkSliceUID, ctStat)
 		UpSendCostTimeMap.mux.Unlock()
 		utils.DebugLogf("upSendPacketMap.Store <== K:%v, V:%v]", tkSliceUID, ctStat)
-		var cmd string
+		var cmd header.MsgType
 		if dataEnd < (tkDataLen + 1) {
 			pp.DebugLogf(newCtx, "Uploading slice data %v-%v (total %v)", dataStart, dataEnd, tkDataLen)
 			var pb proto.Message
@@ -522,7 +522,7 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 				pb = requests.ReqUploadFileSliceData(ctx, tk, pieceOffset, data[dataStart:dataEnd])
 				cmd = header.ReqUploadFileSlice
 			}
-			err := sendSlice(newCtx, pb, fileHash, storageP2pAddress, cmd, storageNetworkAddress)
+			err := sendSlice(newCtx, pb, fileHash, storageP2pAddress, storageNetworkAddress, cmd)
 			if err != nil {
 				return err
 			}
@@ -538,7 +538,7 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 				pb = requests.ReqUploadFileSliceData(ctx, tk, pieceOffset, data[dataStart:])
 				cmd = header.ReqUploadFileSlice
 			}
-			return sendSlice(newCtx, pb, fileHash, storageP2pAddress, cmd, storageNetworkAddress)
+			return sendSlice(newCtx, pb, fileHash, storageP2pAddress, storageNetworkAddress, cmd)
 		}
 	}
 }
@@ -574,8 +574,8 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 	return err
 }
 
-func sendSlice(ctx context.Context, pb proto.Message, fileHash, p2pAddress, cmd, networkAddress string) error {
-	pp.DebugLog(ctx, "sendSlice(pb proto.Message, fileHash, p2pAddress, networkAddress string)",
+func sendSlice(ctx context.Context, pb proto.Message, fileHash, p2pAddress, networkAddress string, cmd header.MsgType) error {
+	pp.DebugLog(ctx, "sendSlice(pb proto.MsgType, fileHash, p2pAddress, networkAddress string)",
 		fileHash, p2pAddress, networkAddress)
 	key := "upload#" + fileHash + p2pAddress
 	//msg := pb.(*protos.ReqUploadFileSlice)

@@ -44,9 +44,9 @@ func getLoggerMapKeyFromContext(ctx context.Context) int64 {
 }
 
 func CreateReqIdAndRegisterRpcLogger(ctx context.Context) context.Context {
-	reqId, _ := utils.NextSnowFlakeId()
-	utils.RpcLoggerMap.Store(reqId, utils.RpcLogger)
-	return core.CreateContextWithReqId(ctx, reqId)
+	rpcLoggerReqId, _ := utils.NextSnowFlakeId()
+	utils.RpcLoggerMap.Store(rpcLoggerReqId, utils.RpcLogger)
+	return core.CreateContextWithReqId(ctx, rpcLoggerReqId)
 }
 
 func Log(ctx context.Context, v ...interface{}) {

@@ -518,7 +518,7 @@ func verifySignature(reqBody *StreamReqBody, sliceHash string, data []byte) bool
 	}
 
 	p2pPubKey := utiled25519.PubKeyBytesToPubKey(pubKeyRaw)
-	msg := []byte(reqBody.P2PAddress + reqBody.FileHash + header.ReqDownloadSlice)
+	msg := []byte(reqBody.P2PAddress + reqBody.FileHash + header.ReqDownloadSlice.Name)
 	if !p2pPubKey.VerifySignature(msg, reqBody.Sign) {
 		return false
 	}
