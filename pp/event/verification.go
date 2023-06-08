@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
@@ -45,8 +45,8 @@ func verifyRspUploadFile(msg *protos.RspUploadFile) error {
 }
 
 // RspUploadFileVerifier task level verifier for all messages carrying RspUploadFile in a uploading task
-func RspUploadFileVerifier(ctx context.Context, cmd string, target interface{}) error {
-	err := verifyReqId(ctx, cmd)
+func RspUploadFileVerifier(ctx context.Context, msgType header.MsgType, target interface{}) error {
+	err := verifyReqId(ctx, msgType.Id)
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func RspUploadFileVerifier(ctx context.Context, cmd string, target interface{}) 
 	// RspUploadFile itself
 	if reflect.TypeOf(target) == reflect.TypeOf(&protos.RspUploadFile{}) {
 		// from sp, verify the p2p address
-		err := verifySpP2pAddress(ctx, cmd)
+		err := verifySpP2pAddress(ctx, msgType.Name)
 		if err != nil {
 			return err
 		}
@@ -74,7 +74,7 @@ func RspUploadFileVerifier(ctx context.Context, cmd string, target interface{}) 
 }
 
 // RspUploadFileWithNoReqIdVerifier no reqid verification for a request message from gateway pp
-func RspUploadFileWithNoReqIdVerifier(ctx context.Context, cmd string, target interface{}) error {
+func RspUploadFileWithNoReqIdVerifier(ctx context.Context, msgType header.MsgType, target interface{}) error {
 	msgBuf := core.MessageFromContext(ctx)
 	if err := proto.Unmarshal(msgBuf.MSGBody, target.(proto.Message)); err != nil {
 		return errors.Wrap(err, "protobuf Unmarshal error")
@@ -115,8 +115,8 @@ func verifyRspBackupStatus(msg *protos.RspBackupStatus) error {
 }
 
 // RspBackupStatusVerifier task level verifier for all messages carrying RspBackupStatus in a backup task
-func RspBackupStatusVerifier(ctx context.Context, cmd string, target interface{}) error {
-	err := verifyReqId(ctx, cmd)
+func RspBackupStatusVerifier(ctx context.Context, msgType header.MsgType, target interface{}) error {
+	err := verifyReqId(ctx, msgType.Id)
 	if err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func RspBackupStatusVerifier(ctx context.Context, cmd string, target interface{}
 }
 
 // RspBackupStatusWithNoReqIdVerifier no reqid verification for a request message from gateway pp
-func RspBackupStatusWithNoReqIdVerifier(ctx context.Context, cmd string, target interface{}) error {
+func RspBackupStatusWithNoReqIdVerifier(ctx context.Context, msgType header.MsgType, target interface{}) error {
 	msgBuf := core.MessageFromContext(ctx)
 	if err := proto.Unmarshal(msgBuf.MSGBody, target.(proto.Message)); err != nil {
 		return errors.Wrap(err, "protobuf Unmarshal error")
@@ -181,7 +181,7 @@ func verifyNoticeFileSliceBackup(msg *protos.NoticeFileSliceBackup) error {
 }
 
 // NoticeFileSliceBackupVerifier task level verifier for all messages carrying NoticeFileSliceBackup in a transfer task
-func NoticeFileSliceBackupVerifier(ctx context.Context, cmd string, target interface{}) error {
+func NoticeFileSliceBackupVerifier(ctx context.Context, msgType header.MsgType, target interface{}) error {
 	msgBuf := core.MessageFromContext(ctx)
 	if err := proto.Unmarshal(msgBuf.MSGBody, target.(proto.Message)); err != nil {
 		return errors.Wrap(err, "protobuf Unmarshal error")
@@ -230,8 +230,8 @@ func verifyRspFileStorageInfo(msg *protos.RspFileStorageInfo) error {
 }
 
 // RspFileStorageInfoVerifier task level verifier for all messages carrying RspFileStorageInfo in a download task
-func RspFileStorageInfoVerifier(ctx context.Context, cmd string, target interface{}) error {
-	err := verifyReqId(ctx, cmd)
+func RspFileStorageInfoVerifier(ctx context.Context, msgType header.MsgType, target interface{}) error {
+	err := verifyReqId(ctx, msgType.Id)
 	if err != nil {
 		return err
 	}
@@ -243,7 +243,7 @@ func RspFileStorageInfoVerifier(ctx context.Context, cmd string, target interfac
 	// RspUploadFile itself
 	if reflect.TypeOf(target) == reflect.TypeOf(&protos.RspFileStorageInfo{}) {
 		// from sp, verify the p2p address
-		err := verifySpP2pAddress(ctx, cmd)
+		err := verifySpP2pAddress(ctx, msgType.Name)
 		if err != nil {
 			return err
 		}
@@ -260,7 +260,7 @@ func RspFileStorageInfoVerifier(ctx context.Context, cmd string, target interfac
 }
 
 // RspFileStorageInfoWithNoReqIdVerifier no reqid verification for a request message from gateway pp
-func RspFileStorageInfoWithNoReqIdVerifier(ctx context.Context, cmd string, target interface{}) error {
+func RspFileStorageInfoWithNoReqIdVerifier(ctx context.Context, msgType header.MsgType, target interface{}) error {
 	msgBuf := core.MessageFromContext(ctx)
 	if err := proto.Unmarshal(msgBuf.MSGBody, target.(proto.Message)); err != nil {
 		return errors.Wrap(err, "protobuf Unmarshal error")
@@ -282,28 +282,28 @@ func verifySpP2pAddress(ctx context.Context, cmd string) error {
 	return nil
 }
 
-func verifyReqId(ctx context.Context, cmd string) error {
-	reqCmd, found := p2pserver.GetP2pServer(ctx).LoadReqId(requests.GetReqIdFromMessage(ctx))
+func verifyReqId(ctx context.Context, msgTypeId uint8) error {
+	reqMsgTypeId, found := p2pserver.GetP2pServer(ctx).LoadReqId(requests.GetReqIdFromMessage(ctx))
 	if !found {
 		return errors.New("no previous request for this rsp found")
 	}
-	if strings.Compare(strings.Replace(reqCmd, "Req", "Rsp", 1), cmd) != 0 {
+	if header.GetRspIdFromReqId(reqMsgTypeId) != msgTypeId {
 		return errors.New("message types don't match")
 	}
 	return nil
 }
 
-func PpRspVerifier(ctx context.Context, cmd string, target interface{}) error {
-	return verifyReqId(ctx, cmd)
+func PpRspVerifier(ctx context.Context, msgType header.MsgType, target interface{}) error {
+	return verifyReqId(ctx, msgType.Id)
 }
 
-func SpRspVerifier(ctx context.Context, cmd string, target interface{}) error {
-	if err := verifySpP2pAddress(ctx, cmd); err != nil {
+func SpRspVerifier(ctx context.Context, msgType header.MsgType, target interface{}) error {
+	if err := verifySpP2pAddress(ctx, msgType.Name); err != nil {
 		return err
 	}
-	return verifyReqId(ctx, cmd)
+	return verifyReqId(ctx, msgType.Id)
 }
 
-func SpAddressVerifier(ctx context.Context, cmd string, target interface{}) error {
-	return verifySpP2pAddress(ctx, cmd)
+func SpAddressVerifier(ctx context.Context, msgType header.MsgType, target interface{}) error {
+	return verifySpP2pAddress(ctx, msgType.Name)
 }

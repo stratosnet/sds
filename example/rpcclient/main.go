@@ -642,7 +642,7 @@ func reqRpMsg() []byte {
 }
 
 // reqActivateMsg
-func reqActivateMsg(stake, fee string, gas uint64) []byte {
+func reqActivateMsg(deposit, fee string, gas uint64) []byte {
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {
@@ -654,7 +654,7 @@ func reqActivateMsg(stake, fee string, gas uint64) []byte {
 	params := make([]rpc.ParamReqActivate, 0)
 	params = append(params, rpc.ParamReqActivate{
 		WalletAddr: WalletAddress,
-		Stake:      stake,
+		Deposit:    deposit,
 		Fee:        fee,
 		Gas:        gas,
 	})
@@ -1467,7 +1467,7 @@ func activate(cmd *cobra.Command, args []string) error {
 		utils.ErrorLog("wrong number of arguments")
 		return nil
 	}
-	stake := args[0]
+	deposit := args[0]
 	fee := args[1]
 	gas := args[2]
 	gasUint64, err := strconv.ParseUint(gas, 10, 64)
@@ -1476,7 +1476,7 @@ func activate(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	r := reqActivateMsg(stake, fee, gasUint64)
+	r := reqActivateMsg(deposit, fee, gasUint64)
 	if r == nil {
 		return nil
 	}

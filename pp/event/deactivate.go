@@ -62,7 +62,7 @@ func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-// NoticeUnbondingPP Notice when this PP node unbonded all its stake
+// NoticeUnbondingPP Notice when this PP node unbonded all its deposit
 func NoticeUnbondingPP(ctx context.Context, conn core.WriteCloser) {
 	setting.State = types.PP_UNBONDING
 	pp.Log(ctx, "Deactivation submitted, all tokens are being unbonded(taking around 180 days to complete)"+

@@ -36,8 +36,8 @@ type WriteCloser interface {
 }
 
 type WriteHook struct {
-	Message string
-	Fn      func(packetId, costTime int64)
+	MessageId uint8
+	Fn        func(packetId, costTime int64)
 }
 
 var (
@@ -331,7 +331,7 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err
 	if m.MSGHead.ReqId == 0 {
 		reqId := GetReqIdFromContext(ctx)
 		if reqId == 0 {
-			reqId, _ = utils.NextSnowFlakeId()
+			reqId = GenerateNewReqId(m.MSGHead.Cmd)
 			InheritRpcLoggerFromParentReqId(ctx, reqId)
 			InheritRemoteReqIdFromParentReqId(ctx, reqId)
 		}
@@ -394,11 +394,11 @@ func (sc *ServerConn) Close() {
 	})
 }
 
-func (sc *ServerConn) SendBadVersionMsg(version uint16, cmd string) {
+func (sc *ServerConn) SendBadVersionMsg(version uint16, cmd uint8) {
 	req := &protos.RspBadVersion{
 		Version:        int32(version),
 		MinimumVersion: int32(sc.minAppVer),
-		Command:        cmd,
+		Command:        uint32(cmd),
 	}
 	data, err := proto.Marshal(req)
 	if err != nil {
@@ -482,7 +482,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				copy(msgBuf[:header.MsgHeaderLen], headerBytes[:header.MsgHeaderLen])
 				msgH.Decode(msgBuf[:header.MsgHeaderLen])
 				if msgH.Version < sc.minAppVer {
-					sc.SendBadVersionMsg(msgH.Version, utils.ByteToString(msgH.Cmd))
+					sc.SendBadVersionMsg(msgH.Version, msgH.Cmd)
 					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "message versions don't match")
 					return
 				}
@@ -497,7 +497,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					return
 				}
 				if secondPartLen > utils.MessageBeatLen {
-					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, fmt.Sprintf("read encrypted header err: over sized [%v], for cmd [%v]", secondPartLen, utils.ByteToString(msgH.Cmd)))
+					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, fmt.Sprintf("read encrypted header err: over sized [%v], for cmd [%v]", secondPartLen, msgH.Cmd))
 					return
 				}
 
@@ -550,25 +550,31 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					copy(msg.MSGBody, msgBuf[posBody:posSign])
 					copy(msg.MSGData, msgBuf[posData:posEnd])
 					TimeRcv = time.Now().UnixMicro()
-					handler := GetHandlerFunc(utils.ByteToString(msgH.Cmd))
+					handler := GetHandlerFunc(msgH.Cmd)
 					if handler == nil {
 						if onMessage != nil {
 							onMessage(*msg, c)
 						} else {
-							Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for message: "+utils.ByteToString(msgH.Cmd))
+							Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for message: "+strconv.FormatUint(uint64(msgH.Cmd), 10))
 						}
 						msgH.Len = 0
 						i = 0
 						msgBuf = nil
 						continue
 					}
-					metrics.Events.WithLabelValues(utils.ByteToString(msgH.Cmd)).Inc()
+					if msgType := header.GetMsgTypeFromId(msgH.Cmd); msgType != nil {
+						metrics.Events.WithLabelValues(msgType.Name).Inc()
+					}
 					handlerCh <- MsgHandler{*msg, handler, recvStart}
 
 					i = 0
 					listenHeader = true
 				} else {
-					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "msgH.Len doesn't match the size of data from message: "+utils.ByteToString(msgH.Cmd))
+					if msgType := header.GetMsgTypeFromId(msgH.Cmd); msgType != nil {
+						Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "msgH.Len doesn't match the size of data for message: "+msgType.Name)
+					} else {
+						Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, fmt.Sprintf("msgH.Len doesn't match the size of data for an invalid message: %d", msgH.Cmd))
+					}
 					return
 				}
 			}
@@ -645,7 +651,7 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 	var err error
 	var key []byte
 
-	cmd := utils.ByteToString(packet.MSGHead.Cmd)
+	cmd := packet.MSGHead.Cmd
 
 	// pack the header
 	if sc.encryptMessage {
@@ -692,7 +698,7 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 	costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
 
 	for _, c := range sc.writeHook {
-		if cmd == c.Message && c.Fn != nil {
+		if cmd == c.MessageId && c.Fn != nil {
 			c.Fn(packet.PacketId, costTime)
 		}
 	}
@@ -745,7 +751,9 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 					ctx := CreateContextWithMessage(ctxWithRecvStart, &msg)
 					ctx = CreateContextWithNetID(ctx, netID)
 					ctx = CreateContextWithSrcP2pAddr(ctx, sc.remoteP2pAddress)
-					log = utils.ByteToString(msgHandler.message.MSGHead.Cmd)
+					if msgType := header.GetMsgTypeFromId(msgHandler.message.MSGHead.Cmd); msgType != nil {
+						log = msgType.Name
+					}
 					handler(ctx, c)
 				})
 				if err != nil {

@@ -44,33 +44,33 @@ func reqActivateData(ctx context.Context, amount types.Coin, txFee types.TxFee) 
 	}
 
 	req := &protos.ReqActivatePP{
-		Tx:            txBytes,
-		PpInfo:        p2pserver.GetP2pServer(ctx).GetPPInfo(),
-		AlreadyActive: false,
-		InitialStake:  amount.String(),
+		Tx:             txBytes,
+		PpInfo:         p2pserver.GetP2pServer(ctx).GetPPInfo(),
+		AlreadyActive:  false,
+		InitialDeposit: amount.String(),
 	}
 	return req, nil
 }
 
-func reqUpdateStakeData(ctx context.Context, stakeDelta types.Coin, txFee types.TxFee) (*protos.ReqUpdateStakePP, error) {
-	// Create and sign transaction to update stake for existing resource node
+func reqUpdateDepositData(ctx context.Context, depositDelta types.Coin, txFee types.TxFee) (*protos.ReqUpdateDepositPP, error) {
+	// Create and sign transaction to update deposit for existing resource node
 	networkAddr := ed25519.PubKeyBytesToAddress(p2pserver.GetP2pServer(ctx).GetP2PPublicKey())
 	ownerAddr, err := secp256k1.PubKeyToAddress(setting.WalletPublicKey)
 	if err != nil {
 		return nil, err
 	}
 
-	txMsg := stratoschain.BuildUpdateResourceNodeStakeMsg(networkAddr, *ownerAddr, stakeDelta)
+	txMsg := stratoschain.BuildUpdateResourceNodeDepositMsg(networkAddr, *ownerAddr, depositDelta)
 	signatureKeys := []relaytypes.SignatureKey{
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := createAndSimulateTx(txMsg, registertypes.TypeMsgUpdateResourceNodeStake, txFee, "", signatureKeys)
+	txBytes, err := createAndSimulateTx(txMsg, registertypes.TypeMsgUpdateResourceNodeDeposit, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
 
-	req := &protos.ReqUpdateStakePP{
+	req := &protos.ReqUpdateDepositPP{
 		Tx:         txBytes,
 		P2PAddress: p2pserver.GetP2pServer(ctx).GetP2PAddress(),
 	}

@@ -38,7 +38,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"registerpeer                                                   register peer to index node\n" +
 		"rp                                                             register peer to index node\n" +
 		"activate <amount> <fee> optional<gas>                          send transaction to stchain to become an active PP node\n" +
-		"updateStake <stakeDelta> <fee> optional<gas>                   send transaction to stchain to update active pp's stake\n" +
+		"updateDeposit <depositDelta> <fee> optional<gas>               send transaction to stchain to update active pp's deposit\n" +
 		"deactivate <fee> optional<gas>                                 send transaction to stchain to stop being an active PP node\n" +
 		"startmining                                                    start mining\n" +
 		"prepay <amount> <fee> optional<beneficiary> <gas>              prepay stos to get ozone\n" +
@@ -120,8 +120,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		return callRpc(c, "activate", param)
 	}
 
-	updateStake := func(line string, param []string) bool {
-		return callRpc(c, "updateStake", param)
+	updateDeposit := func(line string, param []string) bool {
+		return callRpc(c, "updateDeposit", param)
 	}
 
 	status := func(line string, param []string) bool {
@@ -243,7 +243,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("rp", registerPP, true)
 	console.Mystdin.RegisterProcessFunc("registerpeer", registerPP, true)
 	console.Mystdin.RegisterProcessFunc("activate", activate, true)
-	console.Mystdin.RegisterProcessFunc("updateStake", updateStake, true)
+	console.Mystdin.RegisterProcessFunc("updateDeposit", updateDeposit, true)
 	console.Mystdin.RegisterProcessFunc("status", status, true)
 	console.Mystdin.RegisterProcessFunc("deactivate", deactivate, true)
 	console.Mystdin.RegisterProcessFunc("prepay", prepay, true)

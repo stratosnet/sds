@@ -23,7 +23,7 @@ message ReqActivatedPP {
   string p2p_pubkey = 2;
   string ozone_limit_changes = 3; // positive
   string tx_hash = 4;
-  string initial_stake = 5;
+  string initial_deposit = 5;
 }
 
 message ReqActivatedSP {
@@ -36,21 +36,20 @@ message RspActivatedPP {
   Result result = 1;
 }
 
-message ReqUpdatedStakePP {
+message ReqUpdatedDepositPP {
   string p2p_address = 1;
   string ozone_limit_changes = 2;
-  string incr_stake = 3; // true/false
-  string tx_hash = 4;
-  string stake_delta = 5;
-  string current_stake = 6;
-  string available_token_before = 7;
-  string available_token_after = 8;
+  string tx_hash = 3;
+  string deposit_delta = 4;
+  string current_deposit = 5;
+  string available_token_before = 6;
+  string available_token_after = 7;
 }
 
-message ReqUpdatedStakeSP {
+message ReqUpdatedDepositSP {
   string p2p_address = 1;
   string ozone_limit_changes = 2;
-  string incr_stake = 3; // true/false
+  string incr_deposit = 3; // true/false
   string tx_hash = 4;
 }
 
@@ -64,16 +63,16 @@ message ReqUnbondingPP {
   string ozone_limit_changes = 2; // negative
   string unbonding_mature_time = 3;
   string tx_hash = 4;
-  string stake_to_remove = 5;
+  string deposit_to_remove = 5;
 }
 
-message ReqWithdrawnStakeSP {
+message ReqWithdrawnDepositSP {
   string p2p_address = 1;
   string unbonding_mature_time = 2;
   string tx_hash = 3;
 }
 
-message RspWithdrawnStakeSP {
+message RspWithdrawnDepositSP {
   Result result = 1;
 }
 
