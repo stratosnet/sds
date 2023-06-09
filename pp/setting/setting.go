@@ -114,41 +114,47 @@ type MonitorConn struct {
 	Port string `toml:"port"`
 }
 
+type WebServerConfig struct {
+	Path string `toml:"path"`
+	Port string `toml:"port"`
+}
+
 type config struct {
-	Version              AppVersion   `toml:"version"`
-	DownloadPathMinLen   int          `toml:"download_path_min_len"`
-	Port                 string       `toml:"port"`
-	NetworkAddress       string       `toml:"network_address"`
-	Debug                bool         `toml:"debug"`
-	PPListDir            string       `toml:"pp_list_dir"`
-	AccountDir           string       `toml:"account_dir"`
-	StorehousePath       string       `toml:"storehouse_path"`
-	SelfClaimedDiskSize  uint64       `toml:"self_claimed_disk_size"`
-	DownloadPath         string       `toml:"download_path"`
-	P2PAddress           string       `toml:"p2p_address"`
-	P2PPassword          string       `toml:"p2p_password"`
-	WalletAddress        string       `toml:"wallet_address"`
-	WalletPassword       string       `toml:"wallet_password"`
-	AutoRun              bool         `toml:"auto_run"`  // is auto login
-	Internal             bool         `toml:"internal"`  // is internal net
-	IsWallet             bool         `toml:"is_wallet"` // is wallet
-	IsLimitDownloadSpeed bool         `toml:"is_limit_download_speed"`
-	LimitDownloadSpeed   uint64       `toml:"limit_download_speed"`
-	IsLimitUploadSpeed   bool         `toml:"is_limit_upload_speed"`
-	LimitUploadSpeed     uint64       `toml:"limit_upload_speed"`
-	ChainId              string       `toml:"chain_id"`
-	StratosChainUrl      string       `toml:"stratos_chain_url"`
-	Insecure             bool         `toml:"insecure"`
-	GasAdjustment        float64      `toml:"gas_adjustment"`
-	RestPort             string       `toml:"rest_port"`
-	InternalPort         string       `toml:"internal_port"`
-	RpcPort              string       `toml:"rpc_port"`
-	AllowOwnerRpc        bool         `toml:"allow_owner_rpc"`
-	MetricsPort          string       `toml:"metrics_port"`
-	Monitor              MonitorConn  `toml:"monitor"`
-	TrafficLogInterval   uint64       `toml:"traffic_log_interval"`
-	MaxConnection        int          `toml:"max_connection"`
-	SPList               []SPBaseInfo `toml:"sp_list"`
+	Version              AppVersion      `toml:"version"`
+	DownloadPathMinLen   int             `toml:"download_path_min_len"`
+	Port                 string          `toml:"port"`
+	NetworkAddress       string          `toml:"network_address"`
+	Debug                bool            `toml:"debug"`
+	PPListDir            string          `toml:"pp_list_dir"`
+	AccountDir           string          `toml:"account_dir"`
+	StorehousePath       string          `toml:"storehouse_path"`
+	SelfClaimedDiskSize  uint64          `toml:"self_claimed_disk_size"`
+	DownloadPath         string          `toml:"download_path"`
+	P2PAddress           string          `toml:"p2p_address"`
+	P2PPassword          string          `toml:"p2p_password"`
+	WalletAddress        string          `toml:"wallet_address"`
+	WalletPassword       string          `toml:"wallet_password"`
+	AutoRun              bool            `toml:"auto_run"`  // is auto login
+	Internal             bool            `toml:"internal"`  // is internal net
+	IsWallet             bool            `toml:"is_wallet"` // is wallet
+	IsLimitDownloadSpeed bool            `toml:"is_limit_download_speed"`
+	LimitDownloadSpeed   uint64          `toml:"limit_download_speed"`
+	IsLimitUploadSpeed   bool            `toml:"is_limit_upload_speed"`
+	LimitUploadSpeed     uint64          `toml:"limit_upload_speed"`
+	ChainId              string          `toml:"chain_id"`
+	StratosChainUrl      string          `toml:"stratos_chain_url"`
+	Insecure             bool            `toml:"insecure"`
+	GasAdjustment        float64         `toml:"gas_adjustment"`
+	RestPort             string          `toml:"rest_port"`
+	InternalPort         string          `toml:"internal_port"`
+	RpcPort              string          `toml:"rpc_port"`
+	AllowOwnerRpc        bool            `toml:"allow_owner_rpc"`
+	MetricsPort          string          `toml:"metrics_port"`
+	Monitor              MonitorConn     `toml:"monitor"`
+	WebServer            WebServerConfig `toml:"web_server"`
+	TrafficLogInterval   uint64          `toml:"traffic_log_interval"`
+	MaxConnection        int             `toml:"max_connection"`
+	SPList               []SPBaseInfo    `toml:"sp_list"`
 }
 
 func SetupRoot(root string) {
@@ -173,7 +179,7 @@ func LoadConfig(configPath string) error {
 
 	Config.DownloadPathMinLen = 88
 
-	err = formalizePath()
+	err = formalizePaths()
 	if err != nil {
 		return err
 	}
@@ -290,9 +296,19 @@ func defaultConfig() *config {
 		GasAdjustment:        1.3,
 		RestPort:             "",
 		InternalPort:         "",
-		TrafficLogInterval:   10,
-		SPList:               []SPBaseInfo{{NetworkAddress: "127.0.0.1:8888"}},
-		AllowOwnerRpc:        false,
+		Monitor: MonitorConn{
+			TLS:  false,
+			Cert: "",
+			Key:  "",
+			Port: "9501",
+		},
+		WebServer: WebServerConfig{
+			Path: "./web",
+			Port: "8081",
+		},
+		TrafficLogInterval: 10,
+		SPList:             []SPBaseInfo{{NetworkAddress: "127.0.0.1:8888"}},
+		AllowOwnerRpc:      false,
 	}
 }
 
@@ -301,47 +317,49 @@ func GenDefaultConfig() error {
 	return FlushConfig()
 }
 
-func formalizePath() (err error) {
-	//if the configuration are using default path, try to load the root path specified from flag
-	if Config.AccountDir == "./accounts" {
-		Config.AccountDir = filepath.Join(rootPath, Config.AccountDir)
+// formalizePaths checks if the configuration is using default paths. If so, add in the node root path and make it absolute
+func formalizePaths() (err error) {
+	defaultValues := defaultConfig()
+
+	Config.AccountDir, err = formalizePath(Config.AccountDir, defaultValues.AccountDir)
+	if err != nil {
+		return err
 	}
-	if Config.PPListDir == "./peers" {
-		Config.PPListDir = filepath.Join(rootPath, Config.PPListDir)
+
+	Config.PPListDir, err = formalizePath(Config.PPListDir, defaultValues.PPListDir)
+	if err != nil {
+		return err
 	}
-	if Config.StorehousePath == "./storage" {
-		Config.StorehousePath = filepath.Join(rootPath, Config.StorehousePath)
+
+	Config.StorehousePath, err = formalizePath(Config.StorehousePath, defaultValues.StorehousePath)
+	if err != nil {
+		return err
 	}
-	if Config.DownloadPath == "./download" {
-		Config.DownloadPath = filepath.Join(rootPath, Config.DownloadPath)
+
+	Config.DownloadPath, err = formalizePath(Config.DownloadPath, defaultValues.DownloadPath)
+	if err != nil {
+		return err
+	}
+
+	Config.WebServer.Path, err = formalizePath(Config.WebServer.Path, defaultValues.WebServer.Path)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func formalizePath(path, defaultValue string) (newPath string, err error) {
+	newPath = path
+	if path == defaultValue {
+		newPath = filepath.Join(rootPath, path)
 	}
 
 	// make the path absolute if the configured path is not the default value, won't consider the home flag
-	if !filepath.IsAbs(Config.AccountDir) {
-		Config.AccountDir, err = filepath.Abs(Config.AccountDir)
-		if err != nil {
-			return err
-		}
+	if !filepath.IsAbs(newPath) {
+		newPath, err = filepath.Abs(newPath)
 	}
-	if !filepath.IsAbs(Config.StorehousePath) {
-		Config.StorehousePath, err = filepath.Abs(Config.StorehousePath)
-		if err != nil {
-			return err
-		}
-	}
-	if !filepath.IsAbs(Config.DownloadPath) {
-		Config.DownloadPath, err = filepath.Abs(Config.DownloadPath)
-		if err != nil {
-			return err
-		}
-	}
-	if !filepath.IsAbs(Config.PPListDir) {
-		Config.PPListDir, err = filepath.Abs(Config.PPListDir)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return newPath, err
 }
 
 func GetDiskSizeSoftCap(actualTotal uint64) uint64 {

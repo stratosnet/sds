@@ -6206,7 +6206,6 @@ func (x *BlockCheckInfo) GetId() string {
 	return ""
 }
 
-//
 type ReqDownloadTaskInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

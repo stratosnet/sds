@@ -34,14 +34,14 @@ mkdir rsnode
 cd rsnode
 ```
 ### Configuring Your Resource Node
-Next, you need to configure your resource node. The binary will help you create a configuration file at `configs/config.toml`.
+Next, you need to configure your resource node. The binary will help you create a configuration file at `config/config.toml`.
 ```bash
 ppd config -w -p
 # following the instructions to generate a new wallet account or recovery an existing wallet account
 ```
-You will need to edit a few lines in the `configs/config.toml` file to configure your resource node.
+You will need to edit a few lines in the `config/config.toml` file to configure your resource node.
 
-First, make sure or change the SDS version section in the `configs/config.toml` file as the following.
+First, make sure or change the SDS version section in the `config/config.toml` file as the following.
 
 ```toml
 [version]

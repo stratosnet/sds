@@ -7,17 +7,18 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/stratosnet/sds/cmd/common"
 	"github.com/stratosnet/sds/cmd/relayd/setting"
 )
 
 func genConfig(cmd *cobra.Command, args []string) error {
 
-	path, err := cmd.Flags().GetString(CONFIG)
+	path, err := cmd.Flags().GetString(common.Config)
 	if err != nil {
 		return errors.Wrap(err, "failed to get the configuration file path")
 	}
-	if path == DEFAULT_CONFIG_PATH {
-		home, err := cmd.Flags().GetString(HOME)
+	if path == common.DefaultConfigPath {
+		home, err := cmd.Flags().GetString(common.Home)
 		if err != nil {
 			return err
 		}

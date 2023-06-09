@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/stratosnet/sds/cmd/common"
 	"github.com/stratosnet/sds/cmd/ppd/ipfs"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
@@ -36,7 +36,7 @@ func getRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:               "ppd",
 		Short:             "resource node",
-		PersistentPreRunE: rootPreRunE,
+		PersistentPreRunE: common.RootPreRunE,
 	}
 
 	dir, err := os.Getwd()
@@ -45,8 +45,8 @@ func getRootCmd() *cobra.Command {
 		panic(err)
 	}
 
-	rootCmd.PersistentFlags().StringP(HOME, "r", dir, "path for the node")
-	rootCmd.PersistentFlags().StringP(CONFIG, "c", defaultConfigPath, "configuration file path ")
+	rootCmd.PersistentFlags().StringP(common.Home, "r", dir, "path for the node")
+	rootCmd.PersistentFlags().StringP(common.Config, "c", common.DefaultConfigPath, "configuration file path ")
 	return rootCmd
 }
 
@@ -54,8 +54,8 @@ func getNodeCmd() *cobra.Command {
 	nodeCmd := &cobra.Command{
 		Use:     "start",
 		Short:   "start the node",
-		PreRunE: nodePreRunE,
-		RunE:    nodePP,
+		PreRunE: common.NodePreRunE,
+		RunE:    common.NodePP,
 	}
 	return nodeCmd
 }
@@ -142,19 +142,4 @@ func getVersionCmd() *cobra.Command {
 		},
 	}
 	return cmd
-}
-
-func rootPreRunE(cmd *cobra.Command, args []string) error {
-	homePath, err := cmd.Flags().GetString(HOME)
-	if err != nil {
-		utils.ErrorLog("failed to get 'home' path for the node")
-		return err
-	}
-	homePath, err = utils.Absolute(homePath)
-	if err != nil {
-		return err
-	}
-	setting.SetupRoot(homePath)
-	utils.NewDefaultLogger(filepath.Join(setting.GetRootPath(), "./tmp/logs/stdout.log"), true, true)
-	return nil
 }
