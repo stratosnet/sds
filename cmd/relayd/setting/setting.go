@@ -105,7 +105,7 @@ func defaultConfig() *config {
 			},
 		},
 		Keys: keysConfig{
-			WalletPath:     "configs/st1a8ngk4tjvuxneyuvyuy9nvgehkpfa38hm8mp3x.json",
+			WalletPath:     "config/st1a8ngk4tjvuxneyuvyuy9nvgehkpfa38hm8mp3x.json",
 			WalletPassword: "aaa",
 		},
 		SDS: sds{

@@ -22,7 +22,7 @@ const (
 	Home              string = "home"
 	SpHome            string = "sp-home"
 	Config            string = "config"
-	DefaultConfigPath string = "./configs/config.toml"
+	DefaultConfigPath string = "./config/config.toml"
 )
 
 var BaseServer = &serv.BaseServer{}
