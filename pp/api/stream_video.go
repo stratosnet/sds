@@ -326,7 +326,7 @@ func getStreamInfo(ctx context.Context, reqId string, fileHashChan <-chan string
 			utils.DebugLog("Received file storage info from sp ", fInfo)
 		}
 		break
-	case <-time.After(time.Second * setting.HTTPTIMEOUT):
+	case <-time.After(time.Second * setting.HttpTimeout):
 		break
 	}
 

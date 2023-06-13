@@ -38,7 +38,7 @@ func putData(ctx context.Context, httpType HTTPType, target interface{}) {
 		return
 	}
 
-	if setting.Config.InternalPort != "" && setting.WalletAddress != "" {
+	if setting.Config.Node.Connectivity.InternalPort != "" && setting.WalletAddress != "" {
 		// httpRsp(target.ReqId, HTTPDownloadFile, &target)
 		rsp := &HTTPRsp{
 			Data: target,
@@ -49,7 +49,7 @@ func putData(ctx context.Context, httpType HTTPType, target interface{}) {
 }
 
 func storeResponseWriter(ctx context.Context, w http.ResponseWriter) error {
-	if setting.Config.InternalPort != "" && setting.WalletAddress != "" {
+	if setting.Config.Node.Connectivity.InternalPort != "" && setting.WalletAddress != "" {
 		if w != nil {
 			return StoreReqID(ctx, w)
 		}
@@ -73,7 +73,7 @@ func HTTPStartListen(reqID string) error {
 			httpRsp = d.(*HTTPRsp)
 		} else {
 			// timeout
-			if time.Now().Unix()-start > setting.HTTPTIMEOUT {
+			if time.Now().Unix()-start > setting.HttpTimeout {
 				utils.DebugLog("failed to get reqId!")
 				return errors.New("time out for reqId " + reqID)
 			}

@@ -27,7 +27,7 @@ func ReqPpLatencyCheck(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	response := &protos.RspPpLatencyCheck{
-		P2PAddressPp: setting.Config.P2PAddress,
+		P2PAddressPp: setting.Config.Keys.P2PAddress,
 	}
 	_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, response, header.RspPpLatencyCheck)
 }

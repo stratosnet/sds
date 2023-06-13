@@ -105,24 +105,24 @@ func setSoftMemoryCap(tier uint32) {
 	if environment.IsDev() {
 		switch tier {
 		case 0:
-			debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_0_DEV)
+			debug.SetMemoryLimit(setting.SoftRamLimitTier0Dev)
 		case 1:
-			debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_1_DEV)
+			debug.SetMemoryLimit(setting.SoftRamLimitTier1Dev)
 		case 2:
-			debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_2_DEV)
+			debug.SetMemoryLimit(setting.SoftRamLimitTier2Dev)
 		default:
-			debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_2_DEV)
+			debug.SetMemoryLimit(setting.SoftRamLimitTier2Dev)
 		}
 	} else {
 		switch tier {
 		case 0:
-			debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_0)
+			debug.SetMemoryLimit(setting.SoftRamLimitTier0)
 		case 1:
-			debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_1)
+			debug.SetMemoryLimit(setting.SoftRamLimitTier1)
 		case 2:
-			debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_2)
+			debug.SetMemoryLimit(setting.SoftRamLimitTier2)
 		default:
-			debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_2)
+			debug.SetMemoryLimit(setting.SoftRamLimitTier2)
 		}
 	}
 }

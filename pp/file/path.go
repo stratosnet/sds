@@ -50,7 +50,7 @@ func GetDownloadCsvPath(fileHash, fileName, savePath string) string {
 
 // GetDownloadPath get download path
 func GetDownloadPath(fileName string) string {
-	filePath := filepath.Join(setting.Config.DownloadPath, fileName)
+	filePath := filepath.Join(setting.Config.Home.DownloadPath, fileName)
 	// if setting.IsWindows {
 	// 	filePath = filepath.FromSlash(filePath)
 	// }
@@ -73,7 +73,7 @@ func getSlicePath(hash string) (string, error) {
 	}
 	s1 := string([]rune(hash)[:8])
 	s2 := string([]rune(hash)[8:10])
-	path := filepath.Join(setting.Config.StorehousePath, s1, s2)
+	path := filepath.Join(setting.Config.Home.StoragePath, s1, s2)
 	exist, err := PathExists(path)
 	if err != nil {
 		return "", errors.Wrap(err, "failed checking path")

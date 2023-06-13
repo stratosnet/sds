@@ -71,9 +71,9 @@ func genConfig(cmd *cobra.Command, _ []string) error {
 }
 
 func SetupWalletKey() error {
-	if setting.Config.WalletAddress == "" {
+	if setting.Config.Keys.WalletAddress == "" {
 		fmt.Println("No wallet key specified in config. Attempting to create one...")
-		err := utils.SetupWallet(setting.Config.AccountDir, setting.HD_PATH, updateWalletConfig)
+		err := utils.SetupWallet(setting.Config.Home.AccountsPath, setting.HDPath, updateWalletConfig)
 		if err != nil {
 			utils.ErrorLog(err)
 			return err
@@ -83,7 +83,7 @@ func SetupWalletKey() error {
 }
 
 func updateWalletConfig(walletKeyAddressString, password string) {
-	setting.Config.WalletAddress = walletKeyAddressString
-	setting.Config.WalletPassword = password
+	setting.Config.Keys.WalletAddress = walletKeyAddressString
+	setting.Config.Keys.WalletPassword = password
 	_ = setting.FlushConfig()
 }

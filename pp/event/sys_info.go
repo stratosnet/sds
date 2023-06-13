@@ -59,5 +59,5 @@ func startReportDHInfo(ctx context.Context) {
 		job.Cancel()
 	}
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.RspGetHDInfoData(p2pserver.GetP2pServer(ctx).GetP2PAddress()), header.RspGetHDInfo)
-	job, _ = myClock.AddJobRepeat(time.Second*setting.REPORTDHTIME, 0, reportDHInfo(ctx))
+	job, _ = myClock.AddJobRepeat(time.Second*setting.ReportDHInterval, 0, reportDHInfo(ctx))
 }

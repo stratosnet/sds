@@ -117,7 +117,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 	metrics.UploadPerformanceLogNow(target.FileHash + ":RCV_RSP_UPLOAD_SP")
 
 	// SPAM check
-	if time.Now().Unix()-target.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
+	if time.Now().Unix()-target.TimeStamp > setting.SpamThresholdSpSignLatency {
 		pp.ErrorLog(ctx, "sp's upload file response was expired")
 		return
 	}
@@ -173,7 +173,7 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 	}
 
 	// SPAM check
-	if time.Now().Unix()-target.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
+	if time.Now().Unix()-target.TimeStamp > setting.SpamThresholdSpSignLatency {
 		pp.ErrorLog(ctx, "sp's backup file response was expired,", time.Now().Unix(), ",", target.TimeStamp)
 		return
 	}
@@ -259,7 +259,7 @@ func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
 			jsonStr, _ := json.Marshal(hlsInfo)
 			progress.Total = streamTotalSize + int64(len(jsonStr))
 		}
-		progress.HasUpload = (target.TotalSlice - int64(len(target.Slices))) * setting.MAX_SLICE_SIZE
+		progress.HasUpload = (target.TotalSlice - int64(len(target.Slices))) * setting.MaxSliceSize
 	}
 
 	// Start uploading

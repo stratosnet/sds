@@ -32,7 +32,7 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, w ht
 		notLogin(w)
 		return
 	}
-	if len(path) < setting.Config.DownloadPathMinLen {
+	if len(path) < setting.DownloadPathMinLen {
 		utils.DebugLog("invalid path length")
 		return
 	}
@@ -135,14 +135,14 @@ func GetVideoSlices(ctx context.Context, fInfo *protos.RspFileStorageInfo, fileR
 	videoCacheTask := &task.VideoCacheTask{
 		Slices:     slices,
 		FileHash:   fInfo.FileHash,
-		DownloadCh: make(chan bool, setting.STREAM_CACHE_MAXSLICE),
+		DownloadCh: make(chan bool, setting.StreamCacheMaxSlice),
 	}
 
 	task.VideoCacheTaskMap.Store(fInfo.FileHash, videoCacheTask)
 
-	if len(videoCacheTask.Slices) > setting.STREAM_CACHE_MAXSLICE {
+	if len(videoCacheTask.Slices) > setting.StreamCacheMaxSlice {
 		go cacheSlice(ctx, videoCacheTask, fInfo, dTask)
-		for i := 0; i < setting.STREAM_CACHE_MAXSLICE; i++ {
+		for i := 0; i < setting.StreamCacheMaxSlice; i++ {
 			videoCacheTask.DownloadCh <- true
 		}
 	} else {
@@ -213,7 +213,7 @@ func GetHlsInfo(ctx context.Context, fInfo *protos.RspFileStorageInfo) *file.Hls
 				return file.LoadHlsInfo(fInfo.FileHash, sliceHash, fInfo.SavePath)
 			} else {
 				time.Sleep(time.Second)
-				if time.Now().Unix()-start > setting.HTTPTIMEOUT {
+				if time.Now().Unix()-start > setting.HttpTimeout {
 					return nil
 				}
 			}
@@ -246,7 +246,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	// SPAM check
-	if time.Now().Unix()-target.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
+	if time.Now().Unix()-target.TimeStamp > setting.SpamThresholdSpSignLatency {
 		pp.ErrorLog(ctx, "sp's upload file response was expired")
 		return
 	}
@@ -260,7 +260,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	savePath := target.SavePath
 	isVideoStream := utils.IsVideoStream(target.FileHash)
 	if savePath == "" && isVideoStream {
-		savePath = setting.VIDEOPATH
+		savePath = setting.VideoPath
 	}
 
 	newTarget := &protos.RspFileStorageInfo{
@@ -309,7 +309,7 @@ func GetFileReplicaInfo(ctx context.Context, path string, replicaIncreaseNum uin
 	if !setting.CheckLogin() {
 		return
 	}
-	if len(path) < setting.Config.DownloadPathMinLen {
+	if len(path) < setting.DownloadPathMinLen {
 		utils.DebugLog("invalid path length")
 		return
 	}

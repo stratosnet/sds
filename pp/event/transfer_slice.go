@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	transferSliceSpamCheckMap = utils.NewAutoCleanMap(setting.SPAM_THRESHOLD_SLICE_OPERATIONS)
+	transferSliceSpamCheckMap = utils.NewAutoCleanMap(setting.SpamThresholdSliceOperations)
 )
 
 // NoticeFileSliceBackup An SP node wants this PP node to fetch the specified slice from the PP node who stores it.
@@ -38,7 +38,7 @@ func NoticeFileSliceBackup(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("target = ", target)
 
 	// SPAM check
-	if time.Now().Unix()-target.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
+	if time.Now().Unix()-target.TimeStamp > setting.SpamThresholdSpSignLatency {
 		utils.ErrorLog(ctx, "the slice backup request from sp was expired")
 		return
 	}
@@ -128,7 +128,7 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 
 	tkSliceUID := noticeFileSliceBackup.TaskId + sliceHash
 	dataStart := 0
-	dataEnd := setting.MAXDATA
+	dataEnd := setting.MaxData
 	for {
 		packetId, newCtx := p2pserver.CreateNewContextPacketId(ctx)
 		tkSlice := TaskSlice{
@@ -148,8 +148,8 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		}
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspTransferDownload(sliceData[dataStart:dataEnd], noticeFileSliceBackup.TaskId, sliceHash,
 			noticeFileSliceBackup.SpP2PAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress(), uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
-		dataStart += setting.MAXDATA
-		dataEnd += setting.MAXDATA
+		dataStart += setting.MaxData
+		dataEnd += setting.MaxData
 	}
 }
 

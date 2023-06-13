@@ -258,7 +258,7 @@ func RecordDownloadCSV(target *protos.RspFileStorageInfo) {
 		offsetStatrt := int64(rsp.SliceOffset.SliceOffsetStart)
 		offsetEnd := int64(rsp.SliceOffset.SliceOffsetEnd)
 		for {
-			if offsetStatrt+setting.MAXDATA >= offsetEnd {
+			if offsetStatrt+setting.MaxData >= offsetEnd {
 				offsetString := strconv.FormatInt(offsetStatrt, 10)
 				line := []string{sliceHash + offsetString}
 				err = writer.Write(line)
@@ -273,7 +273,7 @@ func RecordDownloadCSV(target *protos.RspFileStorageInfo) {
 			if err = writer.Write(line); err != nil {
 				utils.ErrorLog("download csv line ", err)
 			}
-			offsetStatrt += setting.MAXDATA
+			offsetStatrt += setting.MaxData
 		}
 
 	}
@@ -289,9 +289,9 @@ func CheckFileExisting(ctx context.Context, fileHash, fileName, savePath, encryp
 	}
 	filePath := ""
 	if savePath == "" {
-		filePath = filepath.Join(setting.Config.DownloadPath, fileName)
+		filePath = filepath.Join(setting.Config.Home.DownloadPath, fileName)
 	} else {
-		filePath = filepath.Join(setting.Config.DownloadPath, savePath, fileName)
+		filePath = filepath.Join(setting.Config.Home.DownloadPath, savePath, fileName)
 	}
 	// if setting.IsWindows {
 	//	filePath = filepath.FromSlash(filePath)
@@ -360,7 +360,7 @@ func DeleteSlice(sliceHash string) error {
 }
 
 func DeleteDirectory(fileHash string) {
-	err := os.RemoveAll(filepath.Join(setting.Config.DownloadPath, fileHash))
+	err := os.RemoveAll(filepath.Join(setting.Config.Home.DownloadPath, fileHash))
 	if err != nil {
 		utils.DebugLog("DeleteDirectory err", err)
 	}
@@ -377,9 +377,9 @@ func DeleteTmpFileSlices(ctx context.Context, fileHash string) {
 func CheckFilePathEx(fileHash, fileName, savePath string) bool {
 	filePath := ""
 	if savePath == "" {
-		filePath = filepath.Join(setting.Config.DownloadPath, fileName)
+		filePath = filepath.Join(setting.Config.Home.DownloadPath, fileName)
 	} else {
-		filePath = filepath.Join(setting.Config.DownloadPath, savePath, fileName)
+		filePath = filepath.Join(setting.Config.Home.DownloadPath, savePath, fileName)
 	}
 	utils.DebugLog("filePath", filePath)
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0777)

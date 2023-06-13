@@ -37,8 +37,8 @@ var (
 		mux:     sync.Mutex{},
 	}
 
-	uploadSliceSpamCheckMap = utils.NewAutoCleanMap(setting.SPAM_THRESHOLD_SLICE_OPERATIONS)
-	backupSliceSpamCheckMap = utils.NewAutoCleanMap(setting.SPAM_THRESHOLD_SLICE_OPERATIONS)
+	uploadSliceSpamCheckMap = utils.NewAutoCleanMap(setting.SpamThresholdSliceOperations)
+	backupSliceSpamCheckMap = utils.NewAutoCleanMap(setting.SpamThresholdSliceOperations)
 )
 
 type upSendCostTime struct {
@@ -89,7 +89,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		}
 	}
 
-	if target.PieceOffset.SliceOffsetStart >= slice.SliceSize || target.PieceOffset.SliceOffsetStart%setting.MAXDATA != 0 {
+	if target.PieceOffset.SliceOffsetStart >= slice.SliceSize || target.PieceOffset.SliceOffsetStart%setting.MaxData != 0 {
 		rsp := &protos.RspUploadFileSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
@@ -296,7 +296,7 @@ func ReqBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 	timeEntry := time.Now().UnixMicro() - core.TimeRcv
 
 	msg := requests.UploadSpeedOfProgressData(fileHash, uint64(len(target.Data)),
-		(target.SliceNumber-1)*setting.MAX_SLICE_SIZE+target.PieceOffset.SliceOffsetStart, timeEntry)
+		(target.SliceNumber-1)*setting.MaxSliceSize+target.PieceOffset.SliceOffsetStart, timeEntry)
 	_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, msg, header.UploadSpeedOfProgress)
 	if err := task.SaveBackuptFile(&target); err != nil {
 		// save failed, not handling yet
@@ -467,7 +467,7 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 		return errors.Wrap(err, "failed to get slice data from tmp")
 	}
 
-	if tkDataLen <= setting.MAXDATA {
+	if tkDataLen <= setting.MaxData {
 		packetId, newCtx := p2pserver.CreateNewContextPacketId(ctx)
 		PacketIdMap.Store(packetId, tkSlice)
 		utils.DebugLogf("PacketIdMap.Store <==(%v, %v)", packetId, tkSlice)
@@ -493,7 +493,7 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 	}
 
 	dataStart := 0
-	dataEnd := setting.MAXDATA
+	dataEnd := setting.MaxData
 	for {
 		pieceOffset := &protos.SliceOffset{
 			SliceOffsetStart: uint64(dataStart),
@@ -526,8 +526,8 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 			if err != nil {
 				return err
 			}
-			dataStart += setting.MAXDATA
-			dataEnd += setting.MAXDATA
+			dataStart += setting.MaxData
+			dataEnd += setting.MaxData
 		} else {
 			pp.DebugLogf(newCtx, "Uploading slice data %v-%v (total %v)", dataStart, tkDataLen, tkDataLen)
 			var pb proto.Message

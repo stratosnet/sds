@@ -309,12 +309,12 @@ func DoneDownload(ctx context.Context, fileHash, fileName, savePath string) {
 	if _, ok := setting.ImageMap.Load(fileHash); ok {
 		pp.DebugLog(ctx, "enter imageMap》》》》》》")
 		exist := false
-		exist, err = file.PathExists(setting.IMAGEPATH)
+		exist, err = file.PathExists(setting.ImagePath)
 		if err != nil {
 			pp.ErrorLog(ctx, "ImageMap no", err)
 		}
 		if !exist {
-			if err = os.MkdirAll(setting.IMAGEPATH, os.ModePerm); err != nil {
+			if err = os.MkdirAll(setting.ImagePath, os.ModePerm); err != nil {
 				pp.ErrorLog(ctx, "ImageMap mk no", err)
 			}
 		}
@@ -330,7 +330,7 @@ func DoneDownload(ctx context.Context, fileHash, fileName, savePath string) {
 			if err != nil {
 				pp.ErrorLog(ctx, "img err6>>>", err)
 			}
-			imageFile, err = os.OpenFile(setting.IMAGEPATH+fileHash, os.O_CREATE|os.O_RDWR, 0777)
+			imageFile, err = os.OpenFile(setting.ImagePath+fileHash, os.O_CREATE|os.O_RDWR, 0777)
 			if err != nil {
 				pp.ErrorLog(ctx, "img err7>>>", err)
 			}
@@ -345,7 +345,7 @@ func DoneDownload(ctx context.Context, fileHash, fileName, savePath string) {
 				pp.ErrorLog(ctx, "err9 Remove", err)
 			}
 		} else {
-			err = os.Rename(lastPath, setting.IMAGEPATH+fileHash)
+			err = os.Rename(lastPath, setting.ImagePath+fileHash)
 			if err != nil {
 				pp.ErrorLog(ctx, "ImageMap Rename", err)
 			}

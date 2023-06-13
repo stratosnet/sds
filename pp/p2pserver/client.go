@@ -86,9 +86,9 @@ func (p *P2pServer) newClient(ctx context.Context, server string, heartbeat, rec
 		}
 	})
 
-	serverPort, err := strconv.ParseUint(setting.Config.Port, 10, 16)
+	serverPort, err := strconv.ParseUint(setting.Config.Node.Connectivity.NetworkPort, 10, 16)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Invalid port number in config [%v]", setting.Config.Port)
+		return nil, errors.Wrapf(err, "Invalid port number in config [%v]", setting.Config.Node.Connectivity.NetworkPort)
 	}
 	serverPortOpt := cf.ServerPortOption(uint16(serverPort))
 

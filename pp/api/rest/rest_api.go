@@ -9,7 +9,7 @@ import (
 )
 
 func StartHTTPServ(ctx context.Context) {
-	httpServ := httpserv.MyNewHTTPServ(setting.Config.RestPort)
+	httpServ := httpserv.MyNewHTTPServ(setting.Config.Node.Connectivity.RestPort)
 	httpServ.MyRoute("/videoSlice/", api.GetVideoSlice)
 	httpServ.MyStart(ctx)
 }

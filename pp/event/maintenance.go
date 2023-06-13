@@ -80,7 +80,7 @@ func RspStopMaintenance(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	if setting.IsAuto {
+	if setting.Config.Node.AutoStart {
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_MAINTANENCE_STOP)
 		return
 	}

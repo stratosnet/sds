@@ -18,8 +18,6 @@ var State uint32 = ppTypes.PP_INACTIVE
 
 var OnlineTime int64 = 0
 
-var IsAuto = false
-
 var WalletAddress string
 
 // WalletPublicKey Public key in compressed format
@@ -38,7 +36,7 @@ var MonitorInitialToken string
 // SetMyNetworkAddress set the PP's NetworkAddress according to the internal/external config in config file and the network config from OS
 func SetMyNetworkAddress() {
 	var netAddr string = ""
-	if Config.Internal {
+	if Config.Node.Connectivity.Internal {
 		addrs, err := net.InterfaceAddrs()
 		if err != nil {
 			utils.ErrorLog(err)
@@ -51,7 +49,7 @@ func SetMyNetworkAddress() {
 			}
 		}
 	} else {
-		netAddr = Config.NetworkAddress
+		netAddr = Config.Node.Connectivity.NetworkAddress
 		if netAddr == "" {
 			consensus := externalip.DefaultConsensus(&externalip.ConsensusConfig{Timeout: 10 * time.Second}, nil)
 			ip, err := consensus.ExternalIP()
@@ -63,8 +61,8 @@ func SetMyNetworkAddress() {
 	}
 
 	if netAddr != "" {
-		NetworkAddress = netAddr + ":" + Config.Port
-		RestAddress = netAddr + ":" + Config.RestPort
+		NetworkAddress = netAddr + ":" + Config.Node.Connectivity.NetworkPort
+		RestAddress = netAddr + ":" + Config.Node.Connectivity.RestPort
 	}
 	utils.Log("setting.NetworkAddress", NetworkAddress)
 }

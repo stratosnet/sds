@@ -22,7 +22,7 @@ func CreateWallet(ctx context.Context, password, name, mnemonic, hdPath string) 
 		}
 		mnemonic = newMnemonic
 	}
-	account, err := utils.CreateWallet(setting.Config.AccountDir, name, password, types.StratosBech32Prefix,
+	account, err := utils.CreateWallet(setting.Config.Home.AccountsPath, name, password, types.StratosBech32Prefix,
 		mnemonic, "", hdPath)
 	if utils.CheckError(err) {
 		pp.ErrorLog(ctx, "CreateWallet error", err)
@@ -34,16 +34,16 @@ func CreateWallet(ctx context.Context, password, name, mnemonic, hdPath string) 
 		return ""
 	}
 	if setting.WalletAddress != "" {
-		setting.Config.WalletAddress = setting.WalletAddress
+		setting.Config.Keys.WalletAddress = setting.WalletAddress
 		_ = setting.FlushConfig()
 	}
-	getPublicKey(ctx, filepath.Join(setting.Config.AccountDir, setting.WalletAddress+".json"), password)
+	getPublicKey(ctx, filepath.Join(setting.Config.Home.AccountsPath, setting.WalletAddress+".json"), password)
 	utils.Log("Create account success ,", setting.WalletAddress)
 	return setting.WalletAddress
 }
 
 func GetWalletAddress(ctx context.Context) error {
-	files, err := os.ReadDir(setting.Config.AccountDir)
+	files, err := os.ReadDir(setting.Config.Home.AccountsPath)
 
 	if len(files) == 0 {
 		return errors.New("account Dir is empty")
@@ -52,8 +52,8 @@ func GetWalletAddress(ctx context.Context) error {
 		return err
 	}
 
-	walletAddress := setting.Config.WalletAddress
-	password := setting.Config.WalletPassword
+	walletAddress := setting.Config.Keys.WalletAddress
+	password := setting.Config.Keys.WalletPassword
 	fileName := walletAddress + ".json"
 
 	for _, info := range files {
@@ -61,7 +61,7 @@ func GetWalletAddress(ctx context.Context) error {
 			continue
 		}
 		utils.Log(info.Name())
-		if getPublicKey(ctx, filepath.Join(setting.Config.AccountDir, fileName), password) {
+		if getPublicKey(ctx, filepath.Join(setting.Config.Home.AccountsPath, fileName), password) {
 			setting.WalletAddress = walletAddress
 			return nil
 		}
@@ -91,7 +91,7 @@ func getPublicKey(ctx context.Context, filePath, password string) bool {
 
 // Wallets get all wallets
 func Wallets(ctx context.Context) []string {
-	files, _ := os.ReadDir(setting.Config.AccountDir)
+	files, _ := os.ReadDir(setting.Config.Home.AccountsPath)
 	var wallets []string
 	for _, file := range files {
 		fileName := file.Name()
@@ -117,7 +117,7 @@ func GetWallets(ctx context.Context, walletAddress string, password string) ([]o
 		return nil, errors.New("please input wallet address")
 	}
 
-	files, _ := os.ReadDir(setting.Config.AccountDir)
+	files, _ := os.ReadDir(setting.Config.Home.AccountsPath)
 	if len(files) == 0 {
 		pp.ErrorLog(ctx, "wrong account or password")
 		return nil, errors.New("wrong account or password")

@@ -7,8 +7,6 @@ import (
 )
 
 var (
-	ALLOW_OWNER_RPC bool
-
 	// key(walletAddress + P2PAddress + reqId) : value(*rpc.GetRPResult)
 	rpcRPResultMap = &sync.Map{}
 
