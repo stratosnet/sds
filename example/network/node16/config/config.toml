@@ -1,0 +1,57 @@
+download_path_min_len = 88
+port = '9116'
+network_address = '127.0.0.1'
+debug = true
+pp_list_dir = '/Users/trexb/workspace/sds/example/network/node16/peers'
+account_dir = '/Users/trexb/workspace/sds/example/network/node16/accounts'
+storehouse_path = '/Users/trexb/workspace/sds/example/network/node16/storage'
+download_path = '/Users/trexb/workspace/sds/example/network/node16/download'
+p2p_address = 'stsds1qr6wdm5nl2kzqm3r95gkzkw0kt0wjx3lsqpzac'
+p2p_password = 'aaa'
+wallet_address = 'st1kwtqfxk654urrannhsl7shsm3r7q9tyn40yq4e'
+wallet_password = 'aaa'
+auto_run = true
+internal = false
+is_wallet = true
+is_limit_download_speed = false
+limit_download_speed = 100
+is_limit_upload_speed = false
+limit_upload_speed = 100
+chain_id = 'testchain'
+stratos_chain_url = '127.0.0.1:9090'
+insecure = true
+gas_adjustment = 1.3
+rest_port = '9216'
+internal_port = '9316'
+rpc_port = '9416'
+metrics_port = '9616'
+traffic_log_interval = 10
+max_connection = 1000
+[version]
+app_ver = 9
+min_app_ver = 9
+show = 'v0.9.0'
+
+[monitor]
+tls = false
+cert = ''
+key = ''
+port = '9516'
+
+[[sp_list]]
+p2p_address = 'stsds13yakj2xgzzdfcw7kd5gtfcfv2k6sn5eg4vdfem'
+p2p_public_key = 'stsdspub1hhplcrnkn9597gnh87y9zshe0kfs87fvmtrjpyq4heqjcz0dhltsaqa0fc'
+network_address = '127.0.0.1:38888'
+[[sp_list]]
+p2p_address = 'stsds15sya4n40da64z6n6hvk0p9f7sx72hqpjjnrf9y'
+p2p_public_key = 'stsdspub1pfr08evmk73dtf7ud69pwdznl4xdfghx6k6dyugwpk2jhqq890yqnrcp6u'
+network_address = '127.0.0.1:28888'
+[[sp_list]]
+p2p_address = 'stsds14c3em44vlh276cujnr2ez802uyjyeqrrsu9fuh'
+p2p_public_key = 'stsdspub1zgqd566qdnj4kna050jz505vamjhglxcpdepqctkregdt6snxm6sck2v6h'
+network_address = '127.0.0.1:18888'
+[[sp_list]]
+p2p_address = 'stsds1cw8qhgsxddak8hh8gs7veqmy5ku8f8za6qlq64'
+p2p_public_key = 'stsdspub1jmfc8j7ve0jg3jwq9wkefpa34fg9hhrp7nu6rkf6hff7ml769f6qrwae56'
+network_address = '127.0.0.1:8888'
+

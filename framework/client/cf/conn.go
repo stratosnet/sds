@@ -76,8 +76,8 @@ type options struct {
 type ClientOption func(*options)
 
 type WriteHook struct {
-	Message string
-	Fn      func(packetId, costTime int64)
+	MessageId uint8
+	Fn        func(packetId, costTime int64)
 }
 
 type ClientConn struct {
@@ -580,7 +580,7 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 	if m.MSGHead.ReqId == 0 {
 		reqId := core.GetReqIdFromContext(ctx)
 		if reqId == 0 {
-			reqId, _ = utils.NextSnowFlakeId()
+			reqId = core.GenerateNewReqId(m.MSGHead.Cmd)
 			core.InheritRpcLoggerFromParentReqId(ctx, reqId)
 			core.InheritRemoteReqIdFromParentReqId(ctx, reqId)
 		}
@@ -666,7 +666,13 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				copy(msgBuf[:header.MsgHeaderLen], headerBytes[:header.MsgHeaderLen])
 				msgH.Decode(headerBytes[:header.MsgHeaderLen])
 				if msgH.Version < cc.opts.minAppVer {
-					utils.DebugLogf("received a [%v] message with an outdated [%v] version (min version [%v])", utils.ByteToString(msgH.Cmd), msgH.Version, cc.opts.minAppVer)
+					msgType := header.GetMsgTypeFromId(msgH.Cmd)
+					if msgType != nil {
+						utils.DebugLogf("received a [%v] message with an outdated [%v] version (min version [%v])", msgType.Name, msgH.Version, cc.opts.minAppVer)
+					} else {
+						utils.DebugLogf("received a message with an invalid msg type %d", msgH.Cmd)
+					}
+
 					continue
 				}
 				// no matter the body is empty or not, message is always handled in the second part, after the signature verified.
@@ -680,13 +686,19 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					return
 				}
 				if secondPartLen > utils.MessageBeatLen {
-					Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read encrypted header err: over sized [%v], for cmd [%v]", secondPartLen, utils.ByteToString(msgH.Cmd))
+					msgType := header.GetMsgTypeFromId(msgH.Cmd)
+					if msgType != nil {
+						Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read encrypted header err: over sized [%v], for cmd [%v]", secondPartLen, msgType.Name)
+					} else {
+						Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read encrypted header err: over sized [%v], for an invalid cmd [%d]", secondPartLen, msgH.Cmd)
+					}
+
 					return
 				}
 
 				onereadlen := 1024
 				pos = header.MsgHeaderLen
-				cmd := utils.ByteToString(msgH.Cmd)
+				cmd := msgH.Cmd
 
 				for ; i < int(secondPartLen); i = i + n {
 					if int(secondPartLen)-i < 1024 {
@@ -700,7 +712,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 						Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "read server body err: "+err.Error())
 						return
 					}
-					if cmd == header.RspDownloadSlice {
+					if cmd == header.RspDownloadSlice.Id {
 						if isLimitDownloadSpeed {
 							if limitDownloadSpeed > 0 {
 								lr.SetRate(limitDownloadSpeed)
@@ -747,7 +759,12 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 						if onMessage != nil {
 							onMessage(*message, c)
 						} else {
-							Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for message: "+utils.ByteToString(msgH.Cmd))
+							if msgType := header.GetMsgTypeFromId(msgH.Cmd); msgType != nil {
+								Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for message: "+msgType.Name)
+							} else {
+								Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, fmt.Sprintf("no handler or onMessage() found for an invalid message: %d", cmd))
+							}
+
 						}
 						msgH.Len = 0
 						i = 0
@@ -759,7 +776,11 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					i = 0
 					listenHeader = true
 				} else {
-					Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "msgH.Len doesn't match the size of data for message: "+utils.ByteToString(msgH.Cmd))
+					if msgType := header.GetMsgTypeFromId(msgH.Cmd); msgType != nil {
+						Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "msgH.Len doesn't match the size of data for message: "+msgType.Name)
+					} else {
+						Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, fmt.Sprintf("msgH.Len doesn't match the size of data for an invalid message: %d", msgH.Cmd))
+					}
 					return
 				}
 			}
@@ -812,7 +833,7 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 	var onereadlen = 1024
 	var n int
 
-	cmd := utils.ByteToString(packet.MSGHead.Cmd)
+	cmd := packet.MSGHead.Cmd
 
 	var key []byte
 	// pack the header
@@ -853,7 +874,7 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 		if err != nil {
 			return errors.Wrap(err, "client write err")
 		}
-		if cmd == header.ReqUploadFileSlice {
+		if cmd == header.ReqUploadFileSlice.Id {
 			if isLimitUploadSpeed {
 				if limitUploadSpeed > 0 {
 					lr.SetRate(limitUploadSpeed)
@@ -865,7 +886,7 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 	writeEnd := time.Now()
 	costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
 	for _, c := range cc.writeHook {
-		if cmd == c.Message && c.Fn != nil {
+		if cmd == c.MessageId && c.Fn != nil {
 			c.Fn(packet.PacketId, costTime)
 		}
 	}
@@ -910,8 +931,12 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			ctx = core.CreateContextWithMessage(ctxWithRecvStart, &msg)
 			ctx = core.CreateContextWithNetID(ctx, netID)
 			ctx = core.CreateContextWithSrcP2pAddr(ctx, c.(*ClientConn).remoteP2pAddress)
-			log = utils.ByteToString(msgHandler.message.MSGHead.Cmd)
-			handler(ctx, c)
+			if msgType := header.GetMsgTypeFromId(msgHandler.message.MSGHead.Cmd); msgType != nil {
+				log = msgType.Name
+			}
+			if handler != nil {
+				handler(ctx, c)
+			}
 		}
 	}
 }

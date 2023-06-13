@@ -170,11 +170,11 @@ func (bs *BaseServer) startMonitor() error {
 		prefix:  "",
 	}
 
-	if err := monitorServer.enableWS(monitorAPI(), config); err != nil {
-		return err
-	}
 	ctx := context.WithValue(context.Background(), types.P2P_SERVER_KEY, bs.p2pServ)
 	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
+	if err := monitorServer.enableWS(monitorAPI(), config, ctx); err != nil {
+		return err
+	}
 	if err := monitorServer.start(ctx); err != nil {
 		return err
 	}
@@ -187,6 +187,12 @@ func (bs *BaseServer) startP2pServer() error {
 	if err := bs.p2pServ.Init(); err != nil {
 		return errors.Wrap(err, "failed init p2p server ")
 	}
+
+	err := utils.InitIdWorker(bs.p2pServ.GetP2PAddrInTypeAddress()[0])
+	if err != nil {
+		utils.FatalLogfAndExit(-4, "Fatal error: "+err.Error())
+	}
+
 	event.RegisterAllEventHandlers()
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, types.P2P_SERVER_KEY, bs.p2pServ)

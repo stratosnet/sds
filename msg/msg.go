@@ -38,7 +38,7 @@ func (r *RelayMsgBuf) PutIntoBuffer(msg *RelayMsgBuf) int {
 
 	i += r.MSGSign.Encode(r.MSGData[i:])
 	if len(msg.MSGData) != 0 {
-		utils.DebugLog("There is data to send.....", len(msg.MSGData))
+		utils.DebugLogf("%d bytes data to send.....", len(msg.MSGData))
 	}
 	i += copy(r.MSGData[i:], msg.MSGData[:])
 	return i
