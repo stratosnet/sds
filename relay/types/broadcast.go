@@ -100,6 +100,10 @@ func (u UnsignedMsgBytes) FromBytes() (UnsignedMsg, error) {
 		msg := registertypes.MsgUpdateEffectiveDeposit{}
 		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
 		unsignedMsg.Msg = &msg
+	case "remove_meta_node":
+		msg := registertypes.MsgRemoveMetaNode{}
+		err = relay.ProtoCdc.UnmarshalJSON(u.Msg, &msg)
+		unsignedMsg.Msg = &msg
 	default:
 		return UnsignedMsg{}, errors.Errorf("Unknown msg type [%v]", u.Type)
 	}

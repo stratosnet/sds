@@ -340,7 +340,7 @@ func UpdateMetaNodeDepositMsgHandler() func(event coretypes.ResultEvent) {
 func UnbondingMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(registertypes.EventTypeUnbondingMetaNode,
-			registertypes.AttributeKeyResourceNode,
+			registertypes.AttributeKeyMetaNode,
 			registertypes.AttributeKeyUnbondingMatureTime,
 			registertypes.AttributeKeyDepositToRemove,
 		)
