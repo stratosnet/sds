@@ -1,12 +1,19 @@
 BUILDDIR ?= $(CURDIR)/target
+
+LEDGER_ENABLED ?= false
+
 TEST_DOCKER_REPO=sds-rsnode
+BUILD_ARGS=-o $(BUILDDIR)
 
-BUILD_TARGETS := build install
+ifeq ($(LEDGER_ENABLED),true)
+  BUILD_FLAGS = -tags "ledger"
+endif
 
-build: BUILD_ARGS=-o $(BUILDDIR)/
+build: go.sum $(BUILDDIR)/
+	go $@ $(BUILD_ARGS) $(BUILD_FLAGS) ./cmd/...
 
-$(BUILD_TARGETS): go.sum $(BUILDDIR)/
-	go $@ $(BUILD_ARGS) ./cmd/...
+install: build go.sum $(BUILDDIR)/
+	go $@ ./cmd/...
 
 $(BUILDDIR)/:
 	mkdir -p $(BUILDDIR)/

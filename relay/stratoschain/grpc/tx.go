@@ -4,6 +4,7 @@ import (
 	"context"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/errors"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 
 	"github.com/stratosnet/sds/cmd/relayd/setting"
@@ -24,7 +25,7 @@ func BroadcastTx(txBytes []byte, mode sdktx.BroadcastMode) error {
 
 	resp, err := client.BroadcastTx(ctx, &req)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed broadcast tx, ")
 	}
 	if resp.GetTxResponse().Code != 0 {
 		utils.ErrorLogf("Tx failed: [%v]", resp.GetTxResponse().String())

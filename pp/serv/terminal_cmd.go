@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/core"
@@ -25,6 +26,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
+	"github.com/stratosnet/sds/relay/stratoschain/grpc"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/datamesh"
 	utiltypes "github.com/stratosnet/sds/utils/types"
@@ -894,43 +896,54 @@ func (api *terminalCmd) Withdraw(ctx context.Context, param []string) (CmdResult
 }
 
 func (api *terminalCmd) Send(ctx context.Context, param []string) (CmdResult, error) {
-	if len(param) < 3 {
-		return CmdResult{Msg: ""},
-			errors.New("expecting at least 3 params. Input amount of tokens, to address, fee amount,and (optional) gas amount")
+	if len(param) < 4 {
+		return CmdResult{Msg: ""}, errors.New("expecting more params.")
 	}
 
-	toAddr, err := utiltypes.WalletAddressFromBech(param[0])
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
+
+	// to
+	toAddr, err := utiltypes.WalletAddressFromBech(param[1])
 	if err != nil {
-		return CmdResult{Msg: ""}, errors.New("invalid to param. Should be a valid bech32 wallet address" + err.Error())
+		return CmdResult{Msg: DefaultMsg}, nil
 	}
 
-	amount, err := utiltypes.ParseCoinNormalized(param[1])
+	// amount
+	amount, err := utiltypes.ParseCoinNormalized(param[2])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token")
 	}
 
-	fee, err := utiltypes.ParseCoinNormalized(param[2])
+	// fee
+	fee, err := utiltypes.ParseCoinNormalized(param[3])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
 	}
+
 	txFee := utiltypes.TxFee{
 		Fee:      fee,
 		Simulate: true,
 	}
 
-	if len(param) == 4 {
-		gas, err := strconv.ParseUint(param[3], 10, 64)
-		if err != nil {
-			return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be a positive integer")
-		}
-		txFee.Gas = gas
-		txFee.Simulate = false
+	// gas
+	gas, err := strconv.ParseUint(param[4], 10, 64)
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be a positive integer")
+	}
+	txFee.Gas = gas
+	txFee.Simulate = false
+
+	tx, err := event.ReqSendMsg(ctx, param[0] == "ledger", toAddr, amount, txFee)
+	if err != nil {
+		pp.DebugLog(ctx, "failed composing the tx:", err.Error())
+		return CmdResult{Msg: DefaultMsg}, nil
 	}
 
-	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-
-	if err = stratoschain.Send(ctx, amount, toAddr.Bytes(), txFee); err != nil {
-		return CmdResult{Msg: ""}, err
+	err = grpc.BroadcastTx(tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
+	if err != nil {
+		pp.ErrorLog(ctx, "The send transaction couldn't be broadcast", err)
+	} else {
+		pp.Log(ctx, "The send transaction was broadcast")
 	}
 
 	return CmdResult{Msg: DefaultMsg}, nil

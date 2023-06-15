@@ -4,14 +4,17 @@ import (
 	"context"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/errors"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	"github.com/stratosnet/sds/pp/p2pserver"
-	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
-	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
+	"github.com/cosmos/cosmos-sdk/crypto/ledger"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/relay"
 	"github.com/stratosnet/sds/relay/stratoschain"
@@ -20,6 +23,9 @@ import (
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/stratosnet/sds/utils/types"
+	stchaintypes "github.com/stratosnet/stratos-chain/types"
+	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
+	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
 )
 
 func reqActivateData(ctx context.Context, amount types.Coin, txFee types.TxFee) (*protos.ReqActivatePP, error) {
@@ -135,28 +141,66 @@ func reqPrepayData(ctx context.Context, beneficiary []byte, amount types.Coin, t
 	return req, nil
 }
 
+func ReqSendMsg(ctx context.Context, useLedger bool, toAddress types.Address, amount types.Coin, txFee types.TxFee) ([]byte, error) {
+	var fromAddress types.Address
+	var err error
+	var txBytes []byte
+	var signatureKeys []relaytypes.SignatureKey
+	if useLedger {
+		path := *hd.NewFundraiserParams(0, stchaintypes.CoinType, 0)
+		_, addr, err := ledger.NewPrivKeySecp256k1(path, stchaintypes.AccountAddressPrefix)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed getting address, ")
+		}
+		pp.DebugLog(ctx, "Wallet Address Read from ledger:", addr)
+		fromAddress, err = types.WalletAddressFromBech(addr)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed getting wallet address, ")
+		}
+
+		signatureKeys = []relaytypes.SignatureKey{
+			{Address: addr, Type: relaytypes.SignatureSecp256k1},
+		}
+	} else {
+		fromAddress, err = types.WalletAddressFromBech(setting.WalletAddress)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed getting wallet address, ")
+		}
+		signatureKeys = []relaytypes.SignatureKey{
+			{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
+		}
+	}
+	txMsg := stratoschain.BuildSendMsg(fromAddress.Bytes(), toAddress.Bytes(), amount)
+	txBytes, err = CreateAndSimulateTx(txMsg, banktypes.TypeMsgSend, txFee, "", signatureKeys)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed creating simulate tx, ")
+	}
+
+	return txBytes, nil
+}
+
 func CreateAndSimulateTx(txMsg sdktypes.Msg, msgType string, txFee types.TxFee, memo string, signatureKeys []relaytypes.SignatureKey) ([]byte, error) {
 	protoConfig, txBuilder := createTxConfigAndTxBuilder()
 	err := setMsgInfoToTxBuilder(txBuilder, txMsg, txFee.Fee, txFee.Gas, memo)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed setting msg info to the builder, ")
 	}
 
 	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg, SignatureKeys: signatureKeys, Type: msgType}}
 	txBytes, err := stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.Blockchain.ChainId, unsignedMsgs)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed building tx bytes, ")
 	}
 
 	if txFee.Simulate {
 		gasInfo, err := grpc.Simulate(txBytes)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed simulating, ")
 		}
 		txBuilder.SetGasLimit(uint64(float64(gasInfo.GasUsed) * setting.Config.Blockchain.GasAdjustment))
 		txBytes, err = stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.Blockchain.ChainId, unsignedMsgs)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed building tx bytes after simulation, ")
 		}
 	}
 	return txBytes, nil

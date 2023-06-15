@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cosmos/cosmos-sdk/crypto/ledger"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/cmd/common"
 	"github.com/stratosnet/sds/cmd/ppd/ipfs"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/stratos-chain/crypto/ethsecp256k1"
 )
 
 func main() {
@@ -26,6 +29,7 @@ func main() {
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(verCmd)
 
+	ledger.InitLedger(ethsecp256k1.MakePubKey, signing.SignMode_SIGN_MODE_DIRECT)
 	err := rootCmd.Execute()
 	if err != nil {
 		fmt.Println(err.Error())

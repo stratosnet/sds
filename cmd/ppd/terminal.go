@@ -70,7 +70,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"downgradeinfo                                                  get information of last downgrade happened on this pp node\n" +
 		"performancemeasure                                             turn on performance measurement log for 60 seconds\n" +
 		"withdraw <amount> <fee> optional<targetAddr> optional<gas>     withdraw matured reward (from address is the configured node wallet)\n" +
-		"send <toAddress> <amount> <fee> optional<gas>                  sending coins to another account (from address is the configured node wallet)\n"
+		"send <from:ppwallet/ledger> <toAddress> <amount> <fee> optional<gas>\n" +
+		"                                                               sending coins to another account (from address is the configured node wallet)\n"
 
 	help := func(line string, param []string) bool {
 		fmt.Println(helpStr)
