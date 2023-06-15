@@ -115,8 +115,6 @@ func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize 
 		MyAddress:       p2pserver.GetP2pServer(ctx).GetPPInfo(),
 		WalletSign:      wsig,
 		WalletPubkey:    wpk.Bytes(),
-		IsCover:         false,
-		IsVideoStream:   isVideoStream,
 		DesiredTier:     desiredTier,
 		AllowHigherTier: allowHigherTier,
 	}
