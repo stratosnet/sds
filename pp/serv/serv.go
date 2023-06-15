@@ -171,11 +171,11 @@ func (bs *BaseServer) startMonitor() error {
 		Prefix:  "",
 	}
 
-	if err := monitorServer.EnableWS(monitorAPI(), config); err != nil {
-		return err
-	}
 	ctx := context.WithValue(context.Background(), types.P2P_SERVER_KEY, bs.p2pServ)
 	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
+	if err := monitorServer.EnableWS(monitorAPI(), config, ctx); err != nil {
+		return err
+	}
 	if err := monitorServer.Start(ctx); err != nil {
 		return err
 	}

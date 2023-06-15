@@ -10,6 +10,7 @@ import (
 	"github.com/alex023/clock"
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/pp/namespace"
+	"github.com/stratosnet/sds/cmd/common"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
@@ -323,7 +324,7 @@ func terminal(cmd *cobra.Command, args []string) {
 }
 
 func terminalPreRunE(cmd *cobra.Command, args []string) error {
-	return loadConfig(cmd)
+	return common.LoadConfig(cmd)
 }
 
 func callRpc(c *rpc.Client, line string, param []string) bool {

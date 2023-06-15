@@ -2,18 +2,17 @@ package main
 
 import (
 	"os"
-	"os/signal"
 	"path/filepath"
-	"syscall"
 
 	"github.com/spf13/cobra"
+	"github.com/stratosnet/sds/cmd/common"
 	"github.com/stratosnet/sds/cmd/relayd/setting"
 	"github.com/stratosnet/sds/relay/client"
 	"github.com/stratosnet/sds/utils"
 )
 
 func startRunE(cmd *cobra.Command, _ []string) error {
-	spHomePath, err := cmd.Flags().GetString(SP_HOME)
+	spHomePath, err := cmd.Flags().GetString(common.SpHome)
 	if err != nil {
 		utils.ErrorLog("failed to get 'sp-home' path for the relayd process")
 		return err
@@ -39,13 +38,7 @@ func startRunE(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit,
-		syscall.SIGTERM,
-		syscall.SIGINT,
-		syscall.SIGQUIT,
-		syscall.SIGHUP,
-	)
+	quit := common.GetQuitChannel()
 
 	for {
 		select {
@@ -59,7 +52,7 @@ func startRunE(cmd *cobra.Command, _ []string) error {
 }
 
 func startPreRunE(cmd *cobra.Command, _ []string) error {
-	homePath, err := cmd.Flags().GetString(HOME)
+	homePath, err := cmd.Flags().GetString(common.Home)
 	if err != nil {
 		utils.ErrorLog("failed to get 'home' path for the relayd process")
 		return err
@@ -72,7 +65,7 @@ func startPreRunE(cmd *cobra.Command, _ []string) error {
 	setting.HomePath = homePath
 	_ = utils.NewDefaultLogger(filepath.Join(homePath, "tmp/logs/stdout.log"), true, true)
 
-	configPath, err := cmd.Flags().GetString(CONFIG)
+	configPath, err := cmd.Flags().GetString(common.Config)
 	if err != nil {
 		utils.ErrorLog("failed to get 'config' path for the relayd process")
 		return err
