@@ -326,7 +326,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 
 	if target.SliceSize <= 0 || (target.Result.State == protos.ResultState_RES_FAIL && target.Result.Msg == LOSE_SLICE_MSG) {
 		pp.DebugLog(ctx, "slice was not found, will send msg to sp for retry, sliceHash: ", target.SliceInfo.SliceHash)
-		setDownloadSliceFail(ctx, target.SliceInfo.SliceHash, target.TaskId, target.IsVideoCaching, dTask)
+		setDownloadSliceFail(ctx, target.SliceInfo.SliceHash, target.TaskId, fileReqId, dTask)
 		return
 	}
 
@@ -351,9 +351,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 		} else {
 			receiveSliceAndProgress(ctx, &target, fInfo, dTask, costTime)
 		}
-		if !utils.IsVideoStream(fInfo.FileHash) {
-			task.DownloadProgress(ctx, target.FileHash, fileReqId, uint64(len(target.Data)))
-		}
+		task.DownloadProgress(ctx, target.FileHash, fileReqId, uint64(len(target.Data)))
 	} else {
 		utils.DebugLog("DownloadFileMap doesn't have entry with file hash", target.FileHash)
 	}
@@ -441,12 +439,6 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 	target.Result = &protos.Result{
 		State: protos.ResultState_RES_SUCCESS,
 	}
-	isVideoStream := utils.IsVideoStream(fInfo.FileHash)
-	if isVideoStream && !target.IsVideoCaching {
-		putData(ctx, HTTPDownloadSlice, target)
-	} else if isVideoStream && target.IsVideoCaching {
-		videoCacheKeep(fInfo.FileHash, target.TaskId)
-	}
 	setDownloadSliceSuccess(ctx, target.SliceInfo.SliceHash, dTask)
 	// get total costTime
 	tkSlice := target.TaskId + target.SliceInfo.SliceHash
@@ -456,14 +448,6 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 	instantInboundSpeed := float64(target.SliceSize) / math.Max(float64(totalCostTime), 1)
 	metrics.InboundSpeed.WithLabelValues(reportReq.OpponentP2PAddress).Set(instantInboundSpeed)
 	DownRecvCostTimeMap.DeleteRecord(tkSlice)
-}
-
-func videoCacheKeep(fileHash, taskID string) {
-	utils.DebugLogf("download keep fileHash = %v  taskID = %v", fileHash, taskID)
-	if ing, ok := task.VideoCacheTaskMap.Load(fileHash); ok {
-		ING := ing.(*task.VideoCacheTask)
-		ING.DownloadCh <- true
-	}
 }
 
 // SendReportDownloadResult  PP-SP OR StoragePP-SP
@@ -526,7 +510,7 @@ func SendReqDownloadSlice(ctx context.Context, fileHash string, sliceInfo *proto
 	if err != nil {
 		pp.ErrorLogf(ctx, "Failed to create connection with %v: %v", networkAddress, utils.FormatError(err))
 		if dTask, ok := task.GetDownloadTask(fileHash, req.RspFileStorageInfo.WalletAddress, fileReqId); ok {
-			setDownloadSliceFail(ctx, sliceInfo.SliceStorageInfo.SliceHash, req.RspFileStorageInfo.TaskId, req.IsVideoCaching, dTask)
+			setDownloadSliceFail(ctx, sliceInfo.SliceStorageInfo.SliceHash, req.RspFileStorageInfo.TaskId, fileReqId, dTask)
 		}
 	}
 }
@@ -586,11 +570,8 @@ func setDownloadSliceSuccess(ctx context.Context, sliceHash string, dTask *task.
 	CheckAndSendRetryMessage(ctx, dTask)
 }
 
-func setDownloadSliceFail(ctx context.Context, sliceHash, taskId string, isVideoCaching bool, dTask *task.DownloadTask) {
+func setDownloadSliceFail(ctx context.Context, sliceHash, taskId, fileReqId string, dTask *task.DownloadTask) {
 	dTask.AddFailedSlice(sliceHash)
-	if isVideoCaching {
-		videoCacheKeep(dTask.FileHash, taskId)
-	}
 	CheckAndSendRetryMessage(ctx, dTask)
 }
 

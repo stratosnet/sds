@@ -89,7 +89,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		}
 	}
 
-	if target.PieceOffset.SliceOffsetStart >= slice.SliceSize || target.PieceOffset.SliceOffsetStart%setting.MaxData != 0 {
+	if target.PieceOffset.SliceOffsetStart > slice.SliceSize || target.PieceOffset.SliceOffsetStart%setting.MaxData != 0 {
 		rsp := &protos.RspUploadFileSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,

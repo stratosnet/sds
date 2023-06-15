@@ -1,10 +1,11 @@
-package serv
+package namespace
 
 import (
 	"context"
 	b64 "encoding/base64"
 	"encoding/hex"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/datamesh"
@@ -65,7 +67,7 @@ func RpcPrivApi() *rpcPrivApi {
 }
 
 // apis returns the collection of built-in RPC APIs.
-func apis() []rpc.API {
+func Apis() []rpc.API {
 	return []rpc.API{
 		{
 			Namespace: "owner",
@@ -383,6 +385,44 @@ func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamRe
 			// end of the session
 			file.CleanFileHash(key)
 		}
+	}
+
+	return *result
+}
+
+func (api *rpcPubApi) RequestDownloadSliceData(ctx context.Context, param rpc_api.ParamReqDownloadData) rpc_api.Result {
+	ctx = core.RegisterRemoteReqId(ctx, param.ReqId)
+	var fInfo *protos.RspFileStorageInfo
+	if f, ok := task.DownloadFileMap.Load(param.FileHash + param.ReqId); ok {
+		fInfo = f.(*protos.RspFileStorageInfo)
+	} else {
+		return rpc_api.Result{Return: rpc_api.WRONG_INPUT}
+	}
+
+	req := &protos.ReqDownloadSlice{
+		RspFileStorageInfo: fInfo,
+		SliceNumber:        param.SliceNumber,
+		P2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+	}
+	networkAddress := param.NetworkAddress
+	msgKey := "download#" + param.FileHash + strconv.FormatUint(param.SliceNumber, 10) + param.P2PAddress + param.ReqId
+	err := p2pserver.GetP2pServer(ctx).SendMessageByCachedConn(ctx, msgKey, networkAddress, req, header.ReqDownloadSlice, nil)
+	if err != nil {
+		return rpc_api.Result{Return: rpc_api.INTERNAL_COMM_FAILURE}
+	}
+
+	key := param.SliceHash + param.ReqId
+
+	// wait for result: DOWNLOAD_OK
+	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
+	defer cancel()
+	var result *rpc_api.Result
+
+	select {
+	case <-ctx.Done():
+		result = &rpc_api.Result{Return: rpc_api.TIME_OUT}
+	case result = <-file.SubscribeRemoteSliceEvent(key):
+		file.UnsubscribeRemoteSliceEvent(key)
 	}
 
 	return *result

@@ -21,13 +21,18 @@ var (
 
 	upSliceMutex sync.Mutex
 
-	eventMutex sync.Mutex
+	fileEventMutex sync.Mutex
+
+	sliceEventMutex sync.Mutex
 
 	// key(fileHash + fileReqId) : value(fileSize)
 	rpcFileInfoMap = &sync.Map{}
 
 	// key(fileHash + fileReqId) : value(chan *rpc.Result)
 	rpcFileEventChan = &sync.Map{}
+
+	// key(sliceHash + fileReqId) : value(chan *rpc.Result)
+	rpcSliceEventChan = &sync.Map{}
 
 	// key(fileHash) : value(chan []byte)
 	rpcUploadDataChan = &sync.Map{}
@@ -192,6 +197,14 @@ func SendFileDataBack(hash string, content []byte) {
 	}
 }
 
+func SaveRemoteFileSliceData(sliceKey, fileKey, fileName string, data []byte, offset uint64) error {
+	if _, found := rpcSliceEventChan.Load(sliceKey); found {
+		return SaveRemoteSliceData(sliceKey, fileName, data, offset)
+	} else {
+		return SaveRemoteFileData(fileKey, fileName, data, offset)
+	}
+}
+
 // SaveRemoteFileData application calls this func to send a slice of file data to remote user during download process
 func SaveRemoteFileData(key, fileName string, data []byte, offset uint64) error {
 	if data == nil {
@@ -220,6 +233,25 @@ func SaveRemoteFileData(key, fileName string, data []byte, offset uint64) error 
 	return WaitDownloadSliceDone(key)
 }
 
+// SaveRemoteSliceData application calls this func to send a slice of file data to remote user during slice download process
+func SaveRemoteSliceData(key, fileName string, data []byte, offset uint64) error {
+	if data == nil {
+		return errors.New("invalid input data")
+	}
+
+	offsetend := offset + uint64(len(data))
+	result := rpc.Result{
+		Return:      rpc.DOWNLOAD_OK,
+		OffsetStart: &offset,
+		OffsetEnd:   &offsetend,
+		FileData:    b64.StdEncoding.EncodeToString(data),
+		FileName:    fileName,
+	}
+
+	SetRemoteSliceResult(key, result)
+	return nil
+}
+
 func GetRemoteFileSize(hash string) uint64 {
 	if f, ok := rpcFileInfoMap.Load(hash); ok {
 		return f.(uint64)
@@ -238,29 +270,59 @@ func SaveRemoteFileHash(hash, fileName string, fileSize uint64) {
 // SubscribeRemoteFileEvent rpc server subscribes to events from application. Now, result of operation is the only event
 func SubscribeRemoteFileEvent(key string) chan *rpc.Result {
 	event := make(chan *rpc.Result)
-	eventMutex.Lock()
-	defer eventMutex.Unlock()
+	fileEventMutex.Lock()
+	defer fileEventMutex.Unlock()
 	rpcFileEventChan.Store(key, event)
 	return event
 }
 
 // UnsubscribeRemoteFileEvent rpc server unsubscribes to event from application. Now, result of operation is the only event
 func UnsubscribeRemoteFileEvent(key string) {
-	eventMutex.Lock()
-	defer eventMutex.Unlock()
+	fileEventMutex.Lock()
+	defer fileEventMutex.Unlock()
 	rpcFileEventChan.Delete(key)
 }
 
 // SetRemoteFileResult application sends the result of previous operation to rpc server
 func SetRemoteFileResult(key string, result rpc.Result) {
-	eventMutex.Lock()
-	defer eventMutex.Unlock()
+	fileEventMutex.Lock()
+	defer fileEventMutex.Unlock()
 	ch, found := rpcFileEventChan.Load(key)
 	if found {
 		select {
 		case ch.(chan *rpc.Result) <- &result:
 		default:
 			rpcFileEventChan.Delete(key)
+		}
+	}
+}
+
+// SubscribeRemoteSliceEvent rpc server subscribes to events from application. Now, result of operation is the only event
+func SubscribeRemoteSliceEvent(key string) chan *rpc.Result {
+	event := make(chan *rpc.Result)
+	sliceEventMutex.Lock()
+	defer sliceEventMutex.Unlock()
+	rpcSliceEventChan.Store(key, event)
+	return event
+}
+
+// UnsubscribeRemoteSliceEvent rpc server unsubscribes to event from application. Now, result of operation is the only event
+func UnsubscribeRemoteSliceEvent(key string) {
+	sliceEventMutex.Lock()
+	defer sliceEventMutex.Unlock()
+	rpcSliceEventChan.Delete(key)
+}
+
+// SetRemoteSliceResult application sends the result to rpc server
+func SetRemoteSliceResult(key string, result rpc.Result) {
+	sliceEventMutex.Lock()
+	defer sliceEventMutex.Unlock()
+	ch, found := rpcSliceEventChan.Load(key)
+	if found {
+		select {
+		case ch.(chan *rpc.Result) <- &result:
+		default:
+			rpcSliceEventChan.Delete(key)
 		}
 	}
 }

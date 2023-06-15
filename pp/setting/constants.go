@@ -43,6 +43,10 @@ const (
 	SoftRamLimitTier1Dev  = int64(500 * units.MiB)
 	SoftRamLimitTier2Dev  = int64(700 * units.MiB)
 
+	DefaultHlsSegmentBuffer = 4
+	DefaultHlsSegmentLength = 10
+	DefaultSliceBlockSize   = 33554432
+
 	// http code
 	FAILCode       = 500
 	SUCCESSCode    = 0

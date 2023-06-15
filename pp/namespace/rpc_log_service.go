@@ -1,4 +1,4 @@
-package serv
+package namespace
 
 import (
 	"context"

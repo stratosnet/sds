@@ -11,6 +11,7 @@ import (
 	"github.com/stratosnet/sds/pp/api/rest"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/namespace"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
@@ -23,9 +24,9 @@ import (
 type BaseServer struct {
 	p2pServ     *p2pserver.P2pServer
 	ppNetwork   *network.Network
-	ipcServ     *ipcServer
-	httpRpcServ *httpServer
-	monitorServ *httpServer
+	ipcServ     *namespace.IpcServer
+	httpRpcServ *namespace.HttpServer
+	monitorServ *namespace.HttpServer
 }
 
 func (bs *BaseServer) Start() error {
@@ -79,21 +80,21 @@ func (bs *BaseServer) startIPC() error {
 		{
 			Namespace: "sdslog",
 			Version:   "1.0",
-			Service:   RpcLogService(),
+			Service:   namespace.RpcLogService(),
 			Public:    false,
 		},
 		{
 			Namespace: "remoterpc",
 			Version:   "1.0",
-			Service:   RpcPubApi(),
+			Service:   namespace.RpcPubApi(),
 			Public:    false,
 		},
 	}
 
-	ipc := newIPCServer(setting.IpcEndpoint)
+	ipc := namespace.NewIPCServer(setting.IpcEndpoint)
 	ctx := context.WithValue(context.Background(), types.P2P_SERVER_KEY, bs.p2pServ)
 	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
-	if err := ipc.start(rpcAPIs, ctx); err != nil {
+	if err := ipc.Start(rpcAPIs, ctx); err != nil {
 		return err
 	}
 	bs.ipcServ = ipc
@@ -103,13 +104,13 @@ func (bs *BaseServer) startIPC() error {
 
 func (bs *BaseServer) startHttpRPC() error {
 	file.RpcWaitTimeout = rpc.DefaultHTTPTimeouts.IdleTimeout
-	rpcServer := newHTTPServer(rpc.DefaultHTTPTimeouts)
+	rpcServer := namespace.NewHTTPServer(rpc.DefaultHTTPTimeouts)
 	port, err := strconv.Atoi(setting.Config.Node.Connectivity.RpcPort)
 	if err != nil {
 		return err
 	}
 
-	if err := rpcServer.setListenAddr("0.0.0.0", port); err != nil {
+	if err := rpcServer.SetListenAddr("0.0.0.0", port); err != nil {
 		return err
 	}
 
@@ -119,18 +120,18 @@ func (bs *BaseServer) startHttpRPC() error {
 		allowModuleList = append(allowModuleList, "owner")
 	}
 
-	var config = httpConfig{
+	var config = namespace.HttpConfig{
 		CorsAllowedOrigins: []string{""},
 		Vhosts:             []string{"localhost"},
 		Modules:            allowModuleList,
 	}
 
-	if err := rpcServer.enableRPC(apis(), config); err != nil {
+	if err := rpcServer.EnableRPC(namespace.Apis(), config); err != nil {
 		return err
 	}
 	ctx := context.WithValue(context.Background(), types.P2P_SERVER_KEY, bs.p2pServ)
 	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
-	if err := rpcServer.start(ctx); err != nil {
+	if err := rpcServer.Start(ctx); err != nil {
 		return err
 	}
 
@@ -139,9 +140,9 @@ func (bs *BaseServer) startHttpRPC() error {
 }
 
 func (bs *BaseServer) startMonitor() error {
-	monitorServer := newHTTPServer(rpc.DefaultHTTPTimeouts)
+	monitorServer := namespace.NewHTTPServer(rpc.DefaultHTTPTimeouts)
 	if setting.Config.Monitor.TLS {
-		monitorServer.enableTLS(setting.Config.Monitor.CertFilePath, setting.Config.Monitor.KeyFilePath)
+		monitorServer.EnableTLS(setting.Config.Monitor.CertFilePath, setting.Config.Monitor.KeyFilePath)
 	}
 	port, err := strconv.Atoi(setting.Config.Monitor.Port)
 	if err != nil {
@@ -157,22 +158,22 @@ func (bs *BaseServer) startMonitor() error {
 		return err
 	}
 
-	if err := monitorServer.setListenAddr("0.0.0.0", port); err != nil {
+	if err := monitorServer.SetListenAddr("0.0.0.0", port); err != nil {
 		return err
 	}
 
-	var config = wsConfig{
+	var config = namespace.WsConfig{
 		Origins: []string{},
 		Modules: []string{},
-		prefix:  "",
+		Prefix:  "",
 	}
 
 	ctx := context.WithValue(context.Background(), types.P2P_SERVER_KEY, bs.p2pServ)
 	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
-	if err := monitorServer.enableWS(monitorAPI(), config, ctx); err != nil {
+	if err := monitorServer.EnableWS(monitorAPI(), config, ctx); err != nil {
 		return err
 	}
-	if err := monitorServer.start(ctx); err != nil {
+	if err := monitorServer.Start(ctx); err != nil {
 		return err
 	}
 	bs.monitorServ = monitorServer
@@ -240,13 +241,13 @@ func (bs *BaseServer) startRestServer() error {
 func (bs *BaseServer) Stop() {
 	utils.DebugLogf("BaseServer.Stop ... ")
 	if bs.ipcServ != nil {
-		_ = bs.ipcServ.stop()
+		_ = bs.ipcServ.Stop()
 	}
 	if bs.httpRpcServ != nil {
-		bs.httpRpcServ.stop()
+		bs.httpRpcServ.Stop()
 	}
 	if bs.monitorServ != nil {
-		bs.monitorServ.stop()
+		bs.monitorServ.Stop()
 	}
 	if bs.p2pServ != nil {
 		bs.p2pServ.Stop()

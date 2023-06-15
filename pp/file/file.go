@@ -86,7 +86,7 @@ func GetFileData(filePath string, offset *protos.SliceOffset) ([]byte, error) {
 }
 
 func GetSliceDataFromTmp(fileHash, sliceHash string) ([]byte, error) {
-	return GetWholeFileData(getTmpSlicePath(fileHash, sliceHash))
+	return GetWholeFileData(GetTmpSlicePath(fileHash, sliceHash))
 }
 
 func GetSliceData(sliceHash string) ([]byte, error) {
@@ -131,7 +131,7 @@ func OpenTmpFile(fileHash, fileName string) (*os.File, error) {
 		}
 	}
 
-	fileMg, err := os.OpenFile(getTmpSlicePath(fileHash, fileName), os.O_CREATE|os.O_RDWR, 0777)
+	fileMg, err := os.OpenFile(GetTmpSlicePath(fileHash, fileName), os.O_CREATE|os.O_RDWR, 0777)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed opening file")
 	}
@@ -139,7 +139,7 @@ func OpenTmpFile(fileHash, fileName string) (*os.File, error) {
 }
 
 func RenameTmpFile(fileHash, srcFile, dstFile string) error {
-	return os.Rename(getTmpSlicePath(fileHash, srcFile), getTmpSlicePath(fileHash, dstFile))
+	return os.Rename(GetTmpSlicePath(fileHash, srcFile), GetTmpSlicePath(fileHash, dstFile))
 }
 
 func SaveTmpSliceData(fileHash, sliceHash string, data []byte) error {
@@ -203,7 +203,7 @@ func SaveFileData(ctx context.Context, data []byte, offset int64, sliceHash, fil
 
 	if IsFileRpcRemote(fileHash + fileReqId) {
 		// write to rpc
-		return SaveRemoteFileData(fileHash+fileReqId, fileName, data, uint64(offset))
+		return SaveRemoteFileSliceData(sliceHash+fileReqId, fileHash+fileReqId, fileName, data, uint64(offset))
 	}
 	wmutex.Lock()
 	defer wmutex.Unlock()
@@ -374,14 +374,7 @@ func DeleteTmpFileSlices(ctx context.Context, fileHash string) {
 	}
 }
 
-func CheckFilePathEx(fileHash, fileName, savePath string) bool {
-	filePath := ""
-	if savePath == "" {
-		filePath = filepath.Join(setting.Config.Home.DownloadPath, fileName)
-	} else {
-		filePath = filepath.Join(setting.Config.Home.DownloadPath, savePath, fileName)
-	}
-	utils.DebugLog("filePath", filePath)
+func CheckFilePathEx(filePath string) bool {
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0777)
 	defer func() {
 		_ = file.Close()
@@ -389,7 +382,7 @@ func CheckFilePathEx(fileHash, fileName, savePath string) bool {
 	return err == nil
 }
 
-func getTmpSlicePath(fileHash, sliceHash string) string {
+func GetTmpSlicePath(fileHash, sliceHash string) string {
 	return filepath.Join(getTmpFileFolderPath(fileHash), sliceHash)
 }
 

@@ -54,9 +54,6 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 				return
 			}
 			dTask.RefreshTask(&target)
-			if utils.IsVideoStream(target.FileHash) {
-				return
-			}
 			if _, ok := task.DownloadSpeedOfProgress.Load(target.FileHash + fileReqId); !ok {
 				pp.Log(ctx, "download has stopped")
 				return
