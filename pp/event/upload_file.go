@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
@@ -28,6 +27,7 @@ import (
 	"github.com/stratosnet/sds/utils/encryption"
 	"github.com/stratosnet/sds/utils/encryption/hdkey"
 	"github.com/stratosnet/sds/utils/types"
+	"google.golang.org/protobuf/proto"
 )
 
 var (
@@ -446,7 +446,7 @@ func (UploadStreamFileHandler) PreUpload(ctx context.Context, filePath, encrypti
 		sliceHash := utils.CalcSliceHash(data, fileHash, sliceNumber)
 		err = file.SaveTmpSliceData(fileHash, sliceHash, data)
 		if err != nil {
-
+			return nil, nil, errors.Wrap(err, "failed to save to temp file")
 		}
 
 		slice := &protos.SliceHashAddr{
@@ -526,7 +526,7 @@ func (UploadRawFileHandler) PreUpload(ctx context.Context, filePath, encryptionT
 		sliceHash := utils.CalcSliceHash(data, fileHash, sliceNumber)
 		err = file.SaveTmpSliceData(fileHash, sliceHash, data)
 		if err != nil {
-
+			return nil, nil, errors.Wrap(err, "failed to save to temp file")
 		}
 
 		SliceHashAddr := &protos.SliceHashAddr{
