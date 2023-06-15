@@ -59,20 +59,19 @@ type KeysConfig struct {
 }
 
 type ConnectivityConfig struct {
+	SeedMetaNode   string `toml:"seed_meta_node" comment:"Network address and port of the meta node to connect to when first starting the node. Eg: \"1.2.3.4:8888\""`
 	Internal       bool   `toml:"internal" comment:"Is the node running on an internal network? Eg: false"`
 	NetworkAddress string `toml:"network_address" comment:"IP address of the node. Eg: \"127.0.0.1\""`
 	NetworkPort    string `toml:"network_port" comment:"Main port for communication on the network. Must be open to the internet. Eg: \"18081\""`
-	InternalPort   string `toml:"internal_port" comment:"Port for the internal HTTP server (used for video streaming)"`
-	MetricsPort    string `toml:"metrics_port" comment:"Port for performance metrics"`
-	RestPort       string `toml:"rest_port" comment:"Port for the REST server (also used for video streaming)"`
-	RpcPort        string `toml:"rpc_port" comment:"Port for the RPC server"`
-	AllowOwnerRpc  bool   `toml:"allow_owner_rpc" comment:"Enable private RPC API (for node owner only) Eg: false"`
+	MetricsPort    string `toml:"metrics_port" comment:"Port for prometheus metrics"`
+	RpcPort        string `toml:"rpc_port" comment:"Port for the JSON-RPC api. See https://docs.thestratos.org/docs-resource-node/sds-rpc-for-file-operation/"`
+	AllowOwnerRpc  bool   `toml:"allow_owner_rpc" comment:"Enable the node owner RPC API. This API can manipulate the node status and sign txs with the local wallet. Do not open this to the internet  Eg: false"`
 }
 
 type NodeConfig struct {
 	AutoStart    bool               `toml:"auto_start" comment:"Should the node start mining automatically? Eg: true"` // TODO: review usage. Not actually used to start mining automatically
 	Debug        bool               `toml:"debug" comment:"Should debug info be printed out in logs? Eg: false"`
-	MaxDiskUsage uint64             `toml:"max_disk_usage" comment:"When not 0, limit disk usage to this amount (bytes) Eg: 1099511627776"`
+	MaxDiskUsage uint64             `toml:"max_disk_usage" comment:"When not 0, limit disk usage to this amount (in megabytes) Eg: 1048576 (1 TB)"`
 	Connectivity ConnectivityConfig `toml:"connectivity"`
 }
 
@@ -86,19 +85,18 @@ type MonitorConfig struct {
 type TrafficConfig struct {
 	LogInterval     uint64 `toml:"log_interval" comment:"Interval at which traffic is logged (in seconds) Eg: 10"`
 	MaxConnections  int    `toml:"max_connections" comment:"Max number of concurrent network connections. Eg: 1000"`
-	MaxDownloadRate uint64 `toml:"max_download_rate" comment:"Max number of download messages received per second (per connection). 0 Means unlimited Eg: 100"`
-	MaxUploadRate   uint64 `toml:"max_upload_rate" comment:"Max number of upload messages sent per second (per connection). 0 Means unlimited Eg: 100"`
+	MaxDownloadRate uint64 `toml:"max_download_rate" comment:"Max number of download messages received per second (per connection). 0 Means unlimited. 1000 ≈ 1MB/sec. Eg: 1000"`
+	MaxUploadRate   uint64 `toml:"max_upload_rate" comment:"Max number of upload messages sent per second (per connection). 0 Means unlimited. 1000 ≈ 1MB/sec. Eg: 1000"`
+}
+
+type StreamingConfig struct {
+	InternalPort string `toml:"internal_port" comment:"Port for the internal HTTP server"`
+	RestPort     string `toml:"rest_port" comment:"Port for the REST server"`
 }
 
 type WebServerConfig struct {
 	Path string `toml:"path" comment:"Location of the web server files Eg: \"./web\""`
 	Port string `toml:"port"`
-}
-
-type SPBaseInfo struct {
-	P2PAddress     string `toml:"p2p_address"`
-	P2PPublicKey   string `toml:"p2p_public_key"`
-	NetworkAddress string `toml:"network_address"`
 }
 
 type config struct {
@@ -108,10 +106,9 @@ type config struct {
 	Keys       KeysConfig       `toml:"keys"`
 	Node       NodeConfig       `toml:"node" comment:"Configuration of this node"`
 	Monitor    MonitorConfig    `toml:"monitor" comment:"Configuration for the monitor server"`
+	Streaming  StreamingConfig  `toml:"streaming" comment:"Configuration for video streaming"`
 	Traffic    TrafficConfig    `toml:"traffic"`
 	WebServer  WebServerConfig  `toml:"web_server" comment:"Configuration for the web server (when running sdsweb)"`
-
-	SPList []SPBaseInfo `toml:"sp_list"`
 }
 
 func SetupRoot(root string) {
@@ -153,14 +150,7 @@ func LoadConfig(configPath string) error {
 	grpc.URL = Config.Blockchain.Url
 	grpc.INSECURE = Config.Blockchain.Insecure
 
-	// Initialize SPMap
-	for _, sp := range Config.SPList {
-		key := sp.P2PAddress
-		if key == "" {
-			key = "unknown"
-		}
-		SPMap.Store(key, sp)
-	}
+	initializeSPMap()
 
 	return nil
 }
@@ -243,15 +233,14 @@ func defaultConfig() *config {
 		Node: NodeConfig{
 			AutoStart:    true,
 			Debug:        false,
-			MaxDiskUsage: 1024 * 1024 * 1024 * 1024, // 1TB,
+			MaxDiskUsage: 1024 * 1024, // 1TB,
 			Connectivity: ConnectivityConfig{
+				SeedMetaNode:   "127.0.0.1:8888",
 				Internal:       false,
 				NetworkAddress: "127.0.0.1",
 				NetworkPort:    "18081",
-				InternalPort:   "18181",
-				MetricsPort:    "18281",
-				RestPort:       "18381",
-				RpcPort:        "18481",
+				MetricsPort:    "18181",
+				RpcPort:        "18281",
 				AllowOwnerRpc:  false,
 			},
 		},
@@ -259,7 +248,11 @@ func defaultConfig() *config {
 			TLS:          false,
 			CertFilePath: "",
 			KeyFilePath:  "",
-			Port:         "18581",
+			Port:         "18381",
+		},
+		Streaming: StreamingConfig{
+			InternalPort: "18481",
+			RestPort:     "18581",
 		},
 		Traffic: TrafficConfig{
 			LogInterval:     10,
@@ -271,7 +264,6 @@ func defaultConfig() *config {
 			Path: "./web",
 			Port: "18681",
 		},
-		SPList: []SPBaseInfo{{NetworkAddress: "127.0.0.1:8888"}},
 	}
 }
 
@@ -326,8 +318,9 @@ func formalizePath(path, defaultValue string) (newPath string, err error) {
 }
 
 func GetDiskSizeSoftCap(actualTotal uint64) uint64 {
-	if Config.Node.MaxDiskUsage != 0 && Config.Node.MaxDiskUsage < actualTotal {
-		return Config.Node.MaxDiskUsage
+	maxDiskBytes := Config.Node.MaxDiskUsage * 1024 * 1024 // MB to B
+	if maxDiskBytes != 0 && maxDiskBytes < actualTotal {
+		return maxDiskBytes
 	}
 	return actualTotal
 }

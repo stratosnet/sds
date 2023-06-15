@@ -8,7 +8,7 @@ import (
 )
 
 func StartHTTPServ(ctx context.Context) {
-	httpServ := httpserv.MyNewHTTPServ(setting.Config.Node.Connectivity.InternalPort)
+	httpServ := httpserv.MyNewHTTPServ(setting.Config.Streaming.InternalPort)
 	httpServ.MyRoute("/streamVideoStorageInfo/", streamVideoInfoCache)
 	httpServ.MyRoute("/streamSharedVideoStorageInfo/", streamSharedVideoInfoCache)
 	httpServ.MyRoute("/streamVideo/", streamVideoP2P)

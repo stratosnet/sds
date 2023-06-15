@@ -1,10 +1,10 @@
 [version]
 # App version number. Eg: 9
-app_ver = 9
+app_ver = 10
 # Network connections from nodes below this version number will be rejected. Eg: 9
-min_app_ver = 9
+min_app_ver = 10
 # Formatted version number. Eg: "v0.9.0"
-show = 'v0.9.0'
+show = 'v0.10.0'
 
 # Configuration of the connection to the Stratos blockchain
 [blockchain]
@@ -42,25 +42,23 @@ wallet_password = 'aaa'
 auto_start = true
 # Should debug info be printed out in logs? Eg: false
 debug = true
-# When not 0, limit disk usage to this amount (bytes) Eg: 1099511627776
-max_disk_usage = 1099511627776
+# When not 0, limit disk usage to this amount (in megabytes) Eg: 1048576 (1 TB)
+max_disk_usage = 1048576
 
 [node.connectivity]
+# Network address and port of the meta node to connect to when first starting the node. Eg: "1.2.3.4:8888"
+seed_meta_node = '127.0.0.1:8888'
 # Is the node running on an internal network? Eg: false
 internal = false
 # IP address of the node. Eg: "127.0.0.1"
 network_address = '127.0.0.1'
 # Main port for communication on the network. Must be open to the internet. Eg: "18081"
 network_port = '9111'
-# Port for the internal HTTP server (used for video streaming)
-internal_port = '9211'
-# Port for performance metrics
-metrics_port = '9311'
-# Port for the REST server (also used for video streaming)
-rest_port = '9411'
-# Port for the RPC server
-rpc_port = '9511'
-# Enable private RPC API (for node owner only) Eg: false
+# Port for prometheus metrics
+metrics_port = '9211'
+# Port for the JSON-RPC api. See https://docs.thestratos.org/docs-resource-node/sds-rpc-for-file-operation/
+rpc_port = '9311'
+# Enable the node owner RPC API. This API can manipulate the node status and sign txs with the local wallet. Do not open this to the internet  Eg: false
 allow_owner_rpc = false
 
 # Configuration for the monitor server
@@ -71,16 +69,23 @@ tls = false
 cert_file_path = ''
 # Path to the TLS private key file
 key_file_path = ''
-port = '9611'
+port = '9411'
+
+# Configuration for video streaming
+[streaming]
+# Port for the internal HTTP server
+internal_port = '9511'
+# Port for the REST server
+rest_port = '9611'
 
 [traffic]
 # Interval at which traffic is logged (in seconds) Eg: 10
 log_interval = 10
 # Max number of concurrent network connections. Eg: 1000
 max_connections = 1000
-# Max number of download messages received per second (per connection). 0 Means unlimited Eg: 100
+# Max number of download messages received per second (per connection). 0 Means unlimited. 1000 ≈ 1MB/sec. Eg: 1000
 max_download_rate = 0
-# Max number of upload messages sent per second (per connection). 0 Means unlimited Eg: 100
+# Max number of upload messages sent per second (per connection). 0 Means unlimited. 1000 ≈ 1MB/sec. Eg: 1000
 max_upload_rate = 0
 
 # Configuration for the web server (when running sdsweb)
@@ -88,20 +93,3 @@ max_upload_rate = 0
 # Location of the web server files Eg: "./web"
 path = './web'
 port = '9711'
-
-[[sp_list]]
-p2p_address = 'stsds1cw8qhgsxddak8hh8gs7veqmy5ku8f8za6qlq64'
-p2p_public_key = 'stsdspub1jmfc8j7ve0jg3jwq9wkefpa34fg9hhrp7nu6rkf6hff7ml769f6qrwae56'
-network_address = '127.0.0.1:8888'
-[[sp_list]]
-p2p_address = 'stsds14c3em44vlh276cujnr2ez802uyjyeqrrsu9fuh'
-p2p_public_key = 'stsdspub1zgqd566qdnj4kna050jz505vamjhglxcpdepqctkregdt6snxm6sck2v6h'
-network_address = '127.0.0.1:18888'
-[[sp_list]]
-p2p_address = 'stsds15sya4n40da64z6n6hvk0p9f7sx72hqpjjnrf9y'
-p2p_public_key = 'stsdspub1pfr08evmk73dtf7ud69pwdznl4xdfghx6k6dyugwpk2jhqq890yqnrcp6u'
-network_address = '127.0.0.1:28888'
-[[sp_list]]
-p2p_address = 'stsds13yakj2xgzzdfcw7kd5gtfcfv2k6sn5eg4vdfem'
-p2p_public_key = 'stsdspub1hhplcrnkn9597gnh87y9zshe0kfs87fvmtrjpyq4heqjcz0dhltsaqa0fc'
-network_address = '127.0.0.1:38888'

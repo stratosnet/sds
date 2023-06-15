@@ -29,9 +29,9 @@ func TestSpListCheckAddNew(t *testing.T) {
 	testSpMapInfo2 := setting.SPBaseInfo{P2PAddress: TEST_P2P_ADDR_2, P2PPublicKey: TEST_P2P_PubKey_2}
 
 	// simulation to SPMap
-	testMap := &sync.Map{}
-	testMap.Store(testSpMapInfo1.P2PAddress, testSpMapInfo1)
-	testMap.Store(testSpMapInfo2.P2PAddress, testSpMapInfo2)
+	setting.SPMap = &sync.Map{}
+	setting.SPMap.Store(testSpMapInfo1.P2PAddress, testSpMapInfo1)
+	setting.SPMap.Store(testSpMapInfo2.P2PAddress, testSpMapInfo2)
 
 	// simulation to message
 	var testList []*protos.SPBaseInfo
@@ -40,14 +40,14 @@ func TestSpListCheckAddNew(t *testing.T) {
 	testList = append(testList, testSpListInfo2)
 
 	// test check and update the map
-	if checkSpListChanged(testList, testMap) {
-		testMap = &sync.Map{}
-		updateSpMap(testList, testMap)
+	if checkSpListChanged(testList) {
+		setting.SPMap = &sync.Map{}
+		setting.UpdateSpMap(testList)
 	}
 
 	// check result
 	i := 0
-	testMap.Range(func(k, v interface{}) bool {
+	setting.SPMap.Range(func(k, v interface{}) bool {
 		i++
 		return true
 	})
@@ -66,10 +66,10 @@ func TestSpListCheckRemove(t *testing.T) {
 	testSpMapInfo3 := setting.SPBaseInfo{P2PAddress: TEST_P2P_ADDR_3, P2PPublicKey: TEST_P2P_PubKey_3}
 
 	// simulation to SPMap
-	testMap := &sync.Map{}
-	testMap.Store(testSpMapInfo3.P2PAddress, testSpMapInfo3)
-	testMap.Store(testSpMapInfo1.P2PAddress, testSpMapInfo1)
-	testMap.Store(testSpMapInfo2.P2PAddress, testSpMapInfo2)
+	setting.SPMap = &sync.Map{}
+	setting.SPMap.Store(testSpMapInfo3.P2PAddress, testSpMapInfo3)
+	setting.SPMap.Store(testSpMapInfo1.P2PAddress, testSpMapInfo1)
+	setting.SPMap.Store(testSpMapInfo2.P2PAddress, testSpMapInfo2)
 
 	// simulation to message
 	var testList []*protos.SPBaseInfo
@@ -77,14 +77,14 @@ func TestSpListCheckRemove(t *testing.T) {
 	testList = append(testList, testSpListInfo3)
 
 	// test check and update the map
-	if checkSpListChanged(testList, testMap) {
-		testMap = &sync.Map{}
-		updateSpMap(testList, testMap)
+	if checkSpListChanged(testList) {
+		setting.SPMap = &sync.Map{}
+		setting.UpdateSpMap(testList)
 	}
 
 	// check result
 	i := 0
-	testMap.Range(func(k, v interface{}) bool {
+	setting.SPMap.Range(func(k, v interface{}) bool {
 		i++
 		return true
 	})
@@ -104,10 +104,10 @@ func TestSpListCheckChange(t *testing.T) {
 	testSpMapInfo3 := setting.SPBaseInfo{P2PAddress: TEST_P2P_ADDR_3, P2PPublicKey: TEST_P2P_PubKey_3}
 
 	// simulation to SPMap
-	testMap := &sync.Map{}
-	testMap.Store(testSpMapInfo3.P2PAddress, testSpMapInfo3)
-	testMap.Store(testSpMapInfo1.P2PAddress, testSpMapInfo1)
-	testMap.Store(testSpMapInfo2.P2PAddress, testSpMapInfo2)
+	setting.SPMap = &sync.Map{}
+	setting.SPMap.Store(testSpMapInfo3.P2PAddress, testSpMapInfo3)
+	setting.SPMap.Store(testSpMapInfo1.P2PAddress, testSpMapInfo1)
+	setting.SPMap.Store(testSpMapInfo2.P2PAddress, testSpMapInfo2)
 
 	// simulation to message
 	var testList []*protos.SPBaseInfo
@@ -116,21 +116,21 @@ func TestSpListCheckChange(t *testing.T) {
 	testList = append(testList, testSpListInfo3)
 
 	// test check and update the map
-	if checkSpListChanged(testList, testMap) {
-		testMap = &sync.Map{}
-		updateSpMap(testList, testMap)
+	if checkSpListChanged(testList) {
+		setting.SPMap = &sync.Map{}
+		setting.UpdateSpMap(testList)
 	}
 
 	// check result
 	i := 0
-	testMap.Range(func(k, v interface{}) bool {
+	setting.SPMap.Range(func(k, v interface{}) bool {
 		i++
 		return true
 	})
 	if i != 3 {
 		t.Fatal("Number of items is wrong")
 	}
-	testTmpSpInfo, ok := testMap.Load(testSpListInfo2.P2PAddress)
+	testTmpSpInfo, ok := setting.SPMap.Load(testSpListInfo2.P2PAddress)
 	if !ok || testTmpSpInfo.(setting.SPBaseInfo).P2PPublicKey != TEST_P2P_PubKey_TEM {
 		t.Fatal("Entry is not updated:")
 	}

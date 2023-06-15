@@ -2,7 +2,6 @@ package setting
 
 import (
 	"net"
-	"sync"
 	"time"
 
 	externalip "github.com/glendc/go-external-ip"
@@ -28,8 +27,6 @@ var WalletPrivateKey []byte
 var NetworkAddress string
 
 var RestAddress string
-
-var SPMap = &sync.Map{}
 
 var MonitorInitialToken string
 
@@ -62,7 +59,7 @@ func SetMyNetworkAddress() {
 
 	if netAddr != "" {
 		NetworkAddress = netAddr + ":" + Config.Node.Connectivity.NetworkPort
-		RestAddress = netAddr + ":" + Config.Node.Connectivity.RestPort
+		RestAddress = netAddr + ":" + Config.Streaming.RestPort
 	}
 	utils.Log("setting.NetworkAddress", NetworkAddress)
 }

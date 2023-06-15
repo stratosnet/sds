@@ -215,7 +215,7 @@ func (bs *BaseServer) startTrafficLog() error {
 }
 
 func (bs *BaseServer) startInternalApiServer() error {
-	if setting.Config.Keys.WalletAddress != "" && setting.Config.Node.Connectivity.InternalPort != "" {
+	if setting.Config.Keys.WalletAddress != "" && setting.Config.Streaming.InternalPort != "" {
 		ctx := context.Background()
 		ctx = context.WithValue(ctx, types.P2P_SERVER_KEY, bs.p2pServ)
 		ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
@@ -227,7 +227,7 @@ func (bs *BaseServer) startInternalApiServer() error {
 }
 
 func (bs *BaseServer) startRestServer() error {
-	if setting.Config.Node.Connectivity.RestPort != "" {
+	if setting.Config.Streaming.RestPort != "" {
 		ctx := context.Background()
 		ctx = context.WithValue(ctx, types.P2P_SERVER_KEY, bs.p2pServ)
 		ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
