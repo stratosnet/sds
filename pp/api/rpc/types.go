@@ -47,6 +47,16 @@ type ParamReqDownloadFile struct {
 }
 
 // download: download file data
+type ParamReqDownloadData struct {
+	FileHash       string `json:"filehash"`
+	ReqId          string `json:"reqid"`
+	SliceHash      string `json:"slicehash"`
+	SliceNumber    uint64 `json:"slicenumber"`
+	NetworkAddress string `json:"networkaddress"`
+	P2PAddress     string `json:"p2pAddress"`
+}
+
+// download: download file data
 type ParamDownloadData struct {
 	FileHash string `json:"filehash"`
 	ReqId    string `json:"reqid"`

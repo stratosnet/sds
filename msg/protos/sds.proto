@@ -69,13 +69,12 @@ message RspStopMaintenance {
 
 message ReqUploadFile {
   FileInfo file_info = 1;
-  PPBaseInfo my_address = 2;
-  bytes wallet_sign = 3;
-  bytes wallet_pubkey = 4;
-  bool is_cover = 5;
-  bool is_video_stream = 6;
-  uint32 desired_tier = 7;
-  bool allow_higher_tier = 8;
+  repeated SliceHashAddr slices = 2;
+  PPBaseInfo my_address = 3;
+  bytes wallet_sign = 4;
+  bytes wallet_pubkey = 5;
+  uint32 desired_tier = 6;
+  bool allow_higher_tier = 7;
 }
 
 message RspUploadFile {
@@ -86,12 +85,10 @@ message RspUploadFile {
   int64  total_slice = 5;
   Result result = 6; // accept upload or not
   string owner_wallet_address = 7;
-  bool   is_video_stream = 8;
-  uint64 video_slice_duration = 9;
-  bool   is_encrypted = 10;
-  string sp_p2p_address = 11;
-  bytes  node_sign = 12;
-  int64  time_stamp = 13;
+  bool   is_encrypted = 8;
+  string sp_p2p_address = 9;
+  bytes  node_sign = 10;
+  int64  time_stamp = 11;
 }
 
 message ReqUploadFileSlice {
@@ -257,7 +254,6 @@ message ReqDownloadSlice {
   RspFileStorageInfo rsp_file_storage_info = 1;
   uint64             slice_number = 2;
   string             p2p_address = 3;
-  bool               is_video_caching = 4;
 }
 
 message RspDownloadSlice {

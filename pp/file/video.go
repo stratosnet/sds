@@ -25,13 +25,10 @@ const HLS_HEADER_FILENAME = "index.m3u8"
 
 const TEMP_FOLDER = "tmp"
 
-var HlsInfoMap = make(map[string]*HlsInfo)
-
 type HlsInfo struct {
 	FileHash         string
 	HeaderFile       string
 	StartSliceNumber uint64
-	TotalSize        int64
 	SegmentToSlice   map[string]uint64
 	SliceToSegment   map[uint64]string
 }
@@ -105,11 +102,7 @@ func GetHlsInfo(fileHash string, maxSliceCount uint64) (*HlsInfo, error) {
 		hlsInfo.SegmentToSlice[f.Name()] = currSliceNumber
 		hlsInfo.SliceToSegment[currSliceNumber] = f.Name()
 		currSliceNumber += 1
-
-		fInfo, _ := f.Info()
-		totalSize += fInfo.Size()
 	}
-	hlsInfo.TotalSize = totalSize
 	return hlsInfo, nil
 }
 
@@ -127,6 +120,16 @@ func LoadHlsInfo(fileHash, sliceHash, savePath string) *HlsInfo {
 		return nil
 	}
 	return &hlsInfo
+}
+
+func LoadHlsInfoFromData(data []byte) (*HlsInfo, error) {
+	var hlsInfo HlsInfo
+	err := json.Unmarshal(data, &hlsInfo)
+	if err != nil {
+		utils.ErrorLog(err)
+		return nil, err
+	}
+	return &hlsInfo, nil
 }
 
 func DeleteTmpHlsFolder(ctx context.Context, fileHash string) {
