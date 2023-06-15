@@ -23,6 +23,10 @@ func (handler *DownloadTimeoutHandler) Handle(ctx context.Context, message *msg.
 		return
 	}
 
+	if target.RspFileStorageInfo == nil {
+		return
+	}
+
 	dTask, ok := task.GetDownloadTask(target.RspFileStorageInfo.FileHash, target.RspFileStorageInfo.WalletAddress, task.LOCAL_REQID)
 	if !ok {
 		return
@@ -39,7 +43,7 @@ func (handler *DownloadTimeoutHandler) Handle(ctx context.Context, message *msg.
 	}
 
 	newCtx := core.CreateContextWithParentReqId(ctx, message.MSGHead.ReqId)
-	setDownloadSliceFail(newCtx, slice.SliceStorageInfo.SliceHash, target.RspFileStorageInfo.TaskId, target.IsVideoCaching, dTask)
+	setDownloadSliceFail(newCtx, slice.SliceStorageInfo.SliceHash, target.RspFileStorageInfo.TaskId, task.LOCAL_REQID, dTask)
 }
 
 func (handler *DownloadTimeoutHandler) GetDuration() time.Duration {

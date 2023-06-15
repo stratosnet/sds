@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
-	"path"
 	"path/filepath"
 	"reflect"
 	"time"
@@ -116,8 +115,6 @@ func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize 
 		MyAddress:       p2pserver.GetP2pServer(ctx).GetPPInfo(),
 		WalletSign:      wsig,
 		WalletPubkey:    wpk.Bytes(),
-		IsCover:         false,
-		IsVideoStream:   isVideoStream,
 		DesiredTier:     desiredTier,
 		AllowHigherTier: allowHigherTier,
 	}
@@ -141,64 +138,22 @@ func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize 
 }
 
 // RequestUploadFileData assume the PP's current wallet is the owner, otherwise RequestUploadFile() should be used instead
-func RequestUploadFileData(ctx context.Context, paths, storagePath string, isCover, isVideoStream, isEncrypted bool, desiredTier uint32, allowHigherTier bool) *protos.ReqUploadFile {
-	info, err := file.GetFileInfo(paths)
-	if err != nil {
-		pp.ErrorLog(ctx, "wrong filePath", err.Error())
-		return nil
-	}
-	fileName := info.Name()
-	pp.Log(ctx, "fileName~~~~~~~~~~~~~~~~~~~~~~~~", fileName)
-	encryptionTag := ""
-	if isEncrypted {
-		encryptionTag = utils.GetRandomString(8)
-	}
-	fileHash := ""
-	if isVideoStream {
-		fileHash = file.GetFileHashForVideoStream(paths, encryptionTag)
-	} else {
-		fileHash = file.GetFileHash(paths, encryptionTag)
-	}
-	pp.Log(ctx, "fileHash~~~~~~~~~~~~~~~~~~~~~~", fileHash)
-
+func RequestUploadFileData(ctx context.Context, fileInfo *protos.FileInfo, slices []*protos.SliceHashAddr, desiredTier uint32, allowHigherTier bool) *protos.ReqUploadFile {
 	req := &protos.ReqUploadFile{
-		FileInfo: &protos.FileInfo{
-			FileSize:           uint64(info.Size()),
-			FileName:           fileName,
-			FileHash:           fileHash,
-			StoragePath:        storagePath,
-			EncryptionTag:      encryptionTag,
-			OwnerWalletAddress: setting.WalletAddress,
-		},
+		FileInfo:        fileInfo,
 		MyAddress:       p2pserver.GetP2pServer(ctx).GetPPInfo(),
 		WalletPubkey:    setting.WalletPublicKey,
-		IsCover:         isCover,
-		IsVideoStream:   isVideoStream,
 		DesiredTier:     desiredTier,
 		AllowHigherTier: allowHigherTier,
-	}
-	if isCover {
-		fileSuffix := path.Ext(paths)
-		req.FileInfo.FileName = fileHash + fileSuffix
-	}
-	if isVideoStream {
-		duration, err := file.GetVideoDuration(paths)
-		if err != nil {
-			pp.ErrorLog(ctx, "Failed to get the length of the video: ", err)
-			return nil
-		}
-		req.FileInfo.Duration = duration
+		Slices:          slices,
 	}
 
 	// info
 	p := &task.UploadProgress{
-		Total:     info.Size(),
+		Total:     int64(fileInfo.FileSize),
 		HasUpload: 0,
 	}
-	task.UploadProgressMap.Store(fileHash, p)
-	// if isCover {
-	//	os.Remove(path)
-	// }
+	task.UploadProgressMap.Store(fileInfo.FileHash, p)
 	return req
 }
 
@@ -238,7 +193,6 @@ func RspDownloadSliceData(ctx context.Context, target *protos.ReqDownloadSlice, 
 		Result:            &protos.Result{State: protos.ResultState_RES_SUCCESS, Msg: ""},
 		IsEncrypted:       target.RspFileStorageInfo.EncryptionTag != "",
 		SpP2PAddress:      target.RspFileStorageInfo.SpP2PAddress,
-		IsVideoCaching:    target.IsVideoCaching,
 		StorageP2PAddress: p2pserver.GetP2pServer(ctx).GetP2PAddress(),
 		SliceNumber:       target.SliceNumber,
 	}

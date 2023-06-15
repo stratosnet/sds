@@ -2,22 +2,14 @@ package task
 
 import (
 	"context"
-	"encoding/json"
-	"math/rand"
-	"strconv"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/encryption"
-	"github.com/stratosnet/sds/utils/encryption/hdkey"
-	"google.golang.org/protobuf/proto"
 )
 
 // UploadSliceTask represents a slice upload task that is in progress
@@ -27,6 +19,7 @@ type UploadSliceTask struct {
 	SliceNumber   uint64
 	SliceHash     string
 	Type          protos.UploadType
+	Data          []byte
 }
 
 const (
@@ -335,148 +328,12 @@ type UploadProgress struct {
 // UploadProgressMap Map of the progress for ongoing uploads
 var UploadProgressMap = &sync.Map{} // map[string]*UploadProgress
 
-func CreateUploadSliceTask(ctx context.Context, slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
-	if uploadTask.RspUploadFile.IsVideoStream {
-		return CreateUploadSliceTaskStream(ctx, slice, ppInfo, uploadTask)
-	} else {
-		return CreateUploadSliceTaskFile(ctx, slice, ppInfo, uploadTask)
-	}
-}
-
-func CreateUploadSliceTaskFile(ctx context.Context, slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
+func CreateUploadSliceTask(ctx context.Context, slice *SliceWithStatus, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
 	pp.DebugLogf(ctx, "sliceNumber %v  offsetStart = %v  offsetEnd = %v", slice.Slice.SliceNumber, slice.Slice.SliceOffset.SliceOffsetStart, slice.Slice.SliceOffset.SliceOffsetEnd)
-	startOffset := slice.Slice.SliceOffset.SliceOffsetStart
-	endOffset := slice.Slice.SliceOffset.SliceOffsetEnd
-	fileHash := uploadTask.RspUploadFile.FileHash
-
-	var fileSize uint64
-	var filePath string
-
-	remote := file.IsFileRpcRemote(fileHash)
-	if !remote {
-		// in case of local file
-		filePath = file.GetFilePath(fileHash)
-		fileInfo, err := file.GetFileInfo(filePath)
-		if fileInfo == nil {
-			return nil, errors.Wrap(err, "wrong file path")
-		}
-		fileSize = uint64(fileInfo.Size())
-	} else {
-		// in case of remote (rpc) file
-		fileSize = file.GetRemoteFileSize(fileHash)
-	}
-
-	if fileSize < endOffset {
-		endOffset = fileSize
-	}
-	offset := &protos.SliceOffset{
-		SliceOffsetStart: startOffset,
-		SliceOffsetEnd:   endOffset,
-	}
-
-	var rawData []byte
-	var err error
-	tmpFileName := uuid.NewString()
-	if !remote {
-		metrics.UploadPerformanceLogNow(fileHash + ":SND_GET_LOCAL_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
-		rawData, err = file.GetFileData(filePath, offset)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed getting file data")
-		}
-		if rawData != nil {
-			err = file.SaveTmpSliceData(fileHash, tmpFileName, rawData)
-			if err != nil {
-				return nil, errors.Wrap(err, "filed saving tmp slice data")
-			}
-		}
-		metrics.UploadPerformanceLogNow(fileHash + ":RCV_GET_LOCAL_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
-	} else {
-		metrics.UploadPerformanceLogNow(fileHash + ":SND_GET_REMOTE_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
-		if file.CacheRemoteFileData(fileHash, offset, tmpFileName) == nil {
-			rawData, err = file.GetSliceDataFromTmp(fileHash, tmpFileName)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed getting slice data from tmp")
-			}
-		}
-		metrics.UploadPerformanceLogNow(fileHash + ":RCV_GET_REMOTE_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
-	}
-
-	if rawData == nil {
-		return nil, errors.New("Failed reading data from file")
-	}
-
-	// Encrypt slice data if required
-	data := rawData
-	if uploadTask.RspUploadFile.IsEncrypted {
-		var err error
-		data, err = encryptSliceData(rawData)
-		if err != nil {
-			return nil, errors.Wrap(err, "Couldn't encrypt slice data")
-		}
-		// write data back to the tmp file
-		err = file.SaveTmpSliceData(fileHash, tmpFileName, data)
-		if err != nil {
-			return nil, err
-		}
-	}
-	sliceHash := utils.CalcSliceHash(data, fileHash, slice.Slice.SliceNumber)
 	tk := &UploadSliceTask{
 		RspUploadFile: uploadTask.RspUploadFile,
-		SliceHash:     sliceHash,
+		SliceHash:     slice.Slice.SliceHash,
 		SliceNumber:   slice.Slice.SliceNumber,
-	}
-
-	err = file.RenameTmpFile(fileHash, tmpFileName, sliceHash)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed renaming tmp file")
-	}
-	return tk, nil
-}
-
-func CreateUploadSliceTaskStream(ctx context.Context, slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
-	fileHash := uploadTask.RspUploadFile.FileHash
-	videoFolder := file.GetVideoTmpFolder(fileHash)
-	videoSliceInfo := file.HlsInfoMap[fileHash]
-	var data []byte
-	var sliceTotalSize uint64
-	if slice.Slice.SliceNumber == 1 {
-		jsonStr, _ := json.Marshal(videoSliceInfo)
-		data = jsonStr
-		sliceTotalSize = uint64(len(data))
-	} else if slice.Slice.SliceNumber < videoSliceInfo.StartSliceNumber {
-		data = file.GetDumpySliceData(fileHash, slice.Slice.SliceNumber)
-		sliceTotalSize = uint64(len(data))
-	} else {
-		sliceName := videoSliceInfo.SliceToSegment[slice.Slice.SliceNumber]
-		slicePath := videoFolder + "/" + sliceName
-		fileInfo, err := file.GetFileInfo(slicePath)
-		if err != nil {
-			return nil, errors.New("wrong file path")
-		}
-		data, err = file.GetWholeFileData(slicePath)
-		if err != nil {
-			return nil, errors.New("failed getting whole file data")
-		}
-		sliceTotalSize = uint64(fileInfo.Size())
-	}
-
-	pp.DebugLog(ctx, "sliceNumber", slice.Slice.SliceNumber)
-
-	sliceHash := utils.CalcSliceHash(data, fileHash, slice.Slice.SliceNumber)
-	offset := &protos.SliceOffset{
-		SliceOffsetStart: uint64(0),
-		SliceOffsetEnd:   sliceTotalSize,
-	}
-	slice.Slice.SliceOffset = offset
-	tk := &UploadSliceTask{
-		RspUploadFile: uploadTask.RspUploadFile,
-		SliceNumber:   slice.Slice.SliceNumber,
-		SliceHash:     sliceHash,
-	}
-
-	err := file.SaveTmpSliceData(fileHash, sliceHash, data)
-	if err != nil {
-		return nil, err
 	}
 	return tk, nil
 }
@@ -502,30 +359,4 @@ func SaveUploadFile(target *protos.ReqUploadFileSlice) error {
 
 func SaveBackuptFile(target *protos.ReqBackupFileSlice) error {
 	return file.SaveSliceData(target.Data, target.SliceHash, target.PieceOffset.SliceOffsetStart)
-}
-
-func encryptSliceData(rawData []byte) ([]byte, error) {
-	hdKeyNonce := rand.Uint32()
-	if hdKeyNonce > hdkey.HardenedKeyStart {
-		hdKeyNonce -= hdkey.HardenedKeyStart
-	}
-	aesNonce := rand.Uint64()
-
-	key, err := hdkey.MasterKeyForSliceEncryption(setting.WalletPrivateKey, hdKeyNonce)
-	if err != nil {
-		return nil, err
-	}
-
-	encryptedData, err := encryption.EncryptAES(key.PrivateKey(), rawData, aesNonce)
-	if err != nil {
-		return nil, err
-	}
-
-	encryptedSlice := &protos.EncryptedSlice{
-		HdkeyNonce: hdKeyNonce,
-		AesNonce:   aesNonce,
-		Data:       encryptedData,
-		RawSize:    uint64(len(rawData)),
-	}
-	return proto.Marshal(encryptedSlice)
 }
