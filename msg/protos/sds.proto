@@ -69,13 +69,12 @@ message RspStopMaintenance {
 
 message ReqUploadFile {
   FileInfo file_info = 1;
-  PPBaseInfo my_address = 2;
-  bytes wallet_sign = 3;
-  bytes wallet_pubkey = 4;
-  bool is_cover = 5;
-  bool is_video_stream = 6;
-  uint32 desired_tier = 7;
-  bool allow_higher_tier = 8;
+  repeated SliceHashAddr slices = 2;
+  PPBaseInfo my_address = 3;
+  bytes wallet_sign = 4;
+  bytes wallet_pubkey = 5;
+  uint32 desired_tier = 6;
+  bool allow_higher_tier = 7;
 }
 
 message RspUploadFile {

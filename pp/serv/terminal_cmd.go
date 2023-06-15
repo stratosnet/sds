@@ -23,6 +23,7 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/datamesh"
 	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
@@ -356,7 +357,7 @@ func (api *terminalCmd) Upload(ctx context.Context, param []string) (CmdResult, 
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	event.RequestUploadFile(ctx, pathStr, isEncrypted, desiredTier, allowHigherTier)
+	event.RequestUploadFile(ctx, pathStr, isEncrypted, false, desiredTier, allowHigherTier)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -392,7 +393,7 @@ func (api *terminalCmd) UploadStream(ctx context.Context, param []string) (CmdRe
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	ctx = core.RegisterRemoteReqId(ctx, uuid.New().String())
-	event.RequestUploadStream(ctx, pathStr, desiredTier, allowHigherTier)
+	event.RequestUploadFile(ctx, pathStr, false, true, desiredTier, allowHigherTier)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -428,6 +429,17 @@ func (api *terminalCmd) Download(ctx context.Context, param []string) (CmdResult
 	if len(param) == 2 {
 		saveAs = param[1]
 	}
+
+	_, _, fileHash, _, err := datamesh.ParseFileHandle(param[0])
+	if err != nil {
+		err = errors.New("wrong file path format, failed to parse")
+		return CmdResult{Msg: ""}, err
+	}
+	if utils.IsVideoStream(fileHash) {
+		err = errors.New("video stream file cannot be downloaded by get cmd")
+		return CmdResult{Msg: ""}, err
+	}
+
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	core.RegisterReqId(ctx, task.LOCAL_REQID)
 	req := requests.ReqFileStorageInfoData(ctx, param[0], "", saveAs, setting.WalletAddress, setting.WalletPublicKey, nil)

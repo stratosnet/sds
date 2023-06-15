@@ -4,12 +4,13 @@ package event
 import (
 	"context"
 	"encoding/json"
+	"math"
+	"math/rand"
 	"net/http"
-	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
@@ -24,6 +25,8 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/encryption"
+	"github.com/stratosnet/sds/utils/encryption/hdkey"
 	"github.com/stratosnet/sds/utils/types"
 )
 
@@ -32,7 +35,7 @@ var (
 )
 
 // RequestUploadFile request to SP for upload file
-func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, desiredTier uint32, allowHigherTier bool) {
+func RequestUploadFile(ctx context.Context, path string, isEncrypted, isVideoStream bool, desiredTier uint32, allowHigherTier bool) {
 	pp.DebugLog(ctx, "______________path", path)
 	if !setting.CheckLogin() {
 		return
@@ -47,44 +50,23 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted bool, desir
 		return
 	}
 	if !isFile {
-		var target string
-		if path[len(path)-1:] == "/" {
-			target = path[:len(path)-1] + ".tar.zst"
-		} else {
-			target = path + ".tar.zst"
-		}
-		if err = file.CreateTarWithZstd(path, target); err != nil {
-			pp.ErrorLog(ctx, "failed packing the files in the path, ", err.Error())
-			return
-		}
-		utils.DebugLog("new path:", target)
-		path = target
-	}
-	p := requests.RequestUploadFileData(ctx, path, "", false, false, isEncrypted, desiredTier, allowHigherTier)
-	if err = ReqGetWalletOzForUpload(ctx, setting.WalletAddress, task.LOCAL_REQID, p); err != nil {
-		pp.ErrorLog(ctx, err)
-	}
-}
-
-func RequestUploadStream(ctx context.Context, path string, desiredTier uint32, allowHigherTier bool) {
-	pp.DebugLog(ctx, "______________path", path)
-	if !setting.CheckLogin() {
-		return
-	}
-	isFile, err := file.IsFile(path)
-	if err != nil {
-		pp.ErrorLog(ctx, err)
-		return
-	}
-	if isFile {
-		p := requests.RequestUploadFileData(ctx, path, "", false, true, false, desiredTier, allowHigherTier)
-		if err = ReqGetWalletOzForUpload(ctx, setting.WalletAddress, task.LOCAL_REQID, p); err != nil {
-			pp.ErrorLog(ctx, err)
-		}
-		return
-	} else {
 		pp.ErrorLog(ctx, "the provided path indicates a directory, not a file")
 		return
+	}
+	encryptionTag := ""
+	if isEncrypted {
+		encryptionTag = utils.GetRandomString(8)
+	}
+	uploadFileHandler := getUploadFileHandler(isVideoStream)
+	fileInfo, slices, err := uploadFileHandler.PreUpload(ctx, path, encryptionTag)
+	if err != nil {
+		pp.ErrorLog(ctx, "failed to slice file before upload ", err)
+		return
+	}
+
+	p := requests.RequestUploadFileData(ctx, fileInfo, slices, desiredTier, allowHigherTier)
+	if err = ReqGetWalletOzForUpload(ctx, setting.WalletAddress, task.LOCAL_REQID, p); err != nil {
+		pp.ErrorLog(ctx, err)
 	}
 }
 
@@ -224,57 +206,21 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 	task.UploadProgressMap.Store(target.FileHash, p)
 
 	// Start uploading
-	sliceDataAccessor := func(fileHash string, slice *protos.SliceHashAddr) ([]byte, error) {
-		return file.GetSliceDataFromTmp(fileHash, slice.SliceHash)
-	}
-
-	startUploadingFileSlices(ctx, target.FileHash, sliceDataAccessor)
+	startUploadingFileSlices(ctx, target.FileHash)
 }
 
 func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
-	uploadFileHandler, err := getUploadFileHandler(target.FileHash)
-	if err != nil {
-		pp.ErrorLog(ctx, "received error when get upload file handler: ", err)
-		return
-	}
-
-	totalSize, err := uploadFileHandler.PreUpload(ctx, target)
-	if err != nil {
-		pp.ErrorLog(ctx, "received error when prepare file before upload: ", err)
-		return
-	}
-
 	// Create upload task
 	uploadTask := task.CreateUploadFileTask(target)
 
 	p2pserver.GetP2pServer(ctx).CleanUpConnMap(target.FileHash)
 	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
 
-	if prg, ok := task.UploadProgressMap.Load(target.FileHash); ok {
-		progress := prg.(*task.UploadProgress)
-		progress.Total = totalSize
-		//progress.HasUpload = (target.TotalSlice - int64(len(target.Slices))) * setting.MAX_SLICE_SIZE
-	}
-
 	// Start uploading
-	startUploadingFileSlices(ctx, target.FileHash, uploadFileHandler.GetSliceData)
+	startUploadingFileSlices(ctx, target.FileHash)
 }
 
-func getUploadFileHandler(fileHash string) (UploadFileHandler, error) {
-	codec, err := utils.GetCodecFromFileHash(fileHash)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get codec from file hash")
-	}
-	switch codec {
-	case utils.VIDEO_CODEC:
-		return UploadStreamFileHandler{}, nil
-	default:
-		return UploadRawFileHandler{}, nil
-	}
-}
-
-func startUploadingFileSlices(ctx context.Context, fileHash string,
-	sliceDataAccessor func(fileHash string, slice *protos.SliceHashAddr) ([]byte, error)) {
+func startUploadingFileSlices(ctx context.Context, fileHash string) {
 	value, ok := task.UploadFileTaskMap.Load(fileHash)
 	if !ok {
 		pp.ErrorLogf(ctx, "File upload task cannot be found for file %v", fileHash)
@@ -285,7 +231,7 @@ func startUploadingFileSlices(ctx context.Context, fileHash string,
 	// Send signals to start slice uploads
 	fileTask.SignalNewDestinations()
 
-	err := waitForUploadFinished(ctx, fileTask, sliceDataAccessor)
+	err := waitForUploadFinished(ctx, fileTask)
 	if err != nil {
 		pp.ErrorLog(ctx, "File upload task will be cancelled: ", utils.FormatError(err))
 		return
@@ -294,8 +240,7 @@ func startUploadingFileSlices(ctx context.Context, fileHash string,
 	task.UploadFileTaskMap.Delete(fileHash)
 }
 
-func waitForUploadFinished(ctx context.Context, uploadTask *task.UploadFileTask,
-	sliceDataAccessor func(fileHash string, slice *protos.SliceHashAddr) ([]byte, error)) error {
+func waitForUploadFinished(ctx context.Context, uploadTask *task.UploadFileTask) error {
 	for {
 		// Wait until a new destination can be uploaded to, or until some time has passed
 		select {
@@ -329,13 +274,12 @@ func waitForUploadFinished(ctx context.Context, uploadTask *task.UploadFileTask,
 		// Start uploading to next destination
 		nextDestination := uploadTask.NextDestination()
 		if nextDestination != nil {
-			go uploadSlicesToDestination(ctx, uploadTask, nextDestination, sliceDataAccessor)
+			go uploadSlicesToDestination(ctx, uploadTask, nextDestination)
 		}
 	}
 }
 
-func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileTask, destination *task.SlicesPerDestination,
-	sliceDataAccessor func(fileHash string, slice *protos.SliceHashAddr) ([]byte, error)) {
+func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileTask, destination *task.SlicesPerDestination) {
 	defer func() {
 		uploadTask.UpChan <- true
 	}()
@@ -348,7 +292,7 @@ func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileT
 		var err error
 		switch uploadTask.Type {
 		case protos.UploadType_NEW_UPLOAD:
-			uploadSliceTask, err = task.CreateUploadSliceTask(ctx, slice, uploadTask, sliceDataAccessor)
+			uploadSliceTask, err = task.CreateUploadSliceTask(ctx, slice, uploadTask)
 			if err != nil {
 				slice.SetError(err, true, uploadTask)
 				return
@@ -361,7 +305,7 @@ func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileT
 				return
 			}
 		case protos.UploadType_BACKUP:
-			uploadSliceTask, err = task.GetReuploadSliceTask(ctx, slice, destination.PpInfo, uploadTask, sliceDataAccessor)
+			uploadSliceTask, err = task.GetReuploadSliceTask(ctx, slice, destination.PpInfo, uploadTask)
 			if err != nil {
 				slice.SetError(err, true, uploadTask)
 				return
@@ -390,9 +334,41 @@ func UploadPause(ctx context.Context, fileHash, reqID string, w http.ResponseWri
 	task.UploadProgressMap.Delete(fileHash)
 }
 
+func encryptSliceData(rawData []byte) ([]byte, error) {
+	hdKeyNonce := rand.Uint32()
+	if hdKeyNonce > hdkey.HardenedKeyStart {
+		hdKeyNonce -= hdkey.HardenedKeyStart
+	}
+	aesNonce := rand.Uint64()
+
+	key, err := hdkey.MasterKeyForSliceEncryption(setting.WalletPrivateKey, hdKeyNonce)
+	if err != nil {
+		return nil, err
+	}
+
+	encryptedData, err := encryption.EncryptAES(key.PrivateKey(), rawData, aesNonce)
+	if err != nil {
+		return nil, err
+	}
+
+	encryptedSlice := &protos.EncryptedSlice{
+		HdkeyNonce: hdKeyNonce,
+		AesNonce:   aesNonce,
+		Data:       encryptedData,
+		RawSize:    uint64(len(rawData)),
+	}
+	return proto.Marshal(encryptedSlice)
+}
+
+func getUploadFileHandler(isVideoStream bool) UploadFileHandler {
+	if isVideoStream {
+		return UploadStreamFileHandler{}
+	}
+	return UploadRawFileHandler{}
+}
+
 type UploadFileHandler interface {
-	PreUpload(ctx context.Context, fInfo *protos.RspUploadFile) (int64, error)
-	GetSliceData(fileHash string, slice *protos.SliceHashAddr) ([]byte, error)
+	PreUpload(ctx context.Context, filePath, encryptionTag string) (*protos.FileInfo, []*protos.SliceHashAddr, error)
 }
 
 type UploadStreamFileHandler struct {
@@ -401,76 +377,176 @@ type UploadStreamFileHandler struct {
 type UploadRawFileHandler struct {
 }
 
-func (UploadStreamFileHandler) PreUpload(ctx context.Context, fInfo *protos.RspUploadFile) (int64, error) {
-	fileHash := fInfo.FileHash
-	if file.IsFileRpcRemote(fileHash) {
-		remotePath := strings.Split(file.GetFilePath(fileHash), ":")
-		fileName := remotePath[len(remotePath)-1]
-		file.VideoToHls(ctx, fileHash, filepath.Join(setting.GetRootPath(), file.TEMP_FOLDER, fileHash, fileName))
-	} else {
-		file.VideoToHls(ctx, fileHash, file.GetFilePath(fileHash))
+func (UploadStreamFileHandler) PreUpload(ctx context.Context, filePath, encryptionTag string) (*protos.FileInfo, []*protos.SliceHashAddr, error) {
+	info, err := file.GetFileInfo(filePath)
+	if err != nil {
+		pp.ErrorLog(ctx, "wrong filePath", err.Error())
+		return nil, nil, err
 	}
 
-	hlsInfo, err := file.GetHlsInfo(fInfo.FileHash, uint64(len(fInfo.Slices)))
+	duration, err := file.GetVideoDuration(filePath)
+	if err != nil {
+		pp.ErrorLog(ctx, "Failed to get the length of the video: ", err)
+		return nil, nil, err
+	}
+
+	fileName := info.Name()
+	fileSize := uint64(info.Size())
+	fileHash := file.GetFileHashForVideoStream(filePath, encryptionTag)
+
+	sliceSize := setting.DEFAULT_SLICE_BLOCK_SIZE
+
+	var sliceDuration float64
+	sliceDuration = math.Floor(float64(duration) * float64(sliceSize) / float64(fileSize))
+	sliceDuration = math.Min(float64(setting.DEFAULT_HLS_SEGMENT_LENGTH), sliceDuration)
+	sliceCount := uint64(math.Ceil(float64(duration)/sliceDuration)) + setting.DEFAULT_HLS_SEGMENT_BUFFER + 1
+
+	file.VideoToHls(ctx, fileHash, file.GetFilePath(fileHash))
+
+	hlsInfo, err := file.GetHlsInfo(fileHash, sliceCount)
 	if err != nil {
 		pp.ErrorLog(ctx, "Hls transformation failed: ", err)
-		return 0, err
+		return nil, nil, err
 	}
 	videoFolder := file.GetVideoTmpFolder(fileHash)
 
 	var totalSize int64
-	for _, slice := range fInfo.Slices {
-		var data []byte
+	var slices []*protos.SliceHashAddr
+	for sliceNumber := uint64(1); sliceNumber <= sliceCount; sliceNumber++ {
+		var rawData []byte
 		var sliceSize int64
-		if slice.SliceNumber == 1 {
+		if sliceNumber == 1 {
 			jsonStr, _ := json.Marshal(hlsInfo)
-			data = jsonStr
-			sliceSize = int64(len(data))
-		} else if slice.SliceNumber < hlsInfo.StartSliceNumber {
-			data = file.GetDumpySliceData(fileHash, slice.SliceNumber)
-			sliceSize = int64(len(data))
+			rawData = jsonStr
+			sliceSize = int64(len(rawData))
+		} else if sliceNumber < hlsInfo.StartSliceNumber {
+			rawData = file.GetDumpySliceData(fileHash, sliceNumber)
+			sliceSize = int64(len(rawData))
 		} else {
-			sliceName := hlsInfo.SliceToSegment[slice.SliceNumber]
+			sliceName := hlsInfo.SliceToSegment[sliceNumber]
 			slicePath := videoFolder + "/" + sliceName
 			fileInfo, err := file.GetFileInfo(slicePath)
 			if err != nil {
-				return 0, errors.New("wrong file path")
+				return nil, nil, errors.New("wrong file path")
 			}
-			data, err = file.GetWholeFileData(slicePath)
+			rawData, err = file.GetWholeFileData(slicePath)
 			if err != nil {
-				return 0, errors.New("failed getting whole file data")
+				return nil, nil, errors.New("failed getting whole file data")
 			}
 			sliceSize = fileInfo.Size()
 		}
-		slice.SliceSize = uint64(sliceSize)
-		slice.SliceOffset.SliceOffsetStart = 0
-		slice.SliceOffset.SliceOffsetEnd = slice.SliceSize
-		totalSize += sliceSize
-		err := file.SaveTmpSliceData(fileHash, strconv.FormatUint(slice.SliceNumber, 10), data)
+
+		data := rawData
+		if encryptionTag != "" {
+			data, err = encryptSliceData(rawData)
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "Couldn't encrypt slice data")
+			}
+		}
+		sliceHash := utils.CalcSliceHash(data, fileHash, sliceNumber)
+		err = file.SaveTmpSliceData(fileHash, sliceHash, data)
 		if err != nil {
-			return 0, err
+
+		}
+
+		slice := &protos.SliceHashAddr{
+			SliceHash:   sliceHash,
+			SliceNumber: sliceNumber,
+			SliceSize:   uint64(sliceSize),
+			SliceOffset: &protos.SliceOffset{
+				SliceOffsetStart: 0,
+				SliceOffsetEnd:   uint64(sliceSize),
+			},
+		}
+		slices = append(slices, slice)
+		totalSize += sliceSize
+		err := file.SaveTmpSliceData(fileHash, sliceHash, data)
+		if err != nil {
+			return nil, nil, err
 		}
 	}
 	file.DeleteTmpHlsFolder(ctx, fileHash)
-	return totalSize, nil
-}
-
-func (UploadStreamFileHandler) GetSliceData(fileHash string, slice *protos.SliceHashAddr) ([]byte, error) {
-	return file.GetWholeFileData(file.GetTmpSlicePath(fileHash, strconv.FormatUint(slice.SliceNumber, 10)))
-}
-
-func (UploadRawFileHandler) PreUpload(ctx context.Context, fInfo *protos.RspUploadFile) (int64, error) {
-	fileHash := fInfo.FileHash
-	filePath := file.GetFilePath(fileHash)
-	fileInfo, err := file.GetFileInfo(filePath)
-	if fileInfo == nil {
-		return 0, errors.Wrap(err, "wrong file path")
+	fileInfo := &protos.FileInfo{
+		FileSize:           uint64(totalSize),
+		FileName:           fileName,
+		FileHash:           fileHash,
+		StoragePath:        filePath,
+		EncryptionTag:      encryptionTag,
+		Duration:           duration,
+		OwnerWalletAddress: setting.WalletAddress,
 	}
 
-	return fileInfo.Size(), nil
+	return fileInfo, slices, nil
 }
 
-func (UploadRawFileHandler) GetSliceData(fileHash string, slice *protos.SliceHashAddr) ([]byte, error) {
-	filePath := file.GetFilePath(fileHash)
-	return file.GetFileData(filePath, slice.SliceOffset)
+func (UploadRawFileHandler) PreUpload(ctx context.Context, filePath, encryptionTag string) (*protos.FileInfo, []*protos.SliceHashAddr, error) {
+	info, err := file.GetFileInfo(filePath)
+	if err != nil {
+		pp.ErrorLog(ctx, "wrong filePath", err.Error())
+		return nil, nil, err
+	}
+	fileName := info.Name()
+	fileSize := uint64(info.Size())
+	fileHash := file.GetFileHash(filePath, encryptionTag)
+	sliceSize := uint64(setting.DEFAULT_SLICE_BLOCK_SIZE)
+	sliceCount := uint64(math.Ceil(float64(info.Size()) / float64(sliceSize)))
+
+	var slices []*protos.SliceHashAddr
+	for i := uint64(1); i <= sliceCount; i++ {
+		var sliceOffsetStart uint64
+		var sliceOffsetEnd uint64
+		sliceNumber := i
+		sliceOffsetStart = (i - 1) * sliceSize
+
+		if i == sliceCount {
+			sliceOffsetEnd = fileSize
+		} else {
+			sliceOffsetEnd = i * sliceSize
+		}
+
+		sliceOffset := &protos.SliceOffset{
+			SliceOffsetStart: sliceOffsetStart,
+			SliceOffsetEnd:   sliceOffsetEnd,
+		}
+
+		rawData, err := file.GetFileData(filePath, sliceOffset)
+		if err != nil {
+			return nil, nil, errors.New("Failed reading data from file")
+
+		}
+
+		// Encrypt slice data if required
+		data := rawData
+		if encryptionTag != "" {
+			data, err = encryptSliceData(rawData)
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "Couldn't encrypt slice data")
+			}
+		}
+		sliceHash := utils.CalcSliceHash(data, fileHash, sliceNumber)
+		err = file.SaveTmpSliceData(fileHash, sliceHash, data)
+		if err != nil {
+
+		}
+
+		SliceHashAddr := &protos.SliceHashAddr{
+			SliceHash:   sliceHash,
+			SliceSize:   sliceOffsetEnd - sliceOffsetStart,
+			SliceNumber: sliceNumber,
+			SliceOffset: sliceOffset,
+		}
+
+		slices = append(slices, SliceHashAddr)
+	}
+
+	fileInfo := &protos.FileInfo{
+		FileSize:           uint64(info.Size()),
+		FileName:           fileName,
+		FileHash:           fileHash,
+		StoragePath:        filePath,
+		EncryptionTag:      encryptionTag,
+		OwnerWalletAddress: setting.WalletAddress,
+	}
+
+	return fileInfo, slices, nil
 }

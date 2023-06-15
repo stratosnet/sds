@@ -89,7 +89,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		}
 	}
 
-	if target.PieceOffset.SliceOffsetStart >= slice.SliceSize || target.PieceOffset.SliceOffsetStart%setting.MAXDATA != 0 {
+	if target.PieceOffset.SliceOffsetStart > slice.SliceSize || target.PieceOffset.SliceOffsetStart%setting.MAXDATA != 0 {
 		rsp := &protos.RspUploadFileSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
@@ -462,9 +462,9 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 	}
 	var ctStat = CostTimeStat{}
 
-	data := tk.Data
-	if data == nil {
-		return errors.New("failed to get slice data from task")
+	data, err := file.GetSliceDataFromTmp(fileHash, tk.SliceHash)
+	if err != nil {
+		return errors.Wrap(err, "failed to get slice data from tmp")
 	}
 
 	if tkDataLen <= setting.MAXDATA {
@@ -562,6 +562,7 @@ func BackupFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 	var slice *protos.SliceHashAddr
 	utils.DebugLog("tk.SliceNumber:", tk.SliceNumber)
+	utils.DebugLog(tk)
 	for _, slice = range tk.RspUploadFile.Slices {
 		utils.DebugLogf("slice.SliceNumber: %d", slice.SliceNumber)
 		if slice.SliceNumber == tk.SliceNumber {
