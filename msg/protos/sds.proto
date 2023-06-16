@@ -391,12 +391,6 @@ message NoticeDeactivatedPP {
   Result result = 1;
 }
 
-message ReqUnbondingSP {
-  string p2p_address = 1;
-  string ozone_limit_changes = 2; // negative
-  string unbonding_mature_time = 3;
-}
-
 message RspUnbondingSP {
   Result result = 1;
 }

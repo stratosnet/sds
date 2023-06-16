@@ -144,7 +144,7 @@ func BuildUpdateResourceNodeDepositMsg(networkAddr, ownerAddr utiltypes.Address,
 	)
 }
 
-func BuildUpdateMetaNodeDepositMsg(networkAddr, ownerAddr utiltypes.Address, depositDelta utiltypes.Coin, incrDeposit bool) sdktypes.Msg {
+func BuildUpdateMetaNodeDepositMsg(networkAddr, ownerAddr utiltypes.Address, depositDelta utiltypes.Coin) sdktypes.Msg {
 	coin := sdktypes.Coin{
 		Denom:  depositDelta.Denom,
 		Amount: depositDelta.Amount,
@@ -153,7 +153,6 @@ func BuildUpdateMetaNodeDepositMsg(networkAddr, ownerAddr utiltypes.Address, dep
 		networkAddr[:],
 		ownerAddr[:],
 		coin,
-		incrDeposit,
 	)
 }
 

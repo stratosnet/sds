@@ -18,6 +18,10 @@ type UnbondingPPReq struct {
 	PPList []*protos.ReqUnbondingPP `json:"pp_list"`
 }
 
+type UnbondingSPReq struct {
+	SPList []*protos.ReqUnbondingSP `json:"sp_list"`
+}
+
 type DeactivatedPPReq struct {
 	PPList []*protos.ReqDeactivatedPP `json:"pp_list"`
 }

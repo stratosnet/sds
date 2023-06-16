@@ -294,7 +294,10 @@ func UpdateMetaNodeDepositMsgHandler() func(event coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(registertypes.EventTypeUpdateMetaNodeDeposit,
 			registertypes.AttributeKeyNetworkAddress,
 			registertypes.AttributeKeyOZoneLimitChanges,
-			registertypes.AttributeKeyIncrDeposit,
+			registertypes.AttributeKeyDepositDelta,
+			registertypes.AttributeKeyCurrentDeposit,
+			registertypes.AttributeKeyAvailableTokenBefore,
+			registertypes.AttributeKeyAvailableTokenAfter,
 		)
 
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
@@ -308,10 +311,13 @@ func UpdateMetaNodeDepositMsgHandler() func(event coretypes.ResultEvent) {
 		req := &relayTypes.UpdatedDepositSPReq{}
 		for _, event := range processedEvents {
 			req.SPList = append(req.SPList, &protos.ReqUpdatedDepositSP{
-				P2PAddress:        event[GetEventAttribute(registertypes.EventTypeUpdateMetaNodeDeposit, registertypes.AttributeKeyNetworkAddress)],
-				OzoneLimitChanges: event[GetEventAttribute(registertypes.EventTypeUpdateMetaNodeDeposit, registertypes.AttributeKeyOZoneLimitChanges)],
-				IncrDeposit:       event[GetEventAttribute(registertypes.EventTypeUpdateMetaNodeDeposit, registertypes.AttributeKeyIncrDeposit)],
-				TxHash:            txHash,
+				P2PAddress:           event[GetEventAttribute(registertypes.EventTypeUpdateMetaNodeDeposit, registertypes.AttributeKeyNetworkAddress)],
+				OzoneLimitChanges:    event[GetEventAttribute(registertypes.EventTypeUpdateMetaNodeDeposit, registertypes.AttributeKeyOZoneLimitChanges)],
+				DepositDelta:         event[GetEventAttribute(registertypes.EventTypeUpdateMetaNodeDeposit, registertypes.AttributeKeyDepositDelta)],
+				CurrentDeposit:       event[GetEventAttribute(registertypes.EventTypeUpdateMetaNodeDeposit, registertypes.AttributeKeyCurrentDeposit)],
+				AvailableTokenBefore: event[GetEventAttribute(registertypes.EventTypeUpdateMetaNodeDeposit, registertypes.AttributeKeyAvailableTokenBefore)],
+				AvailableTokenAfter:  event[GetEventAttribute(registertypes.EventTypeUpdateMetaNodeDeposit, registertypes.AttributeKeyAvailableTokenAfter)],
+				TxHash:               txHash,
 			})
 		}
 
@@ -333,8 +339,43 @@ func UpdateMetaNodeDepositMsgHandler() func(event coretypes.ResultEvent) {
 
 func UnbondingMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		// TODO
-		utils.Logf("%+v", result)
+		requiredAttributes := GetEventAttributes(registertypes.EventTypeUnbondingMetaNode,
+			registertypes.AttributeKeyMetaNode,
+			registertypes.AttributeKeyUnbondingMatureTime,
+			registertypes.AttributeKeyDepositToRemove,
+		)
+
+		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
+		key := getCacheKey(requiredAttributes, result)
+		if _, ok := cache.Load(key); ok {
+			utils.DebugLogf("Event unbonding_meta_node was already handled for tx [%v]. Ignoring...", txHash)
+			return
+		}
+		cache.Store(key, true)
+
+		req := &relayTypes.UnbondingSPReq{}
+		for _, event := range processedEvents {
+			req.SPList = append(req.SPList, &protos.ReqUnbondingSP{
+				P2PAddress:          event[GetEventAttribute(registertypes.EventTypeUnbondingMetaNode, registertypes.AttributeKeyMetaNode)],
+				UnbondingMatureTime: event[GetEventAttribute(registertypes.EventTypeUnbondingMetaNode, registertypes.AttributeKeyUnbondingMatureTime)],
+				TxHash:              txHash,
+				DepositToRemove:     event[GetEventAttribute(registertypes.EventTypeUnbondingMetaNode, registertypes.AttributeKeyDepositToRemove)],
+			})
+		}
+
+		if len(req.SPList) != initialEventCount {
+			utils.ErrorLogf("unbonding SP message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+				len(req.SPList), initialEventCount-len(processedEvents), len(processedEvents)-len(req.SPList))
+		}
+		if len(req.SPList) == 0 {
+			return
+		}
+
+		err := postToSP("/chain/unbonding", req)
+		if err != nil {
+			utils.ErrorLog(err)
+			return
+		}
 	}
 }
 
