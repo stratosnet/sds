@@ -100,7 +100,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 	metrics.UploadPerformanceLogNow(target.FileHash + ":RCV_RSP_UPLOAD_SP")
 
 	// SPAM check
-	if time.Now().Unix()-target.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
+	if time.Now().Unix()-target.TimeStamp > setting.SpamThresholdSpSignLatency {
 		pp.ErrorLog(ctx, "sp's upload file response was expired")
 		return
 	}
@@ -156,7 +156,7 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 	}
 
 	// SPAM check
-	if time.Now().Unix()-target.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
+	if time.Now().Unix()-target.TimeStamp > setting.SpamThresholdSpSignLatency {
 		pp.ErrorLog(ctx, "sp's backup file response was expired,", time.Now().Unix(), ",", target.TimeStamp)
 		return
 	}
@@ -394,12 +394,12 @@ func (UploadStreamFileHandler) PreUpload(ctx context.Context, filePath, encrypti
 	fileSize := uint64(info.Size())
 	fileHash := file.GetFileHashForVideoStream(filePath, encryptionTag)
 
-	sliceSize := setting.DEFAULT_SLICE_BLOCK_SIZE
+	sliceSize := setting.DefaultSliceBlockSize
 
 	var sliceDuration float64
 	sliceDuration = math.Floor(float64(duration) * float64(sliceSize) / float64(fileSize))
-	sliceDuration = math.Min(float64(setting.DEFAULT_HLS_SEGMENT_LENGTH), sliceDuration)
-	sliceCount := uint64(math.Ceil(float64(duration)/sliceDuration)) + setting.DEFAULT_HLS_SEGMENT_BUFFER + 1
+	sliceDuration = math.Min(float64(setting.DefaultHlsSegmentLength), sliceDuration)
+	sliceCount := uint64(math.Ceil(float64(duration)/sliceDuration)) + setting.DefaultHlsSegmentBuffer + 1
 
 	file.VideoToHls(ctx, fileHash, file.GetFilePath(fileHash))
 
@@ -488,7 +488,7 @@ func (UploadRawFileHandler) PreUpload(ctx context.Context, filePath, encryptionT
 	fileName := info.Name()
 	fileSize := uint64(info.Size())
 	fileHash := file.GetFileHash(filePath, encryptionTag)
-	sliceSize := uint64(setting.DEFAULT_SLICE_BLOCK_SIZE)
+	sliceSize := uint64(setting.DefaultSliceBlockSize)
 	sliceCount := uint64(math.Ceil(float64(info.Size()) / float64(sliceSize)))
 
 	var slices []*protos.SliceHashAddr

@@ -2,7 +2,6 @@ package event
 
 import (
 	"context"
-	"sync"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
@@ -38,37 +37,22 @@ func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	if checkSpListChanged(target.SpList, setting.SPMap) {
-		setting.SPMap = &sync.Map{}
-		updateSpMap(target.SpList, setting.SPMap)
-		setting.Config.SPList = nil
-		setting.SPMap.Range(func(k, v interface{}) bool {
-			sp := v.(setting.SPBaseInfo)
-			setting.Config.SPList = append(setting.Config.SPList, sp)
-			return true
-		})
-		if err := setting.FlushConfig(); err != nil {
-			utils.ErrorLog("Couldn't write config with updated SP list to yaml file", err)
+	if checkSpListChanged(target.SpList) {
+		setting.UpdateSpMap(target.SpList)
+		if err = setting.SaveSPMapToFile(); err != nil {
+			utils.ErrorLogf("Couldn't save SP list to file: %v", err)
 		}
 	}
 	network.GetPeer(ctx).RunFsm(ctx, network.EVENT_GET_SP_LIST)
 }
 
-func updateSpMap(lst []*protos.SPBaseInfo, mp *sync.Map) {
-	for _, spInList := range lst {
-		spInMap := setting.SPBaseInfo{
-			P2PAddress:     spInList.P2PAddress,
-			P2PPublicKey:   spInList.P2PPubKey,
-			NetworkAddress: spInList.NetworkAddress,
-		}
-		mp.Store(spInList.P2PAddress, spInMap)
-	}
-}
+func checkSpListChanged(list []*protos.SPBaseInfo) bool {
+	listMap := make(map[string]bool)
 
-func checkSpListChanged(lst []*protos.SPBaseInfo, mp *sync.Map) bool {
-	// Compare the elements in the slice and sync.Map
-	for _, spInList := range lst {
-		if sp, ok := mp.Load(spInList.P2PAddress); ok {
+	// Are all elements from the list in the map and unchanged?
+	for _, spInList := range list {
+		listMap[spInList.P2PAddress] = true
+		if sp, ok := setting.SPMap.Load(spInList.P2PAddress); ok {
 			spInMap := sp.(setting.SPBaseInfo)
 			if spInList.NetworkAddress != spInMap.NetworkAddress || spInList.P2PPubKey != spInMap.P2PPublicKey {
 				return true
@@ -78,19 +62,12 @@ func checkSpListChanged(lst []*protos.SPBaseInfo, mp *sync.Map) bool {
 		}
 	}
 
+	// Are there elements in the map but not in the list?
 	changed := false
-	mp.Range(func(key, value interface{}) bool {
-		if _, ok := func(list []*protos.SPBaseInfo, spInfo setting.SPBaseInfo) (int, bool) {
-			for i, spInList := range list {
-				if spInList.P2PAddress == spInfo.P2PAddress &&
-					spInList.NetworkAddress == spInfo.NetworkAddress &&
-					spInList.P2PPubKey == spInfo.P2PPublicKey {
-					return i, true
-				}
-			}
+	setting.SPMap.Range(func(key, value interface{}) bool {
+		spInfo := value.(setting.SPBaseInfo)
+		if !listMap[spInfo.P2PAddress] {
 			changed = true
-			return -1, false
-		}(lst, value.(setting.SPBaseInfo)); !ok {
 			return false
 		}
 		return true

@@ -62,8 +62,8 @@ func (api *terminalCmd) Getoz(ctx context.Context, param []string) (CmdResult, e
 		if info.Name() == ".placeholder" || info.Name() != fileName {
 			continue
 		}
-		pp.Log(ctx, "find file: "+filepath.Join(setting.Config.AccountDir, fileName))
-		keyjson, err := os.ReadFile(filepath.Join(setting.Config.AccountDir, fileName))
+		pp.Log(ctx, "find file: "+filepath.Join(setting.Config.Home.AccountsPath, fileName))
+		keyjson, err := os.ReadFile(filepath.Join(setting.Config.Home.AccountsPath, fileName))
 		if utils.CheckError(err) {
 			pp.ErrorLog(ctx, "getPublicKey ioutil.ReadFile", err)
 			fmt.Println(err)
@@ -166,7 +166,7 @@ func (api *terminalCmd) UpdateDeposit(ctx context.Context, param []string) (CmdR
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token")
 	}
-	minUnsuspendDeposit, err := utiltypes.ParseCoinNormalized(setting.DEFAULT_MIN_UNSUSPEND_DEPOSIT)
+	minUnsuspendDeposit, err := utiltypes.ParseCoinNormalized(setting.DefaultMinUnsuspendDeposit)
 	if err != nil {
 		return CmdResult{Msg: ""}, err
 	}

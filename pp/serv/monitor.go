@@ -130,7 +130,7 @@ func TrafficInfoToMonitorClient(t TrafficInfo) {
 // CreateInitialToken the initial token is used to generate all following tokens
 func CreateInitialToken() string {
 	epoch := strconv.FormatInt(time.Now().Unix(), 10)
-	return utils.CalcHash([]byte(epoch + setting.Config.P2PAddress))
+	return utils.CalcHash([]byte(epoch + setting.Config.Keys.P2PAddress))
 }
 
 // calculateToken
@@ -195,7 +195,7 @@ func (api *monitorApi) GetTrafficData(ctx context.Context, param ParamTrafficInf
 
 func getDiskUsage() int64 {
 	var size int64
-	_ = filepath.Walk(setting.Config.StorehousePath, func(_ string, info os.FileInfo, err error) error {
+	_ = filepath.Walk(setting.Config.Home.StoragePath, func(_ string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -270,7 +270,7 @@ func (api *monitorApi) GetNodeDetails(ctx context.Context, param ParamMonitor) (
 	return &MonitorResult{
 		Return:      "0",
 		MessageType: MSG_GET_NODE_DETAILS,
-		NodeDetails: &NodeDetails{Id: "1", Address: setting.Config.P2PAddress},
+		NodeDetails: &NodeDetails{Id: "1", Address: setting.Config.Keys.P2PAddress},
 	}, nil
 }
 

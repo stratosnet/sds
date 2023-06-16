@@ -11,15 +11,15 @@ import (
 type VerifierFunc func(context.Context, header.MsgType, interface{}) error
 
 var (
-	veirfierMap [header.NUMBER_MESSAGE_TYPES]VerifierFunc
+	verifierMap [header.NUMBER_MESSAGE_TYPES]VerifierFunc
 )
 
 func registerEvent(msgType header.MsgType, hf core.HandlerFunc, vf VerifierFunc) {
 	core.Register(msgType, hf)
-	veirfierMap[msgType.Id] = vf
+	verifierMap[msgType.Id] = vf
 }
 func VerifyMessage(ctx context.Context, msgType header.MsgType, target interface{}) error {
-	verifier := veirfierMap[msgType.Id]
+	verifier := verifierMap[msgType.Id]
 	if verifier == nil {
 		return nil
 	}

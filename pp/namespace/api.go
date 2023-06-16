@@ -753,7 +753,7 @@ func (api *rpcPrivApi) RequestRegisterNewPP(ctx context.Context, param rpc_api.P
 			result := &rpc_api.RPResult{Return: rpc_api.TIME_OUT}
 			return *result
 		default:
-			result, found := pp.GetRPResult(setting.Config.P2PAddress + setting.WalletAddress + reqId)
+			result, found := pp.GetRPResult(setting.Config.Keys.P2PAddress + setting.WalletAddress + reqId)
 			if result != nil && found {
 				return *result
 			}
@@ -869,7 +869,7 @@ func (api *rpcPrivApi) RequestStartMining(ctx context.Context, param rpc_api.Par
 			result := &rpc_api.StartMiningResult{Return: rpc_api.TIME_OUT}
 			return *result
 		default:
-			result, found := pp.GetStartMiningResult(setting.Config.P2PAddress + reqId)
+			result, found := pp.GetStartMiningResult(setting.Config.Keys.P2PAddress + reqId)
 			if result != nil && found {
 				return *result
 			}

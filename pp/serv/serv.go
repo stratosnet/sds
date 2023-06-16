@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/account"
 	"github.com/stratosnet/sds/pp/api"
 	"github.com/stratosnet/sds/pp/api/rest"
@@ -99,8 +98,6 @@ func (bs *BaseServer) startIPC() error {
 		return err
 	}
 	bs.ipcServ = ipc
-	//TODO bring this back later once we have a proper quit mechanism
-	//defer ipc.stop()
 
 	return nil
 }
@@ -108,7 +105,7 @@ func (bs *BaseServer) startIPC() error {
 func (bs *BaseServer) startHttpRPC() error {
 	file.RpcWaitTimeout = rpc.DefaultHTTPTimeouts.IdleTimeout
 	rpcServer := namespace.NewHTTPServer(rpc.DefaultHTTPTimeouts)
-	port, err := strconv.Atoi(setting.Config.RpcPort)
+	port, err := strconv.Atoi(setting.Config.Node.Connectivity.RpcPort)
 	if err != nil {
 		return err
 	}
@@ -119,7 +116,7 @@ func (bs *BaseServer) startHttpRPC() error {
 
 	allowModuleList := []string{"user"}
 	// if config
-	if pp.ALLOW_OWNER_RPC {
+	if setting.Config.Node.Connectivity.AllowOwnerRpc {
 		allowModuleList = append(allowModuleList, "owner")
 	}
 
@@ -145,19 +142,19 @@ func (bs *BaseServer) startHttpRPC() error {
 func (bs *BaseServer) startMonitor() error {
 	monitorServer := namespace.NewHTTPServer(rpc.DefaultHTTPTimeouts)
 	if setting.Config.Monitor.TLS {
-		monitorServer.EnableTLS(setting.Config.Monitor.Cert, setting.Config.Monitor.Key)
+		monitorServer.EnableTLS(setting.Config.Monitor.CertFilePath, setting.Config.Monitor.KeyFilePath)
 	}
 	port, err := strconv.Atoi(setting.Config.Monitor.Port)
 	if err != nil {
 		return errors.New("wrong configuration for monitor port")
 	}
 
-	_, err = strconv.Atoi(setting.Config.MetricsPort)
+	_, err = strconv.Atoi(setting.Config.Node.Connectivity.MetricsPort)
 	if err != nil {
 		return errors.New("wrong configuration for metrics port")
 	}
 
-	if err = metrics.Initialize(setting.Config.MetricsPort); err != nil {
+	if err = metrics.Initialize(setting.Config.Node.Connectivity.MetricsPort); err != nil {
 		return err
 	}
 
@@ -218,7 +215,7 @@ func (bs *BaseServer) startTrafficLog() error {
 }
 
 func (bs *BaseServer) startInternalApiServer() error {
-	if setting.Config.WalletAddress != "" && setting.Config.InternalPort != "" {
+	if setting.Config.Keys.WalletAddress != "" && setting.Config.Streaming.InternalPort != "" {
 		ctx := context.Background()
 		ctx = context.WithValue(ctx, types.P2P_SERVER_KEY, bs.p2pServ)
 		ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
@@ -230,7 +227,7 @@ func (bs *BaseServer) startInternalApiServer() error {
 }
 
 func (bs *BaseServer) startRestServer() error {
-	if setting.Config.RestPort != "" {
+	if setting.Config.Streaming.RestPort != "" {
 		ctx := context.Background()
 		ctx = context.WithValue(ctx, types.P2P_SERVER_KEY, bs.p2pServ)
 		ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)

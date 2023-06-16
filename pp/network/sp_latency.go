@@ -55,12 +55,14 @@ func (p *Network) SpLatencyCheck(ctx context.Context) func() {
 		mtx.Lock()
 		defer mtx.Unlock()
 
-		for _, selectedSP := range setting.Config.SPList {
+		if !p2pserver.GetP2pServer(ctx).SpConnValid() {
+			utils.DebugLog("SP latency check skipped until connection to SP is recovered")
+			return
+		}
+
+		setting.SPMap.Range(func(k, v any) bool {
+			selectedSP := v.(*setting.SPBaseInfo)
 			server := selectedSP.NetworkAddress
-			if !p2pserver.GetP2pServer(ctx).SpConnValid() {
-				utils.DebugLog("SP latency check skipped until connection to SP is recovered")
-				return
-			}
 			utils.DebugLog("[SP_LATENCY_CHECK] SendSpLatencyCheck(", server, ", req, header.ReqSpLatencyCheck)")
 			var spConn *cf.ClientConn
 			var err error
@@ -85,7 +87,8 @@ func (p *Network) SpLatencyCheck(ctx context.Context) func() {
 					p2pserver.GetP2pServer(ctx).StoreBufferedSpConn(spConn)
 				}
 			}
-		}
+			return true
+		})
 		p.ppPeerClock.AddJobRepeat(time.Second*utils.LatencyCheckSpListTimeout, 1, p.ChooseSpToConnectTo(ctx))
 	}
 }

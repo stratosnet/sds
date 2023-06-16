@@ -122,7 +122,7 @@ func getAccountCmd() *cobra.Command {
 		RunE:    createAccounts,
 	}
 	cmd.Flags().StringP(mnemonicFlag, "m", "", "bip39 mnemonic phrase, will generate one if not provide")
-	cmd.Flags().String(hdPathFlag, setting.HD_PATH, "hd-path for the wallet created")
+	cmd.Flags().String(hdPathFlag, setting.HDPath, "hd-path for the wallet created")
 	cmd.Flags().StringP(passwordFlag, "p", "", "wallet password, if not provided, will need to input in prompt")
 	cmd.Flags().StringP(nicknameFlag, "n", "wallet", "name of wallet")
 	cmd.Flags().BoolP(savePassFlag, "s", false, "save wallet password to configuration file")

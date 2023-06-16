@@ -44,7 +44,6 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	pp.Log(ctx, "Register successful", target.Result.Msg)
-	setting.IsLoad = true
 	setting.IsPPSyncedWithSP = true
 	pp.DebugLog(ctx, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@", p2pserver.GetP2pServer(ctx).GetConnectionName(conn))
 	setting.IsPP = target.IsPP
@@ -80,7 +79,7 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 
 	pp.Log(ctx, "start mining")
 	if p2pserver.GetP2pServer(ctx).GetP2pServer() == nil {
-		go p2pserver.GetP2pServer(ctx).StartListenServer(ctx, setting.Config.Port)
+		go p2pserver.GetP2pServer(ctx).StartListenServer(ctx, setting.Config.Node.Connectivity.NetworkPort)
 	}
 	pp.DebugLog(ctx, "Start reporting node status to SP")
 	// trigger 1 stat report immediately

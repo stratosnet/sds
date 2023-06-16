@@ -18,8 +18,9 @@ func (p *P2pServer) ConnectToSP(ctx context.Context) (newConnection bool, err er
 	if p.mainSpConn != nil {
 		return false, nil
 	}
-	if len(setting.Config.SPList) == 0 {
-		return false, errors.New("there are no SP nodes in the config file")
+	spList := setting.GetSPList()
+	if len(spList) == 0 {
+		return false, errors.New("there are no known SP nodes")
 	}
 
 	networkAddMu.Lock()
@@ -36,9 +37,9 @@ func (p *P2pServer) ConnectToSP(ctx context.Context) (newConnection bool, err er
 	}
 
 	// Select a random SP node to connect to
-	spListOrder := rand.Perm(len(setting.Config.SPList))
+	spListOrder := rand.Perm(len(spList))
 	for _, index := range spListOrder {
-		selectedSP := setting.Config.SPList[index]
+		selectedSP := spList[index]
 		pp.DebugLog(ctx, "NewClient:", selectedSP.NetworkAddress)
 		_ = p.NewClientToMainSp(ctx, selectedSP.NetworkAddress)
 		if p.mainSpConn != nil {

@@ -39,7 +39,7 @@ func RspSpLatencyCheck(ctx context.Context, _ core.WriteCloser) {
 
 func updateOptimalSp(ctx context.Context, timeCost int64, rsp *protos.RspSpLatencyCheck) {
 	utils.DebugLogf("Received latency %vns from SP %v", timeCost, rsp.NetworkAddressSp)
-	if rsp.P2PAddressPp != setting.Config.P2PAddress || len(rsp.P2PAddressPp) == 0 {
+	if rsp.P2PAddressPp != setting.Config.Keys.P2PAddress || len(rsp.P2PAddressPp) == 0 {
 		// invalid response containing unknown PP p2pAddr
 		return
 	}

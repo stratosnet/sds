@@ -9,8 +9,8 @@ import (
 
 	"github.com/alex023/clock"
 	"github.com/spf13/cobra"
-	"github.com/stratosnet/sds/pp/namespace"
 	"github.com/stratosnet/sds/cmd/common"
+	"github.com/stratosnet/sds/pp/namespace"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
@@ -87,7 +87,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	}
 
 	newwallet := func(line string, param []string) bool {
-		err := utils.SetupWallet(setting.Config.AccountDir, setting.HD_PATH, updateWalletConfig)
+		err := utils.SetupWallet(setting.Config.Home.AccountsPath, setting.HDPath, updateWalletConfig)
 		if err != nil {
 			fmt.Println(err)
 			return false

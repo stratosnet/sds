@@ -43,7 +43,7 @@ var (
 		mux:     sync.Mutex{},
 	}
 
-	downloadSliceSpamCheckMap = utils.NewAutoCleanMap(setting.SPAM_THRESHOLD_SLICE_OPERATIONS)
+	downloadSliceSpamCheckMap = utils.NewAutoCleanMap(setting.SpamThresholdSliceOperations)
 )
 
 type downSendCostTime struct {
@@ -249,7 +249,7 @@ func splitSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlic
 	dataLen := uint64(len(rsp.Data))
 	utils.DebugLog("dataLen=========", dataLen)
 	dataStart := uint64(0)
-	dataEnd := uint64(setting.MAXDATA)
+	dataEnd := uint64(setting.MaxData)
 	offsetStart := rsp.SliceInfo.SliceOffset.SliceOffsetStart
 	offsetEnd := rsp.SliceInfo.SliceOffset.SliceOffsetStart + dataEnd
 
@@ -271,10 +271,10 @@ func splitSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlic
 			utils.DebugLog("reqID-"+strconv.FormatUint(dataStart, 10)+" =========", strconv.FormatInt(core.GetReqIdFromContext(newCtx), 10))
 			_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspDownloadSliceDataSplit(rsp, dataStart, dataEnd, offsetStart, offsetEnd,
 				rsp.SliceInfo.SliceOffset.SliceOffsetStart, rsp.SliceInfo.SliceOffset.SliceOffsetEnd, false), header.RspDownloadSlice)
-			dataStart += setting.MAXDATA
-			dataEnd += setting.MAXDATA
-			offsetStart += setting.MAXDATA
-			offsetEnd += setting.MAXDATA
+			dataStart += setting.MaxData
+			dataEnd += setting.MaxData
+			offsetStart += setting.MaxData
+			offsetEnd += setting.MaxData
 		} else {
 			utils.DebugLog("reqID-"+strconv.FormatUint(dataStart, 10)+" =========", strconv.FormatInt(core.GetReqIdFromContext(newCtx), 10))
 			_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspDownloadSliceDataSplit(rsp, dataStart, 0, offsetStart, 0,
@@ -505,7 +505,7 @@ func SendReqDownloadSlice(ctx context.Context, fileHash string, sliceInfo *proto
 
 	networkAddress := sliceInfo.StoragePpInfo.NetworkAddress
 	key := "download#" + fileHash + sliceInfo.StoragePpInfo.P2PAddress + fileReqId
-	metrics.UploadPerformanceLogNow(fileHash + ":SND_REQ_SLICE_DATA:" + strconv.FormatInt(int64(sliceInfo.SliceOffset.SliceOffsetStart+(req.SliceNumber-1)*setting.MAX_SLICE_SIZE), 10) + ":" + networkAddress)
+	metrics.UploadPerformanceLogNow(fileHash + ":SND_REQ_SLICE_DATA:" + strconv.FormatInt(int64(sliceInfo.SliceOffset.SliceOffsetStart+(req.SliceNumber-1)*setting.MaxSliceSize), 10) + ":" + networkAddress)
 	err := p2pserver.GetP2pServer(ctx).SendMessageByCachedConn(ctx, key, networkAddress, req, header.ReqDownloadSlice, nil)
 	if err != nil {
 		pp.ErrorLogf(ctx, "Failed to create connection with %v: %v", networkAddress, utils.FormatError(err))

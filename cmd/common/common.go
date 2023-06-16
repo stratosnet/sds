@@ -59,6 +59,12 @@ func NodePreRunE(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+
+	err = setting.InitializeSPMap()
+	if err != nil {
+		return err
+	}
+
 	setting.MonitorInitialToken = serv.CreateInitialToken()
 	setting.TrafficLogPath = filepath.Join(setting.GetRootPath(), "./tmp/logs/traffic_dump.log")
 	trafficLogger := utils.NewTrafficLogger(setting.TrafficLogPath, false, true)
@@ -69,8 +75,8 @@ func NodePreRunE(cmd *cobra.Command, _ []string) error {
 		return errors.Wrap(err, "Couldn't setup PP node")
 	}
 
-	if _, err := os.Stat(setting.Config.PPListDir); os.IsNotExist(err) {
-		if err = os.Mkdir(setting.Config.PPListDir, os.ModePerm); err != nil {
+	if _, err := os.Stat(setting.Config.Home.PeersPath); os.IsNotExist(err) {
+		if err = os.Mkdir(setting.Config.Home.PeersPath, os.ModePerm); err != nil {
 			return errors.Wrap(err, "Couldn't create PP list directory")
 		}
 	}
@@ -117,7 +123,7 @@ func LoadConfig(cmd *cobra.Command) error {
 		return errors.Wrap(err, "failed to load config file")
 	}
 
-	if setting.Config.Debug {
+	if setting.Config.Node.Debug {
 		utils.MyLogger.SetLogLevel(utils.Debug)
 	} else {
 		utils.MyLogger.SetLogLevel(utils.Info)
@@ -132,7 +138,7 @@ func LoadConfig(cmd *cobra.Command) error {
 
 // SetupP2PKey Loads the existing P2P key for this node, or creates a new one if none is available.
 func SetupP2PKey() error {
-	if setting.Config.P2PAddress == "" {
+	if setting.Config.Keys.P2PAddress == "" {
 		utils.Log("No P2P key specified in config. Attempting to create one...")
 		//nickname, err := console.Stdin.PromptInput("Enter P2PAddress nickname: ")
 		//if err != nil {
@@ -151,7 +157,7 @@ func SetupP2PKey() error {
 			return errors.New("invalid. The two passwords don't match")
 		}
 
-		p2pKeyAddress, err := utils.CreateP2PKey(setting.Config.AccountDir, nickname, password,
+		p2pKeyAddress, err := utils.CreateP2PKey(setting.Config.Home.AccountsPath, nickname, password,
 			stchaintypes.SdsNodeP2PAddressPrefix)
 		if err != nil {
 			return errors.New("couldn't create p2p key: " + err.Error())
@@ -161,8 +167,8 @@ func SetupP2PKey() error {
 		if err != nil {
 			return errors.New("couldn't convert P2P key address to bech string: " + err.Error())
 		}
-		setting.Config.P2PAddress = p2pKeyAddressString
-		setting.Config.P2PPassword = password
+		setting.Config.Keys.P2PAddress = p2pKeyAddressString
+		setting.Config.Keys.P2PPassword = password
 		err = setting.FlushConfig()
 		if err != nil {
 			return err
@@ -178,7 +184,7 @@ func NodePP(_ *cobra.Command, _ []string) error {
 		return errors.New(utils.FormatError(err))
 	}
 
-	debug.SetMemoryLimit(setting.SOFT_RAM_LIMIT_TIER_2)
+	debug.SetMemoryLimit(setting.SoftRamLimitTier2)
 	err = BaseServer.Start()
 	defer BaseServer.Stop()
 	if err != nil {

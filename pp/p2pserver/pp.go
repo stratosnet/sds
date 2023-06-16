@@ -81,24 +81,24 @@ func (p *P2pServer) SetPPServer(pp *core.Server) {
 }
 
 func (p *P2pServer) Init() error {
-	p2pKeyFile, err := os.ReadFile(filepath.Join(setting.Config.AccountDir, setting.Config.P2PAddress+".json"))
+	p2pKeyFile, err := os.ReadFile(filepath.Join(setting.Config.Home.AccountsPath, setting.Config.Keys.P2PAddress+".json"))
 	if err != nil {
 		return errors.New("couldn't read P2P key file: " + err.Error())
 	}
 
-	p2pKey, err := utils.DecryptKey(p2pKeyFile, setting.Config.P2PPassword)
+	p2pKey, err := utils.DecryptKey(p2pKeyFile, setting.Config.Keys.P2PPassword)
 	if err != nil {
 		return errors.New("couldn't decrypt P2P key file: " + err.Error())
 	}
 
 	p.p2pPrivKey = utilstypes.BytesToP2pPrivKey(p2pKey.PrivateKey)
 	p.p2pPubKey = p.p2pPrivKey.PubKey()
-	p.p2pAddress, err = utilstypes.P2pAddressFromBech(setting.Config.P2PAddress)
+	p.p2pAddress, err = utilstypes.P2pAddressFromBech(setting.Config.Keys.P2PAddress)
 	return err
 }
 
 func (p *P2pServer) StartListenServer(ctx context.Context, port string) {
-	netListen, err := net.Listen(setting.PP_SERVER_TYPE, ":"+port)
+	netListen, err := net.Listen(setting.P2pServerType, ":"+port)
 	if err != nil {
 		pp.ErrorLog(ctx, "StartListenServer", err)
 	}
@@ -125,9 +125,9 @@ func (p *P2pServer) newServer(ctx context.Context) *core.Server {
 		p.PPDisconnectedNetId(ctx, netID)
 	})
 
-	maxConnection := setting.DEFAULT_MAX_CONNECTION
-	if setting.Config.MaxConnection > maxConnection {
-		maxConnection = setting.Config.MaxConnection
+	maxConnections := setting.DefaultMaxConnections
+	if setting.Config.Traffic.MaxConnections > maxConnections {
+		maxConnections = setting.Config.Traffic.MaxConnections
 	}
 	var ckv []core.ContextKV
 	for _, key := range p.connContextKey {
@@ -140,7 +140,7 @@ func (p *P2pServer) newServer(ctx context.Context) *core.Server {
 		core.LogOpenOption(true),
 		core.MinAppVersionOption(setting.Config.Version.MinAppVer),
 		core.P2pAddressOption(p.GetP2PAddress()),
-		core.MaxConnectionsOption(maxConnection),
+		core.MaxConnectionsOption(maxConnections),
 		core.ContextKVOption(ckv),
 	)
 	server.SetVolRecOptions(
@@ -162,8 +162,8 @@ func (p *P2pServer) Start(ctx context.Context) {
 	// channels for quitting peer level goroutines
 	ctx = p.initQuitChs(ctx)
 	setting.SetMyNetworkAddress()
-	p.peerList.Init(setting.NetworkAddress, filepath.Join(setting.Config.PPListDir, "pp-list"))
-	go p.StartListenServer(ctx, setting.Config.Port)
+	p.peerList.Init(setting.NetworkAddress, filepath.Join(setting.Config.Home.PeersPath, "pp-list"))
+	go p.StartListenServer(ctx, setting.Config.Node.Connectivity.NetworkPort)
 	p.initClient()
 }
 

@@ -1,57 +1,99 @@
-download_path_min_len = 88
-port = '9107'
-network_address = '127.0.0.1'
-debug = true
-pp_list_dir = '/Users/trexb/workspace/sds/example/network/node7/peers'
-account_dir = '/Users/trexb/workspace/sds/example/network/node7/accounts'
-storehouse_path = '/Users/trexb/workspace/sds/example/network/node7/storage'
-download_path = '/Users/trexb/workspace/sds/example/network/node7/download'
+[version]
+# App version number. Eg: 9
+app_ver = 10
+# Network connections from nodes below this version number will be rejected. Eg: 9
+min_app_ver = 10
+# Formatted version number. Eg: "v0.9.0"
+show = 'v0.10.0'
+
+# Configuration of the connection to the Stratos blockchain
+[blockchain]
+# ID of the chain Eg: "tropos-5"
+chain_id = 'testchain'
+# Multiplier for the simulated tx gas cost Eg: 1.5
+gas_adjustment = 1.3
+# Connect to the chain using an insecure connection (no TLS) Eg: true
+insecure = true
+# Network address of the chain Eg: "127.0.0.1:9090"
+url = '127.0.0.1:9090'
+
+# Structure of the home folder. Default paths (eg: "./storage" become relative to the node home. Other paths are relative to the working directory
+[home]
+# Key files (wallet and P2P key). Eg: "./accounts"
+accounts_path = './accounts'
+# Where downloaded files will go. Eg: "./download"
+download_path = './download'
+# The list of peers (other sds nodes). Eg: "./peers"
+peers_path = './peers'
+# Where files are stored. Eg: "./storage"
+storage_path = './storage'
+
+[keys]
+# Address of the P2P key. Eg: "stsdsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 p2p_address = 'stsds1td7zr0eup374ahrt3wjr08gmjueadxuan0eewe'
 p2p_password = 'aaa'
+# Address of the stratos wallet. Eg: "stxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 wallet_address = 'st1r2gh2h8kjtz4slek6aua95ukyd8zmey2y9uatt'
 wallet_password = 'aaa'
-auto_run = true
+
+# Configuration of this node
+[node]
+# Should the node start mining automatically? Eg: true
+auto_start = true
+# Should debug info be printed out in logs? Eg: false
+debug = true
+# When not 0, limit disk usage to this amount (in megabytes) Eg: 1048576 (1 TB)
+max_disk_usage = 1048576
+
+[node.connectivity]
+# Is the node running on an internal network? Eg: false
 internal = false
-is_wallet = true
-is_limit_download_speed = false
-limit_download_speed = 100
-is_limit_upload_speed = false
-limit_upload_speed = 100
-chain_id = 'testchain'
-stratos_chain_url = '127.0.0.1:9090'
-insecure = true
-gas_adjustment = 1.3
-rest_port = '9207'
-internal_port = '9307'
-rpc_port = '9407'
-metrics_port = '9607'
-traffic_log_interval = 10
-max_connection = 1000
-[version]
-app_ver = 9
-min_app_ver = 9
-show = 'v0.9.0'
+# IP address of the node. Eg: "127.0.0.1"
+network_address = '127.0.0.1'
+# Main port for communication on the network. Must be open to the internet. Eg: "18081"
+network_port = '9107'
+# Port for prometheus metrics
+metrics_port = '9207'
+# Port for the JSON-RPC api. See https://docs.thestratos.org/docs-resource-node/sds-rpc-for-file-operation/
+rpc_port = '9307'
+# Enable the node owner RPC API. This API can manipulate the node status and sign txs with the local wallet. Do not open this to the internet  Eg: false
+allow_owner_rpc = false
 
-[monitor]
-tls = false
-cert = ''
-key = ''
-port = '9507'
-
-[[sp_list]]
-p2p_address = 'stsds13yakj2xgzzdfcw7kd5gtfcfv2k6sn5eg4vdfem'
-p2p_public_key = 'stsdspub1hhplcrnkn9597gnh87y9zshe0kfs87fvmtrjpyq4heqjcz0dhltsaqa0fc'
-network_address = '127.0.0.1:38888'
-[[sp_list]]
-p2p_address = 'stsds15sya4n40da64z6n6hvk0p9f7sx72hqpjjnrf9y'
-p2p_public_key = 'stsdspub1pfr08evmk73dtf7ud69pwdznl4xdfghx6k6dyugwpk2jhqq890yqnrcp6u'
-network_address = '127.0.0.1:28888'
-[[sp_list]]
-p2p_address = 'stsds14c3em44vlh276cujnr2ez802uyjyeqrrsu9fuh'
-p2p_public_key = 'stsdspub1zgqd566qdnj4kna050jz505vamjhglxcpdepqctkregdt6snxm6sck2v6h'
-network_address = '127.0.0.1:18888'
-[[sp_list]]
+# The first meta node to connect to when starting the node
+[node.connectivity.seed_meta_node]
 p2p_address = 'stsds1cw8qhgsxddak8hh8gs7veqmy5ku8f8za6qlq64'
 p2p_public_key = 'stsdspub1jmfc8j7ve0jg3jwq9wkefpa34fg9hhrp7nu6rkf6hff7ml769f6qrwae56'
 network_address = '127.0.0.1:8888'
 
+# Configuration for the monitor server
+[monitor]
+# Should the monitor server use TLS? Eg: false
+tls = false
+# Path to the TLS certificate file
+cert_file_path = ''
+# Path to the TLS private key file
+key_file_path = ''
+port = '9407'
+
+# Configuration for video streaming
+[streaming]
+# Port for the internal HTTP server
+internal_port = '9507'
+# Port for the REST server
+rest_port = '9607'
+
+[traffic]
+# Interval at which traffic is logged (in seconds) Eg: 10
+log_interval = 10
+# Max number of concurrent network connections. Eg: 1000
+max_connections = 1000
+# Max number of download messages received per second (per connection). 0 Means unlimited. 1000 ≈ 1MB/sec. Eg: 1000
+max_download_rate = 0
+# Max number of upload messages sent per second (per connection). 0 Means unlimited. 1000 ≈ 1MB/sec. Eg: 1000
+max_upload_rate = 0
+
+# Configuration for the web server (when running sdsweb)
+[web_server]
+# Location of the web server files Eg: "./web"
+path = './web'
+port = '9707'

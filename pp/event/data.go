@@ -135,7 +135,7 @@ func createAndSimulateTx(txMsg sdktypes.Msg, msgType string, txFee types.TxFee, 
 	}
 
 	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg, SignatureKeys: signatureKeys, Type: msgType}}
-	txBytes, err := stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.ChainId, unsignedMsgs)
+	txBytes, err := stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.Blockchain.ChainId, unsignedMsgs)
 	if err != nil {
 		return nil, err
 	}
@@ -145,8 +145,8 @@ func createAndSimulateTx(txMsg sdktypes.Msg, msgType string, txFee types.TxFee, 
 		if err != nil {
 			return nil, err
 		}
-		txBuilder.SetGasLimit(uint64(float64(gasInfo.GasUsed) * setting.Config.GasAdjustment))
-		txBytes, err = stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.ChainId, unsignedMsgs)
+		txBuilder.SetGasLimit(uint64(float64(gasInfo.GasUsed) * setting.Config.Blockchain.GasAdjustment))
+		txBytes, err = stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.Blockchain.ChainId, unsignedMsgs)
 		if err != nil {
 			return nil, err
 		}

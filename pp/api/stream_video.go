@@ -367,9 +367,9 @@ func cacheVideoSlices(ctx context.Context, fInfo *protos.RspFileStorageInfo) {
 		slices[idx] = fInfo.SliceInfo[i]
 	}
 
-	cacheCh := make(chan bool, setting.STREAM_CACHE_MAXSLICE)
+	cacheCh := make(chan bool, setting.StreamCacheMaxSlice)
 
-	for i := 0; i < setting.STREAM_CACHE_MAXSLICE; i++ {
+	for i := 0; i < setting.StreamCacheMaxSlice; i++ {
 		cacheCh <- true
 	}
 
@@ -380,7 +380,7 @@ func cacheVideoSlices(ctx context.Context, fInfo *protos.RspFileStorageInfo) {
 			if !exist {
 				_, _ = getSliceData(ctx, fInfo, sliceInfo)
 			}
-			if idx < len(slices)-setting.STREAM_CACHE_MAXSLICE {
+			if idx < len(slices)-setting.StreamCacheMaxSlice {
 				cacheCh <- true
 			}
 		}(idx, sliceInfo)
@@ -389,7 +389,7 @@ func cacheVideoSlices(ctx context.Context, fInfo *protos.RspFileStorageInfo) {
 }
 
 func checkSliceExist(fileHash, sliceHash string) (bool, string) {
-	folder := file.GetDownloadPath(filepath.Join(setting.VIDEOPATH, fileHash))
+	folder := file.GetDownloadPath(filepath.Join(setting.VideoPath, fileHash))
 	slicePath := filepath.Join(folder, sliceHash)
 	return file.CheckFilePathEx(slicePath), slicePath
 }

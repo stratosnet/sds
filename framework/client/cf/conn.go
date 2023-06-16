@@ -29,10 +29,8 @@ import (
 )
 
 var (
-	limitDownloadSpeed   uint64
-	limitUploadSpeed     uint64
-	isLimitDownloadSpeed bool
-	isLimitUploadSpeed   bool
+	maxDownloadRate uint64
+	maxUploadRate   uint64
 )
 
 const (
@@ -228,14 +226,12 @@ func (cc *ClientConn) GetName() string {
 	return name
 }
 
-func SetLimitDownloadSpeed(down uint64, isLimitDown bool) {
-	limitDownloadSpeed = down
-	isLimitDownloadSpeed = isLimitDown
+func SetMaxDownloadRate(rate uint64) {
+	maxDownloadRate = rate
 }
 
-func SetLimitUploadSpeed(up uint64, isLimitUpload bool) {
-	limitUploadSpeed = up
-	isLimitUploadSpeed = isLimitUpload
+func SetMaxUploadRate(rate uint64) {
+	maxUploadRate = rate
 }
 
 // GetIP get connection ip
@@ -713,11 +709,9 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 						return
 					}
 					if cmd == header.RspDownloadSlice.Id {
-						if isLimitDownloadSpeed {
-							if limitDownloadSpeed > 0 {
-								lr.SetRate(limitDownloadSpeed)
-								lr.Limit()
-							}
+						if maxDownloadRate > 0 {
+							lr.SetRate(maxDownloadRate)
+							lr.Limit()
 						}
 					}
 				}
@@ -875,11 +869,9 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 			return errors.Wrap(err, "client write err")
 		}
 		if cmd == header.ReqUploadFileSlice.Id {
-			if isLimitUploadSpeed {
-				if limitUploadSpeed > 0 {
-					lr.SetRate(limitUploadSpeed)
-					lr.Limit()
-				}
+			if maxUploadRate > 0 {
+				lr.SetRate(maxUploadRate)
+				lr.Limit()
 			}
 		}
 	}

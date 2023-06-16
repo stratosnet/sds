@@ -33,7 +33,7 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, w ht
 		}
 		return
 	}
-	if len(path) < setting.Config.DownloadPathMinLen {
+	if len(path) < setting.DownloadPathMinLen {
 		utils.DebugLog("invalid path length")
 		return
 	}
@@ -117,7 +117,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	// SPAM check
-	if time.Now().Unix()-target.TimeStamp > setting.SPAM_THRESHOLD_SP_SIGN_LATENCY {
+	if time.Now().Unix()-target.TimeStamp > setting.SpamThresholdSpSignLatency {
 		pp.ErrorLog(ctx, "sp's upload file response was expired")
 		return
 	}
@@ -171,7 +171,7 @@ func GetFileReplicaInfo(ctx context.Context, path string, replicaIncreaseNum uin
 	if !setting.CheckLogin() {
 		return
 	}
-	if len(path) < setting.Config.DownloadPathMinLen {
+	if len(path) < setting.DownloadPathMinLen {
 		utils.DebugLog("invalid path length")
 		return
 	}
