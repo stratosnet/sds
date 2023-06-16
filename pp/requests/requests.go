@@ -80,7 +80,7 @@ func ReqGetWalletOzData(walletAddr, reqId string) *protos.ReqGetWalletOz {
 }
 
 // RequestUploadFile a file from an owner instead from a "path" belongs to PP's default wallet
-func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize uint64, walletAddress, walletPubkey, signature string, isEncrypted, isVideoStream bool, desiredTier uint32, allowHigherTier bool) (*protos.ReqUploadFile, error) {
+func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize uint64, walletAddress, walletPubkey, signature string, slices []*protos.SliceHashAddr, isEncrypted, isVideoStream bool, desiredTier uint32, allowHigherTier bool) (*protos.ReqUploadFile, error) {
 	utils.Log("fileName: ", fileName)
 	encryptionTag := ""
 	if isEncrypted {
@@ -112,6 +112,7 @@ func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize 
 			EncryptionTag:      encryptionTag,
 			OwnerWalletAddress: walletAddress,
 		},
+		Slices:          slices,
 		MyAddress:       p2pserver.GetP2pServer(ctx).GetPPInfo(),
 		WalletSign:      wsig,
 		WalletPubkey:    wpk.Bytes(),
@@ -720,6 +721,23 @@ func ReqFileReplicaInfo(path, walletAddr, p2pAddress string, replicaIncreaseNum 
 		ReplicaIncreaseNum: replicaIncreaseNum,
 		WalletSign:         walletSign,
 		WalletPubkey:       walletPUbkey,
+	}
+}
+
+func GetSliceOffset(sliceNumber, sliceCount, sliceSize, fileSize uint64) *protos.SliceOffset {
+	var sliceOffsetStart uint64
+	var sliceOffsetEnd uint64
+	sliceOffsetStart = (sliceNumber - 1) * sliceSize
+
+	if sliceNumber == sliceCount {
+		sliceOffsetEnd = fileSize
+	} else {
+		sliceOffsetEnd = sliceNumber * sliceSize
+	}
+
+	return &protos.SliceOffset{
+		SliceOffsetStart: sliceOffsetStart,
+		SliceOffsetEnd:   sliceOffsetEnd,
 	}
 }
 

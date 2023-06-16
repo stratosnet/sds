@@ -492,22 +492,8 @@ func (UploadRawFileHandler) PreUpload(ctx context.Context, filePath, encryptionT
 	sliceCount := uint64(math.Ceil(float64(info.Size()) / float64(sliceSize)))
 
 	var slices []*protos.SliceHashAddr
-	for i := uint64(1); i <= sliceCount; i++ {
-		var sliceOffsetStart uint64
-		var sliceOffsetEnd uint64
-		sliceNumber := i
-		sliceOffsetStart = (i - 1) * sliceSize
-
-		if i == sliceCount {
-			sliceOffsetEnd = fileSize
-		} else {
-			sliceOffsetEnd = i * sliceSize
-		}
-
-		sliceOffset := &protos.SliceOffset{
-			SliceOffsetStart: sliceOffsetStart,
-			SliceOffsetEnd:   sliceOffsetEnd,
-		}
+	for sliceNumber := uint64(1); sliceNumber <= sliceCount; sliceNumber++ {
+		sliceOffset := requests.GetSliceOffset(sliceNumber, sliceCount, sliceSize, fileSize)
 
 		rawData, err := file.GetFileData(filePath, sliceOffset)
 		if err != nil {
@@ -531,7 +517,7 @@ func (UploadRawFileHandler) PreUpload(ctx context.Context, filePath, encryptionT
 
 		SliceHashAddr := &protos.SliceHashAddr{
 			SliceHash:   sliceHash,
-			SliceSize:   sliceOffsetEnd - sliceOffsetStart,
+			SliceSize:   sliceOffset.SliceOffsetEnd - sliceOffset.SliceOffsetStart,
 			SliceNumber: sliceNumber,
 			SliceOffset: sliceOffset,
 		}
