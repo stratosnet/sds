@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/api/rpc"
@@ -245,6 +245,11 @@ func put(cmd *cobra.Command, args []string) error {
 			utils.ErrorLog("unmarshal failed")
 			return nil
 		}
+	}
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
 	}
 	utils.Log("- uploading is done")
 	return nil
