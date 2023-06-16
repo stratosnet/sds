@@ -1527,7 +1527,7 @@ func prepay(cmd *cobra.Command, args []string) error {
 	if r == nil {
 		return nil
 	}
-	utils.Log("- request register new pp (method: owner_requestPrepay)")
+	utils.Log("- request prepay (method: owner_requestPrepay)")
 	// http request-respond
 	body := httpRequest(r)
 	if body == nil {
@@ -1561,7 +1561,7 @@ func startmining(cmd *cobra.Command, args []string) error {
 	if r == nil {
 		return nil
 	}
-	utils.Log("- request register new pp (method: owner_requestStartMining)")
+	utils.Log("- request register pp (method: owner_requestStartMining)")
 	// http request-respond
 	body := httpRequest(r)
 	if body == nil {
