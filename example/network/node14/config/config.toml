@@ -46,8 +46,6 @@ debug = true
 max_disk_usage = 1048576
 
 [node.connectivity]
-# Network address and port of the meta node to connect to when first starting the node. Eg: "1.2.3.4:8888"
-seed_meta_node = '127.0.0.1:8888'
 # Is the node running on an internal network? Eg: false
 internal = false
 # IP address of the node. Eg: "127.0.0.1"
@@ -60,6 +58,12 @@ metrics_port = '9214'
 rpc_port = '9314'
 # Enable the node owner RPC API. This API can manipulate the node status and sign txs with the local wallet. Do not open this to the internet  Eg: false
 allow_owner_rpc = false
+
+# The first meta node to connect to when starting the node
+[node.connectivity.seed_meta_node]
+p2p_address = 'stsds1cw8qhgsxddak8hh8gs7veqmy5ku8f8za6qlq64'
+p2p_public_key = 'stsdspub1jmfc8j7ve0jg3jwq9wkefpa34fg9hhrp7nu6rkf6hff7ml769f6qrwae56'
+network_address = '127.0.0.1:8888'
 
 # Configuration for the monitor server
 [monitor]

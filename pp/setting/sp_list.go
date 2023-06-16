@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/utils"
 )
@@ -13,9 +14,9 @@ import (
 var SPMap = &sync.Map{}
 
 type SPBaseInfo struct {
-	P2PAddress     string `json:"p2p_address"`
-	P2PPublicKey   string `json:"p2p_public_key"`
-	NetworkAddress string `json:"network_address"`
+	P2PAddress     string `toml:"p2p_address" json:"p2p_address"`
+	P2PPublicKey   string `toml:"p2p_public_key" json:"p2p_public_key"`
+	NetworkAddress string `toml:"network_address" json:"network_address"`
 }
 
 type SPList struct {
@@ -64,24 +65,32 @@ func getSPListPath() string {
 	return filepath.Join(Config.Home.PeersPath, "sp-list.json")
 }
 
-func initializeSPMap() {
+func InitializeSPMap() error {
 	bytes, err := os.ReadFile(getSPListPath())
 	spList := &SPList{}
 	if err == nil {
 		err = json.Unmarshal(bytes, spList)
 	}
 
-	if err != nil {
-		SPMap.Store("unknown", SPBaseInfo{NetworkAddress: Config.Node.Connectivity.SeedMetaNode})
-		utils.ErrorLogf("Cannot load sp-list, initializing from the seed meta node: %v", err)
-		return
+	if err != nil || len(spList.SPs) == 0 {
+		seedNode := Config.Node.Connectivity.SeedMetaNode
+		if seedNode.P2PAddress == "" {
+			return errors.New("invalid node.connectivity.seed_meta_node.p2p_address config")
+		}
+		if seedNode.P2PPublicKey == "" {
+			return errors.New("invalid node.connectivity.seed_meta_node.p2p_public_key config")
+		}
+		if seedNode.NetworkAddress == "" {
+			return errors.New("invalid node.connectivity.seed_meta_node.network_address config")
+		}
+
+		SPMap.Store(seedNode.P2PAddress, seedNode)
+		utils.ErrorLogf("Cannot load sp-list or the list is empty. Initializing from the seed meta node: %v", err)
+		return nil
 	}
 
 	for _, sp := range spList.SPs {
-		key := sp.P2PAddress
-		if key == "" {
-			key = "unknown"
-		}
-		SPMap.Store(key, sp)
+		SPMap.Store(sp.P2PAddress, sp)
 	}
+	return nil
 }

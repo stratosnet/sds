@@ -59,6 +59,12 @@ func NodePreRunE(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+
+	err = setting.InitializeSPMap()
+	if err != nil {
+		return err
+	}
+
 	setting.MonitorInitialToken = serv.CreateInitialToken()
 	setting.TrafficLogPath = filepath.Join(setting.GetRootPath(), "./tmp/logs/traffic_dump.log")
 	trafficLogger := utils.NewTrafficLogger(setting.TrafficLogPath, false, true)

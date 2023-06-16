@@ -59,13 +59,13 @@ type KeysConfig struct {
 }
 
 type ConnectivityConfig struct {
-	SeedMetaNode   string `toml:"seed_meta_node" comment:"Network address and port of the meta node to connect to when first starting the node. Eg: \"1.2.3.4:8888\""`
-	Internal       bool   `toml:"internal" comment:"Is the node running on an internal network? Eg: false"`
-	NetworkAddress string `toml:"network_address" comment:"IP address of the node. Eg: \"127.0.0.1\""`
-	NetworkPort    string `toml:"network_port" comment:"Main port for communication on the network. Must be open to the internet. Eg: \"18081\""`
-	MetricsPort    string `toml:"metrics_port" comment:"Port for prometheus metrics"`
-	RpcPort        string `toml:"rpc_port" comment:"Port for the JSON-RPC api. See https://docs.thestratos.org/docs-resource-node/sds-rpc-for-file-operation/"`
-	AllowOwnerRpc  bool   `toml:"allow_owner_rpc" comment:"Enable the node owner RPC API. This API can manipulate the node status and sign txs with the local wallet. Do not open this to the internet  Eg: false"`
+	SeedMetaNode   SPBaseInfo `toml:"seed_meta_node" comment:"The first meta node to connect to when starting the node"`
+	Internal       bool       `toml:"internal" comment:"Is the node running on an internal network? Eg: false"`
+	NetworkAddress string     `toml:"network_address" comment:"IP address of the node. Eg: \"127.0.0.1\""`
+	NetworkPort    string     `toml:"network_port" comment:"Main port for communication on the network. Must be open to the internet. Eg: \"18081\""`
+	MetricsPort    string     `toml:"metrics_port" comment:"Port for prometheus metrics"`
+	RpcPort        string     `toml:"rpc_port" comment:"Port for the JSON-RPC api. See https://docs.thestratos.org/docs-resource-node/sds-rpc-for-file-operation/"`
+	AllowOwnerRpc  bool       `toml:"allow_owner_rpc" comment:"Enable the node owner RPC API. This API can manipulate the node status and sign txs with the local wallet. Do not open this to the internet  Eg: false"`
 }
 
 type NodeConfig struct {
@@ -150,8 +150,6 @@ func LoadConfig(configPath string) error {
 	grpc.URL = Config.Blockchain.Url
 	grpc.INSECURE = Config.Blockchain.Insecure
 
-	initializeSPMap()
-
 	return nil
 }
 
@@ -235,7 +233,11 @@ func defaultConfig() *config {
 			Debug:        false,
 			MaxDiskUsage: 1024 * 1024, // 1TB,
 			Connectivity: ConnectivityConfig{
-				SeedMetaNode:   "127.0.0.1:8888",
+				SeedMetaNode: SPBaseInfo{
+					P2PAddress:     "",
+					P2PPublicKey:   "",
+					NetworkAddress: "127.0.0.1:8888",
+				},
 				Internal:       false,
 				NetworkAddress: "127.0.0.1",
 				NetworkPort:    "18081",
