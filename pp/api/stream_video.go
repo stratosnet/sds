@@ -569,6 +569,7 @@ func reqDownloadDataMsg(fInfo *protos.RspFileStorageInfo, sliceInfo *protos.Down
 		ReqId:          fInfo.ReqId,
 		SliceHash:      sliceInfo.SliceStorageInfo.SliceHash,
 		SliceNumber:    sliceInfo.SliceNumber,
+		SliceSize:      sliceInfo.SliceStorageInfo.SliceSize,
 		NetworkAddress: sliceInfo.StoragePpInfo.NetworkAddress,
 		P2PAddress:     sliceInfo.StoragePpInfo.P2PAddress,
 	}

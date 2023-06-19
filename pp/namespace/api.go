@@ -127,6 +127,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 		fileSize := uint64(param.FileSize)
 		signature := param.Signature
 
+
 		sliceSize := uint64(setting.MaxSliceSize)
 		sliceCount := uint64(math.Ceil(float64(fileSize) / float64(sliceSize)))
 
@@ -460,19 +461,30 @@ func (api *rpcPubApi) RequestDownloadSliceData(ctx context.Context, param rpc_ap
 
 	key := param.SliceHash + param.ReqId
 
-	// wait for result: DOWNLOAD_OK
-	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
-	defer cancel()
-	var result *rpc_api.Result
-
-	select {
-	case <-ctx.Done():
-		result = &rpc_api.Result{Return: rpc_api.TIME_OUT}
-	case result = <-file.SubscribeRemoteSliceEvent(key):
-		file.UnsubscribeRemoteSliceEvent(key)
+	data := make([]byte, param.SliceSize)
+	downloadedSize := uint64(0)
+	for downloadedSize < param.SliceSize {
+		select {
+		case <-time.After(WAIT_TIMEOUT):
+			return rpc_api.Result{Return: rpc_api.TIME_OUT}
+		case result := <-file.SubscribeRemoteSliceEvent(key):
+			file.UnsubscribeRemoteSliceEvent(key)
+			start := *result.OffsetStart
+			end := *result.OffsetEnd
+			downloadedSize += end - start
+			decoded, err := b64.StdEncoding.DecodeString(result.FileData)
+			if err != nil {
+				return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+			}
+			copy(data[start:], decoded)
+			file.SetDownloadSliceDone(key)
+		}
 	}
 
-	return *result
+	return rpc_api.Result{
+		Return:   rpc_api.DOWNLOAD_OK,
+		FileData: b64.StdEncoding.EncodeToString(data),
+	}
 }
 
 func (api *rpcPubApi) DownloadData(ctx context.Context, param rpc_api.ParamDownloadData) rpc_api.Result {
