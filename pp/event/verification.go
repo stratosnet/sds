@@ -283,12 +283,9 @@ func verifySpP2pAddress(ctx context.Context, cmd string) error {
 }
 
 func verifyReqId(ctx context.Context, msgTypeId uint8) error {
-	reqMsgTypeId, found := p2pserver.GetP2pServer(ctx).LoadReqId(requests.GetReqIdFromMessage(ctx))
+	_, found := p2pserver.GetP2pServer(ctx).LoadRequestInfo(requests.GetReqIdFromMessage(ctx), msgTypeId)
 	if !found {
 		return errors.New("no previous request for this rsp found")
-	}
-	if header.GetRspIdFromReqId(reqMsgTypeId) != msgTypeId {
-		return errors.New("message types don't match")
 	}
 	return nil
 }

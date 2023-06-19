@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	requestMap = utils.NewAutoCleanMap(5 * time.Minute)
+	requestInfoMap = utils.NewAutoCleanMap(5 * time.Minute) // used for req-rsp message pair verifications
 )
 
 func (p *P2pServer) SignP2pMessage(signMsg []byte) []byte {
@@ -50,12 +50,18 @@ func (p *P2pServer) GetPPInfo() *protos.PPBaseInfo {
 	}
 }
 
-func (p *P2pServer) LoadReqId(reqId int64) (uint8, bool) {
-	msgTypeId, found := requestMap.Load(reqId)
+func (p *P2pServer) LoadRequestInfo(reqId int64, rspMsgType uint8) (uint8, bool) {
+	// according to the rsp, load the request info by (reqId | supposed_req_msg_type)
+	msgTypeId, found := requestInfoMap.Load(reqId&0x7FFFFFFFFFFFFF00 | int64(header.GetReqIdFromRspId(rspMsgType)))
 	if !found {
 		return header.MSG_ID_INVALID, found
 	}
 	return msgTypeId.(uint8), found
+}
+
+func (p *P2pServer) StoreRequestInfo(reqId int64, reqMsgType uint8) {
+	// reqId includes the msg type of original request. The consequent requests need to be re-encoded as the index for requestInfoMap
+	requestInfoMap.Store((reqId&0x7FFFFFFFFFFFFF00)|int64(reqMsgType), reqMsgType)
 }
 
 func (p *P2pServer) GetP2PAddrInTypeAddress() utilstypes.Address {
@@ -94,7 +100,7 @@ func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb p
 			core.InheritRemoteReqIdFromParentReqId(ctx, reqId)
 		}
 		msgBuf.MSGHead.ReqId = reqId
-		requestMap.Store(reqId, cmd.Id)
+		p.StoreRequestInfo(reqId, cmd.Id)
 	}
 
 	msgBuf.MSGHead.DataLen = uint32(len(msgBuf.MSGData))
@@ -150,7 +156,7 @@ func (p *P2pServer) TransferSendMessageToPPServ(ctx context.Context, addr string
 			core.InheritRemoteReqIdFromParentReqId(ctx, reqId)
 		}
 		msgBuf.MSGHead.ReqId = reqId
-		requestMap.Store(reqId, cmd.Id)
+		p.StoreRequestInfo(reqId, cmd.Id)
 	}
 
 	p.clientMutex.Lock()
