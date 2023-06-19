@@ -127,7 +127,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 		fileSize := uint64(param.FileSize)
 		signature := param.Signature
 
-		sliceSize := uint64(setting.DEFAULT_SLICE_BLOCK_SIZE)
+		sliceSize := uint64(setting.MaxSliceSize)
 		sliceCount := uint64(math.Ceil(float64(fileSize) / float64(sliceSize)))
 
 		var slices []*protos.SliceHashAddr
