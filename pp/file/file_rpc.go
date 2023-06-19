@@ -249,7 +249,7 @@ func SaveRemoteSliceData(key, fileName string, data []byte, offset uint64) error
 	}
 
 	SetRemoteSliceResult(key, result)
-	return nil
+	return WaitDownloadSliceDone(key)
 }
 
 func GetRemoteFileSize(hash string) uint64 {

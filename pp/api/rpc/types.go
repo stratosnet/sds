@@ -52,6 +52,7 @@ type ParamReqDownloadData struct {
 	ReqId          string `json:"reqid"`
 	SliceHash      string `json:"slicehash"`
 	SliceNumber    uint64 `json:"slicenumber"`
+	SliceSize      uint64 `json:"slicesize"`
 	NetworkAddress string `json:"networkaddress"`
 	P2PAddress     string `json:"p2pAddress"`
 }
