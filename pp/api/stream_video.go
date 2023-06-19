@@ -448,20 +448,32 @@ func getSliceData(ctx context.Context, fInfo *protos.RspFileStorageInfo, sliceIn
 	r := reqDownloadDataMsg(fInfo, sliceInfo)
 	res := namespace.RpcPubApi().RequestDownloadSliceData(ctx, r)
 
+	downloadedSliceSize := uint64(0)
+	for res.Return == rpctypes.DOWNLOAD_OK && downloadedSliceSize < sliceInfo.SliceStorageInfo.SliceSize {
+		decoded, err := base64.StdEncoding.DecodeString(res.FileData)
+		if err != nil {
+			return nil, err
+		}
+		fileMg, _ := os.OpenFile(slicePath, os.O_CREATE|os.O_RDWR, 0777)
+		defer func() {
+			_ = fileMg.Close()
+		}()
+		_ = file.WriteFile(decoded, int64(*res.OffsetStart), fileMg)
+		downloadedSliceSize += *res.OffsetEnd - *res.OffsetStart
+		if downloadedSliceSize < sliceInfo.SliceStorageInfo.SliceSize {
+			r := reqDownloadDataMsg(fInfo, sliceInfo)
+			res = namespace.RpcPubApi().DownloadSliceData(ctx, r)
+		}
+	}
 	if res.Return != rpctypes.DOWNLOAD_OK {
 		return nil, errors.New("failed to get video slice")
 	}
-
-	decoded, err := base64.StdEncoding.DecodeString(res.FileData)
-	if err != nil {
-		return nil, err
+	file.SetDownloadSliceDone(sliceInfo.SliceStorageInfo.SliceHash + fInfo.ReqId)
+	data, err := file.GetWholeFileData(slicePath)
+	if err == nil {
+		return data, nil
 	}
-	fileMg, _ := os.OpenFile(slicePath, os.O_CREATE|os.O_RDWR, 0777)
-	defer func() {
-		_ = fileMg.Close()
-	}()
-	_ = file.WriteFile(decoded, 0, fileMg)
-	return decoded, nil
+	return data, nil
 }
 
 func verifyStreamReqBody(req *http.Request) (*StreamReqBody, error) {

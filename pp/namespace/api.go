@@ -127,7 +127,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 		fileSize := uint64(param.FileSize)
 		signature := param.Signature
 
-		sliceSize := uint64(setting.DEFAULT_SLICE_BLOCK_SIZE)
+		sliceSize := uint64(setting.DefaultSliceBlockSize)
 		sliceCount := uint64(math.Ceil(float64(fileSize) / float64(sliceSize)))
 
 		var slices []*protos.SliceHashAddr
@@ -461,6 +461,27 @@ func (api *rpcPubApi) RequestDownloadSliceData(ctx context.Context, param rpc_ap
 	key := param.SliceHash + param.ReqId
 
 	// wait for result: DOWNLOAD_OK
+	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
+	defer cancel()
+	var result *rpc_api.Result
+
+	select {
+	case <-ctx.Done():
+		result = &rpc_api.Result{Return: rpc_api.TIME_OUT}
+	case result = <-file.SubscribeRemoteSliceEvent(key):
+		file.UnsubscribeRemoteSliceEvent(key)
+	}
+
+	return *result
+}
+
+func (api *rpcPubApi) DownloadSliceData(ctx context.Context, param rpc_api.ParamReqDownloadData) rpc_api.Result {
+	key := param.SliceHash + param.ReqId
+
+	// previous piece was done, tell the caller of remote file driver to move on
+	file.SetDownloadSliceDone(key)
+
+	// wait for result: DOWNLOAD_OK or DL_OK_ASK_INFO
 	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
 	defer cancel()
 	var result *rpc_api.Result
