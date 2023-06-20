@@ -89,7 +89,7 @@ func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize 
 
 	utils.Log("fileHash: ", fileHash)
 
-	file.SaveRemoteFileHash(fileHash, "rpc:"+fileName, fileSize)
+	file.SaveRemoteFileHash(fileHash, fileName, fileSize)
 
 	// convert wallet pubkey to []byte which format is to be used in protobuf messages
 	wpk, err := types.WalletPubkeyFromBech(walletPubkey)
@@ -167,7 +167,7 @@ func RequestDownloadFile(ctx context.Context, fileHash, sdmPath, walletAddr stri
 	}
 
 	// download file uses fileHash + fileReqId as the key
-	file.SaveRemoteFileHash(fileHash+fileReqId, "rpc:", 0)
+	file.SaveRemoteFileHash(fileHash+fileReqId, "", 0)
 
 	// path: mesh network address
 	metrics.DownloadPerformanceLogNow(fileHash + ":SND_STORAGE_INFO_SP:")
