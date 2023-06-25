@@ -259,11 +259,11 @@ func GetRemoteFileSize(hash string) uint64 {
 	return 0
 }
 
-func SaveRemoteFileHash(hash, fileName string, fileSize uint64) {
+func SaveRemoteFileHash(hash, filePath string, fileSize uint64) {
 	reFileMutex.Lock()
 	defer reFileMutex.Unlock()
 
-	fileMap[hash] = "rpc:" + fileName
+	fileMap[hash] = "rpc:" + filePath
 	rpcFileInfoMap.Store(hash, fileSize)
 }
 
