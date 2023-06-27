@@ -29,7 +29,7 @@ func (p *P2pServer) initClient() {
 
 func (p *P2pServer) NewClientToMainSp(ctx context.Context, server string) error {
 	utils.DebugLog("NewClientToMainSp: to", server, " hb: true, rec: true")
-	_, err := p.newClient(ctx, server, true, true, true)
+	_, err := p.newClient(ctx, server, true, false, true)
 	return err
 }
 
@@ -72,7 +72,7 @@ func (p *P2pServer) newClient(ctx context.Context, server string, heartbeat, rec
 		}
 
 		if p.mainSpConn != nil {
-			if c.(*cf.ClientConn).GetIsActive() && p.mainSpConn.GetName() == c.(*cf.ClientConn).GetName() {
+			if p.mainSpConn.GetName() == c.(*cf.ClientConn).GetName() {
 				utils.DebugLog("lost SP conn, name: ", p.mainSpConn.GetName(), " netId is ", p.mainSpConn.GetNetID())
 				p.mainSpConn = nil
 				select {
