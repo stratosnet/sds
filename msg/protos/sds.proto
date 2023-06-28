@@ -22,6 +22,8 @@ message RspGetPPList{
 
 message ReqGetSPList {
   PPBaseInfo my_address = 1;
+  WalletSign wallet_sign = 2;
+  int64 req_time = 4;
 }
 
 message RspGetSPList{
@@ -33,6 +35,8 @@ message ReqRegister {
   PPBaseInfo address = 1;
   bytes public_key = 2;
   PPBaseInfo my_address = 3; //middleman pp address
+  WalletSign wallet_sign = 4;
+  int64 req_time = 5;
 }
 
 message RspRegister {
@@ -71,10 +75,10 @@ message ReqUploadFile {
   FileInfo file_info = 1;
   repeated SliceHashAddr slices = 2;
   PPBaseInfo my_address = 3;
-  bytes wallet_sign = 4;
-  bytes wallet_pubkey = 5;
-  uint32 desired_tier = 6;
-  bool allow_higher_tier = 7;
+  WalletSign wallet_sign = 4;
+  uint32 desired_tier = 5;
+  bool allow_higher_tier = 6;
+  int64 req_time = 7;
 }
 
 message RspUploadFile {
@@ -179,13 +183,13 @@ message RspReportUploadSliceResult {
 
 message ReqFindMyFileList {
   string p2p_address = 1;
-  string wallet_address = 2;
+  WalletSign wallet_sign = 2;
   string file_name = 3; // return all if file name is empty
   uint64 page_id = 4;
   FileSortType file_type = 5;
   bool is_up = 6;
   string keyword = 7;
-
+  int64 req_time = 8;
 }
 
 message RspFindMyFileList {
@@ -202,9 +206,9 @@ message RspFindMyFileList {
 
 message ReqFileStorageInfo {
   FileIndexes     file_indexes = 1;
-  bytes           wallet_sign = 2;
-  bytes           wallet_pubkey = 3;
-  ReqGetShareFile share_request = 4;
+  WalletSign      wallet_sign = 2;
+  ReqGetShareFile share_request = 3;
+  int64 req_time = 4;
 }
 
 message RspFileStorageInfo {
@@ -227,12 +231,11 @@ message RspFileStorageInfo {
 }
 
 message ReqFileReplicaInfo {
-  string    p2p_address = 1;
-  string    wallet_address = 2;
-  string    file_path = 3;
-  uint32    replica_increase_num = 4;
-  bytes     wallet_sign = 5;
-  bytes     wallet_pubkey = 6;
+  string        p2p_address = 1;
+  WalletSign    wallet_sign = 2;
+  string        file_path = 3;
+  uint32        replica_increase_num = 4;
+  int64         req_time = 5;
 }
 
 message RspFileReplicaInfo {
@@ -315,7 +318,7 @@ message ReqReportTaskBP {
 
 message ReqRegisterNewPP {
   string  p2p_address = 1;
-  string  wallet_address = 2;
+  WalletSign wallet_sign = 2;
   uint64  disk_size = 3;
   uint64  free_disk = 4;
   uint64  memory_size = 5;
@@ -325,6 +328,7 @@ message ReqRegisterNewPP {
   uint32  version = 9;
   bytes   pub_key = 10;
   string  network_address = 11;
+  int64   req_time = 12;
 }
 
 message RspRegisterNewPP {
@@ -398,7 +402,8 @@ message RspUnbondingSP {
 message ReqPrepay {
   bytes tx = 1;
   string p2p_address = 2;
-  string wallet_address = 3;
+  WalletSign wallet_sign = 3;
+  int64 req_time = 4;
 }
 
 message RspPrepay {
@@ -408,8 +413,9 @@ message RspPrepay {
 
 message ReqDeleteFile {
   string p2p_address = 1;
-  string wallet_address = 2;
+  WalletSign wallet_sign = 2;
   string file_hash = 3;
+  int64 req_time = 4;
 }
 
 message RspDeleteFile {
@@ -703,8 +709,9 @@ message ReqClearDownloadTask {
 
 message ReqShareLink {
   string p2p_address = 1;
-  string wallet_address = 2;
+  WalletSign wallet_sign = 2;
   uint64 page_id = 3;
+  int64 req_time = 4;
 }
 
 message RspShareLink {
@@ -716,13 +723,27 @@ message RspShareLink {
   uint64 page_id = 6;
 }
 
+message ReqClearExpiredShareLinks {
+  string p2p_address = 1;
+  WalletSign wallet_sign = 2;
+  int64 req_time = 3;
+}
+
+message RspClearExpiredShareLinks {
+  string wallet_address = 1;
+  uint32 cleared = 2;
+  uint32 new_total = 3;
+  Result result = 4;
+}
+
 message ReqShareFile {
   string file_hash = 1;
   bool   is_private = 2;
   int64  share_time = 3;
   string p2p_address = 4;
-  string wallet_address = 5;
+  WalletSign wallet_sign = 5;
   string path_hash = 6;// share whole directory if this field is non-empty
+  int64 req_time = 7;
 }
 
 message RspShareFile {
@@ -737,7 +758,8 @@ message RspShareFile {
 message ReqDeleteShare {
   string share_id = 1;
   string p2p_address = 2;
-  string wallet_address = 3; //
+  WalletSign wallet_sign = 3;
+  int64 req_time = 4;
 }
 
 message RspDeleteShare {
@@ -751,11 +773,10 @@ message RspDeleteShare {
 message ReqGetShareFile {
   string keyword = 1; //
   string p2p_address = 2;
-  string wallet_address = 3; //
-  bytes  wallet_pubkey = 4;
-  bytes  wallet_sign = 5;
-  string share_password = 6;//
-  string save_as = 7;
+  WalletSign wallet_sign = 3; //
+  string share_password = 4;//
+  string save_as = 5;
+  int64 req_time = 6;
 }
 
 
@@ -839,3 +860,10 @@ message NoticeSpUnderMaintenance{
   string sp_p2p_address = 1;
   int32  maintenance_type = 2;
 }
+
+message WalletSign{
+  string wallet_address = 1;
+  bytes  wallet_pubkey = 2;
+  bytes  signature = 3;
+}
+

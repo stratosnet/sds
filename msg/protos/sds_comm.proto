@@ -118,9 +118,9 @@ message EncryptedSlice {
 message ShareLinkInfo{
     string name     = 1;
     string file_hash     = 2;
-    uint64 link_time     = 3;
+    int64 creation_time     = 3;
     uint64 file_size     = 4;
-    uint64 link_time_exp = 5;
+    int64 exp_time = 5;
     string share_id      = 6;
     bool   is_directory = 7;
     string share_link      = 8;    

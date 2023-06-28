@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -295,7 +296,16 @@ func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, 
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	if err := event.Prepay(ctx, beneficiaryAddr.Bytes(), amount, txFee); err != nil {
+
+	nowSec := time.Now().Unix()
+	// sign the wallet signature by wallet private key
+	wsignMsg := utils.PrepayWalletSignMessage(setting.WalletAddress, nowSec)
+	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
+	}
+	if err := event.Prepay(ctx, beneficiaryAddr.Bytes(), amount, txFee,
+		setting.WalletAddress, setting.WalletPublicKey, wsign, nowSec); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
@@ -357,7 +367,9 @@ func (api *terminalCmd) Upload(ctx context.Context, param []string) (CmdResult, 
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	event.RequestUploadFile(ctx, pathStr, isEncrypted, false, desiredTier, allowHigherTier)
+	nowSec := time.Now().Unix()
+	event.RequestUploadFile(ctx, pathStr, isEncrypted, false, desiredTier, allowHigherTier,
+		setting.WalletAddress, setting.WalletPublicKey, nil, nowSec)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -393,7 +405,9 @@ func (api *terminalCmd) UploadStream(ctx context.Context, param []string) (CmdRe
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	ctx = core.RegisterRemoteReqId(ctx, uuid.New().String())
-	event.RequestUploadFile(ctx, pathStr, false, true, desiredTier, allowHigherTier)
+	nowSec := time.Now().Unix()
+	event.RequestUploadFile(ctx, pathStr, false, true, desiredTier, allowHigherTier,
+		setting.WalletAddress, setting.WalletPublicKey, nil, nowSec)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -408,16 +422,43 @@ func (api *terminalCmd) BackupStatus(ctx context.Context, param []string) (CmdRe
 
 func (api *terminalCmd) List(ctx context.Context, param []string) (CmdResult, error) {
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
+	nowSec := time.Now().Unix()
+	// sign the wallet signature by wallet private key
+	wsignMsg := utils.FindMyFileListWalletSignMessage(setting.WalletAddress, nowSec)
+	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
+	}
+
 	if len(param) == 0 {
-		event.FindFileList(ctx, "", setting.WalletAddress, 0, "", 0, true)
+		event.FindFileList(ctx, "", setting.WalletAddress, 0, "", 0, true,
+			setting.WalletPublicKey, wsign, nowSec)
 	} else {
 		pageId, err := strconv.ParseUint(param[0], 10, 64)
 		if err == nil {
-			event.FindFileList(ctx, "", setting.WalletAddress, pageId, "", 0, true)
+			event.FindFileList(ctx, "", setting.WalletAddress, pageId, "", 0, true,
+				setting.WalletPublicKey, wsign, nowSec)
 		} else {
-			event.FindFileList(ctx, param[0], setting.WalletAddress, 0, "", 0, true)
+			event.FindFileList(ctx, param[0], setting.WalletAddress, 0, "", 0, true,
+				setting.WalletPublicKey, wsign, nowSec)
 		}
 	}
+	return CmdResult{Msg: DefaultMsg}, nil
+}
+
+func (api *terminalCmd) ClearExpShare(ctx context.Context, param []string) (CmdResult, error) {
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
+	if len(param) > 0 {
+		return CmdResult{Msg: ""}, errors.New("invalid count for params")
+	}
+	nowSec := time.Now().Unix()
+	// sign the wallet signature by wallet private key
+	wsignMsg := utils.ClearExpiredShareLinksWalletSignMessage(setting.WalletAddress, nowSec)
+	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
+	}
+	event.ClearExpiredShareLinks(ctx, setting.WalletAddress, setting.WalletPublicKey, wsign, nowSec)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -442,7 +483,8 @@ func (api *terminalCmd) Download(ctx context.Context, param []string) (CmdResult
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	core.RegisterReqId(ctx, task.LOCAL_REQID)
-	req := requests.ReqFileStorageInfoData(ctx, param[0], "", saveAs, setting.WalletAddress, setting.WalletPublicKey, nil)
+	nowSec := time.Now().Unix()
+	req := requests.ReqFileStorageInfoData(ctx, param[0], "", saveAs, setting.WalletAddress, setting.WalletPublicKey, nil, nil, nowSec)
 	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, task.LOCAL_REQID, req); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
@@ -458,7 +500,16 @@ func (api *terminalCmd) DeleteFn(ctx context.Context, param []string) (CmdResult
 		return CmdResult{}, errors.New("input correct file hash")
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	event.DeleteFile(ctx, param[0])
+
+	nowSec := time.Now().Unix()
+	fileHash := param[0]
+	// sign the wallet signature by wallet private key
+	wsignMsg := utils.DeleteFileWalletSignMessage(fileHash, setting.WalletAddress, nowSec)
+	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
+	}
+	event.DeleteFile(ctx, param[0], setting.WalletAddress, setting.WalletPublicKey, wsign, nowSec)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -498,7 +549,7 @@ func (api *terminalCmd) SharePath(ctx context.Context, param []string) (CmdResul
 	if len(param) < 3 {
 		return CmdResult{Msg: ""}, errors.New("input directory hash, share duration(in seconds, 0 for default value), is_private (0:public,1:private)")
 	}
-	time, timeErr := strconv.Atoi(param[1])
+	shareDuration, timeErr := strconv.Atoi(param[1])
 	if timeErr != nil {
 		return CmdResult{Msg: ""}, errors.New("input share duration(in seconds, 0 for default value)")
 	}
@@ -514,7 +565,19 @@ func (api *terminalCmd) SharePath(ctx context.Context, param []string) (CmdResul
 	// if len(str1) == setting.FILEHASHLEN { //
 	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
-	event.GetReqShareFile(ctx, "", param[0], setting.WalletAddress, int64(time), isPrivate)
+	nowSec := time.Now().Unix()
+	if !utils.VerifyHash(param[0]) {
+		return CmdResult{}, errors.New("input correct file hash")
+	}
+	fileHash := param[0]
+	// sign the wallet signature by wallet private key
+	wsignMsg := utils.ShareFileWalletSignMessage(fileHash, setting.WalletAddress, nowSec)
+	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
+	}
+	event.GetReqShareFile(ctx, "", param[0], setting.WalletAddress, int64(shareDuration), isPrivate,
+		setting.WalletPublicKey, wsign, nowSec)
 	// }
 	return CmdResult{Msg: DefaultMsg}, nil
 }
@@ -523,7 +586,12 @@ func (api *terminalCmd) ShareFile(ctx context.Context, param []string) (CmdResul
 	if len(param) < 3 {
 		return CmdResult{Msg: ""}, errors.New("input file hash or directory path, share duration(in seconds, 0 for default value), is_private (0:public,1:private)")
 	}
-	time, timeErr := strconv.Atoi(param[1])
+	fileHash := param[0]
+	if !utils.VerifyHash(param[0]) {
+		return CmdResult{}, errors.New("input correct file hash")
+	}
+
+	shareDuration, timeErr := strconv.Atoi(param[1])
 	if timeErr != nil {
 		fmt.Println("input share duration(in seconds, 0 for default value)")
 		return CmdResult{Msg: ""}, errors.New("input share duration(in seconds, 0 for default value)")
@@ -537,7 +605,15 @@ func (api *terminalCmd) ShareFile(ctx context.Context, param []string) (CmdResul
 		isPrivate = true
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	event.GetReqShareFile(ctx, param[0], "", setting.WalletAddress, int64(time), isPrivate)
+	nowSec := time.Now().Unix()
+	// sign the wallet signature by wallet private key
+	wsignMsg := utils.ShareFileWalletSignMessage(fileHash, setting.WalletAddress, nowSec)
+	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
+	}
+	event.GetReqShareFile(ctx, param[0], "", setting.WalletAddress, int64(shareDuration), isPrivate,
+		setting.WalletPublicKey, wsign, nowSec)
 	// if len(str1) == setting.FILEHASHLEN { //
 	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
@@ -547,14 +623,21 @@ func (api *terminalCmd) ShareFile(ctx context.Context, param []string) (CmdResul
 
 func (api *terminalCmd) AllShare(ctx context.Context, param []string) (CmdResult, error) {
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
+	// sign the wallet signature by wallet private key
+	nowSec := time.Now().Unix()
+	wsignMsg := utils.ShareLinkWalletSignMessage(setting.WalletAddress, nowSec)
+	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
+	}
 	if len(param) < 1 {
-		event.GetAllShareLink(ctx, setting.WalletAddress, 0)
+		event.GetAllShareLink(ctx, setting.WalletAddress, 0, setting.WalletPublicKey, wsign, nowSec)
 	} else {
 		page, err := strconv.ParseUint(param[0], 10, 64)
 		if err != nil {
 			return CmdResult{Msg: ""}, errors.New("invalid page id.")
 		}
-		event.GetAllShareLink(ctx, setting.WalletAddress, page)
+		event.GetAllShareLink(ctx, setting.WalletAddress, page, setting.WalletPublicKey, wsign, nowSec)
 	}
 
 	return CmdResult{Msg: DefaultMsg}, nil
@@ -565,7 +648,16 @@ func (api *terminalCmd) CancelShare(ctx context.Context, param []string) (CmdRes
 		return CmdResult{Msg: ""}, errors.New("input share id")
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	event.DeleteShare(ctx, param[0], setting.WalletAddress)
+
+	nowSec := time.Now().Unix()
+	shareId := param[0]
+	// sign the wallet signature by wallet private key
+	wsignMsg := utils.DeleteShareWalletSignMessage(shareId, setting.WalletAddress, nowSec)
+	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
+	}
+	event.DeleteShare(ctx, param[0], setting.WalletAddress, setting.WalletPublicKey, wsign, nowSec)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -576,10 +668,20 @@ func (api *terminalCmd) GetShareFile(ctx context.Context, param []string) (CmdRe
 	if len(param) < 1 {
 		return CmdResult{Msg: ""}, errors.New("input share link and retrieval secret key(if any)")
 	}
+
+	nowSec := time.Now().Unix()
+	shareId := param[0]
+	// sign the wallet signature by wallet private key
+	wsignMsg := utils.GetShareFileWalletSignMessage(shareId, setting.WalletAddress, nowSec)
+	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
+	}
+
 	if len(param) < 2 {
-		event.GetShareFile(ctx, param[0], "", "", setting.WalletAddress, setting.WalletPublicKey, false)
+		event.GetShareFile(ctx, param[0], "", "", setting.WalletAddress, setting.WalletPublicKey, false, wsign, nowSec)
 	} else {
-		event.GetShareFile(ctx, param[0], param[1], "", setting.WalletAddress, setting.WalletPublicKey, false)
+		event.GetShareFile(ctx, param[0], param[1], "", setting.WalletAddress, setting.WalletPublicKey, false, wsign, nowSec)
 	}
 
 	return CmdResult{Msg: DefaultMsg}, nil
