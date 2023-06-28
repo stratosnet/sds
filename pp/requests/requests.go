@@ -33,25 +33,18 @@ import (
 
 const INVALID_STAT = int64(-1)
 
-func ReqRegisterData(ctx context.Context) *protos.ReqRegister {
-	nowSec := time.Now().Unix()
-	// sign the wallet signature by wallet private key
-	wsignMsg := utils.RegisterWalletSignMessage(setting.WalletAddress, nowSec)
-	wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
-	if err != nil {
-		return &protos.ReqRegister{}
-	}
+func ReqRegisterData(ctx context.Context, walletAddr string, walletPubkey, wsig []byte, reqTime int64) *protos.ReqRegister {
 	walletSign := &protos.WalletSign{
-		WalletAddress: setting.WalletAddress,
-		WalletPubkey:  setting.WalletPublicKey,
-		Signature:     wsign,
+		WalletAddress: walletAddr,
+		WalletPubkey:  walletPubkey,
+		Signature:     wsig,
 	}
 	return &protos.ReqRegister{
 		Address:    p2pserver.GetP2pServer(ctx).GetPPInfo(),
 		MyAddress:  p2pserver.GetP2pServer(ctx).GetPPInfo(),
 		PublicKey:  p2pserver.GetP2pServer(ctx).GetP2PPublicKey(),
 		WalletSign: walletSign,
-		ReqTime:    nowSec,
+		ReqTime:    reqTime,
 	}
 }
 
@@ -76,24 +69,18 @@ func ReqGetPPlistData(ctx context.Context) *protos.ReqGetPPList {
 	return &protos.ReqGetPPList{MyAddress: p2pserver.GetP2pServer(ctx).GetPPInfo()}
 }
 
-func ReqGetSPlistData(ctx context.Context) *protos.ReqGetSPList {
-	nowSec := time.Now().Unix()
+func ReqGetSPlistData(ctx context.Context, walletAddr string, walletPubkey, wsig []byte, reqTime int64) *protos.ReqGetSPList {
+	//nowSec := time.Now().Unix()
+	walletSign := &protos.WalletSign{
+		WalletAddress: walletAddr,
+		WalletPubkey:  walletPubkey,
+		Signature:     wsig,
+	}
 	req := &protos.ReqGetSPList{
-		MyAddress: p2pserver.GetP2pServer(ctx).GetPPInfo(),
-		ReqTime:   nowSec,
-		WalletSign: &protos.WalletSign{
-			WalletAddress: setting.WalletAddress,
-			WalletPubkey:  setting.WalletPublicKey,
-			Signature:     nil,
-		},
+		MyAddress:  p2pserver.GetP2pServer(ctx).GetPPInfo(),
+		ReqTime:    reqTime,
+		WalletSign: walletSign,
 	}
-	// sign the wallet signature by wallet private key
-	wsignMsg := utils.GetSPListWalletSignMessage(setting.WalletAddress, nowSec)
-	wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
-	if err != nil {
-		return req
-	}
-	req.WalletSign.Signature = wsign
 	return req
 }
 
@@ -485,20 +472,13 @@ func ReqDownloadSliceData(ctx context.Context, target *protos.RspFileStorageInfo
 	}
 }
 
-func ReqRegisterNewPPData(ctx context.Context) *protos.ReqRegisterNewPP {
+func ReqRegisterNewPPData(ctx context.Context, walletAddr string, walletPubkey, wsig []byte, reqTime int64) *protos.ReqRegisterNewPP {
 	sysInfo := utils.GetSysInfo(setting.Config.Home.StoragePath)
 	sysInfo.DiskSize = setting.GetDiskSizeSoftCap(sysInfo.DiskSize)
-	nowSec := time.Now().Unix()
-	// sign the wallet signature by wallet private key
-	wsignMsg := utils.RegisterNewPPWalletSignMessage(setting.WalletAddress, nowSec)
-	wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
-	if err != nil {
-		return &protos.ReqRegisterNewPP{}
-	}
 	walletSign := &protos.WalletSign{
-		WalletAddress: setting.WalletAddress,
-		WalletPubkey:  setting.WalletPublicKey,
-		Signature:     wsign,
+		WalletAddress: walletAddr,
+		WalletPubkey:  walletPubkey,
+		Signature:     wsig,
 	}
 	return &protos.ReqRegisterNewPP{
 		P2PAddress:     p2pserver.GetP2pServer(ctx).GetP2PAddress(),
@@ -512,7 +492,7 @@ func ReqRegisterNewPPData(ctx context.Context) *protos.ReqRegisterNewPP {
 		Version:        uint32(setting.Config.Version.AppVer),
 		PubKey:         p2pserver.GetP2pServer(ctx).GetP2PPublicKey(),
 		NetworkAddress: setting.NetworkAddress,
-		ReqTime:        nowSec,
+		ReqTime:        reqTime,
 	}
 }
 

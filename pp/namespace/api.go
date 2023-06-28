@@ -906,7 +906,15 @@ func (api *rpcPrivApi) RequestRegisterNewPP(ctx context.Context, param rpc_api.P
 	metrics.RpcReqCount.WithLabelValues("RequestRegisterNewPP").Inc()
 	reqId := uuid.New().String()
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
-	event.RegisterNewPP(ctx)
+	nowSec := time.Now().Unix()
+	// sign the wallet signature by wallet private key
+	wsignMsg := utils.RegisterNewPPWalletSignMessage(setting.WalletAddress, nowSec)
+	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	if err != nil {
+		result := &rpc_api.RPResult{Return: rpc_api.SIGNATURE_FAILURE + ", wrong wallet signature"}
+		return *result
+	}
+	event.RegisterNewPP(ctx, setting.WalletAddress, setting.WalletPublicKey, wsign, nowSec)
 	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
 	defer cancel()
 

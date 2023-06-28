@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -127,9 +128,9 @@ func reqUploadMsg(fileName, hash, sn string) []byte {
 		utils.ErrorLog("Failed reading key file.")
 		return nil
 	}
-
+	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn)))
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
 	if err != nil {
 		return nil
 	}
@@ -140,12 +141,15 @@ func reqUploadMsg(fileName, hash, sn string) []byte {
 	// param
 	var params = []rpc.ParamReqUploadFile{}
 	params = append(params, rpc.ParamReqUploadFile{
-		FileName:     fileName,
-		FileSize:     int(info.Size()),
-		FileHash:     hash,
-		WalletAddr:   WalletAddress,
-		WalletPubkey: wpk,
-		Signature:    hex.EncodeToString(sign),
+		FileName: fileName,
+		FileSize: int(info.Size()),
+		FileHash: hash,
+		WalletSign: rpc.WalletSign{
+			WalletAddr:   WalletAddress,
+			WalletPubkey: wpk,
+			Signature:    hex.EncodeToString(sign),
+		},
+		ReqTime: nowSec,
 	})
 
 	pm, e := json.Marshal(params)
@@ -270,9 +274,9 @@ func reqUploadStreamMsg(fileName, hash, sn string) []byte {
 		utils.ErrorLog("Failed reading key file.")
 		return nil
 	}
-
+	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn)))
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
 	if err != nil {
 		return nil
 	}
@@ -283,12 +287,15 @@ func reqUploadStreamMsg(fileName, hash, sn string) []byte {
 	// param
 	var params = []rpc.ParamReqUploadFile{}
 	params = append(params, rpc.ParamReqUploadFile{
-		FileName:     fileName,
-		FileSize:     int(info.Size()),
-		FileHash:     hash,
-		WalletAddr:   WalletAddress,
-		WalletPubkey: wpk,
-		Signature:    hex.EncodeToString(sign),
+		FileName: fileName,
+		FileSize: int(info.Size()),
+		FileHash: hash,
+		WalletSign: rpc.WalletSign{
+			WalletAddr:   WalletAddress,
+			WalletPubkey: wpk,
+			Signature:    hex.EncodeToString(sign),
+		},
+		ReqTime: nowSec,
 	})
 
 	pm, e := json.Marshal(params)
@@ -401,9 +408,9 @@ func reqDownloadMsg(hash, sdmPath, sn string) []byte {
 		utils.ErrorLog("Failed reading key file.")
 		return nil
 	}
-
+	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileDownloadWalletSignMessage(hash, WalletAddress, sn)))
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileDownloadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
 	if err != nil {
 		return nil
 	}
@@ -415,10 +422,13 @@ func reqDownloadMsg(hash, sdmPath, sn string) []byte {
 	// param
 	var params = []rpc.ParamReqDownloadFile{}
 	params = append(params, rpc.ParamReqDownloadFile{
-		FileHandle:   sdmPath,
-		WalletAddr:   WalletAddress,
-		WalletPubkey: wpk,
-		Signature:    hex.EncodeToString(sign),
+		FileHandle: sdmPath,
+		WalletSign: rpc.WalletSign{
+			WalletAddr:   WalletAddress,
+			WalletPubkey: wpk,
+			Signature:    hex.EncodeToString(sign),
+		},
+		ReqTime: nowSec,
 	})
 
 	pm, e := json.Marshal(params)
@@ -603,12 +613,26 @@ func reqListMsg(page uint64) []byte {
 		utils.ErrorLog("Failed reading key file.")
 		return nil
 	}
-
+	nowSec := time.Now().Unix()
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(utils.FindMyFileListWalletSignMessage(WalletAddress, nowSec)))
+	if err != nil {
+		return nil
+	}
+	wpk, err := WalletPublicKey.ToBech()
+	if err != nil {
+		return nil
+	}
 	// param
 	var params = []rpc.ParamReqFileList{}
 	params = append(params, rpc.ParamReqFileList{
-		WalletAddr: WalletAddress,
-		PageId:     page,
+		WalletSign: rpc.WalletSign{
+			WalletAddr:   WalletAddress,
+			WalletPubkey: wpk,
+			Signature:    hex.EncodeToString(sign),
+		},
+		ReqTime: nowSec,
+		PageId:  page,
 	})
 
 	pm, e := json.Marshal(params)
@@ -629,11 +653,25 @@ func reqRpMsg() []byte {
 		utils.ErrorLog("Failed reading key file.")
 		return nil
 	}
-
+	nowSec := time.Now().Unix()
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(utils.RegisterNewPPWalletSignMessage(WalletAddress, nowSec)))
+	if err != nil {
+		return nil
+	}
+	wpk, err := WalletPublicKey.ToBech()
+	if err != nil {
+		return nil
+	}
 	// param
 	params := make([]rpc.ParamReqRP, 0)
 	params = append(params, rpc.ParamReqRP{
-		WalletAddr: WalletAddress,
+		WalletSign: rpc.WalletSign{
+			WalletAddr:   WalletAddress,
+			WalletPubkey: wpk,
+			Signature:    hex.EncodeToString(sign),
+		},
+		ReqTime: nowSec,
 	})
 
 	pm, e := json.Marshal(params)
@@ -683,10 +721,26 @@ func reqPrepayMsg(prepayAmount, fee string, gasUint64 uint64) []byte {
 		return nil
 	}
 
+	nowSec := time.Now().Unix()
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(utils.PrepayWalletSignMessage(WalletAddress, nowSec)))
+	if err != nil {
+		return nil
+	}
+	wpk, err := WalletPublicKey.ToBech()
+	if err != nil {
+		return nil
+	}
+
 	// param
 	params := make([]rpc.ParamReqPrepay, 0)
 	params = append(params, rpc.ParamReqPrepay{
-		WalletAddr:   WalletAddress,
+		WalletSign: rpc.WalletSign{
+			WalletAddr:   WalletAddress,
+			WalletPubkey: wpk,
+			Signature:    hex.EncodeToString(sign),
+		},
+		ReqTime:      nowSec,
 		PrepayAmount: prepayAmount,
 		Fee:          fee,
 		Gas:          gasUint64,
@@ -881,11 +935,26 @@ func reqListShareMsg(page uint64) []byte {
 		return nil
 	}
 
+	nowSec := time.Now().Unix()
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(utils.FindMyFileListWalletSignMessage(WalletAddress, nowSec)))
+	if err != nil {
+		return nil
+	}
+	wpk, err := WalletPublicKey.ToBech()
+	if err != nil {
+		return nil
+	}
 	// param
 	var params = []rpc.ParamReqListShared{}
 	params = append(params, rpc.ParamReqListShared{
-		WalletAddr: WalletAddress,
-		PageId:     page,
+		WalletSign: rpc.WalletSign{
+			WalletAddr:   WalletAddress,
+			WalletPubkey: wpk,
+			Signature:    hex.EncodeToString(sign),
+		},
+		ReqTime: nowSec,
+		PageId:  page,
 	})
 
 	pm, e := json.Marshal(params)
@@ -950,11 +1019,26 @@ func reqShareMsg(hash string) []byte {
 		return nil
 	}
 
+	nowSec := time.Now().Unix()
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetShareFileWalletSignMessage(hash, WalletAddress, nowSec)))
+	if err != nil {
+		return nil
+	}
+	wpk, err := WalletPublicKey.ToBech()
+	if err != nil {
+		return nil
+	}
 	// param
 	var params = []rpc.ParamReqShareFile{}
 	params = append(params, rpc.ParamReqShareFile{
-		FileHash:   hash,
-		WalletAddr: WalletAddress,
+		FileHash: hash,
+		WalletSign: rpc.WalletSign{
+			WalletAddr:   WalletAddress,
+			WalletPubkey: wpk,
+			Signature:    hex.EncodeToString(sign),
+		},
+		ReqTime: nowSec,
 	})
 
 	pm, e := json.Marshal(params)
@@ -1015,12 +1099,26 @@ func reqStopShareMsg(shareId string) []byte {
 		utils.ErrorLog("Failed reading key file.")
 		return nil
 	}
-
+	nowSec := time.Now().Unix()
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(utils.DeleteShareWalletSignMessage(shareId, WalletAddress, nowSec)))
+	if err != nil {
+		return nil
+	}
+	wpk, err := WalletPublicKey.ToBech()
+	if err != nil {
+		return nil
+	}
 	// param
 	var params = []rpc.ParamReqStopShare{}
 	params = append(params, rpc.ParamReqStopShare{
-		WalletAddr: WalletAddress,
-		ShareId:    shareId,
+		WalletSign: rpc.WalletSign{
+			WalletAddr:   WalletAddress,
+			WalletPubkey: wpk,
+			Signature:    hex.EncodeToString(sign),
+		},
+		ReqTime: nowSec,
+		ShareId: shareId,
 	})
 
 	pm, e := json.Marshal(params)
@@ -1081,13 +1179,22 @@ func reqGetSharedMsg(shareLink string) []byte {
 	if err != nil {
 		return nil
 	}
-
+	nowSec := time.Now().Unix()
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetShareFileWalletSignMessage(shareLink, WalletAddress, nowSec)))
+	if err != nil {
+		return nil
+	}
 	// param
 	var params = []rpc.ParamReqGetShared{}
 	params = append(params, rpc.ParamReqGetShared{
-		WalletAddr:   WalletAddress,
-		ShareLink:    shareLink,
-		WalletPubkey: wpk,
+		WalletSign: rpc.WalletSign{
+			WalletAddr:   WalletAddress,
+			WalletPubkey: wpk,
+			Signature:    hex.EncodeToString(sign),
+		},
+		ReqTime:   nowSec,
+		ShareLink: shareLink,
 	})
 
 	pm, e := json.Marshal(params)
@@ -1108,9 +1215,9 @@ func reqDownloadSharedMsg(fileHash, reqId, sn string) []byte {
 		utils.ErrorLog("Failed reading key file.")
 		return nil
 	}
-
+	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileDownloadWalletSignMessage(fileHash, WalletAddress, sn)))
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileDownloadWalletSignMessage(fileHash, WalletAddress, sn, nowSec)))
 	if err != nil {
 		return nil
 	}
@@ -1123,11 +1230,14 @@ func reqDownloadSharedMsg(fileHash, reqId, sn string) []byte {
 	// param
 	var params = []rpc.ParamReqDownloadShared{}
 	params = append(params, rpc.ParamReqDownloadShared{
-		FileHash:     fileHash,
-		WalletAddr:   WalletAddress,
-		WalletPubkey: wpk,
-		Signature:    hex.EncodeToString(sign),
-		ReqId:        reqId,
+		FileHash: fileHash,
+		WalletSign: rpc.WalletSign{
+			WalletAddr:   WalletAddress,
+			WalletPubkey: wpk,
+			Signature:    hex.EncodeToString(sign),
+		},
+		ReqTime: nowSec,
+		ReqId:   reqId,
 	})
 
 	pm, e := json.Marshal(params)

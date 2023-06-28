@@ -110,7 +110,14 @@ func (api *terminalCmd) Start(ctx context.Context, param []string) (CmdResult, e
 
 func (api *terminalCmd) RegisterPP(ctx context.Context, param []string) (CmdResult, error) {
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	event.RegisterNewPP(ctx)
+	nowSec := time.Now().Unix()
+	// sign the wallet signature by wallet private key
+	wsignMsg := utils.RegisterNewPPWalletSignMessage(setting.WalletAddress, nowSec)
+	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
+	}
+	event.RegisterNewPP(ctx, setting.WalletAddress, setting.WalletPublicKey, wsign, nowSec)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 

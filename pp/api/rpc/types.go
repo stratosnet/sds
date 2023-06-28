@@ -170,6 +170,7 @@ type GetOzoneResult struct {
 type ParamReqRP struct {
 	//P2PAddr    string `json:"p2paddr"`
 	WalletSign WalletSign `json:"wallet_sign"`
+	ReqTime    int64      `json:"req_time"`
 }
 
 type RPResult struct {
