@@ -597,31 +597,6 @@ message RspPpLatencyCheck {
   string sp_index = 4;
 }
 
-message ReqSpStatus {
-  string target_p2p_address = 1;
-  string requester_p2p_address = 2;
-}
-
-message RspSpStatus {
-  string target_p2p_address = 1;
-  string requester_p2p_address = 2;
-  uint32 activation_state = 3;
-  uint64 connection_count = 4;
-  uint64 online_pp_count = 5;
-}
-
-// get bp BLS public key
-message ReqBLSPublicKey {
-  string msg = 1;
-  string id = 2;
-}
-
-message RspBPBLSPublicKey {
-  ReqRegister bp_info = 1;
-  int64 code = 2;
-  string id = 3;
-}
-
 
 message ReqBalance {
   string wallet_address = 1;
@@ -765,16 +740,6 @@ message RspGetShareFile {
   bool            is_private = 3;
   repeated        FileInfo file_info = 4;
   string          sequence_number = 5;
-}
-
-message ReqTransferBLSSignature {
-  string epoch = 1;
-  bytes  pub_key = 2;
-  bytes  signature = 3;
-}
-
-message RspTransferBLSSignature {
-  Result result = 1;
 }
 
 message ReqReportNodeStatus {
