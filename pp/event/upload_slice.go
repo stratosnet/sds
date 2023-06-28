@@ -14,7 +14,6 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
@@ -611,9 +610,6 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 		task.UploadProgressMap.Delete(target.FileHash)
 		p2pserver.GetP2pServer(ctx).CleanUpConnMap(target.FileHash)
 		ScheduleReqBackupStatus(ctx, target.FileHash)
-		if file.IsFileRpcRemote(target.FileHash) {
-			file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: rpc.SUCCESS})
-		}
 	}
 }
 
