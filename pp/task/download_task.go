@@ -64,6 +64,7 @@ type VideoCacheTask struct {
 
 // DownloadTask signal task convert sliceHash list to map
 type DownloadTask struct {
+	TaskId        string // file task id
 	WalletAddress string
 	FileHash      string
 	VisitCer      string
@@ -137,6 +138,7 @@ func AddDownloadTask(target *protos.RspFileStorageInfo) {
 		SuccessSlice:  make(map[string]bool),
 		FailedPPNodes: make(map[string]*protos.PPBaseInfo),
 		SliceCount:    len(target.SliceInfo),
+		TaskId:        target.TaskId,
 	}
 	DownloadTaskMap.Store((target.FileHash + target.WalletAddress + target.ReqId), dTask)
 	metrics.TaskCount.WithLabelValues("download").Inc()

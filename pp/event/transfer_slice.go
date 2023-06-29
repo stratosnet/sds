@@ -61,6 +61,7 @@ func NoticeFileSliceBackup(ctx context.Context, conn core.WriteCloser) {
 		FileHash:           target.FileHash,
 		SliceNum:           target.SliceNumber,
 		ReceiverP2pAddress: target.ToP2PAddress,
+		TaskId:             target.TaskId,
 	}
 	task.AddTransferTask(target.TaskId, target.SliceStorageInfo.SliceHash, tTask)
 

@@ -251,6 +251,7 @@ message ReqDownloadFileWrong {
   string              file_hash = 2;
   repeated string     failed_slices = 3;
   repeated PPBaseInfo failed_pp_nodes = 4;
+  string              task_id = 5;
 }
 
 message ReqDownloadSlice {

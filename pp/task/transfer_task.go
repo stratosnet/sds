@@ -11,6 +11,7 @@ import (
 )
 
 type TransferTask struct {
+	TaskId             string
 	IsReceiver         bool
 	DeleteOrigin       bool
 	PpInfo             *protos.PPBaseInfo

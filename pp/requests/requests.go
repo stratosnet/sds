@@ -569,6 +569,7 @@ func ReqDownloadFileWrongData(fInfo *protos.RspFileStorageInfo, dTask *task.Down
 		FileHash:      fInfo.FileHash,
 		FailedSlices:  failedSlices,
 		FailedPpNodes: failedPPNodes,
+		TaskId:        dTask.TaskId,
 	}
 }
 
