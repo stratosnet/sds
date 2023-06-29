@@ -472,6 +472,19 @@ func (p P2pPubKey) Address() Address {
 	return BytesToAddress(pk)
 }
 
+// P2pPubKeyFromBech create a P2pPubKey from a Bech-encoded P2P public key
+func P2pPubKeyFromBech(str string) (P2pPubKey, error) {
+	pubkey, err := sdktypes.GetFromBech32(str, types.SdsNodeP2PPubkeyPrefix)
+	if err != nil {
+		return P2pPubKey{}, err
+	}
+	err = sdktypes.VerifyAddressFormat(pubkey)
+	if err != nil {
+		return P2pPubKey{}, err
+	}
+	return BytesToP2pPubKey(pubkey), err
+}
+
 // Bytes gets the byte representation of the underlying hash.
 func (p P2pPrivKey) Bytes() []byte { return p[:] }
 
