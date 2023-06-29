@@ -133,11 +133,13 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		//var p float32 = 100
 		//ProgressMap.Store(target.FileHash, p)
 		task.UploadProgressMap.Delete(target.FileHash)
-
-		if file.IsFileRpcRemote(target.FileHash) {
-			file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: rpc.SUCCESS})
-		}
 	}
+
+	// tell the rpc client, uploading to sds network has successfully started.
+	if file.IsFileRpcRemote(target.FileHash) {
+		file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: rpc.SUCCESS})
+	}
+
 	if isCover {
 		pp.DebugLog(ctx, "is_cover")
 	}
