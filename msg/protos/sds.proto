@@ -22,7 +22,7 @@ message RspGetPPList{
 
 message ReqGetSPList {
   PPBaseInfo my_address = 1;
-  WalletSign wallet_sign = 2;
+  Signature signature = 2;
   int64 req_time = 4;
 }
 
@@ -35,7 +35,7 @@ message ReqRegister {
   PPBaseInfo address = 1;
   bytes public_key = 2;
   PPBaseInfo my_address = 3; //middleman pp address
-  WalletSign wallet_sign = 4;
+  Signature signature = 4;
   int64 req_time = 5;
 }
 
@@ -75,7 +75,7 @@ message ReqUploadFile {
   FileInfo file_info = 1;
   repeated SliceHashAddr slices = 2;
   PPBaseInfo my_address = 3;
-  WalletSign wallet_sign = 4;
+  Signature signature = 4;
   uint32 desired_tier = 5;
   bool allow_higher_tier = 6;
   int64 req_time = 7;
@@ -183,7 +183,7 @@ message RspReportUploadSliceResult {
 
 message ReqFindMyFileList {
   string p2p_address = 1;
-  WalletSign wallet_sign = 2;
+  Signature signature = 2;
   string file_name = 3; // return all if file name is empty
   uint64 page_id = 4;
   FileSortType file_type = 5;
@@ -206,7 +206,7 @@ message RspFindMyFileList {
 
 message ReqFileStorageInfo {
   FileIndexes     file_indexes = 1;
-  WalletSign      wallet_sign = 2;
+  Signature       signature = 2;
   ReqGetShareFile share_request = 3;
   int64 req_time = 4;
 }
@@ -232,7 +232,7 @@ message RspFileStorageInfo {
 
 message ReqFileReplicaInfo {
   string        p2p_address = 1;
-  WalletSign    wallet_sign = 2;
+  Signature     signature = 2;
   string        file_path = 3;
   uint32        replica_increase_num = 4;
   int64         req_time = 5;
@@ -318,7 +318,7 @@ message ReqReportTaskBP {
 
 message ReqRegisterNewPP {
   string  p2p_address = 1;
-  WalletSign wallet_sign = 2;
+  Signature signature = 2;
   uint64  disk_size = 3;
   uint64  free_disk = 4;
   uint64  memory_size = 5;
@@ -402,7 +402,7 @@ message RspUnbondingSP {
 message ReqPrepay {
   bytes tx = 1;
   string p2p_address = 2;
-  WalletSign wallet_sign = 3;
+  Signature signature = 3;
   int64 req_time = 4;
 }
 
@@ -413,7 +413,7 @@ message RspPrepay {
 
 message ReqDeleteFile {
   string p2p_address = 1;
-  WalletSign wallet_sign = 2;
+  Signature signature = 2;
   string file_hash = 3;
   int64 req_time = 4;
 }
@@ -709,7 +709,7 @@ message ReqClearDownloadTask {
 
 message ReqShareLink {
   string p2p_address = 1;
-  WalletSign wallet_sign = 2;
+  Signature signature = 2;
   uint64 page_id = 3;
   int64 req_time = 4;
 }
@@ -725,7 +725,7 @@ message RspShareLink {
 
 message ReqClearExpiredShareLinks {
   string p2p_address = 1;
-  WalletSign wallet_sign = 2;
+  Signature signature = 2;
   int64 req_time = 3;
 }
 
@@ -741,7 +741,7 @@ message ReqShareFile {
   bool   is_private = 2;
   int64  share_time = 3;
   string p2p_address = 4;
-  WalletSign wallet_sign = 5;
+  Signature signature = 5;
   string path_hash = 6;// share whole directory if this field is non-empty
   int64 req_time = 7;
 }
@@ -758,7 +758,7 @@ message RspShareFile {
 message ReqDeleteShare {
   string share_id = 1;
   string p2p_address = 2;
-  WalletSign wallet_sign = 3;
+  Signature signature = 3;
   int64 req_time = 4;
 }
 
@@ -773,7 +773,7 @@ message RspDeleteShare {
 message ReqGetShareFile {
   string keyword = 1; //
   string p2p_address = 2;
-  WalletSign wallet_sign = 3; //
+  Signature signature = 3; //
   string share_password = 4;//
   string save_as = 5;
   int64 req_time = 6;
@@ -861,9 +861,10 @@ message NoticeSpUnderMaintenance{
   int32  maintenance_type = 2;
 }
 
-message WalletSign{
-  string wallet_address = 1;
-  bytes  wallet_pubkey = 2;
+message Signature{
+  string address = 1;
+  bytes  pubkey = 2;
   bytes  signature = 3;
+  SignatureType type = 4;
 }
 

@@ -162,3 +162,8 @@ enum SpMaintenanceType {
     CONSENSUS = 0;
     OTHER = 1;
 }
+
+enum SignatureType {
+    WALLET = 0;
+    P2P = 1;
+}

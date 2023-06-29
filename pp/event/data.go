@@ -120,15 +120,16 @@ func reqPrepayData(ctx context.Context, beneficiary []byte, amount types.Coin, t
 		return nil, err
 	}
 
-	walletSign := &protos.WalletSign{
-		WalletAddress: walletAddr,
-		WalletPubkey:  walletPubkey,
-		Signature:     wsign,
+	walletSign := &protos.Signature{
+		Address:   walletAddr,
+		Pubkey:    walletPubkey,
+		Signature: wsign,
+		Type:      protos.SignatureType_WALLET,
 	}
 	req := &protos.ReqPrepay{
 		Tx:         txBytes,
 		P2PAddress: p2pserver.GetP2pServer(ctx).GetP2PAddress(),
-		WalletSign: walletSign,
+		Signature:  walletSign,
 		ReqTime:    reqTime,
 	}
 	return req, nil

@@ -70,7 +70,7 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 		if err != nil {
 			return
 		}
-		reqMsg.(*protos.ReqUploadFile).WalletSign.Signature = wsign
+		reqMsg.(*protos.ReqUploadFile).Signature.Signature = wsign
 		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, reqMsg.(*protos.ReqUploadFile), header.ReqUploadFile)
 		return
 	}
@@ -85,7 +85,7 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 		if err != nil {
 			return
 		}
-		reqMsg.(*protos.ReqFileStorageInfo).WalletSign.Signature = wsign
+		reqMsg.(*protos.ReqFileStorageInfo).Signature.Signature = wsign
 		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, reqMsg.(*protos.ReqFileStorageInfo), header.ReqFileStorageInfo)
 		return
 	}

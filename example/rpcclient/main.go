@@ -144,10 +144,10 @@ func reqUploadMsg(fileName, hash, sn string) []byte {
 		FileName: fileName,
 		FileSize: int(info.Size()),
 		FileHash: hash,
-		WalletSign: rpc.WalletSign{
-			WalletAddr:   WalletAddress,
-			WalletPubkey: wpk,
-			Signature:    hex.EncodeToString(sign),
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
 		},
 		ReqTime: nowSec,
 	})
@@ -290,10 +290,10 @@ func reqUploadStreamMsg(fileName, hash, sn string) []byte {
 		FileName: fileName,
 		FileSize: int(info.Size()),
 		FileHash: hash,
-		WalletSign: rpc.WalletSign{
-			WalletAddr:   WalletAddress,
-			WalletPubkey: wpk,
-			Signature:    hex.EncodeToString(sign),
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
 		},
 		ReqTime: nowSec,
 	})
@@ -423,10 +423,10 @@ func reqDownloadMsg(hash, sdmPath, sn string) []byte {
 	var params = []rpc.ParamReqDownloadFile{}
 	params = append(params, rpc.ParamReqDownloadFile{
 		FileHandle: sdmPath,
-		WalletSign: rpc.WalletSign{
-			WalletAddr:   WalletAddress,
-			WalletPubkey: wpk,
-			Signature:    hex.EncodeToString(sign),
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
 		},
 		ReqTime: nowSec,
 	})
@@ -626,10 +626,10 @@ func reqListMsg(page uint64) []byte {
 	// param
 	var params = []rpc.ParamReqFileList{}
 	params = append(params, rpc.ParamReqFileList{
-		WalletSign: rpc.WalletSign{
-			WalletAddr:   WalletAddress,
-			WalletPubkey: wpk,
-			Signature:    hex.EncodeToString(sign),
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
 		},
 		ReqTime: nowSec,
 		PageId:  page,
@@ -666,10 +666,10 @@ func reqRpMsg() []byte {
 	// param
 	params := make([]rpc.ParamReqRP, 0)
 	params = append(params, rpc.ParamReqRP{
-		WalletSign: rpc.WalletSign{
-			WalletAddr:   WalletAddress,
-			WalletPubkey: wpk,
-			Signature:    hex.EncodeToString(sign),
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
 		},
 		ReqTime: nowSec,
 	})
@@ -735,10 +735,10 @@ func reqPrepayMsg(prepayAmount, fee string, gasUint64 uint64) []byte {
 	// param
 	params := make([]rpc.ParamReqPrepay, 0)
 	params = append(params, rpc.ParamReqPrepay{
-		WalletSign: rpc.WalletSign{
-			WalletAddr:   WalletAddress,
-			WalletPubkey: wpk,
-			Signature:    hex.EncodeToString(sign),
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
 		},
 		ReqTime:      nowSec,
 		PrepayAmount: prepayAmount,
@@ -948,10 +948,10 @@ func reqListShareMsg(page uint64) []byte {
 	// param
 	var params = []rpc.ParamReqListShared{}
 	params = append(params, rpc.ParamReqListShared{
-		WalletSign: rpc.WalletSign{
-			WalletAddr:   WalletAddress,
-			WalletPubkey: wpk,
-			Signature:    hex.EncodeToString(sign),
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
 		},
 		ReqTime: nowSec,
 		PageId:  page,
@@ -1033,10 +1033,10 @@ func reqShareMsg(hash string) []byte {
 	var params = []rpc.ParamReqShareFile{}
 	params = append(params, rpc.ParamReqShareFile{
 		FileHash: hash,
-		WalletSign: rpc.WalletSign{
-			WalletAddr:   WalletAddress,
-			WalletPubkey: wpk,
-			Signature:    hex.EncodeToString(sign),
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
 		},
 		ReqTime: nowSec,
 	})
@@ -1112,10 +1112,10 @@ func reqStopShareMsg(shareId string) []byte {
 	// param
 	var params = []rpc.ParamReqStopShare{}
 	params = append(params, rpc.ParamReqStopShare{
-		WalletSign: rpc.WalletSign{
-			WalletAddr:   WalletAddress,
-			WalletPubkey: wpk,
-			Signature:    hex.EncodeToString(sign),
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
 		},
 		ReqTime: nowSec,
 		ShareId: shareId,
@@ -1188,10 +1188,10 @@ func reqGetSharedMsg(shareLink string) []byte {
 	// param
 	var params = []rpc.ParamReqGetShared{}
 	params = append(params, rpc.ParamReqGetShared{
-		WalletSign: rpc.WalletSign{
-			WalletAddr:   WalletAddress,
-			WalletPubkey: wpk,
-			Signature:    hex.EncodeToString(sign),
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
 		},
 		ReqTime:   nowSec,
 		ShareLink: shareLink,
@@ -1231,10 +1231,10 @@ func reqDownloadSharedMsg(fileHash, reqId, sn string) []byte {
 	var params = []rpc.ParamReqDownloadShared{}
 	params = append(params, rpc.ParamReqDownloadShared{
 		FileHash: fileHash,
-		WalletSign: rpc.WalletSign{
-			WalletAddr:   WalletAddress,
-			WalletPubkey: wpk,
-			Signature:    hex.EncodeToString(sign),
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
 		},
 		ReqTime: nowSec,
 		ReqId:   reqId,

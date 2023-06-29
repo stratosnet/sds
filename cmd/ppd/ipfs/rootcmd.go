@@ -277,10 +277,10 @@ func reqUploadMsg(fileName, hash, sn string) (*rpc_api.ParamReqUploadFile, error
 		FileName: fileName,
 		FileSize: int(info.Size()),
 		FileHash: hash,
-		WalletSign: rpc_api.WalletSign{
-			WalletAddr:   WalletAddress,
-			WalletPubkey: wpk,
-			Signature:    hex.EncodeToString(sign),
+		Signature: rpc_api.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
 		},
 		ReqTime: nowSec,
 	}, nil
@@ -312,10 +312,10 @@ func reqDownloadMsg(hash, sdmPath, sn string) (*rpc_api.ParamReqDownloadFile, er
 
 	return &rpc_api.ParamReqDownloadFile{
 		FileHandle: sdmPath,
-		WalletSign: rpc_api.WalletSign{
-			WalletAddr:   WalletAddress,
-			WalletPubkey: wpk,
-			Signature:    hex.EncodeToString(sign),
+		Signature: rpc_api.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
 		},
 		ReqTime: nowSec,
 	}, nil
@@ -355,10 +355,10 @@ func reqListMsg(page uint64) (*rpc_api.ParamReqFileList, error) {
 		return nil, err
 	}
 	return &rpc_api.ParamReqFileList{
-		WalletSign: rpc_api.WalletSign{
-			WalletAddr:   WalletAddress,
-			WalletPubkey: wpk,
-			Signature:    hex.EncodeToString(sign),
+		Signature: rpc_api.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
 		},
 		PageId:  page,
 		ReqTime: nowSec,

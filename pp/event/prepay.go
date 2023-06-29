@@ -26,7 +26,7 @@ func Prepay(ctx context.Context, beneficiary []byte, amount utiltypes.Coin, txFe
 		pp.ErrorLog(ctx, "Couldn't build PP prepay request: "+err.Error())
 		return err
 	}
-	pp.Log(ctx, "Sending prepay message to SP! "+prepayReq.WalletSign.WalletAddress)
+	pp.Log(ctx, "Sending prepay message to SP! "+prepayReq.Signature.Address)
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, prepayReq, header.ReqPrepay)
 	return nil
 }

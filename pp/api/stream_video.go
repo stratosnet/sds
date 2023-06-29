@@ -556,14 +556,14 @@ func reqDownloadMsg(hash, sdmPath, sn string) rpctypes.ParamReqDownloadFile {
 	nowSec := time.Now().Unix()
 	sign, _ := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetFileDownloadWalletSignMessage(hash, setting.WalletAddress, sn, nowSec)))
 	walletPublicKey, _ := utiltypes.BytesToAccPubKey(setting.WalletPublicKey).ToBech()
-	walletSign := rpctypes.WalletSign{
-		WalletAddr:   setting.WalletAddress,
-		WalletPubkey: walletPublicKey,
-		Signature:    hex.EncodeToString(sign),
+	walletSign := rpctypes.Signature{
+		Address:   setting.WalletAddress,
+		Pubkey:    walletPublicKey,
+		Signature: hex.EncodeToString(sign),
 	}
 	return rpctypes.ParamReqDownloadFile{
 		FileHandle: sdmPath,
-		WalletSign: walletSign,
+		Signature:  walletSign,
 		ReqTime:    nowSec,
 	}
 }
@@ -584,15 +584,15 @@ func reqGetSharedMsg(shareLink string) rpctypes.ParamReqGetShared {
 	nowSec := time.Now().Unix()
 	sign, _ := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetShareFileWalletSignMessage(shareLink, setting.WalletAddress, nowSec)))
 	walletPublicKey, _ := utiltypes.BytesToAccPubKey(setting.WalletPublicKey).ToBech()
-	walletSign := rpctypes.WalletSign{
-		WalletAddr:   setting.WalletAddress,
-		WalletPubkey: walletPublicKey,
-		Signature:    hex.EncodeToString(sign),
+	walletSign := rpctypes.Signature{
+		Address:   setting.WalletAddress,
+		Pubkey:    walletPublicKey,
+		Signature: hex.EncodeToString(sign),
 	}
 	return rpctypes.ParamReqGetShared{
-		WalletSign: walletSign,
-		ReqTime:    nowSec,
-		ShareLink:  shareLink,
+		Signature: walletSign,
+		ReqTime:   nowSec,
+		ShareLink: shareLink,
 	}
 }
 
@@ -600,16 +600,16 @@ func reqDownloadShared(fileHash, sn, reqId string) rpctypes.ParamReqDownloadShar
 	nowSec := time.Now().Unix()
 	sign, _ := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, sn, nowSec)))
 	walletPublicKey, _ := utiltypes.BytesToAccPubKey(setting.WalletPublicKey).ToBech()
-	walletSign := rpctypes.WalletSign{
-		WalletAddr:   setting.WalletAddress,
-		WalletPubkey: walletPublicKey,
-		Signature:    hex.EncodeToString(sign),
+	walletSign := rpctypes.Signature{
+		Address:   setting.WalletAddress,
+		Pubkey:    walletPublicKey,
+		Signature: hex.EncodeToString(sign),
 	}
 	return rpctypes.ParamReqDownloadShared{
-		FileHash:   fileHash,
-		WalletSign: walletSign,
-		ReqTime:    nowSec,
-		ReqId:      reqId,
+		FileHash:  fileHash,
+		Signature: walletSign,
+		ReqTime:   nowSec,
+		ReqId:     reqId,
 	}
 }
 

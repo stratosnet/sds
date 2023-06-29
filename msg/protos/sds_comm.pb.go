@@ -353,6 +353,52 @@ func (SpMaintenanceType) EnumDescriptor() ([]byte, []int) {
 	return file_sds_comm_proto_rawDescGZIP(), []int{6}
 }
 
+type SignatureType int32
+
+const (
+	SignatureType_WALLET SignatureType = 0
+	SignatureType_P2P    SignatureType = 1
+)
+
+// Enum value maps for SignatureType.
+var (
+	SignatureType_name = map[int32]string{
+		0: "WALLET",
+		1: "P2P",
+	}
+	SignatureType_value = map[string]int32{
+		"WALLET": 0,
+		"P2P":    1,
+	}
+)
+
+func (x SignatureType) Enum() *SignatureType {
+	p := new(SignatureType)
+	*p = x
+	return p
+}
+
+func (x SignatureType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SignatureType) Descriptor() protoreflect.EnumDescriptor {
+	return file_sds_comm_proto_enumTypes[7].Descriptor()
+}
+
+func (SignatureType) Type() protoreflect.EnumType {
+	return &file_sds_comm_proto_enumTypes[7]
+}
+
+func (x SignatureType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SignatureType.Descriptor instead.
+func (SignatureType) EnumDescriptor() ([]byte, []int) {
+	return file_sds_comm_proto_rawDescGZIP(), []int{7}
+}
+
 type Result struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1734,10 +1780,12 @@ var file_sds_comm_proto_rawDesc = []byte{
 	0x10, 0x03, 0x2a, 0x2d, 0x0a, 0x11, 0x53, 0x70, 0x4d, 0x61, 0x69, 0x6e, 0x74, 0x65, 0x6e, 0x61,
 	0x6e, 0x63, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12, 0x0d, 0x0a, 0x09, 0x43, 0x4f, 0x4e, 0x53, 0x45,
 	0x4e, 0x53, 0x55, 0x53, 0x10, 0x00, 0x12, 0x09, 0x0a, 0x05, 0x4f, 0x54, 0x48, 0x45, 0x52, 0x10,
-	0x01, 0x42, 0x26, 0x5a, 0x24, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
-	0x73, 0x74, 0x72, 0x61, 0x74, 0x6f, 0x73, 0x6e, 0x65, 0x74, 0x2f, 0x73, 0x64, 0x73, 0x2f, 0x6d,
-	0x73, 0x67, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x01, 0x2a, 0x24, 0x0a, 0x0d, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x54, 0x79,
+	0x70, 0x65, 0x12, 0x0a, 0x0a, 0x06, 0x57, 0x41, 0x4c, 0x4c, 0x45, 0x54, 0x10, 0x00, 0x12, 0x07,
+	0x0a, 0x03, 0x50, 0x32, 0x50, 0x10, 0x01, 0x42, 0x26, 0x5a, 0x24, 0x67, 0x69, 0x74, 0x68, 0x75,
+	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x73, 0x74, 0x72, 0x61, 0x74, 0x6f, 0x73, 0x6e, 0x65, 0x74,
+	0x2f, 0x73, 0x64, 0x73, 0x2f, 0x6d, 0x73, 0x67, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x73, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1752,7 +1800,7 @@ func file_sds_comm_proto_rawDescGZIP() []byte {
 	return file_sds_comm_proto_rawDescData
 }
 
-var file_sds_comm_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
+var file_sds_comm_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
 var file_sds_comm_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_sds_comm_proto_goTypes = []interface{}{
 	(ResultState)(0),          // 0: protos.ResultState
@@ -1762,33 +1810,34 @@ var file_sds_comm_proto_goTypes = []interface{}{
 	(MsgType)(0),              // 4: protos.MsgType
 	(PPState)(0),              // 5: protos.PPState
 	(SpMaintenanceType)(0),    // 6: protos.SpMaintenanceType
-	(*Result)(nil),            // 7: protos.Result
-	(*PPBaseInfo)(nil),        // 8: protos.PPBaseInfo
-	(*SPBaseInfo)(nil),        // 9: protos.SPBaseInfo
-	(*FileInfo)(nil),          // 10: protos.FileInfo
-	(*SliceHashAddr)(nil),     // 11: protos.SliceHashAddr
-	(*SliceOffsetInfo)(nil),   // 12: protos.SliceOffsetInfo
-	(*SliceOffset)(nil),       // 13: protos.SliceOffset
-	(*FileIndexes)(nil),       // 14: protos.FileIndexes
-	(*DownloadSliceInfo)(nil), // 15: protos.DownloadSliceInfo
-	(*SliceStorageInfo)(nil),  // 16: protos.SliceStorageInfo
-	(*EncryptedSlice)(nil),    // 17: protos.EncryptedSlice
-	(*ShareLinkInfo)(nil),     // 18: protos.ShareLinkInfo
-	(*CpuStat)(nil),           // 19: protos.CpuStat
-	(*MemoryStat)(nil),        // 20: protos.MemoryStat
-	(*DiskStat)(nil),          // 21: protos.DiskStat
-	(*BandwidthStat)(nil),     // 22: protos.BandwidthStat
+	(SignatureType)(0),        // 7: protos.SignatureType
+	(*Result)(nil),            // 8: protos.Result
+	(*PPBaseInfo)(nil),        // 9: protos.PPBaseInfo
+	(*SPBaseInfo)(nil),        // 10: protos.SPBaseInfo
+	(*FileInfo)(nil),          // 11: protos.FileInfo
+	(*SliceHashAddr)(nil),     // 12: protos.SliceHashAddr
+	(*SliceOffsetInfo)(nil),   // 13: protos.SliceOffsetInfo
+	(*SliceOffset)(nil),       // 14: protos.SliceOffset
+	(*FileIndexes)(nil),       // 15: protos.FileIndexes
+	(*DownloadSliceInfo)(nil), // 16: protos.DownloadSliceInfo
+	(*SliceStorageInfo)(nil),  // 17: protos.SliceStorageInfo
+	(*EncryptedSlice)(nil),    // 18: protos.EncryptedSlice
+	(*ShareLinkInfo)(nil),     // 19: protos.ShareLinkInfo
+	(*CpuStat)(nil),           // 20: protos.CpuStat
+	(*MemoryStat)(nil),        // 21: protos.MemoryStat
+	(*DiskStat)(nil),          // 22: protos.DiskStat
+	(*BandwidthStat)(nil),     // 23: protos.BandwidthStat
 }
 var file_sds_comm_proto_depIdxs = []int32{
 	0,  // 0: protos.Result.state:type_name -> protos.ResultState
-	13, // 1: protos.SliceHashAddr.slice_offset:type_name -> protos.SliceOffset
-	8,  // 2: protos.SliceHashAddr.pp_info:type_name -> protos.PPBaseInfo
-	13, // 3: protos.SliceOffsetInfo.slice_offset:type_name -> protos.SliceOffset
-	13, // 4: protos.SliceOffsetInfo.encrypted_slice_offset:type_name -> protos.SliceOffset
-	16, // 5: protos.DownloadSliceInfo.slice_storage_info:type_name -> protos.SliceStorageInfo
-	8,  // 6: protos.DownloadSliceInfo.storage_pp_info:type_name -> protos.PPBaseInfo
-	8,  // 7: protos.DownloadSliceInfo.backups_pp_info:type_name -> protos.PPBaseInfo
-	13, // 8: protos.DownloadSliceInfo.slice_offset:type_name -> protos.SliceOffset
+	14, // 1: protos.SliceHashAddr.slice_offset:type_name -> protos.SliceOffset
+	9,  // 2: protos.SliceHashAddr.pp_info:type_name -> protos.PPBaseInfo
+	14, // 3: protos.SliceOffsetInfo.slice_offset:type_name -> protos.SliceOffset
+	14, // 4: protos.SliceOffsetInfo.encrypted_slice_offset:type_name -> protos.SliceOffset
+	17, // 5: protos.DownloadSliceInfo.slice_storage_info:type_name -> protos.SliceStorageInfo
+	9,  // 6: protos.DownloadSliceInfo.storage_pp_info:type_name -> protos.PPBaseInfo
+	9,  // 7: protos.DownloadSliceInfo.backups_pp_info:type_name -> protos.PPBaseInfo
+	14, // 8: protos.DownloadSliceInfo.slice_offset:type_name -> protos.SliceOffset
 	9,  // [9:9] is the sub-list for method output_type
 	9,  // [9:9] is the sub-list for method input_type
 	9,  // [9:9] is the sub-list for extension type_name
@@ -2000,7 +2049,7 @@ func file_sds_comm_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_sds_comm_proto_rawDesc,
-			NumEnums:      7,
+			NumEnums:      8,
 			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,

@@ -186,8 +186,8 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
-	walletAddr := target.ShareRequest.WalletSign.WalletAddress
-	walletPubkey := target.ShareRequest.WalletSign.WalletPubkey
+	walletAddr := target.ShareRequest.Signature.Address
+	walletPubkey := target.ShareRequest.Signature.Pubkey
 	rpcResult := &rpc.FileShareResult{}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -196,7 +196,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	reqId := core.GetRemoteReqId(ctx)
 	rpcRequested := !strings.HasPrefix(reqId, task.LOCAL_REQID)
 	if rpcRequested {
-		defer file.SetFileShareResult(target.ShareRequest.WalletSign.WalletAddress+reqId, rpcResult)
+		defer file.SetFileShareResult(target.ShareRequest.Signature.Address+reqId, rpcResult)
 	}
 
 	if target.ShareRequest.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
@@ -230,7 +230,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			rpcResult.Return = rpc.SHARED_DL_START
 			rpcResult.FileInfo = append(rpcResult.FileInfo, f)
 			rpcResult.SequenceNumber = target.SequenceNumber
-			file.SetFileShareResult(target.ShareRequest.WalletSign.WalletAddress+reqId, rpcResult)
+			file.SetFileShareResult(target.ShareRequest.Signature.Address+reqId, rpcResult)
 			go func(fileInfo *protos.FileInfo) {
 				if walletSign := file.GetSignatureFromRemote(fileInfo.FileHash + walletAddr); walletSign != nil {
 					req = requests.RequestDownloadFile(ctx, fileInfo.FileHash, filePath, walletAddr, reqId, walletSign,
@@ -246,7 +246,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			if err != nil {
 				return
 			}
-			req.WalletSign.Signature = sign
+			req.Signature.Signature = sign
 			p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 		}
 	}
