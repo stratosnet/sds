@@ -19,13 +19,14 @@ import (
 )
 
 // Prepay PP node sends a prepay transaction
-func Prepay(ctx context.Context, beneficiary []byte, amount utiltypes.Coin, txFee utiltypes.TxFee) error {
-	prepayReq, err := reqPrepayData(ctx, beneficiary, amount, txFee)
+func Prepay(ctx context.Context, beneficiary []byte, amount utiltypes.Coin, txFee utiltypes.TxFee,
+	walletAddr string, walletPubkey, wsign []byte, reqTime int64) error {
+	prepayReq, err := reqPrepayData(ctx, beneficiary, amount, txFee, walletAddr, walletPubkey, wsign, reqTime)
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't build PP prepay request: "+err.Error())
 		return err
 	}
-	pp.Log(ctx, "Sending prepay message to SP! "+prepayReq.WalletAddress)
+	pp.Log(ctx, "Sending prepay message to SP! "+prepayReq.Signature.Address)
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, prepayReq, header.ReqPrepay)
 	return nil
 }

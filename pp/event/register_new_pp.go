@@ -17,9 +17,11 @@ import (
 )
 
 // RegisterNewPP P-SP P register to become PP
-func RegisterNewPP(ctx context.Context) {
+func RegisterNewPP(ctx context.Context, walletAddr string, walletPubkey, wsig []byte, reqTime int64) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqRegisterNewPPData(ctx), header.ReqRegisterNewPP)
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx,
+			requests.ReqRegisterNewPPData(ctx, walletAddr, walletPubkey, wsig, reqTime),
+			header.ReqRegisterNewPP)
 	}
 }
 

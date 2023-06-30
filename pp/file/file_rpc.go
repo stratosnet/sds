@@ -49,6 +49,9 @@ var (
 	// key(walletAddr + reqid): value(file list result)
 	rpcFileListResult = &sync.Map{}
 
+	// key(walletAddr + reqid): value(file list result)
+	rpcClearExpiredShareLinksResult = &sync.Map{}
+
 	rpcFileShareResult = &sync.Map{}
 
 	// key(wallet + reqid) : value(*rpc.GetOzoneResult)
@@ -478,6 +481,19 @@ func GetFileShareResult(key string) (*rpc.FileShareResult, bool) {
 func SetFileShareResult(key string, result *rpc.FileShareResult) {
 	if result != nil {
 		rpcFileShareResult.Store(key, result)
+	}
+}
+func GetClearExpiredShareLinksResult(key string) (*rpc.ClearExpiredShareLinksResult, bool) {
+	result, loaded := rpcClearExpiredShareLinksResult.LoadAndDelete(key)
+	if result != nil && loaded {
+		return result.(*rpc.ClearExpiredShareLinksResult), loaded
+	}
+	return nil, loaded
+}
+
+func SetClearExpiredShareLinksResult(key string, result *rpc.ClearExpiredShareLinksResult) {
+	if result != nil {
+		rpcClearExpiredShareLinksResult.Store(key, result)
 	}
 }
 

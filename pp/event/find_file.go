@@ -15,10 +15,11 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-func FindFileList(ctx context.Context, fileName string, walletAddr string, pageId uint64, keyword string, fileType int, isUp bool) {
+func FindFileList(ctx context.Context, fileName string, walletAddr string, pageId uint64, keyword string, fileType int,
+	isUp bool, walletPubkey, wsign []byte, reqTime int64) {
 	if setting.CheckLogin() {
 		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.FindFileListData(fileName, walletAddr, p2pserver.GetP2pServer(ctx).GetP2PAddress(),
-			pageId, keyword, protos.FileSortType(fileType), isUp), header.ReqFindMyFileList)
+			pageId, keyword, protos.FileSortType(fileType), isUp, walletPubkey, wsign, reqTime), header.ReqFindMyFileList)
 	}
 }
 

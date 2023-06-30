@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/ipfs/go-cid"
@@ -552,14 +553,18 @@ func getSliceInfoBySliceNumber(fInfo *protos.RspFileStorageInfo, sliceNumber uin
 
 func reqDownloadMsg(hash, sdmPath, sn string) rpctypes.ParamReqDownloadFile {
 	// param
-	sign, _ := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetFileDownloadWalletSignMessage(hash, setting.WalletAddress, sn)))
+	nowSec := time.Now().Unix()
+	sign, _ := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetFileDownloadWalletSignMessage(hash, setting.WalletAddress, sn, nowSec)))
 	walletPublicKey, _ := utiltypes.BytesToAccPubKey(setting.WalletPublicKey).ToBech()
-
+	walletSign := rpctypes.Signature{
+		Address:   setting.WalletAddress,
+		Pubkey:    walletPublicKey,
+		Signature: hex.EncodeToString(sign),
+	}
 	return rpctypes.ParamReqDownloadFile{
-		FileHandle:   sdmPath,
-		WalletAddr:   setting.WalletAddress,
-		WalletPubkey: walletPublicKey,
-		Signature:    hex.EncodeToString(sign),
+		FileHandle: sdmPath,
+		Signature:  walletSign,
+		ReqTime:    nowSec,
 	}
 }
 
@@ -576,23 +581,35 @@ func reqDownloadDataMsg(fInfo *protos.RspFileStorageInfo, sliceInfo *protos.Down
 }
 
 func reqGetSharedMsg(shareLink string) rpctypes.ParamReqGetShared {
+	nowSec := time.Now().Unix()
+	sign, _ := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetShareFileWalletSignMessage(shareLink, setting.WalletAddress, nowSec)))
 	walletPublicKey, _ := utiltypes.BytesToAccPubKey(setting.WalletPublicKey).ToBech()
+	walletSign := rpctypes.Signature{
+		Address:   setting.WalletAddress,
+		Pubkey:    walletPublicKey,
+		Signature: hex.EncodeToString(sign),
+	}
 	return rpctypes.ParamReqGetShared{
-		WalletAddr:   setting.WalletAddress,
-		WalletPubkey: walletPublicKey,
-		ShareLink:    shareLink,
+		Signature: walletSign,
+		ReqTime:   nowSec,
+		ShareLink: shareLink,
 	}
 }
 
 func reqDownloadShared(fileHash, sn, reqId string) rpctypes.ParamReqDownloadShared {
-	sign, _ := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, sn)))
+	nowSec := time.Now().Unix()
+	sign, _ := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, sn, nowSec)))
 	walletPublicKey, _ := utiltypes.BytesToAccPubKey(setting.WalletPublicKey).ToBech()
+	walletSign := rpctypes.Signature{
+		Address:   setting.WalletAddress,
+		Pubkey:    walletPublicKey,
+		Signature: hex.EncodeToString(sign),
+	}
 	return rpctypes.ParamReqDownloadShared{
-		FileHash:     fileHash,
-		WalletAddr:   setting.WalletAddress,
-		WalletPubkey: walletPublicKey,
-		Signature:    hex.EncodeToString(sign),
-		ReqId:        reqId,
+		FileHash:  fileHash,
+		Signature: walletSign,
+		ReqTime:   nowSec,
+		ReqId:     reqId,
 	}
 }
 

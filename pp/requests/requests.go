@@ -33,11 +33,19 @@ import (
 
 const INVALID_STAT = int64(-1)
 
-func ReqRegisterData(ctx context.Context) *protos.ReqRegister {
+func ReqRegisterData(ctx context.Context, walletAddr string, walletPubkey, wsig []byte, reqTime int64) *protos.ReqRegister {
+	walletSign := &protos.Signature{
+		Address:   walletAddr,
+		Pubkey:    walletPubkey,
+		Signature: wsig,
+		Type:      protos.SignatureType_WALLET,
+	}
 	return &protos.ReqRegister{
 		Address:   p2pserver.GetP2pServer(ctx).GetPPInfo(),
 		MyAddress: p2pserver.GetP2pServer(ctx).GetPPInfo(),
 		PublicKey: p2pserver.GetP2pServer(ctx).GetP2PPublicKey(),
+		Signature: walletSign,
+		ReqTime:   reqTime,
 	}
 }
 
@@ -62,8 +70,20 @@ func ReqGetPPlistData(ctx context.Context) *protos.ReqGetPPList {
 	return &protos.ReqGetPPList{MyAddress: p2pserver.GetP2pServer(ctx).GetPPInfo()}
 }
 
-func ReqGetSPlistData(ctx context.Context) *protos.ReqGetSPList {
-	return &protos.ReqGetSPList{MyAddress: p2pserver.GetP2pServer(ctx).GetPPInfo()}
+func ReqGetSPlistData(ctx context.Context, walletAddr string, walletPubkey, wsig []byte, reqTime int64) *protos.ReqGetSPList {
+	//nowSec := time.Now().Unix()
+	walletSign := &protos.Signature{
+		Address:   walletAddr,
+		Pubkey:    walletPubkey,
+		Signature: wsig,
+		Type:      protos.SignatureType_WALLET,
+	}
+	req := &protos.ReqGetSPList{
+		MyAddress: p2pserver.GetP2pServer(ctx).GetPPInfo(),
+		ReqTime:   reqTime,
+		Signature: walletSign,
+	}
+	return req
 }
 
 func ReqGetPPStatusData(ctx context.Context, initPPList bool) *protos.ReqGetPPStatus {
@@ -80,7 +100,8 @@ func ReqGetWalletOzData(walletAddr, reqId string) *protos.ReqGetWalletOz {
 }
 
 // RequestUploadFile a file from an owner instead from a "path" belongs to PP's default wallet
-func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize uint64, walletAddress, walletPubkey, signature string, slices []*protos.SliceHashAddr, isEncrypted, isVideoStream bool, desiredTier uint32, allowHigherTier bool) (*protos.ReqUploadFile, error) {
+func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize uint64, walletAddress, walletPubkey, signature string, reqTime int64,
+	slices []*protos.SliceHashAddr, isEncrypted, isVideoStream bool, desiredTier uint32, allowHigherTier bool) (*protos.ReqUploadFile, error) {
 	utils.Log("fileName: ", fileName)
 	encryptionTag := ""
 	if isEncrypted {
@@ -112,12 +133,17 @@ func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize 
 			EncryptionTag:      encryptionTag,
 			OwnerWalletAddress: walletAddress,
 		},
-		Slices:          slices,
-		MyAddress:       p2pserver.GetP2pServer(ctx).GetPPInfo(),
-		WalletSign:      wsig,
-		WalletPubkey:    wpk.Bytes(),
+		Slices:    slices,
+		MyAddress: p2pserver.GetP2pServer(ctx).GetPPInfo(),
+		Signature: &protos.Signature{
+			Address:   walletAddress,
+			Pubkey:    wpk.Bytes(),
+			Signature: wsig,
+			Type:      protos.SignatureType_WALLET,
+		},
 		DesiredTier:     desiredTier,
 		AllowHigherTier: allowHigherTier,
+		ReqTime:         reqTime,
 	}
 
 	if isVideoStream {
@@ -139,14 +165,22 @@ func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize 
 }
 
 // RequestUploadFileData assume the PP's current wallet is the owner, otherwise RequestUploadFile() should be used instead
-func RequestUploadFileData(ctx context.Context, fileInfo *protos.FileInfo, slices []*protos.SliceHashAddr, desiredTier uint32, allowHigherTier bool) *protos.ReqUploadFile {
+func RequestUploadFileData(ctx context.Context, fileInfo *protos.FileInfo, slices []*protos.SliceHashAddr, desiredTier uint32, allowHigherTier bool,
+	walletAddr string, walletPubkey, walletSign []byte, reqTime int64) *protos.ReqUploadFile {
+
 	req := &protos.ReqUploadFile{
-		FileInfo:        fileInfo,
-		MyAddress:       p2pserver.GetP2pServer(ctx).GetPPInfo(),
-		WalletPubkey:    setting.WalletPublicKey,
+		FileInfo:  fileInfo,
+		MyAddress: p2pserver.GetP2pServer(ctx).GetPPInfo(),
+		Signature: &protos.Signature{
+			Address:   walletAddr,
+			Pubkey:    walletPubkey,
+			Signature: walletSign,
+			Type:      protos.SignatureType_WALLET,
+		},
 		DesiredTier:     desiredTier,
 		AllowHigherTier: allowHigherTier,
 		Slices:          slices,
+		ReqTime:         reqTime,
 	}
 
 	// info
@@ -159,7 +193,7 @@ func RequestUploadFileData(ctx context.Context, fileInfo *protos.FileInfo, slice
 }
 
 // RequestDownloadFile the entry for rpc remote download
-func RequestDownloadFile(ctx context.Context, fileHash, sdmPath, walletAddr string, reqId string, walletSign, walletPubkey []byte, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
+func RequestDownloadFile(ctx context.Context, fileHash, sdmPath, walletAddr string, reqId string, walletSign, walletPubkey []byte, shareRequest *protos.ReqGetShareFile, reqTime int64) *protos.ReqFileStorageInfo {
 	// file's request id is used for identifying the download session
 	fileReqId := reqId
 	if reqId == "" {
@@ -171,8 +205,7 @@ func RequestDownloadFile(ctx context.Context, fileHash, sdmPath, walletAddr stri
 
 	// path: mesh network address
 	metrics.DownloadPerformanceLogNow(fileHash + ":SND_STORAGE_INFO_SP:")
-	req := ReqFileStorageInfoData(ctx, sdmPath, "", "", walletAddr, walletPubkey, shareRequest)
-	req.WalletSign = walletSign
+	req := ReqFileStorageInfoData(ctx, sdmPath, "", "", walletAddr, walletPubkey, walletSign, shareRequest, reqTime)
 	return req
 }
 
@@ -443,12 +476,18 @@ func ReqDownloadSliceData(ctx context.Context, target *protos.RspFileStorageInfo
 	}
 }
 
-func ReqRegisterNewPPData(ctx context.Context) *protos.ReqRegisterNewPP {
+func ReqRegisterNewPPData(ctx context.Context, walletAddr string, walletPubkey, wsig []byte, reqTime int64) *protos.ReqRegisterNewPP {
 	sysInfo := utils.GetSysInfo(setting.Config.Home.StoragePath)
 	sysInfo.DiskSize = setting.GetDiskSizeSoftCap(sysInfo.DiskSize)
+	walletSign := &protos.Signature{
+		Address:   walletAddr,
+		Pubkey:    walletPubkey,
+		Signature: wsig,
+		Type:      protos.SignatureType_WALLET,
+	}
 	return &protos.ReqRegisterNewPP{
 		P2PAddress:     p2pserver.GetP2pServer(ctx).GetP2PAddress(),
-		WalletAddress:  setting.WalletAddress,
+		Signature:      walletSign,
 		DiskSize:       sysInfo.DiskSize,
 		FreeDisk:       sysInfo.FreeDisk,
 		MemorySize:     sysInfo.MemorySize,
@@ -458,6 +497,7 @@ func ReqRegisterNewPPData(ctx context.Context) *protos.ReqRegisterNewPP {
 		Version:        uint32(setting.Config.Version.AppVer),
 		PubKey:         p2pserver.GetP2pServer(ctx).GetP2PPublicKey(),
 		NetworkAddress: setting.NetworkAddress,
+		ReqTime:        reqTime,
 	}
 }
 
@@ -491,7 +531,7 @@ func ReqTransferDownloadWrongData(ctx context.Context, notice *protos.NoticeFile
 
 // ReqFileStorageInfoData encode ReqFileStorageInfo message. If it's not a "share request", walletAddr should keep the same
 // as the wallet from the "path".
-func ReqFileStorageInfoData(ctx context.Context, path, savePath, saveAs, walletAddr string, walletPUbkey []byte, shareRequest *protos.ReqGetShareFile) *protos.ReqFileStorageInfo {
+func ReqFileStorageInfoData(ctx context.Context, path, savePath, saveAs, walletAddr string, walletPUbkey, wsig []byte, shareRequest *protos.ReqGetShareFile, reqTime int64) *protos.ReqFileStorageInfo {
 	return &protos.ReqFileStorageInfo{
 		FileIndexes: &protos.FileIndexes{
 			P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress(),
@@ -500,8 +540,14 @@ func ReqFileStorageInfoData(ctx context.Context, path, savePath, saveAs, walletA
 			SavePath:      savePath,
 			SaveAs:        saveAs,
 		},
-		WalletPubkey: walletPUbkey,
+		Signature: &protos.Signature{
+			Address:   walletAddr,
+			Pubkey:    walletPUbkey,
+			Signature: wsig,
+			Type:      protos.SignatureType_WALLET,
+		},
 		ShareRequest: shareRequest,
+		ReqTime:      reqTime,
 	}
 }
 
@@ -523,18 +569,40 @@ func ReqDownloadFileWrongData(fInfo *protos.RspFileStorageInfo, dTask *task.Down
 		FileHash:      fInfo.FileHash,
 		FailedSlices:  failedSlices,
 		FailedPpNodes: failedPPNodes,
+		TaskId:        dTask.TaskId,
 	}
 }
 
-func FindFileListData(fileName string, walletAddr, p2pAddress string, pageId uint64, keyword string, fileType protos.FileSortType, isUp bool) *protos.ReqFindMyFileList {
+func FindFileListData(fileName string, walletAddr, p2pAddress string, pageId uint64, keyword string, fileType protos.FileSortType, isUp bool, walletPubkey, wsign []byte, reqTime int64) *protos.ReqFindMyFileList {
+	walletSign := &protos.Signature{
+		Address:   walletAddr,
+		Pubkey:    walletPubkey,
+		Signature: wsign,
+		Type:      protos.SignatureType_WALLET,
+	}
 	return &protos.ReqFindMyFileList{
-		FileName:      fileName,
-		P2PAddress:    p2pAddress,
-		WalletAddress: walletAddr,
-		PageId:        pageId,
-		FileType:      fileType,
-		IsUp:          isUp,
-		Keyword:       keyword,
+		FileName:   fileName,
+		P2PAddress: p2pAddress,
+		Signature:  walletSign,
+		PageId:     pageId,
+		FileType:   fileType,
+		IsUp:       isUp,
+		Keyword:    keyword,
+		ReqTime:    reqTime,
+	}
+}
+
+func ClearExpiredShareLinksData(p2pAddress, walletAddr string, walletPubkey, wsign []byte, reqTime int64) *protos.ReqClearExpiredShareLinks {
+	walletSign := &protos.Signature{
+		Address:   walletAddr,
+		Pubkey:    walletPubkey,
+		Signature: wsign,
+		Type:      protos.SignatureType_WALLET,
+	}
+	return &protos.ReqClearExpiredShareLinks{
+		P2PAddress: p2pAddress,
+		Signature:  walletSign,
+		ReqTime:    reqTime,
 	}
 }
 
@@ -561,11 +629,17 @@ func RspTransferDownload(data []byte, taskId, sliceHash, spP2pAddress, p2pAddres
 	}
 }
 
-func ReqDeleteFileData(fileHash, p2pAddress string) *protos.ReqDeleteFile {
+func ReqDeleteFileData(fileHash, p2pAddress string, walletAddr string, walletPubkey, wsign []byte, reqTime int64) *protos.ReqDeleteFile {
+	walletSign := &protos.Signature{
+		Address:   walletAddr,
+		Pubkey:    walletPubkey,
+		Signature: wsign,
+	}
 	return &protos.ReqDeleteFile{
-		FileHash:      fileHash,
-		P2PAddress:    p2pAddress,
-		WalletAddress: setting.WalletAddress,
+		FileHash:   fileHash,
+		P2PAddress: p2pAddress,
+		Signature:  walletSign,
+		ReqTime:    reqTime,
 	}
 }
 
@@ -589,41 +663,68 @@ func RspGetHDInfoData(p2pAddress string) *protos.RspGetHDInfo {
 	return rsp
 }
 
-func ReqShareLinkData(walletAddr, p2pAddress string, page uint64) *protos.ReqShareLink {
+func ReqShareLinkData(walletAddr, p2pAddress string, page uint64, walletPubkey, wsign []byte, reqTime int64) *protos.ReqShareLink {
+	walletSign := &protos.Signature{
+		Address:   walletAddr,
+		Pubkey:    walletPubkey,
+		Signature: wsign,
+		Type:      protos.SignatureType_WALLET,
+	}
 	return &protos.ReqShareLink{
-		P2PAddress:    p2pAddress,
-		WalletAddress: walletAddr,
-		PageId:        page,
+		P2PAddress: p2pAddress,
+		Signature:  walletSign,
+		PageId:     page,
+		ReqTime:    reqTime,
 	}
 }
 
-func ReqShareFileData(fileHash, pathHash, walletAddr, p2pAddress string, isPrivate bool, shareTime int64) *protos.ReqShareFile {
+func ReqShareFileData(fileHash, pathHash, walletAddr, p2pAddress string, isPrivate bool, shareTime int64, walletPubkey, wsign []byte, reqTime int64) *protos.ReqShareFile {
+	walletSign := &protos.Signature{
+		Address:   walletAddr,
+		Pubkey:    walletPubkey,
+		Signature: wsign,
+		Type:      protos.SignatureType_WALLET,
+	}
 	return &protos.ReqShareFile{
-		FileHash:      fileHash,
-		IsPrivate:     isPrivate,
-		ShareTime:     shareTime,
-		P2PAddress:    p2pAddress,
-		WalletAddress: walletAddr,
-		PathHash:      pathHash,
+		FileHash:   fileHash,
+		IsPrivate:  isPrivate,
+		ShareTime:  shareTime,
+		P2PAddress: p2pAddress,
+		Signature:  walletSign,
+		PathHash:   pathHash,
+		ReqTime:    reqTime,
 	}
 }
 
-func ReqDeleteShareData(shareID, walletAddr, p2pAddress string) *protos.ReqDeleteShare {
+func ReqDeleteShareData(shareID, walletAddr, p2pAddress string, walletPubkey, wsign []byte, reqTime int64) *protos.ReqDeleteShare {
+	walletSign := &protos.Signature{
+		Address:   walletAddr,
+		Pubkey:    walletPubkey,
+		Signature: wsign,
+		Type:      protos.SignatureType_WALLET,
+	}
 	return &protos.ReqDeleteShare{
-		P2PAddress:    p2pAddress,
-		WalletAddress: walletAddr,
-		ShareId:       shareID,
+		P2PAddress: p2pAddress,
+		Signature:  walletSign,
+		ShareId:    shareID,
+		ReqTime:    reqTime,
 	}
 }
 
-func ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr, p2pAddress string, walletPubkey []byte, isVideoStream bool) *protos.ReqGetShareFile {
+func ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr, p2pAddress string, walletPubkey, wsign []byte, isVideoStream bool, reqTime int64) *protos.ReqGetShareFile {
+	walletSign := &protos.Signature{
+		Address:   walletAddr,
+		Pubkey:    walletPubkey,
+		Signature: wsign,
+		Type:      protos.SignatureType_WALLET,
+	}
 	return &protos.ReqGetShareFile{
 		Keyword:       keyword,
 		P2PAddress:    p2pAddress,
-		WalletAddress: walletAddr,
-		WalletPubkey:  walletPubkey,
+		Signature:     walletSign,
 		SharePassword: sharePassword,
 		SaveAs:        saveAs,
+		ReqTime:       reqTime,
 	}
 }
 
@@ -713,14 +814,18 @@ func ReqDowngradeInfo(ctx context.Context) *protos.ReqGetPPDowngradeInfo {
 	return &protos.ReqGetPPDowngradeInfo{MyAddress: p2pserver.GetP2pServer(ctx).GetPPInfo()}
 }
 
-func ReqFileReplicaInfo(path, walletAddr, p2pAddress string, replicaIncreaseNum uint32, walletSign, walletPUbkey []byte) *protos.ReqFileReplicaInfo {
+func ReqFileReplicaInfo(path, walletAddr, p2pAddress string, replicaIncreaseNum uint32, walletPUbkey, walletSign []byte, reqTime int64) *protos.ReqFileReplicaInfo {
 	return &protos.ReqFileReplicaInfo{
 		P2PAddress:         p2pAddress,
-		WalletAddress:      walletAddr,
 		FilePath:           path,
 		ReplicaIncreaseNum: replicaIncreaseNum,
-		WalletSign:         walletSign,
-		WalletPubkey:       walletPUbkey,
+		Signature: &protos.Signature{
+			Address:   walletAddr,
+			Pubkey:    walletPUbkey,
+			Signature: walletSign,
+			Type:      protos.SignatureType_WALLET,
+		},
+		ReqTime: reqTime,
 	}
 }
 

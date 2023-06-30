@@ -13,9 +13,11 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-func DeleteFile(ctx context.Context, fileHash string) {
+func DeleteFile(ctx context.Context, fileHash string, walletAddr string, walletPubkey, wsign []byte, reqTime int64) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteFileData(fileHash, p2pserver.GetP2pServer(ctx).GetP2PAddress()), header.ReqDeleteFile)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx,
+			requests.ReqDeleteFileData(fileHash, p2pserver.GetP2pServer(ctx).GetP2PAddress(), walletAddr, walletPubkey, wsign, reqTime),
+			header.ReqDeleteFile)
 	}
 }
 

@@ -65,12 +65,12 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	if reqMsg, loaded := uploadRequestMap.LoadAndDelete(requests.GetReqIdFromMessage(ctx)); loaded {
-		walletString := utils.GetFileUploadWalletSignMessage(reqMsg.(*protos.ReqUploadFile).FileInfo.FileHash, setting.WalletAddress, target.SequenceNumber)
+		walletString := utils.GetFileUploadWalletSignMessage(reqMsg.(*protos.ReqUploadFile).FileInfo.FileHash, setting.WalletAddress, target.SequenceNumber, reqMsg.(*protos.ReqUploadFile).ReqTime)
 		wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(walletString))
 		if err != nil {
 			return
 		}
-		reqMsg.(*protos.ReqUploadFile).WalletSign = wsign
+		reqMsg.(*protos.ReqUploadFile).Signature.Signature = wsign
 		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, reqMsg.(*protos.ReqUploadFile), header.ReqUploadFile)
 		return
 	}
@@ -80,12 +80,12 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 		if err != nil {
 			return
 		}
-		walletString := utils.GetFileUploadWalletSignMessage(fileHash, setting.WalletAddress, target.SequenceNumber)
+		walletString := utils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, target.SequenceNumber, reqMsg.(*protos.ReqFileStorageInfo).ReqTime)
 		wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(walletString))
 		if err != nil {
 			return
 		}
-		reqMsg.(*protos.ReqFileStorageInfo).WalletSign = wsign
+		reqMsg.(*protos.ReqFileStorageInfo).Signature.Signature = wsign
 		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, reqMsg.(*protos.ReqFileStorageInfo), header.ReqFileStorageInfo)
 		return
 	}

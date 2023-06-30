@@ -58,7 +58,14 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, w ht
 		return
 	}
 
-	req := requests.ReqFileStorageInfoData(ctx, path, savePath, saveAs, setting.WalletAddress, setting.WalletPublicKey, nil)
+	nowSec := time.Now().Unix()
+	// sign the wallet signature by wallet private key
+	wsignMsg := utils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, "", nowSec) // need to retrieve sn first
+	wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	if err != nil {
+		return
+	}
+	req := requests.ReqFileStorageInfoData(ctx, path, savePath, saveAs, setting.WalletAddress, setting.WalletPublicKey, wsign, nil, nowSec)
 	metrics.DownloadPerformanceLogNow(fileHash + ":SND_STORAGE_INFO_SP:")
 	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 }
@@ -182,14 +189,16 @@ func GetFileReplicaInfo(ctx context.Context, path string, replicaIncreaseNum uin
 	}
 	pp.DebugLog(ctx, "path:", path)
 
+	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
-	wsignMsg := utils.GetFileReplicaInfoWalletSignMessage(fileHash, setting.WalletAddress)
+	wsignMsg := utils.GetFileReplicaInfoWalletSignMessage(fileHash, setting.WalletAddress, nowSec)
 	wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
 	if err != nil {
 		return
 	}
 
-	req := requests.ReqFileReplicaInfo(path, setting.WalletAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress(), replicaIncreaseNum, wsign, setting.WalletPublicKey)
+	req := requests.ReqFileReplicaInfo(path, setting.WalletAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress(), replicaIncreaseNum,
+		setting.WalletPublicKey, wsign, nowSec)
 	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileReplicaInfo)
 }
 

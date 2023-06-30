@@ -6,13 +6,13 @@ import (
 )
 
 // GetFileUploadWalletSignMessage upload: wallet sign message for file upload request from the (rpc or cmd) user
-func GetFileUploadWalletSignMessage(fileHash, walletAddr, sn string) string {
-	return fileHash + walletAddr + sn
+func GetFileUploadWalletSignMessage(fileHash, walletAddr, sn string, timestamp int64) string {
+	return fileHash + walletAddr + sn + string(Int64ToByte(timestamp))
 }
 
 // GetFileDownloadWalletSignMessage download: wallet sign message for download request from the (rpc or cmd) user
-func GetFileDownloadWalletSignMessage(fileHash, walletAddr, sn string) string {
-	return fileHash + walletAddr + sn
+func GetFileDownloadWalletSignMessage(fileHash, walletAddr, sn string, timestamp int64) string {
+	return fileHash + walletAddr + sn + string(Int64ToByte(timestamp))
 }
 
 // GetRspUploadFileSpNodeSignMessage upload: node sign message for upload file response, between sp and uploader pp, the dest pp verify this too
@@ -50,6 +50,40 @@ func GetRspFileStorageInfoNodeSignMessage(rspMsg *protos.RspFileStorageInfo) ([]
 }
 
 // GetFileReplicaInfoWalletSignMessage replica info: wallet sign message for get file replica info request from the (rpc or cmd) user
-func GetFileReplicaInfoWalletSignMessage(fileHash, walletAddr string) string {
-	return fileHash + walletAddr
+func GetFileReplicaInfoWalletSignMessage(fileHash, walletAddr string, timestamp int64) string {
+	return fileHash + walletAddr + string(Int64ToByte(timestamp))
+}
+
+func DeleteFileWalletSignMessage(fileHash, walletAddr string, timestamp int64) string {
+	return fileHash + walletAddr + string(Int64ToByte(timestamp))
+}
+func DeleteShareWalletSignMessage(shareId, walletAddr string, timestamp int64) string {
+	return shareId + walletAddr + string(Int64ToByte(timestamp))
+}
+func FindMyFileListWalletSignMessage(walletAddr string, timestamp int64) string {
+	return walletAddr + string(Int64ToByte(timestamp))
+}
+func GetShareFileWalletSignMessage(shareId, walletAddr string, timestamp int64) string {
+	return shareId + walletAddr + string(Int64ToByte(timestamp))
+}
+func GetSPListWalletSignMessage(walletAddr string, timestamp int64) string {
+	return walletAddr + string(Int64ToByte(timestamp))
+}
+func PrepayWalletSignMessage(walletAddr string, timestamp int64) string {
+	return walletAddr + string(Int64ToByte(timestamp))
+}
+func RegisterWalletSignMessage(walletAddr string, timestamp int64) string {
+	return walletAddr + string(Int64ToByte(timestamp))
+}
+func RegisterNewPPWalletSignMessage(walletAddr string, timestamp int64) string {
+	return walletAddr + string(Int64ToByte(timestamp))
+}
+func ShareFileWalletSignMessage(fileHash, walletAddr string, timestamp int64) string {
+	return fileHash + walletAddr + string(Int64ToByte(timestamp))
+}
+func ShareLinkWalletSignMessage(walletAddr string, timestamp int64) string {
+	return walletAddr + string(Int64ToByte(timestamp))
+}
+func ClearExpiredShareLinksWalletSignMessage(walletAddr string, timestamp int64) string {
+	return walletAddr + string(Int64ToByte(timestamp))
 }

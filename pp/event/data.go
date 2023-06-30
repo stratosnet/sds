@@ -102,7 +102,8 @@ func reqDeactivateData(ctx context.Context, txFee types.TxFee) (*protos.ReqDeact
 	return req, nil
 }
 
-func reqPrepayData(ctx context.Context, beneficiary []byte, amount types.Coin, txFee types.TxFee) (*protos.ReqPrepay, error) {
+func reqPrepayData(ctx context.Context, beneficiary []byte, amount types.Coin, txFee types.TxFee,
+	walletAddr string, walletPubkey, wsign []byte, reqTime int64) (*protos.ReqPrepay, error) {
 	// Create and sign a prepay transaction
 	senderAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
 	if err != nil {
@@ -119,10 +120,17 @@ func reqPrepayData(ctx context.Context, beneficiary []byte, amount types.Coin, t
 		return nil, err
 	}
 
+	walletSign := &protos.Signature{
+		Address:   walletAddr,
+		Pubkey:    walletPubkey,
+		Signature: wsign,
+		Type:      protos.SignatureType_WALLET,
+	}
 	req := &protos.ReqPrepay{
-		Tx:            txBytes,
-		P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress(),
-		WalletAddress: setting.WalletAddress,
+		Tx:         txBytes,
+		P2PAddress: p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+		Signature:  walletSign,
+		ReqTime:    reqTime,
 	}
 	return req, nil
 }

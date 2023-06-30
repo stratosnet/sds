@@ -254,6 +254,8 @@ var (
 	RspShareLink               MsgType
 	ReqShareFile               MsgType
 	RspShareFile               MsgType
+	ReqClearExpiredShareLinks  MsgType
+	RspClearExpiredShareLinks  MsgType
 	ReqDeleteShare             MsgType
 	RspDeleteShare             MsgType
 	ReqGetShareFile            MsgType
