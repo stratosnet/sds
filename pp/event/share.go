@@ -186,18 +186,30 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
-	walletAddr := target.ShareRequest.Signature.Address
-	walletPubkey := target.ShareRequest.Signature.Pubkey
-	rpcResult := &rpc.FileShareResult{}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-
 	reqId := core.GetRemoteReqId(ctx)
 	rpcRequested := !strings.HasPrefix(reqId, task.LOCAL_REQID)
+	rpcResult := &rpc.FileShareResult{}
 	if rpcRequested {
 		defer file.SetFileShareResult(target.ShareRequest.Signature.Address+reqId, rpcResult)
 	}
+
+	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		if rpcRequested {
+			rpcResult.Return = rpc.GENERIC_ERR
+		}
+		return
+	}
+
+	if target.ShareRequest == nil {
+		utils.ErrorLog("got empty ShareRequest from sp")
+		return
+	}
+
+	walletAddr := target.ShareRequest.Signature.Address
+	walletPubkey := target.ShareRequest.Signature.Pubkey
 
 	if target.ShareRequest.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.ShareRequest.P2PAddress, core.MessageFromContext(ctx))
@@ -206,11 +218,6 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	}
 
 	pp.Log(ctx, "get RspGetShareFile", target.Result.State, target.Result.Msg)
-	if target.Result.State != protos.ResultState_RES_SUCCESS {
-		rpcResult.Return = rpc.GENERIC_ERR
-		return
-	}
-
 	pp.Log(ctx, "FileInfo:", target.FileInfo)
 
 	for idx, fileInfo := range target.FileInfo {
