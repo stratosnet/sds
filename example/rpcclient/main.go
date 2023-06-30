@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/cmd/common"
