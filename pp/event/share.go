@@ -197,9 +197,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	}
 
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
-		if rpcRequested {
-			rpcResult.Return = rpc.GENERIC_ERR
-		}
+		rpcResult.Return = rpc.GENERIC_ERR
 		return
 	}
 
