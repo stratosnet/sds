@@ -56,6 +56,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"allshare                                                       list all shared files\n" +
 		"getsharefile <sharelink> <password>                            download a shared file, need to consume ozone\n" +
 		"cancelshare <shareID>                                          cancel a shared file\n" +
+		"clearexpshare                                                  clear all expired share links\n" +
 		"ver                                                            version\n" +
 		"monitor                                                        show monitor\n" +
 		"stopmonitor                                                    stop monitor\n" +
@@ -193,6 +194,10 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		return callRpc(c, "cancelShare", param)
 	}
 
+	clearexpshare := func(line string, param []string) bool {
+		return callRpc(c, "clearExpShare", param)
+	}
+
 	getsharefile := func(line string, param []string) bool {
 		return callRpc(c, "getShareFile", param)
 	}
@@ -268,6 +273,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("allshare", allshare, false)
 	console.Mystdin.RegisterProcessFunc("cancelshare", cancelshare, true)
 	console.Mystdin.RegisterProcessFunc("getsharefile", getsharefile, true)
+	console.Mystdin.RegisterProcessFunc("clearexpshare", clearexpshare, true)
 
 	console.Mystdin.RegisterProcessFunc("pauseget", pauseget, true)
 	console.Mystdin.RegisterProcessFunc("pauseput", pauseput, true)
