@@ -106,8 +106,8 @@ const (
 
 	MSG_ID_NOTICE_FILESLICE_BACKUP
 
-	MSG_ID_REQ_TRANSFE_RDOWNLOAD
-	MSG_ID_RSP_TRANSFE_RDOWNLOAD
+	MSG_ID_REQ_TRANSFER_DOWNLOAD
+	MSG_ID_RSP_TRANSFER_DOWNLOAD
 	MSG_ID_REQ_TRANSFER_DOWNLOAD_WRONG
 	MSG_ID_RSP_TRANSFER_DOWNLOAD_WRONG
 
@@ -119,6 +119,8 @@ const (
 	MSG_ID_RSP_FILE_BACKUP_STATUS
 	MSG_ID_REQ_FILE_REPLICA_INFO
 	MSG_ID_RSP_FILE_REPLICA_INFO
+	MSG_ID_REQ_FILE_STATUS
+	MSG_ID_RSP_FILE_STATUS
 	MSG_ID_REQ_SHARELINK
 	MSG_ID_RSP_SHARELINK
 	MSG_ID_REQ_SHARE_FILE
@@ -146,7 +148,6 @@ const (
 	NUMBER_MESSAGE_TYPES
 )
 
-// cmd, 8 bytes string, exceeded will be truncate
 var (
 	ReqGetPPList          MsgType
 	RspGetPPList          MsgType
@@ -250,6 +251,8 @@ var (
 	RspFileBackupStatus        MsgType
 	ReqFileReplicaInfo         MsgType
 	RspFileReplicaInfo         MsgType
+	ReqFileStatus              MsgType
+	RspFileStatus              MsgType
 	ReqShareLink               MsgType
 	RspShareLink               MsgType
 	ReqShareFile               MsgType
@@ -385,8 +388,8 @@ func init() {
 	// backup and transfer
 	registerOneMessageType(&NoticeFileSliceBackup, MSG_ID_NOTICE_FILESLICE_BACKUP, "NotFSB")
 
-	registerOneMessageType(&ReqTransferDownload, MSG_ID_REQ_TRANSFE_RDOWNLOAD, "ReqTdl")
-	registerOneMessageType(&RspTransferDownload, MSG_ID_RSP_TRANSFE_RDOWNLOAD, "RspTdl")
+	registerOneMessageType(&ReqTransferDownload, MSG_ID_REQ_TRANSFER_DOWNLOAD, "ReqTdl")
+	registerOneMessageType(&RspTransferDownload, MSG_ID_RSP_TRANSFER_DOWNLOAD, "RspTdl")
 	registerOneMessageType(&ReqTransferDownloadWrong, MSG_ID_REQ_TRANSFER_DOWNLOAD_WRONG, "ReqTDW")
 	registerOneMessageType(&RspTransferDownloadWrong, MSG_ID_RSP_TRANSFER_DOWNLOAD_WRONG, "RspTDW")
 
@@ -398,6 +401,8 @@ func init() {
 	registerOneMessageType(&RspFileBackupStatus, MSG_ID_RSP_FILE_BACKUP_STATUS, "RspFBSt")
 	registerOneMessageType(&ReqFileReplicaInfo, MSG_ID_REQ_FILE_REPLICA_INFO, "ReqFRpIn")
 	registerOneMessageType(&RspFileReplicaInfo, MSG_ID_RSP_FILE_REPLICA_INFO, "RspFRpIn")
+	registerOneMessageType(&ReqFileStatus, MSG_ID_REQ_FILE_STATUS, "ReqFStat")
+	registerOneMessageType(&RspFileStatus, MSG_ID_RSP_FILE_STATUS, "RspFStat")
 	registerOneMessageType(&ReqShareLink, MSG_ID_REQ_SHARELINK, "ReqSL")
 	registerOneMessageType(&RspShareLink, MSG_ID_RSP_SHARELINK, "RspSL")
 	registerOneMessageType(&ReqShareFile, MSG_ID_REQ_SHARE_FILE, "ReqSF")
@@ -493,8 +498,8 @@ func GetReqIdFromRspId(reqId uint8) uint8 {
 		return MSG_ID_REQ_DOWNLOAD_FILE_WRONG
 	case MSG_ID_RSP_REGISTER_NEWPP:
 		return MSG_ID_REQ_REGISTER_NEWPP
-	case MSG_ID_RSP_TRANSFE_RDOWNLOAD:
-		return MSG_ID_REQ_TRANSFE_RDOWNLOAD
+	case MSG_ID_RSP_TRANSFER_DOWNLOAD:
+		return MSG_ID_REQ_TRANSFER_DOWNLOAD
 	case MSG_ID_RSP_TRANSFER_DOWNLOAD_WRONG:
 		return MSG_ID_REQ_TRANSFER_DOWNLOAD_WRONG
 	case MSG_ID_RSP_REPORT_BACKUP_SLICE_RESULT:
@@ -503,6 +508,8 @@ func GetReqIdFromRspId(reqId uint8) uint8 {
 		return MSG_ID_REQ_FILE_BACKUP_STATUS
 	case MSG_ID_RSP_FILE_REPLICA_INFO:
 		return MSG_ID_REQ_FILE_REPLICA_INFO
+	case MSG_ID_RSP_FILE_STATUS:
+		return MSG_ID_REQ_FILE_STATUS
 	case MSG_ID_RSP_SHARELINK:
 		return MSG_ID_REQ_SHARELINK
 	case MSG_ID_RSP_SHARE_FILE:

@@ -167,3 +167,9 @@ enum SignatureType {
     WALLET = 0;
     P2P = 1;
 }
+
+enum FileUploadState {
+  UPLOADING = 0;
+  FAILED = 1;
+  FINISHED = 2;
+}

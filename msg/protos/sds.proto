@@ -246,6 +246,19 @@ message RspFileReplicaInfo {
   uint32    expected_replicas = 5;
 }
 
+message ReqFileStatus {
+  string    file_hash = 1;
+  Signature signature = 2;
+}
+
+message RspFileStatus {
+  Result          result = 1;
+  string          file_hash = 2;
+  FileUploadState state = 3;
+  bool            user_has_file = 4;
+  uint32          replicas = 5;
+}
+
 message ReqDownloadFileWrong {
   FileIndexes         file_indexes = 1;
   string              file_hash = 2;
