@@ -256,8 +256,6 @@ var (
 	RspShareLink               MsgType
 	ReqShareFile               MsgType
 	RspShareFile               MsgType
-	ReqClearExpiredShareLinks  MsgType
-	RspClearExpiredShareLinks  MsgType
 	ReqDeleteShare             MsgType
 	RspDeleteShare             MsgType
 	ReqGetShareFile            MsgType
@@ -278,6 +276,9 @@ var (
 
 	RspBadVersion            MsgType
 	NoticeSpUnderMaintenance MsgType
+
+	ReqClearExpiredShareLinks MsgType
+	RspClearExpiredShareLinks MsgType
 
 	registeredMessages [NUMBER_MESSAGE_TYPES]*MsgType
 )
