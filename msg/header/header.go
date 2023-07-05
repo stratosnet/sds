@@ -127,8 +127,6 @@ const (
 	MSG_ID_RSP_DELETE_SHARE
 	MSG_ID_REQ_GET_SHAREFILE
 	MSG_ID_RSP_GET_SHAREFILE
-	MSG_ID_REQ_CLEAR_EXPIRED_SHARE_LINKS
-	MSG_ID_RSP_CLEAR_EXPIRED_SHARE_LINKS
 	MSG_ID_REQ_SP_LATENCY_CHECK
 	MSG_ID_RSP_SP_LATENCY_CHECK
 	MSG_ID_REQ_PP_LATENCY_CHECK
@@ -145,6 +143,8 @@ const (
 
 	MSG_ID_RSP_BADVERSION
 	MSG_ID_NOTICE_SP_UNDERMAINTENANCE
+	MSG_ID_REQ_CLEAR_EXPIRED_SHARE_LINKS
+	MSG_ID_RSP_CLEAR_EXPIRED_SHARE_LINKS
 	NUMBER_MESSAGE_TYPES
 )
 
@@ -256,8 +256,6 @@ var (
 	RspShareLink               MsgType
 	ReqShareFile               MsgType
 	RspShareFile               MsgType
-	ReqClearExpiredShareLinks  MsgType
-	RspClearExpiredShareLinks  MsgType
 	ReqDeleteShare             MsgType
 	RspDeleteShare             MsgType
 	ReqGetShareFile            MsgType
@@ -278,6 +276,9 @@ var (
 
 	RspBadVersion            MsgType
 	NoticeSpUnderMaintenance MsgType
+
+	ReqClearExpiredShareLinks MsgType
+	RspClearExpiredShareLinks MsgType
 
 	registeredMessages [NUMBER_MESSAGE_TYPES]*MsgType
 )
@@ -408,8 +409,6 @@ func init() {
 	registerOneMessageType(&RspDeleteShare, MSG_ID_RSP_DELETE_SHARE, "RspDSF")
 	registerOneMessageType(&ReqGetShareFile, MSG_ID_REQ_GET_SHAREFILE, "ReqGSF")
 	registerOneMessageType(&RspGetShareFile, MSG_ID_RSP_GET_SHAREFILE, "RspGSF")
-	registerOneMessageType(&ReqClearExpiredShareLinks, MSG_ID_REQ_CLEAR_EXPIRED_SHARE_LINKS, "ReqCESL")
-	registerOneMessageType(&RspClearExpiredShareLinks, MSG_ID_RSP_CLEAR_EXPIRED_SHARE_LINKS, "RspCESL")
 
 	// heartbeat
 	registerOneMessageType(&ReqSpLatencyCheck, MSG_ID_REQ_SP_LATENCY_CHECK, "ReqSpLat")
@@ -428,6 +427,9 @@ func init() {
 
 	registerOneMessageType(&RspBadVersion, MSG_ID_RSP_BADVERSION, "RspBdVer")
 	registerOneMessageType(&NoticeSpUnderMaintenance, MSG_ID_NOTICE_SP_UNDERMAINTENANCE, "NotMtnc")
+
+	registerOneMessageType(&ReqClearExpiredShareLinks, MSG_ID_REQ_CLEAR_EXPIRED_SHARE_LINKS, "ReqCESL")
+	registerOneMessageType(&RspClearExpiredShareLinks, MSG_ID_RSP_CLEAR_EXPIRED_SHARE_LINKS, "RspCESL")
 }
 
 func GetMsgTypeFromId(id uint8) *MsgType {
@@ -515,8 +517,6 @@ func GetReqIdFromRspId(reqId uint8) uint8 {
 		return MSG_ID_REQ_DELETE_SHARE
 	case MSG_ID_RSP_GET_SHAREFILE:
 		return MSG_ID_REQ_GET_SHAREFILE
-	case MSG_ID_RSP_CLEAR_EXPIRED_SHARE_LINKS:
-		return MSG_ID_REQ_CLEAR_EXPIRED_SHARE_LINKS
 	case MSG_ID_RSP_SP_LATENCY_CHECK:
 		return MSG_ID_REQ_SP_LATENCY_CHECK
 	case MSG_ID_RSP_PP_LATENCY_CHECK:
@@ -527,6 +527,8 @@ func GetReqIdFromRspId(reqId uint8) uint8 {
 		return MSG_ID_REQ_SP_STATUS
 	case MSG_ID_RSP_TRANSFER_BLS_SIGNATURE:
 		return MSG_ID_REQ_TRANSFER_BLS_SIGNATURE
+	case MSG_ID_RSP_CLEAR_EXPIRED_SHARE_LINKS:
+		return MSG_ID_REQ_CLEAR_EXPIRED_SHARE_LINKS
 	default:
 		return MSG_ID_INVALID
 	}

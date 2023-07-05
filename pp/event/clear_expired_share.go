@@ -17,8 +17,8 @@ import (
 
 func ClearExpiredShareLinks(ctx context.Context, walletAddr string, walletPubkey, wsign []byte, reqTime int64) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ClearExpiredShareLinksData(walletAddr,
-			p2pserver.GetP2pServer(ctx).GetP2PAddress(), walletPubkey, wsign, reqTime), header.ReqClearExpiredShareLinks)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ClearExpiredShareLinksData(
+			p2pserver.GetP2pServer(ctx).GetP2PAddress(), walletAddr, walletPubkey, wsign, reqTime), header.ReqClearExpiredShareLinks)
 	}
 }
 
