@@ -49,7 +49,7 @@ func RspClearExpiredShareLinks(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	if target.Result.State == protos.ResultState_RES_SUCCESS {
-		pp.Log(ctx, "ClearExpiredShareLinks success ", target.Result.Msg)
+		pp.Logf(ctx, "ClearExpiredShareLinks done, %d cleared, %d remaining", target.Cleared, target.NewTotal)
 	} else {
 		pp.Log(ctx, "ClearExpiredShareLinks failed ", target.Result.Msg)
 	}
