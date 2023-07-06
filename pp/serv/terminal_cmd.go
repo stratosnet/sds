@@ -557,8 +557,12 @@ func (api *terminalCmd) SharePath(ctx context.Context, param []string) (CmdResul
 		return CmdResult{Msg: ""}, errors.New("input directory hash, share duration(in seconds, 0 for default value), is_private (0:public,1:private)")
 	}
 	shareDuration, timeErr := strconv.Atoi(param[1])
-	if timeErr != nil {
-		return CmdResult{Msg: ""}, errors.New("input share duration(in seconds, 0 for default value)")
+	if timeErr != nil || shareDuration < 0 {
+		msg := fmt.Sprintf(
+			"%v isn't a valid parameter for share duration in seconds, please specify a non-negative integer, "+
+				"0 for default share duration",
+			param[1])
+		return CmdResult{Msg: ""}, errors.New(msg)
 	}
 	private, err := strconv.Atoi(param[2])
 	if err != nil {
@@ -599,9 +603,12 @@ func (api *terminalCmd) ShareFile(ctx context.Context, param []string) (CmdResul
 	}
 
 	shareDuration, timeErr := strconv.Atoi(param[1])
-	if timeErr != nil {
-		fmt.Println("input share duration(in seconds, 0 for default value)")
-		return CmdResult{Msg: ""}, errors.New("input share duration(in seconds, 0 for default value)")
+	if timeErr != nil || shareDuration < 0 {
+		msg := fmt.Sprintf(
+			"%v isn't a valid parameter for share duration in seconds, please specify a non-negative integer, 0 for default share duration",
+			param[1])
+		fmt.Println(msg)
+		return CmdResult{Msg: ""}, errors.New(msg)
 	}
 	private, err := strconv.Atoi(param[2])
 	if err != nil {
