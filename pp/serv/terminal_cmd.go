@@ -800,3 +800,106 @@ func (api *terminalCmd) PerformanceMeasure(ctx context.Context, param []string) 
 	metrics.StartLoggingPerformanceData()
 	return CmdResult{Msg: DefaultMsg}, nil
 }
+
+func (api *terminalCmd) Withdraw(ctx context.Context, param []string) (CmdResult, error) {
+	if len(param) < 2 {
+		return CmdResult{Msg: ""},
+			errors.New("expecting at least 2 params. Input amount of tokens, fee amount, (optional) target address, and (optional) gas amount")
+	}
+
+	amount, err := utiltypes.ParseCoinNormalized(param[0])
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token")
+	}
+
+	fee, err := utiltypes.ParseCoinNormalized(param[1])
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
+	}
+	txFee := utiltypes.TxFee{
+		Fee:      fee,
+		Simulate: true,
+	}
+
+	var targetAddr utiltypes.Address
+	if len(param) == 2 {
+		// use wallet address as default target address
+		targetAddr, _ = utiltypes.WalletAddressFromBech(setting.WalletAddress)
+	} else if len(param) == 3 {
+		// if only have 3 params, then the 3rd param could be targetAddress OR gas
+		targetAddr, err = utiltypes.WalletAddressFromBech(param[2])
+		if err != nil {
+			// if the third parameter is not targetAddress, then it should be gas
+			gas, errGas := strconv.ParseUint(param[2], 10, 64)
+			if errGas != nil {
+				return CmdResult{Msg: ""}, errors.New("invalid third param. Should be a valid bech32 wallet address (target address) OR a positive integer (gas)")
+			}
+			targetAddr, _ = utiltypes.WalletAddressFromBech(setting.WalletAddress)
+			txFee.Gas = gas
+			txFee.Simulate = false
+		}
+	} else if len(param) == 4 {
+		targetAddr, err = utiltypes.WalletAddressFromBech(param[2])
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.New("invalid beneficiary param. Should be a valid bech32 wallet address" + err.Error())
+		}
+
+		gas, err := strconv.ParseUint(param[3], 10, 64)
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be a positive integer")
+		}
+		txFee.Gas = gas
+		txFee.Simulate = false
+	}
+
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
+
+	if err = event.Withdraw(ctx, amount, targetAddr.Bytes(), txFee); err != nil {
+		return CmdResult{Msg: ""}, err
+	}
+
+	return CmdResult{Msg: DefaultMsg}, nil
+}
+
+func (api *terminalCmd) Send(ctx context.Context, param []string) (CmdResult, error) {
+	if len(param) < 3 {
+		return CmdResult{Msg: ""},
+			errors.New("expecting at least 3 params. Input amount of tokens, to address, fee amount,and (optional) gas amount")
+	}
+
+	amount, err := utiltypes.ParseCoinNormalized(param[0])
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token")
+	}
+
+	toAddr, err := utiltypes.WalletAddressFromBech(param[1])
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("invalid to param. Should be a valid bech32 wallet address" + err.Error())
+	}
+
+	fee, err := utiltypes.ParseCoinNormalized(param[2])
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
+	}
+	txFee := utiltypes.TxFee{
+		Fee:      fee,
+		Simulate: true,
+	}
+
+	if len(param) == 4 {
+		gas, err := strconv.ParseUint(param[2], 10, 64)
+		if err != nil {
+			return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be a positive integer")
+		}
+		txFee.Gas = gas
+		txFee.Simulate = false
+	}
+
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
+
+	if err = event.Send(ctx, amount, toAddr.Bytes(), txFee); err != nil {
+		return CmdResult{Msg: ""}, err
+	}
+
+	return CmdResult{Msg: DefaultMsg}, nil
+}

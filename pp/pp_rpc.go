@@ -18,6 +18,12 @@ var (
 
 	// key(P2PAddress + reqId) : value(*rpc.GetStartMiningResult)
 	rpcStartMiningResultMap = &sync.Map{}
+
+	// key(walletAddress + reqId) : value(*rpc.GetWithdrawResult)
+	rpcWithdrawResultMap = &sync.Map{}
+
+	// key(walletAddress + reqId) : value(*rpc.GetSendResult)
+	rpcSendResultMap = &sync.Map{}
 )
 
 func GetRPResult(key string) (*rpc.RPResult, bool) {
@@ -73,5 +79,33 @@ func GetStartMiningResult(key string) (*rpc.StartMiningResult, bool) {
 func SetStartMiningResult(key string, result *rpc.StartMiningResult) {
 	if result != nil {
 		rpcStartMiningResultMap.Store(key, result)
+	}
+}
+
+func GetWithdrawResult(key string) (*rpc.WithdrawResult, bool) {
+	result, loaded := rpcWithdrawResultMap.LoadAndDelete(key)
+	if result != nil && loaded {
+		return result.(*rpc.WithdrawResult), loaded
+	}
+	return nil, loaded
+}
+
+func SetWithdrawResult(key string, result *rpc.WithdrawResult) {
+	if result != nil {
+		rpcWithdrawResultMap.Store(key, result)
+	}
+}
+
+func GetSendResult(key string) (*rpc.SendResult, bool) {
+	result, loaded := rpcSendResultMap.LoadAndDelete(key)
+	if result != nil && loaded {
+		return result.(*rpc.SendResult), loaded
+	}
+	return nil, loaded
+}
+
+func SetSendResult(key string, result *rpc.SendResult) {
+	if result != nil {
+		rpcSendResultMap.Store(key, result)
 	}
 }

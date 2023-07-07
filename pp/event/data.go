@@ -7,7 +7,9 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stratosnet/sds/pp/p2pserver"
+	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
 
@@ -133,6 +135,44 @@ func reqPrepayData(ctx context.Context, beneficiary []byte, amount types.Coin, t
 		ReqTime:    reqTime,
 	}
 	return req, nil
+}
+
+func reqWithdrawData(_ context.Context, amount types.Coin, targetAddr []byte, txFee types.TxFee) ([]byte, error) {
+	senderAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	txMsg := stratoschain.BuildWithdrawMsg(amount, senderAddress.Bytes(), targetAddr)
+	signatureKeys := []relaytypes.SignatureKey{
+		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
+	}
+
+	txBytes, err := createAndSimulateTx(txMsg, pottypes.TypeMsgWithdraw, txFee, "", signatureKeys)
+	if err != nil {
+		return nil, err
+	}
+
+	return txBytes, nil
+}
+
+func reqSendData(_ context.Context, amount types.Coin, toAddr []byte, txFee types.TxFee) ([]byte, error) {
+	senderAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	txMsg := stratoschain.BuildSendMsg(senderAddress.Bytes(), toAddr, amount)
+	signatureKeys := []relaytypes.SignatureKey{
+		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
+	}
+
+	txBytes, err := createAndSimulateTx(txMsg, banktypes.TypeMsgSend, txFee, "", signatureKeys)
+	if err != nil {
+		return nil, err
+	}
+
+	return txBytes, nil
 }
 
 func createAndSimulateTx(txMsg sdktypes.Msg, msgType string, txFee types.TxFee, memo string, signatureKeys []relaytypes.SignatureKey) ([]byte, error) {

@@ -1060,3 +1060,103 @@ func (api *rpcPrivApi) RequestStartMining(ctx context.Context, param rpc_api.Par
 		}
 	}
 }
+
+func (api *rpcPrivApi) RequestWithdraw(ctx context.Context, param rpc_api.ParamReqWithdraw) rpc_api.WithdrawResult {
+	metrics.RpcReqCount.WithLabelValues("RequestWithdraw").Inc()
+	amount, err := utiltypes.ParseCoinNormalized(param.Amount)
+	if err != nil {
+		return rpc_api.WithdrawResult{Return: rpc_api.WRONG_INPUT}
+	}
+	_, err = utiltypes.WalletAddressFromBech(setting.WalletAddress)
+	if err != nil {
+		return rpc_api.WithdrawResult{Return: rpc_api.WRONG_WALLET_ADDRESS}
+	}
+	targetAddr, err := utiltypes.WalletAddressFromBech(param.TargetAddress)
+	if err != nil {
+		return rpc_api.WithdrawResult{Return: rpc_api.WRONG_WALLET_ADDRESS}
+	}
+	fee, err := utiltypes.ParseCoinNormalized(param.Fee)
+	if err != nil {
+		return rpc_api.WithdrawResult{Return: rpc_api.WRONG_INPUT}
+	}
+	txFee := utiltypes.TxFee{
+		Fee:      fee,
+		Simulate: true,
+	}
+	if param.Gas > 0 {
+		txFee.Gas = param.Gas
+		txFee.Simulate = false
+	}
+	err = event.Withdraw(ctx, amount, targetAddr.Bytes(), txFee)
+	if err != nil {
+		return rpc_api.WithdrawResult{Return: rpc_api.WRONG_INPUT}
+	}
+
+	reqId := uuid.New().String()
+	ctx = core.RegisterRemoteReqId(ctx, reqId)
+	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			result := &rpc_api.WithdrawResult{Return: rpc_api.TIME_OUT}
+			return *result
+		default:
+			result, found := pp.GetWithdrawResult(setting.WalletAddress + reqId)
+			if result != nil && found {
+				return *result
+			}
+		}
+	}
+}
+
+func (api *rpcPrivApi) RequestSend(ctx context.Context, param rpc_api.ParamReqSend) rpc_api.SendResult {
+	metrics.RpcReqCount.WithLabelValues("RequestSend").Inc()
+	amount, err := utiltypes.ParseCoinNormalized(param.Amount)
+	if err != nil {
+		return rpc_api.SendResult{Return: rpc_api.WRONG_INPUT}
+	}
+	_, err = utiltypes.WalletAddressFromBech(setting.WalletAddress)
+	if err != nil {
+		return rpc_api.SendResult{Return: rpc_api.WRONG_WALLET_ADDRESS}
+	}
+	toAddr, err := utiltypes.WalletAddressFromBech(param.To)
+	if err != nil {
+		return rpc_api.SendResult{Return: rpc_api.WRONG_WALLET_ADDRESS}
+	}
+	fee, err := utiltypes.ParseCoinNormalized(param.Fee)
+	if err != nil {
+		return rpc_api.SendResult{Return: rpc_api.WRONG_INPUT}
+	}
+	txFee := utiltypes.TxFee{
+		Fee:      fee,
+		Simulate: true,
+	}
+	if param.Gas > 0 {
+		txFee.Gas = param.Gas
+		txFee.Simulate = false
+	}
+	err = event.Send(ctx, amount, toAddr.Bytes(), txFee)
+	if err != nil {
+		return rpc_api.SendResult{Return: rpc_api.WRONG_INPUT}
+	}
+
+	reqId := uuid.New().String()
+	ctx = core.RegisterRemoteReqId(ctx, reqId)
+	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			result := &rpc_api.SendResult{Return: rpc_api.TIME_OUT}
+			return *result
+		default:
+			result, found := pp.GetSendResult(setting.WalletAddress + reqId)
+			if result != nil && found {
+				return *result
+			}
+		}
+	}
+}

@@ -5,6 +5,7 @@ import (
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	"github.com/stratosnet/stratos-chain/types"
 	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
@@ -204,6 +205,28 @@ func BuildPrepayMsg(senderAddress []byte, beneficiaryAddress []byte, amount util
 	return sdstypes.NewMsgPrepay(
 		sdktypes.MustBech32ifyAddressBytes(walletPrefix, senderAddress),
 		sdktypes.MustBech32ifyAddressBytes(walletPrefix, beneficiaryAddress),
+		sdktypes.NewCoins(sdktypes.Coin{
+			Denom:  amount.Denom,
+			Amount: amount.Amount,
+		}),
+	)
+}
+
+func BuildWithdrawMsg(amount utiltypes.Coin, senderAddress []byte, targetAddress []byte) sdktypes.Msg {
+	return pottypes.NewMsgWithdraw(
+		sdktypes.NewCoins(sdktypes.Coin{
+			Denom:  amount.Denom,
+			Amount: amount.Amount,
+		}),
+		senderAddress,
+		targetAddress,
+	)
+}
+
+func BuildSendMsg(senderAddress []byte, toAddress []byte, amount utiltypes.Coin) sdktypes.Msg {
+	return banktypes.NewMsgSend(
+		senderAddress,
+		toAddress,
 		sdktypes.NewCoins(sdktypes.Coin{
 			Denom:  amount.Denom,
 			Amount: amount.Amount,

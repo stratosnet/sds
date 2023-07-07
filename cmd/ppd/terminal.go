@@ -67,7 +67,9 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"maintenance start <duration>                                   put the node in maintenance mode for the requested duration (in seconds)\n" +
 		"maintenance stop                                               stop the current maintenance\n" +
 		"downgradeinfo                                                  get information of last downgrade happened on this pp node\n" +
-		"performancemeasure                                             turn on performance measurement log for 60 seconds\n"
+		"performancemeasure                                             turn on performance measurement log for 60 seconds\n" +
+		"withdraw                                                       withdraw matured reward\n" +
+		"send                                                           sending coins to another account\n"
 
 	help := func(line string, param []string) bool {
 		fmt.Println(helpStr)
@@ -228,6 +230,12 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	checkReplica := func(line string, param []string) bool {
 		return callRpc(c, "checkReplica", param)
 	}
+	withdraw := func(line string, param []string) bool {
+		return callRpc(c, "withdraw", param)
+	}
+	send := func(line string, param []string) bool {
+		return callRpc(c, "send", param)
+	}
 
 	nc := make(chan namespace.LogMsg)
 	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription")
@@ -283,6 +291,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("downgradeinfo", downgradeInfo, true)
 	console.Mystdin.RegisterProcessFunc("performancemeasure", performanceMeasure, true)
 	console.Mystdin.RegisterProcessFunc("CheckReplica", checkReplica, true)
+	console.Mystdin.RegisterProcessFunc("withdraw", withdraw, true)
+	console.Mystdin.RegisterProcessFunc("send", send, true)
 
 	if isExec {
 		exit := false
