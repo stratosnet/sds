@@ -1,5 +1,9 @@
 package rpc
 
+import (
+	"github.com/stratosnet/sds/msg/protos"
+)
+
 const (
 	GENERIC_ERR           string = "-1"
 	SIGNATURE_FAILURE     string = "-3"
@@ -35,6 +39,13 @@ type ParamReqUploadFile struct {
 type ParamUploadData struct {
 	FileHash string `json:"filehash"`
 	Data     string `json:"data"`
+}
+
+// get current file status
+type ParamGetFileStatus struct {
+	FileHash  string    `json:"filehash"`
+	Signature Signature `json:"signature"`
+	ReqTime   int64     `json:"req_time"`
 }
 
 // download: request download file
@@ -142,6 +153,13 @@ type Result struct {
 	SequenceNumber string  `json:"sequencenumber,omitempty"`
 }
 
+type FileStatusResult struct {
+	Return          string                 `json:"return"`
+	FileUploadState protos.FileUploadState `json:"file_upload_state"`
+	UserHasFile     bool                   `json:"user_has_file"`
+	Replicas        uint32                 `json:"replicas"`
+}
+
 type FileListResult struct {
 	Return      string     `json:"return"`
 	FileInfo    []FileInfo `json:"fileinfo,omitempty"`
@@ -230,5 +248,5 @@ type ClearExpiredShareLinksResult struct {
 type Signature struct {
 	Address   string `json:"address"`
 	Pubkey    string `json:"pubkey"`
-	Signature string `json:"signature"`
+	Signature string `json:"signature"` // Hex-encoded
 }

@@ -218,6 +218,27 @@ func (api *terminalCmd) Status(ctx context.Context, param []string) (CmdResult, 
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
+func (api *terminalCmd) FileStatus(ctx context.Context, param []string) (CmdResult, error) {
+	if len(param) < 1 {
+		return CmdResult{Msg: ""}, errors.New("expecting at least 1 param. Input filehash")
+	}
+
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
+	fileHash := param[0]
+	timestamp := time.Now().Unix()
+
+	signature, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetFileStatusWalletSignMessage(fileHash, setting.WalletAddress, timestamp)))
+	if err != nil {
+		return CmdResult{Msg: ""}, err
+	}
+
+	if rsp := event.GetFileStatus(ctx, fileHash, setting.WalletAddress, setting.WalletPublicKey, signature, timestamp); rsp != nil {
+		// Result is available now. Otherwise, it will be logged when RspFileStatus event is received
+		pp.Logf(ctx, "file_hash: %v  status: %v  user_has_file: %v  replicas: %v", rsp.FileHash, rsp.State, rsp.UserHasFile, rsp.Replicas)
+	}
+	return CmdResult{Msg: DefaultMsg}, nil
+}
+
 func (api *terminalCmd) Deactivate(ctx context.Context, param []string) (CmdResult, error) {
 	if len(param) < 1 {
 		return CmdResult{Msg: ""}, errors.New("expecting at least 1 param. Input fee amount and (optional) gas amount")

@@ -40,6 +40,9 @@ var (
 	// key(fileHash + file) : value(downloadReady)
 	rpcDownloadReady = &sync.Map{}
 
+	// key(fileHash + fileReqId) : value(chan *rpc.FileStatusResult)
+	rpcGetFileStatusChan = &sync.Map{}
+
 	// key(fileHash + file) : value(chan uint64)
 	rpcDownloadFileInfo = &sync.Map{}
 
@@ -403,6 +406,27 @@ func WaitDownloadSliceDone(key string) error {
 			return nil
 		}
 		return errors.New("download slice invalid state")
+	}
+}
+
+func SubscribeGetFileStatusDone(key string) chan *rpc.FileStatusResult {
+	done := make(chan *rpc.FileStatusResult)
+	rpcGetFileStatusChan.Store(key, done)
+	return done
+}
+
+func UnsubscribeGetFileStatusDone(key string) {
+	rpcGetFileStatusChan.Delete(key)
+}
+
+func SetGetFileStatusDone(key string, result *rpc.FileStatusResult) {
+	ch, found := rpcGetFileStatusChan.Load(key)
+	if found {
+		select {
+		case ch.(chan *rpc.FileStatusResult) <- result:
+		default:
+			UnsubscribeGetFileStatusDone(key)
+		}
 	}
 }
 

@@ -56,6 +56,7 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspFileBackupStatus, RspBackupStatus, RspBackupStatusVerifier)
 	registerEvent(header.RspFileStorageInfo, RspFileStorageInfo, RspFileStorageInfoVerifier)
 	registerEvent(header.RspFileReplicaInfo, RspFileReplicaInfo, SpRspVerifier)
+	registerEvent(header.RspFileStatus, RspFileStatus, SpRspVerifier)
 	registerEvent(header.RspDownloadFileWrong, RspDownloadFileWrong, RspFileStorageInfoVerifier)
 	registerEvent(header.RspShareLink, RspShareLink, SpRspVerifier)
 	registerEvent(header.RspShareFile, RspShareFile, SpRspVerifier)

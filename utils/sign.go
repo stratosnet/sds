@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"strconv"
+
 	"github.com/stratosnet/sds/msg/protos"
 	"google.golang.org/protobuf/proto"
 )
@@ -52,6 +54,10 @@ func GetRspFileStorageInfoNodeSignMessage(rspMsg *protos.RspFileStorageInfo) ([]
 // GetFileReplicaInfoWalletSignMessage replica info: wallet sign message for get file replica info request from the (rpc or cmd) user
 func GetFileReplicaInfoWalletSignMessage(fileHash, walletAddr string, timestamp int64) string {
 	return fileHash + walletAddr + string(Int64ToByte(timestamp))
+}
+
+func GetFileStatusWalletSignMessage(fileHash, walletAddr string, timestamp int64) string {
+	return fileHash + walletAddr + strconv.FormatInt(timestamp, 10)
 }
 
 func DeleteFileWalletSignMessage(fileHash, walletAddr string, timestamp int64) string {

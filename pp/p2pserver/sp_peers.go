@@ -87,7 +87,7 @@ func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb p
 	case header.MSG_ID_RSP_DOWNLOAD_SLICE:
 		msgBuf.MSGData = pb.(*protos.RspDownloadSlice).Data
 		pb.(*protos.RspDownloadSlice).Data = nil
-	case header.MSG_ID_RSP_TRANSFE_RDOWNLOAD:
+	case header.MSG_ID_RSP_TRANSFER_DOWNLOAD:
 		msgBuf.MSGData = pb.(*protos.RspTransferDownload).Data
 		pb.(*protos.RspTransferDownload).Data = nil
 	}

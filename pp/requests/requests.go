@@ -814,14 +814,27 @@ func ReqDowngradeInfo(ctx context.Context) *protos.ReqGetPPDowngradeInfo {
 	return &protos.ReqGetPPDowngradeInfo{MyAddress: p2pserver.GetP2pServer(ctx).GetPPInfo()}
 }
 
-func ReqFileReplicaInfo(path, walletAddr, p2pAddress string, replicaIncreaseNum uint32, walletPUbkey, walletSign []byte, reqTime int64) *protos.ReqFileReplicaInfo {
+func ReqFileReplicaInfo(path, walletAddr, p2pAddress string, replicaIncreaseNum uint32, walletPubkey, walletSign []byte, reqTime int64) *protos.ReqFileReplicaInfo {
 	return &protos.ReqFileReplicaInfo{
 		P2PAddress:         p2pAddress,
 		FilePath:           path,
 		ReplicaIncreaseNum: replicaIncreaseNum,
 		Signature: &protos.Signature{
 			Address:   walletAddr,
-			Pubkey:    walletPUbkey,
+			Pubkey:    walletPubkey,
+			Signature: walletSign,
+			Type:      protos.SignatureType_WALLET,
+		},
+		ReqTime: reqTime,
+	}
+}
+
+func ReqFileStatus(fileHash, walletAddr string, walletPubkey, walletSign []byte, reqTime int64) *protos.ReqFileStatus {
+	return &protos.ReqFileStatus{
+		FileHash: fileHash,
+		Signature: &protos.Signature{
+			Address:   walletAddr,
+			Pubkey:    walletPubkey,
 			Signature: walletSign,
 			Type:      protos.SignatureType_WALLET,
 		},

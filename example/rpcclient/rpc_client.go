@@ -289,6 +289,61 @@ func putstream(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func getFileStatus(_ *cobra.Command, args []string) error {
+	fileHash := args[0]
+
+	timestamp := time.Now().Unix()
+	signature, err := WalletPrivateKey.Sign([]byte(utils.GetFileStatusWalletSignMessage(fileHash, WalletAddress, timestamp)))
+	if err != nil {
+		return err
+	}
+
+	wpk, err := WalletPublicKey.ToBech()
+	if err != nil {
+		return err
+	}
+
+	params := []rpc.ParamGetFileStatus{{
+		FileHash: fileHash,
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(signature),
+		},
+	}}
+	paramsBytes, e := json.Marshal(params)
+	if e != nil {
+		utils.ErrorLog("json marshal error", e)
+	}
+
+	req := wrapJsonRpc("user_getFileStatus", paramsBytes)
+
+	// http request-respond
+	body := httpRequest(req)
+	if body == nil {
+		utils.ErrorLog("http no response")
+		return nil
+	}
+
+	// handle: unmarshal response then unmarshal result
+	var rsp jsonrpcMessage
+	err = json.Unmarshal(body, &rsp)
+	if err != nil {
+		utils.ErrorLog("unmarshal failed")
+		return nil
+	}
+
+	var res rpc.FileStatusResult
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+		utils.ErrorLog("unmarshal failed")
+		return nil
+	}
+
+	utils.Logf("File status for %v:  Result=[%v]   Status=%v   UserHasFile=%v   Replicas=%v", fileHash, res.Return, protos.FileUploadState_name[int32(res.FileUploadState)], res.UserHasFile, res.Replicas)
+	return nil
+}
+
 func reqDownloadMsg(hash, sdmPath, sn string) []byte {
 	nowSec := time.Now().Unix()
 	// signature

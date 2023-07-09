@@ -249,6 +249,7 @@ message RspFileReplicaInfo {
 message ReqFileStatus {
   string    file_hash = 1;
   Signature signature = 2;
+  int64     req_time = 3;
 }
 
 message RspFileStatus {

@@ -154,6 +154,11 @@ func main() {
 		Short: "upload a file",
 		RunE:  putstream,
 	}
+	filestatusCmd := &cobra.Command{
+		Use:   "filestatus <filehash>",
+		Short: "get the current status of a file",
+		RunE:  getFileStatus,
+	}
 	getCmd := &cobra.Command{
 		Use:   "get",
 		Short: "download a file",
@@ -219,6 +224,7 @@ func main() {
 
 	rootCmd.AddCommand(putCmd)
 	rootCmd.AddCommand(putstreamCmd)
+	rootCmd.AddCommand(filestatusCmd)
 	rootCmd.AddCommand(getCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(shareCmd)
