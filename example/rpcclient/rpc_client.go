@@ -1434,7 +1434,7 @@ func send(cmd *cobra.Command, args []string) error {
 	if r == nil {
 		return nil
 	}
-	utils.Log("- request withdraw (method: owner_requestSend)")
+	utils.Log("- request send (method: owner_requestSend)")
 	// http request-respond
 	body := httpRequest(r)
 	if body == nil {

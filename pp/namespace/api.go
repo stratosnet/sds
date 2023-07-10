@@ -1087,15 +1087,16 @@ func (api *rpcPrivApi) RequestWithdraw(ctx context.Context, param rpc_api.ParamR
 		txFee.Gas = param.Gas
 		txFee.Simulate = false
 	}
-	err = event.Withdraw(ctx, amount, targetAddr.Bytes(), txFee)
-	if err != nil {
-		return rpc_api.WithdrawResult{Return: rpc_api.WRONG_INPUT}
-	}
 
 	reqId := uuid.New().String()
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
 	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
 	defer cancel()
+
+	err = event.Withdraw(ctx, amount, targetAddr.Bytes(), txFee)
+	if err != nil {
+		return rpc_api.WithdrawResult{Return: rpc_api.WRONG_INPUT}
+	}
 
 	for {
 		select {
@@ -1137,15 +1138,16 @@ func (api *rpcPrivApi) RequestSend(ctx context.Context, param rpc_api.ParamReqSe
 		txFee.Gas = param.Gas
 		txFee.Simulate = false
 	}
-	err = event.Send(ctx, amount, toAddr.Bytes(), txFee)
-	if err != nil {
-		return rpc_api.SendResult{Return: rpc_api.WRONG_INPUT}
-	}
 
 	reqId := uuid.New().String()
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
 	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
 	defer cancel()
+
+	err = event.Send(ctx, amount, toAddr.Bytes(), txFee)
+	if err != nil {
+		return rpc_api.SendResult{Return: rpc_api.WRONG_INPUT}
+	}
 
 	for {
 		select {
