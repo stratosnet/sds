@@ -28,7 +28,9 @@ func Send(ctx context.Context, amount utiltypes.Coin, toAddr []byte, txFee utilt
 
 	reqId := core.GetRemoteReqId(ctx)
 	if reqId != "" {
-		rpcResult := &rpc.SendResult{}
+		rpcResult := &rpc.SendResult{
+			Return: rpc.SUCCESS,
+		}
 		defer pp.SetSendResult(setting.WalletAddress+reqId, rpcResult)
 	}
 

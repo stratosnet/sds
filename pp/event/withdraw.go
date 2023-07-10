@@ -28,7 +28,9 @@ func Withdraw(ctx context.Context, amount utiltypes.Coin, targetAddr []byte, txF
 
 	reqId := core.GetRemoteReqId(ctx)
 	if reqId != "" {
-		rpcResult := &rpc.WithdrawResult{}
+		rpcResult := &rpc.WithdrawResult{
+			Return: rpc.SUCCESS,
+		}
 		defer pp.SetWithdrawResult(setting.WalletAddress+reqId, rpcResult)
 	}
 
