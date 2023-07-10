@@ -228,11 +228,10 @@ type ClearExpiredShareLinksResult struct {
 }
 
 type ParamReqWithdraw struct {
-	Signature     Signature `json:"signature"`
-	Amount        string    `json:"amount"`
-	TargetAddress string    `json:"target_address"`
-	Fee           string    `json:"fee"`
-	Gas           uint64    `json:"gas"`
+	Amount        string `json:"amount"`
+	TargetAddress string `json:"target_address"`
+	Fee           string `json:"fee"`
+	Gas           uint64 `json:"gas"`
 }
 
 type WithdrawResult struct {
@@ -240,11 +239,10 @@ type WithdrawResult struct {
 }
 
 type ParamReqSend struct {
-	Signature Signature `json:"signature"`
-	Amount    string    `json:"amount"`
-	To        string    `json:"to"`
-	Fee       string    `json:"fee"`
-	Gas       uint64    `json:"gas"`
+	Amount string `json:"amount"`
+	To     string `json:"to"`
+	Fee    string `json:"fee"`
+	Gas    uint64 `json:"gas"`
 }
 
 type SendResult struct {
