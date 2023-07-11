@@ -19,6 +19,7 @@ import (
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/namespace/stratoschain"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
@@ -1093,7 +1094,7 @@ func (api *rpcPrivApi) RequestWithdraw(ctx context.Context, param rpc_api.ParamR
 	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
 	defer cancel()
 
-	err = event.Withdraw(ctx, amount, targetAddr.Bytes(), txFee)
+	err = stratoschain.Withdraw(ctx, amount, targetAddr.Bytes(), txFee)
 	if err != nil {
 		return rpc_api.WithdrawResult{Return: rpc_api.WRONG_INPUT}
 	}
@@ -1144,7 +1145,7 @@ func (api *rpcPrivApi) RequestSend(ctx context.Context, param rpc_api.ParamReqSe
 	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
 	defer cancel()
 
-	err = event.Send(ctx, amount, toAddr.Bytes(), txFee)
+	err = stratoschain.Send(ctx, amount, toAddr.Bytes(), txFee)
 	if err != nil {
 		return rpc_api.SendResult{Return: rpc_api.WRONG_INPUT}
 	}

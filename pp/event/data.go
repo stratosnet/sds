@@ -7,9 +7,7 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stratosnet/sds/pp/p2pserver"
-	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
 
@@ -40,7 +38,7 @@ func reqActivateData(ctx context.Context, amount types.Coin, txFee types.TxFee) 
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := createAndSimulateTx(txMsg, registertypes.TypeMsgCreateResourceNode, txFee, "", signatureKeys)
+	txBytes, err := CreateAndSimulateTx(txMsg, registertypes.TypeMsgCreateResourceNode, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +65,7 @@ func reqUpdateDepositData(ctx context.Context, depositDelta types.Coin, txFee ty
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := createAndSimulateTx(txMsg, registertypes.TypeMsgUpdateResourceNodeDeposit, txFee, "", signatureKeys)
+	txBytes, err := CreateAndSimulateTx(txMsg, registertypes.TypeMsgUpdateResourceNodeDeposit, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +90,7 @@ func reqDeactivateData(ctx context.Context, txFee types.TxFee) (*protos.ReqDeact
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := createAndSimulateTx(txMsg, registertypes.TypeMsgRemoveResourceNode, txFee, "", signatureKeys)
+	txBytes, err := CreateAndSimulateTx(txMsg, registertypes.TypeMsgRemoveResourceNode, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +115,7 @@ func reqPrepayData(ctx context.Context, beneficiary []byte, amount types.Coin, t
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := createAndSimulateTx(txMsg, sdstypes.TypeMsgPrepay, txFee, "", signatureKeys)
+	txBytes, err := CreateAndSimulateTx(txMsg, sdstypes.TypeMsgPrepay, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -137,45 +135,7 @@ func reqPrepayData(ctx context.Context, beneficiary []byte, amount types.Coin, t
 	return req, nil
 }
 
-func reqWithdrawData(_ context.Context, amount types.Coin, targetAddr []byte, txFee types.TxFee) ([]byte, error) {
-	senderAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	txMsg := stratoschain.BuildWithdrawMsg(amount, senderAddress.Bytes(), targetAddr)
-	signatureKeys := []relaytypes.SignatureKey{
-		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
-	}
-
-	txBytes, err := createAndSimulateTx(txMsg, pottypes.TypeMsgWithdraw, txFee, "", signatureKeys)
-	if err != nil {
-		return nil, err
-	}
-
-	return txBytes, nil
-}
-
-func reqSendData(_ context.Context, amount types.Coin, toAddr []byte, txFee types.TxFee) ([]byte, error) {
-	senderAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	txMsg := stratoschain.BuildSendMsg(senderAddress.Bytes(), toAddr, amount)
-	signatureKeys := []relaytypes.SignatureKey{
-		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
-	}
-
-	txBytes, err := createAndSimulateTx(txMsg, banktypes.TypeMsgSend, txFee, "", signatureKeys)
-	if err != nil {
-		return nil, err
-	}
-
-	return txBytes, nil
-}
-
-func createAndSimulateTx(txMsg sdktypes.Msg, msgType string, txFee types.TxFee, memo string, signatureKeys []relaytypes.SignatureKey) ([]byte, error) {
+func CreateAndSimulateTx(txMsg sdktypes.Msg, msgType string, txFee types.TxFee, memo string, signatureKeys []relaytypes.SignatureKey) ([]byte, error) {
 	protoConfig, txBuilder := createTxConfigAndTxBuilder()
 	err := setMsgInfoToTxBuilder(txBuilder, txMsg, txFee.Fee, txFee.Gas, memo)
 	if err != nil {

@@ -18,6 +18,7 @@ import (
 	"github.com/stratosnet/sds/pp/account"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/namespace/stratoschain"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
@@ -854,7 +855,7 @@ func (api *terminalCmd) Withdraw(ctx context.Context, param []string) (CmdResult
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 
-	if err = event.Withdraw(ctx, amount, targetAddr.Bytes(), txFee); err != nil {
+	if err = stratoschain.Withdraw(ctx, amount, targetAddr.Bytes(), txFee); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 
@@ -897,7 +898,7 @@ func (api *terminalCmd) Send(ctx context.Context, param []string) (CmdResult, er
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 
-	if err = event.Send(ctx, amount, toAddr.Bytes(), txFee); err != nil {
+	if err = stratoschain.Send(ctx, amount, toAddr.Bytes(), txFee); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 
