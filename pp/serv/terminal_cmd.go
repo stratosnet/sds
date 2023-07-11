@@ -888,7 +888,7 @@ func (api *terminalCmd) Send(ctx context.Context, param []string) (CmdResult, er
 	}
 
 	if len(param) == 4 {
-		gas, err := strconv.ParseUint(param[2], 10, 64)
+		gas, err := strconv.ParseUint(param[3], 10, 64)
 		if err != nil {
 			return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be a positive integer")
 		}

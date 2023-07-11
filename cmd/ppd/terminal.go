@@ -68,8 +68,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"maintenance stop                                               stop the current maintenance\n" +
 		"downgradeinfo                                                  get information of last downgrade happened on this pp node\n" +
 		"performancemeasure                                             turn on performance measurement log for 60 seconds\n" +
-		"withdraw                                                       withdraw matured reward\n" +
-		"send                                                           sending coins to another account\n"
+		"withdraw <amount> <fee> optional<targetAddr> optional<gas>     withdraw matured reward\n" +
+		"send <amount> <toAddr> <fee> optional<gas>                     sending coins to another account\n"
 
 	help := func(line string, param []string) bool {
 		fmt.Println(helpStr)
