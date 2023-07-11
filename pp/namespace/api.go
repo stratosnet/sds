@@ -116,6 +116,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 	walletAddr := param.Signature.Address
 	pubkey := param.Signature.Pubkey
 	signature := param.Signature.Signature
+	time := param.ReqTime
 
 	// verify if wallet and public key match
 	if utiltypes.VerifyWalletAddr(pubkey, walletAddr) != 0 {
@@ -164,9 +165,8 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 			}
 		}
 
-		nowSec := time.Now().Unix()
 		// start to upload file
-		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, nowSec,
+		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, time,
 			slices, false, false, param.DesiredTier, param.AllowHigherTier)
 		if err != nil {
 			file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
@@ -277,6 +277,7 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 	pubkey := param.Signature.Pubkey
 	signature := param.Signature.Signature
 	size := fileSize
+	time := param.ReqTime
 
 	_, name := filepath.Split(fileName)
 	if len(name) > 0 {
@@ -289,9 +290,8 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
-	nowSec := time.Now().Unix()
 	// start to upload file
-	go uploadStreamTmpFile(ctx, fileHash, fileName, uint64(size), walletAddr, pubkey, signature, nowSec,
+	go uploadStreamTmpFile(ctx, fileHash, fileName, uint64(size), walletAddr, pubkey, signature, time,
 		param.DesiredTier, param.AllowHigherTier)
 
 	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
