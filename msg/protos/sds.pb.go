@@ -2444,7 +2444,7 @@ func (x *RspFileStatus) GetState() FileUploadState {
 	if x != nil {
 		return x.State
 	}
-	return FileUploadState_UPLOADING
+	return FileUploadState_UNKNOWN
 }
 
 func (x *RspFileStatus) GetUserHasFile() bool {
