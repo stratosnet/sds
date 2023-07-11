@@ -56,6 +56,10 @@ func GetFileReplicaInfoWalletSignMessage(fileHash, walletAddr string, timestamp 
 	return fileHash + walletAddr + strconv.FormatInt(timestamp, 10)
 }
 
+func GetFileStatusWalletSignMessage(fileHash, walletAddr string, timestamp int64) string {
+	return fileHash + walletAddr + strconv.FormatInt(timestamp, 10)
+}
+
 func DeleteFileWalletSignMessage(fileHash, walletAddr string, timestamp int64) string {
 	return fileHash + walletAddr + strconv.FormatInt(timestamp, 10)
 }

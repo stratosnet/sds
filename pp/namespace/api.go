@@ -28,6 +28,7 @@ import (
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/datamesh"
 	utiltypes "github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/stratos-chain/types"
 )
 
 const (
@@ -376,6 +377,50 @@ func (api *rpcPubApi) UploadDataStream(ctx context.Context, param rpc_api.ParamU
 			return *result
 		}
 	}
+}
+
+func (api *rpcPubApi) GetFileStatus(ctx context.Context, param rpc_api.ParamGetFileStatus) rpc_api.FileStatusResult {
+	metrics.RpcReqCount.WithLabelValues("GetFileStatus").Inc()
+
+	pubkey, err := types.SdsPubKeyFromBech32(param.Signature.Pubkey)
+	if err != nil {
+		return rpc_api.FileStatusResult{Return: rpc_api.WRONG_INPUT, Error: err.Error()}
+	}
+	signature, err := hex.DecodeString(param.Signature.Signature)
+	if err != nil {
+		return rpc_api.FileStatusResult{Return: rpc_api.WRONG_INPUT, Error: err.Error()}
+	}
+
+	reqId := uuid.New().String()
+	ctx = core.RegisterRemoteReqId(ctx, reqId)
+
+	if rsp := event.GetFileStatus(ctx, param.FileHash, param.Signature.Address, pubkey.Bytes(), signature, param.ReqTime); rsp != nil {
+		// Result available already available. No need to wait
+		return rpc_api.FileStatusResult{
+			Return:          rpc_api.SUCCESS,
+			Error:           rsp.Result.Msg,
+			FileUploadState: rsp.State,
+			UserHasFile:     rsp.UserHasFile,
+			Replicas:        rsp.Replicas,
+		}
+	}
+
+	key := param.FileHash + reqId
+
+	// wait for the result
+	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
+	defer cancel()
+
+	var result *rpc_api.FileStatusResult
+
+	select {
+	case <-ctx.Done():
+		result = &rpc_api.FileStatusResult{Return: rpc_api.TIME_OUT}
+	case result = <-file.SubscribeGetFileStatusDone(key):
+	}
+	file.UnsubscribeGetFileStatusDone(key)
+
+	return *result
 }
 
 func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamReqDownloadFile) rpc_api.Result {

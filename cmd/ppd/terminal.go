@@ -64,6 +64,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"config  <key> <value>                                          set config key value\n" +
 		"getoz <walletAddress> ->password                               get current ozone balance\n" +
 		"status                                                         get current resource node status\n" +
+		"filestatus <filehash>                                          get current state of an uploaded file\n" +
 		"maintenance start <duration>                                   put the node in maintenance mode for the requested duration (in seconds)\n" +
 		"maintenance stop                                               stop the current maintenance\n" +
 		"downgradeinfo                                                  get information of last downgrade happened on this pp node\n" +
@@ -128,6 +129,10 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 
 	status := func(line string, param []string) bool {
 		return callRpc(c, "status", param)
+	}
+
+	fileStatus := func(line string, param []string) bool {
+		return callRpc(c, "fileStatus", param)
 	}
 
 	deactivate := func(line string, param []string) bool {
@@ -251,6 +256,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("activate", activate, true)
 	console.Mystdin.RegisterProcessFunc("updateDeposit", updateDeposit, true)
 	console.Mystdin.RegisterProcessFunc("status", status, true)
+	console.Mystdin.RegisterProcessFunc("filestatus", fileStatus, true)
 	console.Mystdin.RegisterProcessFunc("deactivate", deactivate, true)
 	console.Mystdin.RegisterProcessFunc("prepay", prepay, true)
 	console.Mystdin.RegisterProcessFunc("u", upload, true)

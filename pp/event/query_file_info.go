@@ -3,6 +3,7 @@ package event
 // Author j
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -223,7 +224,54 @@ func RspFileReplicaInfo(ctx context.Context, conn core.WriteCloser) {
 	pp.Log(ctx, "file expected replicas", target.ExpectedReplicas)
 }
 
-func CheckDownloadPath(path string) bool {
-	_, _, _, _, err := datamesh.ParseFileHandle(path)
-	return err == nil
+// GetFileStatus checks if the specified file is currently being uploaded. If it isn't, it queries the file status from SP to know if the upload succeeded or failed
+func GetFileStatus(ctx context.Context, fileHash, walletAddr string, walletPubkey, walletSign []byte, reqTime int64) *protos.RspFileStatus {
+	if value, found := task.UploadFileTaskMap.Load(fileHash); found {
+		uploadTask := value.(*task.UploadFileTask)
+		rsp := &protos.RspFileStatus{
+			Result:   &protos.Result{State: protos.ResultState_RES_SUCCESS},
+			FileHash: fileHash,
+			State:    protos.FileUploadState_UPLOADING,
+		}
+		if uploadTask.IsFatal() != nil {
+			rsp.State = protos.FileUploadState_FAILED
+			rsp.Result.Msg = uploadTask.IsFatal().Error()
+		}
+		return rsp
+	}
+
+	// If not, send req to sp
+	req := requests.ReqFileStatus(fileHash, walletAddr, walletPubkey, walletSign, reqTime)
+	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStatus)
+	return nil
+}
+
+func RspFileStatus(ctx context.Context, conn core.WriteCloser) {
+	pp.Log(ctx, "get RspFileStatus")
+	var target protos.RspFileStatus
+	if err := VerifyMessage(ctx, header.RspFileStatus, &target); err != nil {
+		pp.ErrorLog(ctx, "failed verifying the message, ", err.Error())
+		return
+	}
+	if !requests.UnmarshalData(ctx, &target) {
+		return
+	}
+
+	fileStatusResult := &rpc.FileStatusResult{
+		Return:          rpc.SUCCESS,
+		FileUploadState: target.State,
+		UserHasFile:     target.UserHasFile,
+		Replicas:        target.Replicas,
+	}
+
+	if target.Result.State == protos.ResultState_RES_FAIL {
+		fileStatusResult.Error = target.Result.Msg
+	}
+
+	if bytes, err := json.Marshal(fileStatusResult); err == nil {
+		pp.Logf(ctx, "RspFileStatus: %v", string(bytes))
+	}
+
+	fileReqId := core.GetRemoteReqId(ctx)
+	file.SetGetFileStatusDone(target.FileHash+fileReqId, fileStatusResult)
 }

@@ -2,6 +2,7 @@ package serv
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -215,6 +216,29 @@ func (api *terminalCmd) UpdateDeposit(ctx context.Context, param []string) (CmdR
 func (api *terminalCmd) Status(ctx context.Context, param []string) (CmdResult, error) {
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	network.GetPeer(ctx).GetPPStatusFromSP(ctx)
+	return CmdResult{Msg: DefaultMsg}, nil
+}
+
+func (api *terminalCmd) FileStatus(ctx context.Context, param []string) (CmdResult, error) {
+	if len(param) < 1 {
+		return CmdResult{Msg: ""}, errors.New("expecting at least 1 param. Input filehash")
+	}
+
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
+	fileHash := param[0]
+	timestamp := time.Now().Unix()
+
+	signature, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetFileStatusWalletSignMessage(fileHash, setting.WalletAddress, timestamp)))
+	if err != nil {
+		return CmdResult{Msg: ""}, err
+	}
+
+	if rsp := event.GetFileStatus(ctx, fileHash, setting.WalletAddress, setting.WalletPublicKey, signature, timestamp); rsp != nil {
+		// Result is available now. Otherwise, it will be logged when RspFileStatus event is received
+		if bytes, err := json.Marshal(rsp); err == nil {
+			pp.Logf(ctx, "File status result: %v", string(bytes))
+		}
+	}
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 

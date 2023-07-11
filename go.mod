@@ -33,6 +33,7 @@ require (
 	github.com/ipfs/interface-go-ipfs-core v0.7.0
 	github.com/ipfs/kubo v0.17.0
 	github.com/klauspost/compress v1.15.12
+	github.com/magiconair/properties v1.8.6
 	github.com/mattn/go-sqlite3 v1.14.9
 	github.com/multiformats/go-multibase v0.1.1
 	github.com/multiformats/go-multihash v0.2.1
@@ -220,7 +221,6 @@ require (
 	github.com/libp2p/go-yamux/v4 v4.0.0 // indirect
 	github.com/libp2p/zeroconf/v2 v2.2.0 // indirect
 	github.com/lucas-clemente/quic-go v0.29.1 // indirect
-	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/marten-seemann/qpack v0.3.0 // indirect
 	github.com/marten-seemann/qtls-go1-18 v0.1.3 // indirect
 	github.com/marten-seemann/qtls-go1-19 v0.1.1 // indirect
