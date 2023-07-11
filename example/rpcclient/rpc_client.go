@@ -310,6 +310,7 @@ func getFileStatus(_ *cobra.Command, args []string) error {
 			Pubkey:    wpk,
 			Signature: hex.EncodeToString(signature),
 		},
+		ReqTime: timestamp,
 	}}
 	paramsBytes, e := json.Marshal(params)
 	if e != nil {
@@ -340,7 +341,7 @@ func getFileStatus(_ *cobra.Command, args []string) error {
 		return nil
 	}
 
-	utils.Logf("File status for %v:  Result=[%v]   Status=%v   UserHasFile=%v   Replicas=%v", fileHash, res.Return, protos.FileUploadState_name[int32(res.FileUploadState)], res.UserHasFile, res.Replicas)
+	utils.Logf("File status:  %v", string(rsp.Result))
 	return nil
 }
 

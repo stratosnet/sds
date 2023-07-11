@@ -169,7 +169,8 @@ enum SignatureType {
 }
 
 enum FileUploadState {
-  UPLOADING = 0;
-  FAILED = 1;
-  FINISHED = 2;
+  UNKNOWN = 0;
+  UPLOADING = 1;
+  FAILED = 2;
+  FINISHED = 3;
 }

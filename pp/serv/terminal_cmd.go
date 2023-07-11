@@ -2,6 +2,7 @@ package serv
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -234,7 +235,9 @@ func (api *terminalCmd) FileStatus(ctx context.Context, param []string) (CmdResu
 
 	if rsp := event.GetFileStatus(ctx, fileHash, setting.WalletAddress, setting.WalletPublicKey, signature, timestamp); rsp != nil {
 		// Result is available now. Otherwise, it will be logged when RspFileStatus event is received
-		pp.Logf(ctx, "file_hash: %v  status: %v  user_has_file: %v  replicas: %v", rsp.FileHash, rsp.State, rsp.UserHasFile, rsp.Replicas)
+		if bytes, err := json.Marshal(rsp); err == nil {
+			pp.Logf(ctx, "File status result: %v", string(bytes))
+		}
 	}
 	return CmdResult{Msg: DefaultMsg}, nil
 }

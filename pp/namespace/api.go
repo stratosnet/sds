@@ -384,11 +384,11 @@ func (api *rpcPubApi) GetFileStatus(ctx context.Context, param rpc_api.ParamGetF
 
 	pubkey, err := types.SdsPubKeyFromBech32(param.Signature.Pubkey)
 	if err != nil {
-		return rpc_api.FileStatusResult{Return: rpc_api.WRONG_INPUT}
+		return rpc_api.FileStatusResult{Return: rpc_api.WRONG_INPUT, Error: err.Error()}
 	}
 	signature, err := hex.DecodeString(param.Signature.Signature)
 	if err != nil {
-		return rpc_api.FileStatusResult{Return: rpc_api.WRONG_INPUT}
+		return rpc_api.FileStatusResult{Return: rpc_api.WRONG_INPUT, Error: err.Error()}
 	}
 
 	reqId := uuid.New().String()
@@ -398,6 +398,7 @@ func (api *rpcPubApi) GetFileStatus(ctx context.Context, param rpc_api.ParamGetF
 		// Result available already available. No need to wait
 		return rpc_api.FileStatusResult{
 			Return:          rpc_api.SUCCESS,
+			Error:           rsp.Result.Msg,
 			FileUploadState: rsp.State,
 			UserHasFile:     rsp.UserHasFile,
 			Replicas:        rsp.Replicas,

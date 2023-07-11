@@ -155,6 +155,7 @@ type Result struct {
 
 type FileStatusResult struct {
 	Return          string                 `json:"return"`
+	Error           string                 `json:"error,omitempty"`
 	FileUploadState protos.FileUploadState `json:"file_upload_state"`
 	UserHasFile     bool                   `json:"user_has_file"`
 	Replicas        uint32                 `json:"replicas"`

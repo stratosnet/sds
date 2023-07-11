@@ -3,6 +3,7 @@ package event
 // Author j
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -227,15 +228,16 @@ func RspFileReplicaInfo(ctx context.Context, conn core.WriteCloser) {
 func GetFileStatus(ctx context.Context, fileHash, walletAddr string, walletPubkey, walletSign []byte, reqTime int64) *protos.RspFileStatus {
 	if value, found := task.UploadFileTaskMap.Load(fileHash); found {
 		uploadTask := value.(*task.UploadFileTask)
-		state := protos.FileUploadState_UPLOADING
-		if uploadTask.IsFatal() != nil {
-			state = protos.FileUploadState_FAILED
-		}
-		return &protos.RspFileStatus{
+		rsp := &protos.RspFileStatus{
 			Result:   &protos.Result{State: protos.ResultState_RES_SUCCESS},
 			FileHash: fileHash,
-			State:    state,
+			State:    protos.FileUploadState_UPLOADING,
 		}
+		if uploadTask.IsFatal() != nil {
+			rsp.State = protos.FileUploadState_FAILED
+			rsp.Result.Msg = uploadTask.IsFatal().Error()
+		}
+		return rsp
 	}
 
 	// If not, send req to sp
@@ -255,18 +257,21 @@ func RspFileStatus(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	if target.Result.State == protos.ResultState_RES_FAIL {
-		pp.ErrorLog(ctx, "Received fail massage from sp: ", target.Result.Msg)
-		return
-	}
-
-	pp.Logf(ctx, "file_hash: %v  status: %v  user_has_file: %v  replicas: %v", target.FileHash, target.State, target.UserHasFile, target.Replicas)
-
-	fileReqId := core.GetRemoteReqId(ctx)
-	file.SetGetFileStatusDone(target.FileHash+fileReqId, &rpc.FileStatusResult{
+	fileStatusResult := &rpc.FileStatusResult{
 		Return:          rpc.SUCCESS,
 		FileUploadState: target.State,
 		UserHasFile:     target.UserHasFile,
 		Replicas:        target.Replicas,
-	})
+	}
+
+	if target.Result.State == protos.ResultState_RES_FAIL {
+		fileStatusResult.Error = target.Result.Msg
+	}
+
+	if bytes, err := json.Marshal(fileStatusResult); err == nil {
+		pp.Logf(ctx, "RspFileStatus: %v", string(bytes))
+	}
+
+	fileReqId := core.GetRemoteReqId(ctx)
+	file.SetGetFileStatusDone(target.FileHash+fileReqId, fileStatusResult)
 }
