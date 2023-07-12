@@ -36,7 +36,7 @@ func Withdraw(ctx context.Context, amount utiltypes.Coin, targetAddr []byte, txF
 		rpcResult := &rpc.WithdrawResult{
 			Return: rpc.SUCCESS,
 		}
-		defer pp.SetWithdrawResult(setting.WalletAddress+reqId, rpcResult)
+		defer pp.SetRPCResult(setting.WalletAddress+reqId, rpcResult)
 	}
 
 	pp.Log(ctx, "Withdraw transaction delivered.")

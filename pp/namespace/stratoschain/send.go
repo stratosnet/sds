@@ -36,7 +36,7 @@ func Send(ctx context.Context, amount utiltypes.Coin, toAddr []byte, txFee utilt
 		rpcResult := &rpc.SendResult{
 			Return: rpc.SUCCESS,
 		}
-		defer pp.SetSendResult(setting.WalletAddress+reqId, rpcResult)
+		defer pp.SetRPCResult(setting.WalletAddress+reqId, rpcResult)
 	}
 
 	pp.Log(ctx, "Send transaction delivered.")
