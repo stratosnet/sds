@@ -38,7 +38,7 @@ func reqActivateData(ctx context.Context, amount types.Coin, txFee types.TxFee) 
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := createAndSimulateTx(txMsg, registertypes.TypeMsgCreateResourceNode, txFee, "", signatureKeys)
+	txBytes, err := CreateAndSimulateTx(txMsg, registertypes.TypeMsgCreateResourceNode, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func reqUpdateDepositData(ctx context.Context, depositDelta types.Coin, txFee ty
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := createAndSimulateTx(txMsg, registertypes.TypeMsgUpdateResourceNodeDeposit, txFee, "", signatureKeys)
+	txBytes, err := CreateAndSimulateTx(txMsg, registertypes.TypeMsgUpdateResourceNodeDeposit, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func reqDeactivateData(ctx context.Context, txFee types.TxFee) (*protos.ReqDeact
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := createAndSimulateTx(txMsg, registertypes.TypeMsgRemoveResourceNode, txFee, "", signatureKeys)
+	txBytes, err := CreateAndSimulateTx(txMsg, registertypes.TypeMsgRemoveResourceNode, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func reqPrepayData(ctx context.Context, beneficiary []byte, amount types.Coin, t
 		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := createAndSimulateTx(txMsg, sdstypes.TypeMsgPrepay, txFee, "", signatureKeys)
+	txBytes, err := CreateAndSimulateTx(txMsg, sdstypes.TypeMsgPrepay, txFee, "", signatureKeys)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +135,7 @@ func reqPrepayData(ctx context.Context, beneficiary []byte, amount types.Coin, t
 	return req, nil
 }
 
-func createAndSimulateTx(txMsg sdktypes.Msg, msgType string, txFee types.TxFee, memo string, signatureKeys []relaytypes.SignatureKey) ([]byte, error) {
+func CreateAndSimulateTx(txMsg sdktypes.Msg, msgType string, txFee types.TxFee, memo string, signatureKeys []relaytypes.SignatureKey) ([]byte, error) {
 	protoConfig, txBuilder := createTxConfigAndTxBuilder()
 	err := setMsgInfoToTxBuilder(txBuilder, txMsg, txFee.Fee, txFee.Gas, memo)
 	if err != nil {

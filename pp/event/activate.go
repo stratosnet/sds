@@ -69,7 +69,7 @@ func RspActivate(ctx context.Context, conn core.WriteCloser) {
 	rpcResult := &rpc.ActivateResult{}
 	reqId := core.GetRemoteReqId(ctx)
 	if reqId != "" {
-		defer pp.SetActivateResult(setting.WalletAddress+reqId, rpcResult)
+		defer pp.SetRPCResult(setting.WalletAddress+reqId, rpcResult)
 	}
 
 	pp.Log(ctx, "get RspActivatePP", target.Result.State, target.Result.Msg)

@@ -221,6 +221,16 @@ func main() {
 		Short: "turn pp to mining status",
 		RunE:  startmining,
 	}
+	withdrawCmd := &cobra.Command{
+		Use:   "withdraw",
+		Short: "withdraw reward",
+		RunE:  withdraw,
+	}
+	sendCmd := &cobra.Command{
+		Use:   "send",
+		Short: "send token",
+		RunE:  send,
+	}
 
 	rootCmd.AddCommand(putCmd)
 	rootCmd.AddCommand(putstreamCmd)
@@ -236,6 +246,8 @@ func main() {
 	rootCmd.AddCommand(activateCmd)
 	rootCmd.AddCommand(prepayCmd)
 	rootCmd.AddCommand(startminingCmd)
+	rootCmd.AddCommand(withdrawCmd)
+	rootCmd.AddCommand(sendCmd)
 
 	combineLogger := utils.NewDefaultLogger("./logs/stdout.log", true, true)
 	combineLogger.SetLogLevel(utils.Info)

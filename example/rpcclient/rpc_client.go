@@ -676,6 +676,42 @@ func reqStartMiningMsg() []byte {
 	return wrapJsonRpc("owner_requestStartMining", pm)
 }
 
+func reqWithdrawMsg(amount, targetAddress, fee string, gasUint64 uint64) []byte {
+	params := []rpc.ParamReqWithdraw{{
+		Amount:        amount,
+		TargetAddress: targetAddress,
+		Fee:           fee,
+		Gas:           gasUint64,
+	}}
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.ErrorLog("failed marshal param for ReqWithdraw")
+		return nil
+	}
+
+	// wrap to the json-rpc message
+	return wrapJsonRpc("owner_requestWithdraw", pm)
+}
+
+func reqSendMsg(amount, toAddress, fee string, gasUint64 uint64) []byte {
+	params := []rpc.ParamReqSend{{
+		Amount: amount,
+		To:     toAddress,
+		Fee:    fee,
+		Gas:    gasUint64,
+	}}
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.ErrorLog("failed marshal param for ReqSend")
+		return nil
+	}
+
+	// wrap to the json-rpc message
+	return wrapJsonRpc("owner_requestSend", pm)
+}
+
 func printFileList(res rpc.FileListResult) {
 	if res.Return == rpc.SUCCESS {
 		fmt.Printf("\n%-20s %-41s %-9s %-8s\n", "File Name", "File Hash", "File Size", "Create Time")
@@ -1376,6 +1412,100 @@ func startmining(cmd *cobra.Command, args []string) error {
 	}
 
 	var res rpc.StartMiningResult
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+		return nil
+	}
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
+	return nil
+}
+
+func withdraw(cmd *cobra.Command, args []string) error {
+	if len(args) != 4 {
+		utils.ErrorLog("wrong number of arguments")
+		return nil
+	}
+	amount := args[0]
+	targetAddress := args[1]
+	fee := args[2]
+	gas := args[3]
+	gasUint64, err := strconv.ParseUint(gas, 10, 64)
+	if err != nil {
+		utils.ErrorLog("wrong number of gas")
+		return nil
+	}
+
+	r := reqWithdrawMsg(amount, targetAddress, fee, gasUint64)
+	if r == nil {
+		return nil
+	}
+	utils.Log("- request withdraw (method: owner_requestWithdraw)")
+	// http request-respond
+	body := httpRequest(r)
+	if body == nil {
+		utils.ErrorLog("json marshal error")
+		return nil
+	}
+
+	// Handle rsp
+	var rsp jsonrpcMessage
+	err = json.Unmarshal(body, &rsp)
+	if err != nil {
+		return nil
+	}
+
+	var res rpc.WithdrawResult
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+		return nil
+	}
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
+	return nil
+}
+
+func send(cmd *cobra.Command, args []string) error {
+	if len(args) != 4 {
+		utils.ErrorLog("wrong number of arguments")
+		return nil
+	}
+	to := args[0]
+	amount := args[1]
+	fee := args[2]
+	gas := args[3]
+	gasUint64, err := strconv.ParseUint(gas, 10, 64)
+	if err != nil {
+		utils.ErrorLog("wrong number of gas")
+		return nil
+	}
+
+	r := reqSendMsg(amount, to, fee, gasUint64)
+	if r == nil {
+		return nil
+	}
+	utils.Log("- request send (method: owner_requestSend)")
+	// http request-respond
+	body := httpRequest(r)
+	if body == nil {
+		utils.ErrorLog("json marshal error")
+		return nil
+	}
+
+	// Handle rsp
+	var rsp jsonrpcMessage
+	err = json.Unmarshal(body, &rsp)
+	if err != nil {
+		return nil
+	}
+
+	var res rpc.SendResult
 	err = json.Unmarshal(rsp.Result, &res)
 	if err != nil {
 		return nil

@@ -68,7 +68,7 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 	rpcResult := &rpc.StartMiningResult{}
 	reqId := core.GetRemoteReqId(ctx)
 	if reqId != "" {
-		defer pp.SetStartMiningResult(p2pserver.GetP2pServer(ctx).GetP2PAddress()+reqId, rpcResult)
+		defer pp.SetRPCResult(p2pserver.GetP2pServer(ctx).GetP2PAddress()+reqId, rpcResult)
 	}
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_MINING_NOT_STARTED)

@@ -45,7 +45,7 @@ func RspPrepay(ctx context.Context, conn core.WriteCloser) {
 	rpcResult := &rpc.PrepayResult{}
 	reqId := core.GetRemoteReqId(ctx)
 	if reqId != "" {
-		defer pp.SetPrepayResult(setting.WalletAddress+reqId, rpcResult)
+		defer pp.SetRPCResult(setting.WalletAddress+reqId, rpcResult)
 	}
 	pp.Log(ctx, "get RspPrepay", target.Result.State, target.Result.Msg)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {

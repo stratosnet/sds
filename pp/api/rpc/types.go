@@ -246,6 +246,28 @@ type ClearExpiredShareLinksResult struct {
 	NewCount   uint32 `json:"new_count"`
 }
 
+type ParamReqWithdraw struct {
+	Amount        string `json:"amount"`
+	TargetAddress string `json:"target_address"`
+	Fee           string `json:"fee"`
+	Gas           uint64 `json:"gas"`
+}
+
+type WithdrawResult struct {
+	Return string `json:"return"`
+}
+
+type ParamReqSend struct {
+	Amount string `json:"amount"`
+	To     string `json:"to"`
+	Fee    string `json:"fee"`
+	Gas    uint64 `json:"gas"`
+}
+
+type SendResult struct {
+	Return string `json:"return"`
+}
+
 type Signature struct {
 	Address   string `json:"address"`
 	Pubkey    string `json:"pubkey"`
