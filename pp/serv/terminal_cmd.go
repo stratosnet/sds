@@ -868,14 +868,14 @@ func (api *terminalCmd) Send(ctx context.Context, param []string) (CmdResult, er
 			errors.New("expecting at least 3 params. Input amount of tokens, to address, fee amount,and (optional) gas amount")
 	}
 
-	amount, err := utiltypes.ParseCoinNormalized(param[0])
-	if err != nil {
-		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token")
-	}
-
-	toAddr, err := utiltypes.WalletAddressFromBech(param[1])
+	toAddr, err := utiltypes.WalletAddressFromBech(param[0])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid to param. Should be a valid bech32 wallet address" + err.Error())
+	}
+
+	amount, err := utiltypes.ParseCoinNormalized(param[1])
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token")
 	}
 
 	fee, err := utiltypes.ParseCoinNormalized(param[2])

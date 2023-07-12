@@ -1420,8 +1420,8 @@ func send(cmd *cobra.Command, args []string) error {
 		utils.ErrorLog("wrong number of arguments")
 		return nil
 	}
-	amount := args[0]
-	to := args[1]
+	to := args[0]
+	amount := args[1]
 	fee := args[2]
 	gas := args[3]
 	gasUint64, err := strconv.ParseUint(gas, 10, 64)
