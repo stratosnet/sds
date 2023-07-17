@@ -337,19 +337,8 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err
 		}
 		m.MSGHead.ReqId = reqId
 	}
-	memory := &message.RelayMsgBuf{
-		MSGHead:  m.MSGHead,
-		MSGSign:  m.MSGSign,
-		PacketId: GetPacketIdFromContext(ctx),
-	}
-	memory.PutIntoBuffer(m)
-	sendCh <- memory
-	if err != nil {
-		utils.ErrorLog("asyncWrite error ", err)
-		memory = nil
-		return
-	}
-
+	m.PacketId = GetPacketIdFromContext(ctx)
+	sendCh <- m
 	return
 }
 
@@ -545,10 +534,13 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					msg = &message.RelayMsgBuf{
 						MSGHead: header.CopyMessageHeader(msgH),
 						MSGBody: make([]byte, posSign-posBody),
-						MSGData: make([]byte, posEnd-posData),
 					}
 					copy(msg.MSGBody, msgBuf[posBody:posSign])
-					copy(msg.MSGData, msgBuf[posData:posEnd])
+
+					if posEnd > posData {
+						msg.MSGData = utils.RequestBuffer()[:posEnd-posData]
+						copy(msg.MSGData[:], msgBuf[posData:posEnd])
+					}
 					TimeRcv = time.Now().UnixMicro()
 					handler := GetHandlerFunc(msgH.Cmd)
 					if handler == nil {
@@ -566,7 +558,6 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 						metrics.Events.WithLabelValues(msgType.Name).Inc()
 					}
 					handlerCh <- MsgHandler{*msg, handler, recvStart}
-
 					i = 0
 					listenHeader = true
 				} else {
@@ -643,15 +634,23 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 	}
 }
 
-func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
+func (sc *ServerConn) writePacket(m *message.RelayMsgBuf) error {
 	var encodedHeader []byte
 	var encodedData []byte
 	var onereadlen = 1024
 	var n int
 	var err error
 	var key []byte
-
+	packet := &message.RelayMsgBuf{
+		MSGHead:  m.MSGHead,
+		MSGSign:  m.MSGSign,
+		PacketId: m.PacketId,
+	}
+	packet.PutIntoBuffer(m)
 	cmd := packet.MSGHead.Cmd
+	if len(m.MSGData) > 0 {
+		defer utils.ReleaseBuffer(m.MSGData)
+	}
 
 	// pack the header
 	if sc.encryptMessage {

@@ -219,7 +219,6 @@ func verifyRspFileStorageInfo(msg *protos.RspFileStorageInfo) error {
 	msg.NodeSign = nil
 	msg.ReqId = ""
 	signmsg, err := utils.GetRspFileStorageInfoNodeSignMessage(msg)
-	utils.DebugLogf("file storage info signmsg: %v", msg)
 	if err != nil {
 		return errors.New("failed getting sp's sign message")
 	}

@@ -19,12 +19,13 @@ const (
 	NodeReportIntervalSec  = 5 * 60  // Interval of node stat report, in seconds
 	PpLatencyCheckInterval = 60      // interval for checking the latency to next PP
 
-	MaxData            = 1024 * 1024 * 3 // max size of a piece in a slice
-	MaxSliceSize       = 1024 * 1024 * 32
-	HttpTimeout        = 20 // seconds
-	ImagePath          = "./images/"
-	VideoPath          = "./videos"
-	DownloadPathMinLen = 88
+	DATA_BUFFER_POOL_SIZE = 100
+	MaxData               = 1024 * 1024 * 3 // max size of a piece in a slice
+	MaxSliceSize          = 1024 * 1024 * 32
+	HttpTimeout           = 20 // seconds
+	ImagePath             = "./images/"
+	VideoPath             = "./videos"
+	DownloadPathMinLen    = 88
 
 	StreamCacheMaxSlice = 2
 

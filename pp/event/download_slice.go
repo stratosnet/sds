@@ -203,29 +203,41 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 		downloadSliceSpamCheckMap.Store(key, a)
 	}
 
+	go splitSendDownloadSliceData(ctx, &target, conn)
+}
+
+func splitSendDownloadSliceData(ctx context.Context, target *protos.ReqDownloadSlice, conn core.WriteCloser) {
+	var rsp *protos.RspDownloadSlice
+	var data [][]byte
 	var slice *protos.DownloadSliceInfo
 	for _, slice = range target.RspFileStorageInfo.SliceInfo {
 		if slice.SliceNumber == target.SliceNumber {
 			break
 		}
 	}
-
 	sliceTaskId := slice.TaskId
-	rsp := requests.RspDownloadSliceData(ctx, &target, slice)
+
+	rsp, data = requests.RspDownloadSliceData(ctx, target, slice)
 	setWriteHookForRspDownloadSlice(conn)
 	if task.DownloadSliceTaskMap.HashKey(sliceTaskId + slice.SliceStorageInfo.SliceHash) {
 		rsp.Data = nil
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		rsp.Result.Msg = "duplicate request for the same slice in the same download task"
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
+		for _, buffer := range data {
+			utils.ReleaseBuffer(buffer)
+		}
 		return
 	}
 
-	if !verifyDownloadSliceHash(&target, slice, rsp) {
+	if !verifyDownloadSliceHash(target.RspFileStorageInfo.FileHash, target.SliceNumber, slice, data) {
 		rsp.Data = nil
 		rsp.Result.State = protos.ResultState_RES_FAIL
-		rsp.Result.Msg = "signature validation failed"
+		rsp.Result.Msg = "slice hash validation failed"
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
+		for _, buffer := range data {
+			utils.ReleaseBuffer(buffer)
+		}
 		return
 	}
 
@@ -234,20 +246,15 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		rsp.Result.Msg = LOSE_SLICE_MSG
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)
+		for _, buffer := range data {
+			utils.ReleaseBuffer(buffer)
+		}
 		return
 	}
 
-	splitSendDownloadSliceData(ctx, rsp, conn)
-
-	//SendReportDownloadResult(ctx, rsp, end.Sub(start).Milliseconds(), true)
-
-	//task.DownloadSliceTaskMap.Store(target.TaskId+target.SliceInfo.SliceHash, true)
-}
-
-func splitSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlice, conn core.WriteCloser) {
 	utils.DebugLog("splitSendDownloadSliceData reqID =========", core.GetReqIdFromContext(ctx))
-	dataLen := uint64(len(rsp.Data))
-	utils.DebugLog("dataLen=========", dataLen)
+	sliceLen := rsp.SliceSize
+	utils.DebugLog("sliceLen=========", sliceLen)
 	dataStart := uint64(0)
 	dataEnd := uint64(setting.MaxData)
 	offsetStart := rsp.SliceInfo.SliceOffset.SliceOffsetStart
@@ -261,24 +268,31 @@ func splitSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlic
 		response: rsp,
 	})
 
-	for {
+	for _, packet := range data {
 		utils.DebugLog("_____________________________")
 		utils.DebugLog(dataStart, dataEnd, offsetStart, offsetEnd)
 
 		_, newCtx := prepareSendDownloadSliceData(ctx, rsp, tkSliceUID)
 
-		if dataEnd < dataLen {
+		if dataEnd < sliceLen {
 			utils.DebugLog("reqID-"+strconv.FormatUint(dataStart, 10)+" =========", strconv.FormatInt(core.GetReqIdFromContext(newCtx), 10))
-			_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspDownloadSliceDataSplit(rsp, dataStart, dataEnd, offsetStart, offsetEnd,
-				rsp.SliceInfo.SliceOffset.SliceOffsetStart, rsp.SliceInfo.SliceOffset.SliceOffsetEnd, false), header.RspDownloadSlice)
+			_ = p2pserver.GetP2pServer(ctx).SendMessage(
+				newCtx,
+				conn,
+				requests.RspDownloadSliceDataSplit(rsp, dataStart, dataEnd, offsetStart, offsetEnd, rsp.SliceInfo.SliceOffset.SliceOffsetStart, rsp.SliceInfo.SliceOffset.SliceOffsetEnd, packet, false),
+				header.RspDownloadSlice,
+			)
 			dataStart += setting.MaxData
 			dataEnd += setting.MaxData
 			offsetStart += setting.MaxData
 			offsetEnd += setting.MaxData
 		} else {
 			utils.DebugLog("reqID-"+strconv.FormatUint(dataStart, 10)+" =========", strconv.FormatInt(core.GetReqIdFromContext(newCtx), 10))
-			_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspDownloadSliceDataSplit(rsp, dataStart, 0, offsetStart, 0,
-				rsp.SliceInfo.SliceOffset.SliceOffsetStart, rsp.SliceInfo.SliceOffset.SliceOffsetEnd, true), header.RspDownloadSlice)
+			_ = p2pserver.GetP2pServer(ctx).SendMessage(
+				newCtx,
+				conn,
+				requests.RspDownloadSliceDataSplit(rsp, dataStart, 0, offsetStart, 0, rsp.SliceInfo.SliceOffset.SliceOffsetStart, rsp.SliceInfo.SliceOffset.SliceOffsetEnd, packet, true),
+				header.RspDownloadSlice)
 			return
 		}
 	}
@@ -311,6 +325,8 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
+
+	defer utils.ReleaseBuffer(target.Data)
 
 	fileReqId, found := getFileReqIdFromContext(ctx)
 	if !found {
@@ -561,8 +577,12 @@ func decryptSliceData(dataToDecrypt []byte) ([]byte, error) {
 	return encryption.DecryptAES(key.PrivateKey(), encryptedSlice.Data, encryptedSlice.AesNonce, false)
 }
 
-func verifyDownloadSliceHash(target *protos.ReqDownloadSlice, slice *protos.DownloadSliceInfo, rsp *protos.RspDownloadSlice) bool {
-	return slice.SliceStorageInfo.SliceHash == utils.CalcSliceHash(rsp.Data, target.RspFileStorageInfo.FileHash, target.SliceNumber)
+func verifyDownloadSliceHash(fileHash string, sliceNumber uint64, slice *protos.DownloadSliceInfo, buffers [][]byte) bool {
+	var data []byte
+	for _, buffer := range buffers {
+		data = append(data, buffer...)
+	}
+	return slice.SliceStorageInfo.SliceHash == utils.CalcSliceHash(data, fileHash, sliceNumber)
 }
 
 func setDownloadSliceSuccess(ctx context.Context, sliceHash string, dTask *task.DownloadTask) {
