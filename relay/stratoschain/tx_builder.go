@@ -31,6 +31,10 @@ func BuildTxBytes(protoConfig client.TxConfig, txBuilder client.TxBuilder, chain
 			len(updatedMsgs), len(unsignedMsgs)-len(filteredMsgs), len(filteredMsgs)-len(updatedMsgs))
 	}
 
+	if len(updatedMsgs) == 0 {
+		return []byte{}, errors.New("no available account to sign transaction")
+	}
+
 	return buildAndSignStdTx(protoConfig, txBuilder, chainId, updatedMsgs)
 }
 
