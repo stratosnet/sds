@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/stratosnet/sds/framework/core"
@@ -130,8 +131,13 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
+	fileReqId := core.GetRemoteReqId(ctx)
+	rpcRequested := !strings.HasPrefix(fileReqId, task.LOCAL_REQID)
 	if target.Result.State == protos.ResultState_RES_FAIL {
 		pp.ErrorLog(ctx, "Received fail massage from sp: ", target.Result.Msg)
+		if rpcRequested {
+			file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
+		}
 		return
 	}
 	metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_STORAGE_INFO_SP:")
@@ -155,7 +161,6 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		TimeStamp:     target.TimeStamp,
 	}
 
-	fileReqId := core.GetRemoteReqId(ctx)
 	newTarget.ReqId = fileReqId
 	pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, fileReqId)
 	if target.Result.State == protos.ResultState_RES_SUCCESS {

@@ -877,7 +877,7 @@ func (api *rpcPubApi) RequestDownloadShared(ctx context.Context, param rpc_api.P
 		return rpc_api.Result{Return: rpc_api.WRONG_FILE_INFO}
 	}
 
-	file.SetSignature(param.FileHash+param.Signature.Address, wsig)
+	file.SetSignature(param.FileHash+param.Signature.Address+param.ReqId, wsig)
 
 	// start from here, the control flow follows that of download file
 	key := fileHash + param.ReqId
