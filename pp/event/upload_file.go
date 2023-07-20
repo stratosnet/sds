@@ -58,7 +58,7 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted, isVideoStr
 	if isEncrypted {
 		encryptionTag = utils.GetRandomString(8)
 	}
-	uploadFileHandler := getUploadFileHandler(isVideoStream)
+	uploadFileHandler := GetUploadFileHandler(isVideoStream)
 	fileInfo, slices, err := uploadFileHandler.PreUpload(ctx, path, encryptionTag)
 	if err != nil {
 		pp.ErrorLog(ctx, "failed to slice file before upload ", err)
@@ -363,7 +363,7 @@ func encryptSliceData(rawData []byte) ([]byte, error) {
 	return proto.Marshal(encryptedSlice)
 }
 
-func getUploadFileHandler(isVideoStream bool) UploadFileHandler {
+func GetUploadFileHandler(isVideoStream bool) UploadFileHandler {
 	if isVideoStream {
 		return UploadStreamFileHandler{}
 	}

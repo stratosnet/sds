@@ -119,7 +119,7 @@ func GetSliceSize(sliceHash string) (int64, error) {
 	return info.Size(), nil
 }
 func OpenTmpFile(fileHash, fileName string) (*os.File, error) {
-	tmpFileFolderPath := getTmpFileFolderPath(fileHash)
+	tmpFileFolderPath := GetTmpFileFolderPath(fileHash)
 	folderPath := filepath.Join(tmpFileFolderPath)
 	exist, err := PathExists(folderPath)
 	if err != nil {
@@ -383,10 +383,10 @@ func CheckFilePathEx(filePath string) bool {
 }
 
 func GetTmpSlicePath(fileHash, sliceHash string) string {
-	return filepath.Join(getTmpFileFolderPath(fileHash), sliceHash)
+	return filepath.Join(GetTmpFileFolderPath(fileHash), sliceHash)
 }
 
-func getTmpFileFolderPath(fileHash string) string {
+func GetTmpFileFolderPath(fileHash string) string {
 	return filepath.Join(setting.GetRootPath(), TEMP_FOLDER, fileHash)
 }
 

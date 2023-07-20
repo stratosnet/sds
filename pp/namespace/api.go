@@ -5,6 +5,7 @@ import (
 	b64 "encoding/base64"
 	"encoding/hex"
 	"math"
+	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
@@ -139,7 +140,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 			tmpSliceName := uuid.NewString()
 			var rawData []byte
 			var err error
-			if file.CacheRemoteFileData(fileHash, sliceOffset, tmpSliceName) == nil {
+			if file.CacheRemoteFileData(fileHash, sliceOffset, fileHash, tmpSliceName, false) == nil {
 				rawData, err = file.GetSliceDataFromTmp(fileHash, tmpSliceName)
 				if err != nil {
 					file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
@@ -168,7 +169,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 
 		// start to upload file
 		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, time,
-			slices, false, false, param.DesiredTier, param.AllowHigherTier)
+			slices, false, param.DesiredTier, param.AllowHigherTier, 0)
 		if err != nil {
 			file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
 			return
@@ -269,106 +270,73 @@ func (api *rpcPubApi) UploadData(ctx context.Context, param rpc_api.ParamUploadD
 }
 
 func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.ParamReqUploadFile) rpc_api.Result {
-	//metrics.RpcReqCount.WithLabelValues("RequestUpload").Inc()
-	//metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_CLIENT")
-	fileName := param.FileName
-	fileSize := param.FileSize
+	metrics.RpcReqCount.WithLabelValues("RequestUploadStream").Inc()
+	tmpFolder := "video"
 	fileHash := param.FileHash
 	walletAddr := param.Signature.Address
 	pubkey := param.Signature.Pubkey
 	signature := param.Signature.Signature
-	size := fileSize
 	time := param.ReqTime
 
-	_, name := filepath.Split(fileName)
-	if len(name) > 0 {
-		utils.DebugLogf("fileName is trimmed from %v to %v", fileName, name)
-		fileName = name
+	// fetch file slices from remote client and send upload request to sp
+	fetchRemoteFileAndReqUpload := func() {
+		metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_CLIENT")
+		fileName := param.FileName
+		fileSize := uint64(param.FileSize)
+		sliceSize := uint64(setting.MaxSliceSize)
+		sliceCount := uint64(math.Ceil(float64(fileSize) / float64(sliceSize)))
+
+		var slices []*protos.SliceHashAddr
+		for sliceNumber := uint64(1); sliceNumber <= sliceCount; sliceNumber++ {
+			sliceOffset := requests.GetSliceOffset(sliceNumber, sliceCount, sliceSize, fileSize)
+
+			if file.CacheRemoteFileData(fileHash, sliceOffset, tmpFolder, fileName, true) != nil {
+				file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
+				return
+			}
+		}
+
+		tmpFilePath := filepath.Join(file.GetTmpFileFolderPath(tmpFolder), fileName)
+		calculatedFileHash := utils.CalcFileHashForVideoStream(tmpFilePath, "")
+		if calculatedFileHash != fileHash {
+			file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.WRONG_FILE_INFO})
+			return
+		}
+
+		fileHandler := event.GetUploadFileHandler(true)
+		fInfo, slices, err := fileHandler.PreUpload(ctx, tmpFilePath, "")
+		if err != nil {
+			file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
+			return
+		}
+		_ = os.RemoveAll(tmpFilePath)
+
+		// start to upload file
+		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, time,
+			slices, false, param.DesiredTier, param.AllowHigherTier, fInfo.Duration)
+		if err != nil {
+			file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
+			return
+		}
+		metrics.UploadPerformanceLogNow(param.FileHash + ":SND_REQ_UPLOAD_SP")
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
+
+		defer metrics.UploadPerformanceLogNow(param.FileHash + ":SND_RSP_UPLOAD_CLIENT")
 	}
 
-	// verify if wallet and public key match
-	if utiltypes.VerifyWalletAddr(pubkey, walletAddr) != 0 {
-		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
-	}
-
-	// start to upload file
-	go uploadStreamTmpFile(ctx, fileHash, fileName, uint64(size), walletAddr, pubkey, signature, time,
-		param.DesiredTier, param.AllowHigherTier)
-
+	//var done = make(chan bool)
 	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
 	defer cancel()
+
+	fileEventCh := file.SubscribeRemoteFileEvent(fileHash)
+	go fetchRemoteFileAndReqUpload()
 
 	select {
 	case <-ctx.Done():
 		result := &rpc_api.Result{Return: rpc_api.TIME_OUT}
 		return *result
 	// since request for uploading a file has been invoked, wait for application's reply then return the result back to the rpc client
-	case result := <-file.SubscribeRemoteFileEvent(fileHash):
-		file.UnsubscribeRemoteFileEvent(fileHash)
-		if result != nil {
-			result = ResultHook(result, fileHash)
-			return *result
-		} else {
-			result = &rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
-			return *result
-		}
-	}
-}
-
-func (api *rpcPubApi) UploadDataStream(ctx context.Context, param rpc_api.ParamUploadData) rpc_api.Result {
-
-	//metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_SP:")
-
-	content := param.Data
-	fileHash := param.FileHash
-	// content in base64
-	dec, _ := b64.StdEncoding.DecodeString(content)
-
-	file.SendFileDataBack(fileHash, dec)
-
-	// first part: if the amount of bytes server requested haven't been finished,
-	// go on asking from the client
-	FileOffsetMutex.Lock()
-	fo, found := FileOffset[fileHash]
-	FileOffsetMutex.Unlock()
-	if found {
-		if fo.ResourceNodeAsked-fo.RemoteRequested > FILE_DATA_SAFE_SIZE {
-			start := fo.RemoteRequested
-			end := fo.RemoteRequested + FILE_DATA_SAFE_SIZE
-			nr := rpc_api.Result{
-				Return:      rpc_api.UPLOAD_DATA,
-				OffsetStart: &start,
-				OffsetEnd:   &end,
-			}
-
-			FileOffsetMutex.Lock()
-			FileOffset[fileHash].RemoteRequested = fo.RemoteRequested + FILE_DATA_SAFE_SIZE
-			FileOffsetMutex.Unlock()
-			return nr
-		} else {
-			nr := rpc_api.Result{
-				Return:      rpc_api.UPLOAD_DATA,
-				OffsetStart: &fo.RemoteRequested,
-				OffsetEnd:   &fo.ResourceNodeAsked,
-			}
-
-			FileOffsetMutex.Lock()
-			delete(FileOffset, fileHash)
-			FileOffsetMutex.Unlock()
-			return nr
-		}
-	}
-
-	// second part: let the server decide what will be the next step
-	newctx, cancel := context.WithTimeout(context.Background(), 3*WAIT_TIMEOUT)
-	defer cancel()
-
-	select {
-	case <-newctx.Done():
-		result := &rpc_api.Result{Return: rpc_api.TIME_OUT}
-		return *result
-	// since a slice has been passed to the application, wait for application's reply then return the result back to the rpc client
-	case result := <-file.SubscribeRemoteFileEvent(fileHash):
+	case result := <-fileEventCh:
 		file.UnsubscribeRemoteFileEvent(fileHash)
 		if result != nil {
 			result = ResultHook(result, fileHash)
@@ -931,21 +899,6 @@ func (api *rpcPubApi) RequestGetOzone(ctx context.Context, param rpc_api.ParamRe
 			}
 		}
 	}
-}
-
-func uploadStreamTmpFile(ctx context.Context, fileHash, fileName string, fileSize uint64, walletAddr, pubkey, signature string,
-	reqTime int64, desiredTier uint32, allowHigherTier bool) {
-	if err := file.CacheRemoteFileData(fileHash, &protos.SliceOffset{SliceOffsetStart: 0, SliceOffsetEnd: fileSize}, fileName); err != nil {
-		utils.ErrorLog("failed uploading stream tmp file", err.Error())
-		return
-	}
-	p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, reqTime,
-		nil, false, true, desiredTier, allowHigherTier)
-	if err != nil {
-		utils.ErrorLog("failed creating RequestUploadFile", err.Error())
-		return
-	}
-	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, p, header.ReqUploadFile)
 }
 
 func (api *rpcPrivApi) RequestRegisterNewPP(ctx context.Context, param rpc_api.ParamReqRP) rpc_api.RPResult {

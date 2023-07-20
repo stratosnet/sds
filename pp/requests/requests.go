@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
-	"path/filepath"
 	"reflect"
 	"time"
 
@@ -101,7 +100,7 @@ func ReqGetWalletOzData(walletAddr, reqId string) *protos.ReqGetWalletOz {
 
 // RequestUploadFile a file from an owner instead from a "path" belongs to PP's default wallet
 func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize uint64, walletAddress, walletPubkey, signature string, reqTime int64,
-	slices []*protos.SliceHashAddr, isEncrypted, isVideoStream bool, desiredTier uint32, allowHigherTier bool) (*protos.ReqUploadFile, error) {
+	slices []*protos.SliceHashAddr, isEncrypted bool, desiredTier uint32, allowHigherTier bool, duration uint64) (*protos.ReqUploadFile, error) {
 	utils.Log("fileName: ", fileName)
 	encryptionTag := ""
 	if isEncrypted {
@@ -132,6 +131,7 @@ func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize 
 			StoragePath:        "rpc:" + fileName,
 			EncryptionTag:      encryptionTag,
 			OwnerWalletAddress: walletAddress,
+			Duration:           duration,
 		},
 		Slices:    slices,
 		MyAddress: p2pserver.GetP2pServer(ctx).GetPPInfo(),
@@ -144,15 +144,6 @@ func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize 
 		DesiredTier:     desiredTier,
 		AllowHigherTier: allowHigherTier,
 		ReqTime:         reqTime,
-	}
-
-	if isVideoStream {
-		duration, err := file.GetVideoDuration(filepath.Join(setting.GetRootPath(), file.TEMP_FOLDER, fileHash, fileName))
-		if err != nil {
-			utils.Log("Failed to get the length of the video: ", err)
-			return nil, errors.Wrap(err, "Failed to get the length of the video")
-		}
-		req.FileInfo.Duration = duration
 	}
 
 	// info

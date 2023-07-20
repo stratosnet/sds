@@ -139,7 +139,7 @@ OuterFor:
 	return data
 }
 
-func CacheRemoteFileData(fileHash string, offset *protos.SliceOffset, fileName string) error {
+func CacheRemoteFileData(fileHash string, offset *protos.SliceOffset, folderName, fileName string, writeFromStartOffset bool) error {
 	upSliceMutex.Lock()
 	defer upSliceMutex.Unlock()
 
@@ -153,7 +153,7 @@ func CacheRemoteFileData(fileHash string, offset *protos.SliceOffset, fileName s
 	// send event and open the pipe for coming data
 	SetRemoteFileResult(fileHash, *r)
 
-	fileMg, err := OpenTmpFile(fileHash, fileName)
+	fileMg, err := OpenTmpFile(folderName, fileName)
 	if err != nil {
 		return errors.Wrap(err, "failed opening temp file")
 	}
@@ -162,6 +162,10 @@ func CacheRemoteFileData(fileHash string, offset *protos.SliceOffset, fileName s
 	}()
 
 	var read int64 = 0
+	var writeOffset int64 = 0
+	if !writeFromStartOffset {
+		writeOffset = int64(offset.SliceOffsetStart)
+	}
 
 OuterFor:
 	for {
@@ -174,12 +178,13 @@ OuterFor:
 			return errors.New("timeout waiting uploaded sub-slice")
 		case subSlice := <-SubscribeGetRemoteFileData(fileHash):
 			metrics.UploadPerformanceLogNow(fileHash + ":RCV_SUBSLICE_RPC:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
-			err = WriteFile(subSlice, read, fileMg)
+			err = WriteFile(subSlice, writeOffset, fileMg)
 			if err != nil {
 				cancel()
 				return errors.Wrap(err, "failed writing file")
 			}
 			read = read + int64(len(subSlice))
+			writeOffset = writeOffset + int64(len(subSlice))
 			if read >= int64(offset.SliceOffsetEnd-offset.SliceOffsetStart) {
 				UnsubscribeGetRemoteFileData(fileHash)
 				cancel()

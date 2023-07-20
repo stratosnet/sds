@@ -198,19 +198,6 @@ func reqUploadStreamMsg(fileName, hash, sn string) []byte {
 	return wrapJsonRpc("user_requestUploadStream", pm)
 }
 
-func uploadDataStreamMsg(hash, data string) []byte {
-	pa := []rpc.ParamUploadData{{
-		FileHash: hash,
-		Data:     data,
-	}}
-	pm, e := json.Marshal(pa)
-	if e != nil {
-		utils.ErrorLog("json marshal error", e)
-	}
-
-	return wrapJsonRpc("user_uploadDataStream", pm)
-}
-
 func putstream(cmd *cobra.Command, args []string) error {
 	sn, err := handleGetOzone()
 	if err != nil {
@@ -265,7 +252,7 @@ func putstream(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 		encoded := base64.StdEncoding.EncodeToString(rawData)
-		r = uploadDataStreamMsg(hash, encoded)
+		r = uploadDataMsg(hash, encoded)
 		utils.Log("- request upload date (method: user_uploadDataStream)")
 		body = httpRequest(r)
 		if body == nil {
@@ -284,6 +271,11 @@ func putstream(cmd *cobra.Command, args []string) error {
 			utils.ErrorLog("unmarshal failed")
 			return nil
 		}
+	}
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
 	}
 	utils.Log("- uploading is done")
 	return nil
