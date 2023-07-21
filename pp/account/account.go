@@ -109,18 +109,3 @@ func Wallets(ctx context.Context) []string {
 	}
 	return wallets
 }
-
-func GetWallets(ctx context.Context, walletAddress string, password string) ([]os.DirEntry, error) {
-	pp.DebugLog(ctx, "walletAddress = ", walletAddress)
-	if walletAddress == "" {
-		pp.ErrorLog(ctx, "please input wallet address")
-		return nil, errors.New("please input wallet address")
-	}
-
-	files, _ := os.ReadDir(setting.Config.Home.AccountsPath)
-	if len(files) == 0 {
-		pp.ErrorLog(ctx, "wrong account or password")
-		return nil, errors.New("wrong account or password")
-	}
-	return files, nil
-}
