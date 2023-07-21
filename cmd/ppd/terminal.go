@@ -62,7 +62,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"stopmonitor                                                    stop monitor\n" +
 		"monitortoken                                                   show token for pp monitor service\n" +
 		"config  <key> <value>                                          set config key value\n" +
-		"getoz <walletAddress> ->password                               get current ozone balance\n" +
+		"getoz <walletAddress>                                          get current ozone balance\n" +
 		"status                                                         get current resource node status\n" +
 		"filestatus <filehash>                                          get current state of an uploaded file\n" +
 		"maintenance start <duration>                                   put the node in maintenance mode for the requested duration (in seconds)\n" +
@@ -86,8 +86,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 			fmt.Println("missing wallet address")
 			return false
 		}
-		password := console.MyGetPassword("input password", false)
-		return callRpc(c, "getoz", []string{param[0], password})
+		return callRpc(c, "getoz", param)
 	}
 
 	newwallet := func(line string, param []string) bool {
