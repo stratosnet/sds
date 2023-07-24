@@ -1161,3 +1161,26 @@ func (api *rpcPrivApi) RequestSend(ctx context.Context, param rpc_api.ParamReqSe
 		}
 	}
 }
+
+func (api *rpcPrivApi) RequestStatus(ctx context.Context, param rpc_api.ParamReqStatus) rpc_api.StatusResult {
+	metrics.RpcReqCount.WithLabelValues("RequestStatus").Inc()
+	reqId := uuid.New().String()
+	ctx = core.RegisterRemoteReqId(ctx, reqId)
+	network.GetPeer(ctx).GetPPStatusFromSP(ctx)
+
+	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			result := &rpc_api.StatusResult{Return: rpc_api.TIME_OUT}
+			return *result
+		default:
+			result, found := pp.GetStatusResult(setting.Config.Keys.P2PAddress + reqId)
+			if result != nil && found {
+				return *result
+			}
+		}
+	}
+}

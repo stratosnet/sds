@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"fmt"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -10,7 +11,9 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
+	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/network"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	ppTypes "github.com/stratosnet/sds/pp/types"
@@ -28,10 +31,16 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
+	rpcResult := &rpc.StatusResult{Return: rpc.SUCCESS}
+	reqId := core.GetRemoteReqId(ctx)
+	if reqId != "" {
+		defer pp.SetRPCResult(p2pserver.GetP2pServer(ctx).GetP2PAddress()+reqId, rpcResult)
+	}
 	pp.DebugLogf(ctx, "get GetPPStatus RSP, activation status = %v", target.IsActive)
 	setSoftMemoryCap(target.OngoingTier)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.ErrorLog(target.Result.Msg)
+		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE
 		if strings.Contains(target.Result.Msg, "Please register first") {
 			network.GetPeer(ctx).RunFsm(ctx, network.EVENT_SP_NO_PP_IN_STORE)
 			setting.IsPPSyncedWithSP = true
@@ -47,7 +56,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 		setting.IsPPSyncedWithSP = true
 	}
 
-	formatRspGetPPStatus(ctx, &target)
+	rpcResult.Message = formatRspGetPPStatus(ctx, &target)
 
 	if target.IsActive == ppTypes.PP_ACTIVE {
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_ACTIVATED)
@@ -64,7 +73,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-func formatRspGetPPStatus(ctx context.Context, response *protos.RspGetPPStatus) {
+func formatRspGetPPStatus(ctx context.Context, response *protos.RspGetPPStatus) string {
 	activation, state := "", ""
 
 	switch response.IsActive {
@@ -96,9 +105,25 @@ func formatRspGetPPStatus(ctx context.Context, response *protos.RspGetPPStatus) 
 	default:
 		state = "Unknown"
 	}
-	pp.Logf(ctx, "*** current node status ***\n"+
-		"Activation: %v | Mining: %v | Initial tier: %v | Ongoing tier: %v | Weight score: %v",
-		activation, state, response.InitTier, response.OngoingTier, response.WeightScore)
+
+	regStatStr := ""
+	regStat := network.GetPeer(ctx).GetStateFromFsm()
+	switch regStat.Id {
+	case network.STATE_NOT_REGISTERED:
+		regStatStr = "Unregistered"
+	case network.STATE_REGISTERING:
+		regStatStr = "Registering"
+	case network.STATE_REGISTERED:
+		regStatStr = "Registered"
+	default:
+		regStatStr = "Unknown"
+	}
+
+	msgStr := fmt.Sprintf("*** current node status ***\n"+
+		"Activation: %v | Registration Status: %v | Mining: %v | Initial tier: %v | Ongoing tier: %v | Weight score: %v",
+		activation, regStatStr, state, response.InitTier, response.OngoingTier, response.WeightScore)
+	pp.Log(ctx, msgStr)
+	return msgStr
 }
 
 func setSoftMemoryCap(tier uint32) {
