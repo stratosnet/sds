@@ -1184,3 +1184,10 @@ func (api *rpcPrivApi) RequestStatus(ctx context.Context, param rpc_api.ParamReq
 		}
 	}
 }
+
+func (api *rpcPubApi) RequestServiceStatus(ctx context.Context, param rpc_api.ParamReqServiceStatus) rpc_api.ServiceStatusResult {
+	metrics.RpcReqCount.WithLabelValues("RequestServiceStatus").Inc()
+	reqId := uuid.New().String()
+	ctx = core.RegisterRemoteReqId(ctx, reqId)
+	return event.GetPPServiceStatus(ctx)
+}

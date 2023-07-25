@@ -684,6 +684,22 @@ func reqStatusMsg() []byte {
 	return wrapJsonRpc("owner_requestStatus", pm)
 }
 
+func reqServiceStatusMsg() []byte {
+	// param
+	params := []rpc.ParamReqServiceStatus{{
+		WalletAddr: WalletAddress,
+	}}
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.ErrorLog("failed marshal param for ReqServiceStatus")
+		return nil
+	}
+
+	// wrap to the json-rpc message
+	return wrapJsonRpc("user_requestServiceStatus", pm)
+}
+
 func reqWithdrawMsg(amount, targetAddress, fee string, gasUint64 uint64) []byte {
 	params := []rpc.ParamReqWithdraw{{
 		Amount:        amount,
@@ -1434,6 +1450,40 @@ func startmining(cmd *cobra.Command, args []string) error {
 
 func status(cmd *cobra.Command, args []string) error {
 	r := reqStatusMsg()
+	if r == nil {
+		return nil
+	}
+	utils.Log("- request register pp (method: owner_requestStatus)")
+	// http request-respond
+	body := httpRequest(r)
+	if body == nil {
+		utils.ErrorLog("json marshal error")
+		return nil
+	}
+
+	// Handle rsp
+	var rsp jsonrpcMessage
+	err := json.Unmarshal(body, &rsp)
+	if err != nil {
+		return nil
+	}
+
+	var res rpc.StatusResult
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+		return nil
+	}
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+		utils.Log(res.Message)
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
+	return nil
+}
+
+func servicestatus(cmd *cobra.Command, args []string) error {
+	r := reqServiceStatusMsg()
 	if r == nil {
 		return nil
 	}
