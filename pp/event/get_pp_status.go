@@ -110,7 +110,7 @@ func formatRspGetPPStatus(ctx context.Context, response *protos.RspGetPPStatus) 
 	regStat := network.GetPeer(ctx).GetStateFromFsm()
 	switch regStat.Id {
 	case network.STATE_NOT_REGISTERED:
-		regStatStr = "Unregistered"
+		regStatStr = "Not registered"
 	case network.STATE_REGISTERING:
 		regStatStr = "Registering"
 	case network.STATE_REGISTERED:
