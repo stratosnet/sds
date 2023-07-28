@@ -38,12 +38,6 @@ enum MsgType {
     DEFAULT = 0;
 }
 
-enum HeartbeatType {
-    REGULAR_HEARTBEAT = 0;
-    LATENCY_CHECK = 1;
-    LATENCY_CHECK_PP = 2;
-}
-
 message PPBaseInfo {
      string p2p_address = 1;
      string wallet_address = 2;
@@ -72,22 +66,12 @@ message FileInfo {
      string encryption_tag = 12;
 }
 
-// slice number and pp address
-message SliceNumAddr {
-     uint64 slice_number = 1;
-     SliceOffset slice_offset = 2;
-     PPBaseInfo pp_info = 3;
-     bytes sp_node_sign = 4;
-}
-
 message SliceHashAddr {
   string slice_hash = 1;
   uint64 slice_number = 2;
   uint64 slice_size = 3;
   SliceOffset slice_offset = 4;
   PPBaseInfo pp_info = 5;
-  string sp_p2p_address = 6;
-  bytes sp_node_sign = 7;
 }
 
 message SliceOffsetInfo {
@@ -102,8 +86,7 @@ message SliceOffset {
 
 
 message FileIndexes{
-    //  string file_hash = 1; // file hash
-    string file_path = 1; //  sdm://accunt/fileHash|fileName
+    string file_path = 1; //  sdm://account/fileHash
     string p2p_address = 2;
     string wallet_address = 3;
     string save_path = 4;
@@ -111,19 +94,18 @@ message FileIndexes{
 }
 
 message DownloadSliceInfo {
-     SliceStorageInfo slice_storage_info = 1;
-     uint64 slice_number = 2;
-     PPBaseInfo storage_pp_info = 3;
-     PPBaseInfo backups_pp_info = 4;
-     bool visit_result = 5;
-     string task_id= 6;
-     SliceOffset slice_offset= 7;
-     bytes sp_node_sign = 8;
+  SliceStorageInfo slice_storage_info = 1;
+  uint64 slice_number = 2;
+  PPBaseInfo storage_pp_info = 3;
+  PPBaseInfo backups_pp_info = 4;
+  bool visit_result = 5;
+  string task_id = 6;
+  SliceOffset slice_offset = 7;
 }
 
 message SliceStorageInfo {
-     uint64 slice_size = 1; //
-     string slice_hash = 2; //
+  uint64 slice_size = 1;
+  string slice_hash = 2;
 }
 
 message EncryptedSlice {
@@ -136,9 +118,9 @@ message EncryptedSlice {
 message ShareLinkInfo{
     string name     = 1;
     string file_hash     = 2;
-    uint64 link_time     = 3;
+    int64 creation_time     = 3;
     uint64 file_size     = 4;
-    uint64 link_time_exp = 5;
+    int64 exp_time = 5;
     string share_id      = 6;
     bool   is_directory = 7;
     string share_link      = 8;    
@@ -167,4 +149,28 @@ message DiskStat {
 message BandwidthStat {
     int64 used = 1;
     int64 total = 2;
+}
+
+enum PPState {
+    OFFLINE = 0;
+    ONLINE = 1;
+    SUSPEND = 2;
+    MAINTENANCE = 3;
+}
+
+enum SpMaintenanceType {
+    CONSENSUS = 0;
+    OTHER = 1;
+}
+
+enum SignatureType {
+    WALLET = 0;
+    P2P = 1;
+}
+
+enum FileUploadState {
+  UNKNOWN = 0;
+  UPLOADING = 1;
+  FAILED = 2;
+  FINISHED = 3;
 }

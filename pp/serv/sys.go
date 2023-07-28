@@ -21,7 +21,7 @@ var dumpClock = clock.NewClock()
 var dumpJob clock.Job
 
 func StartDumpTrafficLog(ctx context.Context) {
-	logJobInterval := setting.Config.TrafficLogInterval
+	logJobInterval := setting.Config.Traffic.LogInterval
 	dumpJob, _ = dumpClock.AddJobRepeat(time.Second*time.Duration(logJobInterval), 0, dumpTrafficLog(ctx))
 }
 
@@ -30,7 +30,7 @@ func dumpTrafficLog(ctx context.Context) func() {
 		v, _ := mem.VirtualMemory()
 		c, _ := cpu.Info()
 		cc, _ := cpu.Percent(time.Second, false)
-		d, _ := utils.GetDiskUsage(setting.Config.StorehousePath)
+		d, _ := utils.GetDiskUsage(setting.Config.Home.StoragePath)
 
 		//Memory
 		memTotal := v.Total
@@ -53,6 +53,7 @@ func dumpTrafficLog(ctx context.Context) func() {
 		cpuInfo := NewCpuInfo(cpuInfos, cpuUsedPercent)
 
 		//HD
+		d.Total = setting.GetDiskSizeSoftCap(d.Total)
 		hdTotal := d.Total
 		hdFree := d.Free
 		hdUsed := d.Used
@@ -126,16 +127,17 @@ func StopDumpTrafficLog() {
 
 // ShowMonitor
 func ShowMonitor(ctx context.Context) {
-	job, _ = myClock.AddJobRepeat(time.Second*time.Duration(setting.Config.TrafficLogInterval), 0, monitor(ctx))
+	job, _ = myClock.AddJobRepeat(time.Second*time.Duration(setting.Config.Traffic.LogInterval), 0, monitor(ctx))
 }
 
-//
 func monitor(ctx context.Context) func() {
 	return func() {
 		v, _ := mem.VirtualMemory()
 		c, _ := cpu.Info()
 		cc, _ := cpu.Percent(time.Second, false)
-		d, _ := utils.GetDiskUsage(setting.Config.StorehousePath)
+		d, _ := utils.GetDiskUsage(setting.Config.Home.StoragePath)
+
+		d.Total = setting.GetDiskSizeSoftCap(d.Total)
 		// n, _ := host.Info()
 		// nv, _ := net.IOCounters(true)
 		// boottime, _ := host.BootTime()

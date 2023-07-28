@@ -6,25 +6,31 @@ import (
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/utils"
 )
 
-func RspSpUnderMaintenance(ctx context.Context, conn core.WriteCloser) {
-	var target protos.RspSpUnderMaintenance
+func NoticeSpUnderMaintenance(ctx context.Context, conn core.WriteCloser) {
+	var target protos.NoticeSpUnderMaintenance
+	if err := VerifyMessage(ctx, header.NoticeSpUnderMaintenance, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
+	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
 
-	switch conn.(type) {
+	switch conn := conn.(type) {
 	case *core.ServerConn:
-		utils.DebugLog("Ignore RspSpUnderMaintenance in SeverConn")
+		utils.DebugLog("Ignore NoticeSpUnderMaintenance in ServerConn")
 		return
 	case *cf.ClientConn:
-		if conn.(*cf.ClientConn).GetName() != p2pserver.GetP2pServer(ctx).GetSpName() {
-			utils.DebugLog("Ignore RspSpUnderMaintenance from non SP node")
+		if conn.GetName() != p2pserver.GetP2pServer(ctx).GetSpName() {
+			utils.DebugLog("Ignore NoticeSpUnderMaintenance from non SP node")
 			return
 		}
 
@@ -35,7 +41,7 @@ func RspSpUnderMaintenance(ctx context.Context, conn core.WriteCloser) {
 			// record SpMaintenance
 			triggerSpSwitch := p2pserver.GetP2pServer(ctx).RecordSpMaintenance(target.SpP2PAddress, time.Now())
 			if triggerSpSwitch {
-				ReqHBLatencyCheckSpList(ctx, conn)
+				network.GetPeer(ctx).SpLatencyCheck(ctx)()
 			}
 		}
 	}

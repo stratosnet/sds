@@ -5,22 +5,18 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/stratosnet/sds/cmd/common"
 	"github.com/stratosnet/sds/cmd/relayd/setting"
 	"github.com/stratosnet/sds/utils"
-)
-
-const (
-	HOME                string = "home"
-	SP_HOME             string = "sp-home"
-	CONFIG              string = "config"
-	DEFAULT_CONFIG_PATH string = "./config/config.toml"
 )
 
 func main() {
 	rootCmd := getRootCmd()
 	startCmd := getStartCmd()
+	configCmd := getGenConfigCmd()
 
 	rootCmd.AddCommand(startCmd)
+	rootCmd.AddCommand(configCmd)
 
 	err := rootCmd.Execute()
 	if err != nil {
@@ -40,16 +36,17 @@ func getRootCmd() *cobra.Command {
 		utils.ErrorLog("failed to get working directory")
 		panic(err)
 	}
-	rootCmd.PersistentFlags().StringP(HOME, "r", dir, "home path for the relayd process")
-	rootCmd.PersistentFlags().StringP(CONFIG, "c", DEFAULT_CONFIG_PATH, "configuration file path ")
+	rootCmd.PersistentFlags().StringP(common.Home, "r", dir, "home path for the relayd process")
+	rootCmd.PersistentFlags().StringP(common.Config, "c", common.DefaultConfigPath, "configuration file path ")
 	return rootCmd
 }
 
 func getStartCmd() *cobra.Command {
 	startCmd := &cobra.Command{
-		Use:   "start",
-		Short: "start relayd",
-		RunE:  startRunE,
+		Use:     "start",
+		Short:   "start relayd",
+		RunE:    startRunE,
+		PreRunE: startPreRunE,
 	}
 
 	dir, err := os.Getwd()
@@ -57,12 +54,21 @@ func getStartCmd() *cobra.Command {
 		utils.ErrorLog("failed to get working directory")
 		panic(err)
 	}
-	startCmd.Flags().StringP(SP_HOME, "s", dir, "home path for the associated SP node")
+	startCmd.Flags().StringP(common.SpHome, "s", dir, "home path for the associated SP node")
 	return startCmd
 }
 
+func getGenConfigCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "config",
+		Short: "create default configuration file",
+		RunE:  genConfig,
+	}
+	return cmd
+}
+
 func rootPreRunE(cmd *cobra.Command, _ []string) error {
-	homePath, err := cmd.Flags().GetString(HOME)
+	homePath, err := cmd.Flags().GetString(common.Home)
 	if err != nil {
 		utils.ErrorLog("failed to get 'home' path for the relayd process")
 		return err
@@ -74,18 +80,5 @@ func rootPreRunE(cmd *cobra.Command, _ []string) error {
 	}
 	setting.HomePath = homePath
 	_ = utils.NewDefaultLogger(filepath.Join(homePath, "tmp/logs/stdout.log"), true, true)
-
-	configPath, err := cmd.Flags().GetString(CONFIG)
-	if err != nil {
-		utils.ErrorLog("failed to get 'config' path for the relayd process")
-		return err
-	}
-	configPath = filepath.Join(homePath, configPath)
-
-	err = setting.LoadConfig(configPath)
-	if err != nil {
-		utils.ErrorLog("Error loading the setting file", err)
-		return err
-	}
 	return nil
 }

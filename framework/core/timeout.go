@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/msg/header"
 )
 
 var (
-	TimeoutRegistry = make(map[string]TimeoutHandler)
+	TimeoutRegistry [header.NUMBER_MESSAGE_TYPES]TimeoutHandler
 	TimoutMap       = newTimeoutMap()
 )
 
@@ -21,8 +21,8 @@ type TimeoutHandler interface {
 	CanDelete(rspMessage *msg.RelayMsgBuf) bool
 }
 
-func RegisterTimeoutHandler(cmd string, handler TimeoutHandler) {
-	TimeoutRegistry[cmd] = handler
+func RegisterTimeoutHandler(msgType header.MsgType, handler TimeoutHandler) {
+	TimeoutRegistry[msgType.Id] = handler
 }
 
 type timeoutMap struct {
@@ -42,8 +42,8 @@ func newTimeoutMap() *timeoutMap {
 }
 
 func (m *timeoutMap) Store(ctx context.Context, reqId int64, reqMsg *msg.RelayMsgBuf) {
-	handler, ok := TimeoutRegistry[utils.ByteToString(reqMsg.MSGHead.Cmd)]
-	if !ok {
+	handler := TimeoutRegistry[reqMsg.MSGHead.Cmd]
+	if handler == nil {
 		return
 	}
 

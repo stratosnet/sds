@@ -1,15 +1,34 @@
 package setting
 
 import (
+	"os"
+
 	"github.com/stratosnet/sds/utils"
 )
 
 var Config *config
 var HomePath string
 
+const (
+	VERSION     = "v0.10.0"
+	APP_VER     = 10
+	MIN_APP_VER = 10
+)
+
+type AppVersion struct {
+	AppVer    uint16 `toml:"app_ver"`
+	MinAppVer uint16 `toml:"min_app_ver"`
+	Show      string `toml:"show"`
+}
+
 type connectionRetries struct {
 	Max           int `toml:"max"`
 	SleepDuration int `toml:"sleep_duration"`
+}
+
+type grpcConfig struct {
+	Url      string `toml:"url"`
+	Insecure bool   `toml:"insecure"`
 }
 
 type sds struct {
@@ -26,14 +45,14 @@ type broadcast struct {
 }
 
 type stratoschain struct {
-	RestServer        string            `toml:"rest_server"`
+	GrpcServer        grpcConfig        `toml:"grpc_server"`
 	WebsocketServer   string            `toml:"websocket_server"`
 	ConnectionRetries connectionRetries `toml:"connection_retries"`
 	Broadcast         broadcast         `toml:"broadcast"`
 }
 
 type transactionsConfig struct {
-	Fee           string  `toml:"fee"`
+	GasPrice      string  `toml:"gas_price"`
 	GasAdjustment float64 `toml:"gas_adjustment"`
 }
 
@@ -45,6 +64,7 @@ type blockchainInfoConfig struct {
 type Version struct {
 	AppVer    uint16 `toml:"app_ver"`
 	MinAppVer uint16 `toml:"min_app_ver"`
+	Show      string `toml:"show"`
 }
 
 type keysConfig struct {
@@ -62,10 +82,63 @@ type config struct {
 
 func LoadConfig(path string) error {
 	Config = new(config)
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		utils.Log("The config at location", path, "does not exist")
+		return err
+	}
+
 	err := utils.LoadTomlConfig(Config, path)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func defaultConfig() *config {
+	return &config{
+		BlockchainInfo: blockchainInfoConfig{
+			ChainId: "testchain",
+			Transactions: transactionsConfig{
+				GasPrice:      "1000000000wei",
+				GasAdjustment: 2.0,
+			},
+		},
+		Keys: keysConfig{
+			WalletPath:     "config/st1a8ngk4tjvuxneyuvyuy9nvgehkpfa38hm8mp3x.json",
+			WalletPassword: "aaa",
+		},
+		SDS: sds{
+			ApiPort:        "8081",
+			ClientPort:     "8088",
+			NetworkAddress: "127.0.0.1",
+			WebsocketPort:  "8889",
+			ConnectionRetries: connectionRetries{
+				Max:           100,
+				SleepDuration: 3000,
+			},
+		},
+		StratosChain: stratoschain{
+			GrpcServer: grpcConfig{
+				Url:      "127.0.0.1:9090",
+				Insecure: true,
+			},
+			WebsocketServer: "127.0.0.1:26657",
+			ConnectionRetries: connectionRetries{
+				Max:           100,
+				SleepDuration: 3000,
+			},
+			Broadcast: broadcast{
+				ChannelSize: 2000,
+				MaxMsgPerTx: 250,
+			},
+		},
+		Version: Version{AppVer: APP_VER, MinAppVer: MIN_APP_VER, Show: VERSION},
+	}
+}
+
+func GenDefaultConfig(filePath string) error {
+	cfg := defaultConfig()
+
+	return utils.WriteTomlConfig(cfg, filePath)
 }

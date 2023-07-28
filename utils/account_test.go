@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -43,7 +43,7 @@ func TestCreateWallet(t *testing.T) {
 			t.Fatal(err.Error())
 		}
 
-		keyjson, err := ioutil.ReadFile("keys/" + bechAddr + ".json")
+		keyjson, err := os.ReadFile("keys/" + bechAddr + ".json")
 		if err != nil {
 			t.Fatal(err.Error())
 		}
@@ -77,7 +77,7 @@ func TestCreateP2PKey(t *testing.T) {
 			t.Fatal(err.Error())
 		}
 
-		keyjson, err := ioutil.ReadFile("keys/" + bechAddr + ".json")
+		keyjson, err := os.ReadFile("keys/" + bechAddr + ".json")
 		if err != nil {
 			t.Fatal(err.Error())
 		}

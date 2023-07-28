@@ -2,78 +2,178 @@ package p2pserver
 
 import (
 	"context"
+	"fmt"
 	"strconv"
+	"strings"
+	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
-
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/pp"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
+	utilstypes "github.com/stratosnet/sds/utils/types"
+	"google.golang.org/protobuf/proto"
 )
 
-// SendMessage
-func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb proto.Message, cmd string) error {
-	data, err := proto.Marshal(pb)
+var (
+	requestInfoMap = utils.NewAutoCleanMap(5 * time.Minute) // used for req-rsp message pair verifications
+)
 
+func (p *P2pServer) SignP2pMessage(signMsg []byte) []byte {
+	return p.p2pPrivKey.Sign(signMsg)
+}
+
+func (p *P2pServer) GetP2PPublicKey() []byte {
+	return p.p2pPubKey.Bytes()
+}
+
+func (p *P2pServer) GetP2PAddress() string {
+	addr, err := p.p2pAddress.P2pAddressToBech()
+	if err != nil {
+		return ""
+	}
+	return addr
+}
+
+func (p *P2pServer) GetPPInfo() *protos.PPBaseInfo {
+	return &protos.PPBaseInfo{
+		P2PAddress:     p.GetP2PAddress(),
+		WalletAddress:  setting.WalletAddress,
+		NetworkAddress: setting.NetworkAddress,
+		RestAddress:    setting.RestAddress,
+	}
+}
+
+func (p *P2pServer) LoadRequestInfo(reqId int64, rspMsgType uint8) (uint8, bool) {
+	// according to the rsp, load the request info by (reqId | supposed_req_msg_type)
+	msgTypeId, found := requestInfoMap.Load(reqId&0x7FFFFFFFFFFFFF00 | int64(header.GetReqIdFromRspId(rspMsgType)))
+	if !found {
+		return header.MSG_ID_INVALID, found
+	}
+	return msgTypeId.(uint8), found
+}
+
+func (p *P2pServer) StoreRequestInfo(reqId int64, reqMsgType uint8) {
+	// reqId includes the msg type of original request. The consequent requests need to be re-encoded as the index for requestInfoMap
+	requestInfoMap.Store((reqId&0x7FFFFFFFFFFFFF00)|int64(reqMsgType), reqMsgType)
+}
+
+func (p *P2pServer) GetP2PAddrInTypeAddress() utilstypes.Address {
+	return p.p2pAddress
+}
+
+func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb proto.Message, cmd header.MsgType) error {
+	msgBuf := &msg.RelayMsgBuf{
+		MSGSign: msg.MessageSign{
+			P2pPubKey:  p.GetP2PPublicKey(),
+			P2pAddress: p.GetP2PAddress(),
+			Signer:     p.SignP2pMessage,
+		},
+	}
+
+	switch cmd.Id {
+	case header.MSG_ID_REQ_UPLOAD_FILESLICE:
+		msgBuf.MSGData = pb.(*protos.ReqUploadFileSlice).Data
+		pb.(*protos.ReqUploadFileSlice).Data = nil
+	case header.MSG_ID_REQ_BACKUP_FILESLICE:
+		msgBuf.MSGData = pb.(*protos.ReqBackupFileSlice).Data
+		pb.(*protos.ReqBackupFileSlice).Data = nil
+	case header.MSG_ID_RSP_DOWNLOAD_SLICE:
+		msgBuf.MSGData = pb.(*protos.RspDownloadSlice).Data
+		pb.(*protos.RspDownloadSlice).Data = nil
+	case header.MSG_ID_RSP_TRANSFER_DOWNLOAD:
+		msgBuf.MSGData = pb.(*protos.RspTransferDownload).Data
+		pb.(*protos.RspTransferDownload).Data = nil
+	}
+
+	if strings.HasPrefix(cmd.Name, "Req") {
+		reqId := core.GetReqIdFromContext(ctx)
+		if reqId == 0 {
+			reqId = core.GenerateNewReqId(cmd.Id)
+			core.InheritRpcLoggerFromParentReqId(ctx, reqId)
+			core.InheritRemoteReqIdFromParentReqId(ctx, reqId)
+		}
+		msgBuf.MSGHead.ReqId = reqId
+		p.StoreRequestInfo(reqId, cmd.Id)
+	}
+
+	msgBuf.MSGHead.DataLen = uint32(len(msgBuf.MSGData))
+	body, err := proto.Marshal(pb)
 	if err != nil {
 		pp.ErrorLog(ctx, "error decoding")
 		return errors.New("error decoding")
 	}
-	msg := &msg.RelayMsgBuf{
-		MSGHead: header.MakeMessageHeader(1, uint16(setting.Config.Version.AppVer), uint32(len(data)), cmd),
-		MSGData: data,
-	}
-	switch conn.(type) {
+	msgBuf.MSGBody = body
+	reqId := msgBuf.MSGHead.ReqId
+	msgBuf.MSGHead = header.MakeMessageHeader(1, setting.Config.Version.AppVer, uint32(len(body)), cmd)
+	msgBuf.MSGHead.ReqId = reqId
+	switch conn := conn.(type) {
 	case *core.ServerConn:
-		return conn.(*core.ServerConn).Write(msg, ctx)
+		return conn.Write(msgBuf, ctx)
 	case *cf.ClientConn:
-		return conn.(*cf.ClientConn).Write(msg, ctx)
+		return conn.Write(msgBuf, ctx)
 	default:
 		return errors.New("unknown connection type")
 	}
 }
 
-func (p *P2pServer) SendMessageDirectToSPOrViaPP(ctx context.Context, pb proto.Message, cmd string) {
+func (p *P2pServer) SendMessageDirectToSPOrViaPP(ctx context.Context, pb proto.Message, cmd header.MsgType) {
 	if p.mainSpConn != nil {
-		p.SendMessage(ctx, p.mainSpConn, pb, cmd)
+		_ = p.SendMessage(ctx, p.mainSpConn, pb, cmd)
 	} else {
-		p.SendMessage(ctx, p.ppConn, pb, cmd)
+		_ = p.SendMessage(ctx, p.ppConn, pb, cmd)
 	}
 }
 
-// SendMessageToSPServer SendMessageToSPServer
-func (p *P2pServer) SendMessageToSPServer(ctx context.Context, pb proto.Message, cmd string) {
-	//_, err := p.ConnectToSP(ctx)
-	//if err != nil {
-	//	utils.ErrorLog(err)
-	//	return
-	//}
+func (p *P2pServer) SendMessageToSPServer(ctx context.Context, pb proto.Message, cmd header.MsgType) {
 	if p.mainSpConn != nil {
-		p.SendMessage(ctx, p.mainSpConn, pb, cmd)
+		_ = p.SendMessage(ctx, p.mainSpConn, pb, cmd)
 	}
 }
 
-// TransferSendMessageToPPServ
 func (p *P2pServer) TransferSendMessageToPPServ(ctx context.Context, addr string, msgBuf *msg.RelayMsgBuf) error {
 	newCtx := core.CreateContextWithParentReqIdAsReqId(ctx)
-	//p.ClientMutex.Lock()
+	cmd := header.GetMsgTypeFromId(msgBuf.MSGHead.Cmd)
+	if cmd == nil {
+		return errors.New(fmt.Sprintf("invalid message type %d", msgBuf.MSGHead.Cmd))
+	}
+	msgBuf.MSGSign = msg.MessageSign{
+		P2pPubKey:  p.GetP2PPublicKey(),
+		P2pAddress: p.GetP2PAddress(),
+		Signer:     p.SignP2pMessage,
+	}
+	if strings.HasPrefix(cmd.Name, "Req") {
+		reqId := core.GetReqIdFromContext(ctx)
+		if reqId == 0 {
+			reqId = core.GenerateNewReqId(msgBuf.MSGHead.Cmd)
+			core.InheritRpcLoggerFromParentReqId(ctx, reqId)
+			core.InheritRemoteReqIdFromParentReqId(ctx, reqId)
+		}
+		msgBuf.MSGHead.ReqId = reqId
+		p.StoreRequestInfo(reqId, cmd.Id)
+	}
+
+	p.clientMutex.Lock()
 	if p.connMap[addr] != nil {
 		err := p.connMap[addr].Write(msgBuf, newCtx)
-		//p.ClientMutex.Unlock()
-		utils.DebugLog("conn exist, transfer")
+		p.clientMutex.Unlock()
+		if err != nil {
+			utils.DebugLogf("Error writing msg to %s, %v", addr, err.Error())
+		}
 		return err
 	}
+	p.clientMutex.Unlock()
 
 	utils.DebugLog("new conn, connect and transfer")
 	newClient, err := p.NewClientToPp(ctx, addr, false)
 	if err != nil {
-		utils.ErrorLogf("cannot transfer message to client [%v]", addr, utils.FormatError(err))
+		utils.ErrorLogf("cannot transfer message to client [%v]: %v", addr, utils.FormatError(err))
 		return err
 	}
 	err = newClient.Write(msgBuf, newCtx)
@@ -86,31 +186,33 @@ func (p *P2pServer) TransferSendMessageToPPServByP2pAddress(ctx context.Context,
 		utils.ErrorLogf("PP %v missing from local ppList. Cannot transfer message due to missing network address", p2pAddress)
 		return
 	}
-	p.TransferSendMessageToPPServ(ctx, ppInfo.NetworkAddress, msgBuf)
+	_ = p.TransferSendMessageToPPServ(ctx, ppInfo.NetworkAddress, msgBuf)
 }
 
-// transferSendMessageToSPServer
-func (p *P2pServer) TransferSendMessageToSPServer(ctx context.Context, msg *msg.RelayMsgBuf) {
+func (p *P2pServer) TransferSendMessageToSPServer(ctx context.Context, message *msg.RelayMsgBuf) {
 	_, err := p.ConnectToSP(ctx)
 	if err != nil {
 		utils.ErrorLog(err)
 		return
 	}
+	message.MSGSign = msg.MessageSign{
+		P2pPubKey:  p.GetP2PPublicKey(),
+		P2pAddress: p.GetP2PAddress(),
+		Signer:     p.SignP2pMessage,
+	}
 
-	p.mainSpConn.Write(msg, ctx)
+	_ = p.mainSpConn.Write(message, ctx)
 }
 
-// ReqTransferSendSP
 func (p *P2pServer) ReqTransferSendSP(ctx context.Context, conn core.WriteCloser) {
 	p.TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
-// transferSendMessageToClient
 func (p *P2pServer) TransferSendMessageToClient(ctx context.Context, p2pAddress string, msgBuf *msg.RelayMsgBuf) {
 	ppNode := p.peerList.GetPPByP2pAddress(ctx, p2pAddress)
 	if ppNode != nil && ppNode.Status == types.PEER_CONNECTED {
 		pp.Log(ctx, "transfer to netid = ", ppNode.NetId)
-		p.GetP2pServer().Unicast(ctx, ppNode.NetId, msgBuf)
+		_ = p.GetP2pServer().Unicast(ctx, ppNode.NetId, msgBuf)
 	} else {
 		pp.DebugLog(ctx, "waller ===== ", p2pAddress)
 	}
@@ -132,15 +234,15 @@ func (p *P2pServer) setWriteHook(conn *cf.ClientConn, callback func(packetId, co
 	if conn != nil {
 		var hooks []cf.WriteHook
 		hook := cf.WriteHook{
-			Message: header.ReqUploadFileSlice,
-			Fn:      callback,
+			MessageId: header.ReqUploadFileSlice.Id,
+			Fn:        callback,
 		}
 		hooks = append(hooks, hook)
 		conn.SetWriteHook(hooks)
 	}
 }
 
-func (p *P2pServer) SendMessageByCachedConn(ctx context.Context, key string, netAddr string, pb proto.Message, cmd string, fn func(packetId, costTime int64)) error {
+func (p *P2pServer) SendMessageByCachedConn(ctx context.Context, key string, netAddr string, pb proto.Message, cmd header.MsgType, fn func(packetId, costTime int64)) error {
 	// use the cached conn to send the message
 	if conn, ok := p.LoadConnFromCache(key); ok {
 		if fn != nil {
@@ -165,7 +267,7 @@ func (p *P2pServer) SendMessageByCachedConn(ctx context.Context, key string, net
 		pp.DebugLog(ctx, "SendMessage(conn, pb, header.ReqUploadFileSlice) ", conn)
 		p.StoreConnToCache(key, conn)
 	} else {
-		pp.ErrorLog(ctx, "Fail to send upload slice request to "+netAddr)
+		pp.ErrorLog(ctx, "Fail to send upload slice request to "+netAddr+", "+err.Error())
 	}
 	return err
 }

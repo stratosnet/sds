@@ -19,42 +19,36 @@ type Network struct {
 	reloadConnectSpRetry int
 	reloadRegisterRetry  int
 	reloadConnecting     bool
+	fsm                  utils.Fsm
 }
 
-const (
-	PP_NETWORK_KEY = "PpNetworkKey"
-)
-
-// GetPeer
 func GetPeer(ctx context.Context) *Network {
-	if ctx == nil || ctx.Value(PP_NETWORK_KEY) == nil {
+	if ctx == nil || ctx.Value(types.PP_NETWORK_KEY) == nil {
 		panic("Network is not instantiated")
 	}
 
-	ps := ctx.Value(PP_NETWORK_KEY).(*Network)
+	ps := ctx.Value(types.PP_NETWORK_KEY).(*Network)
 	return ps
 }
 
-// StartPP
 func (p *Network) StartPP(ctx context.Context) {
 	p.ppPeerClock = clock.NewClock()
 	p.pingTimePPMap = &sync.Map{}
 	p.pingTimeSPMap = &sync.Map{}
-	p.GetSPList(ctx)()
-	p.GetPPStatusInitPPList(ctx)()
-	p.StartPpLatencyCheck(ctx)
+	p.InitFsm()
+	p.StartGetSPList(ctx)()
+	p.ScheduleSpLatencyCheck(ctx)
+	p.SchedulePpLatencyCheck(ctx)
 	p.StartStatusReportToSP(ctx)
 	go p.ListenOffline(ctx)
 }
 
-// InitPeer
 func (p *Network) InitPeer(ctx context.Context) {
 	p.GetSPList(ctx)()
-	p.GetPPStatusInitPPList(ctx)()
+	p.GetPPStatusInitPPList(ctx)
 	go p.ListenOffline(ctx)
 }
 
-// InitPPList
 func (p *Network) InitPPList(ctx context.Context) {
 	pplist, total, _ := p2pserver.GetP2pServer(ctx).GetPPList(ctx)
 	if total == 0 {
@@ -67,7 +61,6 @@ func (p *Network) InitPPList(ctx context.Context) {
 	}
 }
 
-// ConnectToGatewayPP
 func (p *Network) ConnectToGatewayPP(ctx context.Context, pplist []*types.PeerInfo) bool {
 	for _, ppInfo := range pplist {
 		if ppInfo.NetworkAddress == setting.NetworkAddress {
@@ -85,10 +78,9 @@ func (p *Network) ConnectToGatewayPP(ctx context.Context, pplist []*types.PeerIn
 	return false
 }
 
-// ListenOffline
 func (p *Network) ListenOffline(ctx context.Context) {
 	var qch chan bool
-	if v := ctx.Value(p2pserver.LISTEN_OFFLINE_QUIT_CH_KEY); v != nil {
+	if v := ctx.Value(types.LISTEN_OFFLINE_QUIT_CH_KEY); v != nil {
 		qch = v.(chan bool)
 		utils.DebugLogf("ListenOffline quit ch found")
 	}
@@ -98,12 +90,8 @@ func (p *Network) ListenOffline(ctx context.Context) {
 		select {
 		case offline := <-p2pserver.GetP2pServer(ctx).ReadOfflineChan():
 			if offline.IsSp {
-				if setting.IsPP {
-					utils.DebugLogf("SP %v is offline", offline.NetworkAddress)
-					setting.IsStartMining = false
-					setting.IsLoginToSP = false
-					p.reloadConnectSP(ctx)
-				}
+				utils.DebugLogf("SP %v is offline", offline.NetworkAddress)
+				p.reloadConnectSP(ctx)
 			} else {
 				p2pserver.GetP2pServer(ctx).PPDisconnected(ctx, "", offline.NetworkAddress)
 				p.InitPPList(ctx)
@@ -115,22 +103,39 @@ func (p *Network) ListenOffline(ctx context.Context) {
 	}
 }
 
-func (p *Network) ClearPingTimeSPMap() {
-	p.pingTimeSPMap = &sync.Map{}
+func (p *Network) ClearPingTimeMap(sp bool) {
+	if sp {
+		p.pingTimeSPMap = &sync.Map{}
+	} else {
+		p.pingTimePPMap = &sync.Map{}
+	}
 }
 
-func (p *Network) StorePingTimeSPMap(server string, start int64) {
-	p.pingTimePPMap.Store(server, start)
+func (p *Network) StorePingTimeMap(server string, start int64, sp bool) {
+	if sp {
+		p.pingTimeSPMap.Store(server, start)
+	} else {
+		p.pingTimePPMap.Store(server, start)
+	}
 }
 
-func (p *Network) LoadPingTimeSPMap(key string) (int64, bool) {
-	if start, ok := p.pingTimePPMap.Load(key); ok {
+func (p *Network) LoadPingTimeMap(key string, sp bool) (int64, bool) {
+	chosenMap := p.pingTimePPMap
+	if sp {
+		chosenMap = p.pingTimeSPMap
+	}
+
+	if start, ok := chosenMap.Load(key); ok {
 		return start.(int64), true
 	} else {
 		return 0, false
 	}
 }
 
-func (p *Network) DeletePingTimePPMap(key string) {
-	p.pingTimePPMap.Delete(key)
+func (p *Network) DeletePingTimeMap(key string, sp bool) {
+	if sp {
+		p.pingTimeSPMap.Delete(key)
+	} else {
+		p.pingTimePPMap.Delete(key)
+	}
 }

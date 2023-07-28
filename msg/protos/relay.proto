@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+//for future protoc-gen-go requirement
+option go_package = "github.com/stratosnet/sds/msg/protos";
+
+package protos;
+// j
+import "sds_comm.proto";
+
+// upload -----------------------------------
+
+
+
+message Uploaded {
+  string reporter_address = 1;
+  string uploader_address = 2;
+  string file_hash = 3;
+  string tx_hash = 4;
+}
+
+message ReqActivatedPP {
+  string p2p_address = 1;
+  string p2p_pubkey = 2;
+  string ozone_limit_changes = 3; // positive
+  string tx_hash = 4;
+  string initial_deposit = 5;
+}
+
+message ReqActivatedSP {
+  string p2p_address = 1;
+  string ozone_limit_changes = 2; // positive
+  string tx_hash = 3;
+}
+
+message RspActivatedPP {
+  Result result = 1;
+}
+
+message ReqUpdatedDepositPP {
+  string p2p_address = 1;
+  string ozone_limit_changes = 2;
+  string tx_hash = 3;
+  string deposit_delta = 4;
+  string current_deposit = 5;
+  string available_token_before = 6;
+  string available_token_after = 7;
+}
+
+message ReqUpdatedDepositSP {
+  string p2p_address = 1;
+  string ozone_limit_changes = 2;
+  string tx_hash = 3;
+  string deposit_delta = 4;
+  string current_deposit = 5;
+  string available_token_before = 6;
+  string available_token_after = 7;
+}
+
+message ReqDeactivatedPP {
+  string p2p_address = 1;
+  string tx_hash = 2;
+}
+
+message ReqUnbondingPP {
+  string p2p_address = 1;
+  string ozone_limit_changes = 2; // negative
+  string unbonding_mature_time = 3;
+  string tx_hash = 4;
+  string deposit_to_remove = 5;
+}
+
+message ReqUnbondingSP {
+  string p2p_address = 1;
+  string ozone_limit_changes = 2; // negative
+  string unbonding_mature_time = 3;
+  string tx_hash = 4;
+  string deposit_to_remove = 5;
+}
+
+message ReqWithdrawnDepositSP {
+  string p2p_address = 1;
+  string unbonding_mature_time = 2;
+  string tx_hash = 3;
+}
+
+message RspWithdrawnDepositSP {
+  Result result = 1;
+}
+
+message ReqDeactivatedSP {
+  string p2p_address = 1;
+}
+
+message RspDeactivatedSP {
+  Result result = 1;
+}
+
+message ReqPrepaid {
+  string wallet_address = 1;
+  string purchased_uoz = 2;
+  string tx_hash = 3;
+}
+
+message RelayMessage {
+  string type = 1;
+  bytes data = 2;
+}

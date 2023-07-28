@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -31,7 +31,7 @@ func createAccounts(cmd *cobra.Command, args []string) error {
 
 	if len(p2pkeyfiles) < 1 || newP2pKey {
 		fmt.Println("generating new p2p key")
-		p2pKeyAddress, err := utils.CreateP2PKey(setting.Config.AccountDir, "p2pkey", p2ppass,
+		p2pKeyAddress, err := utils.CreateP2PKey(setting.Config.Home.AccountsPath, "p2pkey", p2ppass,
 			types.SdsNodeP2PAddressPrefix)
 		if err != nil {
 			return errors.New("couldn't create p2pkey: " + err.Error())
@@ -41,8 +41,12 @@ func createAccounts(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return errors.New("couldn't convert P2P key address to bech string: " + err.Error())
 		}
-		setting.SetConfig("p2p_address", p2pKeyAddressString)
-		setting.SetConfig("p2p_password", p2ppass)
+		setting.Config.Keys.P2PAddress = p2pKeyAddressString
+		setting.Config.Keys.P2PPassword = p2ppass
+		err = setting.FlushConfig()
+		if err != nil {
+			return err
+		}
 	}
 
 	nickname, _ := cmd.Flags().GetString(nicknameFlag)
@@ -73,11 +77,14 @@ func createAccounts(cmd *cobra.Command, args []string) error {
 	}
 
 	hdPath, err := cmd.Flags().GetString(hdPathFlag)
+	if err != nil {
+		return err
+	}
 	if len(hdPath) <= 0 {
-		hdPath = setting.HD_PATH
+		hdPath = setting.HDPath
 	}
 	//hrp, mnemonic, bip39Passphrase, hdPath
-	walletKeyAddress, err := utils.CreateWallet(setting.Config.AccountDir, nickname, password,
+	walletKeyAddress, err := utils.CreateWallet(setting.Config.Home.AccountsPath, nickname, password,
 		types.StratosBech32Prefix, mnemonic, "", hdPath)
 	if err != nil {
 		return errors.New("couldn't create WalletAddress: " + err.Error())
@@ -87,12 +94,18 @@ func createAccounts(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.New("couldn't convert wallet address to bech string: " + err.Error())
 	}
-	setting.SetConfig("wallet_address", walletKeyAddressString)
+	setting.Config.Keys.WalletAddress = walletKeyAddressString
 
 	save, _ := cmd.Flags().GetBool(savePassFlag)
 	if save {
-		setting.SetConfig("wallet_password", password)
+		setting.Config.Keys.WalletPassword = password
 	}
+
+	err = setting.FlushConfig()
+	if err != nil {
+		return err
+	}
+
 	fmt.Println("save the mnemonic phase properly for future recover: \n" +
 		"=======================================================================  \n" +
 		mnemonic + "\n" +
@@ -102,7 +115,7 @@ func createAccounts(cmd *cobra.Command, args []string) error {
 }
 
 func findp2pKeyFiles() []string {
-	files, _ := ioutil.ReadDir(setting.Config.AccountDir)
+	files, _ := os.ReadDir(setting.Config.Home.AccountsPath)
 	var p2pkeyfiles []string
 	for _, file := range files {
 		fileName := file.Name()

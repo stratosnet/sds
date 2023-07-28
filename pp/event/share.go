@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"strings"
 
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/task"
@@ -19,38 +20,35 @@ import (
 	"github.com/stratosnet/sds/utils/datamesh"
 )
 
-// GetAllShareLink GetShareLink
-func GetAllShareLink(ctx context.Context, walletAddr string, page uint64) {
+func GetAllShareLink(ctx context.Context, walletAddr string, page uint64, walletPubkey, wsign []byte, reqTime int64) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqShareLinkData(walletAddr, page), header.ReqShareLink)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqShareLinkData(walletAddr, p2pserver.GetP2pServer(ctx).GetP2PAddress(), page, walletPubkey, wsign, reqTime), header.ReqShareLink)
 	}
 }
 
-// GetReqShareFile GetReqShareFile
-func GetReqShareFile(ctx context.Context, fileHash, pathHash, walletAddr string, shareTime int64, isPrivate bool) {
+func GetReqShareFile(ctx context.Context, fileHash, pathHash, walletAddr string, shareTime int64, isPrivate bool,
+	walletPubkey, wsign []byte, reqTime int64) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqShareFileData(fileHash, pathHash, walletAddr, isPrivate, shareTime), header.ReqShareFile)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx,
+			requests.ReqShareFileData(fileHash, pathHash, walletAddr,
+				p2pserver.GetP2pServer(ctx).GetP2PAddress(), isPrivate, shareTime,
+				walletPubkey, wsign, reqTime), header.ReqShareFile)
 	}
 }
 
-// DeleteShare DeleteShare
-func DeleteShare(ctx context.Context, shareID, walletAddress string) {
+func DeleteShare(ctx context.Context, shareID, walletAddress string, walletPubkey, wsign []byte, reqTime int64) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteShareData(shareID, walletAddress), header.ReqDeleteShare)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteShareData(shareID, walletAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress(), walletPubkey, wsign, reqTime), header.ReqDeleteShare)
 	}
 }
 
-// ReqShareLink
-func ReqShareLink(ctx context.Context, conn core.WriteCloser) {
-	// pp send to SP
-	utils.DebugLog("ReqShareLinkReqShareLinkReqShareLinkReqShareLink")
-	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
-}
-
-// RspShareLink
 func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 	pp.DebugLog(ctx, "RspShareLink(ctx context.Context, conn core.WriteCloser) {RspShareLink(ctx context.Context, conn core.WriteCloser) {")
 	var target protos.RspShareLink
+	if err := VerifyMessage(ctx, header.RspShareLink, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
+	}
 	rpcResult := &rpc.FileShareResult{}
 
 	if !requests.UnmarshalData(ctx, &target) {
@@ -63,7 +61,7 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 		defer file.SetFileShareResult(target.WalletAddress+reqId, rpcResult)
 	}
 
-	if target.P2PAddress != setting.P2PAddress {
+	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return
@@ -71,24 +69,30 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 
 	if target.Result.State == protos.ResultState_RES_SUCCESS {
 		var fileInfos = make([]rpc.FileInfo, 0)
-		for _, info := range target.ShareInfo {
-			pp.Log(ctx, "_______________________________")
-			pp.Log(ctx, "file_name:", info.Name)
-			pp.Log(ctx, "file_hash:", info.FileHash)
-			pp.Log(ctx, "file_size:", info.FileSize)
-			pp.Log(ctx, "link_time:", info.LinkTime)
-			pp.Log(ctx, "link_time_exp:", info.LinkTimeExp)
-			pp.Log(ctx, "ShareId:", info.ShareId)
-			pp.Log(ctx, "ShareLink:", info.ShareLink)
-			fileInfos = append(fileInfos, rpc.FileInfo{
-				FileHash:    info.FileHash,
-				FileSize:    info.FileSize,
-				FileName:    info.Name,
-				LinkTime:    info.LinkTime,
-				LinkTimeExp: info.LinkTimeExp,
-				ShareId:     info.ShareId,
-				ShareLink:   info.ShareLink,
-			})
+
+		if len(target.ShareInfo) == 0 {
+			pp.Log(ctx, "no shared file found")
+		} else {
+			for _, info := range target.ShareInfo {
+				pp.Log(ctx, "_______________________________")
+				pp.Log(ctx, "file_name:", info.Name)
+				pp.Log(ctx, "file_hash:", info.FileHash)
+				pp.Log(ctx, "file_size:", info.FileSize)
+
+				pp.Log(ctx, "share_creation_time:", info.CreationTime)
+				pp.Log(ctx, "share_exp_time:", info.ExpTime)
+				pp.Log(ctx, "ShareId:", info.ShareId)
+				pp.Log(ctx, "ShareLink:", info.ShareLink)
+				fileInfos = append(fileInfos, rpc.FileInfo{
+					FileHash:    info.FileHash,
+					FileSize:    info.FileSize,
+					FileName:    info.Name,
+					LinkTime:    info.CreationTime,
+					LinkTimeExp: info.ExpTime,
+					ShareId:     info.ShareId,
+					ShareLink:   info.ShareLink,
+				})
+			}
 		}
 		rpcResult.Return = rpc.SUCCESS
 		rpcResult.FileInfo = fileInfos
@@ -98,18 +102,14 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 		pp.ErrorLog(ctx, "all share failed:", target.Result.Msg)
 		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE
 	}
-	return
 }
 
-// ReqShareFile
-func ReqShareFile(ctx context.Context, conn core.WriteCloser) {
-	// pp send to SP
-	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
-}
-
-// RspShareFile
 func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspShareFile
+	if err := VerifyMessage(ctx, header.RspShareFile, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
+	}
 	rpcResult := &rpc.FileShareResult{}
 
 	if !requests.UnmarshalData(ctx, &target) {
@@ -121,7 +121,7 @@ func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 		defer file.SetFileShareResult(target.WalletAddress+reqId, rpcResult)
 	}
 
-	if target.P2PAddress != setting.P2PAddress {
+	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return
@@ -138,19 +138,14 @@ func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 		pp.ErrorLog(ctx, "share file failed:", target.Result.Msg)
 		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE
 	}
-
-	return
 }
 
-// ReqDeleteShare
-func ReqDeleteShare(ctx context.Context, conn core.WriteCloser) {
-	// pp send to SP
-	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
-}
-
-// RspDeleteShare
 func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeleteShare
+	if err := VerifyMessage(ctx, header.RspDeleteShare, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
+	}
 	rpcResult := &rpc.FileShareResult{}
 
 	if !requests.UnmarshalData(ctx, &target) {
@@ -162,7 +157,7 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 		defer file.SetFileShareResult(target.WalletAddress+reqId, rpcResult)
 	}
 
-	if target.P2PAddress != setting.P2PAddress {
+	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return
@@ -175,50 +170,52 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 		pp.ErrorLog(ctx, "cancel share failed:", target.Result.Msg)
 		rpcResult.Return = rpc.GENERIC_ERR
 	}
-	return
 }
 
-// GetShareFile
-func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAddr string, walletPubkey []byte) {
+func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAddr string, walletPubkey []byte,
+	isVideoStream bool, wsign []byte, reqTime int64) {
 	pp.DebugLog(ctx, "GetShareFile for file ", keyword)
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr, walletPubkey), header.ReqGetShareFile)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr, p2pserver.GetP2pServer(ctx).GetP2PAddress(), walletPubkey, wsign, isVideoStream, reqTime), header.ReqGetShareFile)
 	}
 }
 
-// ReqGetShareFile
-func ReqGetShareFile(ctx context.Context, conn core.WriteCloser) {
-	// pp send to SP
-	pp.DebugLog(ctx, "ReqGetShareFile: transferring message to SP server")
-	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
-}
-
-// RspGetShareFile
 func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	var target protos.RspGetShareFile
-	rpcResult := &rpc.FileShareResult{}
+	if err := VerifyMessage(ctx, header.RspGetShareFile, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
+	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-
 	reqId := core.GetRemoteReqId(ctx)
-	rpcRequested := reqId != task.LOCAL_REQID
+	rpcRequested := !strings.HasPrefix(reqId, task.LOCAL_REQID)
+	rpcResult := &rpc.FileShareResult{}
 	if rpcRequested {
-		defer file.SetFileShareResult(target.ShareRequest.WalletAddress+reqId, rpcResult)
+		defer file.SetFileShareResult(target.ShareRequest.Signature.Address+reqId, rpcResult)
 	}
 
-	if target.ShareRequest.P2PAddress != setting.P2PAddress {
+	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		rpcResult.Return = rpc.GENERIC_ERR
+		return
+	}
+
+	if target.ShareRequest == nil {
+		utils.ErrorLog("got empty ShareRequest from sp")
+		return
+	}
+
+	walletAddr := target.ShareRequest.Signature.Address
+	walletPubkey := target.ShareRequest.Signature.Pubkey
+
+	if target.ShareRequest.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.ShareRequest.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return
 	}
 
 	pp.Log(ctx, "get RspGetShareFile", target.Result.State, target.Result.Msg)
-	if target.Result.State != protos.ResultState_RES_SUCCESS {
-		rpcResult.Return = rpc.GENERIC_ERR
-		return
-	}
-
 	pp.Log(ctx, "FileInfo:", target.FileInfo)
 
 	for idx, fileInfo := range target.FileInfo {
@@ -237,23 +234,25 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			f := rpc.FileInfo{FileHash: fileInfo.FileHash}
 			rpcResult.Return = rpc.SHARED_DL_START
 			rpcResult.FileInfo = append(rpcResult.FileInfo, f)
-			file.SetFileShareResult(target.ShareRequest.WalletAddress+reqId, rpcResult)
-			go func() {
-				if walletSign := file.GetSignatureFromRemote(fileInfo.FileHash); walletSign != nil {
-					req = requests.RequestDownloadFile(fileInfo.FileHash, filePath, target.ShareRequest.WalletAddress, reqId, walletSign, target.ShareRequest.WalletPubkey, target.ShareRequest)
+			rpcResult.SequenceNumber = target.SequenceNumber
+			file.SetFileShareResult(target.ShareRequest.Signature.Address+reqId, rpcResult)
+			go func(fileInfo *protos.FileInfo) {
+				if walletSign := file.GetSignatureFromRemote(fileInfo.FileHash + walletAddr + reqId); walletSign != nil {
+					req = requests.RequestDownloadFile(ctx, fileInfo.FileHash, filePath, walletAddr, reqId, walletSign,
+						walletPubkey, target.ShareRequest, target.ShareRequest.ReqTime)
 					p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 				}
-			}()
+			}(fileInfo)
 
 		} else {
-			sig := utils.GetFileDownloadWalletSignMessage(fileInfo.FileHash, setting.WalletAddress)
-			sign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(sig))
+			req = requests.ReqFileStorageInfoData(ctx, filePath, "", saveAs, setting.WalletAddress, setting.WalletPublicKey, nil, target.ShareRequest, target.ShareRequest.ReqTime)
+			sigMsg := utils.GetFileDownloadWalletSignMessage(fileInfo.FileHash, setting.WalletAddress, target.SequenceNumber, target.ShareRequest.ReqTime)
+			sign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(sigMsg))
 			if err != nil {
 				return
 			}
-			req = requests.ReqFileStorageInfoData(filePath, "", saveAs, setting.WalletAddress, sign, setting.WalletPublicKey, false, target.ShareRequest)
+			req.Signature.Signature = sign
 			p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 		}
 	}
-	return
 }

@@ -10,38 +10,36 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 )
 
-type OptimalSp struct {
-	networkAddr string
-	mtx         sync.Mutex
-}
-
-var (
-	optSp               = &OptimalSp{}
-	minReloadSpInterval = 3
-	maxReloadSpInterval = 900 //15 min
-	retry               = 0
-)
+var optimalSpNetworkAddr string
+var networkAddMu sync.Mutex
 
 // ConnectToSP Checks if there is a connection to an SP node. If it doesn't, it attempts to create one with a random SP node.
 func (p *P2pServer) ConnectToSP(ctx context.Context) (newConnection bool, err error) {
 	if p.mainSpConn != nil {
 		return false, nil
 	}
-	if len(setting.Config.SPList) == 0 {
-		return false, errors.New("there are no SP nodes in the config file")
+	spList := setting.GetSPList()
+	if len(spList) == 0 {
+		return false, errors.New("there are no known SP nodes")
 	}
 
-	if optSpNetworkAddr, err := p.GetOptSPAndClear(); err == nil {
-		pp.DebugLog(ctx, "reconnect to detected optimal SP ", optSpNetworkAddr)
-		_ = p.NewClientToMainSp(ctx, optSpNetworkAddr)
+	networkAddMu.Lock()
+	if optimalSpNetworkAddr != "" {
+		pp.DebugLog(ctx, "reconnect to detected optimal SP ", optimalSpNetworkAddr)
+		_ = p.NewClientToMainSp(ctx, optimalSpNetworkAddr)
+		optimalSpNetworkAddr = ""
+		networkAddMu.Unlock()
 		if p.mainSpConn != nil {
 			return true, nil
 		}
+	} else {
+		networkAddMu.Unlock()
 	}
+
 	// Select a random SP node to connect to
-	spListOrder := rand.Perm(len(setting.Config.SPList))
+	spListOrder := rand.Perm(len(spList))
 	for _, index := range spListOrder {
-		selectedSP := setting.Config.SPList[index]
+		selectedSP := spList[index]
 		pp.DebugLog(ctx, "NewClient:", selectedSP.NetworkAddress)
 		_ = p.NewClientToMainSp(ctx, selectedSP.NetworkAddress)
 		if p.mainSpConn != nil {
@@ -52,26 +50,17 @@ func (p *P2pServer) ConnectToSP(ctx context.Context) (newConnection bool, err er
 	return false, errors.New("couldn't connect to any SP node")
 }
 
-// ConnectToOptSP connect if there is a detected optimal SP node.
+// ConfirmOptSP connect if there is a detected optimal SP node.
 func (p *P2pServer) ConfirmOptSP(ctx context.Context, spNetworkAddr string) {
+	networkAddMu.Lock()
+	defer networkAddMu.Unlock()
+	if p.mainSpConn != nil {
+		if p.mainSpConn.GetName() == spNetworkAddr {
+			pp.DebugLog(ctx, "optimal SP already in connection, won't change SP")
+			return
+		}
+	}
 	pp.DebugLog(ctx, "current sp ", p.mainSpConn.GetName(), " to be altered to new optimal SP ", spNetworkAddr)
-	if p.mainSpConn.GetName() == spNetworkAddr {
-		pp.DebugLog(ctx, "optimal SP already in connection, won't change SP")
-		return
-	}
-	p.setOptSP(spNetworkAddr)
+	optimalSpNetworkAddr = spNetworkAddr
 	p.mainSpConn.ClientClose(true)
-}
-
-func (p *P2pServer) GetOptSPAndClear() (string, error) {
-	if len(optSp.networkAddr) > 0 {
-		optSpNetworkAddr := optSp.networkAddr
-		optSp = &OptimalSp{}
-		return optSpNetworkAddr, nil
-	}
-	return "", errors.New("optimal SP not detected")
-}
-
-func (p *P2pServer) setOptSP(spNetworkAddr string) {
-	optSp.networkAddr = spNetworkAddr
 }

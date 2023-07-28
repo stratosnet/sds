@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stratosnet/sds/msg"
+	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -19,46 +20,34 @@ const (
 	packetIDCtxKey    ctxkey = "packetId"
 	parentReqIDCtxKey ctxkey = "parentReqId"
 	recvStartKey      ctxkey = "recvStartTime"
+	srcP2pAddrCtxKey  ctxkey = "srcP2pAddr"
 )
 
 var (
-	messageRegistry map[string]HandlerFunc
+	messageRegistry [header.NUMBER_MESSAGE_TYPES]HandlerFunc
 )
 
-func init() {
-	messageRegistry = map[string]HandlerFunc{}
+func Register(cmd header.MsgType, handler func(context.Context, WriteCloser)) {
+	messageRegistry[cmd.Id] = handler
 }
 
-// Register
-func Register(cmd string, handler func(context.Context, WriteCloser)) {
-	if _, ok := messageRegistry[cmd]; ok {
-	}
-	messageRegistry[cmd] = handler
-}
-
-// Handler
 type Handler interface {
 	Handle(context.Context, interface{})
 }
 
-// HandlerFunc
 type HandlerFunc func(context.Context, WriteCloser)
 
-// Handle
 func (f HandlerFunc) Handle(ctx context.Context, c WriteCloser) {
 	f(ctx, c)
 }
 
-// GetHandlerFunc
-func GetHandlerFunc(msgType string) HandlerFunc {
-	entry, ok := messageRegistry[msgType]
-	if !ok {
+func GetHandlerFunc(id uint8) HandlerFunc {
+	if id >= header.NUMBER_MESSAGE_TYPES {
 		return nil
 	}
-	return entry
+	return messageRegistry[id]
 }
 
-// CreateContextWithMessage
 func CreateContextWithMessage(ctx context.Context, message *msg.RelayMsgBuf) context.Context {
 	return context.WithValue(ctx, messageCtxKey, message)
 }
@@ -68,12 +57,10 @@ func MessageFromContext(ctx context.Context) *msg.RelayMsgBuf {
 	return ctx.Value(messageCtxKey).(*msg.RelayMsgBuf)
 }
 
-// CreateContextWithNetID
 func CreateContextWithNetID(ctx context.Context, netID int64) context.Context {
 	return context.WithValue(ctx, netIDCtxKey, netID)
 }
 
-// NetIDFromContext
 func NetIDFromContext(ctx context.Context) int64 {
 	return ctx.Value(netIDCtxKey).(int64)
 }
@@ -133,6 +120,15 @@ func GetParentReqIdFromContext(ctx context.Context) int64 {
 	return parentReqId
 }
 
+func GetSrcP2pAddrFromContext(ctx context.Context) string {
+	if ctx == nil || ctx.Value(srcP2pAddrCtxKey) == nil {
+		return ""
+	}
+
+	srcP2pAddress := ctx.Value(srcP2pAddrCtxKey).(string)
+	return srcP2pAddress
+}
+
 func CreateContextWithReqId(ctx context.Context, reqId int64) context.Context {
 	return context.WithValue(ctx, reqIDCtxKey, reqId)
 }
@@ -155,4 +151,22 @@ func CreateContextWithParentReqIdAsReqId(ctx context.Context) context.Context {
 		return context.WithValue(ctx, reqIDCtxKey, parentReqId)
 	}
 	return ctx
+}
+
+func CreateContextWithSrcP2pAddr(ctx context.Context, srcP2pAddress string) context.Context {
+	return context.WithValue(ctx, srcP2pAddrCtxKey, srcP2pAddress)
+}
+
+func reqIdFromSnowFlake(snowflake int64, msgid uint8) int64 {
+	// lsb of snowflake is replaced by msg id without losing the uniqueness. There are still 8 bits in the
+	// second-lowest byte for sequence number.
+	return int64((uint64(snowflake) & 0xFFFFFFFFFFFF0000) | (uint64(snowflake) & 0xFF << 8) | uint64(msgid))
+}
+
+func GenerateNewReqId(msgid uint8) int64 {
+	snowFlake, err := utils.NextSnowFlakeId()
+	if err != nil {
+		utils.FatalLogfAndExit(-3, "Fatal error: "+err.Error())
+	}
+	return reqIdFromSnowFlake(snowFlake, msgid)
 }

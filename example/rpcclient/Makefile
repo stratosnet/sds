@@ -1,6 +1,9 @@
 
 build:
-	go build -o rpc_client main.go
+	go build -o rpc_client .
+
+install:
+	go install .
 
 clean:
 	rm -rf rpc_client

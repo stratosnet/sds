@@ -3,35 +3,31 @@ package event
 import (
 	"context"
 
-	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
 
-// DeleteFile
-func DeleteFile(ctx context.Context, fileHash string) {
+func DeleteFile(ctx context.Context, fileHash string, walletAddr string, walletPubkey, wsign []byte, reqTime int64) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteFileData(fileHash), header.ReqDeleteFile)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx,
+			requests.ReqDeleteFileData(fileHash, p2pserver.GetP2pServer(ctx).GetP2PAddress(), walletAddr, walletPubkey, wsign, reqTime),
+			header.ReqDeleteFile)
 	}
 }
 
-// ReqDeleteFile
-func ReqDeleteFile(ctx context.Context, conn core.WriteCloser) {
-	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
-}
-
-// RspDeleteFile
 func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeleteFile
+	if err := VerifyMessage(ctx, header.RspDeleteFile, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+	}
 	if requests.UnmarshalData(ctx, &target) {
-		if target.P2PAddress == setting.P2PAddress {
+		if target.P2PAddress == p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				pp.Log(ctx, "delete success ", target.Result.Msg)
 			} else {
@@ -41,33 +37,4 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 			p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		}
 	}
-}
-
-// ReqDeleteSlice delete slice sp-pp  or pp-p only works if sent from server to client
-func ReqDeleteSlice(ctx context.Context, conn core.WriteCloser) {
-	switch conn.(type) {
-	case *cf.ClientConn:
-		{
-			var target protos.ReqDeleteSlice
-			if requests.UnmarshalData(ctx, &target) {
-				if target.P2PAddress == setting.P2PAddress {
-					if file.DeleteSlice(target.SliceHash) != nil {
-						requests.RspDeleteSliceData(target.SliceHash, "failed to delete, file not exist", false)
-					} else {
-						requests.RspDeleteSliceData(target.SliceHash, "delete successfully", true)
-					}
-				}
-			}
-		}
-
-	default:
-		utils.DebugLog("get a delete msg from client, ERROR!!!!")
-		break
-	}
-
-}
-
-// RspDeleteSlice RspDeleteSlice
-func RspDeleteSlice(ctx context.Context, conn core.WriteCloser) {
-	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }

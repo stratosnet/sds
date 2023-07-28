@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"math"
 	"os"
 	"os/exec"
@@ -26,13 +25,10 @@ const HLS_HEADER_FILENAME = "index.m3u8"
 
 const TEMP_FOLDER = "tmp"
 
-var HlsInfoMap = make(map[string]*HlsInfo)
-
 type HlsInfo struct {
 	FileHash         string
 	HeaderFile       string
 	StartSliceNumber uint64
-	TotalSize        int64
 	SegmentToSlice   map[string]uint64
 	SliceToSegment   map[uint64]string
 }
@@ -48,8 +44,7 @@ func GetVideoDuration(path string) (uint64, error) {
 	return uint64(math.Ceil(length)), nil
 }
 
-func VideoToHls(ctx context.Context, fileHash string) bool {
-	filePath := GetFilePath(fileHash)
+func VideoToHls(ctx context.Context, fileHash, filePath string) bool {
 	videoTmpFolder := GetVideoTmpFolder(fileHash)
 	if _, err := os.Stat(videoTmpFolder); os.IsNotExist(err) {
 		_ = os.Mkdir(videoTmpFolder, fs.ModePerm)
@@ -59,7 +54,7 @@ func VideoToHls(ctx context.Context, fileHash string) bool {
 	transformCmd := exec.Command("ffmpeg", "-i", filePath, "-codec:", "copy", "-start_number", "0", "-hls_time", "10",
 		"-hls_list_size", "0", "-f", "hls", "-hls_segment_filename", hlsSegmentFileName, hlsHeaderFileName)
 	stderr, _ := transformCmd.StderrPipe()
-	transformCmd.Start()
+	_ = transformCmd.Start()
 
 	scanner := bufio.NewScanner(stderr)
 	scanner.Split(bufio.ScanLines)
@@ -67,7 +62,7 @@ func VideoToHls(ctx context.Context, fileHash string) bool {
 		m := scanner.Text()
 		pp.Log(ctx, m)
 	}
-	transformCmd.Wait()
+	_ = transformCmd.Wait()
 	return true
 }
 
@@ -75,7 +70,7 @@ func GetHlsInfo(fileHash string, maxSliceCount uint64) (*HlsInfo, error) {
 	videoTmpFolder := GetVideoTmpFolder(fileHash)
 	totalSize := int64(0)
 
-	files, err := ioutil.ReadDir(videoTmpFolder)
+	files, err := os.ReadDir(videoTmpFolder)
 	if err != nil {
 		return nil, err
 	}
@@ -107,15 +102,13 @@ func GetHlsInfo(fileHash string, maxSliceCount uint64) (*HlsInfo, error) {
 		hlsInfo.SegmentToSlice[f.Name()] = currSliceNumber
 		hlsInfo.SliceToSegment[currSliceNumber] = f.Name()
 		currSliceNumber += 1
-		totalSize += f.Size()
 	}
-	hlsInfo.TotalSize = totalSize
 	return hlsInfo, nil
 }
 
 func LoadHlsInfo(fileHash, sliceHash, savePath string) *HlsInfo {
 	slicePath := GetDownloadTmpPath(fileHash, sliceHash, savePath)
-	data, err := ioutil.ReadFile(slicePath)
+	data, err := os.ReadFile(slicePath)
 	if err != nil {
 		utils.ErrorLog(err)
 		return nil
@@ -127,6 +120,16 @@ func LoadHlsInfo(fileHash, sliceHash, savePath string) *HlsInfo {
 		return nil
 	}
 	return &hlsInfo
+}
+
+func LoadHlsInfoFromData(data []byte) (*HlsInfo, error) {
+	var hlsInfo HlsInfo
+	err := json.Unmarshal(data, &hlsInfo)
+	if err != nil {
+		utils.ErrorLog(err)
+		return nil, err
+	}
+	return &hlsInfo, nil
 }
 
 func DeleteTmpHlsFolder(ctx context.Context, fileHash string) {

@@ -21,7 +21,6 @@ type Connect struct {
 	LogFile string `toml:"log_file"`
 }
 
-// DNS
 func (c *Connect) DNS() string {
 	var dns string
 	if c.Driver == "mysql" {
@@ -41,17 +40,20 @@ func (c *Connect) DNS() string {
 	return dns
 }
 
-// LoadConfFromYaml
 func (c *Connect) LoadConfFromYaml(yamlFile string) {
-	utils.LoadYamlConfig(c, yamlFile)
+	err := utils.LoadYamlConfig(c, yamlFile)
+	if err != nil {
+		utils.ErrorLog("Error loading database config from YAML", err)
+	}
 }
 
-// LoadConfFromToml
 func (c *Connect) LoadConfFromToml(tomlFile string) {
-	utils.LoadTomlConfig(c, tomlFile)
+	err := utils.LoadTomlConfig(c, tomlFile)
+	if err != nil {
+		utils.ErrorLog("Error loading database config from TOML", err)
+	}
 }
 
-// LoadConfFromMap
 func (c *Connect) LoadConfFromMap(conf map[interface{}]interface{}) {
 
 	config := make(map[string]interface{})

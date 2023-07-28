@@ -1,59 +1,23 @@
 package setting
 
 import (
-	ed25519crypto "crypto/ed25519"
-	"encoding/hex"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"sync"
 
+	"github.com/pelletier/go-toml"
+	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/relay/stratoschain"
+	"github.com/stratosnet/sds/relay/stratoschain/grpc"
 	"github.com/stratosnet/sds/utils"
 )
 
-const (
-	Version        = "v0.9.0"
-	APP_VER        = 9
-	MIN_APP_VER    = 9
-	HD_PATH        = "m/44'/606'/0'/0/0"
-	PP_SERVER_TYPE = "tcp4"
-
-	// REPORTDHTIME 1 hour
-	REPORTDHTIME = 60 * 60
-	// NodeReportIntervalSec Interval of node stat report
-	NodeReportIntervalSec   = 300 // in seconds
-	NodeReportCheckInterval = 500 // in num of heights
-	WeightDeductionInterval = 200 // interval for weight deduction in heights
-	PpLatencyCheckInterval  = 60  // interval for checking the latency to next PP
-
-	// MAXDATA max slice size
-	MAXDATA = 1024 * 1024 * 3
-	// HTTPTIMEOUT  HTTPTIMEOUT second
-	HTTPTIMEOUT = 20
-	// IMAGEPATH
-	IMAGEPATH = "./images/"
-	VIDEOPATH = "./videos"
-
-	STREAM_CACHE_MAXSLICE = 2
-
-	FILE_SLICE_DOWNLOAD_BATCH_SIZE         = 20
-	UPDATE_LATEST_STATUS_REPORT_BATCH_SIZE = 20
-
-	DEFAULT_MAX_CONNECTION = 1000
-
-	DEFAULT_MIN_UNSUSPEND_STAKE = "1stos" // 1 stos
-)
-
 var (
-	// Config
-	Config *config
-	// ConfigPath
-	ConfigPath string
-	rootPath   string
+	Config         *config
+	ConfigPath     string
+	rootPath       string
+	TrafficLogPath string
 
 	// ImageMap download image hash map
 	ImageMap = &sync.Map{}
@@ -61,85 +25,90 @@ var (
 	// DownloadProgressMap download progress map
 	DownloadProgressMap = &sync.Map{}
 
-	// IsLoad
-	IsLoad bool
-
-	// UploadTaskIDMap
-	UploadTaskIDMap = &sync.Map{}
-
-	// DownloadTaskIDMap
-	DownloadTaskIDMap = &sync.Map{}
-
-	// socket map
-	UpMap     = make(map[string]interface{}, 0)
-	DownMap   = make(map[string]interface{}, 0)
-	ResultMap = make(map[string]interface{}, 0)
-
-	//  http code
-	FAILCode       = 500
-	SUCCESSCode    = 0
-	ShareErrorCode = 1002
-
 	ostype    = runtime.GOOS
 	IsWindows bool
 
-	// UpChan
 	UpChan = make(chan string, 100)
-
-	// traffic log path
-	TrafficLogPath string
 )
 
-type AppVersion struct {
-	AppVer    uint16 `toml:"app_ver"`
-	MinAppVer uint16 `toml:"min_app_ver"`
-	Show      string `toml:"show"`
+type VersionConfig struct {
+	AppVer    uint16 `toml:"app_ver" comment:"App version number. Eg: 9"`
+	MinAppVer uint16 `toml:"min_app_ver" comment:"Network connections from nodes below this version number will be rejected. Eg: 9"`
+	Show      string `toml:"show" comment:"Formatted version number. Eg: \"v0.9.0\""`
 }
 
-type SPBaseInfo struct {
-	P2PAddress     string `toml:"p2p_address"`
-	P2PPublicKey   string `toml:"p2p_public_key"`
-	NetworkAddress string `toml:"network_address"`
+type BlockchainConfig struct {
+	ChainId       string  `toml:"chain_id" comment:"ID of the chain Eg: \"tropos-5\""`
+	GasAdjustment float64 `toml:"gas_adjustment" comment:"Multiplier for the simulated tx gas cost Eg: 1.5"`
+	Insecure      bool    `toml:"insecure" comment:"Connect to the chain using an insecure connection (no TLS) Eg: true"`
+	Url           string  `toml:"url" comment:"Network address of the chain Eg: \"127.0.0.1:9090\""`
 }
-type MonitorConn struct {
-	TLS  bool   `toml:"tls"`
-	Cert string `toml:"cert"`
-	Key  string `toml:"key"`
+
+type HomeConfig struct {
+	AccountsPath string `toml:"accounts_path" comment:"Key files (wallet and P2P key). Eg: \"./accounts\""`
+	DownloadPath string `toml:"download_path" comment:"Where downloaded files will go. Eg: \"./download\""`
+	PeersPath    string `toml:"peers_path" comment:"The list of peers (other sds nodes). Eg: \"./peers\""`
+	StoragePath  string `toml:"storage_path" comment:"Where files are stored. Eg: \"./storage\""`
+}
+
+type KeysConfig struct {
+	P2PAddress     string `toml:"p2p_address" comment:"Address of the P2P key. Eg: \"stsdsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\""`
+	P2PPassword    string `toml:"p2p_password"`
+	WalletAddress  string `toml:"wallet_address" comment:"Address of the stratos wallet. Eg: \"stxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\""`
+	WalletPassword string `toml:"wallet_password"`
+}
+
+type ConnectivityConfig struct {
+	SeedMetaNode   SPBaseInfo `toml:"seed_meta_node" comment:"The first meta node to connect to when starting the node"`
+	Internal       bool       `toml:"internal" comment:"Is the node running on an internal network? Eg: false"`
+	NetworkAddress string     `toml:"network_address" comment:"IP address of the node. Eg: \"127.0.0.1\""`
+	NetworkPort    string     `toml:"network_port" comment:"Main port for communication on the network. Must be open to the internet. Eg: \"18081\""`
+	MetricsPort    string     `toml:"metrics_port" comment:"Port for prometheus metrics"`
+	RpcPort        string     `toml:"rpc_port" comment:"Port for the JSON-RPC api. See https://docs.thestratos.org/docs-resource-node/sds-rpc-for-file-operation/"`
+	AllowOwnerRpc  bool       `toml:"allow_owner_rpc" comment:"Enable the node owner RPC API. This API can manipulate the node status and sign txs with the local wallet. Do not open this to the internet  Eg: false"`
+}
+
+type NodeConfig struct {
+	AutoStart    bool               `toml:"auto_start" comment:"Should the node start mining automatically? Eg: true"` // TODO: review usage. Not actually used to start mining automatically
+	Debug        bool               `toml:"debug" comment:"Should debug info be printed out in logs? Eg: false"`
+	MaxDiskUsage uint64             `toml:"max_disk_usage" comment:"When not 0, limit disk usage to this amount (in megabytes) Eg: 1048576 (1 TB)"`
+	Connectivity ConnectivityConfig `toml:"connectivity"`
+}
+
+type MonitorConfig struct {
+	TLS          bool   `toml:"tls" comment:"Should the monitor server use TLS? Eg: false"`
+	CertFilePath string `toml:"cert_file_path" comment:"Path to the TLS certificate file"`
+	KeyFilePath  string `toml:"key_file_path" comment:"Path to the TLS private key file"`
+	Port         string `toml:"port"`
+}
+
+type TrafficConfig struct {
+	LogInterval     uint64 `toml:"log_interval" comment:"Interval at which traffic is logged (in seconds) Eg: 10"`
+	MaxConnections  int    `toml:"max_connections" comment:"Max number of concurrent network connections. Eg: 1000"`
+	MaxDownloadRate uint64 `toml:"max_download_rate" comment:"Max number of download messages received per second (per connection). 0 Means unlimited. 1000 ≈ 1MB/sec. Eg: 1000"`
+	MaxUploadRate   uint64 `toml:"max_upload_rate" comment:"Max number of upload messages sent per second (per connection). 0 Means unlimited. 1000 ≈ 1MB/sec. Eg: 1000"`
+}
+
+type StreamingConfig struct {
+	InternalPort string `toml:"internal_port" comment:"Port for the internal HTTP server"`
+	RestPort     string `toml:"rest_port" comment:"Port for the REST server"`
+}
+
+type WebServerConfig struct {
+	Path string `toml:"path" comment:"Location of the web server files Eg: \"./web\""`
 	Port string `toml:"port"`
 }
 
 type config struct {
-	Version              AppVersion   `toml:"version"`
-	DownloadPathMinLen   int          `toml:"download_path_min_len"`
-	Port                 string       `toml:"port"`
-	NetworkAddress       string       `toml:"network_address"`
-	Debug                bool         `toml:"debug"`
-	PPListDir            string       `toml:"pp_list_dir"`
-	AccountDir           string       `toml:"account_dir"`
-	StorehousePath       string       `toml:"storehouse_path"`
-	DownloadPath         string       `toml:"download_path"`
-	P2PAddress           string       `toml:"p2p_address"`
-	P2PPassword          string       `toml:"p2p_password"`
-	WalletAddress        string       `toml:"wallet_address"`
-	WalletPassword       string       `toml:"wallet_password"`
-	AutoRun              bool         `toml:"auto_run"`  // is auto login
-	Internal             bool         `toml:"internal"`  // is internal net
-	IsWallet             bool         `toml:"is_wallet"` // is wallet
-	IsLimitDownloadSpeed bool         `toml:"is_limit_download_speed"`
-	LimitDownloadSpeed   uint64       `toml:"limit_download_speed"`
-	IsLimitUploadSpeed   bool         `toml:"is_limit_upload_speed"`
-	LimitUploadSpeed     uint64       `toml:"limit_upload_speed"`
-	ChainId              string       `toml:"chain_id"`
-	StratosChainUrl      string       `toml:"stratos_chain_url"`
-	GasAdjustment        float64      `toml:"gas_adjustment"`
-	RestPort             string       `toml:"rest_port"`
-	InternalPort         string       `toml:"internal_port"`
-	RpcPort              string       `toml:"rpc_port"`
-	MetricsPort          string       `toml:"metrics_port"`
-	Monitor              MonitorConn  `toml:"monitor"`
-	TrafficLogInterval   uint64       `toml:"traffic_log_interval"`
-	MaxConnection        int          `toml:"max_connection"`
-	SPList               []SPBaseInfo `toml:"sp_list"`
+	Version    VersionConfig    `toml:"version"`
+	Blockchain BlockchainConfig `toml:"blockchain" comment:"Configuration of the connection to the Stratos blockchain"`
+	Home       HomeConfig       `toml:"home" comment:"Structure of the home folder. Default paths (eg: \"./storage\" become relative to the node home. Other paths are relative to the working directory"`
+	Keys       KeysConfig       `toml:"keys"`
+	Node       NodeConfig       `toml:"node" comment:"Configuration of this node"`
+	Monitor    MonitorConfig    `toml:"monitor" comment:"Configuration for the monitor server"`
+	Streaming  StreamingConfig  `toml:"streaming" comment:"Configuration for video streaming"`
+	Traffic    TrafficConfig    `toml:"traffic"`
+	WebServer  WebServerConfig  `toml:"web_server" comment:"Configuration for the web server (when running sdsweb)"`
 }
 
 func SetupRoot(root string) {
@@ -150,7 +119,6 @@ func GetRootPath() string {
 	return rootPath
 }
 
-// LoadConfig
 func LoadConfig(configPath string) error {
 	ConfigPath = configPath
 	Config = &config{}
@@ -163,9 +131,7 @@ func LoadConfig(configPath string) error {
 		return err
 	}
 
-	Config.DownloadPathMinLen = 88
-
-	err = formalizePath(Config)
+	err = formalizePaths()
 	if err != nil {
 		return err
 	}
@@ -177,27 +143,16 @@ func LoadConfig(configPath string) error {
 		IsWindows = false
 	}
 
-	cf.SetLimitDownloadSpeed(Config.LimitDownloadSpeed, Config.IsLimitDownloadSpeed)
-	cf.SetLimitUploadSpeed(Config.LimitUploadSpeed, Config.IsLimitUploadSpeed)
+	cf.SetMaxDownloadRate(Config.Traffic.MaxDownloadRate)
+	cf.SetMaxUploadRate(Config.Traffic.MaxUploadRate)
 
-	IsAuto = Config.AutoRun
-	utils.DebugLogf("AutoRun flag: %v", IsAuto)
-	// todo: we shouldn't call stratoschain package to setup a global variable
-	stratoschain.Url = Config.StratosChainUrl
-
-	// Initialize SPMap
-	for _, sp := range Config.SPList {
-		key := sp.P2PAddress
-		if key == "" {
-			key = "unknown"
-		}
-		SPMap.Store(key, sp)
-	}
+	// todo: we shouldn't call grpc package to setup a global variable
+	grpc.URL = Config.Blockchain.Url
+	grpc.INSECURE = Config.Blockchain.Insecure
 
 	return nil
 }
 
-// CheckLogin
 func CheckLogin() bool {
 	if WalletAddress == "" {
 		utils.ErrorLog("please login")
@@ -206,172 +161,168 @@ func CheckLogin() bool {
 	return true
 }
 
-// GetSign
-func GetSign(str string) []byte {
-	sign := ed25519crypto.Sign(P2PPrivateKey, []byte(str))
-	utils.DebugLog("GetSign == ", hex.EncodeToString(sign))
-	return sign
+func SetConfig(key string, value interface{}) error {
+	tomlTree, err := toml.LoadFile(ConfigPath)
+	if err != nil {
+		return err
+	}
+
+	// Read existing value
+	if !tomlTree.Has(key) {
+		return errors.Errorf("Key [%v] doesn't exist", key)
+	}
+	existingValue := tomlTree.Get(key)
+	switch existingValue.(type) {
+	case *toml.Tree:
+		return errors.Errorf("Key [%v] is a subtree. It cannot be edited directly", key)
+	case []*toml.Tree:
+		return errors.Errorf("Key [%v] is a subtree. It cannot be edited directly", key)
+	default:
+		if existingValue == value {
+			return nil
+		}
+		tomlTree.Set(key, value)
+	}
+
+	// Check if change is valid
+	data, err := tomlTree.Marshal()
+	if err != nil {
+		return err
+	}
+	if err = toml.Unmarshal(data, &config{}); err != nil {
+		return err
+	}
+
+	// Save changes to file
+	err = os.WriteFile(ConfigPath, data, 0644)
+	if err != nil {
+		return err
+	}
+
+	// Reload config object
+	return LoadConfig(ConfigPath)
 }
 
-// SetConfig SetConfig
-func SetConfig(key, value string) bool {
-	found, isString := utils.CheckStructField(key, Config)
-	if !found {
-		utils.Log("configuration not found")
-		return false
-	}
-
-	f, err := os.Open(ConfigPath)
-	defer f.Close()
-	if err != nil {
-		utils.ErrorLog("failed to change configuration file", err)
-		return false
-	}
-
-	var contents []byte
-	contents, err = ioutil.ReadAll(f)
-	if err != nil {
-		utils.ErrorLog("failed to read configuration file", err)
-		return false
-	}
-
-	contentStrs := strings.Split(string(contents), "\n")
-	newString := ""
-	change := false
-	for _, str := range contentStrs {
-		ss := strings.Split(str, " ")
-		if len(ss) > 0 && ss[0] == key {
-			if key == "download_path" {
-				if ostype == "windows" {
-					value = value + `\`
-				} else {
-					value = value + `/`
-				}
-			}
-			ns := ""
-			if isString {
-				ns = key + " = '" + value + "'"
-			} else {
-				ns = key + " = " + value
-			}
-			newString += ns
-			newString += "\n"
-			change = true
-			continue
-		}
-		newString += str
-		newString += "\n"
-	}
-	if !change {
-		return false
-	}
-
-	if err = os.Truncate(ConfigPath, 0); err != nil {
-		utils.ErrorLog("failed to change configuration file", err)
-		return false
-	}
-
-	var configOS *os.File
-	configOS, err = os.OpenFile(ConfigPath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
-	defer configOS.Close()
-
-	if err != nil {
-		utils.ErrorLog("failed to change configuration file", err)
-		return false
-	}
-
-	_, err = configOS.WriteString(newString)
-	if err != nil {
-		utils.ErrorLog("failed to change configuration file", err)
-		return false
-	}
-
-	LoadConfig(ConfigPath)
-	if !(strings.Contains(strings.ToLower(key), "password") || strings.Contains(strings.ToLower(key), "pw")) {
-		utils.Log("finished changing configuration file ", key+": ", value)
-	}
-	//prefix.SetConfig(Config.AddressPrefix)
-
-	return true
+func FlushConfig() error {
+	return utils.WriteTomlConfig(Config, ConfigPath)
 }
 
 func defaultConfig() *config {
 	return &config{
-		Version:              AppVersion{AppVer: APP_VER, MinAppVer: MIN_APP_VER, Show: Version},
-		DownloadPathMinLen:   0,
-		Port:                 "18081",
-		NetworkAddress:       "127.0.0.1",
-		Debug:                false,
-		PPListDir:            "./peers",
-		AccountDir:           "./accounts",
-		StorehousePath:       "./storage",
-		DownloadPath:         "./download",
-		P2PAddress:           "",
-		P2PPassword:          "",
-		WalletAddress:        "",
-		WalletPassword:       "",
-		AutoRun:              true,
-		Internal:             false,
-		IsWallet:             true,
-		IsLimitDownloadSpeed: false,
-		LimitDownloadSpeed:   0,
-		IsLimitUploadSpeed:   false,
-		LimitUploadSpeed:     0,
-		ChainId:              "tropos-4",
-		StratosChainUrl:      "http://127.0.0.1:1317",
-		GasAdjustment:        1.3,
-		RestPort:             "",
-		InternalPort:         "",
-		TrafficLogInterval:   10,
-		SPList:               []SPBaseInfo{{NetworkAddress: "127.0.0.1:8888"}},
+		Version: VersionConfig{AppVer: AppVersion, MinAppVer: MinAppVersion, Show: Version},
+		Blockchain: BlockchainConfig{
+			ChainId:       "mesos-1",
+			GasAdjustment: 1.3,
+			Insecure:      true,
+			Url:           "127.0.0.1:9090",
+		},
+		Home: HomeConfig{
+			AccountsPath: "./accounts",
+			DownloadPath: "./download",
+			PeersPath:    "./peers",
+			StoragePath:  "./storage",
+		},
+		Keys: KeysConfig{
+			P2PAddress:     "",
+			P2PPassword:    "",
+			WalletAddress:  "",
+			WalletPassword: "",
+		},
+		Node: NodeConfig{
+			AutoStart:    true,
+			Debug:        false,
+			MaxDiskUsage: 1024 * 1024, // 1TB,
+			Connectivity: ConnectivityConfig{
+				SeedMetaNode: SPBaseInfo{
+					P2PAddress:     "",
+					P2PPublicKey:   "",
+					NetworkAddress: "127.0.0.1:8888",
+				},
+				Internal:       false,
+				NetworkAddress: "127.0.0.1",
+				NetworkPort:    "18081",
+				MetricsPort:    "18181",
+				RpcPort:        "18281",
+				AllowOwnerRpc:  false,
+			},
+		},
+		Monitor: MonitorConfig{
+			TLS:          false,
+			CertFilePath: "",
+			KeyFilePath:  "",
+			Port:         "18381",
+		},
+		Streaming: StreamingConfig{
+			InternalPort: "18481",
+			RestPort:     "18581",
+		},
+		Traffic: TrafficConfig{
+			LogInterval:     10,
+			MaxConnections:  DefaultMaxConnections,
+			MaxDownloadRate: 0,
+			MaxUploadRate:   0,
+		},
+		WebServer: WebServerConfig{
+			Path: "./web",
+			Port: "18681",
+		},
 	}
 }
 
-func GenDefaultConfig(filePath string) error {
-	cfg := defaultConfig()
-
-	return utils.WriteTomlConfig(cfg, filePath)
+func GenDefaultConfig() error {
+	Config = defaultConfig()
+	return FlushConfig()
 }
 
-func formalizePath(config2 *config) (err error) {
-	//if the configuration are using default path, try to load the root path specified from flag
-	if Config.AccountDir == "./accounts" {
-		Config.AccountDir = filepath.Join(rootPath, Config.AccountDir)
-	}
-	if Config.PPListDir == "./peers" {
-		Config.PPListDir = filepath.Join(rootPath, Config.PPListDir)
-	}
-	if Config.StorehousePath == "./storage" {
-		Config.StorehousePath = filepath.Join(rootPath, Config.StorehousePath)
-	}
-	if Config.DownloadPath == "./download" {
-		Config.DownloadPath = filepath.Join(rootPath, Config.DownloadPath)
+// formalizePaths checks if the configuration is using default paths, and if so, add in the node root path. It also makes all paths absolute
+func formalizePaths() (err error) {
+	defaultValues := defaultConfig()
+
+	Config.Home.AccountsPath, err = formalizePath(Config.Home.AccountsPath, defaultValues.Home.AccountsPath)
+	if err != nil {
+		return err
 	}
 
-	// make the path absolute if the configured path is not the default value, won't consider the home flag
-	if !filepath.IsAbs(Config.AccountDir) {
-		Config.AccountDir, err = filepath.Abs(Config.AccountDir)
-		if err != nil {
-			return err
-		}
+	Config.Home.PeersPath, err = formalizePath(Config.Home.PeersPath, defaultValues.Home.PeersPath)
+	if err != nil {
+		return err
 	}
-	if !filepath.IsAbs(Config.StorehousePath) {
-		Config.StorehousePath, err = filepath.Abs(Config.StorehousePath)
-		if err != nil {
-			return err
-		}
+
+	Config.Home.StoragePath, err = formalizePath(Config.Home.StoragePath, defaultValues.Home.StoragePath)
+	if err != nil {
+		return err
 	}
-	if !filepath.IsAbs(Config.DownloadPath) {
-		Config.DownloadPath, err = filepath.Abs(Config.DownloadPath)
-		if err != nil {
-			return err
-		}
+
+	Config.Home.DownloadPath, err = formalizePath(Config.Home.DownloadPath, defaultValues.Home.DownloadPath)
+	if err != nil {
+		return err
 	}
-	if !filepath.IsAbs(Config.PPListDir) {
-		Config.PPListDir, err = filepath.Abs(Config.PPListDir)
-		if err != nil {
-			return err
-		}
+
+	Config.WebServer.Path, err = formalizePath(Config.WebServer.Path, defaultValues.WebServer.Path)
+	if err != nil {
+		return err
 	}
+
 	return nil
+}
+
+func formalizePath(path, defaultValue string) (newPath string, err error) {
+	newPath = path
+	if path == defaultValue {
+		newPath = filepath.Join(rootPath, path)
+	}
+
+	// Make the path absolute (it won't consider the home flag)
+	if !filepath.IsAbs(newPath) {
+		newPath, err = filepath.Abs(newPath)
+	}
+	return newPath, err
+}
+
+func GetDiskSizeSoftCap(actualTotal uint64) uint64 {
+	maxDiskBytes := Config.Node.MaxDiskUsage * 1024 * 1024 // MB to B
+	if maxDiskBytes != 0 && maxDiskBytes < actualTotal {
+		return maxDiskBytes
+	}
+	return actualTotal
 }

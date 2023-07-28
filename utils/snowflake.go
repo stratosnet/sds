@@ -1,30 +1,25 @@
 package utils
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 	"time"
 )
 
 const (
-	twepoch        = int64(1417937700000) // default start time epoch,
-	DistrictIdBits = uint(5)              // district id bits size
-	NodeIdBits     = uint(9)              // node id bits size
-	sequenceBits   = uint(10)             // sequence number bits size
+	twepoch      = int64(1685987883000) // default start time epoch,
+	NodeIdBits   = uint(8)              // node id bits size
+	sequenceBits = uint(16)             // sequence number bits size
 	/*
-	 * 1 sign   |  39 timestamp                                 | 5 district  |  9 node      | 10 （milliSecond）self sequence ID
-	 * 0        |  0000000 00000000 00000000 00000000 00000000  | 00000       | 000000 000   |  000000 0000
-	 *
+	 * 1b sign |                               39b timestamp | 8b node  |   16b sequence ID |
+	 *       0 | 0000000 00000000 00000000 00000000 00000000 | 00000000 | 00000000 00000000 |
 	 */
-	maxNodeId     = -1 ^ (-1 << NodeIdBits)     // max node id
-	maxDistrictId = -1 ^ (-1 << DistrictIdBits) // max district id
+	maxNodeId    = -1 ^ (-1 << NodeIdBits) // max node id
+	sequenceMask = -1 ^ (-1 << sequenceBits)
 
-	nodeIdShift        = sequenceBits // left shift times
-	DistrictIdShift    = sequenceBits + NodeIdBits
-	timestampLeftShift = sequenceBits + NodeIdBits + DistrictIdBits
-	sequenceMask       = -1 ^ (-1 << sequenceBits)
-	maxNextIdsNum      = 100 //max number of Ids per retrieve
+	nodeIdShift    = sequenceBits // left shift times
+	timestampShift = sequenceBits + NodeIdBits
+	maxNextIdsNum  = 100 //max number of Ids per retrieve
 )
 
 var MyIdWorker *IdWorker
@@ -34,30 +29,21 @@ type IdWorker struct {
 	lastTimestamp int64
 	nodeId        int64
 	twepoch       int64
-	districtId    int64
 	mutex         sync.Mutex
 }
 
 // NewIdWorker new a snowflake id generator object.
 func NewIdWorker(NodeId int64) (*IdWorker, error) {
-	var districtId int64
-	districtId = 1 // default to 1, for future extension
 	idWorker := &IdWorker{}
 	if NodeId > maxNodeId || NodeId < 0 {
-		fmt.Sprintf("NodeId Id can't be greater than %d or less than 0", maxNodeId)
-		return nil, errors.New(fmt.Sprintf("NodeId Id: %d error", NodeId))
-	}
-	if districtId > maxDistrictId || districtId < 0 {
-		fmt.Sprintf("District Id can't be greater than %d or less than 0", maxDistrictId)
-		return nil, errors.New(fmt.Sprintf("District Id: %d error", districtId))
+		ErrorLogf("NodeId Id can't be greater than %d or less than 0", maxNodeId)
+		return nil, fmt.Errorf("NodeId Id: %d error", NodeId)
 	}
 	idWorker.nodeId = NodeId
-	idWorker.districtId = districtId
 	idWorker.lastTimestamp = -1
 	idWorker.sequence = 0
 	idWorker.twepoch = twepoch
 	idWorker.mutex = sync.Mutex{}
-	fmt.Sprintf("worker starting. timestamp left shift %d, District id bits %d, worker id bits %d, sequence bits %d, workerid %d", timestampLeftShift, DistrictIdBits, NodeIdBits, sequenceBits, NodeId)
 	return idWorker, nil
 }
 
@@ -85,8 +71,8 @@ func (id *IdWorker) NextId() (int64, error) {
 // NextIds get snowflake ids.
 func (id *IdWorker) NextIds(num int) ([]int64, error) {
 	if num > maxNextIdsNum || num < 0 {
-		fmt.Sprintf("NextIds num can't be greater than %d or less than 0", maxNextIdsNum)
-		return nil, errors.New(fmt.Sprintf("NextIds num: %d error", num))
+		ErrorLogf("NextIds num can't be greater than %d or less than 0", maxNextIdsNum)
+		return nil, fmt.Errorf("NextIds num: %d error", num)
 	}
 	ids := make([]int64, num)
 	id.mutex.Lock()
@@ -101,7 +87,7 @@ func (id *IdWorker) nextid() (int64, error) {
 	timestamp := timeGen()
 	if timestamp < id.lastTimestamp {
 		//    fmt.Sprintf("clock is moving backwards.  Rejecting requests until %d.", id.lastTimestamp)
-		return 0, errors.New(fmt.Sprintf("Clock moved backwards.  Refusing to generate id for %d milliseconds", id.lastTimestamp-timestamp))
+		return 0, fmt.Errorf("Clock moved backwards.  Refusing to generate id for %d milliseconds", id.lastTimestamp-timestamp)
 	}
 	if id.lastTimestamp == timestamp {
 		id.sequence = (id.sequence + 1) & sequenceMask
@@ -112,11 +98,11 @@ func (id *IdWorker) nextid() (int64, error) {
 		id.sequence = 0
 	}
 	id.lastTimestamp = timestamp
-	return ((timestamp - id.twepoch) << timestampLeftShift) | (id.districtId << DistrictIdShift) | (id.nodeId << nodeIdShift) | id.sequence, nil
+	return ((timestamp - id.twepoch) << timestampShift) | (id.nodeId << nodeIdShift) | id.sequence, nil
 }
 
-func InitIdWorker() error {
-	idWorker, err := NewIdWorker(int64(0))
+func InitIdWorker(nodeid uint8) error {
+	idWorker, err := NewIdWorker(int64(nodeid))
 	MyIdWorker = idWorker
 	return err
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/stratosnet/sds/cmd/common"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
@@ -16,38 +17,41 @@ const (
 	createWalletFlag = "create-wallet"
 )
 
-func genConfig(cmd *cobra.Command, args []string) error {
-
-	path, err := cmd.Flags().GetString(CONFIG)
+func genConfig(cmd *cobra.Command, _ []string) error {
+	path, err := cmd.Flags().GetString(common.Config)
 	if err != nil {
 		return errors.Wrap(err, "failed to get the configuration file path")
 	}
-	if path == defaultConfigPath {
-		home, err := cmd.Flags().GetString(HOME)
+	if path == common.DefaultConfigPath {
+		home, err := cmd.Flags().GetString(common.Home)
 		if err != nil {
 			return err
 		}
 		path = filepath.Join(home, path)
 	}
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	if _, err = os.Stat(path); os.IsNotExist(err) {
 		err = os.MkdirAll(filepath.Dir(path), 0700)
 	}
+	if err != nil {
+		return err
+	}
+
 	err = setting.LoadConfig(path)
 	if err != nil {
 		fmt.Println("generating default config file")
-		err = setting.GenDefaultConfig(path)
+		err = setting.GenDefaultConfig()
 		if err != nil {
 			return errors.Wrap(err, "failed to generate config file at given path")
 		}
-
+		if err = setting.LoadConfig(path); err != nil {
+			return err
+		}
 	}
-
-	setting.LoadConfig(path)
 
 	createP2pKey, err := cmd.Flags().GetBool(createP2pKeyFlag)
 	if err == nil && createP2pKey {
-		err = SetupP2PKey()
+		err = common.SetupP2PKey()
 		if err != nil {
 			err := errors.Wrap(err, "Couldn't setup PP node")
 			utils.ErrorLog(err)
@@ -66,63 +70,10 @@ func genConfig(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func loadConfig(cmd *cobra.Command) error {
-	homePath, err := cmd.Flags().GetString(HOME)
-	if err != nil {
-		utils.ErrorLog("failed to get 'home' path for the node")
-		return err
-	}
-	homePath, err = utils.Absolute(homePath)
-	if err != nil {
-		return err
-	}
-	setting.SetupRoot(homePath)
-
-	configPath, err := cmd.Flags().GetString(CONFIG)
-	if err != nil {
-		utils.ErrorLog("failed to get config path for the node")
-		return err
-	}
-	if configPath == defaultConfigPath {
-		configPath = filepath.Join(homePath, configPath)
-	} else {
-		configPath, err = utils.Absolute(configPath)
-		if err != nil {
-			return err
-		}
-	}
-
-	if _, err := os.Stat(configPath); err != nil {
-		//configPath = filepath.Join(homePath, configPath)
-		if _, err := os.Stat(configPath); err != nil {
-			return errors.Wrap(err, "not able to load config file, generate one with `ppd config`")
-		}
-	}
-
-	setting.SetIPCEndpoint(homePath)
-
-	err = setting.LoadConfig(configPath)
-	if err != nil {
-		return errors.Wrap(err, "failed to load config file")
-	}
-
-	if setting.Config.Debug {
-		utils.MyLogger.SetLogLevel(utils.Debug)
-	} else {
-		utils.MyLogger.SetLogLevel(utils.Info)
-	}
-
-	if setting.Config.Version.Show != setting.Version {
-		utils.ErrorLogf("config version and code version not match, config: [%s], code: [%s]", setting.Config.Version.Show, setting.Version)
-	}
-
-	return nil
-}
-
 func SetupWalletKey() error {
-	if setting.Config.WalletAddress == "" {
+	if setting.Config.Keys.WalletAddress == "" {
 		fmt.Println("No wallet key specified in config. Attempting to create one...")
-		err := utils.SetupWallet(setting.Config.AccountDir, setting.HD_PATH, updateWalletConfig)
+		err := utils.SetupWallet(setting.Config.Home.AccountsPath, setting.HDPath, updateWalletConfig)
 		if err != nil {
 			utils.ErrorLog(err)
 			return err
@@ -132,6 +83,7 @@ func SetupWalletKey() error {
 }
 
 func updateWalletConfig(walletKeyAddressString, password string) {
-	setting.SetConfig("wallet_address", walletKeyAddressString)
-	setting.SetConfig("wallet_password", password)
+	setting.Config.Keys.WalletAddress = walletKeyAddressString
+	setting.Config.Keys.WalletPassword = password
+	_ = setting.FlushConfig()
 }
