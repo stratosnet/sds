@@ -4,6 +4,7 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
@@ -1189,5 +1190,25 @@ func (api *rpcPubApi) RequestServiceStatus(ctx context.Context, param rpc_api.Pa
 	metrics.RpcReqCount.WithLabelValues("RequestServiceStatus").Inc()
 	reqId := uuid.New().String()
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
-	return event.GetPPServiceStatus(ctx)
+	rpcResult := &rpc_api.ServiceStatusResult{Return: rpc_api.SUCCESS}
+
+	regStatStr, onlineStatStr := "", ""
+	regStat := network.GetPeer(ctx).GetStateFromFsm()
+	switch regStat.Id {
+	case network.STATE_NOT_REGISTERED:
+		regStatStr = "Not registered"
+		onlineStatStr = "OFFLINE"
+	case network.STATE_REGISTERING:
+		regStatStr = "Registering"
+		onlineStatStr = "OFFLINE"
+	case network.STATE_REGISTERED:
+		regStatStr = "Registered"
+		onlineStatStr = "ONLINE"
+	default:
+		regStatStr = "Unknown"
+		onlineStatStr = "Unknown"
+	}
+	msgStr := fmt.Sprintf("Registration Status: %v | Mining: %v ", regStatStr, onlineStatStr)
+	rpcResult.Message = msgStr
+	return *rpcResult
 }
