@@ -211,7 +211,7 @@ func defaultConfig() *config {
 	return &config{
 		Version: VersionConfig{AppVer: AppVersion, MinAppVer: MinAppVersion, Show: Version},
 		Blockchain: BlockchainConfig{
-			ChainId:       "tropos-5",
+			ChainId:       "mesos-1",
 			GasAdjustment: 1.3,
 			Insecure:      true,
 			Url:           "127.0.0.1:9090",
