@@ -4,6 +4,7 @@ import (
 	"context"
 	b64 "encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
@@ -1160,4 +1161,54 @@ func (api *rpcPrivApi) RequestSend(ctx context.Context, param rpc_api.ParamReqSe
 			}
 		}
 	}
+}
+
+func (api *rpcPrivApi) RequestStatus(ctx context.Context, param rpc_api.ParamReqStatus) rpc_api.StatusResult {
+	metrics.RpcReqCount.WithLabelValues("RequestStatus").Inc()
+	reqId := uuid.New().String()
+	ctx = core.RegisterRemoteReqId(ctx, reqId)
+	network.GetPeer(ctx).GetPPStatusFromSP(ctx)
+
+	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			result := &rpc_api.StatusResult{Return: rpc_api.TIME_OUT}
+			return *result
+		default:
+			result, found := pp.GetStatusResult(setting.Config.Keys.P2PAddress + reqId)
+			if result != nil && found {
+				return *result
+			}
+		}
+	}
+}
+
+func (api *rpcPubApi) RequestServiceStatus(ctx context.Context, param rpc_api.ParamReqServiceStatus) rpc_api.ServiceStatusResult {
+	metrics.RpcReqCount.WithLabelValues("RequestServiceStatus").Inc()
+	reqId := uuid.New().String()
+	ctx = core.RegisterRemoteReqId(ctx, reqId)
+	rpcResult := &rpc_api.ServiceStatusResult{Return: rpc_api.SUCCESS}
+
+	regStatStr, onlineStatStr := "", ""
+	regStat := network.GetPeer(ctx).GetStateFromFsm()
+	switch regStat.Id {
+	case network.STATE_NOT_REGISTERED:
+		regStatStr = "Not registered"
+		onlineStatStr = "OFFLINE"
+	case network.STATE_REGISTERING:
+		regStatStr = "Registering"
+		onlineStatStr = "OFFLINE"
+	case network.STATE_REGISTERED:
+		regStatStr = "Registered"
+		onlineStatStr = "ONLINE"
+	default:
+		regStatStr = "Unknown"
+		onlineStatStr = "Unknown"
+	}
+	msgStr := fmt.Sprintf("Registration Status: %v | Mining: %v ", regStatStr, onlineStatStr)
+	rpcResult.Message = msgStr
+	return *rpcResult
 }

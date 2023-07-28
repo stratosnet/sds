@@ -273,3 +273,23 @@ type Signature struct {
 	Pubkey    string `json:"pubkey"`
 	Signature string `json:"signature"` // Hex-encoded
 }
+
+type ParamReqStatus struct {
+	WalletAddr string `json:"walletaddr"`
+	//P2PAddr    string `json:"p2paddr"`
+}
+
+type StatusResult struct {
+	Return  string `json:"return"`
+	Message string `json:"message"`
+}
+
+type ParamReqServiceStatus struct {
+	WalletAddr string `json:"walletaddr"`
+	//P2PAddr    string `json:"p2paddr"`
+}
+
+type ServiceStatusResult struct {
+	Return  string `json:"return"`
+	Message string `json:"message"`
+}

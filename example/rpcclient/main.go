@@ -231,6 +231,16 @@ func main() {
 		Short: "send token",
 		RunE:  send,
 	}
+	statusCmd := &cobra.Command{
+		Use:   "status",
+		Short: "get pp's status from sp",
+		RunE:  status,
+	}
+	serviceStatusCmd := &cobra.Command{
+		Use:   "servicestatus",
+		Short: "get pp's service status",
+		RunE:  servicestatus,
+	}
 
 	rootCmd.AddCommand(putCmd)
 	rootCmd.AddCommand(putstreamCmd)
@@ -248,6 +258,8 @@ func main() {
 	rootCmd.AddCommand(startminingCmd)
 	rootCmd.AddCommand(withdrawCmd)
 	rootCmd.AddCommand(sendCmd)
+	rootCmd.AddCommand(statusCmd)
+	rootCmd.AddCommand(serviceStatusCmd)
 
 	combineLogger := utils.NewDefaultLogger("./logs/stdout.log", true, true)
 	combineLogger.SetLogLevel(utils.Info)
