@@ -15,24 +15,21 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// FindMyFileList
-func FindFileList(ctx context.Context, fileName string, walletAddr string, pageId uint64, keyword string, fileType int, isUp bool) {
+func FindFileList(ctx context.Context, fileName string, walletAddr string, pageId uint64, keyword string, fileType int,
+	isUp bool, walletPubkey, wsign []byte, reqTime int64) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.FindFileListData(fileName, walletAddr, pageId, keyword,
-			protos.FileSortType(fileType), isUp), header.ReqFindMyFileList)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.FindFileListData(fileName, walletAddr, p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+			pageId, keyword, protos.FileSortType(fileType), isUp, walletPubkey, wsign, reqTime), header.ReqFindMyFileList)
 	}
 }
 
-// ReqFindMyFileList ReqFindMyFileList
-func ReqFindMyFileList(ctx context.Context, conn core.WriteCloser) {
-	utils.DebugLog("+++++++++++++++++++++++++++++++++++++++++++++++++++")
-	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
-}
-
-// RspFindMyFileList
 func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	pp.DebugLog(ctx, "get RspFindMyFileList")
 	var target protos.RspFindMyFileList
+	if err := VerifyMessage(ctx, header.RspFindMyFileList, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
+	}
 	rpcResult := &rpc.FileListResult{}
 
 	// fail to unmarshal data, not able to determine if and which RPC client this is from, let the client timeout
@@ -46,7 +43,7 @@ func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 		defer file.SetFileListResult(target.WalletAddress+reqId, rpcResult)
 	}
 
-	if target.P2PAddress != setting.P2PAddress {
+	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return
@@ -92,6 +89,4 @@ func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	rpcResult.TotalNumber = target.TotalFileNumber
 	rpcResult.PageId = target.PageId
 	rpcResult.FileInfo = fileInfos
-
-	return
 }

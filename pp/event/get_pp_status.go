@@ -2,29 +2,47 @@ package event
 
 import (
 	"context"
+	"fmt"
+	"runtime/debug"
 	"strings"
 	"time"
 
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
+	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/network"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	ppTypes "github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/environment"
 )
 
 // RspGetPPStatus
 func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspGetPPStatus
+	if err := VerifyMessage(ctx, header.RspGetPPStatus, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
+	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
+	rpcResult := &rpc.StatusResult{Return: rpc.SUCCESS}
+	reqId := core.GetRemoteReqId(ctx)
+	if reqId != "" {
+		defer pp.SetRPCResult(p2pserver.GetP2pServer(ctx).GetP2PAddress()+reqId, rpcResult)
+	}
 	pp.DebugLogf(ctx, "get GetPPStatus RSP, activation status = %v", target.IsActive)
+	setSoftMemoryCap(target.OngoingTier)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.ErrorLog(target.Result.Msg)
+		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE
 		if strings.Contains(target.Result.Msg, "Please register first") {
+			network.GetPeer(ctx).RunFsm(ctx, network.EVENT_SP_NO_PP_IN_STORE)
 			setting.IsPPSyncedWithSP = true
 			return
 		}
@@ -38,23 +56,24 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 		setting.IsPPSyncedWithSP = true
 	}
 
-	isSuspended := setting.IsSuspended
-	formatRspGetPPStatus(ctx, target)
+	rpcResult.Message = formatRspGetPPStatus(ctx, &target)
+
+	if target.IsActive == ppTypes.PP_ACTIVE {
+		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_ACTIVATED)
+	} else {
+		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATUS_INACTIVE)
+	}
 
 	if target.InitPpList {
 		network.GetPeer(ctx).InitPPList(ctx)
-		if setting.IsAuto && setting.State == ppTypes.PP_ACTIVE && !setting.IsLoginToSP {
-			network.GetPeer(ctx).StartRegisterToSp(ctx)
-		}
 	} else {
-		// after user intervention, pp state changed from suspended to non-suspended, start register process
-		if !setting.IsLoginToSP && !setting.IsSuspended && isSuspended != setting.IsSuspended {
-			network.GetPeer(ctx).StartRegisterToSp(ctx)
+		if target.State == int32(protos.PPState_SUSPEND) {
+			network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATUS_SUSPEND)
 		}
 	}
 }
 
-func formatRspGetPPStatus(ctx context.Context, response protos.RspGetPPStatus) {
+func formatRspGetPPStatus(ctx context.Context, response *protos.RspGetPPStatus) string {
 	activation, state := "", ""
 
 	switch response.IsActive {
@@ -72,31 +91,63 @@ func formatRspGetPPStatus(ctx context.Context, response protos.RspGetPPStatus) {
 	case int32(protos.PPState_OFFLINE):
 		state = protos.PPState_OFFLINE.String()
 		setting.OnlineTime = 0
-		setting.IsSuspended = false
 	case int32(protos.PPState_ONLINE):
 		state = protos.PPState_ONLINE.String()
 		if setting.OnlineTime == 0 {
 			setting.OnlineTime = time.Now().Unix()
 		}
-		setting.IsSuspended = false
 	case int32(protos.PPState_SUSPEND):
 		state = protos.PPState_SUSPEND.String()
 		setting.OnlineTime = 0
-		// a just activated pp node should be allowed to register to sp
-		// so, a more strict condition to set pp to a "suspended" flag: the value of tier
-		if response.InitTier != 0 && response.OngoingTier == 0 {
-			setting.IsSuspended = true
-		} else {
-			setting.IsSuspended = false
-		}
 	case int32(protos.PPState_MAINTENANCE):
 		state = protos.PPState_MAINTENANCE.String()
 		setting.OnlineTime = 0
-		setting.IsSuspended = false
 	default:
 		state = "Unknown"
 	}
-	pp.Logf(ctx, "*** current node status ***\n"+
-		"Activation: %v | Mining: %v | Initial tier: %v | Ongoing tier: %v | Weight score: %v",
-		activation, state, response.InitTier, response.OngoingTier, response.WeightScore)
+
+	regStatStr := ""
+	regStat := network.GetPeer(ctx).GetStateFromFsm()
+	switch regStat.Id {
+	case network.STATE_NOT_REGISTERED:
+		regStatStr = "Unregistered"
+	case network.STATE_REGISTERING:
+		regStatStr = "Registering"
+	case network.STATE_REGISTERED:
+		regStatStr = "Registered"
+	default:
+		regStatStr = "Unknown"
+	}
+
+	msgStr := fmt.Sprintf("*** current node status ***\n"+
+		"Activation: %v | Registration Status: %v | Mining: %v | Initial tier: %v | Ongoing tier: %v | Weight score: %v",
+		activation, regStatStr, state, response.InitTier, response.OngoingTier, response.WeightScore)
+	pp.Log(ctx, msgStr)
+	return msgStr
+}
+
+func setSoftMemoryCap(tier uint32) {
+	if environment.IsDev() {
+		switch tier {
+		case 0:
+			debug.SetMemoryLimit(setting.SoftRamLimitTier0Dev)
+		case 1:
+			debug.SetMemoryLimit(setting.SoftRamLimitTier1Dev)
+		case 2:
+			debug.SetMemoryLimit(setting.SoftRamLimitTier2Dev)
+		default:
+			debug.SetMemoryLimit(setting.SoftRamLimitTier2Dev)
+		}
+	} else {
+		switch tier {
+		case 0:
+			debug.SetMemoryLimit(setting.SoftRamLimitTier0)
+		case 1:
+			debug.SetMemoryLimit(setting.SoftRamLimitTier1)
+		case 2:
+			debug.SetMemoryLimit(setting.SoftRamLimitTier2)
+		default:
+			debug.SetMemoryLimit(setting.SoftRamLimitTier2)
+		}
+	}
 }

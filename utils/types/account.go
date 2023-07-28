@@ -35,6 +35,10 @@ const (
 	P2pPublicKeyLength = 32
 	// P2pPrivateKeyLength
 	P2pPrivateKeyLength = 64
+
+	P2pAddressBech32Length = 44
+
+	P2pSignatureLength = 64
 )
 
 // Address
@@ -433,10 +437,16 @@ func VerifyP2pAddrBytes(p2pPubkey []byte, p2pAddr string) bool {
 	return (address.Compare(address2) == 0)
 }
 
-// VerifyP2pSignBytes verify the signature made by P2P key
-func VerifyP2pSignBytes(p2pPubkey []byte, signature []byte, message string) bool {
+// VerifyP2pSignString verify the signature made by P2P key
+func VerifyP2pSignString(p2pPubkey []byte, signature []byte, message string) bool {
 	pk := ed25519.PubKey(p2pPubkey)
 	return pk.VerifySignature([]byte(message), signature)
+}
+
+// VerifyP2pSignBytes verify the signature made by P2P key
+func VerifyP2pSignBytes(p2pPubkey []byte, signature []byte, message []byte) bool {
+	pk := ed25519.PubKey(p2pPubkey)
+	return pk.VerifySignature(message, signature)
 }
 
 // Bytes gets the byte representation of the underlying hash.
@@ -462,6 +472,19 @@ func (p P2pPubKey) Address() Address {
 	return BytesToAddress(pk)
 }
 
+// P2pPubKeyFromBech create a P2pPubKey from a Bech-encoded P2P public key
+func P2pPubKeyFromBech(str string) (P2pPubKey, error) {
+	pubkey, err := sdktypes.GetFromBech32(str, types.SdsNodeP2PPubkeyPrefix)
+	if err != nil {
+		return P2pPubKey{}, err
+	}
+	err = sdktypes.VerifyAddressFormat(pubkey)
+	if err != nil {
+		return P2pPubKey{}, err
+	}
+	return BytesToP2pPubKey(pubkey), err
+}
+
 // Bytes gets the byte representation of the underlying hash.
 func (p P2pPrivKey) Bytes() []byte { return p[:] }
 
@@ -482,4 +505,9 @@ func (p P2pPrivKey) Sign(b []byte) []byte {
 // PubKey generate a P2pPubKey from a P2pPrivKey
 func (p P2pPrivKey) PubKey() P2pPubKey {
 	return BytesToP2pPubKey(crypto.PrivKey(ed25519.PrivKey(p.Bytes())).PubKey().Bytes())
+}
+
+// Address generate an Address from a P2pPrivKey
+func (p P2pPrivKey) Address() Address {
+	return BytesToAddress(crypto.PrivKey(ed25519.PrivKey(p.Bytes())).PubKey().Address().Bytes())
 }

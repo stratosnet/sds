@@ -56,7 +56,9 @@ func (peerList *PeerList) Init(localNetworkAddress, ppListPath string) {
 func (peerList *PeerList) loadPPListFromFile(ctx context.Context) error {
 	// TODO: Update this after we switch to JSON
 	csvFile, err := os.OpenFile(peerList.ppListPath, os.O_CREATE|os.O_RDWR, 0777)
-	defer csvFile.Close()
+	defer func() {
+		_ = csvFile.Close()
+	}()
 	if err != nil {
 		return errors.Wrap(err, "LoadPPListFromFile cannot open ppList file")
 	}

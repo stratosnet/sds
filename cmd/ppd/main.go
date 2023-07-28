@@ -3,9 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/stratosnet/sds/cmd/common"
+	"github.com/stratosnet/sds/cmd/ppd/ipfs"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
@@ -15,11 +16,13 @@ func main() {
 	rootCmd := getRootCmd()
 	nodeCmd := getNodeCmd()
 	terminalCmd := getTerminalCmd()
+	ipfsapiCmd := getIpfsCmd()
 	configCmd := getGenConfigCmd()
 	verCmd := getVersionCmd()
 
 	rootCmd.AddCommand(nodeCmd)
 	rootCmd.AddCommand(terminalCmd)
+	rootCmd.AddCommand(ipfsapiCmd)
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(verCmd)
 
@@ -27,14 +30,13 @@ func main() {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	return
 }
 
 func getRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:               "ppd",
 		Short:             "resource node",
-		PersistentPreRunE: rootPreRunE,
+		PersistentPreRunE: common.RootPreRunE,
 	}
 
 	dir, err := os.Getwd()
@@ -43,8 +45,8 @@ func getRootCmd() *cobra.Command {
 		panic(err)
 	}
 
-	rootCmd.PersistentFlags().StringP(HOME, "r", dir, "path for the node")
-	rootCmd.PersistentFlags().StringP(CONFIG, "c", defaultConfigPath, "configuration file path ")
+	rootCmd.PersistentFlags().StringP(common.Home, "r", dir, "path for the node")
+	rootCmd.PersistentFlags().StringP(common.Config, "c", common.DefaultConfigPath, "configuration file path ")
 	return rootCmd
 }
 
@@ -52,8 +54,8 @@ func getNodeCmd() *cobra.Command {
 	nodeCmd := &cobra.Command{
 		Use:     "start",
 		Short:   "start the node",
-		PreRunE: nodePreRunE,
-		RunE:    nodePP,
+		PreRunE: common.NodePreRunE,
+		RunE:    common.NodePP,
 	}
 	return nodeCmd
 }
@@ -77,6 +79,29 @@ func getTerminalCmd() *cobra.Command {
 	return cmd
 }
 
+func getIpfsCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "ipfs",
+		Short:   "ipfs api server attached to node demon",
+		PreRunE: ipfs.IpfsapiPreRunE,
+		Run:     ipfs.Ipfsapi,
+	}
+
+	migrateCmd := &cobra.Command{
+		Use:     "migrate",
+		Short:   "migrate ipfs file to sds",
+		PreRunE: ipfs.IpfsapiPreRunE,
+		Run:     ipfs.Ipfsmigrate,
+	}
+
+	cmd.PersistentFlags().StringP(ipfs.RpcModeFlag, "m", "ipc", "use http rpc or ipc")
+	cmd.PersistentFlags().StringP(ipfs.IpfsPortFlag, "p", "6798", "port")
+	cmd.PersistentFlags().StringP(ipfs.IpcEndpoint, "", "", "ipc endpoint path")
+	cmd.PersistentFlags().StringP(ipfs.HttpRpcUrl, "", ipfs.HttpRpcDefaultUrl, "http rpc url")
+	cmd.AddCommand(migrateCmd)
+	return cmd
+}
+
 func getGenConfigCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
@@ -97,7 +122,7 @@ func getAccountCmd() *cobra.Command {
 		RunE:    createAccounts,
 	}
 	cmd.Flags().StringP(mnemonicFlag, "m", "", "bip39 mnemonic phrase, will generate one if not provide")
-	cmd.Flags().String(hdPathFlag, setting.HD_PATH, "hd-path for the wallet created")
+	cmd.Flags().String(hdPathFlag, setting.HDPath, "hd-path for the wallet created")
 	cmd.Flags().StringP(passwordFlag, "p", "", "wallet password, if not provided, will need to input in prompt")
 	cmd.Flags().StringP(nicknameFlag, "n", "wallet", "name of wallet")
 	cmd.Flags().BoolP(savePassFlag, "s", false, "save wallet password to configuration file")
@@ -117,19 +142,4 @@ func getVersionCmd() *cobra.Command {
 		},
 	}
 	return cmd
-}
-
-func rootPreRunE(cmd *cobra.Command, args []string) error {
-	homePath, err := cmd.Flags().GetString(HOME)
-	if err != nil {
-		utils.ErrorLog("failed to get 'home' path for the node")
-		return err
-	}
-	homePath, err = utils.Absolute(homePath)
-	if err != nil {
-		return err
-	}
-	setting.SetupRoot(homePath)
-	utils.NewDefaultLogger(filepath.Join(setting.GetRootPath(), "./tmp/logs/stdout.log"), true, true)
-	return nil
 }

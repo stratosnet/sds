@@ -30,18 +30,15 @@ type ProcessCmd struct {
 	allowExec bool
 }
 
-//Terminal
 type Terminal struct {
 	*liner.State
 	mapFunc    map[string]ProcessCmd
-	cmdarray   [100]string
 	supported  bool
 	normalMode liner.ModeApplier
 	rawMode    liner.ModeApplier
 	Isrun      bool
 }
 
-//RegisterProcessFunc
 func (c *Terminal) RegisterProcessFunc(key string, f ProcessFunc, allowExec bool) {
 	strKey := strings.ToLower(key)
 	c.mapFunc[strKey] = ProcessCmd{pFunc: f, allowExec: allowExec}
@@ -50,7 +47,6 @@ func (c *Terminal) RegisterProcessFunc(key string, f ProcessFunc, allowExec bool
 
 }
 
-//NewTerminal
 func NewTerminal() *Terminal {
 	p := new(Terminal)
 
@@ -66,7 +62,7 @@ func NewTerminal() *Terminal {
 		p.normalMode = normalMode
 		p.rawMode = rawMode
 
-		normalMode.ApplyMode()
+		_ = normalMode.ApplyMode()
 	}
 	p.SetCtrlCAborts(true)
 	p.SetTabCompletionStyle(liner.TabPrints)
@@ -75,7 +71,6 @@ func NewTerminal() *Terminal {
 	return p
 }
 
-//Run
 func (c *Terminal) Run() {
 
 	c.Isrun = true
@@ -91,8 +86,10 @@ func (c *Terminal) Run() {
 	})
 
 	if c.supported {
-		c.rawMode.ApplyMode()
-		defer c.normalMode.ApplyMode()
+		_ = c.rawMode.ApplyMode()
+		defer func() {
+			_ = c.normalMode.ApplyMode()
+		}()
 	} else {
 		defer fmt.Println()
 	}
@@ -101,12 +98,11 @@ func (c *Terminal) Run() {
 		if name, err := c.Prompt(">"); err == nil {
 			//log.Print("Got: ", name)
 			cmdstring := strings.Split(name, " ")
-			var param []string
 			// if len(cmdstring) == 2 {
 			// 	param = strings.Split(cmdstring[1], " ")
 			// 	utils.DebugLog("param", param)
 			// }
-			param = cmdstring[1:]
+			param := cmdstring[1:]
 			// utils.DebugLog("cmdstring", cmdstring)
 			strkey := strings.ToLower(cmdstring[0])
 			// utils.DebugLog("cmdstring", strkey, c.mapFunc)
@@ -143,11 +139,12 @@ func (c *Terminal) RunCmd(strkey string, param []string, isExec bool) bool {
 	return false
 }
 
-// PromptPassword
 func (p *Terminal) PromptPassword(prompt string) (passwd string, err error) {
 	if p.supported {
-		p.rawMode.ApplyMode()
-		defer p.normalMode.ApplyMode()
+		_ = p.rawMode.ApplyMode()
+		defer func() {
+			_ = p.normalMode.ApplyMode()
+		}()
 		return p.State.PasswordPrompt(prompt)
 	}
 
@@ -158,7 +155,6 @@ func (p *Terminal) PromptPassword(prompt string) (passwd string, err error) {
 	return passwd, err
 }
 
-// MyGetPassword
 func MyGetPassword(prompt string, confirmation bool) string {
 	// Otherwise prompt the user for the password
 	if prompt != "" {
@@ -180,7 +176,7 @@ func MyGetPassword(prompt string, confirmation bool) string {
 	}
 
 	if Mystdin.supported {
-		Mystdin.rawMode.ApplyMode()
+		_ = Mystdin.rawMode.ApplyMode()
 	} else {
 		defer fmt.Println()
 	}

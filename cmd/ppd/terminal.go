@@ -9,6 +9,8 @@ import (
 
 	"github.com/alex023/clock"
 	"github.com/spf13/cobra"
+	"github.com/stratosnet/sds/cmd/common"
+	"github.com/stratosnet/sds/pp/namespace"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
@@ -37,12 +39,14 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"registerpeer                                                   register peer to index node\n" +
 		"rp                                                             register peer to index node\n" +
 		"activate <amount> <fee> optional<gas>                          send transaction to stchain to become an active PP node\n" +
-		"updateStake <stakeDelta> <fee> optional<gas> <isIncrStake>     send transaction to stchain to update active pp's stake\n" +
+		"updateDeposit <depositDelta> <fee> optional<gas>               send transaction to stchain to update active pp's deposit\n" +
 		"deactivate <fee> optional<gas>                                 send transaction to stchain to stop being an active PP node\n" +
 		"startmining                                                    start mining\n" +
-		"prepay <amount> <fee> optional<gas>                            prepay stos to get ozone\n" +
-		"put <filepath>                                                 upload file, need to consume ozone\n" +
-		"putstream <filepath>                                           upload video file for streaming, need to consume ozone (alpha version, encode format config impossible)\n" +
+		"prepay <amount> <fee> optional<beneficiary> <gas>              prepay stos to get ozone\n" +
+		"put <filepath> optional<isEncrypted> optional<nodeTier> optional<allowHigherTier>\n" +
+		"                                                               upload file, need to consume ozone\n" +
+		"putstream <filepath> optional<isEncrypted> optional<nodeTier> optional<allowHigherTier>\n" +
+		"                                                               upload video file for streaming, need to consume ozone. (alpha version, encode format config impossible)\n" +
 		"list <filename>                                                query uploaded file by self\n" +
 		"list <page id>                                                 query all files owned by the wallet, paginated\n" +
 		"delete <filehash>                                              delete file\n" +
@@ -52,17 +56,21 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"allshare                                                       list all shared files\n" +
 		"getsharefile <sharelink> <password>                            download a shared file, need to consume ozone\n" +
 		"cancelshare <shareID>                                          cancel a shared file\n" +
+		"clearexpshare                                                  clear all expired share links\n" +
 		"ver                                                            version\n" +
 		"monitor                                                        show monitor\n" +
 		"stopmonitor                                                    stop monitor\n" +
 		"monitortoken                                                   show token for pp monitor service\n" +
 		"config  <key> <value>                                          set config key value\n" +
-		"getoz <walletAddress> ->password                               get current ozone balance\n" +
+		"getoz <walletAddress>                                          get current ozone balance\n" +
 		"status                                                         get current resource node status\n" +
+		"filestatus <filehash>                                          get current state of an uploaded file\n" +
 		"maintenance start <duration>                                   put the node in maintenance mode for the requested duration (in seconds)\n" +
 		"maintenance stop                                               stop the current maintenance\n" +
 		"downgradeinfo                                                  get information of last downgrade happened on this pp node\n" +
-		"performancemeasure                                             turn on performance measurement log for 60 seconds\n"
+		"performancemeasure                                             turn on performance measurement log for 60 seconds\n" +
+		"withdraw <amount> <fee> optional<targetAddr> optional<gas>     withdraw matured reward (from address is the configured node wallet)\n" +
+		"send <toAddress> <amount> <fee> optional<gas>                  sending coins to another account (from address is the configured node wallet)\n"
 
 	help := func(line string, param []string) bool {
 		fmt.Println(helpStr)
@@ -78,12 +86,11 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 			fmt.Println("missing wallet address")
 			return false
 		}
-		password := console.MyGetPassword("input password", false)
-		return callRpc(c, "getoz", []string{param[0], password})
+		return callRpc(c, "getoz", param)
 	}
 
 	newwallet := func(line string, param []string) bool {
-		err := utils.SetupWallet(setting.Config.AccountDir, setting.HD_PATH, updateWalletConfig)
+		err := utils.SetupWallet(setting.Config.Home.AccountsPath, setting.HDPath, updateWalletConfig)
 		if err != nil {
 			fmt.Println(err)
 			return false
@@ -117,12 +124,16 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		return callRpc(c, "activate", param)
 	}
 
-	updateStake := func(line string, param []string) bool {
-		return callRpc(c, "updateStake", param)
+	updateDeposit := func(line string, param []string) bool {
+		return callRpc(c, "updateDeposit", param)
 	}
 
 	status := func(line string, param []string) bool {
 		return callRpc(c, "status", param)
+	}
+
+	fileStatus := func(line string, param []string) bool {
+		return callRpc(c, "fileStatus", param)
 	}
 
 	deactivate := func(line string, param []string) bool {
@@ -189,6 +200,10 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		return callRpc(c, "cancelShare", param)
 	}
 
+	clearexpshare := func(line string, param []string) bool {
+		return callRpc(c, "clearExpShare", param)
+	}
+
 	getsharefile := func(line string, param []string) bool {
 		return callRpc(c, "getShareFile", param)
 	}
@@ -216,7 +231,17 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	performanceMeasure := func(line string, param []string) bool {
 		return callRpc(c, "performanceMeasure", param)
 	}
-	nc := make(chan serv.LogMsg)
+	checkReplica := func(line string, param []string) bool {
+		return callRpc(c, "checkReplica", param)
+	}
+	withdraw := func(line string, param []string) bool {
+		return callRpc(c, "withdraw", param)
+	}
+	send := func(line string, param []string) bool {
+		return callRpc(c, "send", param)
+	}
+
+	nc := make(chan namespace.LogMsg)
 	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription")
 	if err != nil {
 		utils.ErrorLog("can't subscribe:", err)
@@ -236,8 +261,9 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("rp", registerPP, true)
 	console.Mystdin.RegisterProcessFunc("registerpeer", registerPP, true)
 	console.Mystdin.RegisterProcessFunc("activate", activate, true)
-	console.Mystdin.RegisterProcessFunc("updateStake", updateStake, true)
+	console.Mystdin.RegisterProcessFunc("updateDeposit", updateDeposit, true)
 	console.Mystdin.RegisterProcessFunc("status", status, true)
+	console.Mystdin.RegisterProcessFunc("filestatus", fileStatus, true)
 	console.Mystdin.RegisterProcessFunc("deactivate", deactivate, true)
 	console.Mystdin.RegisterProcessFunc("prepay", prepay, true)
 	console.Mystdin.RegisterProcessFunc("u", upload, true)
@@ -260,6 +286,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("allshare", allshare, false)
 	console.Mystdin.RegisterProcessFunc("cancelshare", cancelshare, true)
 	console.Mystdin.RegisterProcessFunc("getsharefile", getsharefile, true)
+	console.Mystdin.RegisterProcessFunc("clearexpshare", clearexpshare, true)
 
 	console.Mystdin.RegisterProcessFunc("pauseget", pauseget, true)
 	console.Mystdin.RegisterProcessFunc("pauseput", pauseput, true)
@@ -268,6 +295,9 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("maintenance", maintenance, true)
 	console.Mystdin.RegisterProcessFunc("downgradeinfo", downgradeInfo, true)
 	console.Mystdin.RegisterProcessFunc("performancemeasure", performanceMeasure, true)
+	console.Mystdin.RegisterProcessFunc("CheckReplica", checkReplica, true)
+	console.Mystdin.RegisterProcessFunc("withdraw", withdraw, true)
+	console.Mystdin.RegisterProcessFunc("send", send, true)
 
 	if isExec {
 		exit := false
@@ -288,13 +318,13 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		clock.NewClock().AddJobRepeat(10*time.Second, 0, printExitMsg)
 
 		// disable input buffering
-		exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
+		_ = exec.Command("stty", "-F", "/dev/tty", "cbreak", "min", "1").Run()
 		// do not display entered characters on the screen
-		exec.Command("stty", "-F", "/dev/tty", "-echo").Run()
+		_ = exec.Command("stty", "-F", "/dev/tty", "-echo").Run()
 
 		var b = make([]byte, 1)
 		for {
-			os.Stdin.Read(b)
+			_, _ = os.Stdin.Read(b)
 			if b[0] == ']' {
 				break
 			}
@@ -315,7 +345,7 @@ func terminal(cmd *cobra.Command, args []string) {
 }
 
 func terminalPreRunE(cmd *cobra.Command, args []string) error {
-	return loadConfig(cmd)
+	return common.LoadConfig(cmd)
 }
 
 func callRpc(c *rpc.Client, line string, param []string) bool {
@@ -329,7 +359,7 @@ func callRpc(c *rpc.Client, line string, param []string) bool {
 	return true
 }
 
-func printLogNotification(nc <-chan serv.LogMsg) {
+func printLogNotification(nc <-chan namespace.LogMsg) {
 	for n := range nc {
 		fmt.Print(n.Msg)
 	}
@@ -338,7 +368,7 @@ func printLogNotification(nc <-chan serv.LogMsg) {
 func destroySub(c *rpc.Client, sub *rpc.ClientSubscription) {
 	var cleanResult interface{}
 	sub.Unsubscribe()
-	c.Call(&cleanResult, "sdslog_cleanUp")
+	_ = c.Call(&cleanResult, "sdslog_cleanUp")
 }
 
 func printExitMsg() {

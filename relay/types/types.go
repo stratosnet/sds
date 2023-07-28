@@ -10,20 +10,24 @@ type ActivatedPPReq struct {
 	PPList []*protos.ReqActivatedPP `json:"pp_list"`
 }
 
-type UpdatedStakePPReq struct {
-	PPList []*protos.ReqUpdatedStakePP `json:"pp_list"`
+type UpdatedDepositPPReq struct {
+	PPList []*protos.ReqUpdatedDepositPP `json:"pp_list"`
 }
 
 type UnbondingPPReq struct {
 	PPList []*protos.ReqUnbondingPP `json:"pp_list"`
 }
 
+type UnbondingSPReq struct {
+	SPList []*protos.ReqUnbondingSP `json:"sp_list"`
+}
+
 type DeactivatedPPReq struct {
 	PPList []*protos.ReqDeactivatedPP `json:"pp_list"`
 }
 
-type UpdatedStakeSPReq struct {
-	SPList []*protos.ReqUpdatedStakeSP `json:"sp_list"`
+type UpdatedDepositSPReq struct {
+	SPList []*protos.ReqUpdatedDepositSP `json:"sp_list"`
 }
 
 type ActivatedSPReq struct {
@@ -52,4 +56,20 @@ type SlashedPP struct {
 type SlashedPPReq struct {
 	PPList []SlashedPP `json:"pp_list"`
 	TxHash string      `json:"tx_hash"`
+}
+
+type UpdatedEffectiveDepositPP struct {
+	P2PAddress                string   `json:"p2p_address"`
+	IsUnsuspendedDuringUpdate bool     `json:"is_unsuspended_during_update"`
+	EffectiveDepositAfter     *big.Int `json:"effective_deposit_after"`
+}
+
+type UpdatedEffectiveDepositPPReq struct {
+	PPList []UpdatedEffectiveDepositPP `json:"pp_list"`
+	TxHash string                      `json:"tx_hash"`
+}
+
+type WithdrawnDepositSPReq struct {
+	SPList []*protos.ReqWithdrawnDepositSP `json:"sp_list"`
+	TxHash string                          `json:"tx_hash"`
 }

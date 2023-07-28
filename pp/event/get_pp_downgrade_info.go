@@ -9,11 +9,17 @@ import (
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
+	"github.com/stratosnet/sds/utils"
 )
 
 // RspGetPPDowngradeInfo
 func RspGetPPDowngradeInfo(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspGetPPDowngradeInfo
+	if err := VerifyMessage(ctx, header.RspGetPPDowngradeInfo, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
+	}
+
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
@@ -25,7 +31,7 @@ func RspGetPPDowngradeInfo(ctx context.Context, conn core.WriteCloser) {
 }
 
 func ReqGetPPDowngradeInfo(ctx context.Context) error {
-	req := requests.ReqDowngradeInfo()
+	req := requests.ReqDowngradeInfo(ctx)
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqGetPPDowngradeInfo)
 	return nil
 }

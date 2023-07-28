@@ -6,13 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"reflect"
 	"strconv"
 	"sync"
 	"time"
-	"unsafe"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/metrics"
 	message "github.com/stratosnet/sds/msg"
@@ -24,24 +21,23 @@ import (
 	"github.com/stratosnet/sds/utils/encryption"
 	"github.com/stratosnet/sds/utils/types"
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
+	"google.golang.org/protobuf/proto"
 )
 
-// MsgHandler
 type MsgHandler struct {
 	message   message.RelayMsgBuf
 	handler   HandlerFunc
 	recvStart int64
 }
 
-// WriteCloser
 type WriteCloser interface {
 	Write(*message.RelayMsgBuf, context.Context) error
 	Close()
 }
 
 type WriteHook struct {
-	Message string
-	Fn      func(packetId, costTime int64)
+	MessageId uint8
+	Fn        func(packetId, costTime int64)
 }
 
 var (
@@ -50,7 +46,6 @@ var (
 	TimeRcv          int64
 )
 
-// ServerConn
 type ServerConn struct {
 	netid   int64
 	belong  *Server
@@ -77,7 +72,6 @@ type ServerConn struct {
 	encryptMessage bool
 }
 
-// CreateServerConn
 func CreateServerConn(id int64, s *Server, c net.Conn) *ServerConn {
 	sc := &ServerConn{
 		netid:     id,
@@ -96,25 +90,21 @@ func CreateServerConn(id int64, s *Server, c net.Conn) *ServerConn {
 	return sc
 }
 
-// ServerFromCtx
 func ServerFromCtx(ctx context.Context) (*Server, bool) {
 	server, ok := ctx.Value(serverCtxKey).(*Server)
 	return server, ok
 }
 
-// GetNetID
 func (sc *ServerConn) GetNetID() int64 {
 	return sc.netid
 }
 
-// SetConnName
 func (sc *ServerConn) SetConnName(name string) {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
 	sc.name = name
 }
 
-// GetName
 func (sc *ServerConn) GetName() string {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
@@ -122,7 +112,6 @@ func (sc *ServerConn) GetName() string {
 	return name
 }
 
-// GetIP
 func (sc *ServerConn) GetIP() string {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
@@ -130,7 +119,6 @@ func (sc *ServerConn) GetIP() string {
 	return host
 }
 
-// GetPort
 func (sc *ServerConn) GetPort() string {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
@@ -244,7 +232,7 @@ func (sc *ServerConn) handshake() (error, bool) {
 		sc.sharedKey = sharedPrivKeyBytes
 
 		// Send local p2p address
-		encryptedMsg, err := EncryptAndPack(sharedPrivKeyBytes, []byte(sc.GetLocalP2pAddress()))
+		encryptedMsg, err := Pack(sharedPrivKeyBytes, []byte(sc.GetLocalP2pAddress()))
 		if err != nil {
 			return err, false
 		}
@@ -253,7 +241,7 @@ func (sc *ServerConn) handshake() (error, bool) {
 		}
 
 		// Read remote p2p address
-		p2pAddressBytes, _, err := ReadEncryptedHeaderAndBody(sc.spbConn, sharedPrivKeyBytes, utils.MessageBeatLen)
+		p2pAddressBytes, _, err := Unpack(sc.spbConn, sharedPrivKeyBytes, utils.MessageBeatLen)
 		if err != nil {
 			return err, false
 		}
@@ -322,11 +310,13 @@ func (sc *ServerConn) Start() {
 	}
 }
 
-// Write
-/**
+/*
 error is caught at application layer, if it's utils.ErrWouldBlock，sleep and then continue write
 */
 func (sc *ServerConn) Write(message *message.RelayMsgBuf, ctx context.Context) error {
+	if message.MSGSign.P2pAddress == "" || message.MSGSign.P2pPubKey == nil {
+		return errors.New("missing sign related information")
+	}
 	return asyncWrite(sc, message, ctx)
 }
 
@@ -337,42 +327,23 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err
 		}
 	}()
 
-	var (
-		sendCh chan *message.RelayMsgBuf
-	)
-	sendCh = c.(*ServerConn).sendCh
-	msgH := make([]byte, utils.MsgHeaderLen)
-	reqId := GetReqIdFromContext(ctx)
-	if reqId == 0 {
-		reqId, _ = utils.NextSnowFlakeId()
-		InheritRpcLoggerFromParentReqId(ctx, reqId)
-		InheritRemoteReqIdFromParentReqId(ctx, reqId)
+	sendCh := c.(*ServerConn).sendCh
+	if m.MSGHead.ReqId == 0 {
+		reqId := GetReqIdFromContext(ctx)
+		if reqId == 0 {
+			reqId = GenerateNewReqId(m.MSGHead.Cmd)
+			InheritRpcLoggerFromParentReqId(ctx, reqId)
+			InheritRemoteReqIdFromParentReqId(ctx, reqId)
+		}
+		m.MSGHead.ReqId = reqId
 	}
-	header.GetMessageHeader(m.MSGHead.Tag, m.MSGHead.Version, m.MSGHead.Len, string(m.MSGHead.Cmd), reqId, msgH)
-	// msgData := make([]byte, utils.MessageBeatLen)
-	// copy(msgData[0:], msgH)
-	// copy(msgData[utils.MsgHeaderLen:], m.MSGData)
-	// memory := &message.RelayMsgBuf{
-	// 	MSGHead: m.MSGHead,
-	// 	MSGData: msgData[0 : m.MSGHead.Len+utils.MsgHeaderLen],
-	// }
 	memory := &message.RelayMsgBuf{
 		MSGHead:  m.MSGHead,
+		MSGSign:  m.MSGSign,
 		PacketId: GetPacketIdFromContext(ctx),
 	}
-	memory.MSGHead.ReqId = reqId
-	memory.Alloc = cmem.Alloc(uintptr(m.MSGHead.Len + utils.MsgHeaderLen))
-	memory.MSGData = (*[1 << 30]byte)(unsafe.Pointer(memory.Alloc))[:m.MSGHead.Len+utils.MsgHeaderLen]
-	(*reflect.SliceHeader)(unsafe.Pointer(&memory.MSGData)).Cap = int(m.MSGHead.Len + utils.MsgHeaderLen)
-	copy(memory.MSGData[0:], msgH)
-	copy(memory.MSGData[utils.MsgHeaderLen:], m.MSGData)
-	select {
-	case sendCh <- memory:
-		err = nil
-		// default:
-		// 	err = utils.ErrWouldBlock
-	}
-
+	memory.PutIntoBuffer(m)
+	sendCh <- memory
 	if err != nil {
 		utils.ErrorLog("asyncWrite error ", err)
 		memory = nil
@@ -382,7 +353,6 @@ func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err
 	return
 }
 
-// Close
 func (sc *ServerConn) Close() {
 	sc.belong.goroutine = sc.belong.goAtom.DecrementAndGetNew()
 	sc.once.Do(func() {
@@ -406,9 +376,9 @@ func (sc *ServerConn) Close() {
 			// if sec < 0 (default), the data sending will be finished before close.
 			// if sec = 0, the data will be dropped
 			// if sec > 0, the data sending will continue for <sec> second and then remaining data will be dropped
-			tc.SetLinger(0)
+			_ = tc.SetLinger(0)
 		}
-		sc.spbConn.Close()
+		_ = sc.spbConn.Close()
 		// cancel readLoop, writeLoop and handleLoop go-routines.
 		sc.mu.Lock()
 		sc.cancel()
@@ -424,11 +394,11 @@ func (sc *ServerConn) Close() {
 	})
 }
 
-func (sc *ServerConn) SendBadVersionMsg(version uint16, cmd string) {
+func (sc *ServerConn) SendBadVersionMsg(version uint16, cmd uint8) {
 	req := &protos.RspBadVersion{
 		Version:        int32(version),
 		MinimumVersion: int32(sc.minAppVer),
-		Command:        cmd,
+		Command:        uint32(cmd),
 	}
 	data, err := proto.Marshal(req)
 	if err != nil {
@@ -438,16 +408,14 @@ func (sc *ServerConn) SendBadVersionMsg(version uint16, cmd string) {
 
 	err = sc.Write(&message.RelayMsgBuf{
 		MSGHead: header.MakeMessageHeader(1, sc.minAppVer, uint32(len(data)), header.RspBadVersion),
-		MSGData: data,
+		MSGBody: data,
 	}, context.Background())
 	if err != nil {
 		utils.ErrorLog(err)
 	}
 	time.Sleep(500 * time.Millisecond)
-	return
 }
 
-// readLoop
 func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 	var (
 		spbConn   net.Conn
@@ -455,7 +423,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 		sDone     <-chan struct{}
 		onMessage onMessageFunc
 		handlerCh chan MsgHandler
-		msg       = new(message.RelayMsgBuf)
+		msg       *message.RelayMsgBuf
 		sc        *ServerConn
 	)
 
@@ -476,12 +444,23 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 	}()
 
 	var msgH header.MessageHead
+	var msgS message.MessageSign
 	var headerBytes []byte
 	var n int
 	var err error
+	var key []byte
 
+	listenHeader := true
 	i := 0
+	pos := 0
+
+	msgBuf := make([]byte, utils.MessageBeatLen)
 	for {
+		if sc.encryptMessage {
+			key = sc.sharedKey
+		} else {
+			key = nil
+		}
 		select {
 		case <-cDone: // connection closed
 			Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "closes by conn")
@@ -492,59 +471,46 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 		default:
 			recvStart := time.Now().UnixMilli()
 			_ = spbConn.SetDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
-			if msgH.Len == 0 {
-				if sc.encryptMessage {
-					headerBytes, n, err = ReadEncryptedHeaderAndBody(spbConn, sc.sharedKey, utils.MessageBeatLen)
-				} else {
-					headerBytes, n, err = ReadNonEncryptedHeaderAndBody(spbConn, utils.MessageBeatLen)
-				}
-
+			if listenHeader {
+				// listen to the header
+				headerBytes, n, err = Unpack(spbConn, key, utils.MessageBeatLen)
 				sc.increaseReadFlow(n)
 				if err != nil {
 					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "read header err: "+err.Error())
 					return
 				}
-
-				header.DecodeHeader(headerBytes, &msgH)
-				headerBytes = nil
-
+				copy(msgBuf[:header.MsgHeaderLen], headerBytes[:header.MsgHeaderLen])
+				msgH.Decode(msgBuf[:header.MsgHeaderLen])
 				if msgH.Version < sc.minAppVer {
-					sc.SendBadVersionMsg(msgH.Version, utils.ByteToString(msgH.Cmd))
+					sc.SendBadVersionMsg(msgH.Version, msgH.Cmd)
 					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "message versions don't match")
 					return
 				}
-
-				//when header shows msg length = 0, directly handle msg
-				if msgH.Len == 0 {
-					TimeRcv = time.Now().UnixMicro()
-					handler := GetHandlerFunc(utils.ByteToString(msgH.Cmd))
-					if handler != nil {
-						metrics.Events.WithLabelValues(utils.ByteToString(msgH.Cmd)).Inc()
-						sc.handlerCh <- MsgHandler{message.RelayMsgBuf{}, handler, recvStart}
-					}
-				}
-
+				// no matter the body is empty or not, message is always handled in the second part, after the signature verified.
+				listenHeader = false
 			} else {
-				// start to process the msg if there is more than just the header to read
-				nonce, dataLen, n, err := ReadEncryptionHeader(spbConn)
+				// listen to the second part: body + sign + data. They are concatenated to the header in msgBuf.
+				nonce, secondPartLen, n, err := ReadEncryptionHeader(spbConn)
 				sc.increaseReadFlow(n)
 				if err != nil {
 					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "read encrypted header err: "+err.Error())
 					return
 				}
-				if dataLen > utils.MessageBeatLen {
-					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, fmt.Sprintf("read encrypted header err: over sized [%v], for cmd [%v]", dataLen, utils.ByteToString(msgH.Cmd)))
+				if secondPartLen > utils.MessageBeatLen {
+					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, fmt.Sprintf("read encrypted header err: over sized [%v], for cmd [%v]", secondPartLen, msgH.Cmd))
 					return
 				}
 
 				var onereadlen = 1024
-				msgBuf := make([]byte, utils.MessageBeatLen)
-				for ; i < int(dataLen); i = i + n {
-					if int(dataLen)-i < 1024 {
-						onereadlen = int(dataLen) - i
+				pos = header.MsgHeaderLen
+
+				for ; i < int(secondPartLen); i = i + n {
+					if int(secondPartLen)-i < 1024 {
+						onereadlen = int(secondPartLen) - i
 					}
-					spbConn.SetDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
-					n, err = io.ReadFull(spbConn, msgBuf[i:i+onereadlen])
+					_ = spbConn.SetDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
+					n, err = io.ReadFull(spbConn, msgBuf[pos:pos+onereadlen])
+					pos += n
 					sc.increaseReadFlow(n)
 					if err != nil {
 						Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "message body err: "+err.Error())
@@ -552,54 +518,70 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					}
 				}
 
-				if uint32(i) == dataLen {
-					var plainBody []byte
+				// handle the second part after all bytes are received
+				if uint32(i) == secondPartLen {
+					posBody := uint32(header.MsgHeaderLen)
+					posSign := posBody + msgH.Len
+					posData := posSign + message.MsgSignLen
+					var posEnd uint32
 					if sc.encryptMessage {
-						plainBody, err = encryption.DecryptAES(sc.sharedKey, msgBuf[:dataLen], nonce)
+						secondPart, err := encryption.DecryptAES(sc.sharedKey, msgBuf[posBody:posBody+secondPartLen], nonce, true)
 						if err != nil {
 							Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "message body decryption err: "+err.Error())
 							return
 						}
+						posEnd = posBody + uint32(len(secondPart))
 					} else {
-						plainBody = msgBuf[:dataLen]
+						posEnd = posBody + secondPartLen
 					}
 
-					msg = &message.RelayMsgBuf{
-						MSGHead: msgH,
-						MSGData: plainBody,
+					// verify signature
+					msgS.Decode(msgBuf[posSign : posSign+message.MsgSignLen])
+					if err = msgS.Verify(msgBuf[:posSign], sc.remoteP2pAddress); err != nil {
+						Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "read err: failed signature verification: "+err.Error())
+						continue
 					}
+					// message body goes to field MSGBody, data goes to field MSGData if it exists
+					msg = &message.RelayMsgBuf{
+						MSGHead: header.CopyMessageHeader(msgH),
+						MSGBody: make([]byte, posSign-posBody),
+						MSGData: make([]byte, posEnd-posData),
+					}
+					copy(msg.MSGBody, msgBuf[posBody:posSign])
+					copy(msg.MSGData, msgBuf[posData:posEnd])
 					TimeRcv = time.Now().UnixMicro()
-					handler := GetHandlerFunc(utils.ByteToString(msgH.Cmd))
+					handler := GetHandlerFunc(msgH.Cmd)
 					if handler == nil {
 						if onMessage != nil {
-							onMessage(*msg, c.(WriteCloser))
+							onMessage(*msg, c)
 						} else {
-							Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for message: "+utils.ByteToString(msgH.Cmd))
+							Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for message: "+strconv.FormatUint(uint64(msgH.Cmd), 10))
 						}
 						msgH.Len = 0
 						i = 0
 						msgBuf = nil
 						continue
 					}
-					metrics.Events.WithLabelValues(utils.ByteToString(msgH.Cmd)).Inc()
+					if msgType := header.GetMsgTypeFromId(msgH.Cmd); msgType != nil {
+						metrics.Events.WithLabelValues(msgType.Name).Inc()
+					}
 					handlerCh <- MsgHandler{*msg, handler, recvStart}
-					msgH.Len = 0
+
 					i = 0
-					msgBuf = nil
+					listenHeader = true
 				} else {
-					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "msgH.Len doesn't match the size of data from message: "+utils.ByteToString(msgH.Cmd))
-					msgH.Len = 0
-					i = 0
-					msgBuf = nil
+					if msgType := header.GetMsgTypeFromId(msgH.Cmd); msgType != nil {
+						Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "msgH.Len doesn't match the size of data for message: "+msgType.Name)
+					} else {
+						Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, fmt.Sprintf("msgH.Len doesn't match the size of data for an invalid message: %d", msgH.Cmd))
+					}
 					return
 				}
 			}
-			// setHeartBeatFunc(time.Now().UnixNano())
 		}
 	}
 }
 
-// writeLoop
 func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 	var (
 		sendCh chan *message.RelayMsgBuf
@@ -632,7 +614,6 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 						utils.ErrorLog(err)
 						break OuterFor
 					}
-					packet = nil
 				}
 			default:
 				break OuterFor
@@ -657,7 +638,6 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 					Mylog(sc.belong.opts.logOpen, LOG_MODULE_WRITELOOP, "write packet err", err.Error())
 					return
 				}
-				packet = nil
 			}
 		}
 	}
@@ -669,20 +649,19 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 	var onereadlen = 1024
 	var n int
 	var err error
+	var key []byte
 
-	cmd := utils.ByteToString(packet.MSGHead.Cmd)
+	cmd := packet.MSGHead.Cmd
 
 	// pack the header
 	if sc.encryptMessage {
-		encodedHeader, err = EncryptAndPack(sc.sharedKey, packet.MSGData[:utils.MsgHeaderLen])
-		if err != nil {
-			return errors.Wrap(err, "server cannot encrypt header")
-		}
+		key = sc.sharedKey
 	} else {
-		encodedHeader, err = Pack(packet.MSGData[:utils.MsgHeaderLen])
-		if err != nil {
-			return errors.Wrap(err, "client cannot pack header")
-		}
+		key = nil
+	}
+	encodedHeader, err = Pack(key, packet.GetHeader())
+	if err != nil {
+		return errors.Wrap(err, "server cannot encrypt header")
 	}
 
 	_ = sc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
@@ -692,16 +671,9 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 	sc.increaseWriteFlow(len(encodedHeader))
 
 	// pack the message data
-	if sc.encryptMessage {
-		encodedData, err = EncryptAndPack(sc.sharedKey, packet.MSGData[utils.MsgHeaderLen:])
-		if err != nil {
-			return errors.Wrap(err, "server cannot encrypt msg")
-		}
-	} else {
-		encodedData, err = Pack(packet.MSGData[utils.MsgHeaderLen:])
-		if err != nil {
-			return errors.Wrap(err, "server cannot pack msg")
-		}
+	encodedData, err = Pack(key, packet.GetBytesAfterHeader())
+	if err != nil {
+		return errors.Wrap(err, "server cannot encrypt msg")
 	}
 
 	writeStart := time.Now()
@@ -718,15 +690,15 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 		sc.increaseWriteFlow(n)
 		if err != nil {
 			return errors.Wrap(err, "server write err")
-		} else {
-			// Mylog(s.opts.logOpen,"i", i)
-		}
+		} /*else {
+			Mylog(s.opts.logOpen,"i", i)
+		}*/
 	}
 	writeEnd := time.Now()
 	costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
 
 	for _, c := range sc.writeHook {
-		if cmd == c.Message && c.Fn != nil {
+		if cmd == c.MessageId && c.Fn != nil {
 			c.Fn(packet.PacketId, costTime)
 		}
 	}
@@ -734,45 +706,10 @@ func (sc *ServerConn) writePacket(packet *message.RelayMsgBuf) error {
 	return nil
 }
 
-func (sc *ServerConn) writePacketNoEncrypt(packet *message.RelayMsgBuf) error {
-	var onereadlen = 1024
-	var n int
-	var err error
-	n = 0
-	for i := 0; i < len(packet.MSGData); i = i + n {
-		// Mylog(s.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
-		if len(packet.MSGData)-i < 1024 {
-			onereadlen = len(packet.MSGData) - i
-			// Mylog(s.opts.logOpen,"onereadlen:", onereadlen)
-		}
-
-		sc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
-		n, err = sc.spbConn.Write(packet.MSGData[i : i+onereadlen])
-		// Mylog(s.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
-		// Mylog(s.opts.logOpen,"i+onereadlen:", i+onereadlen)
-		//if logOpts.logAll || logOpts.logOutbound || logOpts.logWrite {
-		//	sc.belong.volRecOpts.writeFlow = sc.belong.volRecOpts.writeAtom.AddAndGetNew(int64(n))
-		//	sc.belong.volRecOpts.secondWriteFlowA = sc.belong.volRecOpts.secondWriteAtomA.AddAndGetNew(int64(n))
-		//	sc.belong.volRecOpts.allFlow = sc.belong.volRecOpts.allAtom.AddAndGetNew(int64(n))
-		//}
-		//sc.belong.writeFlow = sc.belong.writeAtom.AddAndGetNew(int64(n))
-		//sc.belong.secondWriteFlowA = sc.belong.secondWriteAtomA.AddAndGetNew(int64(n))
-		//sc.belong.allFlow = sc.belong.allAtom.AddAndGetNew(int64(n))
-		if err != nil {
-			utils.ErrorLog("server write err", err)
-			return err
-		}
-	}
-	cmem.Free(packet.Alloc)
-	return nil
-}
-
-// handleLoop
 func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 	var (
-		cDone <-chan struct{}
-		sDone <-chan struct{}
-		// timerCh      chan *OnTimeOut
+		cDone     <-chan struct{}
+		sDone     <-chan struct{}
 		handlerCh chan MsgHandler
 		netID     int64
 		ctx       context.Context
@@ -782,7 +719,6 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 
 	cDone = c.(*ServerConn).ctx.Done()
 	sDone = c.(*ServerConn).belong.ctx.Done()
-	// timerCh = c.(*ServerConn).timerCh
 	handlerCh = c.(*ServerConn).handlerCh
 	netID = c.(*ServerConn).netid
 	ctx = c.(*ServerConn).ctx
@@ -814,7 +750,10 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 					ctxWithRecvStart := CreateContextWithRecvStartTime(ctxWithReqId, recvStart)
 					ctx := CreateContextWithMessage(ctxWithRecvStart, &msg)
 					ctx = CreateContextWithNetID(ctx, netID)
-					log = utils.ByteToString(msgHandler.message.MSGHead.Cmd)
+					ctx = CreateContextWithSrcP2pAddr(ctx, sc.remoteP2pAddress)
+					if msgType := header.GetMsgTypeFromId(msgHandler.message.MSGHead.Cmd); msgType != nil {
+						log = msgType.Name
+					}
 					handler(ctx, c)
 				})
 				if err != nil {

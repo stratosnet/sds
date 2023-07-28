@@ -16,7 +16,6 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-// Node
 type Node struct {
 	ID        string
 	Host      string
@@ -25,7 +24,6 @@ type Node struct {
 	DiskUsage float64
 }
 
-// nodeKey
 func (n *Node) nodeKey() string {
 	return n.ID + "#" + n.Host
 }
@@ -53,7 +51,6 @@ func (vn *VNode) Less(than rbtree.Item) bool {
 	return vn.Index < than.(*VNode).Index
 }
 
-// HashRing
 type HashRing struct {
 	VRing           *rbtree.Rbtree
 	NRing           *rbtree.Rbtree
@@ -65,27 +62,6 @@ type HashRing struct {
 	sync.Mutex
 }
 
-// virtualKey
-func (r *HashRing) virtualKey(nodeID string, index uint32) string {
-	return "node#" + nodeID + "#" + strconv.FormatUint(uint64(index), 10)
-}
-
-// hashKey
-func (r *HashRing) hashKey(key string) string {
-	return utils.CalcHash([]byte(key))
-}
-
-// hashTOCRC32
-func (r *HashRing) hashToCRC32(hashInString string) uint32 {
-	return utils.CalcCRC32([]byte(hashInString))
-}
-
-// CalcIndex
-func (r *HashRing) CalcIndex(key string) uint32 {
-	return r.hashToCRC32(r.hashKey(key))
-}
-
-// AddNode
 func (r *HashRing) AddNode(node *Node) {
 	r.Lock()
 	defer r.Unlock()
@@ -95,9 +71,8 @@ func (r *HashRing) AddNode(node *Node) {
 		numberOfNode = r.NumberOfVirtual
 	}
 
-	var i uint32
-	for i = 0; i < numberOfNode; i++ {
-		index := r.CalcIndex(r.virtualKey(node.ID, i))
+	for i := uint32(0); i < numberOfNode; i++ {
+		index := calcIndex(virtualKey(node.ID, i))
 		r.VRing.Insert(&VNode{Index: index, NodeID: node.ID})
 	}
 
@@ -110,7 +85,6 @@ func (r *HashRing) AddNode(node *Node) {
 	r.NRing.Insert(node)
 }
 
-// RemoveNode
 func (r *HashRing) RemoveNode(nodeID string) bool {
 	r.Lock()
 	defer r.Unlock()
@@ -121,14 +95,17 @@ func (r *HashRing) RemoveNode(nodeID string) bool {
 	}
 	node := val.(*Node)
 
+	if r.IsOnline(nodeID) {
+		r.NodeOkCount--
+	}
+
 	var numberOfNode uint32 = 1
 	if r.NumberOfVirtual > 0 {
 		numberOfNode = r.NumberOfVirtual
 	}
 
-	var i uint32
-	for i = 0; i < numberOfNode; i++ {
-		index := r.CalcIndex(r.virtualKey(node.ID, i))
+	for i := uint32(0); i < numberOfNode; i++ {
+		index := calcIndex(virtualKey(node.ID, i))
 		r.VRing.Delete(&VNode{Index: index, NodeID: node.ID})
 	}
 
@@ -176,7 +153,6 @@ func (r *HashRing) SetOnline(ID string) {
 
 // RandomGetNodes return random nodes from the hashring
 func (r *HashRing) RandomGetNodes(num int) []*Node {
-
 	if r.NodeOkCount <= 0 {
 		return nil
 	}
@@ -210,7 +186,7 @@ func (r *HashRing) RandomGetNodes(num int) []*Node {
 
 // GetNode calculates an index from the given key, and returns a node selected using this index
 func (r *HashRing) GetNode(key string) (uint32, string) {
-	keyIndex := r.CalcIndex(key)
+	keyIndex := calcIndex(key)
 	return r.GetNodeByIndex(keyIndex)
 }
 
@@ -293,7 +269,6 @@ func (r *HashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
 	return up, down
 }
 
-// GetNodeByIndex
 func (r *HashRing) GetNodeByIndex(keyIndex uint32) (uint32, string) {
 
 	if r.VRing.Len() <= 0 {
@@ -367,7 +342,6 @@ func (r *HashRing) UpdateNodeDiskUsage(ID string, diskSize, freeDisk uint64) {
 	}
 }
 
-// NewHashRing
 func New(numOfVNode uint32) *HashRing {
 	r := new(HashRing)
 	r.Nodes = new(sync.Map)
@@ -378,4 +352,20 @@ func New(numOfVNode uint32) *HashRing {
 	r.VRing = rbtree.New()
 	r.NRing = rbtree.New()
 	return r
+}
+
+func virtualKey(nodeID string, index uint32) string {
+	return "node#" + nodeID + "#" + strconv.FormatUint(uint64(index), 10)
+}
+
+func hashKey(key string) string {
+	return utils.CalcHash([]byte(key))
+}
+
+func hashToCRC32(hashInString string) uint32 {
+	return utils.CalcCRC32([]byte(hashInString))
+}
+
+func calcIndex(key string) uint32 {
+	return hashToCRC32(hashKey(key))
 }

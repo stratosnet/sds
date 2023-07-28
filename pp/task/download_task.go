@@ -3,7 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/protos"
@@ -21,6 +20,7 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
+	"google.golang.org/protobuf/proto"
 )
 
 const LOCAL_REQID string = "local"
@@ -34,14 +34,11 @@ var DownloadSliceTaskMap = utils.NewAutoCleanMap(1 * time.Hour)
 // DownloadFileMap P download info map  make(map[string]*protos.RspFileStorageInfo)
 var DownloadFileMap = utils.NewAutoCleanMap(5 * time.Minute)
 
-// DownloadFileProgress
 // var DownloadFileProgress = &sync.Map{}
 
-// DownloadSpeedOfProgress DownloadSpeedOfProgress
 var DownloadSpeedOfProgress = &sync.Map{}
 
-// key: slice reqid, value: session id (file reqid)
-var SliceSessionMap = &sync.Map{}
+var SliceSessionMap = &sync.Map{} // key: slice reqid, value: session id (file reqid)
 
 // DownloadSP download progress
 type DownloadSP struct {
@@ -57,8 +54,6 @@ var DownloadSliceProgress = &sync.Map{}
 // This is used because slices can only be decrypted after being fully downloaded
 var DownloadEncryptedSlices = &sync.Map{}
 
-var VideoCacheTaskMap = &sync.Map{}
-
 var reCount int
 
 type VideoCacheTask struct {
@@ -69,6 +64,7 @@ type VideoCacheTask struct {
 
 // DownloadTask signal task convert sliceHash list to map
 type DownloadTask struct {
+	TaskId        string // file task id
 	WalletAddress string
 	FileHash      string
 	VisitCer      string
@@ -121,14 +117,12 @@ func (task *DownloadTask) RefreshTask(target *protos.RspFileStorageInfo) {
 	task.FailedSlice = make(map[string]bool)
 }
 
-// DownloadSliceData
 type DownloadSliceData struct {
 	Data    []byte
 	FileCrc uint32
 	RawSize uint64
 }
 
-// AddDownloadTask
 func AddDownloadTask(target *protos.RspFileStorageInfo) {
 	SliceInfoMap := make(map[string]*protos.DownloadSliceInfo)
 	for _, dlSliceInfo := range target.SliceInfo {
@@ -144,6 +138,7 @@ func AddDownloadTask(target *protos.RspFileStorageInfo) {
 		SuccessSlice:  make(map[string]bool),
 		FailedPPNodes: make(map[string]*protos.PPBaseInfo),
 		SliceCount:    len(target.SliceInfo),
+		TaskId:        target.TaskId,
 	}
 	DownloadTaskMap.Store((target.FileHash + target.WalletAddress + target.ReqId), dTask)
 	metrics.TaskCount.WithLabelValues("download").Inc()
@@ -185,7 +180,6 @@ func CheckDownloadTask(fileHash, walletAddress, fileReqId string) bool {
 	return DownloadTaskMap.HashKey(fileHash + walletAddress + fileReqId)
 }
 
-// CleanDownloadTask
 func CleanDownloadTask(ctx context.Context, fileHash, sliceHash, walletAddress, fileReqId string) {
 	if dlTask, ok := DownloadTaskMap.Load(fileHash + walletAddress + fileReqId); ok {
 
@@ -205,7 +199,6 @@ func DeleteDownloadTask(fileHash, walletAddress, fileReqId string) {
 	DownloadTaskMap.Delete(fileHash + walletAddress + fileReqId)
 }
 
-// CleanDownloadFileAndConnMap
 func CleanDownloadFileAndConnMap(ctx context.Context, fileHash, fileReqId string) {
 	DownloadSpeedOfProgress.Delete(fileHash + fileReqId)
 	if f, ok := DownloadFileMap.Load(fileHash + fileReqId); ok {
@@ -218,16 +211,19 @@ func CleanDownloadFileAndConnMap(ctx context.Context, fileHash, fileReqId string
 	DownloadFileMap.Delete(fileHash + fileReqId)
 }
 
-// CancelDownloadTask
 func CancelDownloadTask(fileHash string) {
 	file.DeleteDirectory(fileHash)
 }
 
-// GetDownloadSlice
-func GetDownloadSlice(target *protos.ReqDownloadSlice) *DownloadSliceData {
-	data := file.GetSliceData(target.SliceInfo.SliceHash)
+func GetDownloadSlice(target *protos.ReqDownloadSlice, slice *protos.DownloadSliceInfo) *DownloadSliceData {
+	data, err := file.GetSliceData(slice.SliceStorageInfo.SliceHash)
+	if err != nil {
+		utils.ErrorLog("Failed getting slice data ", err.Error())
+		return nil
+	}
 	rawSize := uint64(len(data))
-	if target.IsEncrypted {
+	encrypted := target.RspFileStorageInfo.EncryptionTag != ""
+	if encrypted {
 		encryptedSlice := protos.EncryptedSlice{}
 		err := proto.Unmarshal(data, &encryptedSlice)
 		if err == nil {
@@ -246,15 +242,10 @@ func GetDownloadSlice(target *protos.ReqDownloadSlice) *DownloadSliceData {
 
 }
 
-// SaveDownloadFile
-func SaveDownloadFile(ctx context.Context, target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo) bool {
-	if fInfo.IsVideoStream {
-		return file.SaveFileData(ctx, target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, target.SliceInfo.SliceHash, fInfo.FileHash, fInfo.SavePath, fInfo.ReqId)
-	} else {
-		metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_SLICE_DATA:" + strconv.FormatInt(int64(target.SliceInfo.SliceOffset.SliceOffsetStart+(target.SliceNumber-1)*33554432), 10) + ":")
-		defer metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_SAVE_DATA:" + strconv.FormatInt(int64(target.SliceInfo.SliceOffset.SliceOffsetStart+(target.SliceNumber-1)*33554432), 10) + ":")
-		return file.SaveFileData(ctx, target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, fInfo.SavePath, fInfo.ReqId)
-	}
+func SaveDownloadFile(ctx context.Context, target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo) error {
+	metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_SLICE_DATA:" + strconv.FormatInt(int64(target.SliceInfo.SliceOffset.SliceOffsetStart+(target.SliceNumber-1)*33554432), 10) + ":")
+	defer metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_SAVE_DATA:" + strconv.FormatInt(int64(target.SliceInfo.SliceOffset.SliceOffsetStart+(target.SliceNumber-1)*33554432), 10) + ":")
+	return file.SaveFileData(ctx, target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, fInfo.SavePath, fInfo.ReqId)
 }
 
 // checkAgain only used by local file downloading session
@@ -312,12 +303,12 @@ func DoneDownload(ctx context.Context, fileHash, fileName, savePath string) {
 	if _, ok := setting.ImageMap.Load(fileHash); ok {
 		pp.DebugLog(ctx, "enter imageMap》》》》》》")
 		exist := false
-		exist, err = file.PathExists(setting.IMAGEPATH)
+		exist, err = file.PathExists(setting.ImagePath)
 		if err != nil {
 			pp.ErrorLog(ctx, "ImageMap no", err)
 		}
 		if !exist {
-			if err = os.MkdirAll(setting.IMAGEPATH, os.ModePerm); err != nil {
+			if err = os.MkdirAll(setting.ImagePath, os.ModePerm); err != nil {
 				pp.ErrorLog(ctx, "ImageMap mk no", err)
 			}
 		}
@@ -329,11 +320,11 @@ func DoneDownload(ctx context.Context, fileHash, fileName, savePath string) {
 				pp.ErrorLog(ctx, "err5>>>", err)
 			}
 			var img []byte
-			img, err = ioutil.ReadAll(f)
+			img, err = io.ReadAll(f)
 			if err != nil {
 				pp.ErrorLog(ctx, "img err6>>>", err)
 			}
-			imageFile, err = os.OpenFile(setting.IMAGEPATH+fileHash, os.O_CREATE|os.O_RDWR, 0777)
+			imageFile, err = os.OpenFile(setting.ImagePath+fileHash, os.O_CREATE|os.O_RDWR, 0777)
 			if err != nil {
 				pp.ErrorLog(ctx, "img err7>>>", err)
 			}
@@ -348,7 +339,7 @@ func DoneDownload(ctx context.Context, fileHash, fileName, savePath string) {
 				pp.ErrorLog(ctx, "err9 Remove", err)
 			}
 		} else {
-			err = os.Rename(lastPath, setting.IMAGEPATH+fileHash)
+			err = os.Rename(lastPath, setting.ImagePath+fileHash)
 			if err != nil {
 				pp.ErrorLog(ctx, "ImageMap Rename", err)
 			}
@@ -365,9 +356,9 @@ func CheckFileOver(ctx context.Context, fileHash, filePath string) bool {
 
 	if s, ok := DownloadSpeedOfProgress.Load(fileHash + LOCAL_REQID); ok {
 		sp := s.(*DownloadSP)
-		info := file.GetFileInfo(filePath)
-		if info == nil {
-			return false
+		info, err := file.GetFileInfo(filePath)
+		if err != nil {
+			pp.ErrorLog(ctx, "failed getting file info", err)
 		}
 
 		// TODO calculate fileHash to check if download is finished
@@ -413,16 +404,14 @@ func CheckDownloadOver(ctx context.Context, fileHash string) (bool, float32) {
 }
 
 func CheckRemoteDownloadOver(ctx context.Context, fileHash, fileReqId string) {
-
 	key := fileHash + fileReqId
 	size := file.GetRemoteFileInfo(key, fileReqId)
-	utils.DebugLog("size:", string(size))
+	utils.DebugLogf("size: %v", size)
 	metrics.DownloadPerformanceLogNow(fileHash + ":RCV_RPC_DOWNLOAD_DONE:")
 	file.SetRemoteFileResult(key, rpc.Result{Return: rpc.SUCCESS})
 	CleanDownloadFileAndConnMap(ctx, fileHash, fileReqId)
 }
 
-// DownloadProgress
 func DownloadProgress(ctx context.Context, fileHash, fileReqId string, size uint64) {
 	if s, ok := DownloadSpeedOfProgress.Load(fileHash + fileReqId); ok {
 		sp := s.(*DownloadSP)

@@ -2,33 +2,24 @@ package task
 
 import (
 	"context"
-	"encoding/json"
-	"math/rand"
-	"strconv"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/encryption"
-	"github.com/stratosnet/sds/utils/encryption/hdkey"
 )
 
 // UploadSliceTask represents a slice upload task that is in progress
 type UploadSliceTask struct {
-	TaskID          string
-	FileHash        string
-	SliceNumAddr    *protos.SliceNumAddr // upload PP address and sliceNumber
-	SliceOffsetInfo *protos.SliceOffsetInfo
-	FileCRC         uint32
-	Data            []byte
-	SliceTotalSize  uint64
-	SpP2pAddress    string
+	RspUploadFile *protos.RspUploadFile
+	RspBackupFile *protos.RspBackupStatus
+	SliceNumber   uint64
+	SliceHash     string
+	Type          protos.UploadType
+	Data          []byte
 }
 
 const (
@@ -45,16 +36,11 @@ const (
 
 // UploadFileTask represents a file upload task that is in progress
 type UploadFileTask struct {
-	FileCRC       uint32
-	FileHash      string
-	IsEncrypted   bool
-	IsVideoStream bool
-	Sign          []byte
-	Slices        map[string]*SlicesPerDestination
-	SpP2pAddress  string
-	TaskID        string
-	Type          protos.UploadType
-
+	RspUploadFile     *protos.RspUploadFile
+	RspBackupFile     *protos.RspBackupStatus
+	Type              protos.UploadType
+	FileCRC           uint32
+	Destinations      map[string]*SlicesPerDestination
 	ConcurrentUploads int
 	FatalError        error
 	RetryCount        int
@@ -68,59 +54,98 @@ type SlicesPerDestination struct {
 	Started bool
 }
 
+// SliceWithStatus wraps a SliceHashAddr, and it provides extra states for upload/backup task.
 type SliceWithStatus struct {
-	Error       error
-	Fatal       bool // Whether this error should cancel the whole file upload or not
-	SliceHash   string
-	SliceNumber uint64
-	SliceOffset *protos.SliceOffset
-	SliceSize   uint64
-	Status      int
-	SpNodeSign  []byte
-	CostTime    int64
+	Slice    *protos.SliceHashAddr
+	Error    error
+	Fatal    bool // Whether this error should cancel the whole file upload or not
+	Status   int
+	CostTime int64
 }
 
-func CreateUploadFileTask(fileHash, taskId, spP2pAddress string, isEncrypted, isVideoStream bool, signature []byte, slices []*protos.SliceHashAddr, uploadType protos.UploadType) *UploadFileTask {
+func CreateBackupFileTask(target *protos.RspBackupStatus) *UploadFileTask {
+	if target == nil {
+		return nil
+	}
+
 	task := &UploadFileTask{
-		FileCRC:           utils.CalcFileCRC32(file.GetFilePath(fileHash)),
-		FileHash:          fileHash,
-		IsEncrypted:       isEncrypted,
-		IsVideoStream:     isVideoStream,
-		Sign:              signature,
-		Slices:            make(map[string]*SlicesPerDestination),
-		SpP2pAddress:      spP2pAddress,
-		TaskID:            taskId,
-		Type:              uploadType,
+		RspUploadFile:     nil,
+		RspBackupFile:     target,
+		FileCRC:           utils.CalcFileCRC32(file.GetFilePath(target.FileHash)),
+		Type:              protos.UploadType_BACKUP,
+		Destinations:      make(map[string]*SlicesPerDestination),
 		ConcurrentUploads: 0,
 		RetryCount:        0,
 		UpChan:            make(chan bool, MAXSLICE),
 		Mutex:             sync.RWMutex{},
 	}
 
-	for _, slice := range slices {
-		task.addNewSlice(slice)
+	for _, slice := range target.Slices {
+		_, ok := task.Destinations[slice.PpInfo.P2PAddress]
+		if !ok {
+			task.Destinations[slice.PpInfo.P2PAddress] = &SlicesPerDestination{
+				PpInfo:  slice.PpInfo,
+				Started: false,
+			}
+		}
+		sws := &SliceWithStatus{
+			Slice:  slice,
+			Status: SLICE_STATUS_NOT_STARTED,
+		}
+		task.Destinations[slice.PpInfo.P2PAddress].Slices = append(task.Destinations[slice.PpInfo.P2PAddress].Slices, sws)
+	}
+	metrics.TaskCount.WithLabelValues("upload").Inc()
+	return task
+}
+
+func CreateUploadFileTask(target *protos.RspUploadFile) *UploadFileTask {
+	if target == nil {
+		return nil
+	}
+
+	task := &UploadFileTask{
+		RspUploadFile:     target,
+		RspBackupFile:     nil,
+		FileCRC:           utils.CalcFileCRC32(file.GetFilePath(target.FileHash)),
+		Type:              protos.UploadType_NEW_UPLOAD,
+		Destinations:      make(map[string]*SlicesPerDestination),
+		ConcurrentUploads: 0,
+		RetryCount:        0,
+		UpChan:            make(chan bool, MAXSLICE),
+		Mutex:             sync.RWMutex{},
+	}
+
+	for _, slice := range target.Slices {
+		_, ok := task.Destinations[slice.PpInfo.P2PAddress]
+		if !ok {
+			task.Destinations[slice.PpInfo.P2PAddress] = &SlicesPerDestination{
+				PpInfo:  slice.PpInfo,
+				Started: false,
+			}
+		}
+		sws := &SliceWithStatus{
+			Slice:  slice,
+			Status: SLICE_STATUS_NOT_STARTED,
+		}
+		task.Destinations[slice.PpInfo.P2PAddress].Slices = append(task.Destinations[slice.PpInfo.P2PAddress].Slices, sws)
 	}
 	metrics.TaskCount.WithLabelValues("upload").Inc()
 	return task
 }
 
 func (u *UploadFileTask) addNewSlice(slice *protos.SliceHashAddr) {
-	slicesPerDestination := u.Slices[slice.PpInfo.P2PAddress]
+	slicesPerDestination := u.Destinations[slice.PpInfo.P2PAddress]
 	if slicesPerDestination == nil {
 		slicesPerDestination = &SlicesPerDestination{
 			PpInfo:  slice.PpInfo,
 			Started: false,
 		}
-		u.Slices[slice.PpInfo.P2PAddress] = slicesPerDestination
+		u.Destinations[slice.PpInfo.P2PAddress] = slicesPerDestination
 	}
 
 	slicesPerDestination.Slices = append(slicesPerDestination.Slices, &SliceWithStatus{
-		SliceHash:   slice.SliceHash,
-		SliceNumber: slice.SliceNumber,
-		SliceOffset: slice.SliceOffset,
-		SliceSize:   slice.SliceSize,
-		Status:      SLICE_STATUS_NOT_STARTED,
-		SpNodeSign:  slice.SpNodeSign,
+		Slice:  slice,
+		Status: SLICE_STATUS_NOT_STARTED,
 	})
 }
 
@@ -128,7 +153,7 @@ func (u *UploadFileTask) SignalNewDestinations() {
 	u.Mutex.RLock()
 	defer u.Mutex.RUnlock()
 
-	for _, destination := range u.Slices {
+	for _, destination := range u.Destinations {
 		if !destination.Started {
 			select {
 			case u.UpChan <- true:
@@ -142,7 +167,7 @@ func (u *UploadFileTask) IsFinished() bool {
 	u.Mutex.RLock()
 	defer u.Mutex.RUnlock()
 
-	for _, destination := range u.Slices {
+	for _, destination := range u.Destinations {
 		for _, slice := range destination.Slices {
 			if slice.Status != SLICE_STATUS_FINISHED && slice.Status != SLICE_STATUS_REPLACED {
 				return false
@@ -160,7 +185,7 @@ func (u *UploadFileTask) IsFatal() error {
 	if u.FatalError != nil {
 		return u.FatalError
 	}
-	for _, slicesPerDestination := range u.Slices {
+	for _, slicesPerDestination := range u.Destinations {
 		for _, slice := range slicesPerDestination.Slices {
 			if slice.Fatal {
 				return slice.Error
@@ -178,7 +203,7 @@ func (u *UploadFileTask) SliceFailuresToReport() ([]*protos.SliceHashAddr, []boo
 
 	var slicesToReDownload []*protos.SliceHashAddr
 	var failedSlices []bool
-	for _, slicesPerDestination := range u.Slices {
+	for _, slicesPerDestination := range u.Destinations {
 		errorPresent := false
 		for _, slice := range slicesPerDestination.Slices {
 			if slice.Status == SLICE_STATUS_FAILED {
@@ -193,13 +218,7 @@ func (u *UploadFileTask) SliceFailuresToReport() ([]*protos.SliceHashAddr, []boo
 		// There was an error sending slices to this destination, so all associated failed and not started slices will receive a new destination PP
 		for _, slice := range slicesPerDestination.Slices {
 			if slice.Status == SLICE_STATUS_FAILED || slice.Status == SLICE_STATUS_NOT_STARTED || slice.Status == SLICE_STATUS_WAITING_FOR_SP {
-				slicesToReDownload = append(slicesToReDownload, &protos.SliceHashAddr{
-					SliceHash:   slice.SliceHash,
-					SliceNumber: slice.SliceNumber,
-					SliceOffset: slice.SliceOffset,
-					SliceSize:   slice.SliceSize,
-					PpInfo:      slicesPerDestination.PpInfo,
-				})
+				slicesToReDownload = append(slicesToReDownload, slice.Slice)
 				failedSlices = append(failedSlices, slice.Status == SLICE_STATUS_FAILED)
 				slice.Status = SLICE_STATUS_WAITING_FOR_SP
 			}
@@ -218,7 +237,7 @@ func (u *UploadFileTask) GetExcludedDestinations() []*protos.PPBaseInfo {
 	defer u.Mutex.RUnlock()
 
 	var destinations []*protos.PPBaseInfo
-	for _, destination := range u.Slices {
+	for _, destination := range u.Destinations {
 		for _, slice := range destination.Slices {
 			if slice.Status == SLICE_STATUS_FAILED || slice.Status == SLICE_STATUS_WAITING_FOR_SP || slice.Status == SLICE_STATUS_REPLACED {
 				destinations = append(destinations, destination.PpInfo)
@@ -237,7 +256,7 @@ func (u *UploadFileTask) NextDestination() *SlicesPerDestination {
 	if u.ConcurrentUploads >= MAXSLICE {
 		return nil
 	}
-	for _, destination := range u.Slices {
+	for _, destination := range u.Destinations {
 		if !destination.Started {
 			destination.Started = true
 			u.ConcurrentUploads++
@@ -254,9 +273,9 @@ func (u *UploadFileTask) UpdateSliceDestinations(newDestinations []*protos.Slice
 
 	// Get original destination for each slice
 	originalDestinations := make(map[uint64]string)
-	for p2pAddress, destination := range u.Slices {
+	for p2pAddress, destination := range u.Destinations {
 		for _, slice := range destination.Slices {
-			originalDestinations[slice.SliceNumber] = p2pAddress
+			originalDestinations[slice.Slice.SliceNumber] = p2pAddress
 		}
 	}
 
@@ -267,12 +286,12 @@ func (u *UploadFileTask) UpdateSliceDestinations(newDestinations []*protos.Slice
 			continue
 		}
 
-		slicesOriginalDestination := u.Slices[originalP2pAddress]
+		slicesOriginalDestination := u.Destinations[originalP2pAddress]
 		if slicesOriginalDestination == nil {
 			continue
 		}
 		for _, slice := range slicesOriginalDestination.Slices {
-			if slice.SliceNumber == newDestination.SliceNumber {
+			if slice.Slice.SliceNumber == newDestination.SliceNumber {
 				slice.Status = SLICE_STATUS_REPLACED
 				u.addNewSlice(newDestination)
 				break
@@ -309,228 +328,35 @@ type UploadProgress struct {
 // UploadProgressMap Map of the progress for ongoing uploads
 var UploadProgressMap = &sync.Map{} // map[string]*UploadProgress
 
-func CreateUploadSliceTask(ctx context.Context, slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
-	if uploadTask.IsVideoStream {
-		return CreateUploadSliceTaskStream(ctx, slice, ppInfo, uploadTask)
-	} else {
-		return CreateUploadSliceTaskFile(ctx, slice, ppInfo, uploadTask)
-	}
-}
-
-func CreateUploadSliceTaskFile(ctx context.Context, slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
-	pp.DebugLogf(ctx, "sliceNumber %v  offsetStart = %v  offsetEnd = %v", slice.SliceNumber, slice.SliceOffset.SliceOffsetStart, slice.SliceOffset.SliceOffsetEnd)
-	startOffset := slice.SliceOffset.SliceOffsetStart
-	endOffset := slice.SliceOffset.SliceOffsetEnd
-
-	var fileSize uint64
-	var filePath string
-
-	remote := file.IsFileRpcRemote(uploadTask.FileHash)
-	if !remote {
-		// in case of local file
-		filePath = file.GetFilePath(uploadTask.FileHash)
-		fileInfo := file.GetFileInfo(filePath)
-		if fileInfo == nil {
-			return nil, errors.New("wrong file path")
-		}
-		fileSize = uint64(fileInfo.Size())
-	} else {
-		// in case of remote (rpc) file
-		fileSize = file.GetRemoteFileSize(uploadTask.FileHash)
-	}
-
-	if fileSize < endOffset {
-		endOffset = fileSize
-	}
-	offset := &protos.SliceOffset{
-		SliceOffsetStart: startOffset,
-		SliceOffsetEnd:   endOffset,
-	}
-
-	var rawData []byte
-
-	if !remote {
-		metrics.UploadPerformanceLogNow(uploadTask.FileHash + ":SND_GET_LOCAL_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
-		rawData = file.GetFileData(filePath, offset)
-		metrics.UploadPerformanceLogNow(uploadTask.FileHash + ":RCV_GET_LOCAL_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
-	} else {
-		metrics.UploadPerformanceLogNow(uploadTask.FileHash + ":SND_GET_REMOTE_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
-		rawData = file.GetRemoteFileData(uploadTask.FileHash, offset)
-		metrics.UploadPerformanceLogNow(uploadTask.FileHash + ":RCV_GET_REMOTE_DATA:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
-	}
-
-	if rawData == nil {
-		return nil, errors.New("Failed reading data from file")
-	}
-
-	// Encrypt slice data if required
-	data := rawData
-	if uploadTask.IsEncrypted {
-		var err error
-		data, err = encryptSliceData(rawData)
-		if err != nil {
-			return nil, errors.Wrap(err, "Couldn't encrypt slice data")
-		}
-	}
-	dataSize := uint64(len(data))
-	sliceHash := utils.CalcSliceHash(data, uploadTask.FileHash, slice.SliceNumber)
-
-	sl := &protos.SliceOffsetInfo{
-		SliceHash: sliceHash,
-		SliceOffset: &protos.SliceOffset{
-			SliceOffsetStart: 0,
-			SliceOffsetEnd:   dataSize,
-		},
-	}
-
-	sliceNumAddr := &protos.SliceNumAddr{
-		SliceNumber: slice.SliceNumber,
-		SliceOffset: slice.SliceOffset,
-		PpInfo:      ppInfo,
-		SpNodeSign:  slice.SpNodeSign,
-	}
+func CreateUploadSliceTask(ctx context.Context, slice *SliceWithStatus, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
+	pp.DebugLogf(ctx, "sliceNumber %v  offsetStart = %v  offsetEnd = %v", slice.Slice.SliceNumber, slice.Slice.SliceOffset.SliceOffsetStart, slice.Slice.SliceOffset.SliceOffsetEnd)
 	tk := &UploadSliceTask{
-		TaskID:          uploadTask.TaskID,
-		FileHash:        uploadTask.FileHash,
-		SliceNumAddr:    sliceNumAddr,
-		SliceOffsetInfo: sl,
-		FileCRC:         uploadTask.FileCRC,
-		Data:            data,
-		SliceTotalSize:  dataSize,
-		SpP2pAddress:    uploadTask.SpP2pAddress,
-	}
-
-	err := file.SaveTmpSliceData(uploadTask.FileHash, sliceHash, data)
-	if err != nil {
-		return nil, err
-	}
-	return tk, nil
-}
-
-func CreateUploadSliceTaskStream(ctx context.Context, slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
-	videoFolder := file.GetVideoTmpFolder(uploadTask.FileHash)
-	videoSliceInfo := file.HlsInfoMap[uploadTask.FileHash]
-	var data []byte
-	var sliceTotalSize uint64
-
-	if slice.SliceNumber == 1 {
-		jsonStr, _ := json.Marshal(videoSliceInfo)
-		data = jsonStr
-		sliceTotalSize = uint64(len(data))
-	} else if slice.SliceNumber < videoSliceInfo.StartSliceNumber {
-		data = file.GetDumpySliceData(uploadTask.FileHash, slice.SliceNumber)
-		sliceTotalSize = uint64(len(data))
-	} else {
-		var sliceName string
-		sliceName = videoSliceInfo.SliceToSegment[slice.SliceNumber]
-		slicePath := videoFolder + "/" + sliceName
-		if file.GetFileInfo(slicePath) == nil {
-			return nil, errors.New("wrong file path")
-		}
-		data = file.GetWholeFileData(slicePath)
-		sliceTotalSize = uint64(file.GetFileInfo(slicePath).Size())
-	}
-
-	pp.DebugLog(ctx, "sliceNumber", slice.SliceNumber)
-
-	sliceHash := utils.CalcSliceHash(data, uploadTask.FileHash, slice.SliceNumber)
-	offset := &protos.SliceOffset{
-		SliceOffsetStart: uint64(0),
-		SliceOffsetEnd:   sliceTotalSize,
-	}
-	sl := &protos.SliceOffsetInfo{
-		SliceHash:   sliceHash,
-		SliceOffset: offset,
-	}
-	SliceNumAddr := &protos.SliceNumAddr{
-		SliceNumber: slice.SliceNumber,
-		SliceOffset: offset,
-		PpInfo:      ppInfo,
-		SpNodeSign:  slice.SpNodeSign,
-	}
-	slice.SliceOffset = offset
-	tk := &UploadSliceTask{
-		TaskID:          uploadTask.TaskID,
-		FileHash:        uploadTask.FileHash,
-		SliceNumAddr:    SliceNumAddr,
-		SliceOffsetInfo: sl,
-		FileCRC:         uploadTask.FileCRC,
-		Data:            data,
-		SliceTotalSize:  sliceTotalSize,
-		SpP2pAddress:    uploadTask.SpP2pAddress,
-	}
-
-	err := file.SaveTmpSliceData(uploadTask.FileHash, sliceHash, data)
-	if err != nil {
-		return nil, err
+		RspUploadFile: uploadTask.RspUploadFile,
+		SliceHash:     slice.Slice.SliceHash,
+		SliceNumber:   slice.Slice.SliceNumber,
 	}
 	return tk, nil
 }
 
 func GetReuploadSliceTask(ctx context.Context, slice *SliceWithStatus, ppInfo *protos.PPBaseInfo, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
-	pp.DebugLogf(ctx, "  fileHash %s sliceNumber %v, sliceHash %s",
-		uploadTask.FileHash, slice.SliceNumber, slice.SliceHash)
+	fileHash := uploadTask.RspBackupFile.FileHash
+	pp.DebugLogf(ctx, "  fileHash %s sliceNumber %v, sliceHash %s", fileHash, slice.Slice.SliceNumber, slice.Slice.SliceHash)
 
-	rawData := file.GetSliceDataFromTmp(uploadTask.FileHash, slice.SliceHash)
-
+	rawData, err := file.GetSliceDataFromTmp(fileHash, slice.Slice.SliceHash)
 	if rawData == nil {
-		return nil, errors.Errorf("Failed to find the file slice in temp folder for fileHash %s sliceNumber %v, sliceHash %s",
-			uploadTask.FileHash, slice.SliceNumber, slice.SliceHash)
+		return nil, errors.Wrapf(err, "Failed to find the file slice in temp folder for fileHash %s sliceNumber %v, sliceHash %s",
+			fileHash, slice.Slice.SliceNumber, slice.Slice.SliceHash)
 	}
-
-	data := rawData
-	dataSize := uint64(len(data))
-
-	sl := &protos.SliceOffsetInfo{
-		SliceHash: slice.SliceHash,
-		SliceOffset: &protos.SliceOffset{
-			SliceOffsetStart: 0,
-			SliceOffsetEnd:   dataSize,
-		},
-	}
-
 	tk := &UploadSliceTask{
-		TaskID:   uploadTask.TaskID,
-		FileHash: uploadTask.FileHash,
-		SliceNumAddr: &protos.SliceNumAddr{
-			SliceNumber: slice.SliceNumber,
-			SliceOffset: slice.SliceOffset,
-			PpInfo:      ppInfo,
-		},
-		SliceOffsetInfo: sl,
-		Data:            data,
-		SliceTotalSize:  dataSize,
-		SpP2pAddress:    uploadTask.SpP2pAddress,
+		SliceNumber: slice.Slice.SliceNumber,
 	}
 	return tk, nil
 }
 
-func SaveUploadFile(target *protos.ReqUploadFileSlice) bool {
-	return file.SaveSliceData(target.Data, target.SliceInfo.SliceHash, target.SliceInfo.SliceOffset.SliceOffsetStart)
+func SaveUploadFile(target *protos.ReqUploadFileSlice) error {
+	return file.SaveSliceData(target.Data, target.SliceHash, target.PieceOffset.SliceOffsetStart)
 }
 
-func encryptSliceData(rawData []byte) ([]byte, error) {
-	hdKeyNonce := rand.Uint32()
-	if hdKeyNonce > hdkey.HardenedKeyStart {
-		hdKeyNonce -= hdkey.HardenedKeyStart
-	}
-	aesNonce := rand.Uint64()
-
-	key, err := hdkey.MasterKeyForSliceEncryption(setting.WalletPrivateKey, hdKeyNonce)
-	if err != nil {
-		return nil, err
-	}
-
-	encryptedData, err := encryption.EncryptAES(key.PrivateKey(), rawData, aesNonce)
-	if err != nil {
-		return nil, err
-	}
-
-	encryptedSlice := &protos.EncryptedSlice{
-		HdkeyNonce: hdKeyNonce,
-		AesNonce:   aesNonce,
-		Data:       encryptedData,
-		RawSize:    uint64(len(rawData)),
-	}
-	return proto.Marshal(encryptedSlice)
+func SaveBackuptFile(target *protos.ReqBackupFileSlice) error {
+	return file.SaveSliceData(target.Data, target.SliceHash, target.PieceOffset.SliceOffsetStart)
 }

@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/big"
 	"sync"
 	"testing"
@@ -33,20 +32,21 @@ type testEncoder struct {
 
 func (e *testEncoder) EncodeRLP(w io.Writer) error {
 	if e == nil {
-		w.Write([]byte{0, 0, 0, 0})
+		_, err := w.Write([]byte{0, 0, 0, 0})
+		return err
 	} else if e.err != nil {
 		return e.err
 	} else {
-		w.Write([]byte{0, 1, 0, 1, 0, 1, 0, 1, 0, 1})
+		_, err := w.Write([]byte{0, 1, 0, 1, 0, 1, 0, 1, 0, 1})
+		return err
 	}
-	return nil
 }
 
 type byteEncoder byte
 
 func (e byteEncoder) EncodeRLP(w io.Writer) error {
-	w.Write(EmptyList)
-	return nil
+	_, err := w.Write(EmptyList)
+	return err
 }
 
 type encodableReader struct {
@@ -287,7 +287,7 @@ func TestEncodeToReader(t *testing.T) {
 		if err != nil {
 			return nil, err
 		}
-		return ioutil.ReadAll(r)
+		return io.ReadAll(r)
 	})
 }
 
@@ -328,11 +328,11 @@ func TestEncodeToReaderReturnToPool(t *testing.T) {
 		go func() {
 			for i := 0; i < 1000; i++ {
 				_, r, _ := EncodeToReader("foo")
-				ioutil.ReadAll(r)
-				r.Read(buf)
-				r.Read(buf)
-				r.Read(buf)
-				r.Read(buf)
+				_, _ = io.ReadAll(r)
+				_, _ = r.Read(buf)
+				_, _ = r.Read(buf)
+				_, _ = r.Read(buf)
+				_, _ = r.Read(buf)
 			}
 			wg.Done()
 		}()

@@ -61,6 +61,9 @@ func TestHDKeyChild(t *testing.T) {
 	signature := ed25519.Sign(fullChildKey, messageBytes)
 
 	key2, err := MasterKeyFromMnemonic(mnemonic, passphrase)
+	if err != nil {
+		t.Fatal(err)
+	}
 	childKey2, err := Ed25519Child(key2, 42)
 	if err != nil {
 		t.Fatal("Couldn't generate a child key", err)

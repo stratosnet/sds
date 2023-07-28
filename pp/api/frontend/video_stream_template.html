@@ -49,7 +49,10 @@
                 sign: streamInfo.FileInfo.sign,
                 spP2pAddress: streamInfo.FileInfo.sp_p2p_address,
                 savePath: streamInfo.FileInfo.save_path,
-                sliceInfo
+                fileReqId: streamInfo.FileInfo.req_id,
+                fileTimeStamp: streamInfo.FileInfo.time_stamp,
+                sliceInfo,
+                sliceInfos: streamInfo.FileInfo.slice_info,
             })
             return options;
         };

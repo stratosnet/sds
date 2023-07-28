@@ -2,82 +2,104 @@ package event
 
 // client pp event handler
 import (
+	"context"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
 )
 
-// RegisterEventHandle
-func RegisterEventHandle() {
-	core.Register(header.RspGetPPList, RspGetPPList)
-	core.Register(header.RspGetSPList, RspGetSPList)
-	core.Register(header.RspGetPPStatus, RspGetPPStatus)
-	core.Register(header.RspGetPPDowngradeInfo, RspGetPPDowngradeInfo)
+type VerifierFunc func(context.Context, header.MsgType, interface{}) error
 
-	core.Register(header.RspGetWalletOz, RspGetWalletOz)
-	core.Register(header.RspReportNodeStatus, RspReportNodeStatus)
+var (
+	verifierMap [header.NUMBER_MESSAGE_TYPES]VerifierFunc
+)
 
-	core.Register(header.RspRegister, RspRegister)
-	core.Register(header.ReqRegister, ReqRegister)
-	core.Register(header.RspActivatePP, RspActivate)
-	core.Register(header.RspActivatedPP, RspActivated)
-	core.Register(header.RspUpdateStakePP, RspUpdateStake)
-	core.Register(header.RspUpdatedStakePP, RspUpdatedStake)
-	core.Register(header.RspDeactivatePP, RspDeactivate)
-	core.Register(header.RspDeactivatedPP, RspDeactivated)
-	core.Register(header.RspPrepay, RspPrepay)
-	core.Register(header.RspPrepaid, RspPrepaid)
-	core.Register(header.RspMining, RspMining)
-	core.Register(header.RspStartMaintenance, RspStartMaintenance)
-	core.Register(header.RspStopMaintenance, RspStopMaintenance)
-	core.Register(header.RspFindMyFileList, RspFindMyFileList)
-	core.Register(header.ReqFindMyFileList, ReqFindMyFileList)
-	core.Register(header.ReqUploadFileSlice, ReqUploadFileSlice)
-	core.Register(header.RspUploadFile, RspUploadFile)
-	core.Register(header.RspUploadFileSlice, RspUploadFileSlice)
-	core.Register(header.RspUploadSlicesWrong, RspUploadSlicesWrong)
-	core.Register(header.RspReportUploadSliceResult, RspReportUploadSliceResult)
-	core.Register(header.ReqFileStorageInfo, ReqFileStorageInfo)
-	core.Register(header.ReqDownloadSlice, ReqDownloadSlice)
-	core.Register(header.RspDownloadSlice, RspDownloadSlice)
-	core.Register(header.RspReportDownloadResult, RspReportDownloadResult)
-	core.Register(header.RspRegisterNewPP, RspRegisterNewPP)
+func registerEvent(msgType header.MsgType, hf core.HandlerFunc, vf VerifierFunc) {
+	core.Register(msgType, hf)
+	verifierMap[msgType.Id] = vf
+}
+func VerifyMessage(ctx context.Context, msgType header.MsgType, target interface{}) error {
+	verifier := verifierMap[msgType.Id]
+	if verifier == nil {
+		return nil
+	}
+	return verifier(ctx, msgType, target)
+}
 
-	//core.Register(header.ReqTransferNotice, ReqTransferNotice)
-	//core.Register(header.RspValidateTransferCer, RspValidateTransferCer)
-	core.Register(header.ReqFileSliceBackupNotice, ReqFileSliceBackupNotice)
-	core.Register(header.ReqTransferDownload, ReqTransferDownload)
-	core.Register(header.RspTransferDownload, RspTransferDownload)
-	core.Register(header.RspTransferDownloadResult, RspTransferDownloadResult)
-	core.Register(header.RspReportBackupSliceResult, RspReportBackupSliceResult)
-	core.Register(header.RspFileBackupStatus, RspBackupStatus)
-	//core.Register(header.RspReportTransferResult, RspReportTransferResult)
+// RegisterAllEventHandler
+func RegisterAllEventHandlers() {
 
-	core.Register(header.RspDownloadSliceWrong, RspDownloadSliceWrong)
-	core.Register(header.RspFileStorageInfo, RspFileStorageInfo)
-	core.Register(header.RspDownloadFileWrong, RspDownloadFileWrong)
-	core.Register(header.ReqClearDownloadTask, ReqClearDownloadTask)
-	core.Register(header.ReqGetHDInfo, ReqGetHDInfo)
-	core.Register(header.RspGetHDInfo, RspGetHDInfo)
-	core.Register(header.ReqDeleteSlice, ReqDeleteSlice)
-	core.Register(header.RspDeleteSlice, RspDeleteSlice)
-	core.Register(header.UploadSpeedOfProgress, UploadSpeedOfProgress)
+	// pp--(req)--sp--(*rsp*)--pp
+	registerEvent(header.RspGetPPList, RspGetPPList, SpRspVerifier)
+	registerEvent(header.RspGetSPList, RspGetSPList, SpRspVerifier)
+	registerEvent(header.RspGetPPStatus, RspGetPPStatus, SpRspVerifier)
+	registerEvent(header.RspGetPPDowngradeInfo, RspGetPPDowngradeInfo, SpRspVerifier)
+	registerEvent(header.RspGetWalletOz, RspGetWalletOz, SpRspVerifier)
+	registerEvent(header.RspReportNodeStatus, RspReportNodeStatus, SpRspVerifier)
+	registerEvent(header.RspRegister, RspRegister, SpRspVerifier)
+	registerEvent(header.RspActivatePP, RspActivate, SpRspVerifier)
+	registerEvent(header.RspUpdateDepositPP, RspUpdateDeposit, SpRspVerifier)
+	registerEvent(header.RspStateChangePP, RspStateChange, SpRspVerifier)
+	registerEvent(header.RspDeactivatePP, RspDeactivate, SpRspVerifier)
+	registerEvent(header.NoticeUnbondingPP, NoticeUnbondingPP, SpRspVerifier)
+	registerEvent(header.RspPrepay, RspPrepay, SpRspVerifier)
+	registerEvent(header.RspMining, RspMining, SpRspVerifier)
+	registerEvent(header.RspStartMaintenance, RspStartMaintenance, SpRspVerifier)
+	registerEvent(header.RspStopMaintenance, RspStopMaintenance, SpRspVerifier)
+	registerEvent(header.RspFindMyFileList, RspFindMyFileList, SpRspVerifier)
+	registerEvent(header.RspUploadFile, RspUploadFile, RspUploadFileVerifier)
+	registerEvent(header.RspReportUploadSliceResult, RspReportUploadSliceResult, SpRspVerifier)
+	registerEvent(header.RspRegisterNewPP, RspRegisterNewPP, SpRspVerifier)
+	registerEvent(header.RspReportDownloadResult, RspReportDownloadResult, SpRspVerifier)
+	registerEvent(header.RspUploadSlicesWrong, RspUploadSlicesWrong, SpRspVerifier)
+	registerEvent(header.RspReportBackupSliceResult, RspReportBackupSliceResult, SpRspVerifier)
+	registerEvent(header.RspFileBackupStatus, RspBackupStatus, RspBackupStatusVerifier)
+	registerEvent(header.RspFileStorageInfo, RspFileStorageInfo, RspFileStorageInfoVerifier)
+	registerEvent(header.RspFileReplicaInfo, RspFileReplicaInfo, SpRspVerifier)
+	registerEvent(header.RspFileStatus, RspFileStatus, SpRspVerifier)
+	registerEvent(header.RspDownloadFileWrong, RspDownloadFileWrong, RspFileStorageInfoVerifier)
+	registerEvent(header.RspShareLink, RspShareLink, SpRspVerifier)
+	registerEvent(header.RspShareFile, RspShareFile, SpRspVerifier)
+	registerEvent(header.RspGetShareFile, RspGetShareFile, SpRspVerifier)
+	registerEvent(header.RspDeleteShare, RspDeleteShare, SpRspVerifier)
+	registerEvent(header.RspSpLatencyCheck, RspSpLatencyCheck, SpRspVerifier)
+	registerEvent(header.RspDeleteFile, RspDeleteFile, SpRspVerifier)
+	registerEvent(header.RspClearExpiredShareLinks, RspClearExpiredShareLinks, SpRspVerifier)
 
-	core.Register(header.ReqShareLink, ReqShareLink)
-	core.Register(header.RspShareLink, RspShareLink)
-	core.Register(header.ReqShareFile, ReqShareFile)
-	core.Register(header.RspShareFile, RspShareFile)
-	core.Register(header.ReqDeleteShare, ReqDeleteShare)
-	core.Register(header.RspDeleteShare, RspDeleteShare)
-	core.Register(header.ReqGetShareFile, ReqGetShareFile)
-	core.Register(header.RspGetShareFile, RspGetShareFile)
+	// not_pp---sp--(*rsp*)--pp
+	registerEvent(header.NoticeActivatedPP, NoticeActivatedPP, SpAddressVerifier)
+	registerEvent(header.NoticeUpdatedDepositPP, NoticeUpdatedDeposit, SpAddressVerifier)
+	registerEvent(header.NoticeDeactivatedPP, NoticeDeactivatedPP, SpAddressVerifier)
 
-	core.Register(header.ReqSpLatencyCheck, ReqHBLatencyCheckSpList)
-	core.Register(header.ReqLatencyCheck, ReqLatencyCheckToPp)
-	core.Register(header.RspLatencyCheck, RspHBLatencyCheckSpList)
-	core.Register(header.ReqDeleteFile, ReqDeleteFile)
-	core.Register(header.RspDeleteFile, RspDeleteFile)
-	core.Register(header.RspBadVersion, RspBadVersion)
-	core.Register(header.RspSpUnderMaintenance, RspSpUnderMaintenance)
+	// pp--(*req*)--pp--(*rsp*)--pp
+	registerEvent(header.ReqUploadFileSlice, ReqUploadFileSlice, RspUploadFileWithNoReqIdVerifier)
+	registerEvent(header.RspUploadFileSlice, RspUploadFileSlice, PpRspVerifier)
+	registerEvent(header.ReqBackupFileSlice, ReqBackupFileSlice, RspBackupStatusWithNoReqIdVerifier)
+	registerEvent(header.RspBackupFileSlice, RspBackupFileSlice, PpRspVerifier)
+	registerEvent(header.ReqDownloadSlice, ReqDownloadSlice, RspFileStorageInfoWithNoReqIdVerifier)
+	registerEvent(header.RspDownloadSlice, RspDownloadSlice, PpRspVerifier)
+	registerEvent(header.ReqTransferDownload, ReqTransferDownload, NoticeFileSliceBackupVerifier)
+	registerEvent(header.RspTransferDownload, RspTransferDownload, nil)
+	registerEvent(header.ReqPpLatencyCheck, ReqPpLatencyCheck, nil)
+	registerEvent(header.RspPpLatencyCheck, RspPpLatencyCheck, PpRspVerifier)
+
+	// pp--(*msg*)--pp
+	registerEvent(header.ReqClearDownloadTask, ReqClearDownloadTask, nil)
+	registerEvent(header.UploadSpeedOfProgress, UploadSpeedOfProgress, nil)
+
+	// sp--(*msg*)--pp
+	registerEvent(header.NoticeFileSliceBackup, NoticeFileSliceBackup, NoticeFileSliceBackupVerifier)
+	registerEvent(header.NoticeSpUnderMaintenance, NoticeSpUnderMaintenance, SpAddressVerifier)
+
+	// pp1--(req)--pp2--(rspa)--pp1--(*rspb*)--pp2
+	registerEvent(header.RspTransferDownloadResult, RspTransferDownloadResult, nil)
+
+	// framework--(*msg*)--pp
+	registerEvent(header.RspBadVersion, RspBadVersion, nil)
+
+	// to be used
+	registerEvent(header.ReqGetHDInfo, ReqGetHDInfo, nil)
+	registerEvent(header.RspGetHDInfo, RspGetHDInfo, nil)
 
 	core.RegisterTimeoutHandler(header.ReqDownloadSlice, &DownloadTimeoutHandler{})
 }

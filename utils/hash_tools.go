@@ -18,6 +18,7 @@ import (
 )
 
 const hashLen = 20
+const VIDEO_CODEC = 0x72
 
 var hashCidPrefix = cid.Prefix{
 	Version:  1,
@@ -26,36 +27,44 @@ var hashCidPrefix = cid.Prefix{
 	MhLength: 20,
 }
 
-// CalcCRC32
+var hashCidPrefixForVideoStream = cid.Prefix{
+	Version:  1,
+	Codec:    114,
+	MhType:   27,
+	MhLength: 20,
+}
+
 func CalcCRC32(data []byte) uint32 {
 	iEEE := crc32.NewIEEE()
-	io.WriteString(iEEE, string(data))
+	_, _ = io.WriteString(iEEE, string(data))
 	return iEEE.Sum32()
 }
 
-// CalcFileMD5
 func CalcFileMD5(filePath string) []byte {
 	file, err := os.Open(filePath)
 	if err != nil {
 		Log(err.Error())
 		return nil
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 	MD5 := md5.New()
-	io.Copy(MD5, file)
+	_, _ = io.Copy(MD5, file)
 	return MD5.Sum(nil)
 }
 
-// CalcFileCRC32
 func CalcFileCRC32(filePath string) uint32 {
 	file, err := os.Open(filePath)
 	if err != nil {
 		Log(err.Error())
 		return 0
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 	iEEE := crc32.NewIEEE()
-	io.Copy(iEEE, file)
+	_, _ = io.Copy(iEEE, file)
 	return iEEE.Sum32()
 }
 
@@ -67,15 +76,26 @@ func CalcFileHash(filePath, encryptionTag string) string {
 		return ""
 	}
 	data := append([]byte(encryptionTag), CalcFileMD5(filePath)...)
-	return calcFileHash(data)
+	return CalcFileHashFromData(data, cid.Raw)
 }
 
-// CalcHash
+func CalcFileHashForVideoStream(filePath, encryptionTag string) string {
+	if filePath == "" {
+		Log(errors.New("CalcFileHash: missing file path"))
+		return ""
+	}
+	data := append([]byte(encryptionTag), CalcFileMD5(filePath)...)
+	return CalcFileHashFromData(data, VIDEO_CODEC)
+}
+
 func CalcHash(data []byte) string {
 	return hex.EncodeToString(crypto.Keccak256(data))
 }
 
-// CalcHash
+func CalcHashBytes(data []byte) []byte {
+	return crypto.Keccak256(data)
+}
+
 func CalcSliceHash(data []byte, fileHash string, sliceNumber uint64) string {
 	fileCid, _ := cid.Decode(fileHash)
 	fileKeccak256 := fileCid.Hash()
@@ -98,13 +118,13 @@ func CalcSliceHash(data []byte, fileHash string, sliceNumber uint64) string {
 
 func uint64ToBytes(n uint64) []byte {
 	byteBuf := bytes.NewBuffer([]byte{})
-	binary.Write(byteBuf, binary.BigEndian, n)
+	_ = binary.Write(byteBuf, binary.BigEndian, n)
 	return byteBuf.Bytes()
 }
 
-func calcFileHash(data []byte) string {
+func CalcFileHashFromData(data []byte, codec uint64) string {
 	fileHash, _ := mh.Sum(data, mh.KECCAK_256, hashLen)
-	fileCid := cid.NewCidV1(cid.Raw, fileHash)
+	fileCid := cid.NewCidV1(codec, fileHash)
 	encoder, _ := mbase.NewEncoder(mbase.Base32hex)
 	return fileCid.Encode(encoder)
 }
@@ -116,5 +136,22 @@ func VerifyHash(hash string) bool {
 	}
 
 	prefix := fileCid.Prefix()
-	return prefix == hashCidPrefix
+	return prefix == hashCidPrefix || prefix == hashCidPrefixForVideoStream
+}
+
+func IsVideoStream(hash string) bool {
+	code, err := GetCodecFromFileHash(hash)
+	if err != nil {
+		return false
+	}
+	return code == VIDEO_CODEC
+}
+
+func GetCodecFromFileHash(hash string) (uint64, error) {
+	fileCid, err := cid.Decode(hash)
+	if err != nil {
+		return 0, err
+	}
+
+	return fileCid.Prefix().Codec, nil
 }

@@ -3,6 +3,7 @@ package hdkey
 import (
 	"errors"
 	"fmt"
+
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -29,7 +30,7 @@ const (
 	// extended key.  It consists of 4 bytes version, 1 byte depth, 4 bytes
 	// fingerprint, 4 bytes child number, 32 bytes chain code, and 33 bytes
 	// public/private key data.
-	serializedKeyLen = 4 + 1 + 4 + 4 + 32 + 33 // 78 bytes
+	serializedKeyLen = 4 + 1 + 4 + 4 + 32 + 33 //nolint:unused  // 78 bytes
 
 	// maxUint8 is the max positive integer which can be serialized in a uint8
 	maxUint8 = 1<<8 - 1
