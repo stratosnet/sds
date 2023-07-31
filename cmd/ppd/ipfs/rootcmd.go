@@ -67,7 +67,7 @@ func add(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 	utils.Log("- request get ozone (method: user_requestGetOzone)")
 
 	var resOzone rpc_api.GetOzoneResult
-	err = requester.sendRequest(paramReqGetOzone, &resOzone, "requestUpload", env)
+	err = requester.sendRequest(paramReqGetOzone, &resOzone, "requestGetOzone", env)
 	if err != nil {
 		return emitError(re, "failed to send upload file request", err)
 	}
@@ -136,7 +136,7 @@ func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 	utils.Log("- request get ozone (method: user_requestGetOzone)")
 
 	var resOzone rpc_api.GetOzoneResult
-	err = requester.sendRequest(paramReqGetOzone, &resOzone, "requestUpload", env)
+	err = requester.sendRequest(paramReqGetOzone, &resOzone, "requestGetOzone", env)
 	if err != nil {
 		return emitError(re, "failed to send upload file request", err)
 	}
