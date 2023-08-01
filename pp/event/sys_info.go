@@ -2,7 +2,6 @@ package event
 
 import (
 	"context"
-	"time"
 
 	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/pp/p2pserver"
@@ -12,7 +11,6 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/requests"
-	"github.com/stratosnet/sds/pp/setting"
 )
 
 var myClock = clock.NewClock() //nolint:unused
@@ -51,13 +49,4 @@ func reportDHInfo(ctx context.Context) func() {
 
 func reportDHInfoToPP(ctx context.Context) {
 	_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, p2pserver.GetP2pServer(ctx).GetPpConn(), requests.RspGetHDInfoData(p2pserver.GetP2pServer(ctx).GetP2PAddress()), header.RspGetHDInfo)
-}
-
-//nolint:unused
-func startReportDHInfo(ctx context.Context) {
-	if job != nil {
-		job.Cancel()
-	}
-	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.RspGetHDInfoData(p2pserver.GetP2pServer(ctx).GetP2PAddress()), header.RspGetHDInfo)
-	job, _ = myClock.AddJobRepeat(time.Second*setting.ReportDHInterval, 0, reportDHInfo(ctx))
 }

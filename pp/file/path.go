@@ -107,27 +107,6 @@ func IsFile(f string) (bool, error) {
 	return !fi.IsDir(), nil
 }
 
-// GetAllFiles get all files in directory and all sub-directory recursively
-func GetAllFiles(pathname string) {
-	utils.DebugLogf("pathname: %v", pathname)
-	rd, _ := os.ReadDir(pathname)
-	utils.DebugLogf("%v files in %v", len(rd), pathname)
-	if len(rd) == 0 {
-		// empty folder
-		setting.UpChan <- pathname
-	}
-	for _, fi := range rd {
-		if !fi.IsDir() {
-			// file found
-			setting.UpChan <- pathname + "/" + fi.Name()
-			continue
-		}
-
-		// check sub folder
-		GetAllFiles(pathname + "/" + fi.Name())
-	}
-}
-
 // EscapePath
 func EscapePath(param []string) string {
 	operatingSystem := runtime.GOOS

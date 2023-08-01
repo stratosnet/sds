@@ -11,5 +11,4 @@ const (
 
 	EncryptionHeaderSize = 12 // Nonce (8) + data length (4)
 	EncryptionNonceSize  = 8
-	EncryptionLengthSize = 4
 )
