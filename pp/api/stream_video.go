@@ -457,7 +457,7 @@ func getSliceData(ctx context.Context, fInfo *protos.RspFileStorageInfo, sliceIn
 	if err != nil {
 		return nil, err
 	}
-	fileMg, _ := os.OpenFile(slicePath, os.O_CREATE|os.O_RDWR, 0777)
+	fileMg, _ := os.OpenFile(slicePath, os.O_CREATE|os.O_RDWR, 0600)
 	defer func() {
 		_ = fileMg.Close()
 	}()
