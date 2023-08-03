@@ -245,6 +245,11 @@ func list(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) erro
 }
 
 func reqOzone() (*rpc_api.ParamReqGetOzone, error) {
+	// wallet address
+	ret := readWalletKeys(WalletAddress)
+	if !ret {
+		return nil, errors.New("failed reading key file")
+	}
 	return &rpc_api.ParamReqGetOzone{
 		WalletAddr: WalletAddress,
 	}, nil
