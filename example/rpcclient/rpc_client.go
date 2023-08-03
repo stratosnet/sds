@@ -29,6 +29,7 @@ func reqUploadMsg(filePath, hash, sn string) []byte {
 		utils.ErrorLog("Failed to get file information.", err.Error())
 		return nil
 	}
+	fileName := info.Name()
 	nowSec := time.Now().Unix()
 	// signature
 	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
@@ -42,7 +43,7 @@ func reqUploadMsg(filePath, hash, sn string) []byte {
 	// param
 	var params = []rpc.ParamReqUploadFile{}
 	params = append(params, rpc.ParamReqUploadFile{
-		FileName: filePath,
+		FileName: fileName,
 		FileSize: int(info.Size()),
 		FileHash: hash,
 		Signature: rpc.Signature{
