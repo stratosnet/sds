@@ -324,7 +324,7 @@ func DoneDownload(ctx context.Context, fileHash, fileName, savePath string) {
 			if err != nil {
 				pp.ErrorLog(ctx, "img err6>>>", err)
 			}
-			imageFile, err = os.OpenFile(setting.ImagePath+fileHash, os.O_CREATE|os.O_RDWR, 0777)
+			imageFile, err = os.OpenFile(setting.ImagePath+fileHash, os.O_CREATE|os.O_RDWR, 0600)
 			if err != nil {
 				pp.ErrorLog(ctx, "img err7>>>", err)
 			}
