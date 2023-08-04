@@ -168,11 +168,11 @@ func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 				return err
 			}
 			if !exist {
-				if err = os.MkdirAll("./download/", 0777); err != nil {
+				if err = os.MkdirAll("./download/", 0700); err != nil {
 					return emitError(re, "failed to create download folder", err)
 				}
 			}
-			fileMg, err = os.OpenFile(filepath.Join("./download/", res.FileName), os.O_CREATE|os.O_RDWR, 0777)
+			fileMg, err = os.OpenFile(filepath.Join("./download/", res.FileName), os.O_CREATE|os.O_RDWR, 0600)
 			if err != nil {
 				return emitError(re, "can't open file", err)
 			}
@@ -250,13 +250,13 @@ func reqOzone() (*rpc_api.ParamReqGetOzone, error) {
 	}, nil
 }
 
-func reqUploadMsg(fileName, hash, sn string) (*rpc_api.ParamReqUploadFile, error) {
+func reqUploadMsg(filePath, hash, sn string) (*rpc_api.ParamReqUploadFile, error) {
 	// file size
-	info, err := file.GetFileInfo(fileName)
+	info, err := file.GetFileInfo(filePath)
 	if info == nil || err != nil {
 		return nil, errors.New("failed to get file information")
 	}
-
+	fileName := info.Name()
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {

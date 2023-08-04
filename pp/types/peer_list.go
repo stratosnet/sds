@@ -55,7 +55,7 @@ func (peerList *PeerList) Init(localNetworkAddress, ppListPath string) {
 
 func (peerList *PeerList) loadPPListFromFile(ctx context.Context) error {
 	// TODO: Update this after we switch to JSON
-	csvFile, err := os.OpenFile(peerList.ppListPath, os.O_CREATE|os.O_RDWR, 0777)
+	csvFile, err := os.OpenFile(peerList.ppListPath, os.O_CREATE|os.O_RDWR, 0600)
 	defer func() {
 		_ = csvFile.Close()
 	}()
@@ -118,7 +118,7 @@ func (peerList *PeerList) SavePPListToFile(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	csvFile, err := os.OpenFile(peerList.ppListPath, os.O_CREATE|os.O_RDWR, 0777)
+	csvFile, err := os.OpenFile(peerList.ppListPath, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return err
 	}
