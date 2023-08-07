@@ -159,13 +159,14 @@ func put(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func reqUploadStreamMsg(fileName, hash, sn string) []byte {
+func reqUploadStreamMsg(filePath, hash, sn string) []byte {
 	// file size
-	info, err := file.GetFileInfo(fileName)
+	info, err := file.GetFileInfo(filePath)
 	if err != nil {
 		utils.ErrorLog("Failed to get file information.", err.Error())
 		return nil
 	}
+	fileName := info.Name()
 	nowSec := time.Now().Unix()
 	// signature
 	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
