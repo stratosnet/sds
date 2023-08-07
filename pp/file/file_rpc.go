@@ -163,7 +163,7 @@ func CacheRemoteFileData(fileHash string, offset *protos.SliceOffset, folderName
 
 	var read int64 = 0
 	var writeOffset int64 = 0
-	if !writeFromStartOffset {
+	if writeFromStartOffset {
 		writeOffset = int64(offset.SliceOffsetStart)
 	}
 
