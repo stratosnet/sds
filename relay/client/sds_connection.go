@@ -297,8 +297,8 @@ func (s *sdsConnection) txBroadcasterLoop() {
 			// No new messages are waiting to broadcast. Broadcasting existing messages now
 			if len(unsignedMsgs) > 0 {
 				broadcastTxs()
-				timeOver = time.After(txBroadcastMaxInterval * time.Millisecond)
 			}
+			timeOver = time.After(txBroadcastMaxInterval * time.Millisecond)
 		}
 	}
 }

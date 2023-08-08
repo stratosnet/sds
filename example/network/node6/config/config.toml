@@ -74,6 +74,8 @@ cert_file_path = ''
 # Path to the TLS private key file
 key_file_path = ''
 port = '9406'
+# List of IPs that are allowed to connect to the monitor websocket port
+allowed_origins = ['localhost']
 
 # Configuration for video streaming
 [streaming]

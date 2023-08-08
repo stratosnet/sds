@@ -163,7 +163,7 @@ func (bs *BaseServer) startMonitor() error {
 	}
 
 	var config = namespace.WsConfig{
-		Origins: []string{},
+		Origins: setting.Config.Monitor.AllowedOrigins,
 		Modules: []string{},
 		Prefix:  "",
 	}
