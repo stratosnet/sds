@@ -29,6 +29,7 @@ func reqUploadMsg(filePath, hash, sn string) []byte {
 		utils.ErrorLog("Failed to get file information.", err.Error())
 		return nil
 	}
+	fileName := info.Name()
 	nowSec := time.Now().Unix()
 	// signature
 	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
@@ -42,7 +43,7 @@ func reqUploadMsg(filePath, hash, sn string) []byte {
 	// param
 	var params = []rpc.ParamReqUploadFile{}
 	params = append(params, rpc.ParamReqUploadFile{
-		FileName: filePath,
+		FileName: fileName,
 		FileSize: int(info.Size()),
 		FileHash: hash,
 		Signature: rpc.Signature{
@@ -158,13 +159,14 @@ func put(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func reqUploadStreamMsg(fileName, hash, sn string) []byte {
+func reqUploadStreamMsg(filePath, hash, sn string) []byte {
 	// file size
-	info, err := file.GetFileInfo(fileName)
+	info, err := file.GetFileInfo(filePath)
 	if err != nil {
 		utils.ErrorLog("Failed to get file information.", err.Error())
 		return nil
 	}
+	fileName := info.Name()
 	nowSec := time.Now().Unix()
 	// signature
 	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
@@ -458,11 +460,11 @@ func get(cmd *cobra.Command, args []string) error {
 				return err
 			}
 			if !exist {
-				if err = os.MkdirAll("./download/", 0777); err != nil {
+				if err = os.MkdirAll("./download/", 0700); err != nil {
 					return err
 				}
 			}
-			fileMg, err = os.OpenFile(filepath.Join("./download/", res.FileName), os.O_CREATE|os.O_RDWR, 0777)
+			fileMg, err = os.OpenFile(filepath.Join("./download/", res.FileName), os.O_CREATE|os.O_RDWR, 0600)
 			if err != nil {
 				utils.ErrorLog("error initialize file")
 				return errors.New("can't open file")
@@ -1219,12 +1221,12 @@ func getshared(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		if !exist {
-			if err = os.MkdirAll("./download/", 0777); err != nil {
+			if err = os.MkdirAll("./download/", 0700); err != nil {
 				return err
 			}
 		}
 		if fileMg == nil {
-			fileMg, err = os.OpenFile(filepath.Join("./download/", res.FileName), os.O_CREATE|os.O_RDWR, 0777)
+			fileMg, err = os.OpenFile(filepath.Join("./download/", res.FileName), os.O_CREATE|os.O_RDWR, 0600)
 			if err != nil {
 				utils.ErrorLog("error initialize file")
 				return errors.New("can't open file")

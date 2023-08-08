@@ -31,7 +31,7 @@ const (
 	RpcModeIpc               = "ipc"
 	IpcEndpoint              = "ipcEndpoint"
 	IpfsPortFlag             = "port"
-	HttpRpcDefaultUrl        = "http://127.0.0.1:8335"
+	HttpRpcDefaultUrl        = "http://127.0.0.1:9301"
 	HOME              string = "home"
 )
 
