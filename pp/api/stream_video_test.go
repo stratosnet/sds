@@ -2,7 +2,8 @@ package api
 
 import (
 	ed25519crypto "crypto/ed25519"
-	"crypto/md5"
+	mbase "github.com/multiformats/go-multibase"
+	mh "github.com/multiformats/go-multihash"
 	"testing"
 
 	"github.com/ipfs/go-cid"
@@ -55,8 +56,13 @@ func setup(t *testing.T) (*StreamReqBody, string, []byte) {
 	setting.SPMap.Store(spP2pAddrString, setting.SPBaseInfo{P2PPublicKey: spP2pPubKeyString})
 
 	data := []byte("some kind of data")
+
+	filehash, _ := mh.Sum(data, mh.KECCAK_256, 20)
+	fileCid := cid.NewCidV1(uint64(utils.VIDEO_CODEC), filehash)
+	encoder, _ := mbase.NewEncoder(mbase.Base32hex)
+	fh := fileCid.Encode(encoder)
 	reqBody := &StreamReqBody{
-		FileHash:     utils.CalcFileHashFromData(md5.New().Sum(data), cid.Raw),
+		FileHash:     fh,
 		P2PAddress:   "d4c3b2a1",
 		SpP2pAddress: spP2pAddrString,
 		Sign:         nil,

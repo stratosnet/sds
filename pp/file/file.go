@@ -44,14 +44,14 @@ func GetFileSuffix(fileName string) string {
 }
 
 func GetFileHash(filePath, encryptionTag string) string {
-	filehash := utils.CalcFileHash(filePath, encryptionTag)
+	filehash := utils.CalcFileHash(filePath, encryptionTag, utils.SDS_CODEC)
 	utils.DebugLog("filehash", filehash)
 	fileMap[filehash] = filePath
 	return filehash
 }
 
 func GetFileHashForVideoStream(filePath, encryptionTag string) string {
-	filehash := utils.CalcFileHashForVideoStream(filePath, encryptionTag)
+	filehash := utils.CalcFileHash(filePath, encryptionTag, utils.VIDEO_CODEC)
 	utils.DebugLog("filehash", filehash)
 	fileMap[filehash] = filePath
 	return filehash
@@ -306,7 +306,7 @@ func CheckFileExisting(ctx context.Context, fileHash, fileName, savePath, encryp
 		return false
 	}
 
-	hash := utils.CalcFileHash(filePath, encryptionTag)
+	hash := utils.CalcFileHash(filePath, encryptionTag, utils.SDS_CODEC)
 	pp.DebugLog(ctx, "hash", hash)
 	if hash == fileHash {
 		pp.DebugLog(ctx, "file hash matched")

@@ -2,13 +2,18 @@ package utils
 
 import (
 	"crypto/rand"
+	mbase "github.com/multiformats/go-multibase"
+	mh "github.com/multiformats/go-multihash"
 	"testing"
 
 	"github.com/ipfs/go-cid"
 )
 
 func BenchmarkSliceHash(b *testing.B) {
-	fileHash := CalcFileHashFromData([]byte("fileData"), cid.Raw)
+	filehash, _ := mh.Sum([]byte("fileData"), mh.KECCAK_256, 20)
+	fileCid := cid.NewCidV1(uint64(cid.Raw), filehash)
+	encoder, _ := mbase.NewEncoder(mbase.Base32hex)
+	fh := fileCid.Encode(encoder)
 
 	//prepare data
 	sliceCnt := 1000
@@ -25,7 +30,7 @@ func BenchmarkSliceHash(b *testing.B) {
 
 	b.Run("BenchmarkSliceHash", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = CalcSliceHash(sliceList[i%sliceCnt], fileHash, uint64(i))
+			_ = CalcSliceHash(sliceList[i%sliceCnt], fh, uint64(i))
 		}
 	})
 }

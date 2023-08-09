@@ -298,7 +298,7 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 
 		tmpFilePath := filepath.Join(file.GetTmpFileFolderPath(file.TMP_FOLDER_VIDEO), fileName)
 		defer os.RemoveAll(tmpFilePath) // remove tmp file no matter what the result is
-		calculatedFileHash := utils.CalcFileHashForVideoStream(tmpFilePath, "")
+		calculatedFileHash := utils.CalcFileHash(tmpFilePath, "", utils.VIDEO_CODEC)
 		if calculatedFileHash != fileHash {
 			file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.WRONG_FILE_INFO})
 			return
