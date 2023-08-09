@@ -119,7 +119,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 	walletAddr := param.Signature.Address
 	pubkey := param.Signature.Pubkey
 	signature := param.Signature.Signature
-	time := param.ReqTime
+	reqTime := param.ReqTime
 
 	// verify if wallet and public key match
 	if utiltypes.VerifyWalletAddr(pubkey, walletAddr) != 0 {
@@ -168,8 +168,9 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 			}
 		}
 
+		file.AddClearTmpFileChecker(fileHash, time.Now().Unix()+file.DEFAULT_UPLOAD_EXP_IN_SEC)
 		// start to upload file
-		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, time,
+		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, reqTime,
 			slices, false, param.DesiredTier, param.AllowHigherTier, 0)
 		if err != nil {
 			file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
@@ -277,7 +278,7 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 	walletAddr := param.Signature.Address
 	pubkey := param.Signature.Pubkey
 	signature := param.Signature.Signature
-	time := param.ReqTime
+	repTime := param.ReqTime
 
 	// fetch file slices from remote client and send upload request to sp
 	fetchRemoteFileAndReqUpload := func() {
@@ -298,6 +299,8 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 		}
 
 		tmpFilePath := filepath.Join(file.GetTmpFileFolderPath(tmpFolder), fileName)
+		defer os.RemoveAll(tmpFilePath) // remove tmp file no matter what the result is
+		//file.AddClearTmpFileChecker(filepath.Join(tmpFolder, fileName), time.Now().Unix()+file.DEFAULT_UPLOAD_EXP_IN_SEC)
 		calculatedFileHash := utils.CalcFileHashForVideoStream(tmpFilePath, "")
 		if calculatedFileHash != fileHash {
 			file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.WRONG_FILE_INFO})
@@ -310,10 +313,9 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 			file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
 			return
 		}
-		_ = os.RemoveAll(tmpFilePath)
 
 		// start to upload file
-		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, time,
+		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, repTime,
 			slices, false, param.DesiredTier, param.AllowHigherTier, fInfo.Duration)
 		if err != nil {
 			file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})

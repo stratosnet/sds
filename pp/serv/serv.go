@@ -56,6 +56,11 @@ func (bs *BaseServer) Start() error {
 		return err
 	}
 
+	err = bs.startClearTmpFileJob()
+	if err != nil {
+		return err
+	}
+
 	err = bs.startIPC()
 	if err != nil {
 		return err
@@ -211,6 +216,12 @@ func (bs *BaseServer) startTrafficLog() error {
 	ctx = context.WithValue(ctx, types.P2P_SERVER_KEY, bs.p2pServ)
 	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
 	StartDumpTrafficLog(ctx)
+	return nil
+}
+
+func (bs *BaseServer) startClearTmpFileJob() error {
+	ctx := context.Background()
+	file.StartClearTmpFileJob(ctx)
 	return nil
 }
 
