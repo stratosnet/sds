@@ -87,8 +87,8 @@ func (s *sdsConnection) refresh() {
 
 	// Schedule next connection refresh
 	if setting.Config.SDS.ConnectionRetries.RefreshInterval > 0 {
+		s.wg.Add(1)
 		go func() {
-			s.wg.Add(1)
 			defer s.wg.Done()
 
 			select {

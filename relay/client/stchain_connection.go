@@ -55,8 +55,8 @@ func (s *stchainConnection) stop() {
 				return false
 			}
 
+			s.wg.Add(1)
 			go func() {
-				s.wg.Add(1)
 				defer s.wg.Done()
 
 				if subscription.client == nil {
@@ -96,8 +96,8 @@ func (s *stchainConnection) refresh() {
 
 	// Schedule next connection refresh
 	if setting.Config.StratosChain.ConnectionRetries.RefreshInterval > 0 {
+		s.wg.Add(1)
 		go func() {
-			s.wg.Add(1)
 			defer s.wg.Done()
 
 			select {

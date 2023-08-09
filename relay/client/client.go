@@ -7,25 +7,23 @@ import (
 	"sync"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/gorilla/websocket"
 	"github.com/stratosnet/sds/cmd/relayd/setting"
 	"github.com/stratosnet/sds/relay/stratoschain/grpc"
-	relaytypes "github.com/stratosnet/sds/relay/types"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/crypto/secp256k1"
 	"github.com/stratosnet/sds/utils/types"
 )
 
 type MultiClient struct {
-	cancel            context.CancelFunc
-	Ctx               context.Context
-	once              *sync.Once
-	sdsWebsocketConn  *websocket.Conn
-	txBroadcasterChan chan relaytypes.UnsignedMsg
-	sdsConn           connection
-	stchainConn       connection
-	WalletAddress     string
-	WalletPrivateKey  cryptotypes.PrivKey
+	cancel context.CancelFunc
+	Ctx    context.Context
+	once   *sync.Once
+
+	sdsConn     connection
+	stchainConn connection
+
+	WalletAddress    string
+	WalletPrivateKey cryptotypes.PrivKey
 }
 
 // connection is a generic interface for a client connection to an external service (sds or stchain)
