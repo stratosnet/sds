@@ -189,13 +189,15 @@ func SetConfig(key string, value interface{}) error {
 	if err != nil {
 		return err
 	}
-	if err = toml.Unmarshal(data, &config{}); err != nil {
+
+	updatedConfig := &config{}
+	if err = toml.Unmarshal(data, updatedConfig); err != nil {
 		return err
 	}
 
 	// Save changes to file
-	err = os.WriteFile(ConfigPath, data, 0644)
-	if err != nil {
+	Config = updatedConfig
+	if err = FlushConfig(); err != nil {
 		return err
 	}
 
