@@ -276,7 +276,7 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 	walletAddr := param.Signature.Address
 	pubkey := param.Signature.Pubkey
 	signature := param.Signature.Signature
-	repTime := param.ReqTime
+	reqTime := param.ReqTime
 
 	// fetch file slices from remote client and send upload request to sp
 	fetchRemoteFileAndReqUpload := func() {
@@ -312,7 +312,7 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 		}
 
 		// start to upload file
-		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, repTime,
+		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, reqTime,
 			slices, false, param.DesiredTier, param.AllowHigherTier, fInfo.Duration)
 		if err != nil {
 			file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
