@@ -2,61 +2,93 @@ package file
 
 import (
 	"context"
-	"sync"
+	"fmt"
+	"os/exec"
+	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/alex023/clock"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/utils"
 )
 
 const (
-	checkTmpFileInterval         = 300  // 5 mins
-	DEFAULT_UPLOAD_EXP_IN_SEC    = 3600 // 1 hour
-	DEFAULT_STREAMING_EXP_IN_SEC = 1800 // 30 mins
+	checkTmpFileInterval  = 86400 // in seconds, 1 day
+	DEFAULT_EXP_THRESHOLD = 2     // 2 days (will delete if no visit since 2 days ago)
 )
 
 var (
-	clrmu = &sync.Mutex{}
-
-	taskClearTmpFileClock = clock.NewClock()
-	taskClearTmpFileJob   clock.Job
-	clearTmpTaskMap       = &sync.Map{} // Key: fileHash or fileName (under tmp folder), Value: timeStamp to delete
+	clearTmpFileClock = clock.NewClock()
+	clearTmpFileJob   clock.Job
 )
 
 func StartClearTmpFileJob(ctx context.Context) {
 	utils.Log("Starting ClearTmpFileJob......")
-	taskClearTmpFileJob, _ = taskClearTmpFileClock.AddJobRepeat(time.Second*time.Duration(checkTmpFileInterval), 0, clearTmpFile(ctx))
+	clearTmpFileJob, _ = clearTmpFileClock.AddJobRepeat(time.Second*time.Duration(checkTmpFileInterval), 0, clearTmpFile(ctx))
 }
 
 func clearTmpFile(ctx context.Context) func() {
 	return func() {
-		clrmu.Lock()
-		defer clrmu.Unlock()
-
-		entriesToDel := make([]string, 0)
-		clearTmpTaskMap.Range(func(key, value interface{}) bool {
-			fileHashOrName := key.(string)
-			expTime := value.(int64)
-			utils.Logf("iterating clearTmpTaskMap, file=%v, to be expired in %d secs", fileHashOrName, expTime-time.Now().Unix())
-			if expTime > time.Now().Unix() {
-				return true
-			}
-			DeleteTmpFileSlices(ctx, fileHashOrName)
-			entriesToDel = append(entriesToDel, fileHashOrName)
-			return false
-		})
-		// clear entries
-		for _, entry := range entriesToDel {
-			clearTmpTaskMap.Delete(entry)
-		}
-		utils.Logf("%d entries got deleted", len(entriesToDel))
+		clearTmpUploadedVideos(ctx)
+		clearTmpSlices(ctx)
 	}
 }
 
-// add or update timer to clear tmp file/folders
-func AddClearTmpFileChecker(fileHashOrName string, expTime int64) {
-	clrmu.Lock()
-	defer clrmu.Unlock()
-	utils.Logf("1 new checker added to clear tmp file[%v] in %d secs", fileHashOrName, expTime-time.Now().Unix())
-	clearTmpTaskMap.Store(fileHashOrName, expTime)
+func StopClearTmpFileJob() {
+	if clearTmpFileJob != nil {
+		utils.Log("Stopping ClearTmpFileJob......")
+		clearTmpFileJob.Cancel()
+	}
+}
+
+func clearTmpSlices(ctx context.Context) {
+	baseTmpFolderPath := GetTmpFileFolderPath("")
+	baseDir := filepath.Join(baseTmpFolderPath)
+	excludedDir := "logs"
+	exist, err := PathExists(baseDir)
+	if err != nil || !exist {
+		return
+	}
+
+	// Shell command to iterate and delete subfolders based on conditions
+	cmdString := fmt.Sprintf(`
+	find %s -mindepth 1 -maxdepth 1 -type d ! -name %s | while read -r dir; do
+    total_files=$(find "$dir" -type f | wc -l)
+    old_files=$(find "$dir" -type f -atime +%s | wc -l)
+    if [ "$old_files" -eq "$total_files" ] && [ "$total_files" -ne 0 ]; then
+        rm -rf "$dir"
+    fi
+	done
+	`, baseDir, excludedDir, strconv.Itoa(DEFAULT_EXP_THRESHOLD))
+	pp.DebugLogf(ctx, "command to clear tmp slices: \n%s", cmdString)
+	// Execute the command
+	cmd := exec.Command("sh", "-c", cmdString)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Printf("Failed to execute command: %s\n", err)
+		return
+	}
+
+	// Print output (if any)
+	fmt.Println(string(out))
+}
+
+func clearTmpUploadedVideos(ctx context.Context) {
+	baseTmpFolderPath := GetTmpFileFolderPath(TMP_FOLDER_VIDEO)
+	baseDir := filepath.Join(baseTmpFolderPath)
+	cmdString := fmt.Sprintf(`
+	find %s -type f -atime +%s -exec rm {} \;
+	`, baseDir, strconv.Itoa(DEFAULT_EXP_THRESHOLD))
+	pp.DebugLogf(ctx, "command to clear tmp videos: \n%s", cmdString)
+	// Execute the command
+	cmd := exec.Command("sh", "-c", cmdString)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Printf("Failed to execute command: %s\n", err)
+		return
+	}
+
+	// Print output (if any)
+	fmt.Println(string(out))
 }

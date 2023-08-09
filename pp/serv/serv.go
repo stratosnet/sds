@@ -263,5 +263,7 @@ func (bs *BaseServer) Stop() {
 	if bs.p2pServ != nil {
 		bs.p2pServ.Stop()
 	}
+	StopDumpTrafficLog()
+	file.StopClearTmpFileJob()
 	// TODO: stop IPC, TrafficLog, InternalApiServer, RestServer
 }

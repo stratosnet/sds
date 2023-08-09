@@ -451,7 +451,7 @@ func (UploadStreamFileHandler) PreUpload(ctx context.Context, filePath, encrypti
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "failed to save to temp file")
 		}
-		file.AddClearTmpFileChecker(fileHash, time.Now().Unix()+file.DEFAULT_STREAMING_EXP_IN_SEC)
+
 		slice := &protos.SliceHashAddr{
 			SliceHash:   sliceHash,
 			SliceNumber: sliceNumber,
@@ -517,7 +517,6 @@ func (UploadRawFileHandler) PreUpload(ctx context.Context, filePath, encryptionT
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "failed to save to temp file")
 		}
-		file.AddClearTmpFileChecker(fileHash, time.Now().Unix()+file.DEFAULT_UPLOAD_EXP_IN_SEC)
 
 		SliceHashAddr := &protos.SliceHashAddr{
 			SliceHash:   sliceHash,
