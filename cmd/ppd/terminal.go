@@ -35,7 +35,6 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"help                                                           show all the commands\n" +
 		"wallets                                                        acquire all wallet wallets' address\n" +
 		"newwallet                                                      create new wallet, input password in prompt\n" +
-		"login <walletAddress> ->password                               unlock and log in wallet, input password in prompt\n" +
 		"registerpeer                                                   register peer to index node\n" +
 		"rp                                                             register peer to index node\n" +
 		"activate <amount> <fee> optional<gas>                          send transaction to stchain to become an active PP node\n" +
@@ -96,20 +95,6 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 			return false
 		}
 		return true
-	}
-
-	login := func(line string, param []string) bool {
-		if len(param) < 1 {
-			fmt.Println("input wallet address")
-			return false
-		}
-		if len(param[0]) != 41 {
-			fmt.Println("input correct wallet address")
-			return false
-		}
-		password := console.MyGetPassword("input password", false)
-
-		return callRpc(c, "login", []string{param[0], password})
 	}
 
 	start := func(line string, param []string) bool {
@@ -256,7 +241,6 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("wallets", wallets, false)
 	console.Mystdin.RegisterProcessFunc("getoz", getoz, true)
 	console.Mystdin.RegisterProcessFunc("newwallet", newwallet, false)
-	console.Mystdin.RegisterProcessFunc("login", login, false)
 	console.Mystdin.RegisterProcessFunc("startmining", start, true)
 	console.Mystdin.RegisterProcessFunc("rp", registerPP, true)
 	console.Mystdin.RegisterProcessFunc("registerpeer", registerPP, true)
