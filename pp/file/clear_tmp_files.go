@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/alex023/clock"
-	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -61,7 +60,7 @@ func clearTmpSlices(ctx context.Context) {
     fi
 	done
 	`, baseDir, excludedDir, strconv.Itoa(DEFAULT_EXP_THRESHOLD))
-	pp.DebugLogf(ctx, "command to clear tmp slices: \n%s", cmdString)
+	//pp.DebugLogf(ctx, "command to clear tmp slices: \n%s", cmdString)
 	// Execute the command
 	cmd := exec.Command("sh", "-c", cmdString)
 	out, err := cmd.CombinedOutput()
@@ -80,7 +79,7 @@ func clearTmpUploadedVideos(ctx context.Context) {
 	cmdString := fmt.Sprintf(`
 	find %s -type f -atime +%s -exec rm {} \;
 	`, baseDir, strconv.Itoa(DEFAULT_EXP_THRESHOLD))
-	pp.DebugLogf(ctx, "command to clear tmp videos: \n%s", cmdString)
+	//pp.DebugLogf(ctx, "command to clear tmp videos: \n%s", cmdString)
 	// Execute the command
 	cmd := exec.Command("sh", "-c", cmdString)
 	out, err := cmd.CombinedOutput()
