@@ -76,10 +76,11 @@ type NodeConfig struct {
 }
 
 type MonitorConfig struct {
-	TLS          bool   `toml:"tls" comment:"Should the monitor server use TLS? Eg: false"`
-	CertFilePath string `toml:"cert_file_path" comment:"Path to the TLS certificate file"`
-	KeyFilePath  string `toml:"key_file_path" comment:"Path to the TLS private key file"`
-	Port         string `toml:"port"`
+	TLS            bool     `toml:"tls" comment:"Should the monitor server use TLS? Eg: false"`
+	CertFilePath   string   `toml:"cert_file_path" comment:"Path to the TLS certificate file"`
+	KeyFilePath    string   `toml:"key_file_path" comment:"Path to the TLS private key file"`
+	Port           string   `toml:"port"`
+	AllowedOrigins []string `toml:"allowed_origins" comment:"List of IPs that are allowed to connect to the monitor websocket port"`
 }
 
 type TrafficConfig struct {
@@ -247,10 +248,11 @@ func defaultConfig() *config {
 			},
 		},
 		Monitor: MonitorConfig{
-			TLS:          false,
-			CertFilePath: "",
-			KeyFilePath:  "",
-			Port:         "18381",
+			TLS:            false,
+			CertFilePath:   "",
+			KeyFilePath:    "",
+			Port:           "18381",
+			AllowedOrigins: []string{"127.0.0.1"},
 		},
 		Streaming: StreamingConfig{
 			InternalPort: "18481",
