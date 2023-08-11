@@ -28,8 +28,8 @@ type connectionRetries struct {
 }
 
 type grpcConfig struct {
-	Url      string `toml:"url"`
-	Insecure bool   `toml:"insecure"`
+	GrpcServer string `toml:"grpc_server" comment:"Network address of the chain Eg: \"127.0.0.1:9090\""`
+	Insecure   bool   `toml:"insecure"`
 }
 
 type sds struct {
@@ -120,8 +120,8 @@ func defaultConfig() *config {
 		},
 		StratosChain: stratoschain{
 			GrpcServer: grpcConfig{
-				Url:      "127.0.0.1:9090",
-				Insecure: true,
+				GrpcServer: "127.0.0.1:9090",
+				Insecure:   true,
 			},
 			WebsocketServer: "127.0.0.1:26657",
 			ConnectionRetries: connectionRetries{

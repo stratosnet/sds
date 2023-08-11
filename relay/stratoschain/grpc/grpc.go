@@ -10,19 +10,19 @@ import (
 )
 
 var (
-	URL      string
+	SERVER   string
 	INSECURE bool
 )
 
 func CreateGrpcConn() (*grpc.ClientConn, error) {
-	if URL == "" {
+	if SERVER == "" {
 		return nil, errors.New("the stratos-chain GRPC server URL is not set")
 	}
 	dialOptions, err := getDialOptions()
 	if err != nil {
 		return nil, err
 	}
-	return grpc.Dial(URL, dialOptions...)
+	return grpc.Dial(SERVER, dialOptions...)
 }
 
 func getDialOptions() (options []grpc.DialOption, err error) {
