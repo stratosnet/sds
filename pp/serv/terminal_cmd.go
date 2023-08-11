@@ -134,7 +134,6 @@ func (api *terminalCmd) Activate(ctx context.Context, param []string) (CmdResult
 		return CmdResult{Msg: "the pp is already active"}, nil
 	}
 
-	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	if err := event.Activate(ctx, amount, txFee); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
@@ -705,6 +704,7 @@ func (api *terminalCmd) PauseGet(ctx context.Context, param []string) (CmdResult
 	if len(param) < 1 {
 		return CmdResult{Msg: ""}, errors.New("input file hash of the pause")
 	}
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
 	event.DownloadSlicePause(ctx, param[0], "")
 	return CmdResult{Msg: DefaultMsg}, nil
 }
