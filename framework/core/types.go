@@ -9,6 +9,7 @@ const (
 
 	HandshakeMessage = "sds_handshake"
 
-	EncryptionHeaderSize = 12 // Nonce (8) + data length (4)
+	EncryptionHeaderSize = EncryptionNonceSize + EncryptionLengthSize // Nonce (8) + data length (4)
 	EncryptionNonceSize  = 8
+	EncryptionLengthSize = 4
 )
