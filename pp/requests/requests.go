@@ -107,6 +107,16 @@ func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize 
 		encryptionTag = utils.GetRandomString(8)
 	}
 
+	// verify file hash
+	var paths []string
+	for _, slice := range slices {
+		path := file.GetTmpSlicePath(fileHash, slice.SliceHash)
+		paths = append(paths, path)
+	}
+
+	if utils.CalcFileHashFromSlices(paths, encryptionTag) != fileHash {
+		return nil, errors.New("failed verifying file hash")
+	}
 	utils.Log("fileHash: ", fileHash)
 
 	file.SaveRemoteFileHash(fileHash, fileName, fileSize)

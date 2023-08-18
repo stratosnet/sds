@@ -39,7 +39,7 @@ type BlockchainConfig struct {
 	ChainId       string  `toml:"chain_id" comment:"ID of the chain Eg: \"tropos-5\""`
 	GasAdjustment float64 `toml:"gas_adjustment" comment:"Multiplier for the simulated tx gas cost Eg: 1.5"`
 	Insecure      bool    `toml:"insecure" comment:"Connect to the chain using an insecure connection (no TLS) Eg: true"`
-	Url           string  `toml:"url" comment:"Network address of the chain Eg: \"127.0.0.1:9090\""`
+	GrpcServer    string  `toml:"grpc_server" comment:"Network address of the chain Eg: \"127.0.0.1:9090\""`
 }
 
 type HomeConfig struct {
@@ -146,7 +146,7 @@ func LoadConfig(configPath string) error {
 	cf.SetMaxUploadRate(Config.Traffic.MaxUploadRate)
 
 	// todo: we shouldn't call grpc package to setup a global variable
-	grpc.URL = Config.Blockchain.Url
+	grpc.SERVER = Config.Blockchain.GrpcServer
 	grpc.INSECURE = Config.Blockchain.Insecure
 
 	return nil
@@ -215,7 +215,7 @@ func defaultConfig() *config {
 			ChainId:       "mesos-1",
 			GasAdjustment: 1.3,
 			Insecure:      true,
-			Url:           "127.0.0.1:9090",
+			GrpcServer:    "127.0.0.1:9090",
 		},
 		Home: HomeConfig{
 			AccountsPath: "./accounts",

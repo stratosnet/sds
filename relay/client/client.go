@@ -71,7 +71,7 @@ func (m *MultiClient) loadKeys(spHomePath string) error {
 
 func (m *MultiClient) Start() error {
 	// GRPC client to send msgs to stratos-chain
-	grpc.URL = setting.Config.StratosChain.GrpcServer.Url
+	grpc.SERVER = setting.Config.StratosChain.GrpcServer.GrpcServer
 	grpc.INSECURE = setting.Config.StratosChain.GrpcServer.Insecure
 
 	// Start client connections

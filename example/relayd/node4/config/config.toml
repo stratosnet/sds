@@ -16,7 +16,7 @@ refresh_interval = 86400 # seconds
 [stratos_chain]
 websocket_server = "127.0.0.1:26657"
 [stratos_chain.grpc_server]
-url = "127.0.0.1:9090"
+grpc_server = "127.0.0.1:9090"
 insecure = true
 [stratos_chain.connection_retries]
 max = 100
