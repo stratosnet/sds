@@ -42,15 +42,15 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"deactivate <fee> optional<gas>                                 send transaction to stchain to stop being an active PP node\n" +
 		"startmining                                                    start mining\n" +
 		"prepay <amount> <fee> optional<beneficiary> <gas>              prepay stos to get ozone\n" +
-		"put <filepath> optional<isEncrypted> optional<nodeTier> optional<allowHigherTier>\n" +
-		"                                                               upload file, need to consume ozone\n" +
-		"putstream <filepath> optional<isEncrypted> optional<nodeTier> optional<allowHigherTier>\n" +
-		"                                                               upload video file for streaming, need to consume ozone. (alpha version, encode format config impossible)\n" +
+		"put <filepath> optional<isEncrypted> optional<nodeTier>        \n" +
+		"               optional<allowHigherTier>                       upload file, need to consume ozone\n" +
+		"putstream <filepath> optional<isEncrypted> optional<nodeTier>  \n" +
+		"                     optional<allowHigherTier>                 upload video file for streaming, need to consume ozone. (alpha version, encode format config impossible)\n" +
 		"list <filename>                                                query uploaded file by self\n" +
 		"list <page id>                                                 query all files owned by the wallet, paginated\n" +
 		"delete <filehash>                                              delete file\n" +
 		"get <sdm://account/filehash> <saveAs>                          download file, need to consume ozone\n" +
-		"    e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe\n" +
+		"                                                               e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/v05ahm50ugfjrgd3ga8mqi6bqka32ks3dooe1p9g\n" +
 		"sharefile <filehash> <duration> <is_private>                   share an uploaded file\n" +
 		"allshare                                                       list all shared files\n" +
 		"getsharefile <sharelink> <password>                            download a shared file, need to consume ozone\n" +
