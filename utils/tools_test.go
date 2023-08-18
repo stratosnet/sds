@@ -2,6 +2,8 @@ package utils
 
 import (
 	"crypto/md5"
+	mbase "github.com/multiformats/go-multibase"
+	mh "github.com/multiformats/go-multihash"
 	"math/rand"
 	"testing"
 	"time"
@@ -75,14 +77,17 @@ func TestCid(t *testing.T) {
 			t.Fatal("cannot generate random data", err)
 		}
 
-		fileHash := CalcFileHashFromData(fileData[:], cid.Raw)
-		sliceHash := CalcSliceHash(sliceData[:], fileHash, uint64(i))
+		filehash, _ := mh.Sum(fileData[:], mh.KECCAK_256, 20)
+		fileCid := cid.NewCidV1(uint64(SDS_CODEC), filehash)
+		encoder, _ := mbase.NewEncoder(mbase.Base32hex)
+		fh := fileCid.Encode(encoder)
 
-		if !VerifyHash(fileHash) {
+		sliceHash := CalcSliceHash(sliceData[:], fh, uint64(i))
+
+		if !ValidateHash(fh, SDS_CODEC) {
 			t.Fatal("generated file hash is invalid")
 		}
-
-		if !VerifyHash(sliceHash) {
+		if !ValidateHash(sliceHash, cid.Raw) {
 			t.Fatal("generated slice hash is invalid")
 		}
 
@@ -91,7 +96,7 @@ func TestCid(t *testing.T) {
 			t.Fatal("slice hash should be different when being generated with different file hash")
 		}
 
-		if VerifyHash(fakeFileHash) {
+		if ValidateHash(fakeFileHash, SDS_CODEC) {
 			t.Fatal("Fake file hash should have failed verification")
 		}
 	}
@@ -104,13 +109,15 @@ func TestCidLargeFile(t *testing.T) {
 
 	start := time.Now()
 	data := append([]byte(encryptionTag), md5.New().Sum(fileContent)...)
-	filehash := CalcFileHashFromData(data, cid.Raw)
-
+	filehash, _ := mh.Sum(data, mh.KECCAK_256, 20)
+	fileCid := cid.NewCidV1(uint64(cid.Raw), filehash)
+	encoder, _ := mbase.NewEncoder(mbase.Base32hex)
+	fh := fileCid.Encode(encoder)
 	elapsed := time.Since(start)
 	t.Log(filehash)
 	t.Log(elapsed)
 
-	if !VerifyHash(filehash) {
+	if !ValidateHash(fh, cid.Raw) {
 		t.Fatal("generated file hash is invalid")
 	}
 }

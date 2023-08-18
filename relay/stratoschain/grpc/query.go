@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/pkg/errors"
@@ -53,7 +52,6 @@ func QueryResourceNodeState(p2pAddress string) (state relaytypes.ResourceNodeSta
 	client := registertypes.NewQueryClient(conn)
 	ctx := context.Background()
 	req := registertypes.QueryResourceNodeRequest{NetworkAddr: p2pAddress}
-
 	resp, err := client.ResourceNode(ctx, &req)
 	if err != nil {
 		return state, err

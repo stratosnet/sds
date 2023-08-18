@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"crypto/tls"
-
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

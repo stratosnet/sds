@@ -16,9 +16,9 @@ func TestDataMeshIdFromString(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{name: "1", args: args{"sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/v05ahm52iirbq55177uii2bmbsmmcemnjtm740s8"}, want: &DataMeshId{
+		{name: "1", args: args{"sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/v05j1m56k3597bm5a96nq7103fos15oe48qd2ud0"}, want: &DataMeshId{
 			Owner: "st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg",
-			Hash:  "v05ahm52iirbq55177uii2bmbsmmcemnjtm740s8",
+			Hash:  "v05j1m56k3597bm5a96nq7103fos15oe48qd2ud0",
 		}, wantErr: false},
 		{name: "2", args: args{"sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg//v05ahm52iirbq55177uii2bmbsmmcemnjtm740s8"}, want: nil, wantErr: true},
 		{name: "3", args: args{"sdm://st1jn9skjsnxv26mekd8eu8a8aquh30m4mwgahg/v05ahm52iirbq55177uii2bmbsmmcemnjtm740s8"}, want: nil, wantErr: true},
