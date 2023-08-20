@@ -27,8 +27,6 @@ var (
 
 	ostype    = runtime.GOOS
 	IsWindows bool
-
-	UpChan = make(chan string, 100)
 )
 
 type VersionConfig struct {
