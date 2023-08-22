@@ -26,13 +26,13 @@ import (
 const LOCAL_REQID string = "local"
 
 // DownloadTaskMap PP passway download task map   make(map[string]*DownloadTask)
-var DownloadTaskMap = utils.NewAutoCleanMap(5 * time.Minute)
+var DownloadTaskMap = utils.NewAutoCleanMap(1 * time.Hour)
 
 // DownloadSliceTaskMap resource node download slice task map
 var DownloadSliceTaskMap = utils.NewAutoCleanMap(1 * time.Hour)
 
 // DownloadFileMap P download info map  make(map[string]*protos.RspFileStorageInfo)
-var DownloadFileMap = utils.NewAutoCleanMap(5 * time.Minute)
+var DownloadFileMap = utils.NewAutoCleanMap(1 * time.Hour)
 
 // var DownloadFileProgress = &sync.Map{}
 
