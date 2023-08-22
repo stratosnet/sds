@@ -99,7 +99,10 @@ func add(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 			return emitError(re, "failed to get data from file", err)
 		}
 		encoded := base64.StdEncoding.EncodeToString(rawData)
-		paramsData := uploadDataMsg(hash, encoded)
+		paramsData, err := uploadDataMsg(hash, encoded, resOzone.SequenceNumber)
+		if err != nil {
+			return emitError(re, "failed to prepare upload data request", err)
+		}
 		utils.Log("- request upload date (method: user_uploadData)")
 
 		err = requester.sendRequest(paramsData, &res, "uploadData", env)
@@ -291,11 +294,33 @@ func reqUploadMsg(filePath, hash, sn string) (*rpc_api.ParamReqUploadFile, error
 	}, nil
 }
 
-func uploadDataMsg(hash, data string) rpc_api.ParamUploadData {
+func uploadDataMsg(hash, data, sn string) (rpc_api.ParamUploadData, error) {
+	// wallet address
+	ret := readWalletKeys(WalletAddress)
+	if !ret {
+		return rpc_api.ParamUploadData{}, errors.New("failed reading key file")
+	}
+	nowSec := time.Now().Unix()
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
+	if err != nil {
+		return rpc_api.ParamUploadData{}, err
+	}
+	wpk, err := WalletPublicKey.ToBech()
+	if err != nil {
+		return rpc_api.ParamUploadData{}, err
+	}
+
 	return rpc_api.ParamUploadData{
 		FileHash: hash,
 		Data:     data,
-	}
+		Signature: rpc_api.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
+		},
+		ReqTime: nowSec,
+	}, nil
 }
 
 func reqDownloadMsg(hash, sdmPath, sn string) (*rpc_api.ParamReqDownloadFile, error) {

@@ -262,7 +262,7 @@ func main() {
 	rootCmd.AddCommand(serviceStatusCmd)
 
 	combineLogger := utils.NewDefaultLogger("./logs/stdout.log", true, true)
-	combineLogger.SetLogLevel(utils.Info)
+	combineLogger.SetLogLevel(utils.Debug)
 
 	err = rootCmd.Execute()
 	if err != nil {
