@@ -44,17 +44,26 @@ const (
 
 	// INIT_WAIT_TIMEOUT timeout for waiting the initial request
 	INIT_WAIT_TIMEOUT time.Duration = 15 * time.Second
+
+	SIGNATURE_INFO_TTL = 10 * time.Minute
 )
 
 var (
 	// key: fileHash value: file
 	FileOffset      = make(map[string]*FileFetchOffset)
 	FileOffsetMutex sync.Mutex
+
+	signatureInfoMap = utils.NewAutoCleanMap(SIGNATURE_INFO_TTL)
 )
 
 type FileFetchOffset struct {
 	RemoteRequested   uint64
 	ResourceNodeAsked uint64
+}
+
+type signatureInfo struct {
+	signature rpc_api.Signature
+	reqTime   int64
 }
 
 type rpcPubApi struct {
@@ -126,6 +135,12 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
+	// Store initial signature info
+	signatureInfoMap.Store(fileHash, signatureInfo{
+		signature: param.Signature,
+		reqTime:   reqTime,
+	})
+
 	// fetch file slices from remote client and send upload request to sp
 	fetchRemoteFileAndReqUpload := func() {
 		metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_CLIENT")
@@ -168,6 +183,13 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 			}
 		}
 
+		// Get latest signature info and reqTime
+		if info, found := signatureInfoMap.Load(fileHash); found {
+			sigInfo := info.(signatureInfo)
+			signature = sigInfo.signature.Signature
+			reqTime = sigInfo.reqTime
+		}
+
 		// start to upload file
 		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, reqTime,
 			slices, false, param.DesiredTier, param.AllowHigherTier, 0)
@@ -206,8 +228,15 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 }
 
 func (api *rpcPubApi) UploadData(ctx context.Context, param rpc_api.ParamUploadData) rpc_api.Result {
-
 	metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_SP:")
+
+	if param.Signature.Signature != "" {
+		// Update signature info every time new data is received
+		signatureInfoMap.Store(param.FileHash, signatureInfo{
+			signature: param.Signature,
+			reqTime:   param.ReqTime,
+		})
+	}
 
 	content := param.Data
 	fileHash := param.FileHash
@@ -278,6 +307,12 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 	signature := param.Signature.Signature
 	reqTime := param.ReqTime
 
+	// Store initial signature info
+	signatureInfoMap.Store(fileHash, signatureInfo{
+		signature: param.Signature,
+		reqTime:   reqTime,
+	})
+
 	// fetch file slices from remote client and send upload request to sp
 	fetchRemoteFileAndReqUpload := func() {
 		metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_CLIENT")
@@ -309,6 +344,13 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 		if err != nil {
 			file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
 			return
+		}
+
+		// Get latest signature info and reqTime
+		if info, found := signatureInfoMap.Load(fileHash); found {
+			sigInfo := info.(signatureInfo)
+			signature = sigInfo.signature.Signature
+			reqTime = sigInfo.reqTime
 		}
 
 		// start to upload file
