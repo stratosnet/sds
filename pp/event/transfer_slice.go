@@ -39,7 +39,7 @@ func NoticeFileSliceBackup(ctx context.Context, conn core.WriteCloser) {
 
 	// SPAM check
 	if time.Now().Unix()-target.TimeStamp > setting.SpamThresholdSpSignLatency {
-		utils.ErrorLog(ctx, "the slice backup request from sp was expired")
+		utils.ErrorLog("the slice backup request from sp was expired")
 		return
 	}
 
@@ -167,12 +167,6 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	totalCostTIme := DownRecvCostTimeMap.AddCostTime(target.TaskId+target.SliceHash, costTime)
-
-	// verify node sign between PPs
-	if target.P2PAddress == "" {
-		utils.ErrorLog(ctx, "")
-		return
-	}
 
 	err := task.SaveTransferData(&target)
 	if err != nil {
