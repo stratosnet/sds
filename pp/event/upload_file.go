@@ -127,6 +127,8 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
+	task.UploadTaskIdMap.Store(target.FileHash, target.TaskId)
+
 	if len(target.Slices) != 0 {
 		go startUploadTask(ctx, target)
 	} else {
