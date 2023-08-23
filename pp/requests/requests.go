@@ -830,7 +830,7 @@ func ReqFileReplicaInfo(path, walletAddr, p2pAddress string, replicaIncreaseNum 
 	}
 }
 
-func ReqFileStatus(fileHash, walletAddr string, walletPubkey, walletSign []byte, reqTime int64) *protos.ReqFileStatus {
+func ReqFileStatus(fileHash, walletAddr, taskId string, walletPubkey, walletSign []byte, reqTime int64) *protos.ReqFileStatus {
 	return &protos.ReqFileStatus{
 		FileHash: fileHash,
 		Signature: &protos.Signature{
@@ -840,6 +840,7 @@ func ReqFileStatus(fileHash, walletAddr string, walletPubkey, walletSign []byte,
 			Type:      protos.SignatureType_WALLET,
 		},
 		ReqTime: reqTime,
+		TaskId:  taskId,
 	}
 }
 

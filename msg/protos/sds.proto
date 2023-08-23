@@ -250,6 +250,7 @@ message ReqFileStatus {
   string    file_hash = 1;
   Signature signature = 2;
   int64     req_time = 3;
+  string    task_id = 4;
 }
 
 message RspFileStatus {
