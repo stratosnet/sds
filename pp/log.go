@@ -3,7 +3,6 @@ package pp
 import (
 	"context"
 	"fmt"
-
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/utils"
 )
@@ -43,9 +42,10 @@ func getLoggerMapKeyFromContext(ctx context.Context) int64 {
 	return 0
 }
 
-func CreateReqIdAndRegisterRpcLogger(ctx context.Context) context.Context {
+func CreateReqIdAndRegisterRpcLogger(ctx context.Context, terminalId string) context.Context {
 	rpcLoggerReqId, _ := utils.NextSnowFlakeId()
-	utils.RpcLoggerMap.Store(rpcLoggerReqId, utils.RpcLogger)
+	utils.ReqTerminalIdMap.Store(rpcLoggerReqId, terminalId)
+	utils.RpcLoggerMap.Store(rpcLoggerReqId, utils.CreateRpcLogger(rpcLoggerReqId))
 	return core.CreateContextWithReqId(ctx, rpcLoggerReqId)
 }
 
