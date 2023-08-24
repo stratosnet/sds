@@ -340,7 +340,9 @@ func callRpc(c *rpc.Client, terminalId string, line string, param []string) bool
 	var result serv.CmdResult
 
 	paramWithTid := []string{terminalId}
-	paramWithTid = append(paramWithTid, param...)
+	if len(param) > 0 {
+		paramWithTid = append(paramWithTid, param...)
+	}
 	err := c.Call(&result, "sds_"+line, paramWithTid)
 	if err != nil {
 		fmt.Println(err)
