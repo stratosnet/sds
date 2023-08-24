@@ -2,6 +2,7 @@ package namespace
 
 import (
 	"context"
+
 	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
 )
@@ -31,7 +32,10 @@ func (s *rpcLogService) LogSubscription(ctx context.Context, terminalId string) 
 				for reqId, log := range reqIdLogMap {
 					if tid, ok := utils.ReqTerminalIdMap.Load(reqId); ok {
 						if tid == terminalId {
-							notifier.Notify(subscription.ID, &log)
+							err := notifier.Notify(subscription.ID, &log)
+							if err != nil {
+								break
+							}
 							break
 						}
 					}
