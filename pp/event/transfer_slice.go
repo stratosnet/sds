@@ -16,7 +16,6 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
-	"github.com/tendermint/tendermint/types/time"
 )
 
 var (
@@ -36,12 +35,6 @@ func NoticeFileSliceBackup(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	utils.DebugLog("target = ", target)
-
-	// SPAM check
-	if time.Now().Unix()-target.TimeStamp > setting.SpamThresholdSpSignLatency {
-		utils.ErrorLog("the slice backup request from sp was expired")
-		return
-	}
 
 	if target.PpInfo.P2PAddress == p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 		utils.DebugLog("Ignoring slice backup notice because this node already owns the file")
