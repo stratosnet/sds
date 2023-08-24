@@ -19,7 +19,7 @@ const (
 	PpLatencyCheckInterval = 60     // interval for checking the latency to next PP
 	DATA_BUFFER_POOL_SIZE = 100
 
-  MaxData            = 1024 * 1024 * 3 // max size of a piece in a slice
+  	MaxData            = 1024 * 1024 * 3 // max size of a piece in a slice
 	MaxSliceSize       = 1024 * 1024 * 32
 	ImagePath          = "./images/"
 	VideoPath          = "./videos"
