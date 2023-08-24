@@ -24,8 +24,7 @@ type LogLevel int
 
 var level2String = make(map[LogLevel]string)
 
-var RpcLoggerMap = NewAutoCleanMap(60 * time.Minute)     //reqId, rpcLogger
-var ReqTerminalIdMap = NewAutoCleanMap(60 * time.Minute) // reqId: terminalId
+var rpcLoggerMap = NewAutoCleanMap(60 * time.Minute) //termId/reqId, rpcLogger
 
 type Logger struct {
 	logger   *log.Logger
@@ -232,42 +231,8 @@ func (l *CombinedLogger) ErrorLog(v ...interface{}) {
 	l.LogDepth(Error, 4, v...)
 }
 
-var RpcReqIdLogCh = make(chan map[int64]interface{})
-
 type LogMsg struct {
 	Msg string `json:"msg"`
-}
-
-type RpcWriter struct {
-	reqId   int64
-	content []byte
-}
-
-func NewRpcWriter(reqId int64) *RpcWriter {
-	return &RpcWriter{
-		reqId:   reqId,
-		content: make([]byte, 0),
-	}
-}
-
-func (l RpcWriter) Write(p []byte) (n int, err error) {
-	RpcReqIdLogCh <- map[int64]interface{}{l.reqId: LogMsg{Msg: string(p)}}
-	return len(p), nil
-}
-
-func CreateRpcLogger(reqId int64) *Logger {
-	logLevel := Debug
-	if MyLogger != nil && MyLogger.stdLogger != nil {
-		logLevel = MyLogger.stdLogger.logLevel
-	}
-	rpcWriter := NewRpcWriter(reqId)
-
-	rpcLogger := &Logger{
-		logger:   log.New(rpcWriter, "\r\n", log.Ldate|log.Ltime|log.Lshortfile),
-		enabled:  true,
-		logLevel: logLevel,
-	}
-	return rpcLogger
 }
 
 //func ClearRpcLogger() {
@@ -347,4 +312,50 @@ func CheckError(err error) bool {
 		return true
 	}
 	return false
+}
+
+func AddRpcLogger(w io.Writer, id string) {
+	logLevel := Debug
+	if MyLogger != nil && MyLogger.stdLogger != nil {
+		logLevel = MyLogger.stdLogger.logLevel
+	}
+
+	rpcLogger := &Logger{
+		logger:   log.New(w, "\r\n", log.Ldate|log.Ltime|log.Lshortfile),
+		enabled:  true,
+		logLevel: logLevel,
+	}
+	rpcLoggerMap.Store(id, rpcLogger)
+}
+
+func GetRpcLoggerByTerminalId(id string) *Logger {
+	if value, ok := rpcLoggerMap.Load(id); ok {
+		rpcLogger := value.(*Logger)
+		return rpcLogger
+	}
+	return nil
+}
+
+func RegisterReqToLogger(reqId int64, terminalId string) bool {
+	if logger := GetRpcLoggerByTerminalId(terminalId); logger != nil {
+		rpcLoggerMap.Store(reqId, logger)
+		return true
+	}
+	return false
+}
+
+func RegisterReqToParentReq(reqId, parentId int64) bool {
+	if logger := GetRpcLoggerByReqId(parentId); logger != nil {
+		rpcLoggerMap.Store(reqId, logger)
+		return true
+	}
+	return false
+}
+
+func GetRpcLoggerByReqId(id int64) *Logger {
+	if value, ok := rpcLoggerMap.Load(id); ok {
+		rpcLogger := value.(*Logger)
+		return rpcLogger
+	}
+	return nil
 }

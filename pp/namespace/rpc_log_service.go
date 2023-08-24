@@ -24,31 +24,47 @@ func (s *rpcLogService) LogSubscription(ctx context.Context, terminalId string) 
 	}
 
 	subscription := notifier.CreateSubscription()
-
+	writer := newRpcWriter(terminalId)
+	logCh := writer.getLogCh()
+	utils.AddRpcLogger(writer, terminalId)
 	go func() {
 		for {
 			select {
-			case reqIdLogMap := <-utils.RpcReqIdLogCh:
-				for reqId, log := range reqIdLogMap {
-					if tid, ok := utils.ReqTerminalIdMap.Load(reqId); ok {
-						if tid == terminalId {
-							err := notifier.Notify(subscription.ID, &log)
-							if err != nil {
-								break
-							}
-							break
-						}
-					}
+			case log := <-logCh:
+				err := notifier.Notify(subscription.ID, &log)
+				if err != nil {
+					break
 				}
+
 			case <-subscription.Err(): // client send an unsubscribe request
-				// ReqTerminalIdMap & RpcLoggerMap are AutoCleanMap, don't support iteration and doesn't need to clean up manually
+
 				return
 			case <-notifier.Closed(): // connection dropped
-				// ReqTerminalIdMap & RpcLoggerMap are AutoCleanMap, don't support iteration and doesn't need to clean up manually
 				return
 			}
 		}
 	}()
 
 	return subscription, nil
+}
+
+func newRpcWriter(id string) *rpcWriter {
+	return &rpcWriter{
+		terminalId: id,
+		logCh:      make(chan []byte),
+	}
+}
+
+type rpcWriter struct {
+	terminalId string
+	logCh      chan []byte
+}
+
+func (l *rpcWriter) getLogCh() chan []byte {
+	return l.logCh
+}
+
+func (l *rpcWriter) Write(p []byte) (n int, err error) {
+	l.logCh <- p
+	return len(p), nil
 }
