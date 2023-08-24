@@ -208,6 +208,7 @@ func (bs *BaseServer) startP2pServer() error {
 	bs.p2pServ.Start(ctx)
 	_, _ = bs.p2pServ.ConnectToSP(ctx) // Ignore error if we can't connect to any SPs
 	bs.ppNetwork.StartPP(ctx)
+	bs.ppNetwork.StartDataBufferPool()
 	return nil
 }
 

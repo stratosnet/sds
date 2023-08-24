@@ -103,7 +103,6 @@ func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb p
 		p.StoreRequestInfo(reqId, cmd.Id)
 	}
 
-	msgBuf.MSGHead.DataLen = uint32(len(msgBuf.MSGData))
 	body, err := proto.Marshal(pb)
 	if err != nil {
 		pp.ErrorLog(ctx, "error decoding")

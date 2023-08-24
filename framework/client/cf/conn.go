@@ -386,6 +386,7 @@ func (cc *ClientConn) Start() {
 		return
 	}
 	metrics.ConnNumbers.WithLabelValues("client").Inc()
+
 	err = cc.handshake()
 	if err != nil {
 		Mylog(cc.opts.logOpen, LOG_MODULE_START, fmt.Sprintf("handshake error %v -> %v, %v", cc.spbConn.LocalAddr(), cc.spbConn.RemoteAddr(), err.Error()))
@@ -573,6 +574,7 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 	}()
 
 	sendCh := c.sendCh
+
 	if m.MSGHead.ReqId == 0 {
 		reqId := core.GetReqIdFromContext(ctx)
 		if reqId == 0 {
@@ -582,18 +584,10 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 		}
 		m.MSGHead.ReqId = reqId
 	}
-	memory := &msg.RelayMsgBuf{
-		MSGHead:  m.MSGHead,
-		MSGSign:  m.MSGSign,
-		PacketId: core.GetPacketIdFromContext(ctx),
-	}
-	memory.PutIntoBuffer(m)
-	sendCh <- memory
-	if err != nil {
-		utils.ErrorLog("asyncWrite error ", err)
-		memory = nil
-		return
-	}
+
+	m.PacketId = core.GetPacketIdFromContext(ctx)
+
+	sendCh <- m
 	core.TimoutMap.Store(ctx, m.MSGHead.ReqId, m)
 
 	return
@@ -743,10 +737,13 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					message = &msg.RelayMsgBuf{
 						MSGHead: header.CopyMessageHeader(msgH),
 						MSGBody: make([]byte, posSign-posBody),
-						MSGData: make([]byte, posEnd-posData),
 					}
 					copy(message.MSGBody[:], msgBuf[posBody:posSign])
-					copy(message.MSGData[:], msgBuf[posData:posEnd])
+
+					if posEnd > posData {
+						message.MSGData = utils.RequestBuffer()[:posEnd-posData]
+						copy(message.MSGData[:], msgBuf[posData:posEnd])
+					}
 
 					handler := core.GetHandlerFunc(cmd)
 					if handler == nil {
@@ -819,7 +816,7 @@ func writeLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	}
 }
 
-func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
+func (cc *ClientConn) writePacket(m *msg.RelayMsgBuf) error {
 	var lr utils.LimitRate
 	var encodedHeader []byte
 	var encodedData []byte
@@ -827,6 +824,12 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 	var onereadlen = 1024
 	var n int
 
+	packet := &msg.RelayMsgBuf{
+		MSGHead:  m.MSGHead,
+		MSGSign:  m.MSGSign,
+		PacketId: m.PacketId,
+	}
+	packet.PutIntoBuffer(m)
 	cmd := packet.MSGHead.Cmd
 
 	var key []byte
@@ -883,6 +886,9 @@ func (cc *ClientConn) writePacket(packet *msg.RelayMsgBuf) error {
 		}
 	}
 	cmem.Free(packet.Alloc)
+	if len(m.MSGData) > 0 {
+		utils.ReleaseBuffer(m.MSGData)
+	}
 	return nil
 }
 

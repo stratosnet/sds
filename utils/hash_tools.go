@@ -32,6 +32,14 @@ func CalcCRC32(data []byte) uint32 {
 	return iEEE.Sum32()
 }
 
+func CalcCRC32OfSlices(data [][]byte) uint32 {
+	iEEE := crc32.NewIEEE()
+	for _, d := range data {
+		_, _ = io.WriteString(iEEE, string(d))
+	}
+	return iEEE.Sum32()
+}
+
 func CalcFileMD5(filePath string) []byte {
 	file, err := os.Open(filePath)
 	if err != nil {

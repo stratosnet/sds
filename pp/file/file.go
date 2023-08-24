@@ -18,6 +18,7 @@ import (
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
+	"golang.org/x/exp/mmap"
 )
 
 var rmutex sync.RWMutex
@@ -26,6 +27,28 @@ var wmutex sync.RWMutex
 // key(fileHash) : value(file path)
 var fileMap = make(map[string]string)
 var infoMutex sync.Mutex
+var DataBuffer sync.Mutex
+
+func RequestBuffersForSlice(size int64) [][]byte {
+	DataBuffer.Lock()
+	defer DataBuffer.Unlock()
+
+	var buffers [][]byte
+	var start int64
+
+	for start = 0; start <= size; start += setting.MaxData {
+		var end int64
+		if start+int64(setting.MaxData) > size {
+			end = size
+		} else {
+			end = start + setting.MaxData
+		}
+		buffer := utils.RequestBuffer()[0 : end-start]
+		buffers = append(buffers, buffer)
+	}
+
+	return buffers
+}
 
 func GetFileInfo(filePath string) (os.FileInfo, error) {
 	infoMutex.Lock()
@@ -85,8 +108,45 @@ func GetFileData(filePath string, offset *protos.SliceOffset) ([]byte, error) {
 	return data, nil
 }
 
+func ReadFileDataToPackets(path string) (size int64, buffer [][]byte, err error) {
+	size = 0
+	buffer = nil
+	r, err := mmap.Open(path)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	info, err := GetFileInfo(path)
+	if err != nil {
+		return
+	}
+	size = info.Size()
+	buffer = RequestBuffersForSlice(size)
+
+	var i int64
+	for i = 0; i*setting.MaxData < size; i++ {
+		_, err = r.ReadAt(buffer[i], i*setting.MaxData)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+func ReadSliceDataFromTmp(fileHash, sliceHash string) (int64, [][]byte, error) {
+	return ReadFileDataToPackets(GetTmpSlicePath(fileHash, sliceHash))
+}
+
 func GetSliceDataFromTmp(fileHash, sliceHash string) ([]byte, error) {
 	return GetWholeFileData(GetTmpSlicePath(fileHash, sliceHash))
+}
+
+func ReadSliceData(sliceHash string) (int64, [][]byte, error) {
+	slicePath, err := getSlicePath(sliceHash)
+	if err != nil {
+		return 0, nil, err
+	}
+	return ReadFileDataToPackets(slicePath)
 }
 
 func GetSliceData(sliceHash string) ([]byte, error) {
