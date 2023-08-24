@@ -73,6 +73,7 @@ tls = false
 cert_file_path = ''
 # Path to the TLS private key file
 key_file_path = ''
+# Port used for the monitor websocket connection. It's the monitor UI that uses this port, not the person accessing the UI in a browser
 port = '9402'
 # List of IPs that are allowed to connect to the monitor websocket port
 allowed_origins = ['localhost']
@@ -98,4 +99,7 @@ max_upload_rate = 0
 [web_server]
 # Location of the web server files Eg: "./web"
 path = './web'
+# Port where the web server is hosted with sdsweb. If the port is opened and token_on_startup is true, anybody who loads the monitor UI will have full access to the monitor
 port = '9702'
+# Automatically enter monitor token when opening the monitor UI. This should be false if the web_server port is opened
+token_on_startup = true
