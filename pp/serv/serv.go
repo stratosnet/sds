@@ -56,6 +56,11 @@ func (bs *BaseServer) Start() error {
 		return err
 	}
 
+	err = bs.startClearTmpFileJob()
+	if err != nil {
+		return err
+	}
+
 	err = bs.startIPC()
 	if err != nil {
 		return err
@@ -163,7 +168,7 @@ func (bs *BaseServer) startMonitor() error {
 	}
 
 	var config = namespace.WsConfig{
-		Origins: []string{},
+		Origins: setting.Config.Monitor.AllowedOrigins,
 		Modules: []string{},
 		Prefix:  "",
 	}
@@ -215,6 +220,12 @@ func (bs *BaseServer) startTrafficLog() error {
 	return nil
 }
 
+func (bs *BaseServer) startClearTmpFileJob() error {
+	ctx := context.Background()
+	file.StartClearTmpFileJob(ctx)
+	return nil
+}
+
 func (bs *BaseServer) startInternalApiServer() error {
 	if setting.Config.Keys.WalletAddress != "" && setting.Config.Streaming.InternalPort != "" {
 		ctx := context.Background()
@@ -253,5 +264,7 @@ func (bs *BaseServer) Stop() {
 	if bs.p2pServ != nil {
 		bs.p2pServ.Stop()
 	}
+	StopDumpTrafficLog()
+	file.StopClearTmpFileJob()
 	// TODO: stop IPC, TrafficLog, InternalApiServer, RestServer
 }

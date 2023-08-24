@@ -8,12 +8,14 @@ import (
 
 var (
 	/**
-	RPResult:           key(walletAddress + P2PAddress + reqId) - value(*rpc.RPResult)
-	ActivateResult:     key(walletAddress + reqId)              - value(*rpc.ActivateResult)
-	PrepayResult:       key(walletAddress + reqId)              - value(*rpc.PrepayResult)
-	StartMiningResult:  key(P2PAddress + reqId)                 - value(*rpc.StartMiningResult)
-	WithdrawResult:     key(walletAddress + reqId)              - value(*rpc.WithdrawResult)
-	SendResult:         key(walletAddress + reqId)              - value(*rpc.SendResult)
+	RPResult:                             key(walletAddress + P2PAddress + reqId) - value(*rpc.RPResult)
+	ActivateResult:                       key(walletAddress + reqId)              - value(*rpc.ActivateResult)
+	PrepayResult:                         key(walletAddress + reqId)              - value(*rpc.PrepayResult)
+	StartMiningResult:                    key(P2PAddress + reqId)                 - value(*rpc.StartMiningResult)
+	WithdrawResult:                       key(walletAddress + reqId)              - value(*rpc.WithdrawResult)
+	SendResult:                           key(walletAddress + reqId)              - value(*rpc.SendResult)
+	StatusResult:                         key(P2PAddress + reqId)                 - value(*rpc.StatusResult)
+	ClearExpiredShareLinksResult:         key(walletAddress + reqId)              - value(*rpc.ClearExpiredShareLinksResult)
 	*/
 	rpcResultMap = &sync.Map{}
 )
@@ -52,6 +54,14 @@ func GetStartMiningResult(key string) (*rpc.StartMiningResult, bool) {
 	result, loaded := rpcResultMap.LoadAndDelete(key)
 	if result != nil && loaded {
 		return result.(*rpc.StartMiningResult), loaded
+	}
+	return nil, loaded
+}
+
+func GetStatusResult(key string) (*rpc.StatusResult, bool) {
+	result, loaded := rpcResultMap.LoadAndDelete(key)
+	if result != nil && loaded {
+		return result.(*rpc.StatusResult), loaded
 	}
 	return nil, loaded
 }

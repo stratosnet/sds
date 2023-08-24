@@ -29,6 +29,7 @@ func reqUploadMsg(filePath, hash, sn string) []byte {
 		utils.ErrorLog("Failed to get file information.", err.Error())
 		return nil
 	}
+	fileName := info.Name()
 	nowSec := time.Now().Unix()
 	// signature
 	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
@@ -42,7 +43,7 @@ func reqUploadMsg(filePath, hash, sn string) []byte {
 	// param
 	var params = []rpc.ParamReqUploadFile{}
 	params = append(params, rpc.ParamReqUploadFile{
-		FileName: filePath,
+		FileName: fileName,
 		FileSize: int(info.Size()),
 		FileHash: hash,
 		Signature: rpc.Signature{
@@ -62,10 +63,27 @@ func reqUploadMsg(filePath, hash, sn string) []byte {
 	return wrapJsonRpc("user_requestUpload", pm)
 }
 
-func uploadDataMsg(hash, data string) []byte {
+func uploadDataMsg(hash, data, sn string) []byte {
+	nowSec := time.Now().Unix()
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
+	if err != nil {
+		return nil
+	}
+	wpk, err := WalletPublicKey.ToBech()
+	if err != nil {
+		return nil
+	}
+
 	pa := []rpc.ParamUploadData{{
 		FileHash: hash,
 		Data:     data,
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
+		},
+		ReqTime: nowSec,
 	}}
 	pm, e := json.Marshal(pa)
 	if e != nil {
@@ -129,7 +147,7 @@ func put(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 		encoded := base64.StdEncoding.EncodeToString(rawData)
-		r = uploadDataMsg(hash, encoded)
+		r = uploadDataMsg(hash, encoded, sn)
 		utils.Log("- request upload date (method: user_uploadData)")
 		body = httpRequest(r)
 		if body == nil {
@@ -158,13 +176,14 @@ func put(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func reqUploadStreamMsg(fileName, hash, sn string) []byte {
+func reqUploadStreamMsg(filePath, hash, sn string) []byte {
 	// file size
-	info, err := file.GetFileInfo(fileName)
+	info, err := file.GetFileInfo(filePath)
 	if err != nil {
 		utils.ErrorLog("Failed to get file information.", err.Error())
 		return nil
 	}
+	fileName := info.Name()
 	nowSec := time.Now().Unix()
 	// signature
 	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
@@ -252,7 +271,7 @@ func putstream(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 		encoded := base64.StdEncoding.EncodeToString(rawData)
-		r = uploadDataMsg(hash, encoded)
+		r = uploadDataMsg(hash, encoded, sn)
 		utils.Log("- request upload date (method: user_uploadDataStream)")
 		body = httpRequest(r)
 		if body == nil {
@@ -458,11 +477,11 @@ func get(cmd *cobra.Command, args []string) error {
 				return err
 			}
 			if !exist {
-				if err = os.MkdirAll("./download/", 0777); err != nil {
+				if err = os.MkdirAll("./download/", 0700); err != nil {
 					return err
 				}
 			}
-			fileMg, err = os.OpenFile(filepath.Join("./download/", res.FileName), os.O_CREATE|os.O_RDWR, 0777)
+			fileMg, err = os.OpenFile(filepath.Join("./download/", res.FileName), os.O_CREATE|os.O_RDWR, 0600)
 			if err != nil {
 				utils.ErrorLog("error initialize file")
 				return errors.New("can't open file")
@@ -666,6 +685,38 @@ func reqStartMiningMsg() []byte {
 
 	// wrap to the json-rpc message
 	return wrapJsonRpc("owner_requestStartMining", pm)
+}
+
+func reqStatusMsg() []byte {
+	// param
+	params := []rpc.ParamReqStatus{{
+		WalletAddr: WalletAddress,
+	}}
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.ErrorLog("failed marshal param for ReqStatus")
+		return nil
+	}
+
+	// wrap to the json-rpc message
+	return wrapJsonRpc("owner_requestStatus", pm)
+}
+
+func reqServiceStatusMsg() []byte {
+	// param
+	params := []rpc.ParamReqServiceStatus{{
+		WalletAddr: WalletAddress,
+	}}
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.ErrorLog("failed marshal param for ReqServiceStatus")
+		return nil
+	}
+
+	// wrap to the json-rpc message
+	return wrapJsonRpc("user_requestServiceStatus", pm)
 }
 
 func reqWithdrawMsg(amount, targetAddress, fee string, gasUint64 uint64) []byte {
@@ -1187,12 +1238,12 @@ func getshared(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		if !exist {
-			if err = os.MkdirAll("./download/", 0777); err != nil {
+			if err = os.MkdirAll("./download/", 0700); err != nil {
 				return err
 			}
 		}
 		if fileMg == nil {
-			fileMg, err = os.OpenFile(filepath.Join("./download/", res.FileName), os.O_CREATE|os.O_RDWR, 0777)
+			fileMg, err = os.OpenFile(filepath.Join("./download/", res.FileName), os.O_CREATE|os.O_RDWR, 0600)
 			if err != nil {
 				utils.ErrorLog("error initialize file")
 				return errors.New("can't open file")
@@ -1410,6 +1461,74 @@ func startmining(cmd *cobra.Command, args []string) error {
 	}
 	if res.Return == rpc.SUCCESS {
 		utils.Log("- received response (return: SUCCESS)")
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
+	return nil
+}
+
+func status(cmd *cobra.Command, args []string) error {
+	r := reqStatusMsg()
+	if r == nil {
+		return nil
+	}
+	utils.Log("- request register pp (method: owner_requestStatus)")
+	// http request-respond
+	body := httpRequest(r)
+	if body == nil {
+		utils.ErrorLog("json marshal error")
+		return nil
+	}
+
+	// Handle rsp
+	var rsp jsonrpcMessage
+	err := json.Unmarshal(body, &rsp)
+	if err != nil {
+		return nil
+	}
+
+	var res rpc.StatusResult
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+		return nil
+	}
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+		utils.Log(res.Message)
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
+	return nil
+}
+
+func servicestatus(cmd *cobra.Command, args []string) error {
+	r := reqServiceStatusMsg()
+	if r == nil {
+		return nil
+	}
+	utils.Log("- request register pp (method: owner_requestStatus)")
+	// http request-respond
+	body := httpRequest(r)
+	if body == nil {
+		utils.ErrorLog("json marshal error")
+		return nil
+	}
+
+	// Handle rsp
+	var rsp jsonrpcMessage
+	err := json.Unmarshal(body, &rsp)
+	if err != nil {
+		return nil
+	}
+
+	var res rpc.StatusResult
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+		return nil
+	}
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+		utils.Log(res.Message)
 	} else {
 		utils.Log("- received response (return: ", res.Return, ")")
 	}

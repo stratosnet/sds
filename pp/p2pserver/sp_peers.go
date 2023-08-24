@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	requestInfoMap = utils.NewAutoCleanMap(5 * time.Minute) // used for req-rsp message pair verifications
+	requestInfoMap = utils.NewAutoCleanMap(60 * time.Minute) // used for req-rsp message pair verifications
 )
 
 func (p *P2pServer) SignP2pMessage(signMsg []byte) []byte {

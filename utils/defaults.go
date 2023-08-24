@@ -1,7 +1,6 @@
 package utils
 
 const (
-	MaxConnections               = 100000
 	DefTaskPoolCount             = 200
 	TaskSize                     = 1024
 	ReadTimeOut                  = 360             // in seconds
@@ -11,7 +10,6 @@ const (
 	LatencyCheckSpListInterval   = 24 * 3600       // in seconds
 	LatencyCheckSpListTimeout    = 3               // in seconds
 	LatencyCheckTopSpsConsidered = 3               // number of SPs
-	StatusReportPunishInterval   = 10000
 
 	PpMinTier = 0
 	PpMaxTier = 3

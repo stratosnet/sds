@@ -107,6 +107,16 @@ func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize 
 		encryptionTag = utils.GetRandomString(8)
 	}
 
+	// verify file hash
+	var paths []string
+	for _, slice := range slices {
+		path := file.GetTmpSlicePath(fileHash, slice.SliceHash)
+		paths = append(paths, path)
+	}
+
+	if utils.CalcFileHashFromSlices(paths, encryptionTag) != fileHash {
+		return nil, errors.New("failed verifying file hash")
+	}
 	utils.Log("fileHash: ", fileHash)
 
 	file.SaveRemoteFileHash(fileHash, fileName, fileSize)
@@ -819,7 +829,7 @@ func ReqFileReplicaInfo(path, walletAddr, p2pAddress string, replicaIncreaseNum 
 	}
 }
 
-func ReqFileStatus(fileHash, walletAddr string, walletPubkey, walletSign []byte, reqTime int64) *protos.ReqFileStatus {
+func ReqFileStatus(fileHash, walletAddr, taskId string, walletPubkey, walletSign []byte, reqTime int64) *protos.ReqFileStatus {
 	return &protos.ReqFileStatus{
 		FileHash: fileHash,
 		Signature: &protos.Signature{
@@ -829,6 +839,7 @@ func ReqFileStatus(fileHash, walletAddr string, walletPubkey, walletSign []byte,
 			Type:      protos.SignatureType_WALLET,
 		},
 		ReqTime: reqTime,
+		TaskId:  taskId,
 	}
 }
 

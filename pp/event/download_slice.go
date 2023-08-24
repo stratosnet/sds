@@ -369,7 +369,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 		}
 		task.DownloadProgress(ctx, target.FileHash, fileReqId, uint64(len(target.Data)))
 	} else {
-		utils.DebugLog("DownloadFileMap doesn't have entry with file hash", target.FileHash)
+		utils.DebugLogf("Received a slice from an outdated download request[FileHash=%v], ignoring... ", target.FileHash)
 	}
 }
 

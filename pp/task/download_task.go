@@ -26,13 +26,13 @@ import (
 const LOCAL_REQID string = "local"
 
 // DownloadTaskMap PP passway download task map   make(map[string]*DownloadTask)
-var DownloadTaskMap = utils.NewAutoCleanMap(5 * time.Minute)
+var DownloadTaskMap = utils.NewAutoCleanMap(1 * time.Hour)
 
 // DownloadSliceTaskMap resource node download slice task map
 var DownloadSliceTaskMap = utils.NewAutoCleanMap(1 * time.Hour)
 
 // DownloadFileMap P download info map  make(map[string]*protos.RspFileStorageInfo)
-var DownloadFileMap = utils.NewAutoCleanMap(5 * time.Minute)
+var DownloadFileMap = utils.NewAutoCleanMap(1 * time.Hour)
 
 // var DownloadFileProgress = &sync.Map{}
 
@@ -326,7 +326,7 @@ func DoneDownload(ctx context.Context, fileHash, fileName, savePath string) {
 			if err != nil {
 				pp.ErrorLog(ctx, "img err6>>>", err)
 			}
-			imageFile, err = os.OpenFile(setting.ImagePath+fileHash, os.O_CREATE|os.O_RDWR, 0777)
+			imageFile, err = os.OpenFile(setting.ImagePath+fileHash, os.O_CREATE|os.O_RDWR, 0600)
 			if err != nil {
 				pp.ErrorLog(ctx, "img err7>>>", err)
 			}

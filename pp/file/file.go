@@ -67,14 +67,14 @@ func GetFileSuffix(fileName string) string {
 }
 
 func GetFileHash(filePath, encryptionTag string) string {
-	filehash := utils.CalcFileHash(filePath, encryptionTag)
+	filehash := utils.CalcFileHash(filePath, encryptionTag, utils.SDS_CODEC)
 	utils.DebugLog("filehash", filehash)
 	fileMap[filehash] = filePath
 	return filehash
 }
 
 func GetFileHashForVideoStream(filePath, encryptionTag string) string {
-	filehash := utils.CalcFileHashForVideoStream(filePath, encryptionTag)
+	filehash := utils.CalcFileHash(filePath, encryptionTag, utils.VIDEO_CODEC)
 	utils.DebugLog("filehash", filehash)
 	fileMap[filehash] = filePath
 	return filehash
@@ -191,7 +191,7 @@ func OpenTmpFile(fileHash, fileName string) (*os.File, error) {
 		}
 	}
 
-	fileMg, err := os.OpenFile(GetTmpSlicePath(fileHash, fileName), os.O_CREATE|os.O_RDWR, 0777)
+	fileMg, err := os.OpenFile(GetTmpSlicePath(fileHash, fileName), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed opening file")
 	}
@@ -230,7 +230,7 @@ func SaveSliceData(data []byte, sliceHash string, offset uint64) error {
 	if err != nil {
 		return errors.Wrap(err, "failed getting slice path")
 	}
-	fileMg, err := os.OpenFile(slicePath, os.O_CREATE|os.O_RDWR, 0777)
+	fileMg, err := os.OpenFile(slicePath, os.O_CREATE|os.O_RDWR, 0600)
 	defer func() {
 		_ = fileMg.Close()
 	}()
@@ -271,7 +271,7 @@ func SaveFileData(ctx context.Context, data []byte, offset int64, sliceHash, fil
 	if fileName == "" {
 		fileName = fileHash
 	}
-	fileMg, err := os.OpenFile(GetDownloadTmpPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR, 0777)
+	fileMg, err := os.OpenFile(GetDownloadTmpPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return errors.Wrap(err, "failed opening file")
 	}
@@ -286,7 +286,7 @@ func SaveDownloadProgress(ctx context.Context, sliceHash, fileName, fileHash, sa
 		return
 	}
 	wmutex.Lock()
-	csvFile, err := os.OpenFile(GetDownloadCsvPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
+	csvFile, err := os.OpenFile(GetDownloadCsvPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0600)
 	defer func() {
 		_ = csvFile.Close()
 	}()
@@ -305,7 +305,7 @@ func SaveDownloadProgress(ctx context.Context, sliceHash, fileName, fileHash, sa
 
 func RecordDownloadCSV(target *protos.RspFileStorageInfo) {
 	// check if downloading, if not create new, sliceHash+startPosition
-	csvFile, err := os.OpenFile(GetDownloadCsvPath(target.FileHash, target.FileName, target.SavePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0777)
+	csvFile, err := os.OpenFile(GetDownloadCsvPath(target.FileHash, target.FileName, target.SavePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0600)
 	defer func() {
 		_ = csvFile.Close()
 	}()
@@ -357,7 +357,7 @@ func CheckFileExisting(ctx context.Context, fileHash, fileName, savePath, encryp
 	//	filePath = filepath.FromSlash(filePath)
 	// }
 	pp.DebugLog(ctx, "filePath", filePath)
-	file, err := os.OpenFile(filePath, os.O_RDONLY, 0777)
+	file, err := os.OpenFile(filePath, os.O_RDONLY, 0600)
 	defer func() {
 		_ = file.Close()
 	}()
@@ -366,7 +366,7 @@ func CheckFileExisting(ctx context.Context, fileHash, fileName, savePath, encryp
 		return false
 	}
 
-	hash := utils.CalcFileHash(filePath, encryptionTag)
+	hash := utils.CalcFileHash(filePath, encryptionTag, utils.SDS_CODEC)
 	pp.DebugLog(ctx, "hash", hash)
 	if hash == fileHash {
 		pp.DebugLog(ctx, "file hash matched")
@@ -383,7 +383,7 @@ func CheckSliceExisting(fileHash, fileName, sliceHash, savePath, fileReqId strin
 		return false
 	}
 
-	csvFile, err := os.OpenFile(GetDownloadCsvPath(fileHash, fileName, savePath), os.O_RDONLY, 0777)
+	csvFile, err := os.OpenFile(GetDownloadCsvPath(fileHash, fileName, savePath), os.O_RDONLY, 0600)
 	defer func() {
 		_ = csvFile.Close()
 	}()
@@ -435,7 +435,7 @@ func DeleteTmpFileSlices(ctx context.Context, fileHash string) {
 }
 
 func CheckFilePathEx(filePath string) bool {
-	file, err := os.OpenFile(filePath, os.O_RDONLY, 0777)
+	file, err := os.OpenFile(filePath, os.O_RDONLY, 0600)
 	defer func() {
 		_ = file.Close()
 	}()

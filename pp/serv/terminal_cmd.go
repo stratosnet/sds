@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -54,38 +52,15 @@ func (api *terminalCmd) Wallets(ctx context.Context, param []string) (CmdResult,
 
 func (api *terminalCmd) Getoz(ctx context.Context, param []string) (CmdResult, error) {
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
-	files, err := account.GetWallets(ctx, param[0], param[1])
 
-	if err != nil {
-		fmt.Println(err)
+	if _, err := utiltypes.WalletAddressFromBech(param[0]); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
-	fileName := param[0] + ".json"
-	for _, info := range files {
-		if info.Name() == ".placeholder" || info.Name() != fileName {
-			continue
-		}
-		pp.Log(ctx, "find file: "+filepath.Join(setting.Config.Home.AccountsPath, fileName))
-		keyjson, err := os.ReadFile(filepath.Join(setting.Config.Home.AccountsPath, fileName))
-		if utils.CheckError(err) {
-			pp.ErrorLog(ctx, "getPublicKey ioutil.ReadFile", err)
-			fmt.Println(err)
-			return CmdResult{Msg: ""}, err
-		}
-		_, err = utils.DecryptKey(keyjson, param[1])
 
-		if utils.CheckError(err) {
-			pp.ErrorLog(ctx, "getPublicKey DecryptKey", err)
-			return CmdResult{Msg: ""}, err
-		}
-		if err := event.GetWalletOz(ctx, param[0], task.LOCAL_REQID); err != nil {
-			return CmdResult{Msg: ""}, err
-		}
-		return CmdResult{Msg: DefaultMsg}, nil
+	if err := event.GetWalletOz(ctx, param[0], task.LOCAL_REQID); err != nil {
+		return CmdResult{Msg: ""}, err
 	}
-
-	pp.ErrorLogf(ctx, "Wallet %v does not exists", param[0])
-	return CmdResult{Msg: ""}, err
+	return CmdResult{Msg: DefaultMsg}, nil
 }
 
 func (api *terminalCmd) NewWallet(ctx context.Context, param []string) (CmdResult, error) {
@@ -528,7 +503,7 @@ func (api *terminalCmd) DeleteFn(ctx context.Context, param []string) (CmdResult
 		fmt.Println("input file hash")
 		return CmdResult{}, errors.New("input file hash")
 	}
-	if !utils.VerifyHash(param[0]) {
+	if !utils.ValidateHash(param[0], utils.SDS_CODEC) {
 		return CmdResult{}, errors.New("input correct file hash")
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx)
@@ -602,7 +577,7 @@ func (api *terminalCmd) SharePath(ctx context.Context, param []string) (CmdResul
 	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
 	nowSec := time.Now().Unix()
-	if !utils.VerifyHash(param[0]) {
+	if !utils.ValidateHash(param[0], utils.SDS_CODEC) {
 		return CmdResult{}, errors.New("input correct file hash")
 	}
 	fileHash := param[0]
@@ -623,7 +598,7 @@ func (api *terminalCmd) ShareFile(ctx context.Context, param []string) (CmdResul
 		return CmdResult{Msg: ""}, errors.New("input file hash or directory path, share duration(in seconds, 0 for default value), is_private (0:public,1:private)")
 	}
 	fileHash := param[0]
-	if !utils.VerifyHash(param[0]) {
+	if !utils.ValidateHash(param[0], utils.SDS_CODEC) {
 		return CmdResult{}, errors.New("input correct file hash")
 	}
 

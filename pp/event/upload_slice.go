@@ -194,7 +194,8 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspUploadFileSlice
 	if err := VerifyMessage(ctx, header.RspUploadFileSlice, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
+		utils.ErrorLog("failed verifying the message, ", err.Error(),
+			", please make sure your upload bandwidth is enough and retry")
 		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {

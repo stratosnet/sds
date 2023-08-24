@@ -67,7 +67,7 @@ func add(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 	utils.Log("- request get ozone (method: user_requestGetOzone)")
 
 	var resOzone rpc_api.GetOzoneResult
-	err = requester.sendRequest(paramReqGetOzone, &resOzone, "requestUpload", env)
+	err = requester.sendRequest(paramReqGetOzone, &resOzone, "requestGetOzone", env)
 	if err != nil {
 		return emitError(re, "failed to send upload file request", err)
 	}
@@ -99,7 +99,10 @@ func add(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 			return emitError(re, "failed to get data from file", err)
 		}
 		encoded := base64.StdEncoding.EncodeToString(rawData)
-		paramsData := uploadDataMsg(hash, encoded)
+		paramsData, err := uploadDataMsg(hash, encoded, resOzone.SequenceNumber)
+		if err != nil {
+			return emitError(re, "failed to prepare upload data request", err)
+		}
 		utils.Log("- request upload date (method: user_uploadData)")
 
 		err = requester.sendRequest(paramsData, &res, "uploadData", env)
@@ -136,7 +139,7 @@ func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 	utils.Log("- request get ozone (method: user_requestGetOzone)")
 
 	var resOzone rpc_api.GetOzoneResult
-	err = requester.sendRequest(paramReqGetOzone, &resOzone, "requestUpload", env)
+	err = requester.sendRequest(paramReqGetOzone, &resOzone, "requestGetOzone", env)
 	if err != nil {
 		return emitError(re, "failed to send upload file request", err)
 	}
@@ -168,11 +171,11 @@ func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 				return err
 			}
 			if !exist {
-				if err = os.MkdirAll("./download/", 0777); err != nil {
+				if err = os.MkdirAll("./download/", 0700); err != nil {
 					return emitError(re, "failed to create download folder", err)
 				}
 			}
-			fileMg, err = os.OpenFile(filepath.Join("./download/", res.FileName), os.O_CREATE|os.O_RDWR, 0777)
+			fileMg, err = os.OpenFile(filepath.Join("./download/", res.FileName), os.O_CREATE|os.O_RDWR, 0600)
 			if err != nil {
 				return emitError(re, "can't open file", err)
 			}
@@ -245,18 +248,23 @@ func list(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) erro
 }
 
 func reqOzone() (*rpc_api.ParamReqGetOzone, error) {
+	// wallet address
+	ret := readWalletKeys(WalletAddress)
+	if !ret {
+		return nil, errors.New("failed reading key file")
+	}
 	return &rpc_api.ParamReqGetOzone{
 		WalletAddr: WalletAddress,
 	}, nil
 }
 
-func reqUploadMsg(fileName, hash, sn string) (*rpc_api.ParamReqUploadFile, error) {
+func reqUploadMsg(filePath, hash, sn string) (*rpc_api.ParamReqUploadFile, error) {
 	// file size
-	info, err := file.GetFileInfo(fileName)
+	info, err := file.GetFileInfo(filePath)
 	if info == nil || err != nil {
 		return nil, errors.New("failed to get file information")
 	}
-
+	fileName := info.Name()
 	// wallet address
 	ret := readWalletKeys(WalletAddress)
 	if !ret {
@@ -286,11 +294,33 @@ func reqUploadMsg(fileName, hash, sn string) (*rpc_api.ParamReqUploadFile, error
 	}, nil
 }
 
-func uploadDataMsg(hash, data string) rpc_api.ParamUploadData {
+func uploadDataMsg(hash, data, sn string) (rpc_api.ParamUploadData, error) {
+	// wallet address
+	ret := readWalletKeys(WalletAddress)
+	if !ret {
+		return rpc_api.ParamUploadData{}, errors.New("failed reading key file")
+	}
+	nowSec := time.Now().Unix()
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
+	if err != nil {
+		return rpc_api.ParamUploadData{}, err
+	}
+	wpk, err := WalletPublicKey.ToBech()
+	if err != nil {
+		return rpc_api.ParamUploadData{}, err
+	}
+
 	return rpc_api.ParamUploadData{
 		FileHash: hash,
 		Data:     data,
-	}
+		Signature: rpc_api.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
+		},
+		ReqTime: nowSec,
+	}, nil
 }
 
 func reqDownloadMsg(hash, sdmPath, sn string) (*rpc_api.ParamReqDownloadFile, error) {

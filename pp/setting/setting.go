@@ -27,8 +27,6 @@ var (
 
 	ostype    = runtime.GOOS
 	IsWindows bool
-
-	UpChan = make(chan string, 100)
 )
 
 type VersionConfig struct {
@@ -41,7 +39,7 @@ type BlockchainConfig struct {
 	ChainId       string  `toml:"chain_id" comment:"ID of the chain Eg: \"tropos-5\""`
 	GasAdjustment float64 `toml:"gas_adjustment" comment:"Multiplier for the simulated tx gas cost Eg: 1.5"`
 	Insecure      bool    `toml:"insecure" comment:"Connect to the chain using an insecure connection (no TLS) Eg: true"`
-	Url           string  `toml:"url" comment:"Network address of the chain Eg: \"127.0.0.1:9090\""`
+	GrpcServer    string  `toml:"grpc_server" comment:"Network address of the chain Eg: \"127.0.0.1:9090\""`
 }
 
 type HomeConfig struct {
@@ -76,10 +74,11 @@ type NodeConfig struct {
 }
 
 type MonitorConfig struct {
-	TLS          bool   `toml:"tls" comment:"Should the monitor server use TLS? Eg: false"`
-	CertFilePath string `toml:"cert_file_path" comment:"Path to the TLS certificate file"`
-	KeyFilePath  string `toml:"key_file_path" comment:"Path to the TLS private key file"`
-	Port         string `toml:"port"`
+	TLS            bool     `toml:"tls" comment:"Should the monitor server use TLS? Eg: false"`
+	CertFilePath   string   `toml:"cert_file_path" comment:"Path to the TLS certificate file"`
+	KeyFilePath    string   `toml:"key_file_path" comment:"Path to the TLS private key file"`
+	Port           string   `toml:"port"`
+	AllowedOrigins []string `toml:"allowed_origins" comment:"List of IPs that are allowed to connect to the monitor websocket port"`
 }
 
 type TrafficConfig struct {
@@ -147,7 +146,7 @@ func LoadConfig(configPath string) error {
 	cf.SetMaxUploadRate(Config.Traffic.MaxUploadRate)
 
 	// todo: we shouldn't call grpc package to setup a global variable
-	grpc.URL = Config.Blockchain.Url
+	grpc.SERVER = Config.Blockchain.GrpcServer
 	grpc.INSECURE = Config.Blockchain.Insecure
 
 	return nil
@@ -189,13 +188,15 @@ func SetConfig(key string, value interface{}) error {
 	if err != nil {
 		return err
 	}
-	if err = toml.Unmarshal(data, &config{}); err != nil {
+
+	updatedConfig := &config{}
+	if err = toml.Unmarshal(data, updatedConfig); err != nil {
 		return err
 	}
 
 	// Save changes to file
-	err = os.WriteFile(ConfigPath, data, 0644)
-	if err != nil {
+	Config = updatedConfig
+	if err = FlushConfig(); err != nil {
 		return err
 	}
 
@@ -211,10 +212,10 @@ func defaultConfig() *config {
 	return &config{
 		Version: VersionConfig{AppVer: AppVersion, MinAppVer: MinAppVersion, Show: Version},
 		Blockchain: BlockchainConfig{
-			ChainId:       "tropos-5",
+			ChainId:       "mesos-1",
 			GasAdjustment: 1.3,
 			Insecure:      true,
-			Url:           "127.0.0.1:9090",
+			GrpcServer:    "127.0.0.1:9090",
 		},
 		Home: HomeConfig{
 			AccountsPath: "./accounts",
@@ -247,10 +248,11 @@ func defaultConfig() *config {
 			},
 		},
 		Monitor: MonitorConfig{
-			TLS:          false,
-			CertFilePath: "",
-			KeyFilePath:  "",
-			Port:         "18381",
+			TLS:            false,
+			CertFilePath:   "",
+			KeyFilePath:    "",
+			Port:           "18381",
+			AllowedOrigins: []string{"127.0.0.1"},
 		},
 		Streaming: StreamingConfig{
 			InternalPort: "18481",
