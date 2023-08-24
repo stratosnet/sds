@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/alex023/clock"
 	"github.com/spf13/cobra"
@@ -287,7 +289,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	if isExec {
 		exit := false
 		if len(args) > 0 {
-			exit = console.Mystdin.RunCmd(args[0], args[1:], true)
+			strKey := strings.ToLower(args[0])
+			exit = console.Mystdin.RunCmd(strKey, args[1:], true)
 		}
 
 		if exit {
