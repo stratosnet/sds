@@ -77,8 +77,8 @@ type MonitorConfig struct {
 	TLS            bool     `toml:"tls" comment:"Should the monitor server use TLS? Eg: false"`
 	CertFilePath   string   `toml:"cert_file_path" comment:"Path to the TLS certificate file"`
 	KeyFilePath    string   `toml:"key_file_path" comment:"Path to the TLS private key file"`
-	Port           string   `toml:"port"`
-	AllowedOrigins []string `toml:"allowed_origins" comment:"List of IPs that are allowed to connect to the monitor websocket port"`
+	Port           string   `toml:"port" comment:"Port used for the monitor websocket connection. It's the monitor UI that uses this port, not the person accessing the UI in a browser"`
+	AllowedOrigins []string `toml:"allowed_origins" comment:"List of IPs that are allowed to connect to the monitor websocket port. This is used to decide which IP can connect their monitor to the node, NOT to decide who can view the monitor UI page."`
 }
 
 type TrafficConfig struct {
@@ -94,8 +94,9 @@ type StreamingConfig struct {
 }
 
 type WebServerConfig struct {
-	Path string `toml:"path" comment:"Location of the web server files Eg: \"./web\""`
-	Port string `toml:"port"`
+	Path           string `toml:"path" comment:"Location of the web server files Eg: \"./web\""`
+	Port           string `toml:"port" comment:"Port where the web server is hosted with sdsweb. If the port is opened and token_on_startup is true, anybody who loads the monitor UI will have full access to the monitor"`
+	TokenOnStartup bool   `toml:"token_on_startup" comment:"Automatically enter monitor token when opening the monitor UI. This should be false if the web_server port is opened"`
 }
 
 type config struct {
@@ -252,7 +253,7 @@ func defaultConfig() *config {
 			CertFilePath:   "",
 			KeyFilePath:    "",
 			Port:           "18381",
-			AllowedOrigins: []string{"127.0.0.1"},
+			AllowedOrigins: []string{"localhost"},
 		},
 		Streaming: StreamingConfig{
 			InternalPort: "18481",
@@ -265,8 +266,9 @@ func defaultConfig() *config {
 			MaxUploadRate:   0,
 		},
 		WebServer: WebServerConfig{
-			Path: "./web",
-			Port: "18681",
+			Path:           "./web",
+			Port:           "18681",
+			TokenOnStartup: false,
 		},
 	}
 }
