@@ -31,15 +31,13 @@ func (s *rpcLogService) LogSubscription(ctx context.Context, terminalId string) 
 		for {
 			select {
 			case log := <-logCh:
-				err := notifier.Notify(subscription.ID, &log)
+				err := notifier.Notify(subscription.ID, utils.LogMsg{Msg: string(log)})
 				if err != nil {
 					break
 				}
 
 			case <-subscription.Err(): // client send an unsubscribe request
-
-				return
-			case <-notifier.Closed(): // connection dropped
+				utils.DisableRpcLogger(terminalId)
 				return
 			}
 		}

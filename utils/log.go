@@ -231,10 +231,6 @@ func (l *CombinedLogger) ErrorLog(v ...interface{}) {
 	l.LogDepth(Error, 4, v...)
 }
 
-type LogMsg struct {
-	Msg string `json:"msg"`
-}
-
 //func ClearRpcLogger() {
 //	RpcLoggerMap = NewAutoCleanMap(60 * time.Minute)
 //}
@@ -314,6 +310,10 @@ func CheckError(err error) bool {
 	return false
 }
 
+type LogMsg struct {
+	Msg string `json:"msg"`
+}
+
 func AddRpcLogger(w io.Writer, id string) {
 	logLevel := Debug
 	if MyLogger != nil && MyLogger.stdLogger != nil {
@@ -358,4 +358,10 @@ func GetRpcLoggerByReqId(id int64) *Logger {
 		return rpcLogger
 	}
 	return nil
+}
+
+func DisableRpcLogger(id string) {
+	if logger := GetRpcLoggerByTerminalId(id); logger != nil {
+		logger.enabled = false
+	}
 }
