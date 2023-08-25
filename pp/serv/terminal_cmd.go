@@ -57,7 +57,7 @@ func getTerminalIdFromParam(paramWithTerminalId []string) (terminalId string, pa
 }
 
 func (api *terminalCmd) Wallets(ctx context.Context, param []string) (CmdResult, error) {
-	terminalId, param, err := getTerminalIdFromParam(param)
+	terminalId, _, err := getTerminalIdFromParam(param)
 	if err != nil {
 		return CmdResult{Msg: ""}, err
 	}
@@ -114,7 +114,7 @@ func (api *terminalCmd) Start(ctx context.Context, param []string) (CmdResult, e
 }
 
 func (api *terminalCmd) RegisterPP(ctx context.Context, param []string) (CmdResult, error) {
-	terminalId, param, err := getTerminalIdFromParam(param)
+	terminalId, _, err := getTerminalIdFromParam(param)
 	if err != nil {
 		return CmdResult{Msg: ""}, err
 	}
@@ -232,7 +232,7 @@ func (api *terminalCmd) UpdateDeposit(ctx context.Context, param []string) (CmdR
 }
 
 func (api *terminalCmd) Status(ctx context.Context, param []string) (CmdResult, error) {
-	terminalId, param, err := getTerminalIdFromParam(param)
+	terminalId, _, err := getTerminalIdFromParam(param)
 	if err != nil {
 		return CmdResult{Msg: ""}, err
 	}
