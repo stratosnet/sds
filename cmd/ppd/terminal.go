@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/alex023/clock"
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/cmd/common"
-	"github.com/stratosnet/sds/pp/namespace"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
@@ -24,7 +26,6 @@ const (
 
 func run(cmd *cobra.Command, args []string, isExec bool) {
 	c, err := rpc.Dial(setting.IpcEndpoint)
-
 	if err != nil {
 		utils.ErrorLog(err)
 		return
@@ -42,15 +43,15 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"deactivate <fee> optional<gas>                                 send transaction to stchain to stop being an active PP node\n" +
 		"startmining                                                    start mining\n" +
 		"prepay <amount> <fee> optional<beneficiary> <gas>              prepay stos to get ozone\n" +
-		"put <filepath> optional<isEncrypted> optional<nodeTier> optional<allowHigherTier>\n" +
-		"                                                               upload file, need to consume ozone\n" +
-		"putstream <filepath> optional<isEncrypted> optional<nodeTier> optional<allowHigherTier>\n" +
-		"                                                               upload video file for streaming, need to consume ozone. (alpha version, encode format config impossible)\n" +
+		"put <filepath> optional<isEncrypted> optional<nodeTier>        \n" +
+		"               optional<allowHigherTier>                       upload file, need to consume ozone\n" +
+		"putstream <filepath> optional<isEncrypted> optional<nodeTier>  \n" +
+		"                     optional<allowHigherTier>                 upload video file for streaming, need to consume ozone. (alpha version, encode format config impossible)\n" +
 		"list <filename>                                                query uploaded file by self\n" +
 		"list <page id>                                                 query all files owned by the wallet, paginated\n" +
 		"delete <filehash>                                              delete file\n" +
 		"get <sdm://account/filehash> <saveAs>                          download file, need to consume ozone\n" +
-		"    e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/e2ba7fd2390aad9213f2c60854e2b7728c6217309fcc421de5aacc7d4019a4fe\n" +
+		"                                                               e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/v05ahm50ugfjrgd3ga8mqi6bqka32ks3dooe1p9g\n" +
 		"sharefile <filehash> <duration> <is_private>                   share an uploaded file\n" +
 		"allshare                                                       list all shared files\n" +
 		"getsharefile <sharelink> <password>                            download a shared file, need to consume ozone\n" +
@@ -71,13 +72,15 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"withdraw <amount> <fee> optional<targetAddr> optional<gas>     withdraw matured reward (from address is the configured node wallet)\n" +
 		"send <toAddress> <amount> <fee> optional<gas>                  sending coins to another account (from address is the configured node wallet)\n"
 
+	terminalId := uuid.New().String()
+
 	help := func(line string, param []string) bool {
 		fmt.Println(helpStr)
 		return true
 	}
 
 	wallets := func(line string, param []string) bool {
-		return callRpc(c, "wallets", param)
+		return callRpc(c, terminalId, "wallets", param)
 	}
 
 	getoz := func(line string, param []string) bool {
@@ -85,7 +88,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 			fmt.Println("missing wallet address")
 			return false
 		}
-		return callRpc(c, "getoz", param)
+		return callRpc(c, terminalId, "getoz", param)
 	}
 
 	newwallet := func(line string, param []string) bool {
@@ -98,136 +101,136 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	}
 
 	start := func(line string, param []string) bool {
-		return callRpc(c, "start", param)
+		return callRpc(c, terminalId, "start", param)
 	}
 
 	registerPP := func(line string, param []string) bool {
-		return callRpc(c, "registerPP", param)
+		return callRpc(c, terminalId, "registerPP", param)
 	}
 
 	activate := func(line string, param []string) bool {
-		return callRpc(c, "activate", param)
+		return callRpc(c, terminalId, "activate", param)
 	}
 
 	updateDeposit := func(line string, param []string) bool {
-		return callRpc(c, "updateDeposit", param)
+		return callRpc(c, terminalId, "updateDeposit", param)
 	}
 
 	status := func(line string, param []string) bool {
-		return callRpc(c, "status", param)
+		return callRpc(c, terminalId, "status", param)
 	}
 
 	fileStatus := func(line string, param []string) bool {
-		return callRpc(c, "fileStatus", param)
+		return callRpc(c, terminalId, "fileStatus", param)
 	}
 
 	deactivate := func(line string, param []string) bool {
-		return callRpc(c, "deactivate", param)
+		return callRpc(c, terminalId, "deactivate", param)
 	}
 
 	prepay := func(line string, param []string) bool {
-		return callRpc(c, "prepay", param)
+		return callRpc(c, terminalId, "prepay", param)
 	}
 
 	upload := func(line string, param []string) bool {
-		return callRpc(c, "upload", param)
+		return callRpc(c, terminalId, "upload", param)
 	}
 
 	uploadStream := func(line string, param []string) bool {
-		return callRpc(c, "uploadStream", param)
+		return callRpc(c, terminalId, "uploadStream", param)
 	}
 
 	backupStatus := func(line string, param []string) bool {
-		return callRpc(c, "backupStatus", param)
+		return callRpc(c, terminalId, "backupStatus", param)
 	}
 
 	list := func(line string, param []string) bool {
-		return callRpc(c, "list", param)
+		return callRpc(c, terminalId, "list", param)
 	}
 
 	download := func(line string, param []string) bool {
-		return callRpc(c, "download", param)
+		return callRpc(c, terminalId, "download", param)
 	}
 
 	deleteFn := func(line string, param []string) bool {
-		return callRpc(c, "deleteFn", param)
+		return callRpc(c, terminalId, "deleteFn", param)
 	}
 
 	ver := func(line string, param []string) bool {
-		return callRpc(c, "ver", param)
+		return callRpc(c, terminalId, "ver", param)
 	}
 
 	monitor := func(line string, param []string) bool {
-		return callRpc(c, "monitor", param)
+		return callRpc(c, terminalId, "monitor", param)
 	}
 
 	stopmonitor := func(line string, param []string) bool {
-		return callRpc(c, "stopMonitor", param)
+		return callRpc(c, terminalId, "stopMonitor", param)
 	}
 
 	config := func(line string, param []string) bool {
-		return callRpc(c, "config", param)
+		return callRpc(c, terminalId, "config", param)
 	}
 
 	sharepath := func(line string, param []string) bool {
-		return callRpc(c, "sharePath", param)
+		return callRpc(c, terminalId, "sharePath", param)
 	}
 
 	sharefile := func(line string, param []string) bool {
-		return callRpc(c, "shareFile", param)
+		return callRpc(c, terminalId, "shareFile", param)
 	}
 
 	allshare := func(line string, param []string) bool {
-		return callRpc(c, "allShare", param)
+		return callRpc(c, terminalId, "allShare", param)
 	}
 
 	cancelshare := func(line string, param []string) bool {
-		return callRpc(c, "cancelShare", param)
+		return callRpc(c, terminalId, "cancelShare", param)
 	}
 
 	clearexpshare := func(line string, param []string) bool {
-		return callRpc(c, "clearExpShare", param)
+		return callRpc(c, terminalId, "clearExpShare", param)
 	}
 
 	getsharefile := func(line string, param []string) bool {
-		return callRpc(c, "getShareFile", param)
+		return callRpc(c, terminalId, "getShareFile", param)
 	}
 
 	pauseget := func(line string, param []string) bool {
-		return callRpc(c, "pauseGet", param)
+		return callRpc(c, terminalId, "pauseGet", param)
 	}
 
 	pauseput := func(line string, param []string) bool {
-		return callRpc(c, "pausePut", param)
+		return callRpc(c, terminalId, "pausePut", param)
 	}
 
 	cancelget := func(line string, param []string) bool {
-		return callRpc(c, "cancelGet", param)
+		return callRpc(c, terminalId, "cancelGet", param)
 	}
 	monitortoken := func(line string, param []string) bool {
-		return callRpc(c, "monitorToken", param)
+		return callRpc(c, terminalId, "monitorToken", param)
 	}
 	maintenance := func(line string, param []string) bool {
-		return callRpc(c, "maintenance", param)
+		return callRpc(c, terminalId, "maintenance", param)
 	}
 	downgradeInfo := func(line string, param []string) bool {
-		return callRpc(c, "downgradeInfo", param)
+		return callRpc(c, terminalId, "downgradeInfo", param)
 	}
 	performanceMeasure := func(line string, param []string) bool {
-		return callRpc(c, "performanceMeasure", param)
+		return callRpc(c, terminalId, "performanceMeasure", param)
 	}
 	checkReplica := func(line string, param []string) bool {
-		return callRpc(c, "checkReplica", param)
+		return callRpc(c, terminalId, "checkReplica", param)
 	}
 	withdraw := func(line string, param []string) bool {
-		return callRpc(c, "withdraw", param)
+		return callRpc(c, terminalId, "withdraw", param)
 	}
 	send := func(line string, param []string) bool {
-		return callRpc(c, "send", param)
+		return callRpc(c, terminalId, "send", param)
 	}
 
-	nc := make(chan namespace.LogMsg)
-	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription")
+	nc := make(chan utils.LogMsg)
+	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription", terminalId)
 	if err != nil {
 		utils.ErrorLog("can't subscribe:", err)
 		return
@@ -286,7 +289,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	if isExec {
 		exit := false
 		if len(args) > 0 {
-			exit = console.Mystdin.RunCmd(args[0], args[1:], true)
+			strKey := strings.ToLower(args[0])
+			exit = console.Mystdin.RunCmd(strKey, args[1:], true)
 		}
 
 		if exit {
@@ -332,9 +336,14 @@ func terminalPreRunE(cmd *cobra.Command, args []string) error {
 	return common.LoadConfig(cmd)
 }
 
-func callRpc(c *rpc.Client, line string, param []string) bool {
+func callRpc(c *rpc.Client, terminalId string, line string, param []string) bool {
 	var result serv.CmdResult
-	err := c.Call(&result, "sds_"+line, param)
+
+	paramWithTid := []string{terminalId}
+	if len(param) > 0 {
+		paramWithTid = append(paramWithTid, param...)
+	}
+	err := c.Call(&result, "sds_"+line, paramWithTid)
 	if err != nil {
 		fmt.Println(err)
 		return false
@@ -343,16 +352,16 @@ func callRpc(c *rpc.Client, line string, param []string) bool {
 	return true
 }
 
-func printLogNotification(nc <-chan namespace.LogMsg) {
+func printLogNotification(nc <-chan utils.LogMsg) {
 	for n := range nc {
 		fmt.Print(n.Msg)
 	}
 }
 
 func destroySub(c *rpc.Client, sub *rpc.ClientSubscription) {
-	var cleanResult interface{}
+	//var cleanResult interface{}
 	sub.Unsubscribe()
-	_ = c.Call(&cleanResult, "sdslog_cleanUp")
+	//_ = c.Call(&cleanResult, "sdslog_cleanUp")
 }
 
 func printExitMsg() {
