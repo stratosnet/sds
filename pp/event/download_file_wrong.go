@@ -16,6 +16,7 @@ import (
 
 func CheckAndSendRetryMessage(ctx context.Context, dTask *task.DownloadTask) {
 	if !dTask.NeedRetry() {
+		utils.DebugLog("!needretry")
 		return
 	}
 	fileReqId, found := getFileReqIdFromContext(ctx)
@@ -25,7 +26,11 @@ func CheckAndSendRetryMessage(ctx context.Context, dTask *task.DownloadTask) {
 	}
 	if f, ok := task.DownloadFileMap.Load(dTask.FileHash + fileReqId); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
+		utils.DebugLog("+++++++++++++++++++++++++++++++++++++++++++++++")
+		utils.DebugLog("wallet:", fInfo.WalletAddress)
 		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqDownloadFileWrongData(fInfo, dTask), header.ReqDownloadFileWrong)
+	} else {
+		utils.DebugLog("-----------------------------------------------")
 	}
 }
 

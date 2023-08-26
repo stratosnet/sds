@@ -184,12 +184,14 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
+		utils.DebugLog("Error unmarshaling data")
 		return
 	}
 
 	// spam check
 	key := target.RspFileStorageInfo.TaskId + strconv.FormatInt(int64(target.SliceNumber), 10)
 	if _, ok := downloadSliceSpamCheckMap.Load(key); ok {
+		utils.DebugLog("failed spam check")
 		rsp := &protos.RspDownloadSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
@@ -220,6 +222,7 @@ func splitSendDownloadSliceData(ctx context.Context, target *protos.ReqDownloadS
 	rsp, data = requests.RspDownloadSliceData(ctx, target, slice)
 	setWriteHookForRspDownloadSlice(conn)
 	if task.DownloadSliceTaskMap.HashKey(sliceTaskId + slice.SliceStorageInfo.SliceHash) {
+		utils.DebugLog("can't find download slice task")
 		rsp.Data = nil
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		rsp.Result.Msg = "duplicate request for the same slice in the same download task"
@@ -231,6 +234,7 @@ func splitSendDownloadSliceData(ctx context.Context, target *protos.ReqDownloadS
 	}
 
 	if !verifyDownloadSliceHash(target.RspFileStorageInfo.FileHash, target.SliceNumber, slice, data) {
+		utils.DebugLog("failed verifying slice hash")
 		rsp.Data = nil
 		rsp.Result.State = protos.ResultState_RES_FAIL
 		rsp.Result.Msg = "slice hash validation failed"
@@ -254,7 +258,7 @@ func splitSendDownloadSliceData(ctx context.Context, target *protos.ReqDownloadS
 
 	utils.DebugLog("splitSendDownloadSliceData reqID =========", core.GetReqIdFromContext(ctx))
 	sliceLen := rsp.SliceSize
-	utils.DebugLog("sliceLen=========", sliceLen)
+	utils.DebugLog("sliceLen=========", sliceLen, "sliceNumber=======", target.SliceNumber)
 	dataStart := uint64(0)
 	dataEnd := uint64(setting.MaxData)
 	offsetStart := rsp.SliceInfo.SliceOffset.SliceOffsetStart
@@ -267,7 +271,7 @@ func splitSendDownloadSliceData(ctx context.Context, target *protos.ReqDownloadS
 		context:  ctx,
 		response: rsp,
 	})
-
+	utils.DebugLog("_____________________________")
 	for _, packet := range data {
 		utils.DebugLog("_____________________________")
 		utils.DebugLog(dataStart, dataEnd, offsetStart, offsetEnd)
@@ -357,11 +361,10 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 
 	if f, ok := task.DownloadFileMap.Load(target.FileHash + fileReqId); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
-		pp.DebugLog(ctx, "get a slice -------")
-		pp.DebugLog(ctx, "SliceHash", target.SliceInfo.SliceHash)
-		pp.DebugLog(ctx, "SliceOffset", target.SliceInfo.SliceOffset)
-		pp.DebugLog(ctx, "length", len(target.Data))
-		pp.DebugLog(ctx, "sliceSize", target.SliceSize)
+		pp.DebugLog(ctx, "got a packet -------")
+		pp.DebugLog(ctx, "Slice:", target.SliceNumber, ", SliceHash:", target.SliceInfo.SliceHash, "ReqId:", fileReqId)
+		pp.DebugLog(ctx, "SliceStarts:", target.SliceInfo.SliceOffset.SliceOffsetStart, ", SliceSize:", target.SliceSize)
+		pp.DebugLog(ctx, "PacketLength", len(target.Data))
 		if fInfo.EncryptionTag != "" {
 			receiveSliceAndProgressEncrypted(ctx, &target, fInfo, dTask, costTime)
 		} else {
@@ -504,7 +507,8 @@ func DownloadFileSlice(ctx context.Context, target *protos.RspFileStorageInfo, r
 				task.CleanDownloadTask(ctx, target.FileHash, slice.SliceStorageInfo.SliceHash, target.WalletAddress, reqId)
 				setDownloadSliceSuccess(ctx, slice.SliceStorageInfo.SliceHash, dTask)
 			} else {
-				pp.DebugLog(ctx, "request download data")
+				pp.DebugLog(ctx, "-------------------------------------------")
+				pp.DebugLog(ctx, "request download slice:", slice.SliceNumber)
 				req := requests.ReqDownloadSliceData(ctx, target, slice)
 				newCtx := createAndRegisterSliceReqId(ctx, reqId)
 				SendReqDownloadSlice(newCtx, target.FileHash, slice, req, reqId)

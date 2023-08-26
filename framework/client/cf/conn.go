@@ -378,6 +378,7 @@ func (cc *ClientConn) Start() {
 		cc.ClientClose(false)
 		return
 	}
+	utils.DebugLog("before DialTCP...", tcpAddr)
 	cc.spbConn, err = net.DialTCP("tcp", nil, tcpAddr)
 	if err != nil {
 		utils.DebugLogf("cc.spbConn:%p", cc.spbConn)

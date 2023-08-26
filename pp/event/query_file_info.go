@@ -115,6 +115,7 @@ func ReqFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 // RspFileStorageInfo SP-PP , PP-P
 func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	// PP check whether itself is the storage PP, if not transfer
+	pp.Log(ctx, "##############################################################")
 	pp.Log(ctx, "get，RspFileStorageInfo")
 	var target protos.RspFileStorageInfo
 	if err := VerifyMessage(ctx, header.RspFileStorageInfo, &target); err != nil {
