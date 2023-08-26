@@ -946,7 +946,7 @@ func (api *terminalCmd) CheckReplica(ctx context.Context, param []string) (CmdRe
 }
 
 func (api *terminalCmd) DowngradeInfo(ctx context.Context, param []string) (CmdResult, error) {
-	terminalId, param, err := getTerminalIdFromParam(param)
+	terminalId, _, err := getTerminalIdFromParam(param)
 	if err != nil {
 		return CmdResult{Msg: ""}, err
 	}

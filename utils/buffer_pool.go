@@ -37,10 +37,12 @@ func IsPoolFull() bool {
 }
 
 func RequestBuffer() []byte {
+	DebugLog("-", len(globalBufferPool.pool))
 	return globalBufferPool.requestBuffer()
 }
 
 func ReleaseBuffer(buffer []byte) {
+	DebugLog("+", len(globalBufferPool.pool))
 	globalBufferPool.releaseBuffer(buffer)
 }
 
