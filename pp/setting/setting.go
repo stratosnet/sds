@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"sync"
 
 	"github.com/pelletier/go-toml"
@@ -329,4 +330,12 @@ func GetDiskSizeSoftCap(actualTotal uint64) uint64 {
 		return maxDiskBytes
 	}
 	return actualTotal
+}
+
+func GetDataBufferSize() int {
+	i, err := strconv.ParseInt(os.Getenv("PPD_DATA_BUF_SIZE"), 10, 0)
+	if err != nil {
+		return DEFAULT_DATA_BUFFER_POOL_SIZE
+	}
+	return int(i)
 }

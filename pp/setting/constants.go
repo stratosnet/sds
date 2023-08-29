@@ -15,11 +15,11 @@ const (
 	HDPath        = "m/44'/606'/0'/0/0"
 	P2pServerType = "tcp4"
 
-	NodeReportIntervalSec  = 5 * 60 // Interval of node stat report, in seconds
-	PpLatencyCheckInterval = 60     // interval for checking the latency to next PP
-	DATA_BUFFER_POOL_SIZE = 100
+	NodeReportIntervalSec         = 5 * 60 // Interval of node stat report, in seconds
+	PpLatencyCheckInterval        = 60     // interval for checking the latency to next PP
+	DEFAULT_DATA_BUFFER_POOL_SIZE = 2000
 
-  	MaxData            = 1024 * 1024 * 3 // max size of a piece in a slice
+	MaxData            = 1024 * 1024 * 3 // max size of a piece in a slice
 	MaxSliceSize       = 1024 * 1024 * 32
 	ImagePath          = "./images/"
 	VideoPath          = "./videos"

@@ -160,7 +160,8 @@ func (p *P2pServer) newServer(ctx context.Context) *core.Server {
 
 func (p *P2pServer) Start(ctx context.Context) {
 	// channels for quitting peer level goroutines
-	utils.InitBufferPool(setting.MaxData, setting.DATA_BUFFER_POOL_SIZE)
+	utils.InitBufferPool(setting.MaxData, setting.GetDataBufferSize())
+
 	ctx = p.initQuitChs(ctx)
 	setting.SetMyNetworkAddress()
 	p.peerList.Init(setting.NetworkAddress, filepath.Join(setting.Config.Home.PeersPath, "pp-list"))

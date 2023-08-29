@@ -2,6 +2,7 @@ package serv
 
 import (
 	"context"
+	"github.com/stratosnet/sds/utils/environment"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -35,6 +36,8 @@ func (bs *BaseServer) Start() error {
 	if err != nil {
 		return err
 	}
+
+	utils.Logf("initializing resource node with environment=%v...", environment.GetEnvironment())
 
 	err = bs.startP2pServer()
 	if err != nil {
