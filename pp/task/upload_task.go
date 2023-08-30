@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/metrics"
@@ -326,7 +327,8 @@ type UploadProgress struct {
 }
 
 // UploadProgressMap Map of the progress for ongoing uploads
-var UploadProgressMap = &sync.Map{} // map[string]*UploadProgress
+var UploadProgressMap = &sync.Map{}                        // map[string]*UploadProgress
+var UploadTaskIdMap = utils.NewAutoCleanMap(1 * time.Hour) // map[fileHash]taskId  Store the task ID (from SP) for each upload so that getFileStatus knows which taskId corresponds to a fileHash
 
 func CreateUploadSliceTask(ctx context.Context, slice *SliceWithStatus, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
 	pp.DebugLogf(ctx, "sliceNumber %v  offsetStart = %v  offsetEnd = %v", slice.Slice.SliceNumber, slice.Slice.SliceOffset.SliceOffsetStart, slice.Slice.SliceOffset.SliceOffsetEnd)

@@ -58,15 +58,15 @@ func CleanTransferTask(taskId, sliceHash string) {
 	rwmutex.Unlock()
 }
 
-func GetTransferSliceData(taskId, sliceHash string) []byte {
+func GetTransferSliceData(taskId, sliceHash string) (int64, [][]byte) {
 	if tTask, ok := GetTransferTask(taskId, sliceHash); ok {
-		data, err := file.GetSliceData(tTask.SliceStorageInfo.SliceHash)
+		size, buffer, err := file.ReadSliceData(tTask.SliceStorageInfo.SliceHash)
 		if err != nil {
 			utils.ErrorLog("failed getting slice data", err)
 		}
-		return data
+		return size, buffer
 	}
-	return nil
+	return 0, nil
 }
 
 func SaveTransferData(target *protos.RspTransferDownload) error {

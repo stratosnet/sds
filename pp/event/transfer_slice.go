@@ -16,7 +16,6 @@ import (
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
-	"github.com/tendermint/tendermint/types/time"
 )
 
 var (
@@ -36,12 +35,6 @@ func NoticeFileSliceBackup(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	utils.DebugLog("target = ", target)
-
-	// SPAM check
-	if time.Now().Unix()-target.TimeStamp > setting.SpamThresholdSpSignLatency {
-		utils.ErrorLog(ctx, "the slice backup request from sp was expired")
-		return
-	}
 
 	if target.PpInfo.P2PAddress == p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 		utils.DebugLog("Ignoring slice backup notice because this node already owns the file")
@@ -123,14 +116,13 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	task.AddTransferTask(noticeFileSliceBackup.TaskId, noticeFileSliceBackup.SliceStorageInfo.SliceHash, tTask)
 
 	sliceHash := noticeFileSliceBackup.SliceStorageInfo.SliceHash
-	sliceData := task.GetTransferSliceData(noticeFileSliceBackup.TaskId, noticeFileSliceBackup.SliceStorageInfo.SliceHash)
-	sliceDataLen := len(sliceData)
+	sliceDataLen, buffer := task.GetTransferSliceData(noticeFileSliceBackup.TaskId, noticeFileSliceBackup.SliceStorageInfo.SliceHash)
 	utils.DebugLogf("sliceDataLen = %v  TaskId = %v", sliceDataLen, noticeFileSliceBackup.TaskId)
 
 	tkSliceUID := noticeFileSliceBackup.TaskId + sliceHash
 	dataStart := 0
 	dataEnd := setting.MaxData
-	for {
+	for _, data := range buffer {
 		packetId, newCtx := p2pserver.CreateNewContextPacketId(ctx)
 		tkSlice := TaskSlice{
 			TkSliceUID:         tkSliceUID,
@@ -142,12 +134,12 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		costTimeStat := DownSendCostTimeMap.StartSendPacket(tkSliceUID)
 		utils.DebugLogf("--- DownSendCostTimeMap.StartSendPacket--- taskId %v, sliceHash %v, costTimeStatAfter %v",
 			noticeFileSliceBackup.TaskId, sliceHash, costTimeStat)
-		if dataEnd > sliceDataLen {
-			_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspTransferDownload(sliceData[dataStart:], noticeFileSliceBackup.TaskId, sliceHash,
+		if int64(dataEnd) > sliceDataLen {
+			_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspTransferDownload(data, noticeFileSliceBackup.TaskId, sliceHash,
 				noticeFileSliceBackup.SpP2PAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress(), uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 			return
 		}
-		_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspTransferDownload(sliceData[dataStart:dataEnd], noticeFileSliceBackup.TaskId, sliceHash,
+		_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspTransferDownload(data, noticeFileSliceBackup.TaskId, sliceHash,
 			noticeFileSliceBackup.SpP2PAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress(), uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 		dataStart += setting.MaxData
 		dataEnd += setting.MaxData
@@ -166,13 +158,8 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
+	defer utils.ReleaseBuffer(target.Data)
 	totalCostTIme := DownRecvCostTimeMap.AddCostTime(target.TaskId+target.SliceHash, costTime)
-
-	// verify node sign between PPs
-	if target.P2PAddress == "" {
-		utils.ErrorLog(ctx, "")
-		return
-	}
 
 	err := task.SaveTransferData(&target)
 	if err != nil {

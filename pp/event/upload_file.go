@@ -114,9 +114,9 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		if strings.Contains(target.Result.Msg, "Same file with the name") {
-			pp.Log(ctx, target.Result.Msg)
+			pp.ErrorLog(ctx, target.Result.Msg)
 		} else {
-			pp.Log(ctx, "upload failed: ", target.Result.Msg)
+			pp.ErrorLog(ctx, "upload failed: ", target.Result.Msg)
 		}
 
 		if file.IsFileRpcRemote(target.FileHash) {
@@ -126,6 +126,8 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		}
 		return
 	}
+
+	task.UploadTaskIdMap.Store(target.FileHash, target.TaskId)
 
 	if len(target.Slices) != 0 {
 		go startUploadTask(ctx, target)

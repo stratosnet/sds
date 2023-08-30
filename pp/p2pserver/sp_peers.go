@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	requestInfoMap = utils.NewAutoCleanMap(5 * time.Minute) // used for req-rsp message pair verifications
+	requestInfoMap = utils.NewAutoCleanMap(60 * time.Minute) // used for req-rsp message pair verifications
 )
 
 func (p *P2pServer) SignP2pMessage(signMsg []byte) []byte {
@@ -103,7 +103,6 @@ func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb p
 		p.StoreRequestInfo(reqId, cmd.Id)
 	}
 
-	msgBuf.MSGHead.DataLen = uint32(len(msgBuf.MSGData))
 	body, err := proto.Marshal(pb)
 	if err != nil {
 		pp.ErrorLog(ctx, "error decoding")

@@ -70,9 +70,7 @@ func InheritRpcLoggerFromParentReqId(ctx context.Context, reqId int64) {
 		return
 	}
 	parentReqId := ctx.Value(parentReqIDCtxKey).(int64)
-	if logger, ok := utils.RpcLoggerMap.Load(parentReqId); ok {
-		utils.RpcLoggerMap.Store(reqId, logger)
-	}
+	utils.RegisterReqToParentReq(reqId, parentReqId)
 }
 
 func GetPacketIdFromContext(ctx context.Context) int64 {

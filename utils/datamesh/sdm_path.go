@@ -39,7 +39,7 @@ func DataMeshIdFromString(idString string) (*DataMeshId, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to decode owner")
 	}
-	ok := utils.VerifyHash(parts[1])
+	ok := utils.ValidateHash(parts[1], utils.SDS_CODEC)
 	if !ok {
 		return nil, errors.New("failed to decode hash")
 	}

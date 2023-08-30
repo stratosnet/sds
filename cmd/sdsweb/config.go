@@ -19,9 +19,12 @@ type Config struct {
 
 func UpdateWebConfig() error {
 	config := &Config{
-		WsUrl:        fmt.Sprintf("ws://127.0.0.1:%v", setting.Config.Monitor.Port),
-		MonitorToken: serv.GetCurrentToken(),
+		WsUrl: fmt.Sprintf("ws://127.0.0.1:%v", setting.Config.Monitor.Port),
 	}
+	if setting.Config.WebServer.TokenOnStartup {
+		config.MonitorToken = serv.GetCurrentToken()
+	}
+
 	configBytes, err := json.Marshal(config)
 	if err != nil {
 		return err

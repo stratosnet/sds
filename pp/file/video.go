@@ -24,6 +24,7 @@ const HLS_SEGMENT_FILENAME = "%d.ts"
 const HLS_HEADER_FILENAME = "index.m3u8"
 
 const TEMP_FOLDER = "tmp"
+const TMP_FOLDER_VIDEO = "video"
 
 type HlsInfo struct {
 	FileHash         string

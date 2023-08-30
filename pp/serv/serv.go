@@ -2,6 +2,7 @@ package serv
 
 import (
 	"context"
+	"github.com/stratosnet/sds/utils/environment"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -36,6 +37,8 @@ func (bs *BaseServer) Start() error {
 		return err
 	}
 
+	utils.Logf("initializing resource node with environment=%v...", environment.GetEnvironment())
+
 	err = bs.startP2pServer()
 	if err != nil {
 		return err
@@ -52,6 +55,11 @@ func (bs *BaseServer) Start() error {
 	}
 
 	err = bs.startTrafficLog()
+	if err != nil {
+		return err
+	}
+
+	err = bs.startClearTmpFileJob()
 	if err != nil {
 		return err
 	}
@@ -163,7 +171,7 @@ func (bs *BaseServer) startMonitor() error {
 	}
 
 	var config = namespace.WsConfig{
-		Origins: []string{},
+		Origins: setting.Config.Monitor.AllowedOrigins,
 		Modules: []string{},
 		Prefix:  "",
 	}
@@ -203,6 +211,7 @@ func (bs *BaseServer) startP2pServer() error {
 	bs.p2pServ.Start(ctx)
 	_, _ = bs.p2pServ.ConnectToSP(ctx) // Ignore error if we can't connect to any SPs
 	bs.ppNetwork.StartPP(ctx)
+	bs.ppNetwork.StartDataBufferPool()
 	return nil
 }
 
@@ -211,6 +220,12 @@ func (bs *BaseServer) startTrafficLog() error {
 	ctx = context.WithValue(ctx, types.P2P_SERVER_KEY, bs.p2pServ)
 	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
 	StartDumpTrafficLog(ctx)
+	return nil
+}
+
+func (bs *BaseServer) startClearTmpFileJob() error {
+	ctx := context.Background()
+	file.StartClearTmpFileJob(ctx)
 	return nil
 }
 
@@ -252,5 +267,7 @@ func (bs *BaseServer) Stop() {
 	if bs.p2pServ != nil {
 		bs.p2pServ.Stop()
 	}
+	StopDumpTrafficLog()
+	file.StopClearTmpFileJob()
 	// TODO: stop IPC, TrafficLog, InternalApiServer, RestServer
 }

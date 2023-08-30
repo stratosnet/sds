@@ -245,8 +245,13 @@ func GetFileStatus(ctx context.Context, fileHash, walletAddr string, walletPubke
 		return rsp
 	}
 
+	taskId := ""
+	if id, found := task.UploadTaskIdMap.Load(fileHash); found {
+		taskId = id.(string)
+	}
+
 	// If not, send req to sp
-	req := requests.ReqFileStatus(fileHash, walletAddr, walletPubkey, walletSign, reqTime)
+	req := requests.ReqFileStatus(fileHash, walletAddr, taskId, walletPubkey, walletSign, reqTime)
 	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStatus)
 	return nil
 }
