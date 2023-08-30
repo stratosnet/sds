@@ -31,7 +31,7 @@ func (s *rpcLogService) LogSubscription(ctx context.Context, terminalId string) 
 		for {
 			select {
 			case log := <-logCh:
-				err := notifier.Notify(subscription.ID, utils.LogMsg{Msg: string(log)})
+				err := notifier.Notify(subscription.ID, log)
 				if err != nil {
 					break
 				}
@@ -49,20 +49,20 @@ func (s *rpcLogService) LogSubscription(ctx context.Context, terminalId string) 
 func newRpcWriter(id string) *rpcWriter {
 	return &rpcWriter{
 		terminalId: id,
-		logCh:      make(chan []byte),
+		logCh:      make(chan utils.LogMsg),
 	}
 }
 
 type rpcWriter struct {
 	terminalId string
-	logCh      chan []byte
+	logCh      chan utils.LogMsg
 }
 
-func (l *rpcWriter) getLogCh() chan []byte {
+func (l *rpcWriter) getLogCh() chan utils.LogMsg {
 	return l.logCh
 }
 
 func (l *rpcWriter) Write(p []byte) (n int, err error) {
-	l.logCh <- p
+	l.logCh <- utils.LogMsg{Msg: string(p)}
 	return len(p), nil
 }
