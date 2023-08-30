@@ -21,9 +21,8 @@ func logDepthWithContext(context context.Context, level utils.LogLevel, calldept
 		return
 	}
 
-	if value, ok := utils.RpcLoggerMap.Load(loggerKey); ok {
-		rpcLogger := value.(*utils.Logger)
-		rpcLogger.LogDepth(level, calldepth, v...)
+	if logger := utils.GetRpcLoggerByReqId(loggerKey); logger != nil {
+		logger.LogDepth(level, calldepth, v...)
 	}
 }
 
@@ -43,9 +42,9 @@ func getLoggerMapKeyFromContext(ctx context.Context) int64 {
 	return 0
 }
 
-func CreateReqIdAndRegisterRpcLogger(ctx context.Context) context.Context {
+func CreateReqIdAndRegisterRpcLogger(ctx context.Context, terminalId string) context.Context {
 	rpcLoggerReqId, _ := utils.NextSnowFlakeId()
-	utils.RpcLoggerMap.Store(rpcLoggerReqId, utils.RpcLogger)
+	utils.RegisterReqToLogger(rpcLoggerReqId, terminalId)
 	return core.CreateContextWithReqId(ctx, rpcLoggerReqId)
 }
 

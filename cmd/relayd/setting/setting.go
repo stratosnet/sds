@@ -22,18 +22,18 @@ type AppVersion struct {
 }
 
 type connectionRetries struct {
-	Max           int `toml:"max"`
-	SleepDuration int `toml:"sleep_duration"`
+	Max             int `toml:"max"`
+	SleepDuration   int `toml:"sleep_duration"`   // Milliseconds
+	RefreshInterval int `toml:"refresh_interval"` // Seconds
 }
 
 type grpcConfig struct {
-	Url      string `toml:"url"`
-	Insecure bool   `toml:"insecure"`
+	GrpcServer string `toml:"grpc_server" comment:"Network address of the chain Eg: \"127.0.0.1:9090\""`
+	Insecure   bool   `toml:"insecure"`
 }
 
 type sds struct {
 	ApiPort           string            `toml:"api_port"`
-	ClientPort        string            `toml:"client_port"`
 	NetworkAddress    string            `toml:"network_address"`
 	WebsocketPort     string            `toml:"websocket_port"`
 	ConnectionRetries connectionRetries `toml:"connection_retries"`
@@ -110,23 +110,24 @@ func defaultConfig() *config {
 		},
 		SDS: sds{
 			ApiPort:        "8081",
-			ClientPort:     "8088",
 			NetworkAddress: "127.0.0.1",
 			WebsocketPort:  "8889",
 			ConnectionRetries: connectionRetries{
-				Max:           100,
-				SleepDuration: 3000,
+				Max:             100,
+				SleepDuration:   3000,
+				RefreshInterval: 24 * 60 * 60,
 			},
 		},
 		StratosChain: stratoschain{
 			GrpcServer: grpcConfig{
-				Url:      "127.0.0.1:9090",
-				Insecure: true,
+				GrpcServer: "127.0.0.1:9090",
+				Insecure:   true,
 			},
 			WebsocketServer: "127.0.0.1:26657",
 			ConnectionRetries: connectionRetries{
-				Max:           100,
-				SleepDuration: 3000,
+				Max:             100,
+				SleepDuration:   3000,
+				RefreshInterval: 24 * 60 * 60,
 			},
 			Broadcast: broadcast{
 				ChannelSize: 2000,

@@ -37,8 +37,10 @@ type ParamReqUploadFile struct {
 
 // upload: upload file data
 type ParamUploadData struct {
-	FileHash string `json:"filehash"`
-	Data     string `json:"data"`
+	FileHash  string    `json:"filehash"`
+	Data      string    `json:"data"`
+	Signature Signature `json:"signature"`
+	ReqTime   int64     `json:"req_time"`
 }
 
 // get current file status

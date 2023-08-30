@@ -44,17 +44,26 @@ const (
 
 	// INIT_WAIT_TIMEOUT timeout for waiting the initial request
 	INIT_WAIT_TIMEOUT time.Duration = 15 * time.Second
+
+	SIGNATURE_INFO_TTL = 10 * time.Minute
 )
 
 var (
 	// key: fileHash value: file
 	FileOffset      = make(map[string]*FileFetchOffset)
 	FileOffsetMutex sync.Mutex
+
+	signatureInfoMap = utils.NewAutoCleanMap(SIGNATURE_INFO_TTL)
 )
 
 type FileFetchOffset struct {
 	RemoteRequested   uint64
 	ResourceNodeAsked uint64
+}
+
+type signatureInfo struct {
+	signature rpc_api.Signature
+	reqTime   int64
 }
 
 type rpcPubApi struct {
@@ -119,12 +128,18 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 	walletAddr := param.Signature.Address
 	pubkey := param.Signature.Pubkey
 	signature := param.Signature.Signature
-	time := param.ReqTime
+	reqTime := param.ReqTime
 
 	// verify if wallet and public key match
 	if utiltypes.VerifyWalletAddr(pubkey, walletAddr) != 0 {
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
+
+	// Store initial signature info
+	signatureInfoMap.Store(fileHash, signatureInfo{
+		signature: param.Signature,
+		reqTime:   reqTime,
+	})
 
 	// fetch file slices from remote client and send upload request to sp
 	fetchRemoteFileAndReqUpload := func() {
@@ -168,8 +183,15 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 			}
 		}
 
+		// Get latest signature info and reqTime
+		if info, found := signatureInfoMap.Load(fileHash); found {
+			sigInfo := info.(signatureInfo)
+			signature = sigInfo.signature.Signature
+			reqTime = sigInfo.reqTime
+		}
+
 		// start to upload file
-		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, time,
+		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, reqTime,
 			slices, false, param.DesiredTier, param.AllowHigherTier, 0)
 		if err != nil {
 			file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
@@ -206,8 +228,15 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 }
 
 func (api *rpcPubApi) UploadData(ctx context.Context, param rpc_api.ParamUploadData) rpc_api.Result {
-
 	metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_SP:")
+
+	if param.Signature.Signature != "" {
+		// Update signature info every time new data is received
+		signatureInfoMap.Store(param.FileHash, signatureInfo{
+			signature: param.Signature,
+			reqTime:   param.ReqTime,
+		})
+	}
 
 	content := param.Data
 	fileHash := param.FileHash
@@ -272,12 +301,17 @@ func (api *rpcPubApi) UploadData(ctx context.Context, param rpc_api.ParamUploadD
 
 func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.ParamReqUploadFile) rpc_api.Result {
 	metrics.RpcReqCount.WithLabelValues("RequestUploadStream").Inc()
-	tmpFolder := "video"
 	fileHash := param.FileHash
 	walletAddr := param.Signature.Address
 	pubkey := param.Signature.Pubkey
 	signature := param.Signature.Signature
-	time := param.ReqTime
+	reqTime := param.ReqTime
+
+	// Store initial signature info
+	signatureInfoMap.Store(fileHash, signatureInfo{
+		signature: param.Signature,
+		reqTime:   reqTime,
+	})
 
 	// fetch file slices from remote client and send upload request to sp
 	fetchRemoteFileAndReqUpload := func() {
@@ -291,14 +325,15 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 		for sliceNumber := uint64(1); sliceNumber <= sliceCount; sliceNumber++ {
 			sliceOffset := requests.GetSliceOffset(sliceNumber, sliceCount, sliceSize, fileSize)
 
-			if file.CacheRemoteFileData(fileHash, sliceOffset, tmpFolder, fileName, true) != nil {
+			if file.CacheRemoteFileData(fileHash, sliceOffset, file.TMP_FOLDER_VIDEO, fileName, true) != nil {
 				file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
 				return
 			}
 		}
 
-		tmpFilePath := filepath.Join(file.GetTmpFileFolderPath(tmpFolder), fileName)
-		calculatedFileHash := utils.CalcFileHashForVideoStream(tmpFilePath, "")
+		tmpFilePath := filepath.Join(file.GetTmpFileFolderPath(file.TMP_FOLDER_VIDEO), fileName)
+		defer os.RemoveAll(tmpFilePath) // remove tmp file no matter what the result is
+		calculatedFileHash := utils.CalcFileHash(tmpFilePath, "", utils.VIDEO_CODEC)
 		if calculatedFileHash != fileHash {
 			file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.WRONG_FILE_INFO})
 			return
@@ -310,10 +345,16 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 			file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
 			return
 		}
-		_ = os.RemoveAll(tmpFilePath)
+
+		// Get latest signature info and reqTime
+		if info, found := signatureInfoMap.Load(fileHash); found {
+			sigInfo := info.(signatureInfo)
+			signature = sigInfo.signature.Signature
+			reqTime = sigInfo.reqTime
+		}
 
 		// start to upload file
-		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, time,
+		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, reqTime,
 			slices, false, param.DesiredTier, param.AllowHigherTier, fInfo.Duration)
 		if err != nil {
 			file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})

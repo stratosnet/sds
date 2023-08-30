@@ -63,10 +63,27 @@ func reqUploadMsg(filePath, hash, sn string) []byte {
 	return wrapJsonRpc("user_requestUpload", pm)
 }
 
-func uploadDataMsg(hash, data string) []byte {
+func uploadDataMsg(hash, data, sn string) []byte {
+	nowSec := time.Now().Unix()
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
+	if err != nil {
+		return nil
+	}
+	wpk, err := WalletPublicKey.ToBech()
+	if err != nil {
+		return nil
+	}
+
 	pa := []rpc.ParamUploadData{{
 		FileHash: hash,
 		Data:     data,
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
+		},
+		ReqTime: nowSec,
 	}}
 	pm, e := json.Marshal(pa)
 	if e != nil {
@@ -130,7 +147,7 @@ func put(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 		encoded := base64.StdEncoding.EncodeToString(rawData)
-		r = uploadDataMsg(hash, encoded)
+		r = uploadDataMsg(hash, encoded, sn)
 		utils.Log("- request upload date (method: user_uploadData)")
 		body = httpRequest(r)
 		if body == nil {
@@ -159,13 +176,14 @@ func put(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func reqUploadStreamMsg(fileName, hash, sn string) []byte {
+func reqUploadStreamMsg(filePath, hash, sn string) []byte {
 	// file size
-	info, err := file.GetFileInfo(fileName)
+	info, err := file.GetFileInfo(filePath)
 	if err != nil {
 		utils.ErrorLog("Failed to get file information.", err.Error())
 		return nil
 	}
+	fileName := info.Name()
 	nowSec := time.Now().Unix()
 	// signature
 	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
@@ -253,7 +271,7 @@ func putstream(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 		encoded := base64.StdEncoding.EncodeToString(rawData)
-		r = uploadDataMsg(hash, encoded)
+		r = uploadDataMsg(hash, encoded, sn)
 		utils.Log("- request upload date (method: user_uploadDataStream)")
 		body = httpRequest(r)
 		if body == nil {

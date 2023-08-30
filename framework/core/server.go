@@ -6,6 +6,7 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/stratosnet/sds/metrics"
@@ -174,23 +175,26 @@ func (s *Server) Start(l net.Listener) error {
 	for {
 		spbConn, err := l.Accept()
 		if err != nil {
-			if _, ok := err.(net.Error); ok {
-				if tempDelay == 0 {
-					tempDelay = 5 * time.Millisecond
-				} else {
-					tempDelay *= 2
+			if netErr, ok := err.(net.Error); ok {
+				if netErr.Timeout() {
+					continue
+				} else if strings.Contains(netErr.Error(), syscall.EMFILE.Error()) {
+					if tempDelay == 0 {
+						tempDelay = 5 * time.Millisecond
+					} else {
+						tempDelay *= 2
+					}
+					if max := 1 * time.Second; tempDelay >= max {
+						tempDelay = max
+					}
+					utils.ErrorLogf("accept error %v, retrying in %d\n", err, tempDelay)
+					select {
+					case <-time.After(tempDelay):
+					case <-s.ctx.Done():
+					}
+					continue
 				}
-				if max := 1 * time.Second; tempDelay >= max {
-					tempDelay = max
-				}
-				utils.ErrorLogf("accept error %v, retrying in %d\n", err, tempDelay)
-				select {
-				case <-time.After(tempDelay):
-				case <-s.ctx.Done():
-				}
-				continue
 			}
-
 			utils.ErrorLog("accept err:", err)
 			return err
 		}

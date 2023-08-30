@@ -119,9 +119,14 @@ func formatRspGetPPStatus(ctx context.Context, response *protos.RspGetPPStatus) 
 		regStatStr = "Unknown"
 	}
 
+	spStatus := "disconnected"
+	if spInfo := p2pserver.GetP2pServer(ctx).GetSpConn(); spInfo != nil {
+		spStatus = fmt.Sprintf("%v (%v)", spInfo.GetRemoteP2pAddress(), spInfo.GetName())
+	}
+
 	msgStr := fmt.Sprintf("*** current node status ***\n"+
-		"Activation: %v | Registration Status: %v | Mining: %v | Initial tier: %v | Ongoing tier: %v | Weight score: %v",
-		activation, regStatStr, state, response.InitTier, response.OngoingTier, response.WeightScore)
+		"Activation: %v | Registration Status: %v | Mining: %v | Initial tier: %v | Ongoing tier: %v | Weight score: %v | Meta node: %v",
+		activation, regStatStr, state, response.InitTier, response.OngoingTier, response.WeightScore, spStatus)
 	pp.Log(ctx, msgStr)
 	return msgStr
 }

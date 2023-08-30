@@ -79,7 +79,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-
+	defer utils.ReleaseBuffer(target.Data)
 	rspUploadFile := target.RspUploadFile
 	var slice *protos.SliceHashAddr
 	for _, slice = range rspUploadFile.Slices {
@@ -140,7 +140,8 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	UpRecvCostTimeMap.dataMap.Store(tkSlice, totalCostTime)
 	UpRecvCostTimeMap.mux.Unlock()
 	timeEntry := time.Now().UnixMicro() - core.TimeRcv
-	_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.UploadSpeedOfProgressData(fileHash, uint64(len(target.Data)), (target.SliceNumber-1)*33554432+target.PieceOffset.SliceOffsetStart, timeEntry), header.UploadSpeedOfProgress)
+	pieceSize := target.PieceOffset.SliceOffsetEnd - target.PieceOffset.SliceOffsetStart
+	_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.UploadSpeedOfProgressData(fileHash, pieceSize, (target.SliceNumber-1)*33554432+target.PieceOffset.SliceOffsetStart, timeEntry), header.UploadSpeedOfProgress)
 	if err := task.SaveUploadFile(&target); err != nil {
 		// save failed, not handling yet
 		utils.ErrorLog("SaveUploadFile failed", err.Error())
@@ -193,7 +194,8 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspUploadFileSlice
 	if err := VerifyMessage(ctx, header.RspUploadFileSlice, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
+		utils.ErrorLog("failed verifying the message, ", err.Error(),
+			", please make sure your upload bandwidth is enough and retry")
 		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
@@ -238,6 +240,7 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 func ReqBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 	costTime := core.GetRecvCostTimeFromContext(ctx)
 	var target protos.ReqBackupFileSlice
+
 	if err := VerifyMessage(ctx, header.ReqBackupFileSlice, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
 		return
@@ -245,7 +248,7 @@ func ReqBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-
+	defer utils.ReleaseBuffer(target.Data)
 	// spam check
 	key := target.RspBackupFile.TaskId + strconv.FormatInt(int64(target.SliceNumber), 10)
 	if _, ok := backupSliceSpamCheckMap.Load(key); ok {
@@ -461,7 +464,7 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 	}
 	var ctStat = CostTimeStat{}
 
-	data, err := file.GetSliceDataFromTmp(fileHash, tk.SliceHash)
+	_, data, err := file.ReadSliceDataFromTmp(fileHash, tk.SliceHash)
 	if err != nil {
 		return errors.Wrap(err, "failed to get slice data from tmp")
 	}
@@ -482,10 +485,10 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 		var cmd header.MsgType
 		utils.DebugLogf("upSendPacketWgMap.Store <== K:%v, V:%v]", tkSliceUID, ctStat)
 		if tk.Type == protos.UploadType_BACKUP {
-			pb = requests.ReqBackupFileSliceData(ctx, tk, pieceOffset, data)
+			pb = requests.ReqBackupFileSliceData(ctx, tk, pieceOffset, data[0])
 			cmd = header.ReqBackupFileSlice
 		} else {
-			pb = requests.ReqUploadFileSliceData(ctx, tk, pieceOffset, data)
+			pb = requests.ReqUploadFileSliceData(ctx, tk, pieceOffset, data[0])
 			cmd = header.ReqUploadFileSlice
 		}
 		return sendSlice(newCtx, pb, fileHash, storageP2pAddress, storageNetworkAddress, cmd)
@@ -493,7 +496,7 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 
 	dataStart := 0
 	dataEnd := setting.MaxData
-	for {
+	for _, packet := range data {
 		pieceOffset := &protos.SliceOffset{
 			SliceOffsetStart: uint64(dataStart),
 			SliceOffsetEnd:   uint64(dataEnd),
@@ -511,14 +514,14 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 		UpSendCostTimeMap.mux.Unlock()
 		utils.DebugLogf("upSendPacketMap.Store <== K:%v, V:%v]", tkSliceUID, ctStat)
 		var cmd header.MsgType
-		if dataEnd < (tkDataLen + 1) {
+		if dataEnd <= tkDataLen {
 			pp.DebugLogf(newCtx, "Uploading slice data %v-%v (total %v)", dataStart, dataEnd, tkDataLen)
 			var pb proto.Message
 			if tk.Type == protos.UploadType_BACKUP {
-				pb = requests.ReqBackupFileSliceData(ctx, tk, pieceOffset, data[dataStart:dataEnd])
+				pb = requests.ReqBackupFileSliceData(ctx, tk, pieceOffset, packet)
 				cmd = header.ReqBackupFileSlice
 			} else {
-				pb = requests.ReqUploadFileSliceData(ctx, tk, pieceOffset, data[dataStart:dataEnd])
+				pb = requests.ReqUploadFileSliceData(ctx, tk, pieceOffset, packet)
 				cmd = header.ReqUploadFileSlice
 			}
 			err := sendSlice(newCtx, pb, fileHash, storageP2pAddress, storageNetworkAddress, cmd)
@@ -530,16 +533,18 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 		} else {
 			pp.DebugLogf(newCtx, "Uploading slice data %v-%v (total %v)", dataStart, tkDataLen, tkDataLen)
 			var pb proto.Message
+			pieceOffset.SliceOffsetEnd = uint64(tkDataLen)
 			if tk.Type == protos.UploadType_BACKUP {
-				pb = requests.ReqBackupFileSliceData(ctx, tk, pieceOffset, data[dataStart:])
+				pb = requests.ReqBackupFileSliceData(ctx, tk, pieceOffset, packet)
 				cmd = header.ReqBackupFileSlice
 			} else {
-				pb = requests.ReqUploadFileSliceData(ctx, tk, pieceOffset, data[dataStart:])
+				pb = requests.ReqUploadFileSliceData(ctx, tk, pieceOffset, packet)
 				cmd = header.ReqUploadFileSlice
 			}
 			return sendSlice(newCtx, pb, fileHash, storageP2pAddress, storageNetworkAddress, cmd)
 		}
 	}
+	return nil
 }
 
 func BackupFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {

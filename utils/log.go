@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-//log level
+// log level
 const (
 	Detail LogLevel = 1
 	Debug  LogLevel = 10
@@ -24,7 +24,7 @@ type LogLevel int
 
 var level2String = make(map[LogLevel]string)
 
-var RpcLoggerMap = NewAutoCleanMap(60 * time.Minute)
+var rpcLoggerMap = NewAutoCleanMap(60 * time.Minute) //termId/reqId, rpcLogger
 
 type Logger struct {
 	logger   *log.Logger
@@ -39,7 +39,6 @@ type CombinedLogger struct {
 
 var MyLogger *CombinedLogger
 var TrafficLogger *CombinedLogger
-var RpcLogger *Logger
 
 func newLogger(logFilepath string, enableStd, enableFile bool) *CombinedLogger {
 	var outfile *os.File
@@ -152,12 +151,12 @@ func init() {
 	//MyLogger = newLogger("./tmp/logs/stdout.log", true, true)
 }
 
-//SetLogLevel
+// SetLogLevel
 func (l *Logger) SetLogLevel(lv LogLevel) {
 	l.logLevel = lv
 }
 
-//GetLevelString
+// GetLevelString
 func (l *Logger) GetLevelString(lv LogLevel) string {
 	if str, ok := level2String[lv]; ok {
 		return str
@@ -171,7 +170,7 @@ func (l *Logger) SetEnabled(b bool) {
 	l.enabled = b
 }
 
-//SetLogLevel
+// SetLogLevel
 func (l *CombinedLogger) SetLogLevel(lv LogLevel) {
 	l.stdLogger.SetLogLevel(lv)
 	l.fileLogger.SetLogLevel(lv)
@@ -232,28 +231,11 @@ func (l *CombinedLogger) ErrorLog(v ...interface{}) {
 	l.LogDepth(Error, 4, v...)
 }
 
-func SetRpcLogger(rpc io.Writer) {
-	logLevel := Debug
-	if MyLogger != nil && MyLogger.stdLogger != nil {
-		logLevel = MyLogger.stdLogger.logLevel
-	}
+//func ClearRpcLogger() {
+//	RpcLoggerMap = NewAutoCleanMap(60 * time.Minute)
+//}
 
-	RpcLogger = &Logger{
-		logger:   log.New(rpc, "\r\n", log.Ldate|log.Ltime|log.Lshortfile),
-		enabled:  true,
-		logLevel: logLevel,
-	}
-}
-
-func ClearRpcLogger() {
-	if RpcLogger != nil {
-		RpcLogger.enabled = false
-		RpcLogger.logger = nil
-	}
-	RpcLoggerMap = NewAutoCleanMap(60 * time.Minute)
-}
-
-//Log calls default logger and output info log
+// Log calls default logger and output info log
 func Log(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
 	MyLogger.LogDepth(Info, 4, v...)
@@ -264,7 +246,7 @@ func Logf(template string, v ...interface{}) {
 	MyLogger.LogDepth(Info, 4, fmt.Sprintf(template, v...))
 }
 
-//ErrorLog call default logger and output error log
+// ErrorLog call default logger and output error log
 func ErrorLog(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
 	MyLogger.LogDepth(Error, 4, v...)
@@ -274,37 +256,37 @@ func WarnLog(v ...interface{}) {
 	MyLogger.LogDepth(Warn, 4, v...)
 }
 
-//ErrorLogf call default logger and output error log
+// ErrorLogf call default logger and output error log
 func ErrorLogf(template string, v ...interface{}) {
 	//GetLogger().Log(Info, v...)
 	MyLogger.LogDepth(Error, 4, fmt.Errorf(template, v...))
 }
 
-//DebugLog calls default logger and output debug log
+// DebugLog calls default logger and output debug log
 func DebugLog(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
 	MyLogger.LogDepth(Debug, 4, v...)
 }
 
-//DebugLog calls default logger and output debug log
+// DebugLog calls default logger and output debug log
 func DebugLogf(template string, v ...interface{}) {
 	//GetLogger().Log(Info, v...)
 	MyLogger.LogDepth(Debug, 4, fmt.Sprintf(template, v...))
 }
 
-//DebugLog calls default logger and output debug log
+// DebugLog calls default logger and output debug log
 func DebugLogfWithCalldepth(calldepth int, template string, v ...interface{}) {
 	//GetLogger().Log(Info, v...)
 	MyLogger.LogDepth(Debug, calldepth, fmt.Sprintf(template, v...))
 }
 
-//DetailLog calls default logger and output detail log
+// DetailLog calls default logger and output detail log
 func DetailLog(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
 	MyLogger.LogDepth(Detail, 4, v...)
 }
 
-//DetailLog calls default logger and output detail log
+// DetailLog calls default logger and output detail log
 func DetailLogf(template string, v ...interface{}) {
 	//GetLogger().Log(Info, v...)
 	MyLogger.LogDepth(Detail, 4, fmt.Sprintf(template, v...))
@@ -326,4 +308,60 @@ func CheckError(err error) bool {
 		return true
 	}
 	return false
+}
+
+type LogMsg struct {
+	Msg string `json:"msg"`
+}
+
+func AddRpcLogger(w io.Writer, id string) {
+	logLevel := Debug
+	if MyLogger != nil && MyLogger.stdLogger != nil {
+		logLevel = MyLogger.stdLogger.logLevel
+	}
+
+	rpcLogger := &Logger{
+		logger:   log.New(w, "\r\n", log.Ldate|log.Ltime|log.Lshortfile),
+		enabled:  true,
+		logLevel: logLevel,
+	}
+	rpcLoggerMap.Store(id, rpcLogger)
+}
+
+func GetRpcLoggerByTerminalId(id string) *Logger {
+	if value, ok := rpcLoggerMap.Load(id); ok {
+		rpcLogger := value.(*Logger)
+		return rpcLogger
+	}
+	return nil
+}
+
+func RegisterReqToLogger(reqId int64, terminalId string) bool {
+	if logger := GetRpcLoggerByTerminalId(terminalId); logger != nil {
+		rpcLoggerMap.Store(reqId, logger)
+		return true
+	}
+	return false
+}
+
+func RegisterReqToParentReq(reqId, parentId int64) bool {
+	if logger := GetRpcLoggerByReqId(parentId); logger != nil {
+		rpcLoggerMap.Store(reqId, logger)
+		return true
+	}
+	return false
+}
+
+func GetRpcLoggerByReqId(id int64) *Logger {
+	if value, ok := rpcLoggerMap.Load(id); ok {
+		rpcLogger := value.(*Logger)
+		return rpcLogger
+	}
+	return nil
+}
+
+func DisableRpcLogger(id string) {
+	if logger := GetRpcLoggerByTerminalId(id); logger != nil {
+		logger.enabled = false
+	}
 }

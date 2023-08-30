@@ -121,6 +121,7 @@ func dumpTrafficLog(ctx context.Context) func() {
 
 func StopDumpTrafficLog() {
 	if dumpJob != nil {
+		utils.Log("Stopping DumpTrafficLog Job......")
 		dumpJob.Cancel()
 	}
 }

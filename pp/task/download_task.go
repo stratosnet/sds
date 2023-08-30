@@ -26,13 +26,13 @@ import (
 const LOCAL_REQID string = "local"
 
 // DownloadTaskMap PP passway download task map   make(map[string]*DownloadTask)
-var DownloadTaskMap = utils.NewAutoCleanMap(5 * time.Minute)
+var DownloadTaskMap = utils.NewAutoCleanMap(1 * time.Hour)
 
 // DownloadSliceTaskMap resource node download slice task map
 var DownloadSliceTaskMap = utils.NewAutoCleanMap(1 * time.Hour)
 
 // DownloadFileMap P download info map  make(map[string]*protos.RspFileStorageInfo)
-var DownloadFileMap = utils.NewAutoCleanMap(5 * time.Minute)
+var DownloadFileMap = utils.NewAutoCleanMap(1 * time.Hour)
 
 // var DownloadFileProgress = &sync.Map{}
 
@@ -118,7 +118,7 @@ func (task *DownloadTask) RefreshTask(target *protos.RspFileStorageInfo) {
 }
 
 type DownloadSliceData struct {
-	Data    []byte
+	Data    [][]byte
 	FileCrc uint32
 	RawSize uint64
 }
@@ -216,26 +216,28 @@ func CancelDownloadTask(fileHash string) {
 }
 
 func GetDownloadSlice(target *protos.ReqDownloadSlice, slice *protos.DownloadSliceInfo) *DownloadSliceData {
-	data, err := file.GetSliceData(slice.SliceStorageInfo.SliceHash)
+	size, buffers, err := file.ReadSliceData(slice.SliceStorageInfo.SliceHash)
 	if err != nil {
 		utils.ErrorLog("Failed getting slice data ", err.Error())
 		return nil
 	}
-	rawSize := uint64(len(data))
-	encrypted := target.RspFileStorageInfo.EncryptionTag != ""
-	if encrypted {
+	rawSize := uint64(size)
+
+	if target.RspFileStorageInfo.EncryptionTag != "" {
 		encryptedSlice := protos.EncryptedSlice{}
-		err := proto.Unmarshal(data, &encryptedSlice)
+		var data = []byte{}
+
+		for _, buffer := range buffers {
+			data = append(data, buffer...)
+		}
+		err = proto.Unmarshal(data, &encryptedSlice)
 		if err == nil {
 			rawSize = encryptedSlice.RawSize
-		} else {
-			utils.ErrorLog("Couldn't unmarshal encrypted slice to protobuf", err)
-			data = []byte{}
 		}
 	}
 	dSlice := &DownloadSliceData{
-		FileCrc: utils.CalcCRC32(data),
-		Data:    data,
+		FileCrc: utils.CalcCRC32OfSlices(buffers),
+		Data:    buffers,
 		RawSize: rawSize,
 	}
 	return dSlice
