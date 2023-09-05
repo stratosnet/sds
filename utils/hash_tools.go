@@ -118,8 +118,7 @@ func CalcFileHash(filePath, encryptionTag string, codec byte) string {
 	switch codec {
 	case cid.Raw:
 		data = append([]byte(encryptionTag), CalcFileMD5(filePath)...)
-	case VIDEO_CODEC:
-	case SDS_CODEC:
+	case VIDEO_CODEC, SDS_CODEC:
 		data = append([]byte(encryptionTag), CalcFileKeccak(filePath)...)
 	default:
 		return ""
