@@ -184,7 +184,7 @@ func (api *terminalCmd) UpdateDeposit(ctx context.Context, param []string) (CmdR
 		return CmdResult{Msg: ""}, err
 	}
 
-	if len(param) < 3 {
+	if len(param) < 2 {
 		return CmdResult{Msg: ""}, errors.New("expecting at least 2 params. Input amount of depositDelta, fee amount, " +
 			"(optional) gas amount")
 	}
