@@ -1,11 +1,15 @@
 package utils
 
 import (
+	"fmt"
 	"sync"
+	"time"
+
+	"github.com/alex023/clock"
 )
 
 const (
-	BufferPoolRefillStep = 10
+	BufferPoolRefillInterval = 20 // in second
 )
 
 type bufferPool struct {
@@ -16,7 +20,11 @@ type bufferPool struct {
 	mutex       sync.Mutex
 }
 
-var globalBufferPool *bufferPool
+var (
+	globalBufferPool *bufferPool
+	timer            *clock.Clock
+	job              clock.Job
+)
 
 func InitBufferPool(bufferSize, poolSize int) {
 	globalBufferPool = &bufferPool{
@@ -25,24 +33,52 @@ func InitBufferPool(bufferSize, poolSize int) {
 		pool:        make(chan []byte, poolSize),
 		counter:     0,
 	}
-	// fill up the pool
-	for i := 0; i < cap(globalBufferPool.pool); i++ {
-		buffer := make([]byte, 0, bufferSize)
-		globalBufferPool.pool <- buffer
-	}
+	timer = clock.NewClock()
+	refillPool()()
 }
 
 func IsPoolFull() bool {
 	return len(globalBufferPool.pool) >= globalBufferPool.poolMaxSize
 }
 
+func refillPool() func() {
+	return func() {
+		globalBufferPool.mutex.Lock()
+		// fill up the pool
+		for i := 0; i < cap(globalBufferPool.pool); i++ {
+			buffer := make([]byte, 0, globalBufferPool.bufferSize)
+			globalBufferPool.pool <- buffer
+		}
+		DebugLog("refilled pool:", len(globalBufferPool.pool))
+		globalBufferPool.mutex.Unlock()
+	}
+}
+
 func RequestBuffer() []byte {
-	DebugLog("-", len(globalBufferPool.pool))
+	DebugLog(len(globalBufferPool.pool), "-")
+	globalBufferPool.mutex.Lock()
+	if len(globalBufferPool.pool) == 0 {
+		if job == nil {
+			fmt.Println("Adding Job")
+			job, _ = timer.AddJobWithInterval(BufferPoolRefillInterval*time.Second, refillPool())
+		} else {
+			fmt.Println("Updating Job")
+			if !timer.UpdateJobTimeout(job, BufferPoolRefillInterval*time.Second) {
+				fmt.Println("failed updating job")
+			}
+		}
+	}
+	globalBufferPool.mutex.Unlock()
 	return globalBufferPool.requestBuffer()
 }
 
 func ReleaseBuffer(buffer []byte) {
-	DebugLog("+", len(globalBufferPool.pool))
+	DebugLog(len(globalBufferPool.pool), "+")
+	globalBufferPool.mutex.Lock()
+	timer.Reset()
+	job = nil
+	globalBufferPool.mutex.Unlock()
+
 	globalBufferPool.releaseBuffer(buffer)
 }
 
