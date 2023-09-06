@@ -12,8 +12,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
-	"github.com/stratosnet/sds/pp/p2pserver"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/stratosnet/sds/pp/p2pserver"
 
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 
@@ -392,7 +393,7 @@ func ReqReportDownloadResultData(ctx context.Context, target *protos.RspDownload
 		if dlTask, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress); ok {
 			downloadTask := dlTask.(*task.DownloadTask)
 			utils.DebugLog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^downloadTask", downloadTask)
-			if sInfo, ok := downloadTask.SliceInfo[target.SliceInfo.SliceHash]; ok {
+			if sInfo, ok := downloadTask.GetSliceInfo(target.SliceInfo.SliceHash); ok {
 				repReq.SliceInfo = sInfo
 				repReq.SliceInfo.VisitResult = true
 			} else {
@@ -440,7 +441,7 @@ func ReqReportStreamResultData(ctx context.Context, target *protos.RspDownloadSl
 		if dlTask, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress); ok {
 			downloadTask := dlTask.(*task.DownloadTask)
 			utils.DebugLog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^downloadTask", downloadTask)
-			if sInfo, ok := downloadTask.SliceInfo[target.SliceInfo.SliceHash]; ok {
+			if sInfo, ok := downloadTask.GetSliceInfo(target.SliceInfo.SliceHash); ok {
 				repReq.SliceInfo = sInfo
 				repReq.SliceInfo.VisitResult = true
 			} else {

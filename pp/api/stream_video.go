@@ -18,6 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/ipfs/go-cid"
 	"github.com/pkg/errors"
+
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	rpctypes "github.com/stratosnet/sds/pp/api/rpc"
@@ -263,7 +264,11 @@ func redirectToResourceNode(fileHash, sliceHash, restAddress, walletAddress stri
 	if dlTask, ok := task.DownloadTaskMap.Load(fileHash + walletAddress + task.LOCAL_REQID); ok {
 		//self is the resource PP and has task info
 		downloadTask := dlTask.(*task.DownloadTask)
-		targetAddress = downloadTask.SliceInfo[sliceHash].StoragePpInfo.RestAddress
+		if sliceInfo, ok := downloadTask.GetSliceInfo(sliceHash); ok {
+			targetAddress = sliceInfo.StoragePpInfo.RestAddress
+		} else {
+			targetAddress = restAddress
+		}
 	} else {
 		//to ask resource pp for slice addresses
 		targetAddress = restAddress
@@ -293,8 +298,12 @@ func GetVideoSlice(w http.ResponseWriter, req *http.Request) {
 
 	if dlTask, ok := task.DownloadTaskMap.Load(body.FileHash + setting.WalletAddress + task.LOCAL_REQID); ok {
 		utils.DebugLog("Found task info ", body)
+		var ppInfo *protos.PPBaseInfo
 		downloadTask := dlTask.(*task.DownloadTask)
-		ppInfo := downloadTask.SliceInfo[sliceHash].StoragePpInfo
+		if sliceInfo, ok := downloadTask.GetSliceInfo(sliceHash); ok {
+			ppInfo = sliceInfo.StoragePpInfo
+		}
+
 		if ppInfo.P2PAddress != p2pserver.GetP2pServer(req.Context()).GetP2PAddress() {
 			utils.DebugLog("Current P2PAddress does not have the requested slice")
 			targetAddress := ppInfo.RestAddress
