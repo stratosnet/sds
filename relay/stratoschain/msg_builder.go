@@ -116,7 +116,9 @@ func BuildCreateResourceNodeMsg(nodeType registertypes.NodeType, pubKey []byte, 
 	)
 }
 
-func BuildCreateMetaNodeMsg(moniker string, pubKey []byte, depositAmount utiltypes.Coin, ownerAddress, p2pAddress utiltypes.Address) (sdktypes.Msg, error) {
+func BuildCreateMetaNodeMsg(moniker string, pubKey []byte, depositAmount utiltypes.Coin, ownerAddress, beneficiaryAddress, p2pAddress utiltypes.Address,
+) (sdktypes.Msg, error) {
+
 	pk := ed25519.PubKeyBytesToSdkPubKey(pubKey)
 	return registertypes.NewMsgCreateMetaNode(
 		p2pAddress[:],
@@ -126,6 +128,7 @@ func BuildCreateMetaNodeMsg(moniker string, pubKey []byte, depositAmount utiltyp
 			Amount: depositAmount.Amount,
 		},
 		ownerAddress[:],
+		beneficiaryAddress[:],
 		registertypes.Description{
 			Moniker: moniker,
 		},
