@@ -569,7 +569,7 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 	}
 	defer func() {
 		if p := recover(); p != nil {
-			err = errors.Wrapf(utils.ErrServerClosed, "panic occurred during asyncWrite, panic: %v", p)
+			err = errors.Wrapf(utils.ErrServerClosed, "recover occurred during asyncWrite, err: %v", p)
 		}
 	}()
 
