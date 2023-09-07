@@ -2,10 +2,12 @@ package serv
 
 import (
 	"context"
-	"github.com/stratosnet/sds/utils/environment"
 	"strconv"
 
+	"github.com/stratosnet/sds/utils/environment"
+
 	"github.com/pkg/errors"
+
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/pp/account"
 	"github.com/stratosnet/sds/pp/api"
@@ -216,7 +218,6 @@ func (bs *BaseServer) startP2pServer() error {
 	bs.p2pServ.Start(ctx)
 	_, _ = bs.p2pServ.ConnectToSP(ctx) // Ignore error if we can't connect to any SPs
 	bs.ppNetwork.StartPP(ctx)
-	bs.ppNetwork.StartDataBufferPool()
 	return nil
 }
 

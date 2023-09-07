@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
@@ -20,7 +22,6 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
-	"google.golang.org/protobuf/proto"
 )
 
 const LOCAL_REQID string = "local"
@@ -68,12 +69,31 @@ type DownloadTask struct {
 	WalletAddress string
 	FileHash      string
 	VisitCer      string
-	SliceInfo     map[string]*protos.DownloadSliceInfo
+	sliceInfo     map[string]*protos.DownloadSliceInfo
 	FailedSlice   map[string]bool
 	SuccessSlice  map[string]bool
 	FailedPPNodes map[string]*protos.PPBaseInfo
 	SliceCount    int
 	taskMutex     sync.RWMutex
+}
+
+func (task *DownloadTask) DeleteSliceInfo(sliceHash string) {
+	task.taskMutex.Lock()
+	defer task.taskMutex.Unlock()
+	delete(task.sliceInfo, sliceHash)
+}
+
+func (task *DownloadTask) GetNumberOfSliceInfo() int {
+	task.taskMutex.Lock()
+	defer task.taskMutex.Unlock()
+	return len(task.sliceInfo)
+}
+
+func (task *DownloadTask) GetSliceInfo(sliceHash string) (*protos.DownloadSliceInfo, bool) {
+	task.taskMutex.Lock()
+	defer task.taskMutex.Unlock()
+	sliceInfo, ok := task.sliceInfo[sliceHash]
+	return sliceInfo, ok
 }
 
 func (task *DownloadTask) SetSliceSuccess(sliceHash string) {
@@ -93,7 +113,7 @@ func (task *DownloadTask) AddFailedSlice(sliceHash string) {
 	}
 
 	task.FailedSlice[sliceHash] = true
-	sliceInfo, ok := task.SliceInfo[sliceHash]
+	sliceInfo, ok := task.sliceInfo[sliceHash]
 	if !ok {
 		return
 	}
@@ -112,7 +132,7 @@ func (task *DownloadTask) RefreshTask(target *protos.RspFileStorageInfo) {
 	defer task.taskMutex.Unlock()
 	for _, dlSliceInfo := range target.SliceInfo {
 		key := dlSliceInfo.SliceStorageInfo.SliceHash
-		task.SliceInfo[key] = dlSliceInfo
+		task.sliceInfo[key] = dlSliceInfo
 	}
 	task.FailedSlice = make(map[string]bool)
 }
@@ -133,7 +153,7 @@ func AddDownloadTask(target *protos.RspFileStorageInfo) {
 		WalletAddress: target.WalletAddress,
 		FileHash:      target.FileHash,
 		VisitCer:      target.VisitCer,
-		SliceInfo:     SliceInfoMap,
+		sliceInfo:     SliceInfoMap,
 		FailedSlice:   make(map[string]bool),
 		SuccessSlice:  make(map[string]bool),
 		FailedPPNodes: make(map[string]*protos.PPBaseInfo),
@@ -184,14 +204,13 @@ func CleanDownloadTask(ctx context.Context, fileHash, sliceHash, walletAddress, 
 	if dlTask, ok := DownloadTaskMap.Load(fileHash + walletAddress + fileReqId); ok {
 
 		downloadTask := dlTask.(*DownloadTask)
-		delete(downloadTask.SliceInfo, sliceHash)
+		downloadTask.DeleteSliceInfo(sliceHash)
 		pp.DebugLogf(ctx, "PP reported, clean slice task")
 
-		if len(downloadTask.SliceInfo) > 0 {
-			return
+		if downloadTask.GetNumberOfSliceInfo() <= 0 {
+			pp.DebugLog(ctx, "PP reported, clean all slice task")
+			DownloadTaskMap.Delete(fileHash + walletAddress + fileReqId)
 		}
-		pp.DebugLog(ctx, "PP reported, clean all slice task")
-		DownloadTaskMap.Delete(fileHash + walletAddress + fileReqId)
 	}
 }
 
