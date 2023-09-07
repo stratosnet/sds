@@ -64,6 +64,11 @@ func (bs *BaseServer) Start() error {
 		return err
 	}
 
+	err = bs.startReportTransferFailureJob()
+	if err != nil {
+		return err
+	}
+
 	err = bs.startIPC()
 	if err != nil {
 		return err
@@ -229,6 +234,12 @@ func (bs *BaseServer) startClearTmpFileJob() error {
 	return nil
 }
 
+func (bs *BaseServer) startReportTransferFailureJob() error {
+	ctx := context.Background()
+	event.StartReportTransferFailureJob(ctx)
+	return nil
+}
+
 func (bs *BaseServer) startInternalApiServer() error {
 	if setting.Config.Keys.WalletAddress != "" && setting.Config.Streaming.InternalPort != "" {
 		ctx := context.Background()
@@ -269,5 +280,6 @@ func (bs *BaseServer) Stop() {
 	}
 	StopDumpTrafficLog()
 	file.StopClearTmpFileJob()
+	event.StopReportTransferFailureJob()
 	// TODO: stop IPC, TrafficLog, InternalApiServer, RestServer
 }

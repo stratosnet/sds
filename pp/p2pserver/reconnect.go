@@ -2,7 +2,6 @@ package p2pserver
 
 import (
 	"context"
-	"math/rand"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -37,7 +36,8 @@ func (p *P2pServer) ConnectToSP(ctx context.Context) (newConnection bool, err er
 	}
 
 	// Select a random SP node to connect to
-	spListOrder := rand.Perm(len(spList))
+	spListOrder := []int{0, 1, 2, 3}
+	//spListOrder := rand.Perm(len(spList))
 	for _, index := range spListOrder {
 		selectedSP := spList[index]
 		pp.DebugLog(ctx, "NewClient:", selectedSP.NetworkAddress)
