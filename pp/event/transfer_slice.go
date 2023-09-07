@@ -322,6 +322,8 @@ func sendTransferFailureReportToSP(ctx context.Context, taskSliceUIDs []string) 
 		if !ok {
 			continue
 		}
+		utils.DebugLogf("--- reporting backup failure for task[%v]-sliceHash[%v] to sp[%v], isReceiver=%v",
+			tTask.TaskId, tTask.SliceStorageInfo.SliceHash, tTask.SpP2pAddress, tTask.IsReceiver)
 		SendReportBackupSliceResult(ctx, tTask.TaskId, tTask.SliceStorageInfo.SliceHash, tTask.SpP2pAddress, false, false, 0)
 		// delete KV from maps
 		task.CleanTransferTaskByTaskSliceUID(taskSliceUID)
