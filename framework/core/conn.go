@@ -145,6 +145,10 @@ func (sc *ServerConn) GetRemoteNetworkAddress() string {
 	return sc.remoteNetworkAddress
 }
 
+func (sc *ServerConn) SetRemoteNetworkAddress(networkAddress string) {
+	sc.remoteNetworkAddress = networkAddress
+}
+
 func (sc *ServerConn) GetLocalP2pAddress() string {
 	return sc.belong.opts.p2pAddress
 }
