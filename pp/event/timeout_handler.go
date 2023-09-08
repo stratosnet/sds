@@ -4,14 +4,17 @@ import (
 	"context"
 	"time"
 
+	"google.golang.org/protobuf/proto"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/utils"
-	"google.golang.org/protobuf/proto"
 )
+
+const DOWNLOAD_SLICE_TIMEOUT = 300
 
 type DownloadTimeoutHandler struct {
 }
@@ -47,7 +50,7 @@ func (handler *DownloadTimeoutHandler) Handle(ctx context.Context, message *msg.
 }
 
 func (handler *DownloadTimeoutHandler) GetDuration() time.Duration {
-	return 180 * time.Second
+	return DOWNLOAD_SLICE_TIMEOUT * time.Second
 }
 
 func (handler *DownloadTimeoutHandler) GetTimeoutMsg(reqMessage *msg.RelayMsgBuf) *msg.RelayMsgBuf {

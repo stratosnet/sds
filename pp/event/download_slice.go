@@ -3,17 +3,17 @@ package event
 // Author j cc
 import (
 	"context"
-	"fmt"
 	"math"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/pp/p2pserver"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
@@ -316,7 +316,7 @@ func prepareSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSl
 func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	utils.DebugLog("RspDownloadSlice reqID =========", core.GetReqIdFromContext(ctx))
 	costTime := core.GetRecvCostTimeFromContext(ctx)
-	pp.DebugLog(ctx, "get RspDownloadSlice, cost time: ", costTime)
+	utils.DebugLog("get RspDownloadSlice, cost time: ", costTime)
 	var target protos.RspDownloadSlice
 	if err := VerifyMessage(ctx, header.RspDownloadSlice, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
@@ -336,7 +336,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 
 	dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress, fileReqId)
 	if !ok {
-		pp.DebugLog(ctx, "current task is stopped！！！！！！！！！！！！！！！！！！！！！！！！！！")
+		utils.DebugLog("current task is stopped！！！！！！！！！！！！！！！！！！！！！！！！！！")
 		return
 	}
 
@@ -357,11 +357,11 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 
 	if f, ok := task.DownloadFileMap.Load(target.FileHash + fileReqId); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
-		pp.DebugLog(ctx, "get a slice -------")
-		pp.DebugLog(ctx, "SliceHash", target.SliceInfo.SliceHash)
-		pp.DebugLog(ctx, "SliceOffset", target.SliceInfo.SliceOffset)
-		pp.DebugLog(ctx, "length", len(target.Data))
-		pp.DebugLog(ctx, "sliceSize", target.SliceSize)
+		utils.DebugLog("get a slice -------")
+		utils.DebugLog("SliceHash", target.SliceInfo.SliceHash)
+		utils.DebugLog("SliceOffset", target.SliceInfo.SliceOffset)
+		utils.DebugLog("length", len(target.Data))
+		utils.DebugLog("sliceSize", target.SliceSize)
 		if fInfo.EncryptionTag != "" {
 			receiveSliceAndProgressEncrypted(ctx, &target, fInfo, dTask, costTime)
 		} else {
@@ -387,7 +387,7 @@ func receiveSliceAndProgress(ctx context.Context, target *protos.RspDownloadSlic
 		alreadySize := s.(uint64)
 		alreadySize += dataLen
 		if alreadySize == target.SliceSize {
-			pp.DebugLog(ctx, "slice download finished", target.SliceInfo.SliceHash)
+			utils.DebugLog("slice download finished", target.SliceInfo.SliceHash)
 			task.DownloadSliceProgress.Delete(target.SliceInfo.SliceHash + fInfo.ReqId)
 			receivedSlice(ctx, target, fInfo, dTask)
 		} else {
@@ -468,7 +468,7 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 
 // SendReportDownloadResult  PP-SP OR StoragePP-SP
 func SendReportDownloadResult(ctx context.Context, target *protos.RspDownloadSlice, costTime int64, isPP bool) *protos.ReqReportDownloadResult {
-	pp.DebugLog(ctx, "ReportDownloadResult report result target.fileHash = ", target.FileHash)
+	utils.DebugLog("ReportDownloadResult report result target.fileHash = ", target.FileHash)
 	req := requests.ReqReportDownloadResultData(ctx, target, costTime, isPP)
 	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqReportDownloadResult)
 	return req
@@ -479,14 +479,14 @@ func SendReportStreamingResult(ctx context.Context, target *protos.RspDownloadSl
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqReportStreamResultData(ctx, target, isPP), header.ReqReportDownloadResult)
 }
 
-func DownloadFileSlice(ctx context.Context, target *protos.RspFileStorageInfo, reqId string) {
-	pp.DebugLog(ctx, "DownloadFileSlice(&target)", target)
+func DownloadFileSlices(ctx context.Context, target *protos.RspFileStorageInfo, reqId string) {
+	utils.DebugLog("DownloadFileSlice(&target)", target)
 	fileSize := uint64(0)
 	dTask, _ := task.GetDownloadTask(target.FileHash, target.WalletAddress, reqId)
 	for _, sliceInfo := range target.SliceInfo {
 		fileSize += sliceInfo.SliceOffset.SliceOffsetEnd - sliceInfo.SliceOffset.SliceOffsetStart
 	}
-	pp.DebugLog(ctx, fmt.Sprintf("file size: %v  raw file size: %v\n", fileSize, target.FileSize))
+	utils.DebugLogf("file size: %v  raw file size: %v\n", fileSize, target.FileSize)
 
 	sp := &task.DownloadSP{
 		RawSize:        int64(target.FileSize),
@@ -497,27 +497,30 @@ func DownloadFileSlice(ctx context.Context, target *protos.RspFileStorageInfo, r
 		pp.Log(ctx, "download starts: ")
 		task.DownloadSpeedOfProgress.Store(target.FileHash+reqId, sp)
 		for _, slice := range target.SliceInfo {
-			pp.DebugLog(ctx, "taskid ======= ", slice.TaskId)
+			var re string
 			if file.CheckSliceExisting(target.FileHash, target.FileName, slice.SliceStorageInfo.SliceHash, target.SavePath, reqId) {
-				pp.Log(ctx, "slice exist already,", slice.SliceStorageInfo.SliceHash)
+				re = "slice exists"
 				task.DownloadProgress(ctx, target.FileHash, reqId, slice.SliceOffset.SliceOffsetEnd-slice.SliceOffset.SliceOffsetStart)
 				task.CleanDownloadTask(ctx, target.FileHash, slice.SliceStorageInfo.SliceHash, target.WalletAddress, reqId)
 				setDownloadSliceSuccess(ctx, slice.SliceStorageInfo.SliceHash, dTask)
 			} else {
-				pp.DebugLog(ctx, "request download data")
+				re = "request for slice data sent"
 				req := requests.ReqDownloadSliceData(ctx, target, slice)
 				newCtx := createAndRegisterSliceReqId(ctx, reqId)
 				SendReqDownloadSlice(newCtx, target.FileHash, slice, req, reqId)
 			}
+			utils.DebugLog("slice info ======= \ntaskid: ", slice.TaskId,
+				"\nslicehash: ", slice.SliceStorageInfo.SliceHash,
+				"\nslicenumber: ", slice.SliceNumber, "\n result:", re)
 		}
 	} else {
-		pp.Log(ctx, "file exists already!")
+		task.LogDownloadResult(ctx, target.FileHash, false, "file exists already.")
 		task.DeleteDownloadTask(target.FileHash, target.WalletAddress, target.ReqId)
 	}
 }
 
 func SendReqDownloadSlice(ctx context.Context, fileHash string, sliceInfo *protos.DownloadSliceInfo, req *protos.ReqDownloadSlice, fileReqId string) {
-	pp.DebugLog(ctx, "req = ", req)
+	utils.DebugLog("req = ", req)
 
 	networkAddress := sliceInfo.StoragePpInfo.NetworkAddress
 	key := "download#" + fileHash + sliceInfo.StoragePpInfo.P2PAddress + fileReqId
@@ -533,14 +536,14 @@ func SendReqDownloadSlice(ctx context.Context, fileHash string, sliceInfo *proto
 
 // RspReportDownloadResult  SP-P OR SP-PP
 func RspReportDownloadResult(ctx context.Context, conn core.WriteCloser) {
-	pp.DebugLog(ctx, "get RspReportDownloadResult")
+	utils.DebugLog("get RspReportDownloadResult")
 	var target protos.RspReportDownloadResult
 	if err := VerifyMessage(ctx, header.RspReportDownloadResult, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
 	if requests.UnmarshalData(ctx, &target) {
-		pp.DebugLog(ctx, "result", target.Result.State, target.Result.Msg)
+		utils.DebugLog("result", target.Result.State, target.Result.Msg)
 	}
 }
 
