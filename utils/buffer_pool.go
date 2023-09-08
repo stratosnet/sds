@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	BufferPoolRefillInterval = 20 // in second
+	BufferPoolRefillInterval = 3 // in second
 )
 
 type bufferPool struct {
