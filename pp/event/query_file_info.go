@@ -171,7 +171,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 			file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.DOWNLOAD_OK, FileHash: target.FileHash})
 			return
 		}
-		DownloadFileSlice(ctx, newTarget, fileReqId)
+		DownloadFileSlices(ctx, newTarget, fileReqId)
 	} else {
 		file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
 		pp.Log(ctx, "failed to download，", target.Result.Msg)

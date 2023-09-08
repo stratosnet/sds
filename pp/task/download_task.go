@@ -205,7 +205,7 @@ func CleanDownloadTask(ctx context.Context, fileHash, sliceHash, walletAddress, 
 
 		downloadTask := dlTask.(*DownloadTask)
 		downloadTask.DeleteSliceInfo(sliceHash)
-		pp.DebugLogf(ctx, "PP reported, clean slice task")
+		utils.DebugLogf("PP reported, clean slice task")
 
 		if downloadTask.GetNumberOfSliceInfo() <= 0 {
 			pp.DebugLog(ctx, "PP reported, clean all slice task")
@@ -269,6 +269,22 @@ func SaveDownloadFile(ctx context.Context, target *protos.RspDownloadSlice, fInf
 	return file.SaveFileData(ctx, target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, fInfo.SavePath, fInfo.ReqId)
 }
 
+func LogDownloadResult(ctx context.Context, filehash string, success bool, reason string) {
+	pp.Log(ctx, "******************************************************")
+	if success {
+		pp.Log(ctx, "* File ", filehash)
+		pp.Log(ctx, "* has been successfully downloaded")
+	} else {
+		pp.Log(ctx, "* The task to download file ", filehash)
+		pp.Log(ctx, "* has failed, ", reason)
+		pp.Log(ctx, "*")
+		pp.Log(ctx, "* Another task to the same file could be started by ")
+		pp.Log(ctx, "* 'put' command. New task will resume downloading ")
+		pp.Log(ctx, "* from slices already downloaded.")
+	}
+	pp.Log(ctx, "******************************************************")
+}
+
 // checkAgain only used by local file downloading session
 func checkAgain(ctx context.Context, fileHash string) {
 	reCount--
@@ -282,7 +298,7 @@ func checkAgain(ctx context.Context, fileHash string) {
 		if CheckFileOver(ctx, fileHash, filePath) {
 			DownloadFileMap.Delete(fileHash + LOCAL_REQID)
 			DownloadSpeedOfProgress.Delete(fileHash + LOCAL_REQID)
-			utils.Log("————————————————————————————————————download finished————————————————————————————————————")
+			LogDownloadResult(ctx, fileHash, true, "")
 			DoneDownload(ctx, fileHash, fName, fInfo.SavePath)
 		} else {
 			if reCount > 0 {
@@ -394,7 +410,7 @@ func CheckFileOver(ctx context.Context, fileHash, filePath string) bool {
 
 // CheckDownloadOver check download finished
 func CheckDownloadOver(ctx context.Context, fileHash string) (bool, float32) {
-	pp.DebugLog(ctx, "CheckDownloadOver")
+	utils.DebugLog("CheckDownloadOver")
 	if f, ok := DownloadFileMap.Load(fileHash + LOCAL_REQID); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
 		if s, ok := DownloadSpeedOfProgress.Load(fileHash + LOCAL_REQID); ok {
@@ -408,6 +424,7 @@ func CheckDownloadOver(ctx context.Context, fileHash string) (bool, float32) {
 				if CheckFileOver(ctx, fileHash, filePath) {
 					DoneDownload(ctx, fileHash, fName, fInfo.SavePath)
 					CleanDownloadFileAndConnMap(ctx, fileHash, LOCAL_REQID)
+					LogDownloadResult(ctx, fileHash, true, "")
 					return true, 1.0
 				}
 				reCount = 5
