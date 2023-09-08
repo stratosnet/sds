@@ -26,13 +26,14 @@ func CheckAndSendRetryMessage(ctx context.Context, dTask *task.DownloadTask) {
 	if f, ok := task.DownloadFileMap.Load(dTask.FileHash + fileReqId); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
 		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqDownloadFileWrongData(fInfo, dTask), header.ReqDownloadFileWrong)
+		pp.DebugLog(ctx, "Download errors occurred, request for help from SP has sent.")
 	}
 }
 
 // RspFileStorageInfo SP-PP , PP-P
 func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 	// PP check whether itself is the storage PP, if not transfer
-	pp.Log(ctx, "get，RspDownloadFileWrong")
+	utils.Log("get，RspDownloadFileWrong")
 	var target protos.RspFileStorageInfo
 	if err := VerifyMessage(ctx, header.RspDownloadFileWrong, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
@@ -59,7 +60,7 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 				return
 			}
 			for _, slice := range target.SliceInfo {
-				pp.DebugLog(ctx, "taskid ======= ", slice.TaskId)
+				utils.DebugLog(ctx, "taskid ======= ", slice.TaskId)
 				if file.CheckSliceExisting(target.FileHash, target.FileName, slice.SliceStorageInfo.SliceHash, target.SavePath, fileReqId) {
 					pp.Log(ctx, "slice exist already,", slice.SliceStorageInfo.SliceHash)
 					setDownloadSliceSuccess(ctx, slice.SliceStorageInfo.SliceHash, dTask)
@@ -74,7 +75,7 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 			pp.DebugLog(ctx, "DownloadFileSlice(&target)", &target)
 		} else {
 			task.DeleteDownloadTask(target.FileHash, target.WalletAddress, task.LOCAL_REQID)
-			pp.Log(ctx, "failed to download，", target.Result.Msg)
+			task.LogDownloadResult(ctx, target.FileHash, false, target.Result.Msg)
 		}
 	}
 }

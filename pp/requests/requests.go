@@ -12,8 +12,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
-	"github.com/stratosnet/sds/pp/p2pserver"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/stratosnet/sds/pp/p2pserver"
 
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 
@@ -22,7 +23,6 @@ import (
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
@@ -392,7 +392,7 @@ func ReqReportDownloadResultData(ctx context.Context, target *protos.RspDownload
 		if dlTask, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress); ok {
 			downloadTask := dlTask.(*task.DownloadTask)
 			utils.DebugLog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^downloadTask", downloadTask)
-			if sInfo, ok := downloadTask.SliceInfo[target.SliceInfo.SliceHash]; ok {
+			if sInfo, ok := downloadTask.GetSliceInfo(target.SliceInfo.SliceHash); ok {
 				repReq.SliceInfo = sInfo
 				repReq.SliceInfo.VisitResult = true
 			} else {
@@ -440,7 +440,7 @@ func ReqReportStreamResultData(ctx context.Context, target *protos.RspDownloadSl
 		if dlTask, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress); ok {
 			downloadTask := dlTask.(*task.DownloadTask)
 			utils.DebugLog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^downloadTask", downloadTask)
-			if sInfo, ok := downloadTask.SliceInfo[target.SliceInfo.SliceHash]; ok {
+			if sInfo, ok := downloadTask.GetSliceInfo(target.SliceInfo.SliceHash); ok {
 				repReq.SliceInfo = sInfo
 				repReq.SliceInfo.VisitResult = true
 			} else {
@@ -866,7 +866,7 @@ func PPMsgHeader(dataLen uint32, msgType header.MsgType) header.MessageHead {
 
 func UnmarshalData(ctx context.Context, target interface{}) bool {
 	msgBuf := core.MessageFromContext(ctx)
-	pp.DebugLogf(ctx, "Received message type = %v msgBuf len = %v", reflect.TypeOf(target), len(msgBuf.MSGBody))
+	utils.DebugLogf("Received message type = %v msgBuf len = %v", reflect.TypeOf(target), len(msgBuf.MSGBody))
 	ret := UnmarshalMessageData(msgBuf.MSGBody, target)
 	if ret {
 		switch reflect.TypeOf(target) {

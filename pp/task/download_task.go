@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
@@ -20,7 +22,6 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
-	"google.golang.org/protobuf/proto"
 )
 
 const LOCAL_REQID string = "local"
@@ -68,12 +69,31 @@ type DownloadTask struct {
 	WalletAddress string
 	FileHash      string
 	VisitCer      string
-	SliceInfo     map[string]*protos.DownloadSliceInfo
+	sliceInfo     map[string]*protos.DownloadSliceInfo
 	FailedSlice   map[string]bool
 	SuccessSlice  map[string]bool
 	FailedPPNodes map[string]*protos.PPBaseInfo
 	SliceCount    int
 	taskMutex     sync.RWMutex
+}
+
+func (task *DownloadTask) DeleteSliceInfo(sliceHash string) {
+	task.taskMutex.Lock()
+	defer task.taskMutex.Unlock()
+	delete(task.sliceInfo, sliceHash)
+}
+
+func (task *DownloadTask) GetNumberOfSliceInfo() int {
+	task.taskMutex.Lock()
+	defer task.taskMutex.Unlock()
+	return len(task.sliceInfo)
+}
+
+func (task *DownloadTask) GetSliceInfo(sliceHash string) (*protos.DownloadSliceInfo, bool) {
+	task.taskMutex.Lock()
+	defer task.taskMutex.Unlock()
+	sliceInfo, ok := task.sliceInfo[sliceHash]
+	return sliceInfo, ok
 }
 
 func (task *DownloadTask) SetSliceSuccess(sliceHash string) {
@@ -93,7 +113,7 @@ func (task *DownloadTask) AddFailedSlice(sliceHash string) {
 	}
 
 	task.FailedSlice[sliceHash] = true
-	sliceInfo, ok := task.SliceInfo[sliceHash]
+	sliceInfo, ok := task.sliceInfo[sliceHash]
 	if !ok {
 		return
 	}
@@ -112,7 +132,7 @@ func (task *DownloadTask) RefreshTask(target *protos.RspFileStorageInfo) {
 	defer task.taskMutex.Unlock()
 	for _, dlSliceInfo := range target.SliceInfo {
 		key := dlSliceInfo.SliceStorageInfo.SliceHash
-		task.SliceInfo[key] = dlSliceInfo
+		task.sliceInfo[key] = dlSliceInfo
 	}
 	task.FailedSlice = make(map[string]bool)
 }
@@ -133,7 +153,7 @@ func AddDownloadTask(target *protos.RspFileStorageInfo) {
 		WalletAddress: target.WalletAddress,
 		FileHash:      target.FileHash,
 		VisitCer:      target.VisitCer,
-		SliceInfo:     SliceInfoMap,
+		sliceInfo:     SliceInfoMap,
 		FailedSlice:   make(map[string]bool),
 		SuccessSlice:  make(map[string]bool),
 		FailedPPNodes: make(map[string]*protos.PPBaseInfo),
@@ -184,14 +204,13 @@ func CleanDownloadTask(ctx context.Context, fileHash, sliceHash, walletAddress, 
 	if dlTask, ok := DownloadTaskMap.Load(fileHash + walletAddress + fileReqId); ok {
 
 		downloadTask := dlTask.(*DownloadTask)
-		delete(downloadTask.SliceInfo, sliceHash)
-		pp.DebugLogf(ctx, "PP reported, clean slice task")
+		downloadTask.DeleteSliceInfo(sliceHash)
+		utils.DebugLogf("PP reported, clean slice task")
 
-		if len(downloadTask.SliceInfo) > 0 {
-			return
+		if downloadTask.GetNumberOfSliceInfo() <= 0 {
+			pp.DebugLog(ctx, "PP reported, clean all slice task")
+			DownloadTaskMap.Delete(fileHash + walletAddress + fileReqId)
 		}
-		pp.DebugLog(ctx, "PP reported, clean all slice task")
-		DownloadTaskMap.Delete(fileHash + walletAddress + fileReqId)
 	}
 }
 
@@ -250,6 +269,22 @@ func SaveDownloadFile(ctx context.Context, target *protos.RspDownloadSlice, fInf
 	return file.SaveFileData(ctx, target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, fInfo.SavePath, fInfo.ReqId)
 }
 
+func LogDownloadResult(ctx context.Context, filehash string, success bool, reason string) {
+	pp.Log(ctx, "******************************************************")
+	if success {
+		pp.Log(ctx, "* File ", filehash)
+		pp.Log(ctx, "* has been successfully downloaded")
+	} else {
+		pp.Log(ctx, "* The task to download file ", filehash)
+		pp.Log(ctx, "* has failed, ", reason)
+		pp.Log(ctx, "*")
+		pp.Log(ctx, "* Another task to the same file could be started by ")
+		pp.Log(ctx, "* 'put' command. New task will resume downloading ")
+		pp.Log(ctx, "* from slices already downloaded.")
+	}
+	pp.Log(ctx, "******************************************************")
+}
+
 // checkAgain only used by local file downloading session
 func checkAgain(ctx context.Context, fileHash string) {
 	reCount--
@@ -263,7 +298,7 @@ func checkAgain(ctx context.Context, fileHash string) {
 		if CheckFileOver(ctx, fileHash, filePath) {
 			DownloadFileMap.Delete(fileHash + LOCAL_REQID)
 			DownloadSpeedOfProgress.Delete(fileHash + LOCAL_REQID)
-			utils.Log("————————————————————————————————————download finished————————————————————————————————————")
+			LogDownloadResult(ctx, fileHash, true, "")
 			DoneDownload(ctx, fileHash, fName, fInfo.SavePath)
 		} else {
 			if reCount > 0 {
@@ -375,7 +410,7 @@ func CheckFileOver(ctx context.Context, fileHash, filePath string) bool {
 
 // CheckDownloadOver check download finished
 func CheckDownloadOver(ctx context.Context, fileHash string) (bool, float32) {
-	pp.DebugLog(ctx, "CheckDownloadOver")
+	utils.DebugLog("CheckDownloadOver")
 	if f, ok := DownloadFileMap.Load(fileHash + LOCAL_REQID); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
 		if s, ok := DownloadSpeedOfProgress.Load(fileHash + LOCAL_REQID); ok {
@@ -389,6 +424,7 @@ func CheckDownloadOver(ctx context.Context, fileHash string) (bool, float32) {
 				if CheckFileOver(ctx, fileHash, filePath) {
 					DoneDownload(ctx, fileHash, fName, fInfo.SavePath)
 					CleanDownloadFileAndConnMap(ctx, fileHash, LOCAL_REQID)
+					LogDownloadResult(ctx, fileHash, true, "")
 					return true, 1.0
 				}
 				reCount = 5

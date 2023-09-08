@@ -2,6 +2,7 @@ package stratoschain
 
 import (
 	"math/big"
+	"sort"
 
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/bech32"
@@ -41,6 +42,11 @@ func BuildVolumeReportMsg(traffic []*Traffic, reporterAddress, reporterOwnerAddr
 			Volume:        volume,
 		})
 	}
+
+	// Map iteration order is not guaranteed. Let's sort the resulting volumes list
+	sort.SliceStable(nodesVolume, func(i, j int) bool {
+		return nodesVolume[i].WalletAddress < nodesVolume[j].WalletAddress
+	})
 
 	blsSignatureInfo := pottypes.NewBLSSignatureInfo(blsPubKeys, blsSignature, blsTxDataHash)
 

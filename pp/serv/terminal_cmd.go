@@ -600,7 +600,7 @@ func (api *terminalCmd) DeleteFn(ctx context.Context, param []string) (CmdResult
 		fmt.Println("input file hash")
 		return CmdResult{}, errors.New("input file hash")
 	}
-	if !utils.ValidateHash(param[0], utils.SDS_CODEC) {
+	if !utils.ValidateHash(param[0]) {
 		return CmdResult{}, errors.New("input correct file hash")
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
@@ -684,7 +684,7 @@ func (api *terminalCmd) SharePath(ctx context.Context, param []string) (CmdResul
 	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
 	nowSec := time.Now().Unix()
-	if !utils.ValidateHash(param[0], utils.SDS_CODEC) {
+	if !utils.ValidateHash(param[0]) {
 		return CmdResult{}, errors.New("input correct file hash")
 	}
 	fileHash := param[0]
@@ -710,7 +710,7 @@ func (api *terminalCmd) ShareFile(ctx context.Context, param []string) (CmdResul
 		return CmdResult{Msg: ""}, errors.New("input file hash or directory path, share duration(in seconds, 0 for default value), is_private (0:public,1:private)")
 	}
 	fileHash := param[0]
-	if !utils.ValidateHash(param[0], utils.SDS_CODEC) {
+	if !utils.ValidateHash(param[0]) {
 		return CmdResult{}, errors.New("input correct file hash")
 	}
 

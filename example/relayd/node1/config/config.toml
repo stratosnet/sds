@@ -1,7 +1,7 @@
 [version]
 app_ver = 10
 min_app_ver = 10
-show = "v0.10.0"
+show = "v0.10.2"
 
 [sds]
 network_address = "127.0.0.1"
