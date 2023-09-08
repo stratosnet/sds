@@ -60,9 +60,10 @@ type ServerConn struct {
 	name  string
 	heart int64
 
-	minAppVer        uint16
-	sharedKey        []byte // ECDH shared key derived during handshake
-	remoteP2pAddress string
+	minAppVer            uint16
+	sharedKey            []byte // ECDH shared key derived during handshake
+	remoteP2pAddress     string
+	remoteNetworkAddress string // Actual network address of the remote node
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -132,10 +133,16 @@ func (sc *ServerConn) GetLocalAddr() string {
 	return sc.spbConn.LocalAddr().String()
 }
 
+// GetRemoteAddr returns the address from which the connection is directly coming from. In a VM with port forwarding, this might be the address of the host machine
 func (sc *ServerConn) GetRemoteAddr() string {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
 	return sc.spbConn.RemoteAddr().String()
+}
+
+// GetRemoteNetworkAddress returns the actual remote network address, as advertised by the remote node itself
+func (sc *ServerConn) GetRemoteNetworkAddress() string {
+	return sc.remoteNetworkAddress
 }
 
 func (sc *ServerConn) GetLocalP2pAddress() string {
@@ -164,18 +171,15 @@ func (sc *ServerConn) handshake() (error, bool) {
 	if _, err := io.ReadFull(sc.spbConn, buffer); err != nil {
 		return err, false
 	}
-	connType, serverPort, channelId, err := ParseFirstMessage(buffer)
+	connType, serverIP, serverPort, channelId, err := ParseFirstMessage(buffer)
 	if err != nil {
 		return err, false
 	}
 
 	switch connType {
 	case ConnTypeClient:
-		host, _, err := net.SplitHostPort(sc.GetRemoteAddr())
-		if err != nil {
-			return err, false
-		}
-		remoteServer := host + ":" + strconv.FormatUint(uint64(serverPort), 10)
+		remoteServer := serverIP.String() + ":" + strconv.FormatUint(uint64(serverPort), 10)
+		sc.remoteNetworkAddress = remoteServer
 
 		// Open a new tcp connection to the remote addr from current conn
 		handshakeAddr, err := net.ResolveTCPAddr("tcp4", remoteServer)
@@ -193,7 +197,7 @@ func (sc *ServerConn) handshake() (error, bool) {
 		}
 
 		// Write the connection type as first message
-		firstMessage := CreateFirstMessage(ConnTypeHandshake, 0, channelId)
+		firstMessage := CreateFirstMessage(ConnTypeHandshake, nil, 0, channelId)
 		if err = WriteFull(handshakeConn, firstMessage); err != nil {
 			return err, false
 		}

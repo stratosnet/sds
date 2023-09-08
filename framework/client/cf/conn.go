@@ -66,6 +66,7 @@ type options struct {
 	logOpen    bool
 	minAppVer  uint16
 	p2pAddress string
+	serverIp   net.IP
 	serverPort uint16
 	contextkv  []ContextKV
 }
@@ -156,6 +157,13 @@ func LogOpenOption(b bool) ClientOption {
 func P2pAddressOption(p2pAddress string) ClientOption {
 	return func(o *options) {
 		o.p2pAddress = p2pAddress
+	}
+}
+
+// ServerIpOption sets the IP used by the server conn when establishing the handshake
+func ServerIpOption(serverIp net.IP) ClientOption {
+	return func(o *options) {
+		o.serverIp = serverIp
 	}
 }
 
@@ -296,13 +304,14 @@ func (cc *ClientConn) handshake() error {
 	// Create a channel to receive tmp key from handshake connection
 	handshakeChan := make(chan []byte)
 	channelId := rand.Uint32()
-	core.HandshakeChanMap.Store(strconv.FormatUint(uint64(channelId), 10), handshakeChan)
+	channelIdString := strconv.FormatUint(uint64(channelId), 10)
+	core.HandshakeChanMap.Store(channelIdString, handshakeChan)
 	defer func() {
-		core.HandshakeChanMap.Delete(cc.GetRemoteAddr())
+		core.HandshakeChanMap.Delete(channelIdString)
 	}()
 
 	// Write the connection type as first message
-	firstMessage := core.CreateFirstMessage(core.ConnTypeClient, cc.opts.serverPort, channelId)
+	firstMessage := core.CreateFirstMessage(core.ConnTypeClient, cc.opts.serverIp, cc.opts.serverPort, channelId)
 	if err := core.WriteFull(cc.spbConn, firstMessage); err != nil {
 		return err
 	}
