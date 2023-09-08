@@ -21,22 +21,28 @@ func WriteFull(c net.Conn, data []byte) error {
 	return nil
 }
 
-func CreateFirstMessage(connType string, serverPort uint16, channelId uint32) []byte {
+func CreateFirstMessage(connType string, ip net.IP, serverPort uint16, channelId uint32) []byte {
 	buffer := make([]byte, ConnFirstMsgSize)
 	copy(buffer[:8], []byte(connType)[:8])
-	binary.BigEndian.PutUint16(buffer[8:10], serverPort)
-	binary.BigEndian.PutUint32(buffer[10:14], channelId)
+
+	if ip.To16() != nil {
+		copy(buffer[8:24], ip.To16())
+	}
+
+	binary.BigEndian.PutUint16(buffer[24:26], serverPort)
+	binary.BigEndian.PutUint32(buffer[26:30], channelId)
 	return buffer
 }
 
-func ParseFirstMessage(data []byte) (string, uint16, uint32, error) {
+func ParseFirstMessage(data []byte) (string, net.IP, uint16, uint32, error) {
 	if len(data) != ConnFirstMsgSize {
-		return "", 0, 0, errors.Errorf("Invalid first message size [%v]", len(data))
+		return "", nil, 0, 0, errors.Errorf("Invalid first message size [%v]", len(data))
 	}
 	connType := string(data[:8])
-	serverPort := binary.BigEndian.Uint16(data[8:10])
-	channelId := binary.BigEndian.Uint32(data[10:14])
-	return connType, serverPort, channelId, nil
+	ip := net.IP(data[8:24])
+	serverPort := binary.BigEndian.Uint16(data[24:26])
+	channelId := binary.BigEndian.Uint32(data[26:30])
+	return connType, ip, serverPort, channelId, nil
 }
 
 func Pack(privKey, plaintext []byte) ([]byte, error) {
