@@ -11,7 +11,7 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-const TRANSFER_TASK_TIMEOUT_THRESHOLD = 120 // in seconds
+const TRANSFER_TASK_TIMEOUT_THRESHOLD = 180 // in seconds
 
 type TransferTask struct {
 	TaskId             string
