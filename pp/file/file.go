@@ -14,11 +14,12 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/pkg/errors"
+	"golang.org/x/exp/mmap"
+
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
-	"golang.org/x/exp/mmap"
 )
 
 var rmutex sync.RWMutex
@@ -341,7 +342,7 @@ func RecordDownloadCSV(target *protos.RspFileStorageInfo) {
 }
 
 func CheckFileExisting(ctx context.Context, fileHash, fileName, savePath, encryptionTag, fileReqId string) bool {
-	pp.DebugLog(ctx, "CheckFileExisting: file Hash", fileHash)
+	utils.DebugLog("CheckFileExisting: file Hash", fileHash)
 
 	// check if the target path is remote, return false for "not match"
 	if IsFileRpcRemote(fileHash + fileReqId) {
@@ -356,7 +357,7 @@ func CheckFileExisting(ctx context.Context, fileHash, fileName, savePath, encryp
 	// if setting.IsWindows {
 	//	filePath = filepath.FromSlash(filePath)
 	// }
-	pp.DebugLog(ctx, "filePath", filePath)
+	utils.DebugLog("filePath", filePath)
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0600)
 	defer func() {
 		_ = file.Close()
@@ -367,12 +368,12 @@ func CheckFileExisting(ctx context.Context, fileHash, fileName, savePath, encryp
 	}
 
 	hash := utils.CalcFileHash(filePath, encryptionTag, utils.SDS_CODEC)
-	pp.DebugLog(ctx, "hash", hash)
+	utils.DebugLog("hash", hash)
 	if hash == fileHash {
 		pp.DebugLog(ctx, "file hash matched")
 		return true
 	}
-	pp.DebugLog(ctx, "file hash not match")
+	utils.DebugLog("file hash not match")
 	return false
 }
 
