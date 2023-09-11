@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/pp"
@@ -583,6 +584,9 @@ func (api *terminalCmd) Download(ctx context.Context, param []string) (CmdResult
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
 	core.RegisterReqId(ctx, task.LOCAL_REQID)
 	nowSec := time.Now().Unix()
+	if task.CheckDownloadTask(fileHash, setting.WalletAddress, task.LOCAL_REQID) {
+		return CmdResult{Msg: ""}, errors.New("* This file is being downloaded, please wait and try later")
+	}
 	req := requests.ReqFileStorageInfoData(ctx, param[0], "", saveAs, setting.WalletAddress, setting.WalletPublicKey, nil, nil, nowSec)
 	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, task.LOCAL_REQID, req); err != nil {
 		return CmdResult{Msg: ""}, err
