@@ -8,11 +8,30 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
 
 //var osType = runtime.GOOS
+
+// GetDownloadFileName fetch the first name in download tmp folder with the filehash, and generate the file name
+func GetDownloadFileName(fileHash string) (string, error) {
+	fmt.Println("path:", GetDownloadPath(fileHash))
+	files, err := os.ReadDir(GetDownloadPath(fileHash))
+	if err != nil {
+		return "", errors.Wrap(err, "can't get download file name, ")
+	}
+	fmt.Println("files:", files)
+	for _, file := range files {
+		fileName := file.Name()
+		fmt.Println("file name:", file.Name(), "last:", fileName[len(fileName)-4:])
+		if fileName[len(fileName)-4:] == ".csv" {
+			return fileName[:len(fileName)-4], nil
+		}
+	}
+	return "", errors.New("can't find cached files")
+}
 
 // GetDownloadTmpPath get temporary download path
 func GetDownloadTmpPath(fileHash, fileName, savePath string) string {

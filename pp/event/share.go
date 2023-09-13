@@ -3,6 +3,7 @@ package event
 import (
 	"context"
 	"strings"
+	"sync"
 
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/task"
@@ -18,6 +19,12 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/datamesh"
+)
+
+var (
+
+	// key: fileHash + fileReqId; value: sdm (already got translated from share link)
+	sdmMap = &sync.Map{}
 )
 
 func GetAllShareLink(ctx context.Context, walletAddr string, page uint64, walletPubkey, wsign []byte, reqTime int64) {
@@ -206,9 +213,6 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	walletAddr := target.ShareRequest.Signature.Address
-	walletPubkey := target.ShareRequest.Signature.Pubkey
-
 	if target.ShareRequest.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.ShareRequest.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
@@ -235,15 +239,8 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			rpcResult.Return = rpc.SHARED_DL_START
 			rpcResult.FileInfo = append(rpcResult.FileInfo, f)
 			rpcResult.SequenceNumber = target.SequenceNumber
+			sdmMap.Store(fileInfo.FileHash+reqId, filePath)
 			file.SetFileShareResult(target.ShareRequest.Signature.Address+reqId, rpcResult)
-			go func(fileInfo *protos.FileInfo) {
-				if walletSign := file.GetSignatureFromRemote(fileInfo.FileHash + walletAddr + reqId); walletSign != nil {
-					req = requests.RequestDownloadFile(ctx, fileInfo.FileHash, filePath, walletAddr, reqId, walletSign,
-						walletPubkey, target.ShareRequest, target.ShareRequest.ReqTime)
-					p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
-				}
-			}(fileInfo)
-
 		} else {
 			if task.CheckDownloadTask(fileInfo.FileHash, setting.WalletAddress, task.LOCAL_REQID) {
 				pp.DebugLog(ctx, "* This file is being downloaded, please wait and try later\n")
@@ -259,4 +256,14 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 		}
 	}
+}
+
+func GetFilePath(key string) string {
+	filePath, ok := sdmMap.Load(key)
+	if !ok {
+		utils.DebugLog("FAILED!")
+		return ""
+	}
+
+	return filePath.(string)
 }
