@@ -3,12 +3,15 @@ package file
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"time"
 
 	"github.com/alex023/clock"
+
+	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -24,13 +27,13 @@ var (
 
 func StartClearTmpFileJob(ctx context.Context) {
 	utils.Log("Starting ClearTmpFileJob......")
-	clearTmpFileJob, _ = clearTmpFileClock.AddJobRepeat(time.Second*time.Duration(checkTmpFileInterval), 0, clearTmpFile(ctx))
+	clearTmpFileJob, _ = clearTmpFileClock.AddJobRepeat(time.Second*time.Duration(checkTmpFileInterval), 0, clearAllCaches(ctx))
 }
-
-func clearTmpFile(ctx context.Context) func() {
+func clearAllCaches(ctx context.Context) func() {
 	return func() {
 		clearTmpUploadedVideos(ctx)
 		clearTmpSlices(ctx)
+		clearDownloadCaches(ctx)
 	}
 }
 
@@ -44,6 +47,14 @@ func StopClearTmpFileJob() {
 func clearTmpSlices(ctx context.Context) {
 	baseTmpFolderPath := GetTmpFileFolderPath("")
 	baseDir := filepath.Join(baseTmpFolderPath)
+
+	// check if the folder exists
+	_, error := os.Stat(baseDir)
+	if os.IsNotExist(error) {
+		utils.DebugLog(baseDir, " does not exist")
+		return
+	}
+
 	excludedDir := "logs"
 	exist, err := PathExists(baseDir)
 	if err != nil || !exist {
@@ -76,6 +87,14 @@ func clearTmpSlices(ctx context.Context) {
 func clearTmpUploadedVideos(ctx context.Context) {
 	baseTmpFolderPath := GetTmpFileFolderPath(TMP_FOLDER_VIDEO)
 	baseDir := filepath.Join(baseTmpFolderPath)
+
+	// check if the folder exists
+	_, error := os.Stat(baseDir)
+	if os.IsNotExist(error) {
+		utils.DebugLogf("%v does not exist", baseDir)
+		return
+	}
+
 	cmdString := fmt.Sprintf(`
 	find %s -type f -atime +%s -exec rm {} \;
 	`, baseDir, strconv.Itoa(DEFAULT_EXP_THRESHOLD))
@@ -90,4 +109,29 @@ func clearTmpUploadedVideos(ctx context.Context) {
 
 	// Print output (if any)
 	fmt.Println(string(out))
+}
+
+func clearDownloadCaches(ctx context.Context) {
+	downFolder := setting.Config.Home.DownloadPath
+	files, err := os.ReadDir(downFolder)
+	if err != nil {
+		utils.DebugLog("Can't open folder.")
+		return
+	}
+
+	for _, file := range files {
+		utils.DebugLog("File:", file.Name())
+		filepath := filepath.Join(downFolder, file.Name())
+		fi, err := os.Stat(filepath)
+		if err != nil {
+			utils.DebugLog("Can't open folder, ", err.Error())
+			return
+		}
+
+		if time.Since(fi.ModTime()) > DEFAULT_EXP_THRESHOLD*time.Hour*24 {
+			if err = os.RemoveAll(filepath); err != nil {
+				utils.DebugLog("failed removing file:", err.Error())
+			}
+		}
+	}
 }

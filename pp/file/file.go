@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/pkg/errors"
@@ -29,6 +30,8 @@ var wmutex sync.RWMutex
 var fileMap = make(map[string]string)
 var infoMutex sync.Mutex
 var DataBuffer sync.Mutex
+var fileNameMap = utils.NewAutoCleanMap(1 * time.Hour)
+var downloadMap = utils.NewAutoCleanMap(1 * time.Hour)
 
 func RequestBuffersForSlice(size int64) [][]byte {
 	DataBuffer.Lock()
@@ -556,4 +559,85 @@ func ExtractTarWithZstd(source string, target string) error {
 		}
 	}
 	return nil
+}
+
+// CheckDownloadCache check there is download cache for the file with fileHash
+func CheckDownloadCache(fileHash string) error {
+	folderPath := filepath.Join(setting.Config.Home.DownloadPath, fileHash)
+	fileInfo, err := os.Stat(folderPath)
+	if err != nil {
+		return errors.Wrap(err, "download cache doesn't exist, ")
+	}
+	if !fileInfo.IsDir() {
+		return errors.New("the supposed directory name is a file")
+	}
+	fileName, err := GetDownloadFileName(fileHash)
+	if err != nil {
+		return errors.Wrap(err, "failed get the download file name, ")
+	}
+	fileNameMap.Store(fileHash, fileName)
+	filePath := GetDownloadTmpPath(fileHash, fileName, "")
+	if fileHash != GetFileHash(filePath, "") {
+		return errors.New("the cached file doesn't match file hash")
+	}
+	return nil
+}
+
+// ReadDownloadCachedData read setting.MacData bytes from the cache and store the cursor for next reading; check the end if cursor equals file size.
+func ReadDownloadCachedData(fileHash, reqid string) ([]byte, uint64, uint64, bool) {
+	var offsetEnd uint64
+	var offsetStart uint64
+	var finished bool
+	offsetEnd = 0
+	finished = false
+	fileName, ok := fileNameMap.Load(fileHash)
+	if !ok {
+		return nil, offsetStart, offsetEnd, finished
+	}
+	fileName = fileName.(string) + ".tmp"
+	filePath := filepath.Join(setting.Config.Home.DownloadPath, fileHash, fileName.(string))
+	start, ok := downloadMap.Load(fileHash + reqid)
+	if !ok {
+		return nil, offsetStart, offsetEnd, finished
+	}
+	offsetStart = start.(uint64)
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		return nil, offsetStart, offsetEnd, finished
+	}
+
+	if offsetStart >= uint64(fileInfo.Size()) {
+		finished = true
+		return nil, offsetStart, offsetEnd, finished
+	}
+
+	if offsetStart+setting.MaxData < uint64(fileInfo.Size()) {
+		offsetEnd = offsetStart + setting.MaxData
+	} else {
+		offsetEnd = uint64(fileInfo.Size())
+	}
+
+	offset := &protos.SliceOffset{
+		SliceOffsetStart: offsetStart,
+		SliceOffsetEnd:   offsetEnd,
+	}
+
+	data, err := GetFileData(filePath, offset)
+	if err != nil {
+		return nil, offsetStart, offsetEnd, finished
+	}
+	SeekDownloadCached(fileHash, reqid, offsetEnd)
+	return data, offsetStart, offsetEnd, finished
+}
+
+func SeekDownloadCached(fileHash, reqid string, offsetStrart uint64) {
+	downloadMap.Store(fileHash+reqid, offsetStrart)
+}
+
+func GetFileName(fileHash string) string {
+	fileName, ok := fileNameMap.Load(fileHash)
+	if !ok {
+		return ""
+	}
+	return fileName.(string)
 }
