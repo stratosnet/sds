@@ -11,7 +11,6 @@ import (
 
 	"github.com/alex023/clock"
 
-	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -33,7 +32,7 @@ func clearAllCaches(ctx context.Context) func() {
 	return func() {
 		clearTmpUploadedVideos(ctx)
 		clearTmpSlices(ctx)
-		clearDownloadCaches(ctx)
+		clearTmpDownloadCaches(ctx)
 	}
 }
 
@@ -111,9 +110,8 @@ func clearTmpUploadedVideos(ctx context.Context) {
 	fmt.Println(string(out))
 }
 
-func clearDownloadCaches(ctx context.Context) {
-	downFolder := setting.Config.Home.DownloadPath
-	files, err := os.ReadDir(downFolder)
+func clearTmpDownloadCaches(ctx context.Context) {
+	files, err := os.ReadDir(GetTmpDownloadPath())
 	if err != nil {
 		utils.DebugLog("Can't open folder.")
 		return
@@ -121,7 +119,7 @@ func clearDownloadCaches(ctx context.Context) {
 
 	for _, file := range files {
 		utils.DebugLog("File:", file.Name())
-		filepath := filepath.Join(downFolder, file.Name())
+		filepath := filepath.Join(GetTmpDownloadPath(), file.Name())
 		fi, err := os.Stat(filepath)
 		if err != nil {
 			utils.DebugLog("Can't open folder, ", err.Error())

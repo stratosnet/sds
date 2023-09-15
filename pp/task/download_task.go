@@ -221,6 +221,7 @@ func CleanDownloadTask(ctx context.Context, fileHash, sliceHash, walletAddress, 
 
 func DeleteDownloadTask(fileHash, walletAddress, fileReqId string) {
 	DownloadTaskMap.Delete(fileHash + walletAddress + fileReqId)
+	file.FinishLocalDownload(fileHash)
 }
 
 func CleanDownloadFileAndConnMap(ctx context.Context, fileHash, fileReqId string) {
@@ -271,7 +272,7 @@ func GetDownloadSlice(target *protos.ReqDownloadSlice, slice *protos.DownloadSli
 func SaveDownloadFile(ctx context.Context, target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo) error {
 	metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_SLICE_DATA:" + strconv.FormatInt(int64(target.SliceInfo.SliceOffset.SliceOffsetStart+(target.SliceNumber-1)*33554432), 10) + ":")
 	defer metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_SAVE_DATA:" + strconv.FormatInt(int64(target.SliceInfo.SliceOffset.SliceOffsetStart+(target.SliceNumber-1)*33554432), 10) + ":")
-	return file.SaveFileData(ctx, target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, fInfo.SavePath, fInfo.ReqId)
+	return file.SaveDownloadedFileData(target.Data, int64(target.SliceInfo.SliceOffset.SliceOffsetStart), target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, fInfo.SavePath, fInfo.ReqId)
 }
 
 func LogDownloadResult(ctx context.Context, filehash string, success bool, reason string) {
@@ -299,7 +300,7 @@ func checkAgain(ctx context.Context, fileHash string) {
 		if fName == "" {
 			fName = fileHash
 		}
-		filePath := file.GetDownloadTmpPath(fileHash, fName, fInfo.SavePath)
+		filePath := file.GetDownloadTmpFilePath(fileHash, fName, fInfo.SavePath)
 		if CheckFileOver(ctx, fileHash, filePath) {
 			DownloadFileMap.Delete(fileHash + LOCAL_REQID)
 			DownloadSpeedOfProgress.Delete(fileHash + LOCAL_REQID)
@@ -316,21 +317,24 @@ func checkAgain(ctx context.Context, fileHash string) {
 
 // DoneDownload
 func DoneDownload(ctx context.Context, fileHash, fileName, savePath string) {
-	filePath := file.GetDownloadTmpPath(fileHash, fileName, savePath)
+	filePath := file.GetDownloadTmpFilePath(fileHash, fileName, savePath)
 	newFilePath := filePath[:len(filePath)-4]
 	lastPath := strings.Replace(newFilePath, fileHash+"/", "", -1)
 	lastPath = addSeqNum2FileName(lastPath, 0)
 
-	err := os.Symlink(filePath, lastPath)
-	if err != nil {
-		pp.ErrorLog(ctx, "DoneDownload", err)
+	// only in case this is a download started from local terminal, the file is copied to target folder
+	if file.IsLocalDownload(fileHash) {
+		err := file.CopyDownloadFile(fileHash, fileName, savePath)
+		if err != nil {
+			pp.ErrorLog(ctx, "failed copying file to target location, ", err)
+		}
 	}
 	SetDownloadResultToRpc(fileHash, true)
 	metrics.DownloadPerformanceLogNow(fileHash + ":RCV_DOWNLOAD_DONE:")
 	if _, ok := setting.ImageMap.Load(fileHash); ok {
 		pp.DebugLog(ctx, "enter imageMap》》》》》》")
 		exist := false
-		exist, err = file.PathExists(setting.ImagePath)
+		exist, err := file.PathExists(setting.ImagePath)
 		if err != nil {
 			pp.ErrorLog(ctx, "ImageMap no", err)
 		}
@@ -410,7 +414,7 @@ func CheckDownloadOver(ctx context.Context, fileHash string) (bool, float32) {
 				if fName == "" {
 					fName = fileHash
 				}
-				filePath := file.GetDownloadTmpPath(fileHash, fName, fInfo.SavePath)
+				filePath := file.GetDownloadTmpFilePath(fileHash, fName, fInfo.SavePath)
 				if CheckFileOver(ctx, fileHash, filePath) {
 					DoneDownload(ctx, fileHash, fName, fInfo.SavePath)
 					CleanDownloadFileAndConnMap(ctx, fileHash, LOCAL_REQID)

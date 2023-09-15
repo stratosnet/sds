@@ -13,79 +13,64 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-//var osType = runtime.GOOS
+// GetTmpFolderPath path to the tmp file folder
+func GetTmpFolderPath() string {
+	return filepath.Join(setting.GetRootPath(), TEMP_FOLDER)
+}
+
+// GetTmpFileFolderPath path to tmp file folder for specific file
+func GetTmpFileFolderPath(fileHash string) string {
+	return filepath.Join(GetTmpFolderPath(), fileHash)
+}
+
+// GetTmpDownloadPath path to the download tmp file folder
+func GetTmpDownloadPath() string {
+	return filepath.Join(GetTmpFolderPath(), "download")
+}
+
+func GetDownloadTmpFolderPath(fileHash string) string {
+	return filepath.Join(GetTmpDownloadPath(), fileHash)
+}
+
+// GetDownloadTmpFilePath path to the download tmp file
+func GetDownloadTmpFilePath(fileHash, fileName, savePath string) string {
+	if savePath == "" {
+		return filepath.Join(GetDownloadTmpFolderPath(fileHash), fileName+".tmp")
+	}
+	return filepath.Join(GetDownloadTmpFolderPath(savePath+"/"+fileHash), fileName+".tmp")
+}
 
 // GetDownloadFileName fetch the first name in download tmp folder with the filehash, and generate the file name
 func GetDownloadFileName(fileHash string) (string, error) {
-	fmt.Println("path:", GetDownloadPath(fileHash))
-	files, err := os.ReadDir(GetDownloadPath(fileHash))
+	files, err := os.ReadDir(GetDownloadTmpFolderPath(fileHash))
 	if err != nil {
 		return "", errors.Wrap(err, "can't get download file name, ")
 	}
-	fmt.Println("files:", files)
 	for _, file := range files {
 		fileName := file.Name()
-		fmt.Println("file name:", file.Name(), "last:", fileName[len(fileName)-4:])
-		if fileName[len(fileName)-4:] == ".csv" {
+		if fileName[len(fileName)-4:] == ".tmp" {
 			return fileName[:len(fileName)-4], nil
 		}
 	}
 	return "", errors.New("can't find cached files")
 }
 
-// GetDownloadTmpPath get temporary download path
-func GetDownloadTmpPath(fileHash, fileName, savePath string) string {
+// GetDownloadTmpCsvPath get download CSV path
+func GetDownloadTmpCsvPath(fileHash, fileName, savePath string) string {
 	if savePath == "" {
-		downPath := GetDownloadPath(fileHash) + "/" + fileName + ".tmp"
-		// if setting.IsWindows {
-		// 	downPath = filepath.FromSlash(downPath)
-		// }
-		return downPath
-	}
-	downPath := GetDownloadPath(savePath+"/"+fileHash) + "/" + fileName + ".tmp"
-	// if setting.IsWindows {
-	// 	downPath = filepath.FromSlash(downPath)
-	// }
-	return downPath
-
-}
-
-// GetDownloadCsvPath get download CSV path
-func GetDownloadCsvPath(fileHash, fileName, savePath string) string {
-	if savePath == "" {
-		csv := GetDownloadPath(fileHash) + "/" + fileName + ".csv"
-		// if setting.IsWindows {
-		// 	csv = filepath.FromSlash(csv)
-		// }
+		csv := GetDownloadTmpFolderPath(fileHash) + "/" + fileName + ".csv"
 		return csv
 	}
-	csv := GetDownloadPath(savePath+"/"+fileHash) + "/" + fileName + ".csv"
-	// if setting.IsWindows {
-	// 	csv = filepath.FromSlash(csv)
-	// }
+	csv := GetDownloadTmpFolderPath(savePath+"/"+fileHash) + "/" + fileName + ".csv"
 	return csv
 
 }
 
-// GetDownloadPath get download path
-func GetDownloadPath(fileName string) string {
-	filePath := filepath.Join(setting.Config.Home.DownloadPath, fileName)
-	// if setting.IsWindows {
-	// 	filePath = filepath.FromSlash(filePath)
-	// }
-	exist, err := PathExists(filePath)
-	if err != nil {
-		utils.ErrorLogf("file existed: %v", err)
-		return ""
-	}
-	if !exist {
-		if err = os.MkdirAll(filePath, os.ModePerm); err != nil {
-			utils.ErrorLogf("MkdirAll error: %v", err)
-			return ""
-		}
-	}
-	return filePath
+// GetDownloadFilePath get download path
+func GetDownloadFilePath(fileName string) string {
+	return filepath.Join(setting.Config.Home.DownloadPath, fileName)
 }
+
 func getSlicePath(hash string) (string, error) {
 	if len(hash) < 10 {
 		return "", errors.New("wrong size of slice hash")
