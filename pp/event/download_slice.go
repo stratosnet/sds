@@ -498,7 +498,7 @@ func DownloadFileSlices(ctx context.Context, target *protos.RspFileStorageInfo, 
 		task.DownloadSpeedOfProgress.Store(target.FileHash+reqId, sp)
 		for _, slice := range target.SliceInfo {
 			var re string
-			if file.CheckSliceExisting(target.FileHash, target.FileName, slice.SliceStorageInfo.SliceHash, target.SavePath, reqId) {
+			if file.CheckSliceExisting(target.FileHash, target.FileName, slice.SliceStorageInfo.SliceHash, reqId) {
 				re = "slice exists"
 				task.DownloadProgress(ctx, target.FileHash, reqId, slice.SliceOffset.SliceOffsetEnd-slice.SliceOffset.SliceOffsetStart)
 				task.CleanDownloadTask(ctx, target.FileHash, slice.SliceStorageInfo.SliceHash, target.WalletAddress, reqId)

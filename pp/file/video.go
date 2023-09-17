@@ -108,7 +108,7 @@ func GetHlsInfo(fileHash string, maxSliceCount uint64) (*HlsInfo, error) {
 }
 
 func LoadHlsInfo(fileHash, sliceHash, savePath string) *HlsInfo {
-	slicePath := GetDownloadTmpFilePath(fileHash, sliceHash, savePath)
+	slicePath := GetDownloadTmpFilePath(fileHash, sliceHash)
 	data, err := os.ReadFile(slicePath)
 	if err != nil {
 		utils.ErrorLog(err)

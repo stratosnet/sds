@@ -7,9 +7,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/alex023/clock"
+	"github.com/stratosnet/sds/pp/setting"
 
 	"github.com/stratosnet/sds/utils"
 )
@@ -33,6 +37,7 @@ func clearAllCaches(ctx context.Context) func() {
 		clearTmpUploadedVideos(ctx)
 		clearTmpSlices(ctx)
 		clearTmpDownloadCaches(ctx)
+		clearTmpDownloadVideo(ctx)
 	}
 }
 
@@ -110,26 +115,56 @@ func clearTmpUploadedVideos(ctx context.Context) {
 	fmt.Println(string(out))
 }
 
-func clearTmpDownloadCaches(ctx context.Context) {
-	files, err := os.ReadDir(GetTmpDownloadPath())
+func ageCache(cacheFolder string, expiration time.Duration, folderCheck, fileCheck func(name string) bool) {
+	folders, err := os.ReadDir(cacheFolder)
 	if err != nil {
-		utils.DebugLog("Can't open folder.")
 		return
 	}
 
-	for _, file := range files {
-		utils.DebugLog("File:", file.Name())
-		filepath := filepath.Join(GetTmpDownloadPath(), file.Name())
-		fi, err := os.Stat(filepath)
-		if err != nil {
-			utils.DebugLog("Can't open folder, ", err.Error())
-			return
-		}
-
-		if time.Since(fi.ModTime()) > DEFAULT_EXP_THRESHOLD*time.Hour*24 {
-			if err = os.RemoveAll(filepath); err != nil {
-				utils.DebugLog("failed removing file:", err.Error())
+	var folderToRm sync.Map
+	for _, folder := range folders {
+		if folder.IsDir() && folderCheck(folder.Name()) {
+			folderpath := filepath.Join(cacheFolder, folder.Name())
+			files, err := os.ReadDir(folderpath)
+			if err != nil {
+				utils.DebugLog("AgeCache: failed reading file folder in tmp:", err.Error())
+				return
+			}
+			for _, file := range files {
+				if !file.IsDir() && fileCheck(file.Name()) {
+					filepath := filepath.Join(folderpath, file.Name())
+					stat, err := os.Stat(filepath)
+					if err != nil {
+						utils.DebugLog("AgeCache: failed get file stat:", err.Error())
+						return
+					}
+					at := stat.Sys().(*syscall.Stat_t).Atim
+					if time.Since(time.Unix(at.Sec, at.Nsec)) > expiration {
+						folderToRm.Store(folderpath, true)
+					}
+				}
 			}
 		}
 	}
+	folderToRm.Range(func(k, v any) bool {
+		fp := k.(string)
+		utils.DebugLog("AgeCache: clearing ", filepath.Base(fp))
+		err = os.RemoveAll(fp)
+		if err != nil {
+			utils.DebugLog("Failed clearing AgeCache:", filepath.Base(fp), ", ", err.Error())
+		}
+		return true
+	})
+}
+
+func clearTmpDownloadCaches(ctx context.Context) {
+	ageCache(GetTmpDownloadPath(), DEFAULT_EXP_THRESHOLD*time.Minute, //DEFAULT_EXP_THRESHOLD*time.Hour*24,
+		func(folderName string) bool { return folderName != "videos" },
+		func(fileName string) bool { return strings.HasSuffix(fileName, ".tmp") })
+}
+
+func clearTmpDownloadVideo(ctx context.Context) {
+	ageCache(filepath.Join(GetTmpDownloadPath(), setting.VideoPath), DEFAULT_EXP_THRESHOLD*time.Minute, //DEFAULT_EXP_THRESHOLD*time.Hour*24,
+		func(string) bool { return true },
+		func(string) bool { return true })
 }
