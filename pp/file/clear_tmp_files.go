@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/alex023/clock"
@@ -138,7 +137,8 @@ func ageCache(cacheFolder string, expiration time.Duration, folderCheck, fileChe
 						utils.DebugLog("AgeCache: failed get file stat:", err.Error())
 						return
 					}
-					at := stat.Sys().(*syscall.Stat_t).Atim
+
+					at := accessTime(stat)
 					if time.Since(time.Unix(at.Sec, at.Nsec)) > expiration {
 						folderToRm.Store(folderpath, true)
 					}
