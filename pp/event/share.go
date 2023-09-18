@@ -246,6 +246,8 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 				pp.DebugLog(ctx, "* This file is being downloaded, please wait and try later\n")
 				return
 			}
+
+			file.StartLocalDownload(fileInfo.FileHash)
 			req = requests.ReqFileStorageInfoData(ctx, filePath, "", saveAs, setting.WalletAddress, setting.WalletPublicKey, nil, target.ShareRequest, target.ShareRequest.ReqTime)
 			sigMsg := utils.GetFileDownloadWalletSignMessage(fileInfo.FileHash, setting.WalletAddress, target.SequenceNumber, target.ShareRequest.ReqTime)
 			sign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(sigMsg))

@@ -82,7 +82,6 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 		if err != nil {
 			return
 		}
-		file.StartLocalDownload(fileHash)
 		walletString := utils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, target.SequenceNumber, rmsg.ReqTime)
 		wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(walletString))
 		if err != nil {
