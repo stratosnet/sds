@@ -283,15 +283,10 @@ func SaveDownloadedFileData(data []byte, offset int64, sliceHash, fileName, file
 	if fileName == "" {
 		fileName = fileHash
 	}
-	fileMg, err := os.OpenFile(GetDownloadTmpFilePath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR, 0600)
+	tmpFilePath := GetDownloadTmpFilePath(fileHash, fileName)
+	fileMg, err := os.OpenFile(tmpFilePath, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
-		var path string
-		if savePath == "" {
-			path = GetDownloadTmpFolderPath(fileHash)
-		} else {
-			path = GetDownloadTmpFolderPath(savePath + "/" + fileHash)
-		}
-		fileMg, err = CreateFolderAndReopenFile(path, fileName)
+		fileMg, err = CreateFolderAndReopenFile(filepath.Dir(tmpFilePath), filepath.Base(tmpFilePath))
 		if err != nil {
 			return errors.Wrap(err, "failed open file")
 		}
@@ -307,7 +302,7 @@ func SaveDownloadProgress(ctx context.Context, sliceHash, fileName, fileHash, sa
 		return
 	}
 	wmutex.Lock()
-	csvFile, err := os.OpenFile(GetDownloadTmpCsvPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0600)
+	csvFile, err := os.OpenFile(GetDownloadTmpCsvPath(fileHash, fileName), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0600)
 	defer func() {
 		_ = csvFile.Close()
 	}()
@@ -326,7 +321,7 @@ func SaveDownloadProgress(ctx context.Context, sliceHash, fileName, fileHash, sa
 
 func RecordDownloadCSV(target *protos.RspFileStorageInfo) {
 	// check if downloading, if not create new, sliceHash+startPosition
-	csvFile, err := os.OpenFile(GetDownloadTmpCsvPath(target.FileHash, target.FileName, target.SavePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0600)
+	csvFile, err := os.OpenFile(GetDownloadTmpCsvPath(target.FileHash, target.FileName), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0600)
 	defer func() {
 		_ = csvFile.Close()
 	}()
@@ -368,12 +363,7 @@ func CheckFileExisting(ctx context.Context, fileHash, fileName, savePath, encryp
 	if IsFileRpcRemote(fileHash + fileReqId) {
 		return false
 	}
-	filePath := ""
-	if savePath == "" {
-		filePath = filepath.Join(setting.Config.Home.DownloadPath, fileName)
-	} else {
-		filePath = filepath.Join(setting.Config.Home.DownloadPath, savePath, fileName)
-	}
+	filePath := GetDownloadFilePath(fileName, savePath)
 	utils.DebugLog("filePath", filePath)
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0600)
 	defer func() {
@@ -423,19 +413,18 @@ func copyFile(srcPath, dstPath string) (int64, error) {
 }
 
 func CopyDownloadFile(fileHash, fileName, savePath string) error {
-	utils.DebugLog(GetDownloadTmpFilePath(fileHash, fileName, savePath), "to", GetDownloadFilePath(fileName))
-	_, err := copyFile(GetDownloadTmpFilePath(fileHash, fileName, savePath), GetDownloadFilePath(fileName))
+	_, err := copyFile(GetDownloadTmpFilePath(fileHash, fileName), GetDownloadFilePath(fileName, ""))
 	return err
 }
 
-func CheckSliceExisting(fileHash, fileName, sliceHash, savePath, fileReqId string) bool {
+func CheckSliceExisting(fileHash, fileName, sliceHash, fileReqId string) bool {
 	utils.DebugLog("CheckSliceExisting sliceHash", sliceHash)
 
 	if IsFileRpcRemote(fileHash + fileReqId) {
 		return false
 	}
 
-	csvFile, err := os.OpenFile(GetDownloadTmpCsvPath(fileHash, fileName, savePath), os.O_RDONLY, 0600)
+	csvFile, err := os.OpenFile(GetDownloadTmpCsvPath(fileHash, fileName), os.O_RDONLY, 0600)
 	defer func() {
 		_ = csvFile.Close()
 	}()
@@ -472,7 +461,7 @@ func DeleteSlice(sliceHash string) error {
 }
 
 func DeleteDirectory(fileHash string) {
-	err := os.RemoveAll(filepath.Join(setting.Config.Home.DownloadPath, fileHash))
+	err := os.RemoveAll(getDownloadTmpFolderPath(fileHash))
 	if err != nil {
 		utils.DebugLog("DeleteDirectory err", err)
 	}
@@ -607,20 +596,19 @@ func ExtractTarWithZstd(source string, target string) error {
 
 // CheckDownloadCache check there is download cache for the file with fileHash
 func CheckDownloadCache(fileHash string) error {
-	folderPath := filepath.Join(setting.Config.Home.DownloadPath, fileHash)
-	fileInfo, err := os.Stat(folderPath)
+	fileInfo, err := os.Stat(getDownloadTmpFolderPath(fileHash))
 	if err != nil {
 		return errors.Wrap(err, "download cache doesn't exist, ")
 	}
 	if !fileInfo.IsDir() {
 		return errors.New("the supposed directory name is a file")
 	}
-	fileName, err := GetDownloadFileName(fileHash)
+	fileName, err := GetDownloadFileNameFromTmp(fileHash)
 	if err != nil {
 		return errors.Wrap(err, "failed get the download file name, ")
 	}
 	fileNameMap.Store(fileHash, fileName)
-	filePath := GetDownloadTmpFilePath(fileHash, fileName, "")
+	filePath := GetDownloadTmpFilePath(fileHash, fileName)
 	if fileHash != GetFileHash(filePath, "") {
 		return errors.New("the cached file doesn't match file hash")
 	}
@@ -634,18 +622,19 @@ func ReadDownloadCachedData(fileHash, reqid string) ([]byte, uint64, uint64, boo
 	var finished bool
 	offsetEnd = 0
 	finished = false
+	start, ok := downloadMap.Load(fileHash + reqid)
+	if !ok {
+		downloadMap.Store(fileHash+reqid, 0)
+		offsetStart = 0
+	} else {
+		offsetStart = start.(uint64)
+	}
+
 	fileName, ok := fileNameMap.Load(fileHash)
 	if !ok {
 		return nil, offsetStart, offsetEnd, finished
 	}
-	fileName = fileName.(string) + ".tmp"
-	filePath := filepath.Join(setting.Config.Home.DownloadPath, fileHash, fileName.(string))
-	start, ok := downloadMap.Load(fileHash + reqid)
-	if !ok {
-		downloadMap.Store(fileHash+reqid, 0)
-		start = 0
-	}
-	offsetStart = start.(uint64)
+	filePath := GetDownloadTmpFilePath(fileHash, fileName.(string))
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		return nil, offsetStart, offsetEnd, finished

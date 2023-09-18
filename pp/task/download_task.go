@@ -300,7 +300,7 @@ func checkAgain(ctx context.Context, fileHash string) {
 		if fName == "" {
 			fName = fileHash
 		}
-		filePath := file.GetDownloadTmpFilePath(fileHash, fName, fInfo.SavePath)
+		filePath := file.GetDownloadTmpFilePath(fileHash, fName)
 		if CheckFileOver(ctx, fileHash, filePath) {
 			DownloadFileMap.Delete(fileHash + LOCAL_REQID)
 			DownloadSpeedOfProgress.Delete(fileHash + LOCAL_REQID)
@@ -317,7 +317,7 @@ func checkAgain(ctx context.Context, fileHash string) {
 
 // DoneDownload
 func DoneDownload(ctx context.Context, fileHash, fileName, savePath string) {
-	filePath := file.GetDownloadTmpFilePath(fileHash, fileName, savePath)
+	filePath := file.GetDownloadTmpFilePath(fileHash, fileName)
 	newFilePath := filePath[:len(filePath)-4]
 	lastPath := strings.Replace(newFilePath, fileHash+"/", "", -1)
 	lastPath = addSeqNum2FileName(lastPath, 0)
@@ -414,7 +414,7 @@ func CheckDownloadOver(ctx context.Context, fileHash string) (bool, float32) {
 				if fName == "" {
 					fName = fileHash
 				}
-				filePath := file.GetDownloadTmpFilePath(fileHash, fName, fInfo.SavePath)
+				filePath := file.GetDownloadTmpFilePath(fileHash, fName)
 				if CheckFileOver(ctx, fileHash, filePath) {
 					DoneDownload(ctx, fileHash, fName, fInfo.SavePath)
 					CleanDownloadFileAndConnMap(ctx, fileHash, LOCAL_REQID)
