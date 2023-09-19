@@ -429,7 +429,7 @@ func CheckSliceExisting(fileHash, fileName, sliceHash, fileReqId string) bool {
 		_ = csvFile.Close()
 	}()
 	if err != nil {
-		// 没有此文件目录，因此不存在此切片
+		// file path not available, accordingly slice not exist
 		return false
 	}
 	reader := csv.NewReader(csvFile)
