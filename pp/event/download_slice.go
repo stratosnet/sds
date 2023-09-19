@@ -380,7 +380,7 @@ func receiveSliceAndProgress(ctx context.Context, target *protos.RspDownloadSlic
 	dTask *task.DownloadTask, costTime int64) bool {
 
 	if success, ok := dTask.SuccessSlice[target.SliceInfo.SliceHash]; ok && success {
-		utils.ErrorLog("Slice[%v] of file[%v] already received, skipping duplicate data,", target.SliceInfo.SliceHash, target.FileHash)
+		utils.DebugLogf("Slice[%v] of file[%v] already received, skipping duplicate data,", target.SliceInfo.SliceHash, target.FileHash)
 		return false
 	}
 	err := task.SaveDownloadFile(ctx, target, fInfo)
@@ -416,7 +416,7 @@ func receiveSliceAndProgressEncrypted(ctx context.Context, target *protos.RspDow
 	fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask, costTime int64) bool {
 
 	if success, ok := dTask.SuccessSlice[target.SliceInfo.SliceHash]; ok && success {
-		utils.ErrorLog("Slice[%v] of file[%v] already received, skipping duplicate data,", target.SliceInfo.SliceHash, target.FileHash)
+		utils.DebugLogf("Slice[%v] of file[%v] already received, skipping duplicate data,", target.SliceInfo.SliceHash, target.FileHash)
 		return false
 	}
 
