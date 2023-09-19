@@ -141,7 +141,7 @@ func GetTimeoutTransfer() []string {
 	defer rwmutex.RUnlock()
 	taskSliceUIDs := make([]string, 0)
 	for taskSliceUID, backupTask := range transferTaskMap {
-		if backupTask.LastTouchTime+TRANSFER_TASK_TIMEOUT_THRESHOLD > time.Now().Unix() {
+		if backupTask.LastTouchTime+TRANSFER_TASK_TIMEOUT_THRESHOLD < time.Now().Unix() {
 			taskSliceUIDs = append(taskSliceUIDs, taskSliceUID)
 		}
 	}
