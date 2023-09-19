@@ -530,7 +530,7 @@ func DownloadFileSlices(ctx context.Context, target *protos.RspFileStorageInfo, 
 				"\nslicenumber: ", slice.SliceNumber, "\n result:", re)
 		}
 	} else {
-		task.LogDownloadResult(ctx, target.FileHash, false, "file exists already.")
+		task.DownloadResult(ctx, target.FileHash, false, "file exists already.")
 		task.DeleteDownloadTask(target.FileHash, target.WalletAddress, target.ReqId)
 	}
 }
