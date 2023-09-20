@@ -362,14 +362,10 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 		utils.DebugLog("SliceOffset", target.SliceInfo.SliceOffset)
 		utils.DebugLog("length", len(target.Data))
 		utils.DebugLog("sliceSize", target.SliceSize)
-		receiveDone := false
 		if fInfo.EncryptionTag != "" {
-			receiveDone = receiveSliceAndProgressEncrypted(ctx, &target, fInfo, dTask, costTime)
+			receiveSliceAndProgressEncrypted(ctx, &target, fInfo, dTask, costTime)
 		} else {
-			receiveDone = receiveSliceAndProgress(ctx, &target, fInfo, dTask, costTime)
-		}
-		if receiveDone {
-			task.DownloadProgress(ctx, target.FileHash, fileReqId, uint64(len(target.Data)))
+			receiveSliceAndProgress(ctx, &target, fInfo, dTask, costTime)
 		}
 	} else {
 		utils.DebugLogf("Received a slice from an outdated download request[FileHash=%v], ignoring... ", target.FileHash)
@@ -377,18 +373,18 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 }
 
 func receiveSliceAndProgress(ctx context.Context, target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo,
-	dTask *task.DownloadTask, costTime int64) bool {
+	dTask *task.DownloadTask, costTime int64) {
 
 	if success, ok := dTask.SuccessSlice[target.SliceInfo.SliceHash]; ok && success {
 		utils.DebugLogf("Slice[%v] of file[%v] already received, skipping duplicate data,", target.SliceInfo.SliceHash, target.FileHash)
-		return false
+		return
 	}
 	err := task.SaveDownloadFile(ctx, target, fInfo)
 	if err != nil {
 		utils.ErrorLog("Download failed, failed saving file ", err)
 		file.CloseDownloadSession(fInfo.FileHash + fInfo.ReqId)
 		task.CleanDownloadFileAndConnMap(ctx, fInfo.FileHash, fInfo.ReqId)
-		return false
+		return
 	}
 	dataLen := uint64(len(target.Data))
 	if s, ok := task.DownloadSliceProgress.Load(target.SliceInfo.SliceHash + fInfo.ReqId); ok {
@@ -409,15 +405,14 @@ func receiveSliceAndProgress(ctx context.Context, target *protos.RspDownloadSlic
 			task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash+fInfo.ReqId, dataLen)
 		}
 	}
-	return true
 }
 
 func receiveSliceAndProgressEncrypted(ctx context.Context, target *protos.RspDownloadSlice,
-	fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask, costTime int64) bool {
+	fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask, costTime int64) {
 
 	if success, ok := dTask.SuccessSlice[target.SliceInfo.SliceHash]; ok && success {
 		utils.DebugLogf("Slice[%v] of file[%v] already received, skipping duplicate data,", target.SliceInfo.SliceHash, target.FileHash)
-		return false
+		return
 	}
 
 	dataToDecrypt := target.Data
@@ -440,13 +435,13 @@ func receiveSliceAndProgressEncrypted(ctx context.Context, target *protos.RspDow
 		decryptedData, err := decryptSliceData(dataToDecrypt)
 		if err != nil {
 			pp.ErrorLog(ctx, "Couldn't decrypt slice", err)
-			return false
+			return
 		}
 		target.Data = decryptedData
 		err = task.SaveDownloadFile(ctx, target, fInfo)
 		if err != nil {
 			pp.ErrorLog(ctx, "Failed saving download file", err.Error())
-			return false
+			return
 		}
 		pp.DebugLog(ctx, "slice download finished", target.SliceInfo.SliceHash)
 		task.DownloadSliceProgress.Delete(target.SliceInfo.SliceHash + fInfo.ReqId)
@@ -462,12 +457,13 @@ func receiveSliceAndProgressEncrypted(ctx context.Context, target *protos.RspDow
 		task.DownloadEncryptedSlices.Store(target.SliceInfo.SliceHash+fInfo.ReqId, dataToStore)
 		task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash+fInfo.ReqId, dataToDecryptSize)
 	}
-	return true
 }
 
 func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *protos.RspFileStorageInfo, dTask *task.DownloadTask) {
 	file.SaveDownloadProgress(ctx, target.SliceInfo.SliceHash, fInfo.FileName, target.FileHash, target.SavePath, fInfo.ReqId)
 	task.CleanDownloadTask(ctx, target.FileHash, target.SliceInfo.SliceHash, target.WalletAddress, fInfo.ReqId)
+	task.DownloadProgress(ctx, target.FileHash, fInfo.ReqId, target.SliceSize)
+
 	target.Result = &protos.Result{
 		State: protos.ResultState_RES_SUCCESS,
 	}
