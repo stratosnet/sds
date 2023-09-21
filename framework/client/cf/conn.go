@@ -768,7 +768,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 						}
 						msgH.Len = 0
 						i = 0
-						msgBuf = nil
+						listenHeader = true
 						continue
 					}
 					handlerCh <- MsgHandler{*message, handler, recvStart}
