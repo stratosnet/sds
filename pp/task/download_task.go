@@ -285,8 +285,8 @@ func DownloadResult(ctx context.Context, filehash string, success bool, reason s
 		pp.Log(ctx, "* has failed, ", reason)
 		pp.Log(ctx, "*")
 		pp.Log(ctx, "* Another task to the same file could be started by ")
-		pp.Log(ctx, "* 'put' command. New task will resume downloading ")
-		pp.Log(ctx, "* from slices already downloaded.")
+		pp.Log(ctx, "* 'get' or 'getsharefile' command. New task will resume")
+		pp.Log(ctx, "* downloading from slices already downloaded.")
 	}
 	pp.Log(ctx, "******************************************************")
 	SetDownloadResultToRpc(filehash, success)
