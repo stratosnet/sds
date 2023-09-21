@@ -559,7 +559,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 						}
 						msgH.Len = 0
 						i = 0
-						msgBuf = nil
+						listenHeader = true
 						continue
 					}
 					if msgType := header.GetMsgTypeFromId(msgH.Cmd); msgType != nil {
