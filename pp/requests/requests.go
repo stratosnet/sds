@@ -485,11 +485,17 @@ func ReqRegisterNewPPData(ctx context.Context, walletAddr string, walletPubkey, 
 		Signature: wsig,
 		Type:      protos.SignatureType_WALLET,
 	}
+	var free uint64
+	if sysInfo.DiskSize > sysInfo.Used {
+		free = sysInfo.DiskSize - sysInfo.Used
+	} else {
+		free = 0
+	}
 	return &protos.ReqRegisterNewPP{
 		P2PAddress:     p2pserver.GetP2pServer(ctx).GetP2PAddress(),
 		Signature:      walletSign,
 		DiskSize:       sysInfo.DiskSize,
-		FreeDisk:       sysInfo.FreeDisk,
+		FreeDisk:       free,
 		MemorySize:     sysInfo.MemorySize,
 		OsAndVer:       sysInfo.OSInfo,
 		CpuInfo:        sysInfo.CPUInfo,
@@ -649,13 +655,12 @@ func RspGetHDInfoData(p2pAddress string) *protos.RspGetHDInfo {
 		WalletAddress: setting.WalletAddress,
 	}
 
-	diskStats, err := utils.GetDiskUsage(setting.Config.Home.StoragePath)
-	if err == nil {
-		diskStats.Total = setting.GetDiskSizeSoftCap(diskStats.Total)
-		rsp.DiskSize = int64(diskStats.Total)
-		rsp.DiskFree = int64(diskStats.Free)
+	total, used := utils.GetDiskUsage()
+	total = setting.GetDiskSizeSoftCap(total)
+	if total > used {
+		rsp.DiskSize = int64(total)
+		rsp.DiskFree = int64(total - used)
 	} else {
-		utils.ErrorLog("Can't fetch disk usage statistics", err)
 		rsp.DiskSize = INVALID_STAT
 		rsp.DiskFree = INVALID_STAT
 	}
@@ -774,11 +779,11 @@ func ReqNodeStatusData(p2pAddress string) *protos.ReqReportNodeStatus {
 
 	// Disk usage statistics
 	diskStat := &protos.DiskStat{}
-	info, err := utils.GetDiskUsage(setting.Config.Home.StoragePath)
+	total, used := utils.GetDiskUsage()
 	if err == nil {
-		diskStat.RootUsed = int64(info.Used)
-		info.Total = setting.GetDiskSizeSoftCap(info.Total)
-		diskStat.RootTotal = int64(info.Total)
+		diskStat.RootUsed = int64(used)
+		total = setting.GetDiskSizeSoftCap(total)
+		diskStat.RootTotal = int64(total)
 	} else {
 		utils.ErrorLog(
 			"Can't fetch disk usage statistics when reporting node status, this might cause score deduction", err)

@@ -114,6 +114,7 @@ type config struct {
 
 func SetupRoot(root string) {
 	rootPath = root
+	utils.SetDiskMeasureFolder(root)
 }
 
 func GetRootPath() string {

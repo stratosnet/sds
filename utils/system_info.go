@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"os"
 	"path/filepath"
 	"strconv"
 
@@ -14,12 +15,14 @@ import (
 // SysInfo
 type SysInfo struct {
 	DiskSize   uint64
-	FreeDisk   uint64
+	Used       uint64
 	MemorySize uint64
 	OSInfo     string
 	CPUInfo    string
 	MacAddress string
 }
+
+var DiskMeasureFolder string
 
 // GetSysInfo
 func GetSysInfo(diskPath string) *SysInfo {
@@ -55,20 +58,38 @@ func GetSysInfo(diskPath string) *SysInfo {
 	}
 	defer DebugLog("sysInfo = ", sys)
 
-	diskStats, err := GetDiskUsage(diskPath)
-	if err != nil {
-		ErrorLog("Can't fetch disk usage statistics", err)
-		return sys
-	}
-
-	sys.DiskSize = diskStats.Total
-	sys.FreeDisk = diskStats.Free
+	sys.DiskSize, sys.Used = GetDiskUsage()
 	return sys
 }
 
-func GetDiskUsage(path string) (*disk.UsageStat, error) {
+func WalkSize(path string) (totalSize int64) {
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			totalSize += info.Size()
+		}
+		return nil
+	})
+	if err != nil {
+		DebugLog("Failed calculate the size of disk used.")
+		return 0
+	}
 
-	volume := filepath.Dir(path)
+	return
+}
 
-	return disk.Usage(volume)
+func SetDiskMeasureFolder(path string) {
+	DiskMeasureFolder = path
+}
+func GetDiskUsage() (uint64, uint64) {
+
+	if DiskMeasureFolder == "" {
+		return 0, 0
+	}
+	df, err := disk.Usage(DiskMeasureFolder)
+	if err != nil {
+		df.Total = 0
+	}
+	used := WalkSize(DiskMeasureFolder)
+
+	return df.Total, uint64(used)
 }
