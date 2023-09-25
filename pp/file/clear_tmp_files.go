@@ -29,6 +29,7 @@ var (
 
 func StartClearTmpFileJob(ctx context.Context) {
 	utils.Log("Starting ClearTmpFileJob......")
+	clearAllCaches(ctx)()
 	clearTmpFileJob, _ = clearTmpFileClock.AddJobRepeat(time.Second*time.Duration(checkTmpFileInterval), 0, clearAllCaches(ctx))
 }
 func clearAllCaches(ctx context.Context) func() {
@@ -158,13 +159,14 @@ func ageCache(cacheFolder string, expiration time.Duration, folderCheck, fileChe
 }
 
 func clearTmpDownloadCaches(ctx context.Context) {
-	ageCache(GetTmpDownloadPath(), DEFAULT_EXP_THRESHOLD*time.Minute, //DEFAULT_EXP_THRESHOLD*time.Hour*24,
+	ageCache(GetTmpDownloadPath(), DEFAULT_EXP_THRESHOLD*time.Hour*24,
 		func(folderName string) bool { return folderName != "videos" },
 		func(fileName string) bool { return strings.HasSuffix(fileName, ".tmp") })
 }
 
 func clearTmpDownloadVideo(ctx context.Context) {
-	ageCache(filepath.Join(GetTmpDownloadPath(), setting.VideoPath), DEFAULT_EXP_THRESHOLD*time.Minute, //DEFAULT_EXP_THRESHOLD*time.Hour*24,
+	utils.DebugLog("clearTmpDownloadVideo")
+	ageCache(filepath.Join(GetTmpDownloadPath(), setting.VideoPath), DEFAULT_EXP_THRESHOLD*time.Hour*24,
 		func(string) bool { return true },
 		func(string) bool { return true })
 }
