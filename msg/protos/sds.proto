@@ -854,23 +854,13 @@ message ReqMessageForward{
   string dest_p2p = 1;
   string source_p2p = 2;
   uint32 cmd_type = 3;
-  oneof msg {
-    ReqUploadSlicesWrong req_upload_slices_wrong = 4;
-    ReqTransferDownloadWrong req_transfer_download_wrong = 5;
-    ReportUploadSliceResult req_upload_slice_result = 6;
-    ReqReportDownloadResult req_report_download_result = 7;
-    ReqReportBackupSliceResult req_report_backup_slice_result = 8;
-  }
+  bytes  msg = 4;
 }
 
 message RspMessageForward{
   string dest_p2p = 1;
   string source_p2p = 2;
   uint32 cmd_type = 3;
-  oneof msg {
-    RspUploadSlicesWrong rsp_upload_slices_wrong = 4;
-    RspReportUploadSliceResult rsp_upload_slice_result = 5;
-    RspReportDownloadResult rsp_report_download_result = 6;
-    RspReportBackupSliceResult rsp_report_backup_slice_result = 7;
-  }
+  bytes  msg = 4;
+  Result result = 5;
 }
