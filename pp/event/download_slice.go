@@ -387,22 +387,22 @@ func receiveSliceAndProgress(ctx context.Context, target *protos.RspDownloadSlic
 		return
 	}
 	dataLen := uint64(len(target.Data))
-	if s, ok := task.DownloadSliceProgress.Load(target.SliceInfo.SliceHash + fInfo.ReqId); ok {
+	if s, ok := task.DownloadSliceProgress.Load(target.TaskId + target.SliceInfo.SliceHash + fInfo.ReqId); ok {
 		alreadySize := s.(uint64)
 		alreadySize += dataLen
 		if alreadySize == target.SliceSize {
 			utils.DebugLog("slice download finished", target.SliceInfo.SliceHash)
-			task.DownloadSliceProgress.Delete(target.SliceInfo.SliceHash + fInfo.ReqId)
+			task.DownloadSliceProgress.Delete(target.TaskId + target.SliceInfo.SliceHash + fInfo.ReqId)
 			receivedSlice(ctx, target, fInfo, dTask)
 		} else {
-			task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash+fInfo.ReqId, alreadySize)
+			task.DownloadSliceProgress.Store(target.TaskId+target.SliceInfo.SliceHash+fInfo.ReqId, alreadySize)
 		}
 	} else {
 		// if data is sent at once
 		if target.SliceSize == dataLen {
 			receivedSlice(ctx, target, fInfo, dTask)
 		} else {
-			task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash+fInfo.ReqId, dataLen)
+			task.DownloadSliceProgress.Store(target.TaskId+target.SliceInfo.SliceHash+fInfo.ReqId, dataLen)
 		}
 	}
 }
@@ -424,7 +424,7 @@ func receiveSliceAndProgressEncrypted(ctx context.Context, target *protos.RspDow
 		copy(existingSliceData[encryptedOffset.SliceOffsetStart:encryptedOffset.SliceOffsetEnd], dataToDecrypt)
 		dataToDecrypt = existingSliceData
 
-		if s, ok := task.DownloadSliceProgress.Load(target.SliceInfo.SliceHash + fInfo.ReqId); ok {
+		if s, ok := task.DownloadSliceProgress.Load(target.TaskId + target.SliceInfo.SliceHash + fInfo.ReqId); ok {
 			existingSize := s.(uint64)
 			dataToDecryptSize += existingSize
 		}
@@ -444,8 +444,9 @@ func receiveSliceAndProgressEncrypted(ctx context.Context, target *protos.RspDow
 			return
 		}
 		pp.DebugLog(ctx, "slice download finished", target.SliceInfo.SliceHash)
-		task.DownloadSliceProgress.Delete(target.SliceInfo.SliceHash + fInfo.ReqId)
+		task.DownloadSliceProgress.Delete(target.TaskId + target.SliceInfo.SliceHash + fInfo.ReqId)
 		task.DownloadEncryptedSlices.Delete(target.SliceInfo.SliceHash + fInfo.ReqId)
+		utils.DebugLog("slice task has been deleted...")
 		receivedSlice(ctx, target, fInfo, dTask)
 	} else {
 		// Store partial slice data to memory
@@ -455,7 +456,7 @@ func receiveSliceAndProgressEncrypted(ctx context.Context, target *protos.RspDow
 			copy(dataToStore[encryptedOffset.SliceOffsetStart:encryptedOffset.SliceOffsetEnd], dataToDecrypt)
 		}
 		task.DownloadEncryptedSlices.Store(target.SliceInfo.SliceHash+fInfo.ReqId, dataToStore)
-		task.DownloadSliceProgress.Store(target.SliceInfo.SliceHash+fInfo.ReqId, dataToDecryptSize)
+		task.DownloadSliceProgress.Store(target.TaskId+target.SliceInfo.SliceHash+fInfo.ReqId, dataToDecryptSize)
 	}
 }
 
