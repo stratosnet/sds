@@ -27,30 +27,26 @@ import (
 const LOCAL_REQID string = "local"
 
 var (
+	// File related maps
 	// DownloadTaskMap PP passway download task map   make(map[string]*DownloadTask)
 	DownloadTaskMap = utils.NewAutoCleanMap(1 * time.Hour)
-
-	// DownloadSliceTaskMap resource node download slice task map
-	DownloadSliceTaskMap = utils.NewAutoCleanMap(1 * time.Hour)
-
 	// DownloadFileMap P download info map  make(map[string]*protos.RspFileStorageInfo)
 	DownloadFileMap = utils.NewAutoCleanMap(1 * time.Hour)
-
-	// var DownloadFileProgress = &sync.Map{}
-
+	// DownloadSpeedOfProgress
 	DownloadSpeedOfProgress = &sync.Map{}
+	// key: fileHash + fileReqId; value: chan bool
+	downloadResultChan = &sync.Map{}
 
-	SliceSessionMap = &sync.Map{} // key: slice reqid, value: session id (file reqid)
-
-	// DownloadSliceProgress hash：size
-	DownloadSliceProgress = &sync.Map{}
-
+	// Slice related maps
+	// DownloadSliceTaskMap resource node download slice task map
+	DownloadSliceTaskMap = utils.NewAutoCleanMap(1 * time.Hour)
+	// SliceSessionMap key: slice reqid, value: file-reqid
+	SliceSessionMap = &sync.Map{} //
+	// DownloadSliceProgress sliceTaskId + sliceHash + reqId : downloaded size
+	DownloadSliceProgress = utils.NewAutoCleanMap(1 * time.Hour)
 	// DownloadEncryptedSlices stores the partially downloaded encrypted slices, indexed by the slice hash.
 	// This is used because slices can only be decrypted after being fully downloaded
 	DownloadEncryptedSlices = &sync.Map{}
-
-	// key: fileHash + fileReqId; value: chan bool
-	downloadResultChan = &sync.Map{}
 
 	downloadEndMutex sync.Mutex
 )
@@ -229,7 +225,7 @@ func CleanDownloadFileAndConnMap(ctx context.Context, fileHash, fileReqId string
 	if f, ok := DownloadFileMap.Load(fileHash + fileReqId); ok {
 		fInfo := f.(*protos.RspFileStorageInfo)
 		for _, slice := range fInfo.SliceInfo {
-			DownloadSliceProgress.Delete(slice.SliceStorageInfo.SliceHash + fileReqId)
+			DownloadSliceProgress.Delete(slice.TaskId + slice.SliceStorageInfo.SliceHash + fInfo.ReqId)
 			p2pserver.GetP2pServer(ctx).DeleteConnFromCache("download#" + fileHash + slice.StoragePpInfo.P2PAddress + fileReqId)
 		}
 	}

@@ -317,6 +317,10 @@ func SaveDownloadProgress(ctx context.Context, sliceHash, fileName, fileHash, sa
 		pp.ErrorLog(ctx, "download csv line ", err)
 	}
 	writer.Flush()
+
+	if err = writer.Error(); err != nil {
+		pp.ErrorLog(ctx, "flush error,", err.Error())
+	}
 }
 
 func RecordDownloadCSV(target *protos.RspFileStorageInfo) {
