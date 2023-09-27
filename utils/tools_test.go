@@ -2,11 +2,12 @@ package utils
 
 import (
 	"crypto/md5"
-	mbase "github.com/multiformats/go-multibase"
-	mh "github.com/multiformats/go-multihash"
 	"math/rand"
 	"testing"
 	"time"
+
+	mbase "github.com/multiformats/go-multibase"
+	mh "github.com/multiformats/go-multihash"
 
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/go-bip39"
@@ -84,10 +85,10 @@ func TestCid(t *testing.T) {
 
 		sliceHash := CalcSliceHash(sliceData[:], fh, uint64(i))
 
-		if !ValidateHash(fh, SDS_CODEC) {
+		if !ValidateHash(fh) {
 			t.Fatal("generated file hash is invalid")
 		}
-		if !ValidateHash(sliceHash, cid.Raw) {
+		if !ValidateHash(sliceHash) {
 			t.Fatal("generated slice hash is invalid")
 		}
 
@@ -96,7 +97,7 @@ func TestCid(t *testing.T) {
 			t.Fatal("slice hash should be different when being generated with different file hash")
 		}
 
-		if ValidateHash(fakeFileHash, SDS_CODEC) {
+		if ValidateHash(fakeFileHash) {
 			t.Fatal("Fake file hash should have failed verification")
 		}
 	}
@@ -117,7 +118,7 @@ func TestCidLargeFile(t *testing.T) {
 	t.Log(filehash)
 	t.Log(elapsed)
 
-	if !ValidateHash(fh, cid.Raw) {
+	if !ValidateHash(fh) {
 		t.Fatal("generated file hash is invalid")
 	}
 }

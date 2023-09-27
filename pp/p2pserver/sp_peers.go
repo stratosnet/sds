@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
@@ -18,7 +20,6 @@ import (
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/utils"
 	utilstypes "github.com/stratosnet/sds/utils/types"
-	"google.golang.org/protobuf/proto"
 )
 
 var (
@@ -249,7 +250,7 @@ func (p *P2pServer) SendMessageByCachedConn(ctx context.Context, key string, net
 		}
 		err := p.SendMessage(ctx, conn, pb, cmd)
 		if err == nil {
-			pp.DebugLog(ctx, "SendMessage(conn, pb, header.ReqUploadFileSlice) ", conn)
+			utils.DebugLog("SendMessage(conn, pb, header.", cmd.Name, ") ", conn)
 			return err
 		}
 	}
@@ -263,10 +264,10 @@ func (p *P2pServer) SendMessageByCachedConn(ctx context.Context, key string, net
 	}
 	err = p.SendMessage(ctx, conn, pb, cmd)
 	if err == nil {
-		pp.DebugLog(ctx, "SendMessage(conn, pb, header.ReqUploadFileSlice) ", conn)
+		utils.DebugLog("SendMessage(conn, pb, header.ReqUploadFileSlice) ", conn)
 		p.StoreConnToCache(key, conn)
 	} else {
-		pp.ErrorLog(ctx, "Fail to send upload slice request to "+netAddr+", "+err.Error())
+		utils.ErrorLog("Fail to send upload slice request to " + netAddr + ", " + err.Error())
 	}
 	return err
 }

@@ -42,7 +42,13 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted, isVideoStr
 		return
 	}
 
-	fileHash := file.GetFileHash(path, "")
+	var fileHash string
+	if isVideoStream {
+		fileHash = file.GetFileHashForVideoStream(path, "")
+	} else {
+		fileHash = file.GetFileHash(path, "")
+	}
+
 	metrics.UploadPerformanceLogNow(fileHash + ":RCV_CMD_START:")
 
 	isFile, err := file.IsFile(path)

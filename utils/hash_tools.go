@@ -118,8 +118,7 @@ func CalcFileHash(filePath, encryptionTag string, codec byte) string {
 	switch codec {
 	case cid.Raw:
 		data = append([]byte(encryptionTag), CalcFileMD5(filePath)...)
-	case VIDEO_CODEC:
-	case SDS_CODEC:
+	case VIDEO_CODEC, SDS_CODEC:
 		data = append([]byte(encryptionTag), CalcFileKeccak(filePath)...)
 	default:
 		return ""
@@ -173,19 +172,14 @@ func uint64ToBytes(n uint64) []byte {
 }
 
 // ValidateHash only validate the hash format, does NOT verify if the hash is created by certain content
-func ValidateHash(hash string, codec byte) bool {
+func ValidateHash(hash string) bool {
 	fileCid, err := cid.Decode(hash)
 	if err != nil {
 		return false
 	}
 	prefix := fileCid.Prefix()
 
-	return prefix == cid.Prefix{
-		Version:  VALID_CID_VERSION,
-		MhType:   VALID_MH_TYPE,
-		MhLength: VALID_MH_LENGTH,
-		Codec:    uint64(codec),
-	}
+	return prefix.Version == VALID_CID_VERSION && prefix.MhType == VALID_MH_TYPE && prefix.MhLength == VALID_MH_LENGTH
 }
 
 func IsVideoStream(hash string) bool {

@@ -8,65 +8,61 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
 
-//var osType = runtime.GOOS
-
-// GetDownloadTmpPath get temporary download path
-func GetDownloadTmpPath(fileHash, fileName, savePath string) string {
-	if savePath == "" {
-		downPath := GetDownloadPath(fileHash) + "/" + fileName + ".tmp"
-		// if setting.IsWindows {
-		// 	downPath = filepath.FromSlash(downPath)
-		// }
-		return downPath
-	}
-	downPath := GetDownloadPath(savePath+"/"+fileHash) + "/" + fileName + ".tmp"
-	// if setting.IsWindows {
-	// 	downPath = filepath.FromSlash(downPath)
-	// }
-	return downPath
-
+// getTmpFolderPath path to the tmp file folder
+func getTmpFolderPath() string {
+	return filepath.Join(setting.GetRootPath(), TEMP_FOLDER)
 }
 
-// GetDownloadCsvPath get download CSV path
-func GetDownloadCsvPath(fileHash, fileName, savePath string) string {
-	if savePath == "" {
-		csv := GetDownloadPath(fileHash) + "/" + fileName + ".csv"
-		// if setting.IsWindows {
-		// 	csv = filepath.FromSlash(csv)
-		// }
-		return csv
-	}
-	csv := GetDownloadPath(savePath+"/"+fileHash) + "/" + fileName + ".csv"
-	// if setting.IsWindows {
-	// 	csv = filepath.FromSlash(csv)
-	// }
-	return csv
-
+// GetTmpFileFolderPath path to tmp file folder for specific file
+func GetTmpFileFolderPath(fileHash string) string {
+	return filepath.Join(getTmpFolderPath(), fileHash)
 }
 
-// GetDownloadPath get download path
-func GetDownloadPath(fileName string) string {
-	filePath := filepath.Join(setting.Config.Home.DownloadPath, fileName)
-	// if setting.IsWindows {
-	// 	filePath = filepath.FromSlash(filePath)
-	// }
-	exist, err := PathExists(filePath)
+// GetTmpDownloadPath path to the download tmp file folder
+func GetTmpDownloadPath() string {
+	return filepath.Join(getTmpFolderPath(), "download")
+}
+
+func getDownloadTmpFolderPath(fileHash string) string {
+	return filepath.Join(GetTmpDownloadPath(), fileHash)
+}
+
+// GetDownloadTmpFilePath path to the download tmp file
+func GetDownloadTmpFilePath(fileHash, fileName string) string {
+	return filepath.Join(getDownloadTmpFolderPath(fileHash), fileName+".tmp")
+}
+
+// GetDownloadTmpCsvPath get download CSV path
+func GetDownloadTmpCsvPath(fileHash, fileName string) string {
+	return filepath.Join(getDownloadTmpFolderPath(fileHash), fileName+".csv")
+}
+
+// GetDownloadFileNameFromTmp fetch the first name in download tmp folder with the filehash, and generate the file name
+func GetDownloadFileNameFromTmp(fileHash string) (string, error) {
+	files, err := os.ReadDir(getDownloadTmpFolderPath(fileHash))
 	if err != nil {
-		utils.ErrorLogf("file existed: %v", err)
-		return ""
+		return "", errors.Wrap(err, "can't get download file name, ")
 	}
-	if !exist {
-		if err = os.MkdirAll(filePath, os.ModePerm); err != nil {
-			utils.ErrorLogf("MkdirAll error: %v", err)
-			return ""
+	for _, file := range files {
+		fileName := file.Name()
+
+		if len(fileName) > 4 && fileName[len(fileName)-4:] == ".tmp" {
+			return fileName[:len(fileName)-4], nil
 		}
 	}
-	return filePath
+	return "", errors.New("can't find cached files")
 }
+
+// GetDownloadFilePath path to a file as in download folder
+func GetDownloadFilePath(fileName, savePath string) string {
+	return filepath.Join(setting.Config.Home.DownloadPath, savePath, fileName)
+}
+
 func getSlicePath(hash string) (string, error) {
 	if len(hash) < 10 {
 		return "", errors.New("wrong size of slice hash")

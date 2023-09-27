@@ -11,23 +11,34 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/pkg/errors"
+	"golang.org/x/exp/mmap"
+
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
-	"golang.org/x/exp/mmap"
 )
 
-var rmutex sync.RWMutex
-var wmutex sync.RWMutex
+const (
+	LOCAL_TAG = "LOCAL"
+)
 
-// key(fileHash) : value(file path)
-var fileMap = make(map[string]string)
-var infoMutex sync.Mutex
-var DataBuffer sync.Mutex
+var (
+	rmutex sync.RWMutex
+
+	wmutex sync.RWMutex
+
+	// key(fileHash) : value(file path)
+	fileMap     = make(map[string]string)
+	infoMutex   sync.Mutex
+	DataBuffer  sync.Mutex
+	fileNameMap = utils.NewAutoCleanMap(1 * time.Hour)
+	downloadMap = utils.NewAutoCleanMap(1 * time.Hour)
+)
 
 func RequestBuffersForSlice(size int64) [][]byte {
 	DataBuffer.Lock()
@@ -257,7 +268,8 @@ func WriteFile(data []byte, offset int64, fileMg *os.File) error {
 	return nil
 }
 
-func SaveFileData(ctx context.Context, data []byte, offset int64, sliceHash, fileName, fileHash, savePath, fileReqId string) error {
+// SaveDownloadedFileData save data of downloaded file into download temporary folder
+func SaveDownloadedFileData(data []byte, offset int64, sliceHash, fileName, fileHash, savePath, fileReqId string) error {
 
 	utils.DebugLog("sliceHash", sliceHash)
 
@@ -271,9 +283,13 @@ func SaveFileData(ctx context.Context, data []byte, offset int64, sliceHash, fil
 	if fileName == "" {
 		fileName = fileHash
 	}
-	fileMg, err := os.OpenFile(GetDownloadTmpPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR, 0600)
+	tmpFilePath := GetDownloadTmpFilePath(fileHash, fileName)
+	fileMg, err := os.OpenFile(tmpFilePath, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
-		return errors.Wrap(err, "failed opening file")
+		fileMg, err = CreateFolderAndReopenFile(filepath.Dir(tmpFilePath), filepath.Base(tmpFilePath))
+		if err != nil {
+			return errors.Wrap(err, "failed open file")
+		}
 	}
 	defer func() {
 		_ = fileMg.Close()
@@ -286,7 +302,7 @@ func SaveDownloadProgress(ctx context.Context, sliceHash, fileName, fileHash, sa
 		return
 	}
 	wmutex.Lock()
-	csvFile, err := os.OpenFile(GetDownloadCsvPath(fileHash, fileName, savePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0600)
+	csvFile, err := os.OpenFile(GetDownloadTmpCsvPath(fileHash, fileName), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0600)
 	defer func() {
 		_ = csvFile.Close()
 	}()
@@ -301,11 +317,15 @@ func SaveDownloadProgress(ctx context.Context, sliceHash, fileName, fileHash, sa
 		pp.ErrorLog(ctx, "download csv line ", err)
 	}
 	writer.Flush()
+
+	if err = writer.Error(); err != nil {
+		pp.ErrorLog(ctx, "flush error,", err.Error())
+	}
 }
 
 func RecordDownloadCSV(target *protos.RspFileStorageInfo) {
 	// check if downloading, if not create new, sliceHash+startPosition
-	csvFile, err := os.OpenFile(GetDownloadCsvPath(target.FileHash, target.FileName, target.SavePath), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0600)
+	csvFile, err := os.OpenFile(GetDownloadTmpCsvPath(target.FileHash, target.FileName), os.O_CREATE|os.O_RDWR|os.O_APPEND, 0600)
 	defer func() {
 		_ = csvFile.Close()
 	}()
@@ -341,54 +361,79 @@ func RecordDownloadCSV(target *protos.RspFileStorageInfo) {
 }
 
 func CheckFileExisting(ctx context.Context, fileHash, fileName, savePath, encryptionTag, fileReqId string) bool {
-	pp.DebugLog(ctx, "CheckFileExisting: file Hash", fileHash)
+	utils.DebugLog("CheckFileExisting: file Hash", fileHash)
 
 	// check if the target path is remote, return false for "not match"
 	if IsFileRpcRemote(fileHash + fileReqId) {
 		return false
 	}
-	filePath := ""
-	if savePath == "" {
-		filePath = filepath.Join(setting.Config.Home.DownloadPath, fileName)
-	} else {
-		filePath = filepath.Join(setting.Config.Home.DownloadPath, savePath, fileName)
-	}
-	// if setting.IsWindows {
-	//	filePath = filepath.FromSlash(filePath)
-	// }
-	pp.DebugLog(ctx, "filePath", filePath)
+	filePath := GetDownloadFilePath(fileName, savePath)
+	utils.DebugLog("filePath", filePath)
 	file, err := os.OpenFile(filePath, os.O_RDONLY, 0600)
 	defer func() {
 		_ = file.Close()
 	}()
 	if err != nil {
-		pp.DebugLog(ctx, "no directory specified, thus no file slices")
+		pp.DebugLog(ctx, "check file existing: file doesn't exist.")
 		return false
 	}
 
 	hash := utils.CalcFileHash(filePath, encryptionTag, utils.SDS_CODEC)
-	pp.DebugLog(ctx, "hash", hash)
+	utils.DebugLog("hash", hash)
 	if hash == fileHash {
 		pp.DebugLog(ctx, "file hash matched")
 		return true
 	}
-	pp.DebugLog(ctx, "file hash not match")
+	utils.DebugLog("file hash not match")
 	return false
 }
+func copyFile(srcPath, dstPath string) (int64, error) {
+	sourceFileStat, err := os.Stat(srcPath)
+	if err != nil {
+		return 0, err
+	}
 
-func CheckSliceExisting(fileHash, fileName, sliceHash, savePath, fileReqId string) bool {
+	if !sourceFileStat.Mode().IsRegular() {
+		return 0, fmt.Errorf("%s is not a regular file", srcPath)
+	}
+
+	source, err := os.Open(srcPath)
+	if err != nil {
+		return 0, err
+	}
+	defer source.Close()
+
+	destination, err := os.Create(dstPath)
+	if err != nil {
+		// creat the folder and retry
+		destination, err = CreateFolderAndReopenFile(filepath.Dir(dstPath), filepath.Base(dstPath))
+		if err != nil {
+			return 0, err
+		}
+	}
+	defer destination.Close()
+	nBytes, err := io.Copy(destination, source)
+	return nBytes, err
+}
+
+func CopyDownloadFile(fileHash, fileName, savePath string) error {
+	_, err := copyFile(GetDownloadTmpFilePath(fileHash, fileName), GetDownloadFilePath(fileName, ""))
+	return err
+}
+
+func CheckSliceExisting(fileHash, fileName, sliceHash, fileReqId string) bool {
 	utils.DebugLog("CheckSliceExisting sliceHash", sliceHash)
 
 	if IsFileRpcRemote(fileHash + fileReqId) {
 		return false
 	}
 
-	csvFile, err := os.OpenFile(GetDownloadCsvPath(fileHash, fileName, savePath), os.O_RDONLY, 0600)
+	csvFile, err := os.OpenFile(GetDownloadTmpCsvPath(fileHash, fileName), os.O_RDONLY, 0600)
 	defer func() {
 		_ = csvFile.Close()
 	}()
 	if err != nil {
-		// 没有此文件目录，因此不存在此切片
+		// file path not available, accordingly slice not exist
 		return false
 	}
 	reader := csv.NewReader(csvFile)
@@ -420,7 +465,7 @@ func DeleteSlice(sliceHash string) error {
 }
 
 func DeleteDirectory(fileHash string) {
-	err := os.RemoveAll(filepath.Join(setting.Config.Home.DownloadPath, fileHash))
+	err := os.RemoveAll(getDownloadTmpFolderPath(fileHash))
 	if err != nil {
 		utils.DebugLog("DeleteDirectory err", err)
 	}
@@ -444,10 +489,6 @@ func CheckFilePathEx(filePath string) bool {
 
 func GetTmpSlicePath(fileHash, sliceHash string) string {
 	return filepath.Join(GetTmpFileFolderPath(fileHash), sliceHash)
-}
-
-func GetTmpFileFolderPath(fileHash string) string {
-	return filepath.Join(setting.GetRootPath(), TEMP_FOLDER, fileHash)
 }
 
 func CreateTarWithZstd(source string, target string) error {
@@ -555,4 +596,115 @@ func ExtractTarWithZstd(source string, target string) error {
 		}
 	}
 	return nil
+}
+
+// CheckDownloadCache check there is download cache for the file with fileHash
+func CheckDownloadCache(fileHash string) error {
+	fileInfo, err := os.Stat(getDownloadTmpFolderPath(fileHash))
+	if err != nil {
+		return errors.Wrap(err, "download cache doesn't exist, ")
+	}
+	if !fileInfo.IsDir() {
+		return errors.New("the supposed directory name is a file")
+	}
+	fileName, err := GetDownloadFileNameFromTmp(fileHash)
+	if err != nil {
+		return errors.Wrap(err, "failed get the download file name, ")
+	}
+	fileNameMap.Store(fileHash, fileName)
+	filePath := GetDownloadTmpFilePath(fileHash, fileName)
+	if fileHash != GetFileHash(filePath, "") {
+		return errors.New("the cached file doesn't match file hash")
+	}
+	return nil
+}
+
+// ReadDownloadCachedData read setting.MacData bytes from the cache and store the cursor for next reading; check the end if cursor equals file size.
+func ReadDownloadCachedData(fileHash, reqid string) ([]byte, uint64, uint64, bool) {
+	var offsetEnd uint64
+	var offsetStart uint64
+	var finished bool
+	offsetEnd = 0
+	finished = false
+	start, ok := downloadMap.Load(fileHash + reqid)
+	if !ok {
+		downloadMap.Store(fileHash+reqid, 0)
+		offsetStart = 0
+	} else {
+		offsetStart = start.(uint64)
+	}
+
+	fileName, ok := fileNameMap.Load(fileHash)
+	if !ok {
+		return nil, offsetStart, offsetEnd, finished
+	}
+	filePath := GetDownloadTmpFilePath(fileHash, fileName.(string))
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		return nil, offsetStart, offsetEnd, finished
+	}
+
+	if offsetStart >= uint64(fileInfo.Size()) {
+		finished = true
+		return nil, offsetStart, offsetEnd, finished
+	}
+
+	if offsetStart+setting.MaxData < uint64(fileInfo.Size()) {
+		offsetEnd = offsetStart + setting.MaxData
+	} else {
+		offsetEnd = uint64(fileInfo.Size())
+	}
+
+	offset := &protos.SliceOffset{
+		SliceOffsetStart: offsetStart,
+		SliceOffsetEnd:   offsetEnd,
+	}
+
+	data, err := GetFileData(filePath, offset)
+	if err != nil {
+		return nil, offsetStart, offsetEnd, finished
+	}
+	downloadMap.Store(fileHash+reqid, offsetEnd)
+	return data, offsetStart, offsetEnd, finished
+}
+
+// FinishLocalDownload when a local download is done, successfully or unsuccessfully, call this to untag
+func FinishLocalDownload(fileHash string) {
+	downloadMap.Delete(fileHash + LOCAL_TAG)
+}
+
+// StartLocalDownload when a local download starts, call this to tag a local download is on
+func StartLocalDownload(fileHash string) {
+	downloadMap.Store(fileHash+LOCAL_TAG, 0)
+}
+
+// StartLocalDownload when a local download starts, call this to tag a local download is on
+func IsLocalDownload(fileHash string) bool {
+	_, ok := downloadMap.Load(fileHash + LOCAL_TAG)
+	return ok
+}
+
+func GetFileName(fileHash string) string {
+	fileName, ok := fileNameMap.Load(fileHash)
+	if !ok {
+		return ""
+	}
+	return fileName.(string)
+}
+
+func CreateFolderAndReopenFile(folderPath, fileName string) (*os.File, error) {
+	exist, err := PathExists(folderPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed checking folder existence")
+	}
+	if !exist {
+		if err = os.MkdirAll(folderPath, os.ModePerm); err != nil {
+			return nil, errors.Wrap(err, "failed creating folder")
+		}
+	}
+	file, err := os.OpenFile(filepath.Join(folderPath, fileName), os.O_CREATE|os.O_RDWR, 0600)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed open the file after second try")
+	}
+	return file, nil
 }

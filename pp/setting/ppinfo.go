@@ -26,6 +26,8 @@ var WalletPrivateKey []byte
 
 var NetworkAddress string
 
+var NetworkIP net.IP
+
 var RestAddress string
 
 var MonitorInitialToken string
@@ -60,6 +62,7 @@ func SetMyNetworkAddress() {
 	if netAddr != "" {
 		NetworkAddress = netAddr + ":" + Config.Node.Connectivity.NetworkPort
 		RestAddress = netAddr + ":" + Config.Streaming.RestPort
+		NetworkIP = net.ParseIP(netAddr)
 	}
 	utils.Log("setting.NetworkAddress", NetworkAddress)
 }

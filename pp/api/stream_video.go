@@ -18,6 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/ipfs/go-cid"
 	"github.com/pkg/errors"
+
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	rpctypes "github.com/stratosnet/sds/pp/api/rpc"
@@ -93,7 +94,7 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 	}.String()
 
 	r := reqDownloadMsg(fileHash, sdmPath, sn)
-	res := namespace.RpcPubApi().RequestDownload(ctx, r)
+	res := namespace.RpcPubApi().RequestVideoDownload(ctx, r)
 
 	if res.Return != rpctypes.DOWNLOAD_OK {
 		w.WriteHeader(setting.FAILCode)
@@ -142,7 +143,7 @@ func streamSharedVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 
 	fileHash := res.FileHash
 	reqDownloadShared := reqDownloadShared(fileHash, sn, res.ReqId)
-	res = namespace.RpcPubApi().RequestDownloadShared(ctx, reqDownloadShared)
+	res = namespace.RpcPubApi().RequestDownloadSharedVideo(ctx, reqDownloadShared)
 	if res.Return != rpctypes.DOWNLOAD_OK {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get file storage info").ToBytes())
@@ -183,7 +184,7 @@ func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 	}.String()
 
 	r := reqDownloadMsg(fileHash, sdmPath, sn)
-	res := namespace.RpcPubApi().RequestDownload(ctx, r)
+	res := namespace.RpcPubApi().RequestVideoDownload(ctx, r)
 
 	if res.Return != rpctypes.DOWNLOAD_OK {
 		w.WriteHeader(setting.FAILCode)
@@ -263,7 +264,11 @@ func redirectToResourceNode(fileHash, sliceHash, restAddress, walletAddress stri
 	if dlTask, ok := task.DownloadTaskMap.Load(fileHash + walletAddress + task.LOCAL_REQID); ok {
 		//self is the resource PP and has task info
 		downloadTask := dlTask.(*task.DownloadTask)
-		targetAddress = downloadTask.SliceInfo[sliceHash].StoragePpInfo.RestAddress
+		if sliceInfo, ok := downloadTask.GetSliceInfo(sliceHash); ok {
+			targetAddress = sliceInfo.StoragePpInfo.RestAddress
+		} else {
+			targetAddress = restAddress
+		}
 	} else {
 		//to ask resource pp for slice addresses
 		targetAddress = restAddress
@@ -293,8 +298,12 @@ func GetVideoSlice(w http.ResponseWriter, req *http.Request) {
 
 	if dlTask, ok := task.DownloadTaskMap.Load(body.FileHash + setting.WalletAddress + task.LOCAL_REQID); ok {
 		utils.DebugLog("Found task info ", body)
+		var ppInfo *protos.PPBaseInfo
 		downloadTask := dlTask.(*task.DownloadTask)
-		ppInfo := downloadTask.SliceInfo[sliceHash].StoragePpInfo
+		if sliceInfo, ok := downloadTask.GetSliceInfo(sliceHash); ok {
+			ppInfo = sliceInfo.StoragePpInfo
+		}
+
 		if ppInfo.P2PAddress != p2pserver.GetP2pServer(req.Context()).GetP2PAddress() {
 			utils.DebugLog("Current P2PAddress does not have the requested slice")
 			targetAddress := ppInfo.RestAddress
@@ -390,7 +399,7 @@ func cacheVideoSlices(ctx context.Context, fInfo *protos.RspFileStorageInfo) {
 }
 
 func checkSliceExist(fileHash, sliceHash string) (bool, string) {
-	folder := file.GetDownloadPath(filepath.Join(setting.VideoPath, fileHash))
+	folder := filepath.Join(file.GetTmpDownloadPath(), setting.VideoPath, fileHash)
 	slicePath := filepath.Join(folder, sliceHash)
 	return file.CheckFilePathEx(slicePath), slicePath
 }
@@ -457,7 +466,13 @@ func getSliceData(ctx context.Context, fInfo *protos.RspFileStorageInfo, sliceIn
 	if err != nil {
 		return nil, err
 	}
-	fileMg, _ := os.OpenFile(slicePath, os.O_CREATE|os.O_RDWR, 0600)
+	fileMg, err := os.OpenFile(slicePath, os.O_CREATE|os.O_RDWR, 0600)
+	if err != nil {
+		fileMg, err = file.CreateFolderAndReopenFile(filepath.Dir(slicePath), filepath.Base(slicePath))
+		if err != nil {
+			return nil, err
+		}
+	}
 	defer func() {
 		_ = fileMg.Close()
 	}()
