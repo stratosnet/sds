@@ -432,7 +432,7 @@ func (api *terminalCmd) Upload(ctx context.Context, param []string) (CmdResult, 
 		desiredTier = uint32(tier)
 	}
 
-	allowHigherTier := false
+	allowHigherTier := true
 	if len(param) > 3 {
 		allowHigherTierBool, err := strconv.ParseBool(param[3])
 		if err != nil {
@@ -474,7 +474,7 @@ func (api *terminalCmd) UploadStream(ctx context.Context, param []string) (CmdRe
 		desiredTier = uint32(tier)
 	}
 
-	allowHigherTier := false
+	allowHigherTier := true
 	if len(param) > 2 {
 		allowHigherTierBool, err := strconv.ParseBool(param[2])
 		if err != nil {
