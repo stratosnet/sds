@@ -65,28 +65,30 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	if reqMsg, loaded := uploadRequestMap.LoadAndDelete(requests.GetReqIdFromMessage(ctx)); loaded {
-		walletString := utils.GetFileUploadWalletSignMessage(reqMsg.(*protos.ReqUploadFile).FileInfo.FileHash, setting.WalletAddress, target.SequenceNumber, reqMsg.(*protos.ReqUploadFile).ReqTime)
+		rmsg := reqMsg.(*protos.ReqUploadFile)
+		walletString := utils.GetFileUploadWalletSignMessage(rmsg.FileInfo.FileHash, setting.WalletAddress, target.SequenceNumber, rmsg.ReqTime)
 		wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(walletString))
 		if err != nil {
 			return
 		}
-		reqMsg.(*protos.ReqUploadFile).Signature.Signature = wsign
-		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, reqMsg.(*protos.ReqUploadFile), header.ReqUploadFile)
+		rmsg.Signature.Signature = wsign
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, rmsg, header.ReqUploadFile)
 		return
 	}
 
 	if reqMsg, loaded := downloadRequestMap.LoadAndDelete(requests.GetReqIdFromMessage(ctx)); loaded {
-		_, _, fileHash, _, err := datamesh.ParseFileHandle(reqMsg.(*protos.ReqFileStorageInfo).FileIndexes.FilePath)
+		rmsg := reqMsg.(*protos.ReqFileStorageInfo)
+		_, _, fileHash, _, err := datamesh.ParseFileHandle(rmsg.FileIndexes.FilePath)
 		if err != nil {
 			return
 		}
-		walletString := utils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, target.SequenceNumber, reqMsg.(*protos.ReqFileStorageInfo).ReqTime)
+		walletString := utils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, target.SequenceNumber, rmsg.ReqTime)
 		wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(walletString))
 		if err != nil {
 			return
 		}
-		reqMsg.(*protos.ReqFileStorageInfo).Signature.Signature = wsign
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, reqMsg.(*protos.ReqFileStorageInfo), header.ReqFileStorageInfo)
+		rmsg.Signature.Signature = wsign
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, rmsg, header.ReqFileStorageInfo)
 		return
 	}
 	pp.Logf(ctx, "get GetWalletOz RSP, the current ozone balance of %v = %v, %s, %v", target.GetWalletAddress(), target.GetWalletOz(), target.SequenceNumber, reqId)

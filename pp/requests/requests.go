@@ -12,8 +12,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
-	"github.com/stratosnet/sds/pp/p2pserver"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/stratosnet/sds/pp/p2pserver"
 
 	"github.com/cosmos/cosmos-sdk/types/bech32"
 
@@ -22,7 +23,6 @@ import (
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
@@ -107,16 +107,6 @@ func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize 
 		encryptionTag = utils.GetRandomString(8)
 	}
 
-	// verify file hash
-	var paths []string
-	for _, slice := range slices {
-		path := file.GetTmpSlicePath(fileHash, slice.SliceHash)
-		paths = append(paths, path)
-	}
-
-	if utils.CalcFileHashFromSlices(paths, encryptionTag) != fileHash {
-		return nil, errors.New("failed verifying file hash")
-	}
 	utils.Log("fileHash: ", fileHash)
 
 	file.SaveRemoteFileHash(fileHash, fileName, fileSize)
@@ -392,7 +382,7 @@ func ReqReportDownloadResultData(ctx context.Context, target *protos.RspDownload
 		if dlTask, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress); ok {
 			downloadTask := dlTask.(*task.DownloadTask)
 			utils.DebugLog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^downloadTask", downloadTask)
-			if sInfo, ok := downloadTask.SliceInfo[target.SliceInfo.SliceHash]; ok {
+			if sInfo, ok := downloadTask.GetSliceInfo(target.SliceInfo.SliceHash); ok {
 				repReq.SliceInfo = sInfo
 				repReq.SliceInfo.VisitResult = true
 			} else {
@@ -440,7 +430,7 @@ func ReqReportStreamResultData(ctx context.Context, target *protos.RspDownloadSl
 		if dlTask, ok := task.DownloadTaskMap.Load(target.FileHash + target.WalletAddress); ok {
 			downloadTask := dlTask.(*task.DownloadTask)
 			utils.DebugLog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^downloadTask", downloadTask)
-			if sInfo, ok := downloadTask.SliceInfo[target.SliceInfo.SliceHash]; ok {
+			if sInfo, ok := downloadTask.GetSliceInfo(target.SliceInfo.SliceHash); ok {
 				repReq.SliceInfo = sInfo
 				repReq.SliceInfo.VisitResult = true
 			} else {
@@ -485,11 +475,17 @@ func ReqRegisterNewPPData(ctx context.Context, walletAddr string, walletPubkey, 
 		Signature: wsig,
 		Type:      protos.SignatureType_WALLET,
 	}
+	var free uint64
+	if sysInfo.DiskSize > sysInfo.Used {
+		free = sysInfo.DiskSize - sysInfo.Used
+	} else {
+		free = 0
+	}
 	return &protos.ReqRegisterNewPP{
 		P2PAddress:     p2pserver.GetP2pServer(ctx).GetP2PAddress(),
 		Signature:      walletSign,
 		DiskSize:       sysInfo.DiskSize,
-		FreeDisk:       sysInfo.FreeDisk,
+		FreeDisk:       free,
 		MemorySize:     sysInfo.MemorySize,
 		OsAndVer:       sysInfo.OSInfo,
 		CpuInfo:        sysInfo.CPUInfo,
@@ -649,13 +645,12 @@ func RspGetHDInfoData(p2pAddress string) *protos.RspGetHDInfo {
 		WalletAddress: setting.WalletAddress,
 	}
 
-	diskStats, err := utils.GetDiskUsage(setting.Config.Home.StoragePath)
-	if err == nil {
-		diskStats.Total = setting.GetDiskSizeSoftCap(diskStats.Total)
-		rsp.DiskSize = int64(diskStats.Total)
-		rsp.DiskFree = int64(diskStats.Free)
+	total, used := utils.GetDiskUsage()
+	total = setting.GetDiskSizeSoftCap(total)
+	if total > used {
+		rsp.DiskSize = int64(total)
+		rsp.DiskFree = int64(total - used)
 	} else {
-		utils.ErrorLog("Can't fetch disk usage statistics", err)
 		rsp.DiskSize = INVALID_STAT
 		rsp.DiskFree = INVALID_STAT
 	}
@@ -774,11 +769,11 @@ func ReqNodeStatusData(p2pAddress string) *protos.ReqReportNodeStatus {
 
 	// Disk usage statistics
 	diskStat := &protos.DiskStat{}
-	info, err := utils.GetDiskUsage(setting.Config.Home.StoragePath)
+	total, used := utils.GetDiskUsage()
 	if err == nil {
-		diskStat.RootUsed = int64(info.Used)
-		info.Total = setting.GetDiskSizeSoftCap(info.Total)
-		diskStat.RootTotal = int64(info.Total)
+		diskStat.RootUsed = int64(used)
+		total = setting.GetDiskSizeSoftCap(total)
+		diskStat.RootTotal = int64(total)
 	} else {
 		utils.ErrorLog(
 			"Can't fetch disk usage statistics when reporting node status, this might cause score deduction", err)
@@ -866,7 +861,7 @@ func PPMsgHeader(dataLen uint32, msgType header.MsgType) header.MessageHead {
 
 func UnmarshalData(ctx context.Context, target interface{}) bool {
 	msgBuf := core.MessageFromContext(ctx)
-	pp.DebugLogf(ctx, "Received message type = %v msgBuf len = %v", reflect.TypeOf(target), len(msgBuf.MSGBody))
+	utils.DebugLogf("Received message type = %v msgBuf len = %v", reflect.TypeOf(target), len(msgBuf.MSGBody))
 	ret := UnmarshalMessageData(msgBuf.MSGBody, target)
 	if ret {
 		switch reflect.TypeOf(target) {

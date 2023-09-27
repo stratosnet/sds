@@ -184,7 +184,7 @@ func (api *terminalCmd) UpdateDeposit(ctx context.Context, param []string) (CmdR
 		return CmdResult{Msg: ""}, err
 	}
 
-	if len(param) < 3 {
+	if len(param) < 2 {
 		return CmdResult{Msg: ""}, errors.New("expecting at least 2 params. Input amount of depositDelta, fee amount, " +
 			"(optional) gas amount")
 	}
@@ -432,7 +432,7 @@ func (api *terminalCmd) Upload(ctx context.Context, param []string) (CmdResult, 
 		desiredTier = uint32(tier)
 	}
 
-	allowHigherTier := false
+	allowHigherTier := true
 	if len(param) > 3 {
 		allowHigherTierBool, err := strconv.ParseBool(param[3])
 		if err != nil {
@@ -474,7 +474,7 @@ func (api *terminalCmd) UploadStream(ctx context.Context, param []string) (CmdRe
 		desiredTier = uint32(tier)
 	}
 
-	allowHigherTier := false
+	allowHigherTier := true
 	if len(param) > 2 {
 		allowHigherTierBool, err := strconv.ParseBool(param[2])
 		if err != nil {
@@ -583,6 +583,11 @@ func (api *terminalCmd) Download(ctx context.Context, param []string) (CmdResult
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
 	core.RegisterReqId(ctx, task.LOCAL_REQID)
 	nowSec := time.Now().Unix()
+	if task.CheckDownloadTask(fileHash, setting.WalletAddress, task.LOCAL_REQID) {
+		return CmdResult{Msg: ""}, errors.New("* This file is being downloaded, please wait and try later")
+	}
+
+	file.StartLocalDownload(fileHash)
 	req := requests.ReqFileStorageInfoData(ctx, param[0], "", saveAs, setting.WalletAddress, setting.WalletPublicKey, nil, nil, nowSec)
 	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, task.LOCAL_REQID, req); err != nil {
 		return CmdResult{Msg: ""}, err
@@ -600,7 +605,7 @@ func (api *terminalCmd) DeleteFn(ctx context.Context, param []string) (CmdResult
 		fmt.Println("input file hash")
 		return CmdResult{}, errors.New("input file hash")
 	}
-	if !utils.ValidateHash(param[0], utils.SDS_CODEC) {
+	if !utils.ValidateHash(param[0]) {
 		return CmdResult{}, errors.New("input correct file hash")
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
@@ -684,7 +689,7 @@ func (api *terminalCmd) SharePath(ctx context.Context, param []string) (CmdResul
 	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
 	nowSec := time.Now().Unix()
-	if !utils.ValidateHash(param[0], utils.SDS_CODEC) {
+	if !utils.ValidateHash(param[0]) {
 		return CmdResult{}, errors.New("input correct file hash")
 	}
 	fileHash := param[0]
@@ -710,7 +715,7 @@ func (api *terminalCmd) ShareFile(ctx context.Context, param []string) (CmdResul
 		return CmdResult{Msg: ""}, errors.New("input file hash or directory path, share duration(in seconds, 0 for default value), is_private (0:public,1:private)")
 	}
 	fileHash := param[0]
-	if !utils.ValidateHash(param[0], utils.SDS_CODEC) {
+	if !utils.ValidateHash(param[0]) {
 		return CmdResult{}, errors.New("input correct file hash")
 	}
 

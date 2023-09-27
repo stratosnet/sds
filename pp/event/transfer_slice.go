@@ -4,7 +4,9 @@ package event
 import (
 	"context"
 	"strconv"
+	"time"
 
+	"github.com/alex023/clock"
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
@@ -18,8 +20,12 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
+const CHECK_TRANFER_FAILURE_INTERVAL = 60 // in seconds
+
 var (
-	transferSliceSpamCheckMap = utils.NewAutoCleanMap(setting.SpamThresholdSliceOperations)
+	transferSliceSpamCheckMap  = utils.NewAutoCleanMap(setting.SpamThresholdSliceOperations)
+	reportTransferFailureClock = clock.NewClock()
+	reportTransferFailureJob   clock.Job
 )
 
 // NoticeFileSliceBackup An SP node wants this PP node to fetch the specified slice from the PP node who stores it.
@@ -54,7 +60,10 @@ func NoticeFileSliceBackup(ctx context.Context, conn core.WriteCloser) {
 		FileHash:           target.FileHash,
 		SliceNum:           target.SliceNumber,
 		ReceiverP2pAddress: target.ToP2PAddress,
+		SpP2pAddress:       target.SpP2PAddress,
 		TaskId:             target.TaskId,
+		AlreadySize:        uint64(0),
+		LastTouchTime:      time.Now().Unix(),
 	}
 	task.AddTransferTask(target.TaskId, target.SliceStorageInfo.SliceHash, tTask)
 
@@ -112,6 +121,9 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		FileHash:           noticeFileSliceBackup.FileHash,
 		SliceNum:           noticeFileSliceBackup.SliceNumber,
 		ReceiverP2pAddress: target.NewPp.P2PAddress,
+		SpP2pAddress:       noticeFileSliceBackup.SpP2PAddress,
+		AlreadySize:        uint64(0),
+		LastTouchTime:      time.Now().Unix(),
 	}
 	task.AddTransferTask(noticeFileSliceBackup.TaskId, noticeFileSliceBackup.SliceStorageInfo.SliceHash, tTask)
 
@@ -143,6 +155,8 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 			noticeFileSliceBackup.SpP2PAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress(), uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 		dataStart += setting.MaxData
 		dataEnd += setting.MaxData
+		// add AlreadySize to transfer task
+		task.AddAlreadySizeToTransferTask(noticeFileSliceBackup.TaskId, sliceHash, uint64(len(data)))
 	}
 }
 
@@ -163,7 +177,7 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 
 	err := task.SaveTransferData(&target)
 	if err != nil {
-		utils.ErrorLog("failed saving transfer data", err.Error())
+		utils.ErrorLog("saving transfer data", err.Error())
 		return
 	}
 	// All data has been received
@@ -280,5 +294,38 @@ func setWriteHookForRspTransferSlice(conn core.WriteCloser) {
 		var hooks []cf.WriteHook
 		hooks = append(hooks, hookBackup)
 		conn.SetWriteHook(hooks)
+	}
+}
+
+func StartReportTransferFailureJob(ctx context.Context) {
+	utils.Log("Starting ReportTransferFailureJob......")
+	reportTransferFailureJob, _ = reportTransferFailureClock.AddJobRepeat(CHECK_TRANFER_FAILURE_INTERVAL*time.Second, 0, CheckTransferTimeout(ctx))
+}
+
+func StopReportTransferFailureJob() {
+	if reportTransferFailureJob != nil {
+		utils.Log("Stopping ReportTransferFailureJob......")
+		reportTransferFailureJob.Cancel()
+	}
+}
+
+func CheckTransferTimeout(ctx context.Context) func() {
+	return func() {
+		timeoutTaskUIDs := task.GetTimeoutTransfer()
+		sendTransferFailureReportToSP(ctx, timeoutTaskUIDs)
+	}
+}
+
+func sendTransferFailureReportToSP(ctx context.Context, taskSliceUIDs []string) {
+	for _, taskSliceUID := range taskSliceUIDs {
+		tTask, ok := task.GetTransferTaskByTaskSliceUID(taskSliceUID)
+		if !ok {
+			continue
+		}
+		utils.DebugLogf("--- reporting backup failure for task[%v]-sliceHash[%v] to sp[%v], isReceiver=%v",
+			tTask.TaskId, tTask.SliceStorageInfo.SliceHash, tTask.SpP2pAddress, tTask.IsReceiver)
+		SendReportBackupSliceResult(ctx, tTask.TaskId, tTask.SliceStorageInfo.SliceHash, tTask.SpP2pAddress, false, false, 0)
+		// delete KV from maps
+		task.CleanTransferTaskByTaskSliceUID(taskSliceUID)
 	}
 }

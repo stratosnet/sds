@@ -290,7 +290,9 @@ func reqUploadMsg(filePath, hash, sn string) (*rpc_api.ParamReqUploadFile, error
 			Pubkey:    wpk,
 			Signature: hex.EncodeToString(sign),
 		},
-		ReqTime: nowSec,
+		ReqTime:         nowSec,
+		DesiredTier:     2,
+		AllowHigherTier: true,
 	}, nil
 }
 

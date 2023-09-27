@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg"
@@ -108,6 +109,7 @@ func (p *P2pServer) newClient(ctx context.Context, server string, heartbeat, rec
 		cf.LogOpenOption(true),
 		cf.MinAppVersionOption(setting.Config.Version.MinAppVer),
 		cf.P2pAddressOption(p.GetP2PAddress()),
+		cf.ServerIpOption(setting.NetworkIP),
 		serverPortOpt,
 		cf.ContextKVOption(ckv),
 	}
@@ -117,11 +119,11 @@ func (p *P2pServer) newClient(ctx context.Context, server string, heartbeat, rec
 	if spconn {
 		p.mainSpConn = conn
 	}
-	conn.Start()
 	p.clientMutex.Lock()
 	p.connMap[server] = conn
 	p.clientMutex.Unlock()
 
+	conn.Start()
 	return conn, nil
 }
 

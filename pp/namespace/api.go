@@ -463,6 +463,86 @@ func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamRe
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
+	// if the file is being downloaded in an existing download session
+	var result *rpc_api.Result
+	reqId := uuid.New().String()
+	key := fileHash + reqId
+
+	// if there is already downloading session in progress, wait for the result
+	if task.CheckDownloadTask(fileHash, setting.WalletAddress, task.LOCAL_REQID) {
+		success := <-task.SubscribeDownloadResult(key)
+		task.UnsubscribeDownloadResult(key)
+		if !success {
+			return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+		}
+	}
+
+	// check if the file is already cached in download folder and if it's valid
+	err = file.CheckDownloadCache(fileHash)
+	if err != nil {
+		// rpc normal download initiate a local download
+		ctx = core.RegisterRemoteReqId(ctx, task.LOCAL_REQID)
+		req := requests.ReqFileStorageInfoData(ctx, param.FileHandle, "", "", wallet, wpk.Bytes(), wsig, nil, param.ReqTime)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
+		success := <-task.SubscribeDownloadResult(key)
+		task.UnsubscribeDownloadResult(key)
+		if !success {
+			return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+		}
+	}
+
+	// check the cached file again before send it to the client
+	err = file.CheckDownloadCache(fileHash)
+	if err != nil {
+		return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+	}
+
+	// initialize the cursor reading the file from the beginning
+	data, start, end, _ := file.ReadDownloadCachedData(fileHash, reqId)
+	if data == nil {
+		return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE}
+	}
+	result = &rpc_api.Result{
+		Return:      rpc_api.DOWNLOAD_OK,
+		OffsetStart: &start,
+		OffsetEnd:   &end,
+		FileName:    file.GetFileName(fileHash),
+		FileData:    b64.StdEncoding.EncodeToString(data),
+		ReqId:       reqId,
+	}
+
+	return *result
+}
+
+func (api *rpcPubApi) RequestVideoDownload(ctx context.Context, param rpc_api.ParamReqDownloadFile) rpc_api.Result {
+	metrics.RpcReqCount.WithLabelValues("RequestDownload").Inc()
+	_, _, fileHash, _, err := datamesh.ParseFileHandle(param.FileHandle)
+	if err != nil {
+		return rpc_api.Result{Return: rpc_api.WRONG_INPUT}
+	}
+
+	metrics.UploadPerformanceLogNow(fileHash + ":RCV_REQ_DOWNLOAD_CLIENT")
+	wallet := param.Signature.Address
+	pubkey := param.Signature.Pubkey
+	signature := param.Signature.Signature
+
+	// wallet pubkey and wallet signature will be carried in sds messages in []byte format
+	wpk, err := utiltypes.WalletPubkeyFromBech(pubkey)
+	if err != nil {
+		utils.ErrorLog("wrong wallet pubkey")
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+	wsig, err := hex.DecodeString(signature)
+	if err != nil {
+		utils.ErrorLog("wrong signature")
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
+	// verify if wallet and public key match
+	if utiltypes.VerifyWalletAddrBytes(wpk.Bytes(), wallet) != 0 {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
 	reqId := uuid.New().String()
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
 	// request for downloading file
@@ -546,28 +626,27 @@ func (api *rpcPubApi) RequestDownloadSliceData(ctx context.Context, param rpc_ap
 }
 
 func (api *rpcPubApi) DownloadData(ctx context.Context, param rpc_api.ParamDownloadData) rpc_api.Result {
-	key := param.FileHash + param.ReqId
 
-	// previous piece was done, tell the caller of remote file driver to move on
-	file.SetDownloadSliceDone(key)
-
-	// wait for result: DOWNLOAD_OK or DL_OK_ASK_INFO
-	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
-	defer cancel()
+	// download from the cached file
 	var result *rpc_api.Result
-
-	select {
-	case <-ctx.Done():
-		file.CleanFileHash(key)
-		result = &rpc_api.Result{Return: rpc_api.TIME_OUT}
-	// told application that last piece has been done, wait here for the next piece or other event and send this back to rpc client
-	case result = <-file.SubscribeRemoteFileEvent(key):
-		file.UnsubscribeRemoteFileEvent(key)
-		if result == nil || !(result.Return == rpc_api.DOWNLOAD_OK || result.Return == rpc_api.DL_OK_ASK_INFO) {
-			file.CleanFileHash(key)
+	data, start, end, finished := file.ReadDownloadCachedData(param.FileHash, param.ReqId)
+	if finished {
+		result = &rpc_api.Result{
+			Return: rpc_api.DL_OK_ASK_INFO,
 		}
-		if result != nil {
-			result.FileName = ""
+		return *result
+	}
+	if data != nil {
+		result = &rpc_api.Result{
+			Return:      rpc_api.DOWNLOAD_OK,
+			OffsetStart: &start,
+			OffsetEnd:   &end,
+			FileName:    file.GetFileName(param.FileHash),
+			FileData:    b64.StdEncoding.EncodeToString(data),
+		}
+	} else {
+		result = &rpc_api.Result{
+			Return: rpc_api.GENERIC_ERR,
 		}
 	}
 
@@ -576,31 +655,7 @@ func (api *rpcPubApi) DownloadData(ctx context.Context, param rpc_api.ParamDownl
 
 func (api *rpcPubApi) DownloadedFileInfo(ctx context.Context, param rpc_api.ParamDownloadFileInfo) rpc_api.Result {
 	metrics.RpcReqCount.WithLabelValues("DownloadedFileInfo").Inc()
-
-	fileSize := param.FileSize
-	key := param.FileHash + param.ReqId
-
-	// no matter what reason, this is the end of the session, clean everything related to tthe session
-	defer file.CleanFileHash(key)
-
-	file.SetRemoteFileInfo(key, fileSize)
-
-	// wait for result, SUCCESS or some failure
-	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
-	defer cancel()
-	var result *rpc_api.Result
-
-	select {
-	case <-ctx.Done():
-		file.CleanFileHash(key)
-		result = &rpc_api.Result{Return: rpc_api.TIME_OUT}
-	// the file info at the end has been sent to the application, wait to confirm the end of download process and send this
-	// back to rpc client.
-	case result = <-file.SubscribeRemoteFileEvent(key):
-		file.UnsubscribeRemoteFileEvent(key)
-	}
-
-	return *result
+	return rpc_api.Result{Return: rpc_api.SUCCESS}
 }
 
 func (api *rpcPubApi) RequestList(ctx context.Context, param rpc_api.ParamReqFileList) rpc_api.FileListResult {
@@ -644,8 +699,7 @@ func (api *rpcPubApi) RequestList(ctx context.Context, param rpc_api.ParamReqFil
 	}
 }
 
-func (api *rpcPubApi) RequestClearExpiredShareLinks(
-	ctx context.Context, param rpc_api.ParamReqClearExpiredShareLinks) rpc_api.ClearExpiredShareLinksResult {
+func (api *rpcPubApi) RequestClearExpiredShareLinks(ctx context.Context, param rpc_api.ParamReqClearExpiredShareLinks) rpc_api.ClearExpiredShareLinksResult {
 	metrics.RpcReqCount.WithLabelValues("RequestClearExpiredShareLinks").Inc()
 
 	reqId := uuid.New().String()
@@ -863,6 +917,88 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 }
 
 func (api *rpcPubApi) RequestDownloadShared(ctx context.Context, param rpc_api.ParamReqDownloadShared) rpc_api.Result {
+	// wallet pubkey and wallet signature will be carried in sds messages in []byte format
+	wpk, err := utiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
+	if err != nil {
+		utils.ErrorLog("wrong wallet pubkey")
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
+	// verify if wallet and public key match
+	if utiltypes.VerifyWalletAddrBytes(wpk.Bytes(), param.Signature.Address) != 0 {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
+	wsig, err := hex.DecodeString(param.Signature.Signature)
+	if err != nil {
+		utils.ErrorLog("wrong signature")
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
+	// file hash should be given in the result message
+	fileHash := param.FileHash
+	if fileHash == "" {
+		return rpc_api.Result{Return: rpc_api.WRONG_FILE_INFO}
+	}
+
+	file.SetSignature(param.FileHash+param.Signature.Address+param.ReqId, wsig)
+
+	// if the file is being downloaded in an existing download session
+	var result *rpc_api.Result
+	reqId := uuid.New().String()
+	key := fileHash + param.ReqId
+
+	// if there is already downloading session in progress, wait for the result
+	if task.CheckDownloadTask(fileHash, setting.WalletAddress, task.LOCAL_REQID) {
+		success := <-task.SubscribeDownloadResult(key)
+		task.UnsubscribeDownloadResult(key)
+		if !success {
+			return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+		}
+	}
+
+	// check if the file is already cached in download folder and if it's valid
+	err = file.CheckDownloadCache(fileHash)
+	if err != nil {
+		// rpc normal download initiate a local download
+		ctx = core.RegisterRemoteReqId(ctx, task.LOCAL_REQID)
+		filePath := event.GetFilePath(key)
+		if event.GetFilePath(key) == "" {
+			return rpc_api.Result{Return: rpc_api.INTERNAL_COMM_FAILURE}
+		}
+		req := requests.ReqFileStorageInfoData(ctx, filePath, "", "", param.Signature.Address, wpk.Bytes(), wsig, nil, param.ReqTime)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
+		success := <-task.SubscribeDownloadResult(key)
+		task.UnsubscribeDownloadResult(key)
+		if !success {
+			return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+		}
+	}
+
+	// check the cached file again before send it to the client
+	err = file.CheckDownloadCache(fileHash)
+	if err != nil {
+		return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+	}
+
+	// initialize the cursor reading the file from the beginning
+	data, start, end, _ := file.ReadDownloadCachedData(fileHash, reqId)
+	if data == nil {
+		return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE}
+	}
+	result = &rpc_api.Result{
+		Return:      rpc_api.DOWNLOAD_OK,
+		OffsetStart: &start,
+		OffsetEnd:   &end,
+		FileName:    file.GetFileName(fileHash),
+		FileData:    b64.StdEncoding.EncodeToString(data),
+		ReqId:       reqId,
+	}
+
+	return *result
+}
+
+func (api *rpcPubApi) RequestDownloadSharedVideo(ctx context.Context, param rpc_api.ParamReqDownloadShared) rpc_api.Result {
 	// wallet pubkey and wallet signature will be carried in sds messages in []byte format
 	wpk, err := utiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
 	if err != nil {

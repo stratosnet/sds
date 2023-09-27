@@ -2,10 +2,12 @@ package serv
 
 import (
 	"context"
-	"github.com/stratosnet/sds/utils/environment"
 	"strconv"
 
+	"github.com/stratosnet/sds/utils/environment"
+
 	"github.com/pkg/errors"
+
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/pp/account"
 	"github.com/stratosnet/sds/pp/api"
@@ -60,6 +62,11 @@ func (bs *BaseServer) Start() error {
 	}
 
 	err = bs.startClearTmpFileJob()
+	if err != nil {
+		return err
+	}
+
+	err = bs.startReportTransferFailureJob()
 	if err != nil {
 		return err
 	}
@@ -211,7 +218,6 @@ func (bs *BaseServer) startP2pServer() error {
 	bs.p2pServ.Start(ctx)
 	_, _ = bs.p2pServ.ConnectToSP(ctx) // Ignore error if we can't connect to any SPs
 	bs.ppNetwork.StartPP(ctx)
-	bs.ppNetwork.StartDataBufferPool()
 	return nil
 }
 
@@ -226,6 +232,14 @@ func (bs *BaseServer) startTrafficLog() error {
 func (bs *BaseServer) startClearTmpFileJob() error {
 	ctx := context.Background()
 	file.StartClearTmpFileJob(ctx)
+	return nil
+}
+
+func (bs *BaseServer) startReportTransferFailureJob() error {
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, types.P2P_SERVER_KEY, bs.p2pServ)
+	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
+	event.StartReportTransferFailureJob(ctx)
 	return nil
 }
 
@@ -269,5 +283,6 @@ func (bs *BaseServer) Stop() {
 	}
 	StopDumpTrafficLog()
 	file.StopClearTmpFileJob()
+	event.StopReportTransferFailureJob()
 	// TODO: stop IPC, TrafficLog, InternalApiServer, RestServer
 }
