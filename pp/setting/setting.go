@@ -235,7 +235,7 @@ func defaultConfig() *config {
 		Node: NodeConfig{
 			AutoStart:    true,
 			Debug:        false,
-			MaxDiskUsage: 1024 * 1024, // 1TB,
+			MaxDiskUsage: 8 * 1000 * 1000 * 1000 * 1000 / 1024 / 1024, // 8TB,
 			Connectivity: ConnectivityConfig{
 				SeedMetaNode: SPBaseInfo{
 					P2PAddress:     "",
