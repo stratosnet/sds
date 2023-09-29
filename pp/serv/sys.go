@@ -30,7 +30,7 @@ func dumpTrafficLog(ctx context.Context) func() {
 		v, _ := mem.VirtualMemory()
 		c, _ := cpu.Info()
 		cc, _ := cpu.Percent(time.Second, false)
-		t, u := utils.GetDiskUsage()
+		d, _ := utils.GetDiskUsage(setting.Config.Home.StoragePath)
 
 		//Memory
 		memTotal := v.Total
@@ -53,17 +53,11 @@ func dumpTrafficLog(ctx context.Context) func() {
 		cpuInfo := NewCpuInfo(cpuInfos, cpuUsedPercent)
 
 		//HD
-
-		hdTotal := setting.GetDiskSizeSoftCap(t)
-		hdUsed := u
-		hdFree := hdTotal - u
-		var hdUsedPercent float64
-		if t != 0 {
-			hdUsedPercent = float64(u) / float64(t)
-		} else {
-			hdUsedPercent = 0
-		}
-
+		d.Total = setting.GetDiskSizeSoftCap(d.Total)
+		hdTotal := d.Total
+		hdFree := d.Free
+		hdUsed := d.Used
+		hdUsedPercent := d.UsedPercent
 		hdInfo := NewHdInfo(hdTotal, hdFree, hdUsed, hdUsedPercent)
 
 		//Traffic
@@ -142,9 +136,9 @@ func monitor(ctx context.Context) func() {
 		v, _ := mem.VirtualMemory()
 		c, _ := cpu.Info()
 		cc, _ := cpu.Percent(time.Second, false)
-		t, u := utils.GetDiskUsage()
+		d, _ := utils.GetDiskUsage(setting.Config.Home.StoragePath)
 
-		t = setting.GetDiskSizeSoftCap(t)
+		d.Total = setting.GetDiskSizeSoftCap(d.Total)
 		// n, _ := host.Info()
 		// nv, _ := net.IOCounters(true)
 		// boottime, _ := host.BootTime()
@@ -164,22 +158,10 @@ func monitor(ctx context.Context) func() {
 			utils.Logf("        CPU         : %v   %v cores ", modelname, cores)
 
 		}
-		var hdUsedPercent float64
-		if t != 0 {
-			hdUsedPercent = float64(u) / float64(t)
-		} else {
-			hdUsedPercent = 0
-		}
-		var f uint64
-		if t > u {
-			f = t - u
-		} else {
-			f = 0
-		}
 		utils.Logf("        CPU Used    : %f%% ", cc[0])
 		// utils.Logf("        Network     : %v bytes / %v bytes", nv[0].BytesRxecv, nv[0].BytesSent)
 		// utils.Logf("        SystemBoot:%v", btime)
-		utils.Logf("        HD          : %v GB  Free: %v GB Usage:%f%% Path:%s", t/1024/1024/1024, f/1024/1024/1024, hdUsedPercent, setting.GetRootPath())
+		utils.Logf("        HD          : %v GB  Free: %v GB Usage:%f%% Path:%s", d.Total/1024/1024/1024, d.Free/1024/1024/1024, d.UsedPercent, d.Path)
 		// utils.Logf("        OS        : %v(%v)   %v  ", n.Platform, n.PlatformFamily, n.PlatformVersion)
 		// utils.Logf("        Hostname  : %v  ", n.Hostname)
 		r := int64(0)
