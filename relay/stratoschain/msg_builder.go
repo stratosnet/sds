@@ -24,7 +24,7 @@ type Traffic struct {
 
 // Stratos-chain 'pot' module
 func BuildVolumeReportMsg(traffic []*Traffic, reporterAddress, reporterOwnerAddress []byte, epoch uint64,
-	reportReference string, blsTxDataHash, blsSignature []byte, blsPubKeys [][]byte) (sdktypes.Msg, []byte, error) {
+	reportReference string, blsTxDataHash, blsSignature []byte, blsPubKeys [][]byte, totalOzone *big.Int) (sdktypes.Msg, []byte, error) {
 	aggregatedVolume := make(map[string]uint64)
 	for _, trafficRecord := range traffic {
 		aggregatedVolume[trafficRecord.WalletAddress] += trafficRecord.Volume
@@ -50,7 +50,7 @@ func BuildVolumeReportMsg(traffic []*Traffic, reporterAddress, reporterOwnerAddr
 
 	blsSignatureInfo := pottypes.NewBLSSignatureInfo(blsPubKeys, blsSignature, blsTxDataHash)
 
-	volumeReportMsg := pottypes.NewMsgVolumeReport(nodesVolume, reporterAddress, sdktypes.NewIntFromUint64(epoch), reportReference, reporterOwnerAddress, blsSignatureInfo)
+	volumeReportMsg := pottypes.NewMsgVolumeReport(nodesVolume, reporterAddress, sdktypes.NewIntFromUint64(epoch), reportReference, reporterOwnerAddress, blsSignatureInfo, sdktypes.NewIntFromBigInt(totalOzone))
 	signBytes := volumeReportMsg.GetSignBytes()
 	return volumeReportMsg, signBytes, nil
 }
