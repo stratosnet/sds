@@ -61,7 +61,7 @@ func (p *Network) SpLatencyCheck(ctx context.Context) func() {
 		}
 
 		setting.SPMap.Range(func(k, v any) bool {
-			selectedSP := v.(*setting.SPBaseInfo)
+			selectedSP := v.(setting.SPBaseInfo)
 			server := selectedSP.NetworkAddress
 			utils.DebugLog("[SP_LATENCY_CHECK] SendSpLatencyCheck(", server, ", req, header.ReqSpLatencyCheck)")
 			var spConn *cf.ClientConn
