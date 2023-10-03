@@ -442,9 +442,8 @@ func (api *terminalCmd) Upload(ctx context.Context, param []string) (CmdResult, 
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
-	nowSec := time.Now().Unix()
 	event.RequestUploadFile(ctx, pathStr, isEncrypted, false, desiredTier, allowHigherTier,
-		setting.WalletAddress, setting.WalletPublicKey, nil, nowSec)
+		setting.WalletAddress, setting.WalletPublicKey, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -485,9 +484,8 @@ func (api *terminalCmd) UploadStream(ctx context.Context, param []string) (CmdRe
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
 	ctx = core.RegisterRemoteReqId(ctx, uuid.New().String())
-	nowSec := time.Now().Unix()
 	event.RequestUploadFile(ctx, pathStr, false, true, desiredTier, allowHigherTier,
-		setting.WalletAddress, setting.WalletPublicKey, nil, nowSec)
+		setting.WalletAddress, setting.WalletPublicKey, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
