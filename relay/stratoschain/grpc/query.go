@@ -2,6 +2,8 @@ package grpc
 
 import (
 	"context"
+	"fmt"
+
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -116,7 +118,12 @@ func QueryTxByHash(txHash string) (err error) {
 	if err != nil {
 		return err
 	}
-	utils.Logf("--- resp is %v", resp)
+
+	if resp == nil {
+		errMsg := fmt.Sprintf("QueryTxByHash returned nil response for transaction hash [%v]", txHash)
+		return errors.New(errMsg)
+	}
+	utils.Logf("--- resp is %v", *resp.TxResponse)
 	// skip non-successful tx
 	if resp.GetTxResponse().Code != 0 {
 		utils.ErrorLogf("Tx with hash[%v] failed: [%v]", txHash, resp.GetTxResponse().String())

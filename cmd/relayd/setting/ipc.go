@@ -61,9 +61,9 @@ func DefaultDataDir(homePath string) string {
 			if appdata == "" || isNonEmptyDir(fallback) {
 				return fallback
 			}
-			return filepath.Join(appdata, "Stratos_sds")
+			return filepath.Join(appdata, "Stratos_relay")
 		default:
-			return filepath.Join(home, ".stratos_sds")
+			return filepath.Join(home, ".stratos_relay")
 		}
 	}
 	// As we cannot guess a stable location, return empty and handle later

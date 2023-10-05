@@ -82,7 +82,7 @@ type config struct {
 }
 type ConnectivityConfig struct {
 	RpcPort       string `toml:"rpc_port" comment:"Port for the JSON-RPC api. See https://docs.thestratos.org/docs-resource-node/sds-rpc-for-file-operation/"`
-	AllowOwnerRpc bool   `toml:"allow_owner_rpc" comment:"Enable the node owner RPC API. This API can manipulate the node status and sign txs with the local wallet. Do not open this to the internet  Eg: false"`
+	AllowOwnerRpc bool   `toml:"allow_owner_rpc" comment:"Enable the node owner RPC API. Do not open this to the internet  Eg: false"`
 }
 
 type NodeConfig struct {
@@ -145,7 +145,7 @@ func defaultConfig() *config {
 		},
 		Version: Version{AppVer: APP_VER, MinAppVer: MIN_APP_VER, Show: VERSION},
 		Node: NodeConfig{Connectivity: ConnectivityConfig{
-			RpcPort:       "9095",
+			RpcPort:       "9880",
 			AllowOwnerRpc: true,
 		}},
 	}

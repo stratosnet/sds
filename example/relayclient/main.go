@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	DefaultUrl = "http://127.0.0.1:9881"
+	DefaultUrl      = "http://127.0.0.1:9880"
+	DefaultPassword = "aaa"
 )
 
 var (
@@ -139,6 +140,8 @@ func main() {
 	}
 
 	rootCmd.PersistentFlags().StringP("url", "u", DefaultUrl, "url to the RPC server, e.g. http://3.24.59.6:8235")
+	rootCmd.PersistentFlags().StringP("wallet", "w", "", "wallet address to be used, or path to the wallet key file (default: the first wallet in folder ./accounts/)")
+	rootCmd.PersistentFlags().StringP("password", "p", DefaultPassword, "the password of the wallet file")
 	rootCmd.PersistentFlags().StringP(common.Home, "r", workingDirectory, "path for the node")
 
 	syncCmd := &cobra.Command{
