@@ -16,7 +16,6 @@ import (
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
@@ -55,8 +54,7 @@ func init() {
 	cache = utils.NewAutoCleanMap(time.Minute)
 }
 
-func ProcessEvents(broadcastResponse sdktx.BroadcastTxResponse) map[string]coretypes.ResultEvent {
-	response := broadcastResponse.TxResponse
+func ProcessEvents(response sdktypes.TxResponse) map[string]coretypes.ResultEvent {
 	// Read the events from each msg in the log
 	var events []map[string]string
 	for _, msg := range response.Logs {
@@ -106,6 +104,7 @@ func ProcessEvents(broadcastResponse sdktx.BroadcastTxResponse) map[string]coret
 
 func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
+		utils.Logf("%+v", result)
 		requiredAttributes := GetEventAttributes(registertypes.EventTypeCreateResourceNode,
 			registertypes.AttributeKeyNetworkAddress,
 			registertypes.AttributeKeyPubKey,

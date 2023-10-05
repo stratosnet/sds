@@ -1,18 +1,19 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/stratosnet/sds/cmd/common"
 	"github.com/stratosnet/sds/cmd/relayd/setting"
 	"github.com/stratosnet/sds/relay/client"
+	"github.com/stratosnet/sds/relay/serv"
 	"github.com/stratosnet/sds/utils"
 )
 
 func startRunE(cmd *cobra.Command, _ []string) error {
-	spHomePath, err := cmd.Flags().GetString(common.SpHome)
+	spHomePath, err := cmd.Flags().GetString(serv.SpHome)
 	if err != nil {
 		utils.ErrorLog("failed to get 'sp-home' path for the relayd process")
 		return err
@@ -38,7 +39,13 @@ func startRunE(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	quit := common.GetQuitChannel()
+	err = serv.BaseServer.Start()
+	defer serv.BaseServer.Stop()
+	if err != nil {
+		return errors.New(utils.FormatError(err))
+	}
+
+	quit := serv.GetQuitChannel()
 
 	for {
 		select {
@@ -52,7 +59,7 @@ func startRunE(cmd *cobra.Command, _ []string) error {
 }
 
 func startPreRunE(cmd *cobra.Command, _ []string) error {
-	homePath, err := cmd.Flags().GetString(common.Home)
+	homePath, err := cmd.Flags().GetString(serv.Home)
 	if err != nil {
 		utils.ErrorLog("failed to get 'home' path for the relayd process")
 		return err
@@ -65,13 +72,13 @@ func startPreRunE(cmd *cobra.Command, _ []string) error {
 	setting.HomePath = homePath
 	_ = utils.NewDefaultLogger(filepath.Join(homePath, "tmp/logs/stdout.log"), true, true)
 
-	configPath, err := cmd.Flags().GetString(common.Config)
+	configPath, err := cmd.Flags().GetString(serv.Config)
 	if err != nil {
 		utils.ErrorLog("failed to get 'config' path for the relayd process")
 		return err
 	}
 	configPath = filepath.Join(homePath, configPath)
-
+	setting.SetIPCEndpoint(homePath)
 	err = setting.LoadConfig(configPath)
 	if err != nil {
 		utils.ErrorLog("Error loading the setting file", err)

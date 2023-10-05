@@ -78,6 +78,15 @@ type config struct {
 	SDS            sds                  `toml:"sds"`
 	StratosChain   stratoschain         `toml:"stratos_chain"`
 	Version        Version              `toml:"version"`
+	Node           NodeConfig           `toml:"node" comment:"Configuration of this node"`
+}
+type ConnectivityConfig struct {
+	RpcPort       string `toml:"rpc_port" comment:"Port for the JSON-RPC api. See https://docs.thestratos.org/docs-resource-node/sds-rpc-for-file-operation/"`
+	AllowOwnerRpc bool   `toml:"allow_owner_rpc" comment:"Enable the node owner RPC API. This API can manipulate the node status and sign txs with the local wallet. Do not open this to the internet  Eg: false"`
+}
+
+type NodeConfig struct {
+	Connectivity ConnectivityConfig `toml:"connectivity"`
 }
 
 func LoadConfig(path string) error {
@@ -135,6 +144,10 @@ func defaultConfig() *config {
 			},
 		},
 		Version: Version{AppVer: APP_VER, MinAppVer: MIN_APP_VER, Show: VERSION},
+		Node: NodeConfig{Connectivity: ConnectivityConfig{
+			RpcPort:       "9095",
+			AllowOwnerRpc: true,
+		}},
 	}
 }
 

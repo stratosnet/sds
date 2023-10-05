@@ -27,6 +27,7 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/relay/stratoschain/grpc"
 	"github.com/stratosnet/sds/rpc"
 	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/datamesh"
@@ -75,9 +76,15 @@ func RpcPubApi() *rpcPubApi {
 
 type rpcPrivApi struct {
 }
+type rpcPrivApiRelay struct {
+}
 
 func RpcPrivApi() *rpcPrivApi {
 	return &rpcPrivApi{}
+}
+
+func RpcPrivApiRelay() *rpcPrivApiRelay {
+	return &rpcPrivApiRelay{}
 }
 
 // apis returns the collection of built-in RPC APIs.
@@ -94,6 +101,17 @@ func Apis() []rpc.API {
 			Version:   "1.0",
 			Service:   RpcPubApi(),
 			Public:    true,
+		},
+	}
+}
+
+func RelayApis() []rpc.API {
+	return []rpc.API{
+		{
+			Namespace: "owner",
+			Version:   "1.0",
+			Service:   RpcPrivApiRelay(),
+			Public:    false,
 		},
 	}
 }
@@ -1388,4 +1406,17 @@ func (api *rpcPubApi) RequestServiceStatus(ctx context.Context, param rpc_api.Pa
 	msgStr := fmt.Sprintf("Registration Status: %v | Mining: %v ", regStatStr, onlineStatStr)
 	rpcResult.Message = msgStr
 	return *rpcResult
+}
+
+func (api *rpcPrivApiRelay) RequestSync(ctx context.Context, param rpc_api.ParamReqSync) rpc_api.SyncResult {
+	metrics.RpcReqCount.WithLabelValues("RequestSync").Inc()
+	txHash := param.TxHash
+
+	// verify if wallet and public key match
+	if len(txHash) == 0 {
+		return rpc_api.SyncResult{Return: rpc_api.WRONG_INPUT}
+	}
+
+	grpc.QueryTxByHash(txHash)
+	return rpc_api.SyncResult{Return: rpc_api.SUCCESS}
 }

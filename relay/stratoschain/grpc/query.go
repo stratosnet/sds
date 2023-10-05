@@ -2,14 +2,16 @@ package grpc
 
 import (
 	"context"
+	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/pkg/errors"
-	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
-
 	pptypes "github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/relay"
+	"github.com/stratosnet/sds/relay/stratoschain/handlers"
 	relaytypes "github.com/stratosnet/sds/relay/stratoschain/types"
+	"github.com/stratosnet/sds/utils"
+	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 )
 
 func QueryAccount(address string) (*authtypes.BaseAccount, error) {
@@ -97,6 +99,37 @@ func QueryMetaNode(p2pAddress string) (err error) {
 
 	if metaNode.Suspend {
 		return errors.New("")
+	}
+	return nil
+}
+
+func QueryTxByHash(txHash string) (err error) {
+	conn, err := CreateGrpcConn()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	client := sdktx.NewServiceClient(conn)
+	ctx := context.Background()
+	req := sdktx.GetTxRequest{Hash: txHash}
+	resp, err := client.GetTx(ctx, &req)
+	if err != nil {
+		return err
+	}
+	utils.Logf("--- resp is %v", resp)
+	// skip non-successful tx
+	if resp.GetTxResponse().Code != 0 {
+		utils.ErrorLogf("Tx with hash[%v] failed: [%v]", txHash, resp.GetTxResponse().String())
+		return nil
+	}
+	// process relayed events
+	events := handlers.ProcessEvents(*resp.TxResponse)
+	for msgType, event := range events {
+		if handler, ok := handlers.Handlers[msgType]; ok {
+			go handler(event)
+		} else {
+			utils.ErrorLogf("No handler for event type [%v]", msgType)
+		}
 	}
 	return nil
 }
