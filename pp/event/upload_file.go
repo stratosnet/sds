@@ -36,7 +36,7 @@ var (
 
 // RequestUploadFile request to SP for upload file
 func RequestUploadFile(ctx context.Context, path string, isEncrypted, isVideoStream bool, desiredTier uint32, allowHigherTier bool,
-	walletAddr string, walletPubkey, wsign []byte, reqTime int64) {
+	walletAddr string, walletPubkey, wsign []byte) {
 	pp.DebugLog(ctx, "______________path", path)
 	if !setting.CheckLogin() {
 		return
@@ -71,6 +71,7 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted, isVideoStr
 		return
 	}
 
+	reqTime := time.Now().Unix()
 	p := requests.RequestUploadFileData(ctx, fileInfo, slices, desiredTier, allowHigherTier, walletAddr, walletPubkey, wsign, reqTime)
 	if err = ReqGetWalletOzForUpload(ctx, setting.WalletAddress, task.LOCAL_REQID, p); err != nil {
 		pp.ErrorLog(ctx, err)
