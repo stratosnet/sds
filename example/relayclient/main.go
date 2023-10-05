@@ -10,18 +10,18 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/cmd/common"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/types"
 )
 
 const (
-	DefaultUrl      = "http://127.0.0.1:9880"
-	DefaultPassword = "aaa"
+	DefaultUrl = "http://127.0.0.1:9881"
+	//DefaultPassword = "aaa"
 )
 
 var (
-	WalletPrivateKey types.AccPrivKey
-	WalletPublicKey  types.AccPubKey
-	WalletAddress    string
+	//TODO wallet related features to be activated in the future (currently commented)
+	//WalletPrivateKey types.AccPrivKey
+	//WalletPublicKey  types.AccPubKey
+	//WalletAddress    string
 
 	Url string
 )
@@ -75,52 +75,52 @@ func rootPreRunE(cmd *cobra.Command, _ []string) error {
 		return errors.New(utils.FormatError(err))
 	}
 
-	walletArg, err := cmd.Flags().GetString("wallet")
+	_, err = cmd.Flags().GetString(common.Home) // homePath
 	if err != nil {
 		return errors.New(utils.FormatError(err))
 	}
 
-	password, err := cmd.Flags().GetString("password")
-	if err != nil {
-		return errors.New(utils.FormatError(err))
-	}
+	//walletArg, err := cmd.Flags().GetString("wallet")
+	//if err != nil {
+	//	return errors.New(utils.FormatError(err))
+	//}
+	//
+	//password, err := cmd.Flags().GetString("password")
+	//if err != nil {
+	//	return errors.New(utils.FormatError(err))
+	//}
 
-	homePath, err := cmd.Flags().GetString(common.Home)
-	if err != nil {
-		return errors.New(utils.FormatError(err))
-	}
-
-	walletFolder := filepath.Join(homePath, "accounts")
-	walletPath := walletArg
-	if isWalletFile(walletArg) {
-		walletPath = filepath.Join(walletFolder, walletArg)
-		if filepath.Ext(walletPath) == "" {
-			walletPath += ".json"
-		}
-	} else if walletArg == "" {
-		walletPath = findWalletFile(walletFolder)
-	}
-
-	if walletPath == "" {
-		return errors.New("couldn't locate wallet file")
-	}
-
-	keyjson, err := os.ReadFile(walletPath)
-	if err != nil {
-		return errors.New(utils.FormatError(err))
-	}
-
-	key, err := utils.DecryptKey(keyjson, password)
-	if err != nil {
-		return errors.New(utils.FormatError(err))
-	}
-
-	WalletAddress, err = key.Address.WalletAddressToBech()
-	if err != nil {
-		return errors.New(utils.FormatError(err))
-	}
-	WalletPrivateKey = types.BytesToAccPriveKey(key.PrivateKey)
-	WalletPublicKey = WalletPrivateKey.PubKeyFromPrivKey()
+	//walletFolder := filepath.Join(homePath, "accounts")
+	//walletPath := walletArg
+	//if isWalletFile(walletArg) {
+	//	walletPath = filepath.Join(walletFolder, walletArg)
+	//	if filepath.Ext(walletPath) == "" {
+	//		walletPath += ".json"
+	//	}
+	//} else if walletArg == "" {
+	//	walletPath = findWalletFile(walletFolder)
+	//}
+	//
+	//if walletPath == "" {
+	//	return errors.New("couldn't locate wallet file")
+	//}
+	//
+	//keyjson, err := os.ReadFile(walletPath)
+	//if err != nil {
+	//	return errors.New(utils.FormatError(err))
+	//}
+	//
+	//key, err := utils.DecryptKey(keyjson, password)
+	//if err != nil {
+	//	return errors.New(utils.FormatError(err))
+	//}
+	//
+	//WalletAddress, err = key.Address.WalletAddressToBech()
+	//if err != nil {
+	//	return errors.New(utils.FormatError(err))
+	//}
+	//WalletPrivateKey = types.BytesToAccPriveKey(key.PrivateKey)
+	//WalletPublicKey = WalletPrivateKey.PubKeyFromPrivKey()
 
 	return nil
 }
@@ -140,9 +140,9 @@ func main() {
 	}
 
 	rootCmd.PersistentFlags().StringP("url", "u", DefaultUrl, "url to the RPC server, e.g. http://3.24.59.6:8235")
-	rootCmd.PersistentFlags().StringP("wallet", "w", "", "wallet address to be used, or path to the wallet key file (default: the first wallet in folder ./accounts/)")
-	rootCmd.PersistentFlags().StringP("password", "p", DefaultPassword, "the password of the wallet file")
 	rootCmd.PersistentFlags().StringP(common.Home, "r", workingDirectory, "path for the node")
+	//rootCmd.PersistentFlags().StringP("wallet", "w", "", "wallet address to be used, or path to the wallet key file (default: the first wallet in folder ./accounts/)")
+	//rootCmd.PersistentFlags().StringP("password", "p", DefaultPassword, "the password of the wallet file")
 
 	syncCmd := &cobra.Command{
 		Use:   "sync",

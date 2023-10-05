@@ -145,7 +145,7 @@ func defaultConfig() *config {
 		},
 		Version: Version{AppVer: APP_VER, MinAppVer: MIN_APP_VER, Show: VERSION},
 		Node: NodeConfig{Connectivity: ConnectivityConfig{
-			RpcPort:       "9880",
+			RpcPort:       "9881",
 			AllowOwnerRpc: true,
 		}},
 	}
