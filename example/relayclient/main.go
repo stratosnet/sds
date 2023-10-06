@@ -18,7 +18,7 @@ const (
 )
 
 var (
-	//TODO wallet related features to be activated in the future (currently commented)
+	//TODO wallet related features to be activated in the future (currently commented out)
 	//WalletPrivateKey types.AccPrivKey
 	//WalletPublicKey  types.AccPubKey
 	//WalletAddress    string
