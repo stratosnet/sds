@@ -35,8 +35,3 @@ gas_adjustment = 2.0
 [keys]
 wallet_path = "config/st1a8ngk4tjvuxneyuvyuy9nvgehkpfa38hm8mp3x.json"
 wallet_password = "aaa"
-
-[node]
-[node.connectivity]
-rpc_port = "9881"
-allow_owner_rpc = true
