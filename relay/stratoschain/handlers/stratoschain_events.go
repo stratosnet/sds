@@ -104,7 +104,6 @@ func ProcessEvents(response sdktypes.TxResponse) map[string]coretypes.ResultEven
 
 func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		utils.Logf("%+v", result)
 		requiredAttributes := GetEventAttributes(registertypes.EventTypeCreateResourceNode,
 			registertypes.AttributeKeyNetworkAddress,
 			registertypes.AttributeKeyPubKey,
