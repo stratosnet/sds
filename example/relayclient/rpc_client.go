@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/spf13/cobra"
-	"github.com/stratosnet/sds/relay/rpc"
+	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/utils"
 )
 

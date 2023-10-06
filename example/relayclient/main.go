@@ -3,9 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/cmd/common"
@@ -34,38 +32,38 @@ type jsonrpcMessage struct {
 	Result  json.RawMessage `json:"result,omitempty"`
 }
 
-func isWalletFile(fileName string) bool {
-	match, _ := filepath.Match("st1*", fileName)
-	return match
-}
-
-func isWalletKeyPath(filePath string) bool {
-	fileInfo, err := os.Stat(filePath)
-	if err != nil {
-		return false
-	}
-
-	return !fileInfo.IsDir() && filepath.Ext(filePath) == ".json" && isWalletFile(fileInfo.Name())
-}
-
-func findWalletFile(folder string) string {
-	var walletPath string
-
-	_ = filepath.Walk(folder, func(path string, _ os.FileInfo, err error) error {
-		if err != nil {
-			fmt.Println(err)
-			return nil
-		}
-
-		if isWalletKeyPath(path) {
-			// only catch the first wallet file
-			walletPath = path
-			return nil
-		}
-		return nil
-	})
-	return walletPath
-}
+//func isWalletFile(fileName string) bool {
+//	match, _ := filepath.Match("st1*", fileName)
+//	return match
+//}
+//
+//func isWalletKeyPath(filePath string) bool {
+//	fileInfo, err := os.Stat(filePath)
+//	if err != nil {
+//		return false
+//	}
+//
+//	return !fileInfo.IsDir() && filepath.Ext(filePath) == ".json" && isWalletFile(fileInfo.Name())
+//}
+//
+//func findWalletFile(folder string) string {
+//	var walletPath string
+//
+//	_ = filepath.Walk(folder, func(path string, _ os.FileInfo, err error) error {
+//		if err != nil {
+//			fmt.Println(err)
+//			return nil
+//		}
+//
+//		if isWalletKeyPath(path) {
+//			// only catch the first wallet file
+//			walletPath = path
+//			return nil
+//		}
+//		return nil
+//	})
+//	return walletPath
+//}
 
 // rootPreRunE
 func rootPreRunE(cmd *cobra.Command, _ []string) error {

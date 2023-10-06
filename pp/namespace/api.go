@@ -1417,6 +1417,10 @@ func (api *rpcPrivApiRelay) RequestSync(ctx context.Context, param rpc_api.Param
 		return rpc_api.SyncResult{Return: rpc_api.WRONG_INPUT}
 	}
 
-	grpc.QueryTxByHash(txHash)
+	err := grpc.QueryTxByHash(txHash)
+	if err != nil {
+		utils.DebugLogf("error when calling grpc.QueryTxByHash for txHash[%v], reason: %v", txHash, err.Error())
+		return rpc_api.SyncResult{Return: rpc_api.GENERIC_ERR}
+	}
 	return rpc_api.SyncResult{Return: rpc_api.SUCCESS}
 }

@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/utils/environment"
 
 	"github.com/stratosnet/sds/cmd/relayd/setting"
@@ -28,7 +27,6 @@ var BaseServer = &BaseRelayServer{}
 
 // BaseServer base pp server
 type BaseRelayServer struct {
-	ppNetwork   *network.Network
 	ipcServ     *namespace.IpcServer
 	httpRpcServ *namespace.HttpServer
 }
