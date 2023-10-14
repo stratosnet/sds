@@ -95,6 +95,7 @@ func getIpfsCmd() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().StringP(ipfs.RpcModeFlag, "m", "ipc", "use http rpc or ipc")
+	cmd.PersistentFlags().String(ipfs.PasswordFlag, "", "wallet password")
 	cmd.PersistentFlags().StringP(ipfs.IpfsPortFlag, "p", "6798", "port")
 	cmd.PersistentFlags().StringP(ipfs.IpcEndpoint, "", "", "ipc endpoint path")
 	cmd.PersistentFlags().StringP(ipfs.HttpRpcUrl, "", ipfs.HttpRpcDefaultUrl, "http rpc url")
