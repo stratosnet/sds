@@ -57,6 +57,21 @@ func (r *Redis) Set(key string, value interface{}, expire time.Duration) error {
 	return errors.New("key or value is nil")
 }
 
+// Expire
+func (r *Redis) Expire(key string, expire time.Duration) error {
+
+	if key != "" {
+		err := r.Client.Expire(key, expire).Err()
+		if err != nil {
+			utils.FatalLogfAndExit(1, "failed to update expire to redis: %v", err)
+			return err
+		}
+		return nil
+	}
+
+	return errors.New("key or value is nil")
+}
+
 // Delete
 func (r *Redis) Delete(key string) error {
 
