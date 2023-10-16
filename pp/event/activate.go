@@ -112,7 +112,5 @@ func NoticeActivatedPP(ctx context.Context, conn core.WriteCloser) {
 
 	setting.State = types.PP_ACTIVE
 	network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_ACTIVATED)
-	utils.Log("This PP node is now active")
-
-	ReqStateChange(ctx, conn)
+	utils.Log("This PP node is now active, waiting for state change to be completed")
 }

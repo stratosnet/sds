@@ -25,7 +25,14 @@ func RspStateChange(ctx context.Context, conn core.WriteCloser) {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
-	if setting.Config.Node.AutoStart && target.UpdateState == uint32(protos.PPState_OFFLINE) {
-		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATE_OFFLINE)
+	if target.UpdateState != uint32(protos.PPState_OFFLINE) {
+		utils.Log("State change hasn't been completed")
+		return
 	}
+	if setting.Config.Node.AutoStart {
+		utils.Log("State change has been completed, will start registering automatically")
+		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATE_OFFLINE)
+		return
+	}
+	utils.Log("State change has been completed, please register you node manually")
 }
