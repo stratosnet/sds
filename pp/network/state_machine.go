@@ -92,10 +92,9 @@ func (n *Network) InitFsm() {
 
 		{STATE_NOT_CREATED, EVENT_RCV_RSP_REGISTER_NEW_PP, utils.TransitionItem{NewState: STATE_NOT_ACTIVATED}},
 
-		{STATE_NOT_ACTIVATED, EVENT_RCV_RSP_ACTIVATED, utils.TransitionItem{NewState: STATE_NOT_REGISTERED}},                           // auto-run is off
-		{STATE_NOT_ACTIVATED, EVENT_RCV_STATE_OFFLINE, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}}, // auto-run is on
-		//
-		//{STATE_NOT_REGISTERED, EVENT_RCV_STATE_OFFLINE, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}},
+		{STATE_NOT_ACTIVATED, EVENT_RCV_RSP_ACTIVATED, utils.TransitionItem{NewState: STATE_NOT_REGISTERED}},
+
+		{STATE_NOT_REGISTERED, EVENT_RCV_STATE_OFFLINE, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}},
 		{STATE_NOT_REGISTERED, EVENT_START_MINING, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}},
 
 		{STATE_REGISTERING, EVENT_RCV_RSP_FIRST_NODE_STATUS, utils.TransitionItem{NewState: STATE_REGISTERED}},
