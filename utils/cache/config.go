@@ -20,6 +20,7 @@ type Cache interface {
 	Get(key string, data interface{}) error
 	Delete(key string) error
 	Set(key string, value interface{}, expire time.Duration) error
+	Expire(key string, expire time.Duration) error
 	EnQueue(key string, value interface{}) error
 	DeQueue(key string) (interface{}, error)
 }
