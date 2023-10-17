@@ -7,17 +7,9 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/network"
-	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
-
-func ReqStateChange(ctx context.Context, conn core.WriteCloser) {
-	req := &protos.ReqStateChangePP{
-		P2PAddress: p2pserver.GetP2pServer(ctx).GetP2PAddress(),
-	}
-	_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, req, header.ReqStateChangePP)
-}
 
 func RspStateChange(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspStateChangePP
