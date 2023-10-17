@@ -4,17 +4,18 @@ import (
 	"context"
 
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/network"
+	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/utils"
 )
 
 func RspStateChange(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspStateChangePP
-	if err := VerifyMessage(ctx, header.RspStateChangePP, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
+	success := requests.UnmarshalData(ctx, &target)
+	if !success {
+		utils.ErrorLog("failed unmarshal the RspStateChangePP message")
 		return
 	}
 	if target.UpdateState != uint32(protos.PPState_OFFLINE) {
