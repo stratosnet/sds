@@ -271,6 +271,7 @@ func waitForUploadFinished(ctx context.Context, uploadTask *task.UploadFileTask)
 		}
 
 		if err := uploadTask.IsFatal(); err != nil {
+			utils.DebugLog("Fatal error")
 			return err
 		}
 

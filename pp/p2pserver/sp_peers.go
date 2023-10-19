@@ -230,7 +230,7 @@ func (p *P2pServer) ClearBufferedSpConns() {
 	p.bufferedSpConns = make([]*cf.ClientConn, 0)
 }
 
-func (p *P2pServer) setWriteHook(conn *cf.ClientConn, callback func(packetId, costTime int64)) {
+func (p *P2pServer) setWriteHook(conn *cf.ClientConn, callback core.WriteHookFunc) {
 	if conn != nil {
 		var hooks []cf.WriteHook
 		hook := cf.WriteHook{
@@ -242,7 +242,7 @@ func (p *P2pServer) setWriteHook(conn *cf.ClientConn, callback func(packetId, co
 	}
 }
 
-func (p *P2pServer) SendMessageByCachedConn(ctx context.Context, key string, netAddr string, pb proto.Message, cmd header.MsgType, fn func(packetId, costTime int64)) error {
+func (p *P2pServer) SendMessageByCachedConn(ctx context.Context, key string, netAddr string, pb proto.Message, cmd header.MsgType, fn core.WriteHookFunc) error {
 	// use the cached conn to send the message
 	if conn, ok := p.LoadConnFromCache(key); ok {
 		if fn != nil {
