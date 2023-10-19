@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/relay/stratoschain/grpc"
+	"github.com/stratosnet/sds/relay/stratoschain/handlers"
 	"github.com/stratosnet/sds/utils"
 )
 
@@ -30,11 +31,22 @@ func (api *relayCmd) Sync(ctx context.Context, param []string) (CmdResult, error
 		return CmdResult{Msg: ""}, errors.New("wrong number of arguments")
 	}
 	txHash := param[0]
-	err := grpc.QueryTxByHash(txHash)
+	txResponse, err := grpc.QueryTxByHash(txHash)
 	if err != nil {
 		errMsg := fmt.Sprintf("error when calling grpc.QueryTxByHash for txHash[%v], reason: %v", txHash, err.Error())
 		utils.DebugLogf(errMsg)
 		return CmdResult{Msg: ""}, errors.New(errMsg)
 	}
+
+	// process relayed events
+	events := handlers.ProcessEvents(*txResponse)
+	for msgType, event := range events {
+		if handler, ok := handlers.Handlers[msgType]; ok {
+			go handler(event)
+		} else {
+			utils.ErrorLogf("No handler for event type [%v]", msgType)
+		}
+	}
+
 	return CmdResult{Msg: DefaultMsg}, nil
 }
