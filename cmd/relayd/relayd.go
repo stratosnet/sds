@@ -3,7 +3,9 @@ package main
 import (
 	"errors"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/cmd/relayd/setting"
@@ -45,7 +47,13 @@ func startRunE(cmd *cobra.Command, _ []string) error {
 		return errors.New(utils.FormatError(err))
 	}
 
-	quit := serv.GetQuitChannel()
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit,
+		syscall.SIGTERM,
+		syscall.SIGINT,
+		syscall.SIGQUIT,
+		syscall.SIGHUP,
+	)
 
 	for {
 		select {

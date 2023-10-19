@@ -2,9 +2,6 @@ package serv
 
 import (
 	"context"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/stratosnet/sds/utils/environment"
 
@@ -61,16 +58,4 @@ func (bs *BaseRelayServer) Stop() {
 	if bs.ipcServ != nil {
 		_ = bs.ipcServ.Stop()
 	}
-}
-
-func GetQuitChannel() chan os.Signal {
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit,
-		syscall.SIGTERM,
-		syscall.SIGINT,
-		syscall.SIGQUIT,
-		syscall.SIGHUP,
-	)
-
-	return quit
 }
