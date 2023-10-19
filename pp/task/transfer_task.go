@@ -103,37 +103,39 @@ func GetTransferSliceData(taskId, sliceHash string) (int64, [][]byte) {
 	return 0, nil
 }
 
-func SaveTransferData(target *protos.RspTransferDownload) error {
-	if tTask, ok := GetTransferTask(target.TaskId, target.SliceHash); ok {
-		err := file.SaveSliceData(target.Data, tTask.SliceStorageInfo.SliceHash, target.Offset)
-		if err != nil {
-			return errors.Wrap(err, "failed saving slice data")
-		}
-		// sum up AlreadySize and update task info
-		tTask, ok = AddAlreadySizeToTransferTask(target.TaskId, target.SliceHash, uint64(len(target.Data)))
-		if !ok {
-			return errors.New("failed to update task")
-		}
-		sliceSize, err := file.GetSliceSize(tTask.SliceStorageInfo.SliceHash)
-		if err != nil {
-			return errors.Wrap(err, "failed getting slice size")
-		}
-		if uint64(sliceSize) < tTask.SliceStorageInfo.SliceSize || // check size of local file
-			tTask.AlreadySize < target.SliceSize { // AlreadySize < SliceSize
-			return errors.New("slice data saved, waiting for more data of this slice")
-		}
-		// check slice hash
-		sliceData, err := file.GetSliceData(tTask.SliceStorageInfo.SliceHash)
-		if err != nil {
-			return errors.Wrap(err, "Failed getting slice data")
-		}
-		if tTask.SliceStorageInfo.SliceHash != utils.CalcSliceHash(sliceData, tTask.FileHash, tTask.SliceNum) {
-			return errors.New("whole slice received, but slice hash doesn't match")
-		}
-		utils.DebugLogf("whole slice received, sliceHash=%v", tTask.SliceStorageInfo.SliceHash)
-		return nil
+func SaveTransferData(target *protos.RspTransferDownload) (bool, error) {
+	tTask, ok := GetTransferTask(target.TaskId, target.SliceHash)
+	if !ok {
+		return false, errors.New("failed getting transfer task")
 	}
-	return errors.New("failed getting transfer task")
+	err := file.SaveSliceData(target.Data, tTask.SliceStorageInfo.SliceHash, target.Offset)
+	if err != nil {
+		return false, errors.Wrap(err, "failed saving slice data")
+	}
+	// sum up AlreadySize and update task info
+	tTask, ok = AddAlreadySizeToTransferTask(target.TaskId, target.SliceHash, uint64(len(target.Data)))
+	if !ok {
+		return false, errors.New("failed to update task")
+	}
+	sliceSize, err := file.GetSliceSize(tTask.SliceStorageInfo.SliceHash)
+	if err != nil {
+		return false, errors.Wrap(err, "failed getting slice size")
+	}
+	if uint64(sliceSize) < tTask.SliceStorageInfo.SliceSize || // check size of local file
+		tTask.AlreadySize < target.SliceSize { // AlreadySize < SliceSize
+		return false, nil
+	}
+	// check slice hash
+	sliceData, err := file.GetSliceData(tTask.SliceStorageInfo.SliceHash)
+	if err != nil {
+		return false, errors.Wrap(err, "Failed getting slice data")
+	}
+	if tTask.SliceStorageInfo.SliceHash != utils.CalcSliceHash(sliceData, tTask.FileHash, tTask.SliceNum) {
+		return false, errors.New("whole slice received, but slice hash doesn't match")
+	}
+	utils.DebugLogf("whole slice received, sliceHash=%v", tTask.SliceStorageInfo.SliceHash)
+	return true, nil
+
 }
 
 func GetTimeoutTransfer() []string {

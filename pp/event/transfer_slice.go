@@ -175,9 +175,13 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	defer utils.ReleaseBuffer(target.Data)
 	totalCostTIme := DownRecvCostTimeMap.AddCostTime(target.TaskId+target.SliceHash, costTime)
 
-	err := task.SaveTransferData(&target)
+	completed, err := task.SaveTransferData(&target)
 	if err != nil {
 		utils.ErrorLog("saving transfer data", err.Error())
+		return
+	}
+	if !completed {
+		utils.DebugLogf("slice data saved, waiting for more data of this slice[%v]", target.SliceHash)
 		return
 	}
 	// All data has been received
