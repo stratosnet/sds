@@ -218,6 +218,10 @@ func splitSendDownloadSliceData(ctx context.Context, target *protos.ReqDownloadS
 	sliceTaskId := slice.TaskId
 
 	rsp, data = requests.RspDownloadSliceData(ctx, target, slice)
+	if rsp == nil && data == nil {
+		return
+	}
+
 	setWriteHookForRspDownloadSlice(conn)
 	if task.DownloadSliceTaskMap.HashKey(sliceTaskId + slice.SliceStorageInfo.SliceHash) {
 		rsp.Data = nil
