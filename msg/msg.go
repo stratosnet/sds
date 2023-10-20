@@ -44,6 +44,10 @@ func (r *RelayMsgBuf) PutIntoBuffer(msg *RelayMsgBuf) int {
 	return i
 }
 
+func (r *RelayMsgBuf) ReleaseAlloc() {
+	cmem.Free(r.Alloc)
+}
+
 func (r *RelayMsgBuf) GetHeader() []byte {
 	return r.MSGData[:header.MsgHeaderLen]
 }

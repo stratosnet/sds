@@ -305,9 +305,8 @@ func splitSendDownloadSliceData(ctx context.Context, target *protos.ReqDownloadS
 func prepareSendDownloadSliceData(ctx context.Context, rsp *protos.RspDownloadSlice, tkSliceUID string) (int64, context.Context) {
 	packetId, newCtx := p2pserver.CreateNewContextPacketId(ctx)
 	tkSlice := TaskSlice{
-		TkSliceUID:         tkSliceUID,
-		IsUpload:           false,
-		IsBackupOrTransfer: false,
+		TkSliceUID: tkSliceUID,
+		SliceType:  SliceDownload,
 	}
 	PacketIdMap.Store(packetId, tkSlice)
 	utils.DebugLogf("PacketIdMap.Store <==(%v, %v)", packetId, tkSlice)
