@@ -656,13 +656,13 @@ func HandleSendPacketCostTime(ctx context.Context, packetId, costTime int64, con
 		case SliceBackup, SliceTransfer:
 			sliceType = "Transfer/Backup"
 			// tell sp about the failure
-			if costTime > utils.WriteTimeOut {
+			if costTime > (time.Duration(utils.WriteTimeOut) * time.Second).Milliseconds() {
 				SendReportBackupSliceResult(ctx, tkSlice.TaskId, tkSlice.SliceHash, tkSlice.SpP2pAddress, false, tkSlice.OriginDeleted, costTime)
 			}
 			go handleBackupTransferSend(tkSlice, costTime)
 		}
 
-		if costTime > utils.WriteTimeOut {
+		if costTime > (time.Duration(utils.WriteTimeOut) * time.Second).Milliseconds() {
 			utils.DebugLog("Closing a slow connection during", sliceType)
 			go conn.Close()
 		}
