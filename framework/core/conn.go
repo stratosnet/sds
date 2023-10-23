@@ -16,7 +16,6 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/cmem"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/encryption"
 	"github.com/stratosnet/sds/utils/types"
@@ -37,7 +36,7 @@ type WriteCloser interface {
 
 type WriteHook struct {
 	MessageId uint8
-	Fn        func(packetId, costTime int64)
+	Fn        WriteHookFunc
 }
 
 var (
@@ -655,11 +654,13 @@ func (sc *ServerConn) writePacket(m *message.RelayMsgBuf) error {
 		PacketId: m.PacketId,
 	}
 	packet.PutIntoBuffer(m)
-	cmd := packet.MSGHead.Cmd
+	defer packet.ReleaseAlloc()
+
 	if len(m.MSGData) > 0 {
 		defer utils.ReleaseBuffer(m.MSGData)
 	}
 
+	cmd := packet.MSGHead.Cmd
 	// pack the header
 	if sc.encryptMessage {
 		key = sc.sharedKey
@@ -685,31 +686,24 @@ func (sc *ServerConn) writePacket(m *message.RelayMsgBuf) error {
 
 	writeStart := time.Now()
 	for i := 0; i < len(encodedData); i = i + n {
-		// Mylog(s.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
 		if len(encodedData)-i < 1024 {
 			onereadlen = len(encodedData) - i
-			// Mylog(s.opts.logOpen,"onereadlen:", onereadlen)
 		}
 		_ = sc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
 		n, err = sc.spbConn.Write(encodedData[i : i+onereadlen])
-		// Mylog(s.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
-		// Mylog(s.opts.logOpen,"i+onereadlen:", i+onereadlen)
-		sc.increaseWriteFlow(n)
 		if err != nil {
-			return errors.Wrap(err, "server write err")
-		} /*else {
-			Mylog(s.opts.logOpen,"i", i)
-		}*/
+			break
+		}
+		sc.increaseWriteFlow(n)
 	}
 	writeEnd := time.Now()
 	costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
 
 	for _, c := range sc.writeHook {
 		if cmd == c.MessageId && c.Fn != nil {
-			c.Fn(packet.PacketId, costTime)
+			c.Fn(sc.ctx, packet.PacketId, costTime, sc)
 		}
 	}
-	cmem.Free(packet.Alloc)
 	return nil
 }
 

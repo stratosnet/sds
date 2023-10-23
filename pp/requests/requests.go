@@ -202,6 +202,10 @@ func RequestDownloadFile(ctx context.Context, fileHash, sdmPath, walletAddr stri
 
 func RspDownloadSliceData(ctx context.Context, target *protos.ReqDownloadSlice, slice *protos.DownloadSliceInfo) (*protos.RspDownloadSlice, [][]byte) {
 	sliceData := task.GetDownloadSlice(target, slice)
+	if sliceData == nil {
+		utils.ErrorLog("failed get download slice from the file")
+		return nil, nil
+	}
 	return &protos.RspDownloadSlice{
 		P2PAddress:    target.P2PAddress,
 		WalletAddress: target.RspFileStorageInfo.WalletAddress,

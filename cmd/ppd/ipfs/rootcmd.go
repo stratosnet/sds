@@ -413,7 +413,7 @@ func readWalletKeys(wallet string) bool {
 		return false
 	}
 
-	key, err := utils.DecryptKey(keyjson, "aaa")
+	key, err := utils.DecryptKey(keyjson, WalletPassword)
 	if utils.CheckError(err) {
 		utils.ErrorLog("getPublicKey DecryptKey", err)
 		return false

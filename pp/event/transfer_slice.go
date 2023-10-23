@@ -137,9 +137,12 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	for _, data := range buffer {
 		packetId, newCtx := p2pserver.CreateNewContextPacketId(ctx)
 		tkSlice := TaskSlice{
-			TkSliceUID:         tkSliceUID,
-			IsUpload:           false,
-			IsBackupOrTransfer: true,
+			TkSliceUID:    tkSliceUID,
+			SliceType:     SliceTransfer,
+			TaskId:        noticeFileSliceBackup.TaskId,
+			SliceHash:     noticeFileSliceBackup.SliceStorageInfo.SliceHash,
+			SpP2pAddress:  noticeFileSliceBackup.SpP2PAddress,
+			OriginDeleted: false,
 		}
 		PacketIdMap.Store(packetId, tkSlice)
 		utils.DebugLogf("PacketIdMap.Store <==(%v, %v)", packetId, tkSlice)
@@ -175,9 +178,13 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	defer utils.ReleaseBuffer(target.Data)
 	totalCostTIme := DownRecvCostTimeMap.AddCostTime(target.TaskId+target.SliceHash, costTime)
 
-	err := task.SaveTransferData(&target)
+	completed, err := task.SaveTransferData(&target)
 	if err != nil {
 		utils.ErrorLog("saving transfer data", err.Error())
+		return
+	}
+	if !completed {
+		utils.DebugLogf("slice data saved, waiting for more data of this slice[%v]", target.SliceHash)
 		return
 	}
 	// All data has been received

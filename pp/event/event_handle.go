@@ -39,7 +39,6 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspRegister, RspRegister, SpRspVerifier)
 	registerEvent(header.RspActivatePP, RspActivate, SpRspVerifier)
 	registerEvent(header.RspUpdateDepositPP, RspUpdateDeposit, SpRspVerifier)
-	registerEvent(header.RspStateChangePP, RspStateChange, SpRspVerifier)
 	registerEvent(header.RspDeactivatePP, RspDeactivate, SpRspVerifier)
 	registerEvent(header.NoticeUnbondingPP, NoticeUnbondingPP, SpRspVerifier)
 	registerEvent(header.RspPrepay, RspPrepay, SpRspVerifier)
@@ -70,6 +69,7 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.NoticeActivatedPP, NoticeActivatedPP, SpAddressVerifier)
 	registerEvent(header.NoticeUpdatedDepositPP, NoticeUpdatedDeposit, SpAddressVerifier)
 	registerEvent(header.NoticeDeactivatedPP, NoticeDeactivatedPP, SpAddressVerifier)
+	registerEvent(header.RspStateChangePP, RspStateChange, SpAddressVerifier)
 
 	// pp--(*req*)--pp--(*rsp*)--pp
 	registerEvent(header.ReqUploadFileSlice, ReqUploadFileSlice, RspUploadFileWithNoReqIdVerifier)
