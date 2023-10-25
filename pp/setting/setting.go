@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/pelletier/go-toml"
 	"github.com/pkg/errors"
@@ -28,19 +29,49 @@ var (
 
 	ostype    = runtime.GOOS
 	IsWindows bool
+
+	meta_p2p    string
+	meta_pubkey string
+	meta_net    string
 )
 
+func init() {
+	meta_entry := []struct {
+		P2p    string
+		PubKey string
+		Net    string
+	}{
+		{"stsds1z96pm5ls0ff2y7y8adpy6r3l8jqeaud7envnqv",
+			"stsdspub1lf769k20k36e4gvnewcwdtfudzj95qk45d5f0p300jmr7e6y73zsdyh25y",
+			"34.82.40.37:8888",
+		},
+		{"stsds10kmygjv7e2t39f6jka6445q20e9lv4a7u3qex3",
+			"stsdspub1srn3qetarx3x6f2x9wqfv3nh2aufxv03ncl5v6jkmyg666scvz6s4xgprq",
+			"34.85.35.57:8888",
+		},
+		{"stsds1ypxg8sj5vn4s4v0w965g4r9g3pt3vlz6wyzx0f",
+			"stsdspub1y6exsr8snwz65ev3pzq6k3yfy2ku3kexqdd0en35dnr8mxc9w6sq5jg6lf",
+			"34.34.149.18:8888",
+		},
+	}
+	rand := time.Now().UnixMilli() % 3
+	meta_p2p = meta_entry[rand].P2p
+	meta_pubkey = meta_entry[rand].PubKey
+	meta_net = meta_entry[rand].Net
+
+}
+
 type VersionConfig struct {
-	AppVer    uint16 `toml:"app_ver" comment:"App version number. Eg: 9"`
-	MinAppVer uint16 `toml:"min_app_ver" comment:"Network connections from nodes below this version number will be rejected. Eg: 9"`
-	Show      string `toml:"show" comment:"Formatted version number. Eg: \"v0.9.0\""`
+	AppVer    uint16 `toml:"app_ver" comment:"App version number. Eg: 11"`
+	MinAppVer uint16 `toml:"min_app_ver" comment:"Network connections from nodes below this version number will be rejected. Eg: 11"`
+	Show      string `toml:"show" comment:"Formatted version number. Eg: \"v0.11.0\""`
 }
 
 type BlockchainConfig struct {
-	ChainId       string  `toml:"chain_id" comment:"ID of the chain Eg: \"tropos-5\""`
+	ChainId       string  `toml:"chain_id" comment:"ID of the chain Eg: \"stratos-1\""`
 	GasAdjustment float64 `toml:"gas_adjustment" comment:"Multiplier for the simulated tx gas cost Eg: 1.5"`
 	Insecure      bool    `toml:"insecure" comment:"Connect to the chain using an insecure connection (no TLS) Eg: true"`
-	GrpcServer    string  `toml:"grpc_server" comment:"Network address of the chain Eg: \"127.0.0.1:9090\""`
+	GrpcServer    string  `toml:"grpc_server" comment:"Network address of the chain grpc Eg: \"127.0.0.1:9090\""`
 }
 
 type HomeConfig struct {
@@ -70,7 +101,7 @@ type ConnectivityConfig struct {
 type NodeConfig struct {
 	AutoStart    bool               `toml:"auto_start" comment:"Should the node start mining automatically? Eg: true"` // TODO: review usage. Not actually used to start mining automatically
 	Debug        bool               `toml:"debug" comment:"Should debug info be printed out in logs? Eg: false"`
-	MaxDiskUsage uint64             `toml:"max_disk_usage" comment:"When not 0, limit disk usage to this amount (in megabytes) Eg: 1048576 (1 TB)"`
+	MaxDiskUsage uint64             `toml:"max_disk_usage" comment:"When not 0, limit disk usage to this amount (in megabytes) Eg: 7629394 = 8 * 1000 * 1000 * 1000 * 1000 / 1024 / 1024  (8TB) "`
 	Connectivity ConnectivityConfig `toml:"connectivity"`
 }
 
@@ -97,7 +128,7 @@ type StreamingConfig struct {
 type WebServerConfig struct {
 	Path           string `toml:"path" comment:"Location of the web server files Eg: \"./web\""`
 	Port           string `toml:"port" comment:"Port where the web server is hosted with sdsweb. If the port is opened and token_on_startup is true, anybody who loads the monitor UI will have full access to the monitor"`
-	TokenOnStartup bool   `toml:"token_on_startup" comment:"Automatically enter monitor token when opening the monitor UI. This should be false if the web_server port is opened"`
+	TokenOnStartup bool   `toml:"token_on_startup" comment:"Automatically enter monitor token when opening the monitor UI. This should be false if the web_server port is opened to internet and you don't want public access to your node monitor'"`
 }
 
 type config struct {
@@ -114,7 +145,6 @@ type config struct {
 
 func SetupRoot(root string) {
 	rootPath = root
-	utils.SetDiskMeasureFolder(root)
 }
 
 func GetRootPath() string {
@@ -215,10 +245,10 @@ func defaultConfig() *config {
 	return &config{
 		Version: VersionConfig{AppVer: AppVersion, MinAppVer: MinAppVersion, Show: Version},
 		Blockchain: BlockchainConfig{
-			ChainId:       "mesos-1",
-			GasAdjustment: 1.3,
-			Insecure:      true,
-			GrpcServer:    "127.0.0.1:9090",
+			ChainId:       "stratos-1",
+			GasAdjustment: 1.5,
+			Insecure:      false,
+			GrpcServer:    "grpc.thestratos.org:443",
 		},
 		Home: HomeConfig{
 			AccountsPath: "./accounts",
@@ -238,9 +268,9 @@ func defaultConfig() *config {
 			MaxDiskUsage: 8 * 1000 * 1000 * 1000 * 1000 / 1024 / 1024, // 8TB,
 			Connectivity: ConnectivityConfig{
 				SeedMetaNode: SPBaseInfo{
-					P2PAddress:     "",
-					P2PPublicKey:   "",
-					NetworkAddress: "127.0.0.1:8888",
+					P2PAddress:     meta_p2p,
+					P2PPublicKey:   meta_pubkey,
+					NetworkAddress: meta_net,
 				},
 				Internal:       false,
 				NetworkAddress: "127.0.0.1",

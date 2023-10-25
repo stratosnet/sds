@@ -14,9 +14,11 @@ func main() {
 	rootCmd := getRootCmd()
 	startCmd := getStartCmd()
 	configCmd := getGenConfigCmd()
+	syncCmd := getSyncCmd()
 
 	rootCmd.AddCommand(startCmd)
 	rootCmd.AddCommand(configCmd)
+	rootCmd.AddCommand(syncCmd)
 
 	err := rootCmd.Execute()
 	if err != nil {
@@ -81,4 +83,21 @@ func rootPreRunE(cmd *cobra.Command, _ []string) error {
 	setting.HomePath = homePath
 	_ = utils.NewDefaultLogger(filepath.Join(homePath, "tmp/logs/stdout.log"), true, true)
 	return nil
+}
+
+func getSyncCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "sync",
+		Short:   "sync stchain tx to sp",
+		RunE:    sync,
+		PreRunE: syncPreRunE,
+	}
+	dir, err := os.Getwd()
+	if err != nil {
+		utils.ErrorLog("failed to get working directory")
+		panic(err)
+	}
+
+	cmd.PersistentFlags().StringP(common.Home, "r", dir, "home path for the relayd process")
+	return cmd
 }

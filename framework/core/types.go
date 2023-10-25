@@ -1,5 +1,7 @@
 package core
 
+import "context"
+
 const (
 	// This is either a client creating a connection, or a temporary connection made for a handshake
 	// Read the first message from the connection. It should indicate what kind of connection it is
@@ -13,3 +15,5 @@ const (
 	EncryptionNonceSize  = 8
 	EncryptionLengthSize = 4
 )
+
+type WriteHookFunc func(ctx context.Context, packetId, costTime int64, conn WriteCloser)

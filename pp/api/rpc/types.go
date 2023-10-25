@@ -270,6 +270,14 @@ type SendResult struct {
 	Return string `json:"return"`
 }
 
+type ParamReqSync struct {
+	TxHash string `json:"tx_hash"`
+}
+
+type SyncResult struct {
+	Return string `json:"return"`
+}
+
 type Signature struct {
 	Address   string `json:"address"`
 	Pubkey    string `json:"pubkey"`
