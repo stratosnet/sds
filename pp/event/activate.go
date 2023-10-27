@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/msg/header"
@@ -31,8 +32,9 @@ func Activate(ctx context.Context, amount utiltypes.Coin, txFee utiltypes.TxFee)
 	case types.PP_ACTIVE:
 		pp.Log(ctx, "This node is already active on the blockchain. Waiting for SP node to confirm...")
 		activateReq = &protos.ReqActivatePP{
-			PpInfo:        p2pserver.GetP2pServer(ctx).GetPPInfo(),
-			AlreadyActive: true,
+			PpInfo:         p2pserver.GetP2pServer(ctx).GetPPInfo(),
+			AlreadyActive:  true,
+			InitialDeposit: utiltypes.NewCoin(utiltypes.Wei, sdktypes.NewIntFromBigInt(ppState.Tokens)).String(),
 		}
 	default:
 		activateReq, err = reqActivateData(ctx, amount, txFee)
