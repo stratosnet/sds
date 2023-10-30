@@ -96,7 +96,7 @@ func RspActivate(ctx context.Context, conn core.WriteCloser) {
 			pp.Log(ctx, "The activation transaction was broadcast")
 		}
 	case types.PP_ACTIVE:
-		pp.Log(ctx, "This node is already active")
+		pp.Log(ctx, "This node is already active, no need to re-activate it again")
 	case types.PP_UNBONDING:
 		pp.Log(ctx, "This node is unbonding")
 	}
