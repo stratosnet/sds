@@ -68,8 +68,8 @@ func GetTransferTaskByTaskSliceUID(taskSliceUID string) (tTask TransferTask, ok 
 }
 
 func AddAlreadySizeToTransferTask(taskId, sliceHash string, alreadySizeDelta uint64) (tTask TransferTask, ok bool) {
-	rwmutex.RLock()
-	defer rwmutex.RUnlock()
+	rwmutex.Lock()
+	defer rwmutex.Unlock()
 	tTask, ok = transferTaskMap[taskId+sliceHash]
 	if !ok {
 		return
