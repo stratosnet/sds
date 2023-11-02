@@ -58,8 +58,6 @@ func RspUpdateDeposit(ctx context.Context, conn core.WriteCloser) {
 	} else {
 		pp.Log(ctx, "The UpdateDeposit transaction was broadcast")
 	}
-
-	ReqStateChange(ctx, conn)
 }
 
 // NoticeUpdatedDeposit Notice when this PP node's deposit was successfully updated
@@ -88,4 +86,5 @@ func NoticeUpdatedDeposit(ctx context.Context, conn core.WriteCloser) {
 		pp.Log(ctx, "All tokens are being unbonded(taking around 180 days to complete)"+
 			"\n --- This node will be forced to suspend very soon! ---")
 	}
+	utils.Log("Waiting for state change to be completed")
 }

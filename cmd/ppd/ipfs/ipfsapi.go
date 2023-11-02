@@ -8,6 +8,7 @@ import (
 	cmds "github.com/ipfs/go-ipfs-cmds"
 	"github.com/ipfs/go-ipfs-cmds/cli"
 	"github.com/ipfs/go-ipfs-cmds/http"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/pp/ipfs"
 	"github.com/stratosnet/sds/pp/setting"
@@ -33,12 +34,14 @@ const (
 	IpfsPortFlag             = "port"
 	HttpRpcDefaultUrl        = "http://127.0.0.1:9301"
 	HOME              string = "home"
+	PasswordFlag             = "password"
 )
 
 var (
 	WalletPrivateKey types.AccPrivKey
 	WalletPublicKey  types.AccPubKey
 	WalletAddress    string
+	WalletPassword   string
 )
 
 func IpfsapiPreRunE(cmd *cobra.Command, args []string) error {
@@ -55,12 +58,18 @@ func Ipfsapi(cmd *cobra.Command, args []string) {
 	portParam, _ := cmd.Flags().GetString(IpfsPortFlag)
 	env := getCmdEnv(cmd)
 
+	password, err := cmd.Flags().GetString("password")
+	if err != nil {
+		panic(errors.New("failed to get password from the parameters"))
+	}
+	WalletPassword = password
+
 	config := http.NewServerConfig()
 	config.APIPath = "/api/v0"
 	h := http.NewHandler(env, RootCmd, config)
 
 	// create http rpc server
-	err := nethttp.ListenAndServe(":"+portParam, h)
+	err = nethttp.ListenAndServe(":"+portParam, h)
 	if err != nil {
 		panic(err)
 	}

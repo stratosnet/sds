@@ -17,7 +17,6 @@ import (
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/utils/cmem"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/encryption"
 	"github.com/stratosnet/sds/utils/types"
@@ -76,7 +75,7 @@ type ClientOption func(*options)
 
 type WriteHook struct {
 	MessageId uint8
-	Fn        func(packetId, costTime int64)
+	Fn        core.WriteHookFunc
 }
 
 type ClientConn struct {
@@ -838,7 +837,13 @@ func (cc *ClientConn) writePacket(m *msg.RelayMsgBuf) error {
 		MSGSign:  m.MSGSign,
 		PacketId: m.PacketId,
 	}
+
 	packet.PutIntoBuffer(m)
+	defer packet.ReleaseAlloc()
+
+	if len(m.MSGData) > 0 {
+		defer utils.ReleaseBuffer(m.MSGData)
+	}
 	cmd := packet.MSGHead.Cmd
 
 	var key []byte
@@ -867,19 +872,15 @@ func (cc *ClientConn) writePacket(m *msg.RelayMsgBuf) error {
 	}
 	writeStart := time.Now()
 	for i := 0; i < len(encodedData); i = i + n {
-		// Mylog(cc.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
 		if len(encodedData)-i < 1024 {
 			onereadlen = len(encodedData) - i
-			// Mylog(cc.opts.logOpen,"onereadlen:", onereadlen)
 		}
 		_ = cc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
 		n, err = cc.spbConn.Write(encodedData[i : i+onereadlen])
-		cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(n))
-		// Mylog(cc.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
-		// Mylog(cc.opts.logOpen,"i+onereadlen:", i+onereadlen)
 		if err != nil {
-			return errors.Wrap(err, "client write err")
+			break
 		}
+		cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(n))
 		if cmd == header.ReqUploadFileSlice.Id {
 			if maxUploadRate > 0 {
 				lr.SetRate(maxUploadRate)
@@ -891,13 +892,10 @@ func (cc *ClientConn) writePacket(m *msg.RelayMsgBuf) error {
 	costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
 	for _, c := range cc.writeHook {
 		if cmd == c.MessageId && c.Fn != nil {
-			c.Fn(packet.PacketId, costTime)
+			c.Fn(cc.ctx, packet.PacketId, costTime, cc)
 		}
 	}
-	cmem.Free(packet.Alloc)
-	if len(m.MSGData) > 0 {
-		utils.ReleaseBuffer(m.MSGData)
-	}
+
 	return nil
 }
 

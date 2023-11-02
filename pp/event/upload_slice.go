@@ -40,6 +40,14 @@ var (
 	backupSliceSpamCheckMap = utils.NewAutoCleanMap(setting.SpamThresholdSliceOperations)
 )
 
+const (
+	SliceInvalid  = 0
+	SliceUpload   = 1
+	SliceDownload = 2
+	SliceBackup   = 3
+	SliceTransfer = 4
+)
+
 type upSendCostTime struct {
 	dataMap *utils.AutoCleanUnsafeMap //map[string]*CostTimeStat // K: tkId+sliceNum, V: CostTimeStat{TotalCostTime, PacketCount}
 	mux     sync.Mutex
@@ -50,9 +58,13 @@ type upRecvCostTime struct {
 }
 
 type TaskSlice struct {
-	TkSliceUID         string
-	IsUpload           bool
-	IsBackupOrTransfer bool
+	TkSliceUID    string
+	SliceType     int32
+	fileHash      string
+	TaskId        string
+	SliceHash     string
+	SpP2pAddress  string
+	OriginDeleted bool
 }
 
 type CostTimeStat struct {
@@ -458,9 +470,9 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 	utils.DebugLog("reqID-"+taskId+" =========", strconv.FormatInt(core.GetReqIdFromContext(ctx), 10))
 	tkSliceUID := taskId + strconv.FormatUint(tk.SliceNumber, 10)
 	tkSlice := TaskSlice{
-		TkSliceUID:         tkSliceUID,
-		IsUpload:           true,
-		IsBackupOrTransfer: false,
+		TkSliceUID: tkSliceUID,
+		SliceType:  SliceUpload,
+		fileHash:   fileHash,
 	}
 	var ctStat = CostTimeStat{}
 
@@ -618,7 +630,7 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 	}
 }
 
-func HandleSendPacketCostTime(packetId, costTime int64) {
+func HandleSendPacketCostTime(ctx context.Context, packetId, costTime int64, conn core.WriteCloser) {
 	if packetId <= 0 || costTime <= 0 {
 		return
 	}
@@ -631,14 +643,28 @@ func HandleSendPacketCostTime(packetId, costTime int64) {
 		if len(tkSlice.TkSliceUID) > 0 {
 			PacketIdMap.Delete(packetId)
 		}
-		utils.DebugLogf("HandleSendPacketCostTime, packetId=%v, isUpload=%v, isBackupOrTransfer=%v, newReport.costTime=%v, ",
-			packetId, tkSlice.IsUpload, tkSlice.IsBackupOrTransfer, costTime)
-		if tkSlice.IsBackupOrTransfer {
-			go handleBackupTransferSend(tkSlice, costTime)
-		} else if tkSlice.IsUpload {
+		var sliceType string
+		switch tkSlice.SliceType {
+		case SliceInvalid:
+		case SliceUpload:
+			sliceType = "Upload"
 			go handleUploadSend(tkSlice, costTime)
-		} else {
+		case SliceDownload:
+			sliceType = "Download"
+			// a storage PP is on the write side. The failure is reported by the downloader.
 			go handleDownloadSend(tkSlice, costTime)
+		case SliceBackup, SliceTransfer:
+			sliceType = "Transfer/Backup"
+			// tell sp about the failure
+			if costTime > (time.Duration(utils.WriteTimeOut) * time.Second).Milliseconds() {
+				SendReportBackupSliceResult(ctx, tkSlice.TaskId, tkSlice.SliceHash, tkSlice.SpP2pAddress, false, tkSlice.OriginDeleted, costTime)
+			}
+			go handleBackupTransferSend(tkSlice, costTime)
+		}
+
+		if costTime > (time.Duration(utils.WriteTimeOut) * time.Second).Milliseconds() {
+			utils.DebugLog("Closing a slow connection during", sliceType)
+			go conn.Close()
 		}
 	}
 }
