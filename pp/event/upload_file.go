@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -190,10 +191,17 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	pp.Logf(ctx, "Backup status for file %s: the number of replica is %d", target.FileHash, target.Replicas)
+	pp.Logf(ctx, "Backup status for file %s: current_replica is %d, desired_replica is %d, ongoing_backups is %d, delete_origin is %v, need_reupload is %v",
+		target.FileHash, target.Replicas, target.DesiredReplicas, target.OngoingBackups,
+		strconv.FormatBool(target.DeleteOriginTmp), strconv.FormatBool(target.NeedReupload))
 	if target.DeleteOriginTmp {
 		pp.Logf(ctx, "Backup is finished for file %s, delete all the temporary slices", target.FileHash)
 		file.DeleteTmpFileSlices(ctx, target.FileHash)
+		return
+	}
+
+	if !target.NeedReupload {
+		pp.Logf(ctx, "No need to re-upload slices for the file  %s", target.FileHash)
 		return
 	}
 
@@ -201,7 +209,6 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 		ScheduleReqBackupStatus(ctx, target.FileHash)
 		return
 	}
-
 	pp.Logf(ctx, "Start re-uploading slices for the file  %s", target.FileHash)
 	totalSize := int64(0)
 	for _, slice := range target.Slices {
