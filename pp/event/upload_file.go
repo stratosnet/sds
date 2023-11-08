@@ -205,8 +205,13 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
+	if len(target.TaskId) == 0 {
+		pp.Logf(ctx, "No task Id assigned for re-upload file  %s", target.FileHash)
+		return
+	}
+
 	if len(target.Slices) == 0 {
-		ScheduleReqBackupStatus(ctx, target.FileHash)
+		pp.Logf(ctx, "Task Id assigned for re-uploading file %s, however, no available destination for the moment, please retry later", target.FileHash)
 		return
 	}
 	pp.Logf(ctx, "Start re-uploading slices for the file  %s", target.FileHash)
