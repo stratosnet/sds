@@ -466,7 +466,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 			return
 		default:
 			recvStart := time.Now().UnixMilli()
-			_ = spbConn.SetDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
+			_ = spbConn.SetReadDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
 			if listenHeader {
 				// listen to the header
 				headerBytes, n, err = Unpack(spbConn, key, utils.MessageBeatLen)
@@ -504,7 +504,6 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					if int(secondPartLen)-i < 1024 {
 						onereadlen = int(secondPartLen) - i
 					}
-					_ = spbConn.SetDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
 					n, err = io.ReadFull(spbConn, msgBuf[pos:pos+onereadlen])
 					pos += n
 					sc.increaseReadFlow(n)
@@ -672,7 +671,7 @@ func (sc *ServerConn) writePacket(m *message.RelayMsgBuf) error {
 		return errors.Wrap(err, "server cannot encrypt header")
 	}
 
-	_ = sc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
+	_ = sc.spbConn.SetWriteDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
 	if err = WriteFull(sc.spbConn, encodedHeader); err != nil {
 		return errors.Wrap(err, "server write err")
 	}
@@ -689,7 +688,6 @@ func (sc *ServerConn) writePacket(m *message.RelayMsgBuf) error {
 		if len(encodedData)-i < 1024 {
 			onereadlen = len(encodedData) - i
 		}
-		_ = sc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
 		n, err = sc.spbConn.Write(encodedData[i : i+onereadlen])
 		if err != nil {
 			break
