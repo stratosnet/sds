@@ -200,37 +200,12 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	if !target.NeedReupload {
-		pp.Logf(ctx, "No need to re-upload slices for the file  %s", target.FileHash)
+	if target.NeedReupload {
+		pp.Logf(ctx, "No available replicas remains the file %s, re-upload it if you still want to use it, "+
+			"please be kindly noted that you won't be charged for re-uploading this file", target.FileHash)
 		return
 	}
-
-	if len(target.TaskId) == 0 {
-		pp.Logf(ctx, "No task Id assigned for re-upload file  %s", target.FileHash)
-		return
-	}
-
-	if len(target.Slices) == 0 {
-		pp.Logf(ctx, "Task Id assigned for re-uploading file %s, however, no available destination for the moment, please retry later", target.FileHash)
-		return
-	}
-	pp.Logf(ctx, "Start re-uploading slices for the file  %s", target.FileHash)
-	totalSize := int64(0)
-	for _, slice := range target.Slices {
-		totalSize += int64(slice.GetSliceSize())
-	}
-	uploadTask := task.CreateBackupFileTask(target)
-	p2pserver.GetP2pServer(ctx).CleanUpConnMap("upload#" + target.FileHash)
-	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
-
-	p := &task.UploadProgress{
-		Total:     totalSize,
-		HasUpload: 0,
-	}
-	task.UploadProgressMap.Store(target.FileHash, p)
-
-	// Start uploading
-	startUploadingFileSlices(ctx, target.FileHash)
+	pp.Logf(ctx, "No need to re-upload slices for the file  %s", target.FileHash)
 }
 
 func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
