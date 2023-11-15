@@ -106,7 +106,7 @@ func GetTransferSliceData(taskId, sliceHash string) (int64, [][]byte) {
 func SaveTransferData(target *protos.RspTransferDownload) (bool, error) {
 	tTask, ok := GetTransferTask(target.TaskId, target.SliceHash)
 	if !ok {
-		return false, errors.New("failed getting transfer task")
+		return false, errors.Errorf("failed getting transfer task - task_id:%v  slice_hash:%v  uploader_p2p_addess:%v", target.TaskId, target.SliceHash, target.P2PAddress)
 	}
 	err := file.SaveSliceData(target.Data, tTask.SliceStorageInfo.SliceHash, target.Offset)
 	if err != nil {
