@@ -16,9 +16,9 @@ import (
 
 	"github.com/stratosnet/sds/relay/stratoschain/grpc"
 	relaytypes "github.com/stratosnet/sds/relay/types"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	utilsecp256k1 "github.com/stratosnet/sds/utils/crypto/secp256k1"
+	"github.com/stratosnet/sds/relay/utils"
+	"github.com/stratosnet/sds/relay/utils/crypto/ed25519"
+	utilsecp256k1 "github.com/stratosnet/sds/relay/utils/crypto/secp256k1"
 )
 
 func BuildTxBytes(protoConfig client.TxConfig, txBuilder client.TxBuilder, chainId string, unsignedMsgs []*relaytypes.UnsignedMsg) ([]byte, error) {

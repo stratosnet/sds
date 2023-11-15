@@ -4,16 +4,18 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/pkg/errors"
-	pptypes "github.com/stratosnet/sds/pp/types"
+
+	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
+
 	"github.com/stratosnet/sds/relay"
 	relaytypes "github.com/stratosnet/sds/relay/stratoschain/types"
-	"github.com/stratosnet/sds/utils"
-	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
+	"github.com/stratosnet/sds/relay/utils"
 )
 
 func QueryAccount(address string) (*authtypes.BaseAccount, error) {
@@ -44,7 +46,7 @@ func QueryAccount(address string) (*authtypes.BaseAccount, error) {
 
 func QueryResourceNodeState(p2pAddress string) (state relaytypes.ResourceNodeState, err error) {
 	state = relaytypes.ResourceNodeState{
-		IsActive:  pptypes.PP_INACTIVE,
+		IsActive:  relaytypes.PP_INACTIVE,
 		Suspended: true,
 	}
 	conn, err := CreateGrpcConn()
@@ -69,11 +71,11 @@ func QueryResourceNodeState(p2pAddress string) (state relaytypes.ResourceNodeSta
 	state.Suspended = resourceNode.Suspend
 	switch resourceNode.GetStatus() {
 	case stakingtypes.Bonded:
-		state.IsActive = pptypes.PP_ACTIVE
+		state.IsActive = relaytypes.PP_ACTIVE
 	case stakingtypes.Unbonding:
-		state.IsActive = pptypes.PP_UNBONDING
+		state.IsActive = relaytypes.PP_UNBONDING
 	case stakingtypes.Unbonded:
-		state.IsActive = pptypes.PP_INACTIVE
+		state.IsActive = relaytypes.PP_INACTIVE
 	}
 
 	state.Tokens = resourceNode.Tokens.BigInt()

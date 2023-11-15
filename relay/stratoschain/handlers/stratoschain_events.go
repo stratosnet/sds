@@ -12,7 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	coretypes "github.com/tendermint/tendermint/rpc/core/types"
+	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
@@ -22,12 +22,12 @@ import (
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
 
-	"github.com/stratosnet/sds/cmd/relayd/setting"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/relay/cmd/relayd/setting"
+	"github.com/stratosnet/sds/relay/msg/protos"
 	relayTypes "github.com/stratosnet/sds/relay/types"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto"
-	"github.com/stratosnet/sds/utils/crypto/ed25519"
+	"github.com/stratosnet/sds/relay/utils"
+	"github.com/stratosnet/sds/relay/utils/crypto"
+	"github.com/stratosnet/sds/relay/utils/crypto/ed25519"
 )
 
 var Handlers map[string]func(coretypes.ResultEvent)

@@ -7,11 +7,12 @@ import (
 	"sync"
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	"github.com/stratosnet/sds/cmd/relayd/setting"
+
+	"github.com/stratosnet/sds/relay/cmd/relayd/setting"
 	"github.com/stratosnet/sds/relay/stratoschain/grpc"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto/secp256k1"
-	"github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/sds/relay/utils"
+	"github.com/stratosnet/sds/relay/utils/crypto/secp256k1"
+	"github.com/stratosnet/sds/relay/utils/types"
 )
 
 type MultiClient struct {

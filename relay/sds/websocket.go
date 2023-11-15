@@ -1,9 +1,10 @@
 package sds
 
 import (
-	"github.com/gorilla/websocket"
-	"github.com/stratosnet/sds/utils"
 	"net/http"
+
+	"github.com/gorilla/websocket"
+	"github.com/stratosnet/sds/relay/utils"
 )
 
 const (

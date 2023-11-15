@@ -2,44 +2,42 @@ package types
 
 import (
 	"math/big"
-
-	"github.com/stratosnet/sds/msg/protos"
 )
 
 type ActivatedPPReq struct {
-	PPList []*protos.ReqActivatedPP `json:"pp_list"`
+	PPList []*ReqActivatedPP `json:"pp_list"`
 }
 
 type UpdatedDepositPPReq struct {
-	PPList []*protos.ReqUpdatedDepositPP `json:"pp_list"`
+	PPList []*ReqUpdatedDepositPP `json:"pp_list"`
 }
 
 type UnbondingPPReq struct {
-	PPList []*protos.ReqUnbondingPP `json:"pp_list"`
+	PPList []*ReqUnbondingPP `json:"pp_list"`
 }
 
 type UnbondingSPReq struct {
-	SPList []*protos.ReqUnbondingSP `json:"sp_list"`
+	SPList []*ReqUnbondingSP `json:"sp_list"`
 }
 
 type DeactivatedPPReq struct {
-	PPList []*protos.ReqDeactivatedPP `json:"pp_list"`
+	PPList []*ReqDeactivatedPP `json:"pp_list"`
 }
 
 type UpdatedDepositSPReq struct {
-	SPList []*protos.ReqUpdatedDepositSP `json:"sp_list"`
+	SPList []*ReqUpdatedDepositSP `json:"sp_list"`
 }
 
 type ActivatedSPReq struct {
-	SPList []*protos.ReqActivatedSP `json:"sp_list"`
+	SPList []*ReqActivatedSP `json:"sp_list"`
 }
 
 type PrepaidReq struct {
-	WalletList []*protos.ReqPrepaid `json:"wallet_list"`
+	WalletList []*ReqPrepaid `json:"wallet_list"`
 }
 
 type FileUploadedReq struct {
-	UploadList []*protos.Uploaded `json:"upload_list"`
+	UploadList []*Uploaded `json:"upload_list"`
 }
 
 type VolumeReportedReq struct {
@@ -70,6 +68,6 @@ type UpdatedEffectiveDepositPPReq struct {
 }
 
 type WithdrawnDepositSPReq struct {
-	SPList []*protos.ReqWithdrawnDepositSP `json:"sp_list"`
-	TxHash string                          `json:"tx_hash"`
+	SPList []*ReqWithdrawnDepositSP `json:"sp_list"`
+	TxHash string                   `json:"tx_hash"`
 }

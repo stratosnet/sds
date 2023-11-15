@@ -6,9 +6,9 @@ import (
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 
-	"github.com/stratosnet/sds/cmd/relayd/setting"
+	"github.com/stratosnet/sds/relay/cmd/relayd/setting"
 	"github.com/stratosnet/sds/relay/stratoschain/handlers"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/relay/utils"
 )
 
 func BroadcastTx(txBytes []byte, mode sdktx.BroadcastMode) error {

@@ -13,8 +13,8 @@ import (
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
 
-	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	utiltypes "github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/sds/relay/utils/crypto/ed25519"
+	utiltypes "github.com/stratosnet/sds/relay/utils/types"
 )
 
 type Traffic struct {

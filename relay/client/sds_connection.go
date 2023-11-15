@@ -7,22 +7,23 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/websocket"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	sdktypes "github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	"github.com/gorilla/websocket"
-	"github.com/stratosnet/sds/cmd/relayd/setting"
-	"github.com/stratosnet/sds/msg/protos"
+
 	"github.com/stratosnet/sds/relay"
+	"github.com/stratosnet/sds/relay/cmd/relayd/setting"
 	"github.com/stratosnet/sds/relay/sds"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/relay/stratoschain/grpc"
 	relaytypes "github.com/stratosnet/sds/relay/types"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/types"
-	"google.golang.org/protobuf/proto"
+	"github.com/stratosnet/sds/relay/utils"
+	"github.com/stratosnet/sds/relay/utils/types"
 )
 
 const (
@@ -162,7 +163,7 @@ func (s *sdsConnection) sdsEventsReaderLoop() {
 		}
 
 		utils.Log("received: " + string(data))
-		msg := protos.RelayMessage{}
+		msg := relaytypes.RelayMessage{}
 		err = proto.Unmarshal(data, &msg)
 		if err != nil {
 			utils.ErrorLog("couldn't unmarshal message to protos.RelayMessage", err)

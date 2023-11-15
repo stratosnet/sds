@@ -7,12 +7,14 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/cmd/relayd/setting"
+
+	tmHttp "github.com/cometbft/cometbft/rpc/client/http"
+	tmrpccoretypes "github.com/cometbft/cometbft/rpc/core/types"
+
+	"github.com/stratosnet/sds/relay/cmd/relayd/setting"
 	"github.com/stratosnet/sds/relay/stratoschain"
 	"github.com/stratosnet/sds/relay/stratoschain/handlers"
-	"github.com/stratosnet/sds/utils"
-	tmHttp "github.com/tendermint/tendermint/rpc/client/http"
-	coretypes "github.com/tendermint/tendermint/rpc/core/types"
+	"github.com/stratosnet/sds/relay/utils"
 )
 
 // stchainConnection is used to subscribe to stratos-chain events and receive messages via websocket
@@ -29,7 +31,7 @@ type stchainConnection struct {
 }
 
 type websocketSubscription struct {
-	channel <-chan coretypes.ResultEvent
+	channel <-chan tmrpccoretypes.ResultEvent
 	client  *tmHttp.HTTP
 	query   string
 }
@@ -140,7 +142,7 @@ func (s *stchainConnection) refresh() {
 	s.client.cancel() // Cancel global context
 }
 
-func (s *stchainConnection) stratosSubscriptionReaderLoop(subscription websocketSubscription, handler func(coretypes.ResultEvent)) {
+func (s *stchainConnection) stratosSubscriptionReaderLoop(subscription websocketSubscription, handler func(tmrpccoretypes.ResultEvent)) {
 	s.wg.Add(1)
 
 	defer func() {
