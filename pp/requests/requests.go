@@ -62,7 +62,7 @@ func ReqRegisterDataTR(ctx context.Context, target *protos.ReqRegister) *msg.Rel
 }
 
 func ReqMiningData(ctx context.Context) *protos.ReqMining {
-	return &protos.ReqMining{Address: p2pserver.GetP2pServer(ctx).GetPPInfo()}
+	return &protos.ReqMining{Address: p2pserver.GetP2pServer(ctx).GetPPInfo(), Version: setting.Version}
 }
 
 func ReqGetPPlistData(ctx context.Context) *protos.ReqGetPPList {
