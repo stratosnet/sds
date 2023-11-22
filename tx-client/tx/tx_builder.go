@@ -14,7 +14,7 @@ import (
 	txv1beta1 "cosmossdk.io/api/cosmos/tx/v1beta1"
 
 	"github.com/stratosnet/tx-client/crypto/ed25519"
-	"github.com/stratosnet/tx-client/crypto/ethsecp256k1"
+	"github.com/stratosnet/tx-client/crypto/secp256k1"
 	cryptotypes "github.com/stratosnet/tx-client/crypto/types"
 	"github.com/stratosnet/tx-client/grpc"
 	"github.com/stratosnet/tx-client/types"
@@ -113,7 +113,7 @@ func buildAndSignStdTx(txConfig TxConfig, unsignedTx *txv1beta1.Tx, chainId stri
 			}
 			privKey = &ed25519.PrivKey{Key: signatureKey.PrivateKey}
 		default:
-			privKey = &ethsecp256k1.PrivKey{Key: signatureKey.PrivateKey}
+			privKey = secp256k1.Generate(signatureKey.PrivateKey)
 		}
 		pubkey = privKey.PubKey()
 
@@ -152,7 +152,7 @@ func buildAndSignStdTx(txConfig TxConfig, unsignedTx *txv1beta1.Tx, chainId stri
 		case types.SignatureEd25519:
 			privKey = &ed25519.PrivKey{Key: signatureKey.PrivateKey}
 		default:
-			privKey = &ethsecp256k1.PrivKey{Key: signatureKey.PrivateKey}
+			privKey = secp256k1.Generate(signatureKey.PrivateKey)
 		}
 		sigV2, err := SignWithPrivKey(
 			txConfig.SignModeHandler().DefaultMode(), signerData,

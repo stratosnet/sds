@@ -1,8 +1,8 @@
 package types
 
 import (
-	tmcrypto "github.com/cometbft/cometbft/crypto"
 	"github.com/cosmos/gogoproto/proto"
+	tmcrypto "github.com/tendermint/tendermint/crypto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 

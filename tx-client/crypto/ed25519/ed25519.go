@@ -7,8 +7,8 @@ import (
 
 	"github.com/hdevalence/ed25519consensus"
 
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/crypto/tmhash"
 
 	cryptotypes "github.com/stratosnet/tx-client/crypto/types"
 )
