@@ -112,12 +112,14 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	// spam check
-	key := rspUploadFile.TaskId + strconv.FormatInt(int64(target.SliceNumber), 10) + strconv.FormatInt(int64(target.PieceOffset.SliceOffsetStart), 10)
+	key := rspUploadFile.TaskId + strconv.FormatInt(int64(target.SliceNumber), 10) +
+		strconv.FormatInt(int64(target.PieceOffset.SliceOffsetStart), 10) + target.P2PAddress +
+		strconv.FormatInt(rspUploadFile.TimeStamp, 10)
 	if _, ok := uploadSliceSpamCheckMap.Load(key); ok {
 		rsp := &protos.RspUploadFileSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
-				Msg:   "failed uploading file slice, re-upload",
+				Msg:   "repeated upload slice request, refused",
 			},
 		}
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspUploadFileSlice)
@@ -262,12 +264,13 @@ func ReqBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 	}
 	defer utils.ReleaseBuffer(target.Data)
 	// spam check
-	key := target.RspBackupFile.TaskId + strconv.FormatInt(int64(target.SliceNumber), 10)
+	key := target.RspBackupFile.TaskId + strconv.FormatInt(int64(target.SliceNumber), 10) + target.P2PAddress +
+		strconv.FormatInt(target.RspBackupFile.TimeStamp, 10)
 	if _, ok := backupSliceSpamCheckMap.Load(key); ok {
 		rsp := &protos.RspBackupFileSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
-				Msg:   "failed backing up file slice, re-backup",
+				Msg:   "repeated backup slice request, refused",
 			},
 		}
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspBackupFileSlice)
