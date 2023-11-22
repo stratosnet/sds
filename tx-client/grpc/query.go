@@ -3,50 +3,48 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"math/big"
+	"strconv"
 
 	"github.com/pkg/errors"
 
-	"github.com/cosmos/cosmos-sdk/types"
-	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	authv1beta1 "cosmossdk.io/api/cosmos/auth/v1beta1"
+	abciv1beta1 "cosmossdk.io/api/cosmos/base/abci/v1beta1"
+	stakingv1beta1 "cosmossdk.io/api/cosmos/staking/v1beta1"
+	txv1beta1 "cosmossdk.io/api/cosmos/tx/v1beta1"
 
-	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
-
-	"github.com/stratosnet/sds/relay"
-	relaytypes "github.com/stratosnet/sds/relay/stratoschain/types"
-	"github.com/stratosnet/sds/relay/utils"
+	registerv1 "github.com/stratosnet/stratos-chain/api/stratos/register/v1"
+	"github.com/stratosnet/tx-client/types"
+	"github.com/stratosnet/tx-client/utils"
 )
 
-func QueryAccount(address string) (*authtypes.BaseAccount, error) {
+func QueryAccount(address string) (*authv1beta1.BaseAccount, error) {
 	conn, err := CreateGrpcConn()
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
 
-	client := authtypes.NewQueryClient(conn)
+	client := authv1beta1.NewQueryClient(conn)
 	ctx := context.Background()
-	req := authtypes.QueryAccountRequest{Address: address}
+	req := authv1beta1.QueryAccountRequest{Address: address}
 
 	resp, err := client.Account(ctx, &req)
 	if err != nil {
 		return nil, err
 	}
 
-	err = resp.UnpackInterfaces(relay.ProtoCdc)
-	if err != nil {
+	account := &authv1beta1.BaseAccount{}
+	if err = resp.Account.UnmarshalTo(account); err != nil {
 		return nil, err
 	}
-	cachedAcc := resp.GetAccount().GetCachedValue()
-	account := cachedAcc.(*authtypes.BaseAccount)
 
 	return account, err
 }
 
-func QueryResourceNodeState(p2pAddress string) (state relaytypes.ResourceNodeState, err error) {
-	state = relaytypes.ResourceNodeState{
-		IsActive:  relaytypes.PP_INACTIVE,
+func QueryResourceNodeState(p2pAddress string) (state types.ResourceNodeState, err error) {
+	state = types.ResourceNodeState{
+		IsActive:  types.PP_INACTIVE,
 		Suspended: true,
 	}
 	conn, err := CreateGrpcConn()
@@ -55,9 +53,9 @@ func QueryResourceNodeState(p2pAddress string) (state relaytypes.ResourceNodeSta
 	}
 	defer conn.Close()
 
-	client := registertypes.NewQueryClient(conn)
+	client := registerv1.NewQueryClient(conn)
 	ctx := context.Background()
-	req := registertypes.QueryResourceNodeRequest{NetworkAddr: p2pAddress}
+	req := registerv1.QueryResourceNodeRequest{NetworkAddr: p2pAddress}
 	resp, err := client.ResourceNode(ctx, &req)
 	if err != nil {
 		return state, err
@@ -70,15 +68,19 @@ func QueryResourceNodeState(p2pAddress string) (state relaytypes.ResourceNodeSta
 
 	state.Suspended = resourceNode.Suspend
 	switch resourceNode.GetStatus() {
-	case stakingtypes.Bonded:
-		state.IsActive = relaytypes.PP_ACTIVE
-	case stakingtypes.Unbonding:
-		state.IsActive = relaytypes.PP_UNBONDING
-	case stakingtypes.Unbonded:
-		state.IsActive = relaytypes.PP_INACTIVE
+	case stakingv1beta1.BondStatus_BOND_STATUS_BONDED:
+		state.IsActive = types.PP_ACTIVE
+	case stakingv1beta1.BondStatus_BOND_STATUS_UNBONDING:
+		state.IsActive = types.PP_UNBONDING
+	case stakingv1beta1.BondStatus_BOND_STATUS_UNBONDED:
+		state.IsActive = types.PP_INACTIVE
 	}
 
-	state.Tokens = resourceNode.Tokens.BigInt()
+	tokenInt64, err := strconv.ParseInt(resourceNode.Tokens, 10, 64)
+	if err != nil {
+		return state, err
+	}
+	state.Tokens = big.NewInt(tokenInt64)
 	return state, nil
 }
 
@@ -88,9 +90,9 @@ func QueryMetaNode(p2pAddress string) (err error) {
 		return err
 	}
 	defer conn.Close()
-	client := registertypes.NewQueryClient(conn)
+	client := registerv1.NewQueryClient(conn)
 	ctx := context.Background()
-	req := registertypes.QueryMetaNodeRequest{NetworkAddr: p2pAddress}
+	req := registerv1.QueryMetaNodeRequest{NetworkAddr: p2pAddress}
 	resp, err := client.MetaNode(ctx, &req)
 	if err != nil {
 		return err
@@ -107,15 +109,15 @@ func QueryMetaNode(p2pAddress string) (err error) {
 	return nil
 }
 
-func QueryTxByHash(txHash string) (*types.TxResponse, error) {
+func QueryTxByHash(txHash string) (*abciv1beta1.TxResponse, error) {
 	conn, err := CreateGrpcConn()
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
-	client := sdktx.NewServiceClient(conn)
+	client := txv1beta1.NewServiceClient(conn)
 	ctx := context.Background()
-	req := sdktx.GetTxRequest{Hash: txHash}
+	req := txv1beta1.GetTxRequest{Hash: txHash}
 	resp, err := client.GetTx(ctx, &req)
 	if err != nil {
 		return nil, err
