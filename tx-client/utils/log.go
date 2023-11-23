@@ -2,12 +2,10 @@ package utils
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
-	"time"
 )
 
 // log level
@@ -20,11 +18,12 @@ const (
 	Fatal  LogLevel = 50
 )
 
+var (
+	level2String = make(map[LogLevel]string)
+	TxLogger     *CombinedLogger
+)
+
 type LogLevel int
-
-var level2String = make(map[LogLevel]string)
-
-var rpcLoggerMap = NewAutoCleanMap(60 * time.Minute) //termId/reqId, rpcLogger
 
 type Logger struct {
 	logger   *log.Logger
@@ -36,9 +35,6 @@ type CombinedLogger struct {
 	stdLogger  *Logger
 	fileLogger *Logger
 }
-
-var MyLogger *CombinedLogger
-var TrafficLogger *CombinedLogger
 
 func newLogger(logFilepath string, enableStd, enableFile bool) *CombinedLogger {
 	var outfile *os.File
@@ -82,62 +78,8 @@ func NewLogger(filepath string, enableStd, enableFile bool) *CombinedLogger {
 }
 
 func NewDefaultLogger(filepath string, enableStd, enableFile bool) *CombinedLogger {
-	MyLogger = newLogger(filepath, enableStd, enableFile)
-	return MyLogger
-}
-
-func NewTrafficLogger(filePath string, enableStd, enableFile bool) *CombinedLogger {
-	TrafficLogger = newLogger(filePath, enableStd, enableFile)
-	return TrafficLogger
-}
-
-// DumpTraffic Log calls default logger and output info log
-func DumpTraffic(v ...interface{}) {
-	//GetLogger().Log(Info, v...)
-	TrafficLogger.LogDepth(Info, 4, v...)
-}
-
-func GetLastLinesFromTrafficLog(path string, n uint64) []string {
-	file, err := os.Open(path)
-	if err != nil {
-		panic(err)
-	}
-	defer func() {
-		_ = file.Close()
-	}()
-
-	line := ""
-	var lines []string
-	var cursor int64 = 0
-	stat, _ := file.Stat()
-	filesize := stat.Size()
-	var i uint64
-	for i = 0; i < n; i++ {
-		line = ""
-		for {
-			cursor -= 1
-			_, _ = file.Seek(cursor, io.SeekEnd)
-
-			char := make([]byte, 1)
-			_, _ = file.Read(char)
-
-			if cursor != -1 && (char[0] == 10 || char[0] == 13) {
-				break
-			}
-
-			line = fmt.Sprintf("%s%s", string(char), line)
-
-			if cursor == -filesize {
-				break
-			}
-		}
-		lines = append(lines, line)
-		if cursor == -filesize {
-			break
-		}
-	}
-
-	return lines
+	TxLogger = newLogger(filepath, enableStd, enableFile)
+	return TxLogger
 }
 
 func init() {
@@ -231,69 +173,65 @@ func (l *CombinedLogger) ErrorLog(v ...interface{}) {
 	l.LogDepth(Error, 4, v...)
 }
 
-//func ClearRpcLogger() {
-//	RpcLoggerMap = NewAutoCleanMap(60 * time.Minute)
-//}
-
 // Log calls default logger and output info log
 func Log(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	MyLogger.LogDepth(Info, 4, v...)
+	TxLogger.LogDepth(Info, 4, v...)
 }
 
 func Logf(template string, v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	MyLogger.LogDepth(Info, 4, fmt.Sprintf(template, v...))
+	TxLogger.LogDepth(Info, 4, fmt.Sprintf(template, v...))
 }
 
 // ErrorLog call default logger and output error log
 func ErrorLog(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	MyLogger.LogDepth(Error, 4, v...)
+	TxLogger.LogDepth(Error, 4, v...)
 }
 
 func WarnLog(v ...interface{}) {
-	MyLogger.LogDepth(Warn, 4, v...)
+	TxLogger.LogDepth(Warn, 4, v...)
 }
 
 // ErrorLogf call default logger and output error log
 func ErrorLogf(template string, v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	MyLogger.LogDepth(Error, 4, fmt.Errorf(template, v...))
+	TxLogger.LogDepth(Error, 4, fmt.Errorf(template, v...))
 }
 
 // DebugLog calls default logger and output debug log
 func DebugLog(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	MyLogger.LogDepth(Debug, 4, v...)
+	TxLogger.LogDepth(Debug, 4, v...)
 }
 
 // DebugLog calls default logger and output debug log
 func DebugLogf(template string, v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	MyLogger.LogDepth(Debug, 4, fmt.Sprintf(template, v...))
+	TxLogger.LogDepth(Debug, 4, fmt.Sprintf(template, v...))
 }
 
 // DebugLog calls default logger and output debug log
 func DebugLogfWithCalldepth(calldepth int, template string, v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	MyLogger.LogDepth(Debug, calldepth, fmt.Sprintf(template, v...))
+	TxLogger.LogDepth(Debug, calldepth, fmt.Sprintf(template, v...))
 }
 
 // DetailLog calls default logger and output detail log
 func DetailLog(v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	MyLogger.LogDepth(Detail, 4, v...)
+	TxLogger.LogDepth(Detail, 4, v...)
 }
 
 // DetailLog calls default logger and output detail log
 func DetailLogf(template string, v ...interface{}) {
 	//GetLogger().Log(Info, v...)
-	MyLogger.LogDepth(Detail, 4, fmt.Sprintf(template, v...))
+	TxLogger.LogDepth(Detail, 4, fmt.Sprintf(template, v...))
 }
 
 func FatalLogfAndExit(exitCode int, template string, v ...interface{}) {
-	MyLogger.LogDepth(Fatal, 4, fmt.Sprintf(template, v...))
+	TxLogger.LogDepth(Fatal, 4, fmt.Sprintf(template, v...))
 	os.Exit(exitCode)
 }
 
@@ -304,64 +242,8 @@ func FatalLogfAndExit(exitCode int, template string, v ...interface{}) {
 func CheckError(err error) bool {
 	if err != nil {
 		// a fatal error , should be fatal and exit. If that is not the expected behavior, change this log
-		MyLogger.ErrorLog("Fatal error:", err.Error())
+		TxLogger.ErrorLog("Fatal error:", err.Error())
 		return true
 	}
 	return false
-}
-
-type LogMsg struct {
-	Msg string `json:"msg"`
-}
-
-func AddRpcLogger(w io.Writer, id string) {
-	logLevel := Debug
-	if MyLogger != nil && MyLogger.stdLogger != nil {
-		logLevel = MyLogger.stdLogger.logLevel
-	}
-
-	rpcLogger := &Logger{
-		logger:   log.New(w, "\r\n", log.Ldate|log.Ltime|log.Lshortfile),
-		enabled:  true,
-		logLevel: logLevel,
-	}
-	rpcLoggerMap.Store(id, rpcLogger)
-}
-
-func GetRpcLoggerByTerminalId(id string) *Logger {
-	if value, ok := rpcLoggerMap.Load(id); ok {
-		rpcLogger := value.(*Logger)
-		return rpcLogger
-	}
-	return nil
-}
-
-func RegisterReqToLogger(reqId int64, terminalId string) bool {
-	if logger := GetRpcLoggerByTerminalId(terminalId); logger != nil {
-		rpcLoggerMap.Store(reqId, logger)
-		return true
-	}
-	return false
-}
-
-func RegisterReqToParentReq(reqId, parentId int64) bool {
-	if logger := GetRpcLoggerByReqId(parentId); logger != nil {
-		rpcLoggerMap.Store(reqId, logger)
-		return true
-	}
-	return false
-}
-
-func GetRpcLoggerByReqId(id int64) *Logger {
-	if value, ok := rpcLoggerMap.Load(id); ok {
-		rpcLogger := value.(*Logger)
-		return rpcLogger
-	}
-	return nil
-}
-
-func DisableRpcLogger(id string) {
-	if logger := GetRpcLoggerByTerminalId(id); logger != nil {
-		logger.enabled = false
-	}
 }
