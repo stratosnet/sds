@@ -90,12 +90,13 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	noticeFileSliceBackup := target.NoticeFileSliceBackup
 
 	// spam check
-	key := noticeFileSliceBackup.TaskId + strconv.FormatInt(int64(noticeFileSliceBackup.SliceNumber), 10)
+	key := noticeFileSliceBackup.TaskId + strconv.FormatInt(int64(noticeFileSliceBackup.SliceNumber), 10) +
+		noticeFileSliceBackup.ToP2PAddress + strconv.FormatInt(noticeFileSliceBackup.TimeStamp, 10)
 	if _, ok := transferSliceSpamCheckMap.Load(key); ok {
 		rsp := &protos.RspTransferDownload{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
-				Msg:   "failed transferring file slice, re-transfer",
+				Msg:   "repeated transfer message, refused",
 			},
 		}
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspTransferDownload)
@@ -175,6 +176,14 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
+	if target.Result != nil && target.Result.State == protos.ResultState_RES_FAIL {
+		utils.ErrorLog("received failed transfer download,", target.Result.Msg)
+		return
+	}
+	if target.Data == nil {
+		utils.ErrorLog("no data contained in the message")
+		return
+	}
 	defer utils.ReleaseBuffer(target.Data)
 	totalCostTIme := DownRecvCostTimeMap.AddCostTime(target.TaskId+target.SliceHash, costTime)
 
@@ -187,7 +196,8 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		utils.DebugLogf("slice data saved, waiting for more data of this slice[%v]", target.SliceHash)
 		return
 	}
-	// All data has been received
+
+	// data is received
 	SendReportBackupSliceResult(ctx, target.TaskId, target.SliceHash, target.SpP2PAddress, true, false, totalCostTIme)
 	_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspTransferDownloadResultData(target.TaskId, target.SliceHash, target.SpP2PAddress), header.RspTransferDownloadResult)
 }
@@ -232,6 +242,7 @@ func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
 func SendReportBackupSliceResult(ctx context.Context, taskId, sliceHash, spP2pAddress string, result bool, originDeleted bool, costTime int64) {
 	tTask, ok := task.GetTransferTask(taskId, sliceHash)
 	if !ok {
+		utils.ErrorLog("Transfer/backup task is already removed.")
 		return
 	}
 	opponentP2PAddress := tTask.PpInfo.P2PAddress

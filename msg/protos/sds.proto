@@ -48,6 +48,7 @@ message RspRegister {
 
 message ReqMining {
   PPBaseInfo address = 1;
+  string version = 2;
 }
 
 message RspMining {
