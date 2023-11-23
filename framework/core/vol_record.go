@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/framework/utils"
 )
 
 type onStartLogFunc func(*Server)

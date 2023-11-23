@@ -5,7 +5,7 @@ import (
 	"runtime/debug"
 	"unsafe"
 
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/framework/utils"
 )
 
 type taskFunc func()
@@ -44,7 +44,7 @@ func makeTaskPool(count int) *TaskPool {
 	return &taskPool
 }
 
-//  make a task and start a go routine
+// make a task and start a go routine
 func makeTask(index int, size int, close chan struct{}) *task {
 	t := &task{
 		index:        index,

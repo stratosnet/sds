@@ -5,8 +5,10 @@ import (
 	"testing"
 
 	"github.com/magiconair/properties/assert"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/utils"
+
+	"github.com/stratosnet/sds-api/header"
+
+	"github.com/stratosnet/framework/utils"
 )
 
 const (

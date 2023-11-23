@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/stratosnet/sds/utils"
+
+	"github.com/stratosnet/framework/utils"
 )
 
 var RemoteReqIdMap = utils.NewAutoCleanMap(24 * time.Hour)

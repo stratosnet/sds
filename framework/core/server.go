@@ -9,11 +9,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/stratosnet/sds/metrics"
-
 	"github.com/alex023/clock"
-	"github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/utils"
+
+	"github.com/stratosnet/framework/metrics"
+	"github.com/stratosnet/framework/msg"
+	"github.com/stratosnet/framework/utils"
 )
 
 var (

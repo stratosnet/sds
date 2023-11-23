@@ -12,19 +12,20 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alex023/clock"
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	"github.com/stratosnet/sds/utils/encryption"
-	"github.com/stratosnet/sds/utils/types"
+
 	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
 
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds-api/header"
 
-	"github.com/alex023/clock"
+	"github.com/stratosnet/framework/core"
+	"github.com/stratosnet/framework/metrics"
+	"github.com/stratosnet/framework/msg"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/framework/utils/crypto/ed25519"
+	"github.com/stratosnet/framework/utils/encryption"
+	"github.com/stratosnet/framework/utils/types"
 )
 
 var (

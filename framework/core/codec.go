@@ -5,9 +5,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds-api/header"
+
+	"github.com/stratosnet/framework/msg"
+	"github.com/stratosnet/framework/utils"
 )
 
 type ctxkey string

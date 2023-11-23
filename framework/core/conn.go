@@ -11,16 +11,19 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/metrics"
-	message "github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	"github.com/stratosnet/sds/utils/encryption"
-	"github.com/stratosnet/sds/utils/types"
-	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
 	"google.golang.org/protobuf/proto"
+
+	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
+
+	"github.com/stratosnet/sds-api/header"
+	"github.com/stratosnet/sds-api/protos"
+
+	"github.com/stratosnet/framework/metrics"
+	message "github.com/stratosnet/framework/msg"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/framework/utils/crypto/ed25519"
+	"github.com/stratosnet/framework/utils/encryption"
+	"github.com/stratosnet/framework/utils/types"
 )
 
 type MsgHandler struct {
