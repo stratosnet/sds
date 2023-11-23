@@ -201,7 +201,7 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 	}
 
 	if target.NeedReupload {
-		pp.Logf(ctx, "No available replicas remains the file %s, re-upload it if you still want to use it, "+
+		pp.Logf(ctx, "No available replicas remains for the file %s, re-upload it if you still want to use it, "+
 			"please be kindly noted that you won't be charged for re-uploading this file", target.FileHash)
 		return
 	}
