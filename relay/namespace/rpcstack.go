@@ -14,8 +14,10 @@ import (
 	"sync/atomic"
 
 	"github.com/rs/cors"
-	"github.com/stratosnet/sds/relay/rpc"
-	"github.com/stratosnet/sds/relay/utils"
+
+	"github.com/stratosnet/framework/utils"
+
+	"github.com/stratosnet/relay/rpc"
 )
 
 // HttpConfig is the JSON-RPC/HTTP configuration.

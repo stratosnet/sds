@@ -3,7 +3,7 @@ package setting
 import (
 	"os"
 
-	"github.com/stratosnet/sds/relay/utils"
+	"github.com/stratosnet/framework/utils"
 )
 
 var Config *config

@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/stratosnet/sds/relay/rpc"
-	"github.com/stratosnet/sds/relay/utils"
+	"github.com/stratosnet/framework/utils"
+
+	"github.com/stratosnet/relay/rpc"
 )
 
 // StartHTTPEndpoint starts the HTTP RPC endpoint.

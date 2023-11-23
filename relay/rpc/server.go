@@ -7,7 +7,7 @@ import (
 
 	mapset "github.com/deckarep/golang-set"
 
-	"github.com/stratosnet/sds/relay/utils"
+	"github.com/stratosnet/framework/utils"
 )
 
 const MetadataApi = "rpc"

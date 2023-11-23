@@ -6,10 +6,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/stratosnet/sds/relay/cmd/relayd/setting"
-	"github.com/stratosnet/sds/relay/rpc"
-	"github.com/stratosnet/sds/relay/server"
-	"github.com/stratosnet/sds/relay/utils"
+	"github.com/stratosnet/framework/utils"
+
+	"github.com/stratosnet/relay/cmd/relayd/setting"
+	"github.com/stratosnet/relay/rpc"
+	"github.com/stratosnet/relay/server"
 )
 
 func sync(cmd *cobra.Command, args []string) error {

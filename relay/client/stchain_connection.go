@@ -8,13 +8,14 @@ import (
 
 	"github.com/pkg/errors"
 
-	tmHttp "github.com/cometbft/cometbft/rpc/client/http"
-	tmrpccoretypes "github.com/cometbft/cometbft/rpc/core/types"
+	tmHttp "github.com/tendermint/tendermint/rpc/client/http"
+	tmrpccoretypes "github.com/tendermint/tendermint/rpc/core/types"
 
-	"github.com/stratosnet/sds/relay/cmd/relayd/setting"
-	"github.com/stratosnet/sds/relay/stratoschain"
-	"github.com/stratosnet/sds/relay/stratoschain/handlers"
-	"github.com/stratosnet/sds/relay/utils"
+	"github.com/stratosnet/framework/utils"
+
+	"github.com/stratosnet/relay/cmd/relayd/setting"
+	"github.com/stratosnet/relay/stratoschain"
+	"github.com/stratosnet/relay/stratoschain/handlers"
 )
 
 // stchainConnection is used to subscribe to stratos-chain events and receive messages via websocket

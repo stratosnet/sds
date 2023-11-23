@@ -12,22 +12,21 @@ import (
 
 	"github.com/pkg/errors"
 
-	coretypes "github.com/cometbft/cometbft/rpc/core/types"
+	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	stakingTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	abciv1beta1 "cosmossdk.io/api/cosmos/base/abci/v1beta1"
+	stakingv1beta1 "cosmossdk.io/api/cosmos/staking/v1beta1"
 
-	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
-	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
-	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
+	"github.com/stratosnet/sds-api/protos"
 
-	"github.com/stratosnet/sds/relay/cmd/relayd/setting"
-	"github.com/stratosnet/sds/relay/msg/protos"
-	relayTypes "github.com/stratosnet/sds/relay/types"
-	"github.com/stratosnet/sds/relay/utils"
-	"github.com/stratosnet/sds/relay/utils/crypto"
-	"github.com/stratosnet/sds/relay/utils/crypto/ed25519"
+	"github.com/stratosnet/tx-client/crypto"
+	"github.com/stratosnet/tx-client/crypto/ed25519"
+	cryptotypes "github.com/stratosnet/tx-client/crypto/types"
+
+	"github.com/stratosnet/framework/utils"
+
+	"github.com/stratosnet/relay/cmd/relayd/setting"
+	relayTypes "github.com/stratosnet/relay/types"
 )
 
 var Handlers map[string]func(coretypes.ResultEvent)
@@ -54,14 +53,14 @@ func init() {
 	cache = utils.NewAutoCleanMap(time.Minute)
 }
 
-func ProcessEvents(response sdktypes.TxResponse) map[string]coretypes.ResultEvent {
+func ProcessEvents(response *abciv1beta1.TxResponse) map[string]coretypes.ResultEvent {
 	// Read the events from each msg in the log
 	var events []map[string]string
 	for _, msg := range response.Logs {
 		msgMap := make(map[string]string)
 		for _, stringEvent := range msg.Events {
 			for _, attrib := range stringEvent.Attributes {
-				msgMap[fmt.Sprintf("%v.%v", stringEvent.Type, attrib.Key)] = attrib.Value
+				msgMap[fmt.Sprintf("%v.%v", stringEvent.Type_, attrib.Key)] = attrib.Value
 			}
 		}
 		if len(msgMap) > 0 {
@@ -76,7 +75,7 @@ func ProcessEvents(response sdktypes.TxResponse) map[string]coretypes.ResultEven
 		currentMap := aggregatedEvents[typeStr]
 		if currentMap == nil {
 			currentMap = make(map[string][]string)
-			currentMap["tx.hash"] = []string{response.TxHash}
+			currentMap["tx.hash"] = []string{response.Txhash}
 		}
 
 		for key, value := range event {
@@ -104,11 +103,11 @@ func ProcessEvents(response sdktypes.TxResponse) map[string]coretypes.ResultEven
 
 func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		requiredAttributes := GetEventAttributes(registertypes.EventTypeCreateResourceNode,
-			registertypes.AttributeKeyNetworkAddress,
-			registertypes.AttributeKeyPubKey,
-			registertypes.AttributeKeyOZoneLimitChanges,
-			registertypes.AttributeKeyInitialDeposit,
+		requiredAttributes := GetEventAttributes(EventTypeCreateResourceNode,
+			AttributeKeyNetworkAddress,
+			AttributeKeyPubKey,
+			AttributeKeyOZoneLimitChanges,
+			AttributeKeyInitialDeposit,
 		)
 
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
@@ -121,18 +120,18 @@ func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 
 		req := &relayTypes.ActivatedPPReq{}
 		for _, event := range processedEvents {
-			p2pPubkey, err := processHexPubkey(event[GetEventAttribute(registertypes.EventTypeCreateResourceNode, registertypes.AttributeKeyPubKey)])
+			p2pPubKey, err := processHexPubkey(event[GetEventAttribute(EventTypeCreateResourceNode, AttributeKeyPubKey)])
 			if err != nil {
 				utils.ErrorLog(err)
 				continue
 			}
 
 			req.PPList = append(req.PPList, &protos.ReqActivatedPP{
-				P2PAddress:        event[GetEventAttribute(registertypes.EventTypeCreateResourceNode, registertypes.AttributeKeyNetworkAddress)],
-				P2PPubkey:         hex.EncodeToString(p2pPubkey.Bytes()),
-				OzoneLimitChanges: event[GetEventAttribute(registertypes.EventTypeCreateResourceNode, registertypes.AttributeKeyOZoneLimitChanges)],
+				P2PAddress:        event[GetEventAttribute(EventTypeCreateResourceNode, AttributeKeyNetworkAddress)],
+				P2PPubkey:         hex.EncodeToString(p2pPubKey.Bytes()),
+				OzoneLimitChanges: event[GetEventAttribute(EventTypeCreateResourceNode, AttributeKeyOZoneLimitChanges)],
 				TxHash:            txHash,
-				InitialDeposit:    event[GetEventAttribute(registertypes.EventTypeCreateResourceNode, registertypes.AttributeKeyInitialDeposit)],
+				InitialDeposit:    event[GetEventAttribute(EventTypeCreateResourceNode, AttributeKeyInitialDeposit)],
 			})
 		}
 
@@ -154,13 +153,13 @@ func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 
 func UpdateResourceNodeDepositMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		requiredAttributes := GetEventAttributes(registertypes.EventTypeUpdateResourceNodeDeposit,
-			registertypes.AttributeKeyNetworkAddress,
-			registertypes.AttributeKeyOZoneLimitChanges,
-			registertypes.AttributeKeyDepositDelta,
-			registertypes.AttributeKeyCurrentDeposit,
-			registertypes.AttributeKeyAvailableTokenBefore,
-			registertypes.AttributeKeyAvailableTokenAfter,
+		requiredAttributes := GetEventAttributes(EventTypeUpdateResourceNodeDeposit,
+			AttributeKeyNetworkAddress,
+			AttributeKeyOZoneLimitChanges,
+			AttributeKeyDepositDelta,
+			AttributeKeyCurrentDeposit,
+			AttributeKeyAvailableTokenBefore,
+			AttributeKeyAvailableTokenAfter,
 		)
 
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
@@ -174,13 +173,13 @@ func UpdateResourceNodeDepositMsgHandler() func(event coretypes.ResultEvent) {
 		req := &relayTypes.UpdatedDepositPPReq{}
 		for _, event := range processedEvents {
 			req.PPList = append(req.PPList, &protos.ReqUpdatedDepositPP{
-				P2PAddress:           event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeDeposit, registertypes.AttributeKeyNetworkAddress)],
-				OzoneLimitChanges:    event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeDeposit, registertypes.AttributeKeyOZoneLimitChanges)],
+				P2PAddress:           event[GetEventAttribute(EventTypeUpdateResourceNodeDeposit, AttributeKeyNetworkAddress)],
+				OzoneLimitChanges:    event[GetEventAttribute(EventTypeUpdateResourceNodeDeposit, AttributeKeyOZoneLimitChanges)],
 				TxHash:               txHash,
-				DepositDelta:         event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeDeposit, registertypes.AttributeKeyDepositDelta)],
-				CurrentDeposit:       event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeDeposit, registertypes.AttributeKeyCurrentDeposit)],
-				AvailableTokenBefore: event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeDeposit, registertypes.AttributeKeyAvailableTokenBefore)],
-				AvailableTokenAfter:  event[GetEventAttribute(registertypes.EventTypeUpdateResourceNodeDeposit, registertypes.AttributeKeyAvailableTokenAfter)],
+				DepositDelta:         event[GetEventAttribute(EventTypeUpdateResourceNodeDeposit, AttributeKeyDepositDelta)],
+				CurrentDeposit:       event[GetEventAttribute(EventTypeUpdateResourceNodeDeposit, AttributeKeyCurrentDeposit)],
+				AvailableTokenBefore: event[GetEventAttribute(EventTypeUpdateResourceNodeDeposit, AttributeKeyAvailableTokenBefore)],
+				AvailableTokenAfter:  event[GetEventAttribute(EventTypeUpdateResourceNodeDeposit, AttributeKeyAvailableTokenAfter)],
 			})
 		}
 
@@ -202,10 +201,10 @@ func UpdateResourceNodeDepositMsgHandler() func(event coretypes.ResultEvent) {
 
 func UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		requiredAttributes := GetEventAttributes(registertypes.EventTypeUnbondingResourceNode,
-			registertypes.AttributeKeyResourceNode,
-			registertypes.AttributeKeyUnbondingMatureTime,
-			registertypes.AttributeKeyDepositToRemove,
+		requiredAttributes := GetEventAttributes(EventTypeUnbondingResourceNode,
+			AttributeKeyResourceNode,
+			AttributeKeyUnbondingMatureTime,
+			AttributeKeyDepositToRemove,
 		)
 
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
@@ -219,10 +218,10 @@ func UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 		req := &relayTypes.UnbondingPPReq{}
 		for _, event := range processedEvents {
 			req.PPList = append(req.PPList, &protos.ReqUnbondingPP{
-				P2PAddress:          event[GetEventAttribute(registertypes.EventTypeUnbondingResourceNode, registertypes.AttributeKeyResourceNode)],
-				UnbondingMatureTime: event[GetEventAttribute(registertypes.EventTypeUnbondingResourceNode, registertypes.AttributeKeyUnbondingMatureTime)],
+				P2PAddress:          event[GetEventAttribute(EventTypeUnbondingResourceNode, AttributeKeyResourceNode)],
+				UnbondingMatureTime: event[GetEventAttribute(EventTypeUnbondingResourceNode, AttributeKeyUnbondingMatureTime)],
 				TxHash:              txHash,
-				DepositToRemove:     event[GetEventAttribute(registertypes.EventTypeUnbondingResourceNode, registertypes.AttributeKeyDepositToRemove)],
+				DepositToRemove:     event[GetEventAttribute(EventTypeUnbondingResourceNode, AttributeKeyDepositToRemove)],
 			})
 		}
 
@@ -244,8 +243,8 @@ func UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 
 func CompleteUnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		requiredAttributes := GetEventAttributes(registertypes.EventTypeCompleteUnbondingResourceNode,
-			registertypes.AttributeKeyNetworkAddress,
+		requiredAttributes := GetEventAttributes(EventTypeCompleteUnbondingResourceNode,
+			AttributeKeyNetworkAddress,
 		)
 
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
@@ -259,7 +258,7 @@ func CompleteUnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent)
 		req := &relayTypes.DeactivatedPPReq{}
 		for _, event := range processedEvents {
 			req.PPList = append(req.PPList, &protos.ReqDeactivatedPP{
-				P2PAddress: event[GetEventAttribute(registertypes.EventTypeCompleteUnbondingResourceNode, registertypes.AttributeKeyNetworkAddress)],
+				P2PAddress: event[GetEventAttribute(EventTypeCompleteUnbondingResourceNode, AttributeKeyNetworkAddress)],
 				TxHash:     txHash,
 			})
 		}
@@ -289,13 +288,13 @@ func CreateMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
 
 func UpdateMetaNodeDepositMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		requiredAttributes := GetEventAttributes(registertypes.EventTypeUpdateMetaNodeDeposit,
-			registertypes.AttributeKeyNetworkAddress,
-			registertypes.AttributeKeyOZoneLimitChanges,
-			registertypes.AttributeKeyDepositDelta,
-			registertypes.AttributeKeyCurrentDeposit,
-			registertypes.AttributeKeyAvailableTokenBefore,
-			registertypes.AttributeKeyAvailableTokenAfter,
+		requiredAttributes := GetEventAttributes(EventTypeUpdateMetaNodeDeposit,
+			AttributeKeyNetworkAddress,
+			AttributeKeyOZoneLimitChanges,
+			AttributeKeyDepositDelta,
+			AttributeKeyCurrentDeposit,
+			AttributeKeyAvailableTokenBefore,
+			AttributeKeyAvailableTokenAfter,
 		)
 
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
@@ -309,12 +308,12 @@ func UpdateMetaNodeDepositMsgHandler() func(event coretypes.ResultEvent) {
 		req := &relayTypes.UpdatedDepositSPReq{}
 		for _, event := range processedEvents {
 			req.SPList = append(req.SPList, &protos.ReqUpdatedDepositSP{
-				P2PAddress:           event[GetEventAttribute(registertypes.EventTypeUpdateMetaNodeDeposit, registertypes.AttributeKeyNetworkAddress)],
-				OzoneLimitChanges:    event[GetEventAttribute(registertypes.EventTypeUpdateMetaNodeDeposit, registertypes.AttributeKeyOZoneLimitChanges)],
-				DepositDelta:         event[GetEventAttribute(registertypes.EventTypeUpdateMetaNodeDeposit, registertypes.AttributeKeyDepositDelta)],
-				CurrentDeposit:       event[GetEventAttribute(registertypes.EventTypeUpdateMetaNodeDeposit, registertypes.AttributeKeyCurrentDeposit)],
-				AvailableTokenBefore: event[GetEventAttribute(registertypes.EventTypeUpdateMetaNodeDeposit, registertypes.AttributeKeyAvailableTokenBefore)],
-				AvailableTokenAfter:  event[GetEventAttribute(registertypes.EventTypeUpdateMetaNodeDeposit, registertypes.AttributeKeyAvailableTokenAfter)],
+				P2PAddress:           event[GetEventAttribute(EventTypeUpdateMetaNodeDeposit, AttributeKeyNetworkAddress)],
+				OzoneLimitChanges:    event[GetEventAttribute(EventTypeUpdateMetaNodeDeposit, AttributeKeyOZoneLimitChanges)],
+				DepositDelta:         event[GetEventAttribute(EventTypeUpdateMetaNodeDeposit, AttributeKeyDepositDelta)],
+				CurrentDeposit:       event[GetEventAttribute(EventTypeUpdateMetaNodeDeposit, AttributeKeyCurrentDeposit)],
+				AvailableTokenBefore: event[GetEventAttribute(EventTypeUpdateMetaNodeDeposit, AttributeKeyAvailableTokenBefore)],
+				AvailableTokenAfter:  event[GetEventAttribute(EventTypeUpdateMetaNodeDeposit, AttributeKeyAvailableTokenAfter)],
 				TxHash:               txHash,
 			})
 		}
@@ -337,10 +336,10 @@ func UpdateMetaNodeDepositMsgHandler() func(event coretypes.ResultEvent) {
 
 func UnbondingMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		requiredAttributes := GetEventAttributes(registertypes.EventTypeUnbondingMetaNode,
-			registertypes.AttributeKeyMetaNode,
-			registertypes.AttributeKeyUnbondingMatureTime,
-			registertypes.AttributeKeyDepositToRemove,
+		requiredAttributes := GetEventAttributes(EventTypeUnbondingMetaNode,
+			AttributeKeyMetaNode,
+			AttributeKeyUnbondingMatureTime,
+			AttributeKeyDepositToRemove,
 		)
 
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
@@ -354,10 +353,10 @@ func UnbondingMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
 		req := &relayTypes.UnbondingSPReq{}
 		for _, event := range processedEvents {
 			req.SPList = append(req.SPList, &protos.ReqUnbondingSP{
-				P2PAddress:          event[GetEventAttribute(registertypes.EventTypeUnbondingMetaNode, registertypes.AttributeKeyMetaNode)],
-				UnbondingMatureTime: event[GetEventAttribute(registertypes.EventTypeUnbondingMetaNode, registertypes.AttributeKeyUnbondingMatureTime)],
+				P2PAddress:          event[GetEventAttribute(EventTypeUnbondingMetaNode, AttributeKeyMetaNode)],
+				UnbondingMatureTime: event[GetEventAttribute(EventTypeUnbondingMetaNode, AttributeKeyUnbondingMatureTime)],
 				TxHash:              txHash,
-				DepositToRemove:     event[GetEventAttribute(registertypes.EventTypeUnbondingMetaNode, registertypes.AttributeKeyDepositToRemove)],
+				DepositToRemove:     event[GetEventAttribute(EventTypeUnbondingMetaNode, AttributeKeyDepositToRemove)],
 			})
 		}
 
@@ -379,9 +378,9 @@ func UnbondingMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
 
 func WithdrawnDepositHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		requiredAttributes := GetEventAttributes(registertypes.EventTypeWithdrawMetaNodeRegistrationDeposit,
-			registertypes.AttributeKeyNetworkAddress,
-			registertypes.AttributeKeyUnbondingMatureTime,
+		requiredAttributes := GetEventAttributes(EventTypeWithdrawMetaNodeRegistrationDeposit,
+			AttributeKeyNetworkAddress,
+			AttributeKeyUnbondingMatureTime,
 		)
 
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
@@ -394,8 +393,8 @@ func WithdrawnDepositHandler() func(event coretypes.ResultEvent) {
 
 		req := &relayTypes.WithdrawnDepositSPReq{}
 		for _, event := range processedEvents {
-			networkAddr := event[GetEventAttribute(registertypes.EventTypeWithdrawMetaNodeRegistrationDeposit, registertypes.AttributeKeyNetworkAddress)]
-			unbondingMatureTime := event[GetEventAttribute(registertypes.EventTypeWithdrawMetaNodeRegistrationDeposit, registertypes.AttributeKeyUnbondingMatureTime)]
+			networkAddr := event[GetEventAttribute(EventTypeWithdrawMetaNodeRegistrationDeposit, AttributeKeyNetworkAddress)]
+			unbondingMatureTime := event[GetEventAttribute(EventTypeWithdrawMetaNodeRegistrationDeposit, AttributeKeyUnbondingMatureTime)]
 
 			if len(networkAddr) == 0 || len(unbondingMatureTime) == 0 {
 				continue
@@ -434,9 +433,9 @@ func CompleteUnbondingMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
 
 func MetaNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		requiredAttributes := GetEventAttributes(registertypes.EventTypeMetaNodeRegistrationVote,
-			registertypes.AttributeKeyCandidateNetworkAddress,
-			registertypes.AttributeKeyCandidateStatus,
+		requiredAttributes := GetEventAttributes(EventTypeMetaNodeRegistrationVote,
+			AttributeKeyCandidateNetworkAddress,
+			AttributeKeyCandidateStatus,
 		)
 
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
@@ -449,9 +448,9 @@ func MetaNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
 
 		req := &relayTypes.ActivatedSPReq{}
 		for _, event := range processedEvents {
-			candidateNetworkAddr := event[GetEventAttribute(registertypes.EventTypeMetaNodeRegistrationVote, registertypes.AttributeKeyCandidateNetworkAddress)]
+			candidateNetworkAddr := event[GetEventAttribute(EventTypeMetaNodeRegistrationVote, AttributeKeyCandidateNetworkAddress)]
 
-			if event[GetEventAttribute(registertypes.EventTypeMetaNodeRegistrationVote, registertypes.AttributeKeyCandidateStatus)] != stakingTypes.BondStatusBonded {
+			if event[GetEventAttribute(EventTypeMetaNodeRegistrationVote, AttributeKeyCandidateStatus)] != stakingv1beta1.BondStatus_BOND_STATUS_BONDED.String() {
 				utils.DebugLogf("Indexing node vote handler: The candidate [%v] needs more votes before being considered active", candidateNetworkAddr)
 				continue
 			}
@@ -481,10 +480,10 @@ func MetaNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
 func PrepayMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		utils.Logf("%+v", result)
-		requiredAttributes := GetEventAttributes(sdstypes.EventTypePrepay,
-			sdktypes.AttributeKeySender,
-			sdstypes.AttributeKeyBeneficiary,
-			sdstypes.AttributeKeyPurchasedNoz,
+		requiredAttributes := GetEventAttributes(EventTypePrepay,
+			AttributeKeySender,
+			AttributeKeyBeneficiary,
+			AttributeKeyPurchasedNoz,
 		)
 
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
@@ -498,8 +497,8 @@ func PrepayMsgHandler() func(event coretypes.ResultEvent) {
 		req := &relayTypes.PrepaidReq{}
 		for _, event := range processedEvents {
 			req.WalletList = append(req.WalletList, &protos.ReqPrepaid{
-				WalletAddress: event[GetEventAttribute(sdstypes.EventTypePrepay, sdstypes.AttributeKeyBeneficiary)],
-				PurchasedUoz:  event[GetEventAttribute(sdstypes.EventTypePrepay, sdstypes.AttributeKeyPurchasedNoz)],
+				WalletAddress: event[GetEventAttribute(EventTypePrepay, AttributeKeyBeneficiary)],
+				PurchasedUoz:  event[GetEventAttribute(EventTypePrepay, AttributeKeyPurchasedNoz)],
 				TxHash:        txHash,
 			})
 		}
@@ -522,10 +521,10 @@ func PrepayMsgHandler() func(event coretypes.ResultEvent) {
 
 func FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		requiredAttributes := GetEventAttributes(sdstypes.EventTypeFileUpload,
-			sdstypes.AttributeKeyReporter,
-			sdstypes.AttributeKeyUploader,
-			sdstypes.AttributeKeyFileHash,
+		requiredAttributes := GetEventAttributes(EventTypeFileUpload,
+			AttributeKeyReporter,
+			AttributeKeyUploader,
+			AttributeKeyFileHash,
 		)
 
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
@@ -539,9 +538,9 @@ func FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 		req := &relayTypes.FileUploadedReq{}
 		for _, event := range processedEvents {
 			req.UploadList = append(req.UploadList, &protos.Uploaded{
-				ReporterAddress: event[GetEventAttribute(sdstypes.EventTypeFileUpload, sdstypes.AttributeKeyReporter)],
-				UploaderAddress: event[GetEventAttribute(sdstypes.EventTypeFileUpload, sdstypes.AttributeKeyUploader)],
-				FileHash:        event[GetEventAttribute(sdstypes.EventTypeFileUpload, sdstypes.AttributeKeyFileHash)],
+				ReporterAddress: event[GetEventAttribute(EventTypeFileUpload, AttributeKeyReporter)],
+				UploaderAddress: event[GetEventAttribute(EventTypeFileUpload, AttributeKeyUploader)],
+				FileHash:        event[GetEventAttribute(EventTypeFileUpload, AttributeKeyFileHash)],
 				TxHash:          txHash,
 			})
 		}
@@ -564,8 +563,8 @@ func FileUploadMsgHandler() func(event coretypes.ResultEvent) {
 
 func VolumeReportHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		requiredAttributes := GetEventAttributes(pottypes.EventTypeVolumeReport,
-			pottypes.AttributeKeyEpoch,
+		requiredAttributes := GetEventAttributes(EventTypeVolumeReport,
+			AttributeKeyEpoch,
 		)
 
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
@@ -578,7 +577,7 @@ func VolumeReportHandler() func(event coretypes.ResultEvent) {
 
 		req := &relayTypes.VolumeReportedReq{}
 		for _, event := range processedEvents {
-			req.Epochs = append(req.Epochs, event[GetEventAttribute(pottypes.EventTypeVolumeReport, pottypes.AttributeKeyEpoch)])
+			req.Epochs = append(req.Epochs, event[GetEventAttribute(EventTypeVolumeReport, AttributeKeyEpoch)])
 		}
 
 		if len(req.Epochs) != initialEventCount {
@@ -599,10 +598,10 @@ func VolumeReportHandler() func(event coretypes.ResultEvent) {
 
 func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		requiredAttributes := GetEventAttributes(pottypes.EventTypeSlashing,
-			pottypes.AttributeKeyNodeP2PAddress,
-			pottypes.AttributeKeyNodeSuspended,
-			pottypes.AttributeKeyAmount,
+		requiredAttributes := GetEventAttributes(EventTypeSlashing,
+			AttributeKeyNodeP2PAddress,
+			AttributeKeyNodeSuspended,
+			AttributeKeyAmount,
 		)
 
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
@@ -614,18 +613,18 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 		cache.Store(key, true)
 		var slashedPPs []relayTypes.SlashedPP
 		for _, event := range processedEvents {
-			suspended, err := strconv.ParseBool(event[GetEventAttribute(pottypes.EventTypeSlashing, pottypes.AttributeKeyNodeSuspended)])
+			suspended, err := strconv.ParseBool(event[GetEventAttribute(EventTypeSlashing, AttributeKeyNodeSuspended)])
 			if err != nil {
 				utils.DebugLog("Invalid suspended boolean in the slashing message from stratos-chain", err)
 				continue
 			}
-			slashedAmt, ok := new(big.Int).SetString(event[GetEventAttribute(pottypes.EventTypeSlashing, pottypes.AttributeKeyAmount)], 10)
+			slashedAmt, ok := new(big.Int).SetString(event[GetEventAttribute(EventTypeSlashing, AttributeKeyAmount)], 10)
 			if !ok {
 				utils.DebugLog("Invalid slashed amount in big integer in the slashing message from stratos-chain")
 				continue
 			}
 			slashedPP := relayTypes.SlashedPP{
-				P2PAddress: event[GetEventAttribute(pottypes.EventTypeSlashing, pottypes.AttributeKeyNodeP2PAddress)],
+				P2PAddress: event[GetEventAttribute(EventTypeSlashing, AttributeKeyNodeP2PAddress)],
 				QueryFirst: false,
 				Suspended:  suspended,
 				SlashedAmt: slashedAmt,
@@ -655,10 +654,10 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 
 func UpdateEffectiveDepositHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
-		requiredAttributes := GetEventAttributes(registertypes.EventTypeUpdateEffectiveDeposit,
-			registertypes.AttributeKeyNetworkAddress,
-			registertypes.AttributeKeyIsUnsuspended,
-			registertypes.AttributeKeyEffectiveDepositAfter,
+		requiredAttributes := GetEventAttributes(EventTypeUpdateEffectiveDeposit,
+			AttributeKeyNetworkAddress,
+			AttributeKeyIsUnsuspended,
+			AttributeKeyEffectiveDepositAfter,
 		)
 
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
@@ -670,19 +669,19 @@ func UpdateEffectiveDepositHandler() func(event coretypes.ResultEvent) {
 		cache.Store(key, true)
 		var updatedPPs []relayTypes.UpdatedEffectiveDepositPP
 		for _, event := range processedEvents {
-			isUnsuspendedDuringUpdate, err := strconv.ParseBool(event[GetEventAttribute(registertypes.EventTypeUpdateEffectiveDeposit, registertypes.AttributeKeyIsUnsuspended)])
+			isUnsuspendedDuringUpdate, err := strconv.ParseBool(event[GetEventAttribute(EventTypeUpdateEffectiveDeposit, AttributeKeyIsUnsuspended)])
 			if err != nil {
 				utils.DebugLog("Invalid is_unsuspended boolean in the update_effective_deposit message from stratos-chain", err)
 				continue
 			}
 
-			effectiveDepositAfter, ok := new(big.Int).SetString(event[GetEventAttribute(registertypes.EventTypeUpdateEffectiveDeposit, registertypes.AttributeKeyEffectiveDepositAfter)], 10)
+			effectiveDepositAfter, ok := new(big.Int).SetString(event[GetEventAttribute(EventTypeUpdateEffectiveDeposit, AttributeKeyEffectiveDepositAfter)], 10)
 			if !ok {
 				utils.DebugLog("Invalid effective_deposit_after in big integer in the update_effective_deposit message from stratos-chain")
 				continue
 			}
 			utils.DebugLogf("network_address: %v, isUnsuspendedDuringUpdate is %v, effectiveDepositAfter: %v",
-				event[GetEventAttribute(registertypes.EventTypeUpdateEffectiveDeposit, registertypes.AttributeKeyNetworkAddress)], isUnsuspendedDuringUpdate, effectiveDepositAfter.String())
+				event[GetEventAttribute(EventTypeUpdateEffectiveDeposit, AttributeKeyNetworkAddress)], isUnsuspendedDuringUpdate, effectiveDepositAfter.String())
 
 			if !isUnsuspendedDuringUpdate {
 				// only msg for unsuspended node will be transferred to SP
@@ -690,7 +689,7 @@ func UpdateEffectiveDepositHandler() func(event coretypes.ResultEvent) {
 			}
 
 			updatedPP := relayTypes.UpdatedEffectiveDepositPP{
-				P2PAddress:                event[GetEventAttribute(registertypes.EventTypeUpdateEffectiveDeposit, registertypes.AttributeKeyNetworkAddress)],
+				P2PAddress:                event[GetEventAttribute(EventTypeUpdateEffectiveDeposit, AttributeKeyNetworkAddress)],
 				IsUnsuspendedDuringUpdate: isUnsuspendedDuringUpdate,
 				EffectiveDepositAfter:     effectiveDepositAfter,
 			}
@@ -783,7 +782,7 @@ func processHexPubkey(attribute string) (cryptotypes.PubKey, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Error when trying to decode P2P pubkey hex")
 	}
-	p2pPubkey := ed25519.PubKeyBytesToSdkPubKey(p2pPubkeyRaw)
+	p2pPubkey := &ed25519.PubKey{Key: p2pPubkeyRaw}
 
 	return p2pPubkey, nil
 }

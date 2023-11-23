@@ -9,21 +9,23 @@ import (
 
 	"github.com/gorilla/websocket"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
-	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
-	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+	basev1beta1 "cosmossdk.io/api/cosmos/base/v1beta1"
+	txv1beta1 "cosmossdk.io/api/cosmos/tx/v1beta1"
+	sdkmath "cosmossdk.io/math"
 
-	"github.com/stratosnet/sds/relay"
-	"github.com/stratosnet/sds/relay/cmd/relayd/setting"
-	"github.com/stratosnet/sds/relay/sds"
-	"github.com/stratosnet/sds/relay/stratoschain"
-	"github.com/stratosnet/sds/relay/stratoschain/grpc"
-	relaytypes "github.com/stratosnet/sds/relay/types"
-	"github.com/stratosnet/sds/relay/utils"
-	"github.com/stratosnet/sds/relay/utils/types"
+	"github.com/stratosnet/sds-api/protos"
+
+	"github.com/stratosnet/framework/utils"
+
+	"github.com/stratosnet/tx-client/grpc"
+	"github.com/stratosnet/tx-client/tx"
+	txclienttypes "github.com/stratosnet/tx-client/types"
+
+	"github.com/stratosnet/relay/cmd/relayd/setting"
+	"github.com/stratosnet/relay/sds"
+	"github.com/stratosnet/relay/stratoschain"
 )
 
 const (
@@ -34,7 +36,7 @@ type sdsConnection struct {
 	client *MultiClient
 
 	sdsWebsocketConn  *websocket.Conn
-	txBroadcasterChan chan relaytypes.UnsignedMsg
+	txBroadcasterChan chan txclienttypes.UnsignedMsg
 
 	cancel context.CancelFunc
 	ctx    context.Context
@@ -163,7 +165,7 @@ func (s *sdsConnection) sdsEventsReaderLoop() {
 		}
 
 		utils.Log("received: " + string(data))
-		msg := relaytypes.RelayMessage{}
+		msg := protos.RelayMessage{}
 		err = proto.Unmarshal(data, &msg)
 		if err != nil {
 			utils.ErrorLog("couldn't unmarshal message to protos.RelayMessage", err)
@@ -172,7 +174,7 @@ func (s *sdsConnection) sdsEventsReaderLoop() {
 
 		switch msg.Type {
 		case sds.TypeBroadcast:
-			unsignedMsgs := relaytypes.UnsignedMsgs{}
+			unsignedMsgs := txclienttypes.UnsignedMsgs{}
 			err = json.Unmarshal(msg.Data, &unsignedMsgs)
 			if err != nil {
 				utils.ErrorLog("couldn't unmarshal UnsignedMsgs json", err)
@@ -185,7 +187,7 @@ func (s *sdsConnection) sdsEventsReaderLoop() {
 					continue
 				}
 				// Add unsignedMsg to tx broadcast channel
-				s.txBroadcasterChan <- unsignedMsg
+				s.txBroadcasterChan <- *unsignedMsg
 			}
 		}
 	}
@@ -208,14 +210,14 @@ func (s *sdsConnection) txBroadcasterLoop() {
 		go s.refresh()
 	}()
 
-	s.txBroadcasterChan = make(chan relaytypes.UnsignedMsg, setting.Config.StratosChain.Broadcast.ChannelSize)
+	s.txBroadcasterChan = make(chan txclienttypes.UnsignedMsg, setting.Config.StratosChain.Broadcast.ChannelSize)
 
-	var unsignedMsgs []*relaytypes.UnsignedMsg
+	var unsignedMsgs []*txclienttypes.UnsignedMsg
 	broadcastTxs := func() {
 		utils.Logf("Tx broadcaster loop will try to broadcast %v msgs %v", len(unsignedMsgs), countMsgsByType(unsignedMsgs))
 
-		var unsignedSdkMsgs []sdktypes.Msg
-		protoConfig, txBuilder := createTxConfigAndTxBuilder()
+		var unsignedSdkMsgs []*anypb.Any
+		txConfig, unsignedTx := tx.CreateTxConfigAndTxBuilder()
 		for _, unsignedMsg := range unsignedMsgs {
 			unsignedSdkMsgs = append(unsignedSdkMsgs, unsignedMsg.Msg)
 		}
@@ -223,12 +225,9 @@ func (s *sdsConnection) txBroadcasterLoop() {
 			unsignedMsgs = nil // Clearing msg list
 		}()
 
-		err := setMsgInfoToTxBuilder(txBuilder, unsignedSdkMsgs, 0, "")
-		if err != nil {
-			utils.ErrorLog("couldn't set tx builder", err)
-			return
-		}
-		txBytes, err := stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.BlockchainInfo.ChainId, unsignedMsgs)
+		setMsgInfoToTxBuilder(unsignedTx, unsignedSdkMsgs)
+
+		txBytes, err := tx.BuildTxBytes(txConfig, unsignedTx, setting.Config.BlockchainInfo.ChainId, unsignedMsgs)
 		if err != nil {
 			utils.ErrorLog("couldn't build tx bytes", err)
 			return
@@ -240,33 +239,34 @@ func (s *sdsConnection) txBroadcasterLoop() {
 			return
 		}
 		gasLimit := uint64(float64(gasInfo.GasUsed) * setting.Config.BlockchainInfo.Transactions.GasAdjustment)
-		txBuilder.SetGasLimit(gasLimit)
+		unsignedTx.AuthInfo.Fee.GasLimit = gasLimit
 
-		gasPrice, err := types.ParseCoinNormalized(setting.Config.BlockchainInfo.Transactions.GasPrice)
+		gasPrice, err := txclienttypes.ParseCoinNormalized(setting.Config.BlockchainInfo.Transactions.GasPrice)
 		if err != nil {
 			utils.ErrorLog("couldn't parse gas price", err)
 			return
 		}
-		feeAmount := gasPrice.Amount.Mul(sdktypes.NewIntFromUint64(gasLimit))
-		fee := sdktypes.NewCoin(gasPrice.Denom, feeAmount)
-		txBuilder.SetFeeAmount(sdktypes.NewCoins(
-			sdktypes.Coin{
+		feeAmount := gasPrice.Amount.Mul(sdkmath.NewIntFromUint64(gasLimit))
+		fee := txclienttypes.NewCoin(gasPrice.Denom, feeAmount)
+		unsignedTx.AuthInfo.Fee.Amount = []*basev1beta1.Coin{
+			{
 				Denom:  fee.Denom,
-				Amount: fee.Amount,
-			}),
-		)
+				Amount: fee.Amount.String(),
+			},
+		}
 
-		txBytes, err = stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.BlockchainInfo.ChainId, unsignedMsgs)
+		txBytes, err = tx.BuildTxBytes(txConfig, unsignedTx, setting.Config.BlockchainInfo.ChainId, unsignedMsgs)
 		if err != nil {
 			utils.ErrorLog("couldn't build tx bytes", err)
 			return
 		}
 
-		err = grpc.BroadcastTx(txBytes, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
+		err = stratoschain.DeliverTx(txBytes)
 		if err != nil {
 			utils.ErrorLog("couldn't broadcast transaction", err)
 			return
 		}
+
 	}
 
 	timeOver := time.After(txBroadcastMaxInterval * time.Millisecond)
@@ -304,7 +304,7 @@ func (s *sdsConnection) txBroadcasterLoop() {
 	}
 }
 
-func countMsgsByType(unsignedMsgs []*relaytypes.UnsignedMsg) string {
+func countMsgsByType(unsignedMsgs []*txclienttypes.UnsignedMsg) string {
 	msgCount := make(map[string]int)
 	for _, msg := range unsignedMsgs {
 		msgCount[msg.Type]++
@@ -320,20 +320,15 @@ func countMsgsByType(unsignedMsgs []*relaytypes.UnsignedMsg) string {
 	return "[" + countString + "]"
 }
 
-func setMsgInfoToTxBuilder(txBuilder client.TxBuilder, txMsg []sdktypes.Msg, gas uint64, memo string) error {
-	err := txBuilder.SetMsgs(txMsg...)
-	if err != nil {
-		return err
-	}
-
-	//txBuilder.SetFeeGranter(tx.FeeGranter())
-	txBuilder.SetGasLimit(gas)
-	txBuilder.SetMemo(memo)
-	return nil
+func setMsgInfoToTxBuilder(tx *txv1beta1.Tx, txMsgs []*anypb.Any) {
+	tx.Body.Messages = txMsgs
+	tx.Body.Memo = ""
+	tx.AuthInfo.Fee.GasLimit = 0
+	return
 }
 
-func createTxConfigAndTxBuilder() (client.TxConfig, client.TxBuilder) {
-	protoConfig := authtx.NewTxConfig(relay.ProtoCdc, []signingtypes.SignMode{signingtypes.SignMode_SIGN_MODE_DIRECT})
-	txBuilder := protoConfig.NewTxBuilder()
-	return protoConfig, txBuilder
-}
+//func createTxConfigAndTxBuilder() (client.TxConfig, *txv1beta1.Tx) {
+//	txConfig := authtx.NewTxConfig([]signingv1beta1.SignMode{signingv1beta1.SignMode_SIGN_MODE_DIRECT})
+//	tx := &txv1beta1.Tx{}
+//	return txConfig, tx
+//}

@@ -6,13 +6,15 @@ import (
 	"path/filepath"
 	"sync"
 
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	"github.com/stratosnet/tx-client/crypto/secp256k1"
+	cryptotypes "github.com/stratosnet/tx-client/crypto/types"
+	"github.com/stratosnet/tx-client/grpc"
+	txclienttypes "github.com/stratosnet/tx-client/types"
 
-	"github.com/stratosnet/sds/relay/cmd/relayd/setting"
-	"github.com/stratosnet/sds/relay/stratoschain/grpc"
-	"github.com/stratosnet/sds/relay/utils"
-	"github.com/stratosnet/sds/relay/utils/crypto/secp256k1"
-	"github.com/stratosnet/sds/relay/utils/types"
+	"github.com/stratosnet/framework/utils"
+
+	"github.com/stratosnet/relay/cmd/relayd/setting"
+	relaytypes "github.com/stratosnet/relay/types"
 )
 
 type MultiClient struct {
@@ -55,16 +57,13 @@ func (m *MultiClient) loadKeys(spHomePath string) error {
 		return err
 	}
 
-	walletKey, err := utils.DecryptKey(walletJson, setting.Config.Keys.WalletPassword)
+	walletKey, err := relaytypes.DecryptKey(walletJson, setting.Config.Keys.WalletPassword)
 	if err != nil {
 		return err
 	}
 
-	m.WalletPrivateKey = secp256k1.PrivKeyToSdkPrivKey(walletKey.PrivateKey)
-	m.WalletAddress, err = types.BytesToAddress(m.WalletPrivateKey.PubKey().Address()).WalletAddressToBech()
-	if err != nil {
-		return err
-	}
+	m.WalletPrivateKey = secp256k1.Generate(walletKey.PrivateKey)
+	m.WalletAddress = txclienttypes.AccAddress(m.WalletPrivateKey.PubKey().Address()).String()
 
 	utils.DebugLogf("verified wallet key successfully! walletAddr is %v", m.WalletAddress)
 	return nil

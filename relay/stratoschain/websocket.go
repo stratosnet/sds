@@ -3,8 +3,9 @@ package stratoschain
 import (
 	"errors"
 
-	tmhttp "github.com/cometbft/cometbft/rpc/client/http"
-	"github.com/stratosnet/sds/relay/utils"
+	tmhttp "github.com/tendermint/tendermint/rpc/client/http"
+
+	"github.com/stratosnet/framework/utils"
 )
 
 func DialWebsocket(addr string) (*tmhttp.HTTP, error) {

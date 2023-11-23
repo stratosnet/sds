@@ -4,7 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	"github.com/stratosnet/sds/relay/utils"
+
+	"github.com/stratosnet/framework/utils"
 )
 
 const (

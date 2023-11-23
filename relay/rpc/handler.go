@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/stratosnet/sds/relay/utils"
+	"github.com/stratosnet/framework/utils"
 )
 
 // handler handles JSON-RPC messages. There is one handler per connection. Note that

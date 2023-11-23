@@ -3,12 +3,12 @@ package server
 import (
 	"context"
 
-	"github.com/stratosnet/sds/relay/utils/environment"
+	"github.com/stratosnet/framework/utils"
 
-	"github.com/stratosnet/sds/relay/cmd/relayd/setting"
-	"github.com/stratosnet/sds/relay/namespace"
-	"github.com/stratosnet/sds/relay/rpc"
-	"github.com/stratosnet/sds/relay/utils"
+	"github.com/stratosnet/relay/cmd/relayd/setting"
+	"github.com/stratosnet/relay/namespace"
+	"github.com/stratosnet/relay/rpc"
+	"github.com/stratosnet/relay/utils/environment"
 )
 
 const (

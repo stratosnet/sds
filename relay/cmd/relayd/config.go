@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/stratosnet/sds/relay/cmd/relayd/setting"
+	"github.com/stratosnet/relay/cmd/relayd/setting"
 )
 
 const (

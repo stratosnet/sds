@@ -10,7 +10,7 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/stratosnet/sds/relay/utils"
+	"github.com/stratosnet/framework/utils"
 )
 
 var (
