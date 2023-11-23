@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 //for future protoc-gen-go requirement
-option go_package = "github.com/stratosnet/sds/msg/protos";
+option go_package = "github.com/stratosnet/sds-api/protos";
 
 package protos;
 // j

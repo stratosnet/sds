@@ -1,21 +1,15 @@
 syntax = "proto3";
 
 //for future protoc-gen-go requirement
-option go_package = "github.com/stratosnet/sds/relay/types";
+option go_package = "github.com/stratosnet/sds-api/protos";
 
 package protos;
+// j
+import "sds_comm.proto";
 
 // upload -----------------------------------
 
-message Result {
-  ResultState state = 1;
-  string msg = 2;
-}
 
-enum ResultState {
-  RES_SUCCESS = 0;
-  RES_FAIL = 1;
-}
 
 message Uploaded {
   string reporter_address = 1;
