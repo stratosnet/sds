@@ -237,7 +237,7 @@ func CancelDownloadTask(fileHash string) {
 }
 
 func GetDownloadSlice(target *protos.ReqDownloadSlice, slice *protos.DownloadSliceInfo) *DownloadSliceData {
-	size, buffers, err := file.ReadSliceData(slice.SliceStorageInfo.SliceHash)
+	size, buffers, err := file.ReadSliceData(target.RspFileStorageInfo.FileHash, slice.SliceStorageInfo.SliceHash)
 	if err != nil {
 		utils.ErrorLog("Failed getting slice data ", err.Error())
 		return nil
