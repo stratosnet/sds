@@ -8,12 +8,12 @@ import (
 	mh "github.com/multiformats/go-multihash"
 
 	"github.com/ipfs/go-cid"
+	"github.com/stratosnet/framework/types/bech32"
 	"github.com/stratosnet/framework/utils"
 	"github.com/stratosnet/framework/utils/crypto/ed25519"
 	"github.com/stratosnet/sds-api/header"
 	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/tx-client/types/bech32"
 )
 
 func init() {

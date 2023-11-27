@@ -20,8 +20,7 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
 
-	cryptosecp256k1 "github.com/stratosnet/tx-client/crypto/secp256k1"
-
+	cryptosecp256k1 "github.com/stratosnet/framework/crypto/secp256k1"
 	"github.com/stratosnet/framework/utils/crypto"
 	"github.com/stratosnet/framework/utils/crypto/ed25519"
 	"github.com/stratosnet/framework/utils/crypto/secp256k1"

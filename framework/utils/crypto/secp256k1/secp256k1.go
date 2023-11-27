@@ -3,9 +3,8 @@ package secp256k1
 import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/pkg/errors"
-	"github.com/stratosnet/tx-client/crypto/secp256k1"
-	cryptotypes "github.com/stratosnet/tx-client/crypto/types"
-
+	"github.com/stratosnet/framework/crypto/secp256k1"
+	cryptotypes "github.com/stratosnet/framework/crypto/types"
 	"github.com/stratosnet/framework/utils/types"
 )
 

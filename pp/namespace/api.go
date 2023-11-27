@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stratosnet/framework/core"
 	"github.com/stratosnet/framework/metrics"
+	"github.com/stratosnet/framework/types"
 	"github.com/stratosnet/framework/utils"
 	"github.com/stratosnet/framework/utils/datamesh"
 	utiltypes "github.com/stratosnet/framework/utils/types"
@@ -393,7 +394,7 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 func (api *rpcPubApi) GetFileStatus(ctx context.Context, param rpc_api.ParamGetFileStatus) rpc_api.FileStatusResult {
 	metrics.RpcReqCount.WithLabelValues("GetFileStatus").Inc()
 
-	pubkey, err := txclienttypes.SdsPubKeyFromBech32(param.Signature.Pubkey)
+	pubkey, err := types.SdsPubKeyFromBech32(param.Signature.Pubkey)
 	if err != nil {
 		return rpc_api.FileStatusResult{Return: rpc_api.WRONG_INPUT, Error: err.Error()}
 	}

@@ -10,16 +10,16 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/stratosnet/framework/types"
 	"github.com/stratosnet/framework/utils"
 	"github.com/stratosnet/framework/utils/console"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
-	stchaintypes "github.com/stratosnet/tx-client/types"
+	txclienttypes "github.com/stratosnet/tx-client/types"
 )
 
 const (
 	Home              string = "home"
-	SpHome            string = "sp-home"
 	Config            string = "config"
 	DefaultConfigPath string = "./config/config.toml"
 )
@@ -157,12 +157,12 @@ func SetupP2PKey() error {
 		}
 
 		p2pKeyAddress, err := utils.CreateP2PKey(setting.Config.Home.AccountsPath, nickname, password,
-			stchaintypes.SdsNodeP2PAddressPrefix)
+			types.SdsNodeP2PAddressPrefix)
 		if err != nil {
 			return errors.New("couldn't create p2p key: " + err.Error())
 		}
 
-		p2pKeyAddressString, err := p2pKeyAddress.ToBech(stchaintypes.SdsNodeP2PAddressPrefix)
+		p2pKeyAddressString, err := p2pKeyAddress.ToBech(types.SdsNodeP2PAddressPrefix)
 		if err != nil {
 			return errors.New("couldn't convert P2P key address to bech string: " + err.Error())
 		}
@@ -198,13 +198,13 @@ func NodePP(_ *cobra.Command, _ []string) error {
 
 // RegisterDenoms registers the denominations to the PP.
 func RegisterDenoms() error {
-	if err := stchaintypes.RegisterDenom(stchaintypes.Stos, sdkmath.LegacyOneDec()); err != nil {
+	if err := txclienttypes.RegisterDenom(txclienttypes.Stos, sdkmath.LegacyOneDec()); err != nil {
 		return err
 	}
-	if err := stchaintypes.RegisterDenom(stchaintypes.Gwei, sdkmath.LegacyNewDecWithPrec(1, stchaintypes.GweiDenomUnit)); err != nil {
+	if err := txclienttypes.RegisterDenom(txclienttypes.Gwei, sdkmath.LegacyNewDecWithPrec(1, txclienttypes.GweiDenomUnit)); err != nil {
 		return err
 	}
-	if err := stchaintypes.RegisterDenom(stchaintypes.Wei, sdkmath.LegacyNewDecWithPrec(1, stchaintypes.WeiDenomUnit)); err != nil {
+	if err := txclienttypes.RegisterDenom(txclienttypes.Wei, sdkmath.LegacyNewDecWithPrec(1, txclienttypes.WeiDenomUnit)); err != nil {
 		return err
 	}
 

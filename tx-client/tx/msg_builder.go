@@ -11,17 +11,17 @@ import (
 	basev1beta1 "cosmossdk.io/api/cosmos/base/v1beta1"
 	sdkmath "cosmossdk.io/math"
 
+	"github.com/stratosnet/framework/crypto/ed25519"
+	"github.com/stratosnet/framework/types"
+	"github.com/stratosnet/framework/types/bech32"
 	potv1 "github.com/stratosnet/stratos-chain/api/stratos/pot/v1"
 	registerv1 "github.com/stratosnet/stratos-chain/api/stratos/register/v1"
 	sdsv1 "github.com/stratosnet/stratos-chain/api/stratos/sds/v1"
-
-	"github.com/stratosnet/tx-client/crypto/ed25519"
-	"github.com/stratosnet/tx-client/types"
-	"github.com/stratosnet/tx-client/types/bech32"
+	txclienttypes "github.com/stratosnet/tx-client/types"
 )
 
 // Stratos-chain 'pot' module
-func BuildVolumeReportMsg(traffic []*types.Traffic, reporterAddress, reporterOwnerAddress []byte, epoch uint64,
+func BuildVolumeReportMsg(traffic []*txclienttypes.Traffic, reporterAddress, reporterOwnerAddress []byte, epoch uint64,
 	reportReference string, blsTxDataHash, blsSignature []byte, blsPubKeys [][]byte) (*potv1.MsgVolumeReport, []byte, error) {
 
 	aggregatedVolume := make(map[string]uint64)
@@ -62,7 +62,7 @@ func BuildVolumeReportMsg(traffic []*types.Traffic, reporterAddress, reporterOwn
 		BLSSignature:    blsSignatureInfo,
 	}
 
-	msgBytes := types.GetVolumeReportMsgBytes(volumeReportMsg)
+	msgBytes := txclienttypes.GetVolumeReportMsgBytes(volumeReportMsg)
 
 	return volumeReportMsg, msgBytes, nil
 }
@@ -111,11 +111,11 @@ func BuildUpdateEffectiveDepositMsg(spP2pAddress []types.SdsAddress, spWalletAdd
 }
 
 // Stratos-chain 'register' module
-func BuildCreateResourceNodeMsg(nodeType types.NodeType, pubKey []byte, depositAmount types.Coin,
+func BuildCreateResourceNodeMsg(nodeType txclienttypes.NodeType, pubKey []byte, depositAmount txclienttypes.Coin,
 	ownerAddress types.AccAddress, p2pAddress types.SdsAddress) (*registerv1.MsgCreateResourceNode, error) {
 
 	if nodeType == 0 {
-		nodeType = types.STORAGE
+		nodeType = txclienttypes.STORAGE
 	}
 
 	pk := &ed25519.PubKey{Key: pubKey}
@@ -139,7 +139,7 @@ func BuildCreateResourceNodeMsg(nodeType types.NodeType, pubKey []byte, depositA
 	}, nil
 }
 
-func BuildCreateMetaNodeMsg(pubKey []byte, depositAmount types.Coin, ownerAddress types.AccAddress,
+func BuildCreateMetaNodeMsg(pubKey []byte, depositAmount txclienttypes.Coin, ownerAddress types.AccAddress,
 	p2pAddress types.SdsAddress) (*registerv1.MsgCreateMetaNode, error) {
 
 	pk := &ed25519.PubKey{Key: pubKey}
@@ -166,7 +166,7 @@ func BuildCreateMetaNodeMsg(pubKey []byte, depositAmount types.Coin, ownerAddres
 
 // Stratos-chain 'register' module
 func BuildUpdateResourceNodeDepositMsg(networkAddr types.SdsAddress, ownerAddr types.AccAddress,
-	depositDelta types.Coin) *registerv1.MsgUpdateResourceNodeDeposit {
+	depositDelta txclienttypes.Coin) *registerv1.MsgUpdateResourceNodeDeposit {
 
 	return &registerv1.MsgUpdateResourceNodeDeposit{
 		NetworkAddress: networkAddr.String(),
@@ -179,7 +179,7 @@ func BuildUpdateResourceNodeDepositMsg(networkAddr types.SdsAddress, ownerAddr t
 }
 
 func BuildUpdateMetaNodeDepositMsg(networkAddr types.SdsAddress, ownerAddr types.AccAddress,
-	depositDelta types.Coin) *registerv1.MsgUpdateMetaNodeDeposit {
+	depositDelta txclienttypes.Coin) *registerv1.MsgUpdateMetaNodeDeposit {
 
 	return &registerv1.MsgUpdateMetaNodeDeposit{
 		NetworkAddress: networkAddr.String(),
@@ -244,7 +244,7 @@ func BuildFileUploadMsg(fileHash string, from types.AccAddress, reporterAddress 
 	}
 }
 
-func BuildPrepayMsg(senderAddress types.AccAddress, beneficiaryAddress types.AccAddress, amount types.Coin,
+func BuildPrepayMsg(senderAddress types.AccAddress, beneficiaryAddress types.AccAddress, amount txclienttypes.Coin,
 ) *sdsv1.MsgPrepay {
 
 	return &sdsv1.MsgPrepay{
@@ -260,7 +260,7 @@ func BuildPrepayMsg(senderAddress types.AccAddress, beneficiaryAddress types.Acc
 
 }
 
-func BuildWithdrawMsg(amount types.Coin, senderAddress types.AccAddress, targetAddress types.AccAddress,
+func BuildWithdrawMsg(amount txclienttypes.Coin, senderAddress types.AccAddress, targetAddress types.AccAddress,
 ) *potv1.MsgWithdraw {
 
 	return &potv1.MsgWithdraw{
@@ -275,7 +275,7 @@ func BuildWithdrawMsg(amount types.Coin, senderAddress types.AccAddress, targetA
 	}
 }
 
-func BuildSendMsg(senderAddress types.AccAddress, toAddress types.AccAddress, amount types.Coin) *bankv1beta1.MsgSend {
+func BuildSendMsg(senderAddress types.AccAddress, toAddress types.AccAddress, amount txclienttypes.Coin) *bankv1beta1.MsgSend {
 
 	return &bankv1beta1.MsgSend{
 		FromAddress: senderAddress.String(),

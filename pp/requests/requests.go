@@ -17,6 +17,7 @@ import (
 	"github.com/stratosnet/framework/core"
 	"github.com/stratosnet/framework/metrics"
 	"github.com/stratosnet/framework/msg"
+	"github.com/stratosnet/framework/types/bech32"
 	"github.com/stratosnet/framework/utils"
 	"github.com/stratosnet/framework/utils/types"
 	"github.com/stratosnet/sds-api/header"
@@ -25,7 +26,6 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/tx-client/types/bech32"
 )
 
 const INVALID_STAT = int64(-1)

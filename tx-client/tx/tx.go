@@ -4,7 +4,7 @@ import (
 	signingv1beta1 "cosmossdk.io/api/cosmos/tx/signing/v1beta1"
 	txv1beta1 "cosmossdk.io/api/cosmos/tx/v1beta1"
 
-	cryptotypes "github.com/stratosnet/tx-client/crypto/types"
+	cryptotypes "github.com/stratosnet/framework/crypto/types"
 	authsigning "github.com/stratosnet/tx-client/types/auth/signing"
 	txsigning "github.com/stratosnet/tx-client/types/tx/signing"
 )

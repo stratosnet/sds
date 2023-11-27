@@ -8,10 +8,10 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/stratosnet/tx-client/crypto/ed25519"
-	"github.com/stratosnet/tx-client/crypto/secp256k1"
-	"github.com/stratosnet/tx-client/types"
-	"github.com/stratosnet/tx-client/types/bech32"
+	"github.com/stratosnet/framework/crypto/ed25519"
+	"github.com/stratosnet/framework/crypto/secp256k1"
+	"github.com/stratosnet/framework/types"
+	"github.com/stratosnet/framework/types/bech32"
 
 	"github.com/stratosnet/framework/utils/crypto/sha3"
 )

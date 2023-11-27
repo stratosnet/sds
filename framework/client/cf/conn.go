@@ -15,11 +15,10 @@ import (
 	"github.com/alex023/clock"
 	"github.com/pkg/errors"
 
-	tmed25519 "github.com/stratosnet/tx-client/crypto/ed25519"
-
 	"github.com/stratosnet/sds-api/header"
 
 	"github.com/stratosnet/framework/core"
+	tmed25519 "github.com/stratosnet/framework/crypto/ed25519"
 	"github.com/stratosnet/framework/metrics"
 	"github.com/stratosnet/framework/msg"
 	"github.com/stratosnet/framework/utils"

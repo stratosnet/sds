@@ -5,7 +5,7 @@ import (
 
 	signingv1beta1 "cosmossdk.io/api/cosmos/tx/signing/v1beta1"
 
-	cryptotypes "github.com/stratosnet/tx-client/crypto/types"
+	cryptotypes "github.com/stratosnet/framework/crypto/types"
 )
 
 // SignatureV2 is a convenience type that is easier to use in application logic

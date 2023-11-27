@@ -13,9 +13,9 @@ import (
 	basev1beta1 "cosmossdk.io/api/cosmos/base/v1beta1"
 	txv1beta1 "cosmossdk.io/api/cosmos/tx/v1beta1"
 
-	"github.com/stratosnet/tx-client/crypto/ed25519"
-	"github.com/stratosnet/tx-client/crypto/secp256k1"
-	cryptotypes "github.com/stratosnet/tx-client/crypto/types"
+	"github.com/stratosnet/framework/crypto/ed25519"
+	"github.com/stratosnet/framework/crypto/secp256k1"
+	cryptotypes "github.com/stratosnet/framework/crypto/types"
 	"github.com/stratosnet/tx-client/grpc"
 	"github.com/stratosnet/tx-client/types"
 	authsigning "github.com/stratosnet/tx-client/types/auth/signing"

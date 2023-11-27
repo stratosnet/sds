@@ -15,12 +15,12 @@ import (
 	"github.com/pkg/errors"
 	coretypes "github.com/tendermint/tendermint/rpc/core/types"
 
+	"github.com/stratosnet/framework/crypto"
+	"github.com/stratosnet/framework/crypto/ed25519"
+	cryptotypes "github.com/stratosnet/framework/crypto/types"
 	"github.com/stratosnet/framework/utils"
 	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds-api/relay"
-	"github.com/stratosnet/tx-client/crypto"
-	"github.com/stratosnet/tx-client/crypto/ed25519"
-	cryptotypes "github.com/stratosnet/tx-client/crypto/types"
 	txclienttypes "github.com/stratosnet/tx-client/types"
 
 	"github.com/stratosnet/relay/cmd/relayd/setting"

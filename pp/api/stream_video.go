@@ -18,6 +18,7 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/pkg/errors"
 
+	"github.com/stratosnet/framework/types/bech32"
 	"github.com/stratosnet/framework/utils"
 	utiled25519 "github.com/stratosnet/framework/utils/crypto/ed25519"
 	"github.com/stratosnet/framework/utils/datamesh"
@@ -33,7 +34,6 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/tx-client/types/bech32"
 )
 
 type StreamReqBody struct {

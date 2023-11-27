@@ -15,9 +15,9 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
 
-	"github.com/stratosnet/tx-client/crypto"
-	"github.com/stratosnet/tx-client/crypto/secp256k1"
-	txclienttypes "github.com/stratosnet/tx-client/types"
+	"github.com/stratosnet/framework/crypto"
+	"github.com/stratosnet/framework/crypto/secp256k1"
+	txclienttypes "github.com/stratosnet/framework/types"
 )
 
 const (

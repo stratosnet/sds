@@ -6,12 +6,11 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/stratosnet/tx-client/crypto/secp256k1"
-	cryptotypes "github.com/stratosnet/tx-client/crypto/types"
-	"github.com/stratosnet/tx-client/grpc"
-	txclienttypes "github.com/stratosnet/tx-client/types"
-
+	"github.com/stratosnet/framework/crypto/secp256k1"
+	cryptotypes "github.com/stratosnet/framework/crypto/types"
+	"github.com/stratosnet/framework/types"
 	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/tx-client/grpc"
 
 	"github.com/stratosnet/relay/cmd/relayd/setting"
 	relaytypes "github.com/stratosnet/relay/types"
@@ -63,7 +62,7 @@ func (m *MultiClient) loadKeys(spHomePath string) error {
 	}
 
 	m.WalletPrivateKey = secp256k1.Generate(walletKey.PrivateKey)
-	m.WalletAddress = txclienttypes.AccAddress(m.WalletPrivateKey.PubKey().Address()).String()
+	m.WalletAddress = types.AccAddress(m.WalletPrivateKey.PubKey().Address()).String()
 
 	utils.DebugLogf("verified wallet key successfully! walletAddr is %v", m.WalletAddress)
 	return nil

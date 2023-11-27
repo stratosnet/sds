@@ -1,9 +1,8 @@
 package ed25519
 
 import (
-	"github.com/stratosnet/tx-client/crypto/ed25519"
-	cryptotypes "github.com/stratosnet/tx-client/crypto/types"
-
+	"github.com/stratosnet/framework/crypto/ed25519"
+	cryptotypes "github.com/stratosnet/framework/crypto/types"
 	"github.com/stratosnet/framework/utils/types"
 )
 
