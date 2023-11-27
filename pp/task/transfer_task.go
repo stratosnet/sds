@@ -94,7 +94,7 @@ func CleanTransferTaskByTaskSliceUID(taskSliceUID string) {
 
 func GetTransferSliceData(taskId, sliceHash string) (int64, [][]byte) {
 	if tTask, ok := GetTransferTask(taskId, sliceHash); ok {
-		size, buffer, err := file.ReadSliceData(tTask.SliceStorageInfo.SliceHash)
+		size, buffer, err := file.ReadSliceData(tTask.FileHash, tTask.SliceStorageInfo.SliceHash)
 		if err != nil {
 			utils.ErrorLog("failed getting slice data", err)
 		}
