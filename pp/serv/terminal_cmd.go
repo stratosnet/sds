@@ -11,8 +11,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/metrics"
+	"github.com/stratosnet/framework/core"
+	"github.com/stratosnet/framework/metrics"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/framework/utils/datamesh"
+	utiltypes "github.com/stratosnet/framework/utils/types"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/account"
 	"github.com/stratosnet/sds/pp/event"
@@ -23,9 +26,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/datamesh"
-	utiltypes "github.com/stratosnet/sds/utils/types"
+	txclienttypes "github.com/stratosnet/tx-client/types"
 )
 
 const (
@@ -141,16 +142,16 @@ func (api *terminalCmd) Activate(ctx context.Context, param []string) (CmdResult
 		return CmdResult{Msg: ""}, errors.New("expecting at least 2 params. Input amount of tokens, fee amount and (optionally) gas amount")
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
-	amount, err := utiltypes.ParseCoinNormalized(param[0])
+	amount, err := txclienttypes.ParseCoinNormalized(param[0])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token")
 	}
 
-	fee, err := utiltypes.ParseCoinNormalized(param[1])
+	fee, err := txclienttypes.ParseCoinNormalized(param[1])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
 	}
-	txFee := utiltypes.TxFee{
+	txFee := txclienttypes.TxFee{
 		Fee:      fee,
 		Simulate: true,
 	}
@@ -189,11 +190,11 @@ func (api *terminalCmd) UpdateDeposit(ctx context.Context, param []string) (CmdR
 			"(optional) gas amount")
 	}
 
-	depositDelta, err := utiltypes.ParseCoinNormalized(param[0])
+	depositDelta, err := txclienttypes.ParseCoinNormalized(param[0])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token")
 	}
-	minUnsuspendDeposit, err := utiltypes.ParseCoinNormalized(setting.DefaultMinUnsuspendDeposit)
+	minUnsuspendDeposit, err := txclienttypes.ParseCoinNormalized(setting.DefaultMinUnsuspendDeposit)
 	if err != nil {
 		return CmdResult{Msg: ""}, err
 	}
@@ -202,11 +203,11 @@ func (api *terminalCmd) UpdateDeposit(ctx context.Context, param []string) (CmdR
 		return CmdResult{Msg: ""}, errors.New("the minimum value to update deposit is " + minUnsuspendDeposit.String())
 	}
 
-	fee, err := utiltypes.ParseCoinNormalized(param[1])
+	fee, err := txclienttypes.ParseCoinNormalized(param[1])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
 	}
-	txFee := utiltypes.TxFee{
+	txFee := txclienttypes.TxFee{
 		Fee:      fee,
 		Simulate: true,
 	}
@@ -280,11 +281,11 @@ func (api *terminalCmd) Deactivate(ctx context.Context, param []string) (CmdResu
 		return CmdResult{Msg: ""}, errors.New("expecting at least 1 param. Input fee amount and (optional) gas amount")
 	}
 
-	fee, err := utiltypes.ParseCoinNormalized(param[0])
+	fee, err := txclienttypes.ParseCoinNormalized(param[0])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
 	}
-	txFee := utiltypes.TxFee{
+	txFee := txclienttypes.TxFee{
 		Fee:      fee,
 		Simulate: true,
 	}
@@ -319,16 +320,16 @@ func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, 
 			errors.New("expecting at least 2 params. Input amount of tokens, fee amount, (optional) beneficiary, and (optional) gas amount")
 	}
 
-	amount, err := utiltypes.ParseCoinNormalized(param[0])
+	amount, err := txclienttypes.ParseCoinNormalized(param[0])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token" + err.Error())
 	}
 
-	fee, err := utiltypes.ParseCoinNormalized(param[1])
+	fee, err := txclienttypes.ParseCoinNormalized(param[1])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
 	}
-	txFee := utiltypes.TxFee{
+	txFee := txclienttypes.TxFee{
 		Fee:      fee,
 		Simulate: true,
 	}
@@ -979,16 +980,16 @@ func (api *terminalCmd) Withdraw(ctx context.Context, param []string) (CmdResult
 			errors.New("expecting at least 2 params. Input amount of tokens, fee amount, (optional) target address, and (optional) gas amount")
 	}
 
-	amount, err := utiltypes.ParseCoinNormalized(param[0])
+	amount, err := txclienttypes.ParseCoinNormalized(param[0])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token")
 	}
 
-	fee, err := utiltypes.ParseCoinNormalized(param[1])
+	fee, err := txclienttypes.ParseCoinNormalized(param[1])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
 	}
-	txFee := utiltypes.TxFee{
+	txFee := txclienttypes.TxFee{
 		Fee:      fee,
 		Simulate: true,
 	}
@@ -1049,16 +1050,16 @@ func (api *terminalCmd) Send(ctx context.Context, param []string) (CmdResult, er
 		return CmdResult{Msg: ""}, errors.New("invalid to param. Should be a valid bech32 wallet address" + err.Error())
 	}
 
-	amount, err := utiltypes.ParseCoinNormalized(param[1])
+	amount, err := txclienttypes.ParseCoinNormalized(param[1])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token")
 	}
 
-	fee, err := utiltypes.ParseCoinNormalized(param[2])
+	fee, err := txclienttypes.ParseCoinNormalized(param[2])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
 	}
-	txFee := utiltypes.TxFee{
+	txFee := txclienttypes.TxFee{
 		Fee:      fee,
 		Simulate: true,
 	}

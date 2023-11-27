@@ -1,7 +1,7 @@
 package rpc
 
 import (
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds-api/protos"
 )
 
 const (

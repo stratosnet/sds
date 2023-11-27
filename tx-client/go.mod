@@ -14,7 +14,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stratosnet/stratos-chain/api v0.0.0-20231113204325-6de660f174b5
 	github.com/tendermint/go-amino v0.16.0
-	github.com/tendermint/tendermint v0.34.25-0.20221221220620-936221e0a8d9
 	github.com/tyler-smith/go-bip39 v1.1.0
 	golang.org/x/crypto v0.14.0
 	golang.org/x/tools v0.13.0

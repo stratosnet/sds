@@ -5,7 +5,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/framework/utils"
 )
 
 // StartIPCEndpoint starts an IPC endpoint.

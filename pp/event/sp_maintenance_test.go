@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/framework/utils"
 )
 
 const (

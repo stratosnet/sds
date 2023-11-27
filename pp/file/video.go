@@ -14,9 +14,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/stratosnet/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
 )
 
 const HLS_SEGMENT_FILENAME = "%d.ts"

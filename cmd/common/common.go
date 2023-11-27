@@ -7,15 +7,14 @@ import (
 	"runtime/debug"
 	"syscall"
 
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	sdkmath "cosmossdk.io/math"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/framework/utils/console"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/console"
-	"github.com/stratosnet/sds/utils/types"
-	stchaintypes "github.com/stratosnet/stratos-chain/types"
+	stchaintypes "github.com/stratosnet/tx-client/types"
 )
 
 const (
@@ -199,13 +198,13 @@ func NodePP(_ *cobra.Command, _ []string) error {
 
 // RegisterDenoms registers the denominations to the PP.
 func RegisterDenoms() error {
-	if err := types.RegisterDenom(types.Stos, sdktypes.OneDec()); err != nil {
+	if err := stchaintypes.RegisterDenom(stchaintypes.Stos, sdkmath.LegacyOneDec()); err != nil {
 		return err
 	}
-	if err := types.RegisterDenom(types.Gwei, sdktypes.NewDecWithPrec(1, types.GweiDenomUnit)); err != nil {
+	if err := stchaintypes.RegisterDenom(stchaintypes.Gwei, sdkmath.LegacyNewDecWithPrec(1, stchaintypes.GweiDenomUnit)); err != nil {
 		return err
 	}
-	if err := types.RegisterDenom(types.Wei, sdktypes.NewDecWithPrec(1, types.WeiDenomUnit)); err != nil {
+	if err := stchaintypes.RegisterDenom(stchaintypes.Wei, sdkmath.LegacyNewDecWithPrec(1, stchaintypes.WeiDenomUnit)); err != nil {
 		return err
 	}
 

@@ -3,12 +3,12 @@ package event
 import (
 	"context"
 
-	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/framework/core"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/sds-api/header"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/requests"
-	"github.com/stratosnet/sds/utils"
 )
 
 // RspReportNodeStatus

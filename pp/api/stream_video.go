@@ -15,12 +15,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/ipfs/go-cid"
 	"github.com/pkg/errors"
 
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/framework/utils"
+	utiled25519 "github.com/stratosnet/framework/utils/crypto/ed25519"
+	"github.com/stratosnet/framework/utils/datamesh"
+	"github.com/stratosnet/framework/utils/httpserv"
+	utiltypes "github.com/stratosnet/framework/utils/types"
+	"github.com/stratosnet/sds-api/header"
+	"github.com/stratosnet/sds-api/protos"
 	rpctypes "github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
@@ -29,11 +33,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/utils"
-	utiled25519 "github.com/stratosnet/sds/utils/crypto/ed25519"
-	"github.com/stratosnet/sds/utils/datamesh"
-	"github.com/stratosnet/sds/utils/httpserv"
-	utiltypes "github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/tx-client/types/bech32"
 )
 
 type StreamReqBody struct {

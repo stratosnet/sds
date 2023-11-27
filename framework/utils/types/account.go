@@ -8,9 +8,7 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-
+	"github.com/stratosnet/tx-client/crypto/ed25519"
 	"github.com/stratosnet/tx-client/crypto/secp256k1"
 	"github.com/stratosnet/tx-client/types"
 	"github.com/stratosnet/tx-client/types/bech32"
@@ -436,13 +434,13 @@ func VerifyP2pAddrBytes(p2pPubkey []byte, p2pAddr string) bool {
 
 // VerifyP2pSignString verify the signature made by P2P key
 func VerifyP2pSignString(p2pPubkey []byte, signature []byte, message string) bool {
-	pk := ed25519.PubKey(p2pPubkey)
+	pk := ed25519.PubKey{Key: p2pPubkey}
 	return pk.VerifySignature([]byte(message), signature)
 }
 
 // VerifyP2pSignBytes verify the signature made by P2P key
 func VerifyP2pSignBytes(p2pPubkey []byte, signature []byte, message []byte) bool {
-	pk := ed25519.PubKey(p2pPubkey)
+	pk := ed25519.PubKey{Key: p2pPubkey}
 	return pk.VerifySignature(message, signature)
 }
 
@@ -465,8 +463,8 @@ func (p P2pPubKey) ToBech() (string, error) {
 
 // Address generate a P2P address from P2P public key
 func (p P2pPubKey) Address() Address {
-	pk := ed25519.PubKey(p.Bytes()).Address()
-	return BytesToAddress(pk)
+	pubKey := ed25519.PubKey{Key: p.Bytes()}
+	return BytesToAddress(pubKey.Address())
 }
 
 // P2pPubKeyFromBech create a P2pPubKey from a Bech-encoded P2P public key
@@ -501,10 +499,12 @@ func (p P2pPrivKey) Sign(b []byte) []byte {
 
 // PubKey generate a P2pPubKey from a P2pPrivKey
 func (p P2pPrivKey) PubKey() P2pPubKey {
-	return BytesToP2pPubKey(crypto.PrivKey(ed25519.PrivKey(p.Bytes())).PubKey().Bytes())
+	privKey := ed25519.PrivKey{Key: p.Bytes()}
+	return BytesToP2pPubKey(privKey.PubKey().Bytes())
 }
 
 // Address generate an Address from a P2pPrivKey
 func (p P2pPrivKey) Address() Address {
-	return BytesToAddress(crypto.PrivKey(ed25519.PrivKey(p.Bytes())).PubKey().Address().Bytes())
+	privKey := ed25519.PrivKey{Key: p.Bytes()}
+	return BytesToAddress(privKey.PubKey().Address().Bytes())
 }

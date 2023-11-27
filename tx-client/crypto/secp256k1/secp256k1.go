@@ -9,8 +9,6 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/tyler-smith/go-bip39"
 
-	tmcrypto "github.com/tendermint/tendermint/crypto"
-
 	ethcrypto "github.com/stratosnet/tx-client/crypto/ethereum"
 	"github.com/stratosnet/tx-client/crypto/ethereum/common"
 	cryptotypes "github.com/stratosnet/tx-client/crypto/types"
@@ -34,7 +32,7 @@ var (
 	_ cryptotypes.PrivKey = &PrivKey{}
 )
 
-// Generate generates a eth_secp256k1 private key from the given bytes.
+// Generate generates an eth_secp256k1 private key from the given bytes.
 func Generate(bz []byte) cryptotypes.PrivKey {
 	bzArr := make([]byte, PrivKeySize)
 	copy(bzArr, bz)
@@ -164,13 +162,13 @@ var (
 
 // Address returns the address of the ECDSA public key.
 // The function will return an empty address if the public key is invalid.
-func (pubKey *PubKey) Address() tmcrypto.Address {
+func (pubKey *PubKey) Address() cryptotypes.Address {
 	pubk, err := ethcrypto.DecompressPubkey(pubKey.Key)
 	if err != nil {
 		return nil
 	}
 
-	return tmcrypto.Address(ethcrypto.PubkeyToAddress(*pubk).Bytes())
+	return cryptotypes.Address(ethcrypto.PubkeyToAddress(*pubk).Bytes())
 }
 
 // Bytes returns the raw bytes of the ECDSA public key.

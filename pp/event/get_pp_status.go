@@ -7,9 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/framework/core"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/sds-api/header"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/network"
@@ -17,7 +18,6 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	ppTypes "github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/utils"
 	"github.com/stratosnet/sds/utils/environment"
 )
 

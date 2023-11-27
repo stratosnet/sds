@@ -3,23 +3,21 @@ package event
 import (
 	"context"
 
-	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/stratosnet/sds/pp/api/rpc"
-	"github.com/stratosnet/sds/pp/setting"
-
-	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/framework/core"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/sds-api/header"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp"
+	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
-	"github.com/stratosnet/sds/relay/stratoschain/grpc"
-	"github.com/stratosnet/sds/utils"
-	utiltypes "github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/tx"
+	txclienttypes "github.com/stratosnet/tx-client/types"
 )
 
 // Prepay PP node sends a prepay transaction
-func Prepay(ctx context.Context, beneficiary []byte, amount utiltypes.Coin, txFee utiltypes.TxFee,
+func Prepay(ctx context.Context, beneficiary []byte, amount txclienttypes.Coin, txFee txclienttypes.TxFee,
 	walletAddr string, walletPubkey, wsign []byte, reqTime int64) error {
 	prepayReq, err := reqPrepayData(ctx, beneficiary, amount, txFee, walletAddr, walletPubkey, wsign, reqTime)
 	if err != nil {
@@ -53,7 +51,7 @@ func RspPrepay(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	err := grpc.BroadcastTx(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
+	err := tx.BroadcastTx(target.Tx)
 	if err != nil {
 		pp.ErrorLog(ctx, "The prepay transaction couldn't be broadcast", err)
 	} else {

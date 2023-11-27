@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/stratosnet/framework/utils"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
-	"github.com/stratosnet/sds/utils"
 )
 
 const (

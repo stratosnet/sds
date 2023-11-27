@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/framework/metrics"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/utils"
 )
 
 const TRANSFER_TASK_TIMEOUT_THRESHOLD = 180 // in seconds

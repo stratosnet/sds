@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/framework/utils/types"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/utils/types"
 )
 
 const (

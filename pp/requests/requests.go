@@ -14,20 +14,18 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/stratosnet/sds/pp/p2pserver"
-
-	"github.com/cosmos/cosmos-sdk/types/bech32"
-
-	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/framework/core"
+	"github.com/stratosnet/framework/metrics"
+	"github.com/stratosnet/framework/msg"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/framework/utils/types"
+	"github.com/stratosnet/sds-api/header"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/tx-client/types/bech32"
 )
 
 const INVALID_STAT = int64(-1)

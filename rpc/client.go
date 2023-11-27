@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/framework/utils"
 )
 
 var (

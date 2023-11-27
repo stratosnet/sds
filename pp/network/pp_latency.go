@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/framework/msg"
+	"github.com/stratosnet/sds-api/header"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"google.golang.org/protobuf/proto"

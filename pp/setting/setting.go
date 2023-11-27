@@ -10,9 +10,9 @@ import (
 
 	"github.com/pelletier/go-toml"
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/relay/stratoschain/grpc"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/framework/client/cf"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/tx-client/grpc"
 )
 
 var (

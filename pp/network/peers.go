@@ -5,11 +5,12 @@ import (
 	"sync"
 
 	"github.com/alex023/clock"
+
+	"github.com/stratosnet/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/utils"
 )
 
 type Network struct {

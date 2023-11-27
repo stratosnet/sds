@@ -10,13 +10,11 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/spf13/cobra"
 
-	txclienttype "github.com/stratosnet/tx-client/types"
-
 	"github.com/stratosnet/framework/utils"
-
 	"github.com/stratosnet/relay/client"
 	"github.com/stratosnet/relay/cmd/relayd/setting"
 	"github.com/stratosnet/relay/server"
+	txclienttypes "github.com/stratosnet/tx-client/types"
 )
 
 func startRunE(cmd *cobra.Command, _ []string) error {
@@ -107,13 +105,13 @@ func startPreRunE(cmd *cobra.Command, _ []string) error {
 
 // RegisterDenoms registers the denominations to the PP.
 func registerDenoms() error {
-	if err := txclienttype.RegisterDenom(txclienttype.Stos, sdkmath.LegacyOneDec()); err != nil {
+	if err := txclienttypes.RegisterDenom(txclienttypes.Stos, sdkmath.LegacyOneDec()); err != nil {
 		return err
 	}
-	if err := txclienttype.RegisterDenom(txclienttype.Gwei, sdkmath.LegacyNewDecWithPrec(1, txclienttype.GweiDenomUnit)); err != nil {
+	if err := txclienttypes.RegisterDenom(txclienttypes.Gwei, sdkmath.LegacyNewDecWithPrec(1, txclienttypes.GweiDenomUnit)); err != nil {
 		return err
 	}
-	if err := txclienttype.RegisterDenom(txclienttype.Wei, sdkmath.LegacyNewDecWithPrec(1, txclienttype.WeiDenomUnit)); err != nil {
+	if err := txclienttypes.RegisterDenom(txclienttypes.Wei, sdkmath.LegacyNewDecWithPrec(1, txclienttypes.WeiDenomUnit)); err != nil {
 		return err
 	}
 

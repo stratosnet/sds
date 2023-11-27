@@ -5,9 +5,9 @@ import (
 	"io"
 	"sync/atomic"
 
-	"github.com/stratosnet/sds/utils"
-
 	mapset "github.com/deckarep/golang-set"
+
+	"github.com/stratosnet/framework/utils"
 )
 
 const MetadataApi = "rpc"

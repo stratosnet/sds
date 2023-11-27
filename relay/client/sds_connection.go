@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cosmos/gogoproto/proto"
 	"github.com/gorilla/websocket"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	basev1beta1 "cosmossdk.io/api/cosmos/base/v1beta1"
@@ -261,7 +261,7 @@ func (s *sdsConnection) txBroadcasterLoop() {
 			return
 		}
 
-		err = stratoschain.DeliverTx(txBytes)
+		err = stratoschain.BroadcastTx(txBytes)
 		if err != nil {
 			utils.ErrorLog("couldn't broadcast transaction", err)
 			return

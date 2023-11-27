@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/framework/core"
+	"github.com/stratosnet/framework/utils"
 )
 
 func logDepthWithContext(context context.Context, level utils.LogLevel, calldepth int, v ...interface{}) {

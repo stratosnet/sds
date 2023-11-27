@@ -4,14 +4,14 @@ import (
 	"context"
 	"time"
 
-	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/framework/client/cf"
+	"github.com/stratosnet/framework/core"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/sds-api/header"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
-	"github.com/stratosnet/sds/utils"
 )
 
 func NoticeSpUnderMaintenance(ctx context.Context, conn core.WriteCloser) {

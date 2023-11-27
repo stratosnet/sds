@@ -15,7 +15,7 @@ import (
 	"github.com/alex023/clock"
 	"github.com/pkg/errors"
 
-	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
+	tmed25519 "github.com/stratosnet/tx-client/crypto/ed25519"
 
 	"github.com/stratosnet/sds-api/header"
 

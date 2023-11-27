@@ -3,26 +3,19 @@ package event
 import (
 	"context"
 
-	"github.com/cosmos/cosmos-sdk/client"
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
-	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
+	"github.com/stratosnet/framework/utils/crypto/ed25519"
+	"github.com/stratosnet/framework/utils/crypto/secp256k1"
+	"github.com/stratosnet/framework/utils/types"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp/p2pserver"
-	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
-	sdstypes "github.com/stratosnet/stratos-chain/x/sds/types"
-
-	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/relay"
-	"github.com/stratosnet/sds/relay/stratoschain"
-	"github.com/stratosnet/sds/relay/stratoschain/grpc"
-	relaytypes "github.com/stratosnet/sds/relay/types"
-	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	"github.com/stratosnet/sds/utils/crypto/secp256k1"
-	"github.com/stratosnet/sds/utils/types"
+	pptypes "github.com/stratosnet/sds/pp/types"
+	txclienttx "github.com/stratosnet/tx-client/tx"
+	txclienttypes "github.com/stratosnet/tx-client/types"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
-func reqActivateData(ctx context.Context, amount types.Coin, txFee types.TxFee) (*protos.ReqActivatePP, error) {
+func reqActivateData(ctx context.Context, amount txclienttypes.Coin, txFee txclienttypes.TxFee) (*protos.ReqActivatePP, error) {
 	// Create and sign transaction to add new resource node
 	ownerAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
 	if err != nil {
@@ -30,15 +23,23 @@ func reqActivateData(ctx context.Context, amount types.Coin, txFee types.TxFee) 
 	}
 
 	p2pAddress := p2pserver.GetP2pServer(ctx).GetP2PAddrInTypeAddress()
-	txMsg, err := stratoschain.BuildCreateResourceNodeMsg(registertypes.STORAGE, p2pserver.GetP2pServer(ctx).GetP2PPublicKey(), amount, ownerAddress, p2pAddress)
+	txMsg, err := txclienttx.BuildCreateResourceNodeMsg(txclienttypes.STORAGE, p2pserver.GetP2pServer(ctx).GetP2PPublicKey(), amount, ownerAddress.Bytes(), p2pAddress.Bytes())
 	if err != nil {
 		return nil, err
 	}
-	signatureKeys := []relaytypes.SignatureKey{
-		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
+	signatureKeys := []*txclienttypes.SignatureKey{
+		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: txclienttypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := CreateAndSimulateTx(txMsg, registertypes.TypeMsgCreateResourceNode, txFee, "", signatureKeys)
+	chainId := setting.Config.Blockchain.ChainId
+	gasAdjustment := setting.Config.Blockchain.GasAdjustment
+
+	msgAny, err := anypb.New(txMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	txBytes, err := txclienttx.CreateAndSimulateTx(msgAny, pptypes.TypeMsgCreateResourceNode, txFee, "", signatureKeys, chainId, gasAdjustment)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +53,7 @@ func reqActivateData(ctx context.Context, amount types.Coin, txFee types.TxFee) 
 	return req, nil
 }
 
-func reqUpdateDepositData(ctx context.Context, depositDelta types.Coin, txFee types.TxFee) (*protos.ReqUpdateDepositPP, error) {
+func reqUpdateDepositData(ctx context.Context, depositDelta txclienttypes.Coin, txFee txclienttypes.TxFee) (*protos.ReqUpdateDepositPP, error) {
 	// Create and sign transaction to update deposit for existing resource node
 	networkAddr := ed25519.PubKeyBytesToAddress(p2pserver.GetP2pServer(ctx).GetP2PPublicKey())
 	ownerAddr, err := secp256k1.PubKeyToAddress(setting.WalletPublicKey)
@@ -60,12 +61,20 @@ func reqUpdateDepositData(ctx context.Context, depositDelta types.Coin, txFee ty
 		return nil, err
 	}
 
-	txMsg := stratoschain.BuildUpdateResourceNodeDepositMsg(networkAddr, *ownerAddr, depositDelta)
-	signatureKeys := []relaytypes.SignatureKey{
-		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
+	txMsg := txclienttx.BuildUpdateResourceNodeDepositMsg(networkAddr.Bytes(), ownerAddr.Bytes(), depositDelta)
+	signatureKeys := []*txclienttypes.SignatureKey{
+		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: txclienttypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := CreateAndSimulateTx(txMsg, registertypes.TypeMsgUpdateResourceNodeDeposit, txFee, "", signatureKeys)
+	chainId := setting.Config.Blockchain.ChainId
+	gasAdjustment := setting.Config.Blockchain.GasAdjustment
+
+	msgAny, err := anypb.New(txMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	txBytes, err := txclienttx.CreateAndSimulateTx(msgAny, pptypes.TypeMsgUpdateResourceNodeDeposit, txFee, "", signatureKeys, chainId, gasAdjustment)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +86,7 @@ func reqUpdateDepositData(ctx context.Context, depositDelta types.Coin, txFee ty
 	return req, nil
 }
 
-func reqDeactivateData(ctx context.Context, txFee types.TxFee) (*protos.ReqDeactivatePP, error) {
+func reqDeactivateData(ctx context.Context, txFee txclienttypes.TxFee) (*protos.ReqDeactivatePP, error) {
 	// Create and sign transaction to remove a resource node
 	nodeAddress := ed25519.PubKeyBytesToAddress(p2pserver.GetP2pServer(ctx).GetP2PPublicKey())
 	ownerAddress, err := secp256k1.PubKeyToAddress(setting.WalletPublicKey)
@@ -85,12 +94,20 @@ func reqDeactivateData(ctx context.Context, txFee types.TxFee) (*protos.ReqDeact
 		return nil, err
 	}
 
-	txMsg := stratoschain.BuildRemoveResourceNodeMsg(nodeAddress, *ownerAddress)
-	signatureKeys := []relaytypes.SignatureKey{
-		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
+	txMsg := txclienttx.BuildRemoveResourceNodeMsg(nodeAddress.Bytes(), ownerAddress.Bytes())
+	signatureKeys := []*txclienttypes.SignatureKey{
+		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: txclienttypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := CreateAndSimulateTx(txMsg, registertypes.TypeMsgRemoveResourceNode, txFee, "", signatureKeys)
+	chainId := setting.Config.Blockchain.ChainId
+	gasAdjustment := setting.Config.Blockchain.GasAdjustment
+
+	msgAny, err := anypb.New(txMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	txBytes, err := txclienttx.CreateAndSimulateTx(msgAny, pptypes.TypeMsgRemoveResourceNode, txFee, "", signatureKeys, chainId, gasAdjustment)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +119,7 @@ func reqDeactivateData(ctx context.Context, txFee types.TxFee) (*protos.ReqDeact
 	return req, nil
 }
 
-func reqPrepayData(ctx context.Context, beneficiary []byte, amount types.Coin, txFee types.TxFee,
+func reqPrepayData(ctx context.Context, beneficiary []byte, amount txclienttypes.Coin, txFee txclienttypes.TxFee,
 	walletAddr string, walletPubkey, wsign []byte, reqTime int64) (*protos.ReqPrepay, error) {
 	// Create and sign a prepay transaction
 	senderAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
@@ -110,12 +127,20 @@ func reqPrepayData(ctx context.Context, beneficiary []byte, amount types.Coin, t
 		return nil, err
 	}
 
-	txMsg := stratoschain.BuildPrepayMsg(senderAddress.Bytes(), beneficiary, amount)
-	signatureKeys := []relaytypes.SignatureKey{
-		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: relaytypes.SignatureSecp256k1},
+	txMsg := txclienttx.BuildPrepayMsg(senderAddress.Bytes(), beneficiary, amount)
+	signatureKeys := []*txclienttypes.SignatureKey{
+		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: txclienttypes.SignatureSecp256k1},
 	}
 
-	txBytes, err := CreateAndSimulateTx(txMsg, sdstypes.TypeMsgPrepay, txFee, "", signatureKeys)
+	chainId := setting.Config.Blockchain.ChainId
+	gasAdjustment := setting.Config.Blockchain.GasAdjustment
+
+	msgAny, err := anypb.New(txMsg)
+	if err != nil {
+		return nil, err
+	}
+
+	txBytes, err := txclienttx.CreateAndSimulateTx(msgAny, pptypes.TypeMsgPrepay, txFee, "", signatureKeys, chainId, gasAdjustment)
 	if err != nil {
 		return nil, err
 	}
@@ -133,54 +158,4 @@ func reqPrepayData(ctx context.Context, beneficiary []byte, amount types.Coin, t
 		ReqTime:    reqTime,
 	}
 	return req, nil
-}
-
-func CreateAndSimulateTx(txMsg sdktypes.Msg, msgType string, txFee types.TxFee, memo string, signatureKeys []relaytypes.SignatureKey) ([]byte, error) {
-	protoConfig, txBuilder := createTxConfigAndTxBuilder()
-	err := setMsgInfoToTxBuilder(txBuilder, txMsg, txFee.Fee, txFee.Gas, memo)
-	if err != nil {
-		return nil, err
-	}
-
-	unsignedMsgs := []*relaytypes.UnsignedMsg{{Msg: txMsg, SignatureKeys: signatureKeys, Type: msgType}}
-	txBytes, err := stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.Blockchain.ChainId, unsignedMsgs)
-	if err != nil {
-		return nil, err
-	}
-
-	if txFee.Simulate {
-		gasInfo, err := grpc.Simulate(txBytes)
-		if err != nil {
-			return nil, err
-		}
-		txBuilder.SetGasLimit(uint64(float64(gasInfo.GasUsed) * setting.Config.Blockchain.GasAdjustment))
-		txBytes, err = stratoschain.BuildTxBytes(protoConfig, txBuilder, setting.Config.Blockchain.ChainId, unsignedMsgs)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return txBytes, nil
-}
-
-func createTxConfigAndTxBuilder() (client.TxConfig, client.TxBuilder) {
-	protoConfig := authtx.NewTxConfig(relay.ProtoCdc, []signingtypes.SignMode{signingtypes.SignMode_SIGN_MODE_DIRECT})
-	txBuilder := protoConfig.NewTxBuilder()
-	return protoConfig, txBuilder
-}
-
-func setMsgInfoToTxBuilder(txBuilder client.TxBuilder, txMsg sdktypes.Msg, fee types.Coin, gas uint64, memo string) error {
-	err := txBuilder.SetMsgs(txMsg)
-	if err != nil {
-		return err
-	}
-
-	txBuilder.SetFeeAmount(sdktypes.NewCoins(
-		sdktypes.Coin{
-			Denom:  fee.Denom,
-			Amount: fee.Amount,
-		}),
-	)
-	txBuilder.SetGasLimit(gas)
-	txBuilder.SetMemo(memo)
-	return nil
 }

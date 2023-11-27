@@ -8,6 +8,8 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	"github.com/stratosnet/tx-client/crypto/ed25519"
+	cryptotypes "github.com/stratosnet/tx-client/crypto/types"
 	"github.com/stratosnet/tx-client/types/bech32"
 )
 
@@ -211,6 +213,25 @@ func (aa AccAddress) Format(s fmt.State, verb rune) {
 // ----------------------------------------------------------------------------
 
 type SdsAddress []byte
+
+// SdsPubKeyFromBech32 returns an ed25519 SdsPublicKey from a Bech32 string.
+func SdsPubKeyFromBech32(pubkeyStr string) (cryptotypes.PubKey, error) {
+	_, sdsPubKeyBytes, err := bech32.DecodeAndConvert(pubkeyStr)
+	if err != nil {
+		return nil, err
+	}
+	pubKey := ed25519.PubKey{Key: sdsPubKeyBytes}
+	return &pubKey, nil
+}
+
+// SdsPubKeyToBech32 convert a SdsPublicKey to a Bech32 string.
+func SdsPubKeyToBech32(pubkey cryptotypes.PubKey) (string, error) {
+	bech32Pub, err := bech32.ConvertAndEncode(SdsNodeP2PPubkeyPrefix, pubkey.Bytes())
+	if err != nil {
+		panic(err)
+	}
+	return bech32Pub, nil
+}
 
 func SdsAddressBytesToBech32(addr []byte) string {
 	return addrBytesToBech32(addr, SdsNodeP2PAddressPrefix)

@@ -3,22 +3,21 @@ package event
 import (
 	"context"
 
-	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/framework/core"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/sds-api/header"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/pp/tx"
 	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/relay/stratoschain/grpc"
-	"github.com/stratosnet/sds/utils"
-	utiltypes "github.com/stratosnet/sds/utils/types"
+	txclienttypes "github.com/stratosnet/tx-client/types"
 )
 
 // Deactivate Request that an active PP node becomes inactive
-func Deactivate(ctx context.Context, txFee utiltypes.TxFee) error {
+func Deactivate(ctx context.Context, txFee txclienttypes.TxFee) error {
 	deactivateReq, err := reqDeactivateData(ctx, txFee)
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't build PP deactivate request: "+err.Error())
@@ -54,7 +53,7 @@ func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	err := grpc.BroadcastTx(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
+	err := tx.BroadcastTx(target.Tx)
 	if err != nil {
 		pp.ErrorLog(ctx, "The deactivation transaction couldn't be broadcast", err)
 	} else {

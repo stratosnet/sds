@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/types"
 )
@@ -30,7 +30,7 @@ func (p *P2pServer) DeletePPByNetworkAddress(ctx context.Context, p2pAddr string
 	p.peerList.DeletePPByNetworkAddress(ctx, p2pAddr)
 }
 
-//UpdatePP will update one pp info to local list
+// UpdatePP will update one pp info to local list
 func (p *P2pServer) UpdatePP(ctx context.Context, pp *types.PeerInfo) {
 	p.peerList.UpdatePP(ctx, pp)
 }

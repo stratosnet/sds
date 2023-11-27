@@ -7,9 +7,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/stratosnet/framework/utils"
 	"github.com/stratosnet/sds/cmd/common"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
 )
 
 const (

@@ -7,7 +7,7 @@ import (
 	nethttp "net/http"
 
 	cmds "github.com/ipfs/go-ipfs-cmds"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/framework/utils"
 )
 
 type requester interface {

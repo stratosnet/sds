@@ -6,11 +6,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/framework/utils/crypto/secp256k1"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto/secp256k1"
-	"github.com/stratosnet/stratos-chain/types"
+	"github.com/stratosnet/tx-client/types"
 )
 
 func CreateWallet(ctx context.Context, password, name, mnemonic, hdPath string) string {

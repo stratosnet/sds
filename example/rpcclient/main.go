@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/framework/utils/types"
 	"github.com/stratosnet/sds/cmd/common"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/types"
 )
 
 const (

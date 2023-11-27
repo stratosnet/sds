@@ -13,7 +13,7 @@ import (
 
 	mapset "github.com/deckarep/golang-set"
 	"github.com/gorilla/websocket"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/framework/utils"
 )
 
 const (

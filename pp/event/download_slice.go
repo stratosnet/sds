@@ -11,21 +11,20 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/pp/p2pserver"
-
-	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/framework/client/cf"
+	"github.com/stratosnet/framework/core"
+	"github.com/stratosnet/framework/metrics"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/framework/utils/encryption"
+	"github.com/stratosnet/framework/utils/encryption/hdkey"
+	"github.com/stratosnet/sds-api/header"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/encryption"
-	"github.com/stratosnet/sds/utils/encryption/hdkey"
 )
 
 const (

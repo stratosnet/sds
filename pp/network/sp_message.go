@@ -4,13 +4,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/framework/utils/types"
+	"github.com/stratosnet/sds-api/header"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/types"
 )
 
 // RegisterToSP send ReqRegister to SP

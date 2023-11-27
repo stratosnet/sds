@@ -6,10 +6,13 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/framework/utils/console"
+
+	"github.com/stratosnet/tx-client/types"
+
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/console"
-	"github.com/stratosnet/stratos-chain/types"
 )
 
 const (

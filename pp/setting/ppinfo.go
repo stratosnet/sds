@@ -5,8 +5,8 @@ import (
 	"time"
 
 	externalip "github.com/glendc/go-external-ip"
+	"github.com/stratosnet/framework/utils"
 	ppTypes "github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/utils"
 )
 
 var IsPP = false

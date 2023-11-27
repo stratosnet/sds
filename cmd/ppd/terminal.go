@@ -12,12 +12,12 @@ import (
 
 	"github.com/alex023/clock"
 	"github.com/spf13/cobra"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/framework/utils/console"
 	"github.com/stratosnet/sds/cmd/common"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/console"
 )
 
 const (

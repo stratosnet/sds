@@ -9,8 +9,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/stratosnet/framework/utils"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
 )
 
 // getTmpFolderPath path to the tmp file folder

@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/framework/metrics"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/utils"
 )
 
 // UploadSliceTask represents a slice upload task that is in progress

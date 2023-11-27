@@ -1,35 +1,29 @@
 package ed25519
 
 import (
-	"github.com/stratosnet/framework/utils/types"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-
-	sdked25519 "github.com/stratosnet/tx-client/crypto/ed25519"
+	"github.com/stratosnet/tx-client/crypto/ed25519"
 	cryptotypes "github.com/stratosnet/tx-client/crypto/types"
+
+	"github.com/stratosnet/framework/utils/types"
 )
 
 func NewKey() []byte {
 	privKey := ed25519.GenPrivKey()
-	return privKey[:]
+	return privKey.Bytes()
 }
 
-func PrivKeyBytesToPrivKey(privKey []byte) crypto.PrivKey {
-	var privKey2 [64]byte
-	copy(privKey2[:], privKey)
-	return ed25519.PrivKey(privKey2[:])
+func PrivKeyBytesToPrivKey(privKey []byte) cryptotypes.PrivKey {
+	return ed25519.Generate(privKey)
 }
 
-func PrivKeyBytesToPubKey(privKey []byte) crypto.PubKey {
+func PrivKeyBytesToPubKey(privKey []byte) cryptotypes.PubKey {
 	pubKey := PrivKeyBytesToPrivKey(privKey).PubKey()
-	pubKey2 := pubKey.(ed25519.PubKey)
-	return pubKey2
+	return pubKey
 }
 
 func PrivKeyBytesToPubKeyBytes(privKey []byte) []byte {
 	pubKey := PrivKeyBytesToPrivKey(privKey).PubKey()
-	pubKey2 := pubKey.(ed25519.PubKey)
-	return pubKey2[:]
+	return pubKey.Bytes()
 }
 
 func PrivKeyBytesToAddress(privKey []byte) types.Address {
@@ -37,10 +31,10 @@ func PrivKeyBytesToAddress(privKey []byte) types.Address {
 	return types.BytesToAddress(address)
 }
 
-func PubKeyBytesToPubKey(pubKey []byte) crypto.PubKey {
-	var pubKey2 [ed25519.PubKeySize]byte
+func PubKeyBytesToPubKey(pubKey []byte) cryptotypes.PubKey {
+	var pubKey2 []byte
 	copy(pubKey2[:], pubKey)
-	return ed25519.PubKey(pubKey2[:])
+	return &ed25519.PubKey{Key: pubKey2}
 }
 
 func PubKeyBytesToAddress(pubKey []byte) types.Address {
@@ -49,8 +43,7 @@ func PubKeyBytesToAddress(pubKey []byte) types.Address {
 }
 
 func PrivKeyBytesToSdkPrivKey(privKey []byte) cryptotypes.PrivKey {
-	retPrivKey := sdked25519.PrivKey{Key: privKey} //nolint:staticcheck
-	return &retPrivKey
+	return ed25519.Generate(privKey)
 }
 
 func PrivKeyBytesToSdkPubKey(privKey []byte) cryptotypes.PubKey {
@@ -59,6 +52,6 @@ func PrivKeyBytesToSdkPubKey(privKey []byte) cryptotypes.PubKey {
 }
 
 func PubKeyBytesToSdkPubKey(pubKey []byte) cryptotypes.PubKey {
-	retPubKey := sdked25519.PubKey{Key: pubKey}
+	retPubKey := ed25519.PubKey{Key: pubKey}
 	return &retPubKey
 }

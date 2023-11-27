@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/framework/utils"
 )
 
 // ServeListener accepts connections on l, serving JSON-RPC on them.

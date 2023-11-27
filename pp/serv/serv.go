@@ -8,7 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/stratosnet/sds/metrics"
+	"github.com/stratosnet/framework/metrics"
+	"github.com/stratosnet/framework/utils"
 	"github.com/stratosnet/sds/pp/account"
 	"github.com/stratosnet/sds/pp/api"
 	"github.com/stratosnet/sds/pp/api/rest"
@@ -20,7 +21,6 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/rpc"
-	"github.com/stratosnet/sds/utils"
 )
 
 // BaseServer base pp server

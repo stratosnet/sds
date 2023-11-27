@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
-	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
+	tmed25519 "github.com/stratosnet/tx-client/crypto/ed25519"
 
 	"github.com/stratosnet/sds-api/header"
 	"github.com/stratosnet/sds-api/protos"

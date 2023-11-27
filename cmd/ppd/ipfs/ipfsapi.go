@@ -10,11 +10,11 @@ import (
 	"github.com/ipfs/go-ipfs-cmds/http"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/framework/utils/types"
 	"github.com/stratosnet/sds/pp/ipfs"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/types"
 )
 
 type ipfsenv struct {

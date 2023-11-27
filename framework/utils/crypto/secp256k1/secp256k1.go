@@ -33,11 +33,12 @@ func PubKeyToSdkPubKey(pubKey []byte) (cryptotypes.PubKey, error) {
 	return &secp256k1.PubKey{Key: ecdsaPubKey.SerializeCompressed()}, nil
 }
 
-func PubKeyToAddress(pubKey []byte) (*types.Address, error) {
+func PubKeyToAddress(pubKey []byte) (types.Address, error) {
+	var address types.Address
 	pubKeyObject, err := PubKeyToSdkPubKey(pubKey)
 	if err != nil {
-		return nil, err
+		return address, err
 	}
-	address := types.BytesToAddress(pubKeyObject.Address())
-	return &address, nil
+	address = types.BytesToAddress(pubKeyObject.Address())
+	return address, nil
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/stratosnet/relay/stratoschain/handlers"
 )
 
-func DeliverTx(txBytes []byte) error {
+func BroadcastTx(txBytes []byte) error {
 
 	resp, err := grpc.BroadcastTx(txBytes, txv1beta1.BroadcastMode_BROADCAST_MODE_SYNC)
 	if err != nil {

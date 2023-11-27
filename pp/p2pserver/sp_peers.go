@@ -10,16 +10,16 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/framework/client/cf"
+	"github.com/stratosnet/framework/core"
+	"github.com/stratosnet/framework/msg"
+	"github.com/stratosnet/framework/utils"
+	utilstypes "github.com/stratosnet/framework/utils/types"
+	"github.com/stratosnet/sds-api/header"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/utils"
-	utilstypes "github.com/stratosnet/sds/utils/types"
 )
 
 var (

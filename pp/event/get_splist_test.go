@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp/setting"
 )
 

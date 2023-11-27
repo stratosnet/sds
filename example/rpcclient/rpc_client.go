@@ -15,11 +15,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/framework/utils/datamesh"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/datamesh"
 )
 
 func reqUploadMsg(filePath, hash, sn string) []byte {

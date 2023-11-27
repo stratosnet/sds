@@ -9,13 +9,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/framework/client/cf"
+	"github.com/stratosnet/framework/core"
+	"github.com/stratosnet/framework/utils"
+	utilstypes "github.com/stratosnet/framework/utils/types"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/utils"
-	utilstypes "github.com/stratosnet/sds/utils/types"
 )
 
 const (

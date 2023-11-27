@@ -13,10 +13,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/framework/core"
+	"github.com/stratosnet/framework/metrics"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/framework/utils/datamesh"
+	utiltypes "github.com/stratosnet/framework/utils/types"
+	"github.com/stratosnet/sds-api/header"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp"
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/event"
@@ -28,10 +31,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/rpc"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/datamesh"
-	utiltypes "github.com/stratosnet/sds/utils/types"
-	"github.com/stratosnet/stratos-chain/types"
+	txclienttypes "github.com/stratosnet/tx-client/types"
 )
 
 const (
@@ -393,7 +393,7 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 func (api *rpcPubApi) GetFileStatus(ctx context.Context, param rpc_api.ParamGetFileStatus) rpc_api.FileStatusResult {
 	metrics.RpcReqCount.WithLabelValues("GetFileStatus").Inc()
 
-	pubkey, err := types.SdsPubKeyFromBech32(param.Signature.Pubkey)
+	pubkey, err := txclienttypes.SdsPubKeyFromBech32(param.Signature.Pubkey)
 	if err != nil {
 		return rpc_api.FileStatusResult{Return: rpc_api.WRONG_INPUT, Error: err.Error()}
 	}
@@ -1111,16 +1111,16 @@ func (api *rpcPrivApi) RequestRegisterNewPP(ctx context.Context, param rpc_api.P
 
 func (api *rpcPrivApi) RequestActivate(ctx context.Context, param rpc_api.ParamReqActivate) rpc_api.ActivateResult {
 	metrics.RpcReqCount.WithLabelValues("RequestActivate").Inc()
-	deposit, err := utiltypes.ParseCoinNormalized(param.Deposit)
+	deposit, err := txclienttypes.ParseCoinNormalized(param.Deposit)
 	if err != nil {
 		return rpc_api.ActivateResult{Return: rpc_api.WRONG_INPUT}
 	}
-	fee, err := utiltypes.ParseCoinNormalized(param.Fee)
+	fee, err := txclienttypes.ParseCoinNormalized(param.Fee)
 	if err != nil {
 		return rpc_api.ActivateResult{Return: rpc_api.WRONG_INPUT}
 	}
 
-	txFee := utiltypes.TxFee{
+	txFee := txclienttypes.TxFee{
 		Fee:      fee,
 		Gas:      param.Gas,
 		Simulate: false,
@@ -1163,16 +1163,16 @@ func (api *rpcPrivApi) RequestPrepay(ctx context.Context, param rpc_api.ParamReq
 		}
 	}
 
-	prepayAmount, err := utiltypes.ParseCoinNormalized(param.PrepayAmount)
+	prepayAmount, err := txclienttypes.ParseCoinNormalized(param.PrepayAmount)
 	if err != nil {
 		return rpc_api.PrepayResult{Return: rpc_api.WRONG_INPUT}
 	}
-	fee, err := utiltypes.ParseCoinNormalized(param.Fee)
+	fee, err := txclienttypes.ParseCoinNormalized(param.Fee)
 	if err != nil {
 		return rpc_api.PrepayResult{Return: rpc_api.WRONG_INPUT}
 	}
 
-	txFee := utiltypes.TxFee{
+	txFee := txclienttypes.TxFee{
 		Fee:      fee,
 		Gas:      param.Gas,
 		Simulate: false,
@@ -1240,7 +1240,7 @@ func (api *rpcPrivApi) RequestStartMining(ctx context.Context, param rpc_api.Par
 
 func (api *rpcPrivApi) RequestWithdraw(ctx context.Context, param rpc_api.ParamReqWithdraw) rpc_api.WithdrawResult {
 	metrics.RpcReqCount.WithLabelValues("RequestWithdraw").Inc()
-	amount, err := utiltypes.ParseCoinNormalized(param.Amount)
+	amount, err := txclienttypes.ParseCoinNormalized(param.Amount)
 	if err != nil {
 		return rpc_api.WithdrawResult{Return: rpc_api.WRONG_INPUT}
 	}
@@ -1252,11 +1252,11 @@ func (api *rpcPrivApi) RequestWithdraw(ctx context.Context, param rpc_api.ParamR
 	if err != nil {
 		return rpc_api.WithdrawResult{Return: rpc_api.WRONG_WALLET_ADDRESS}
 	}
-	fee, err := utiltypes.ParseCoinNormalized(param.Fee)
+	fee, err := txclienttypes.ParseCoinNormalized(param.Fee)
 	if err != nil {
 		return rpc_api.WithdrawResult{Return: rpc_api.WRONG_INPUT}
 	}
-	txFee := utiltypes.TxFee{
+	txFee := txclienttypes.TxFee{
 		Fee:      fee,
 		Simulate: true,
 	}
@@ -1291,7 +1291,7 @@ func (api *rpcPrivApi) RequestWithdraw(ctx context.Context, param rpc_api.ParamR
 
 func (api *rpcPrivApi) RequestSend(ctx context.Context, param rpc_api.ParamReqSend) rpc_api.SendResult {
 	metrics.RpcReqCount.WithLabelValues("RequestSend").Inc()
-	amount, err := utiltypes.ParseCoinNormalized(param.Amount)
+	amount, err := txclienttypes.ParseCoinNormalized(param.Amount)
 	if err != nil {
 		return rpc_api.SendResult{Return: rpc_api.WRONG_INPUT}
 	}
@@ -1303,11 +1303,11 @@ func (api *rpcPrivApi) RequestSend(ctx context.Context, param rpc_api.ParamReqSe
 	if err != nil {
 		return rpc_api.SendResult{Return: rpc_api.WRONG_WALLET_ADDRESS}
 	}
-	fee, err := utiltypes.ParseCoinNormalized(param.Fee)
+	fee, err := txclienttypes.ParseCoinNormalized(param.Fee)
 	if err != nil {
 		return rpc_api.SendResult{Return: rpc_api.WRONG_INPUT}
 	}
-	txFee := utiltypes.TxFee{
+	txFee := txclienttypes.TxFee{
 		Fee:      fee,
 		Simulate: true,
 	}

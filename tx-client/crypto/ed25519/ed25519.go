@@ -7,9 +7,8 @@ import (
 
 	"github.com/hdevalence/ed25519consensus"
 
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/tmhash"
-
+	tmcrypto "github.com/stratosnet/tx-client/crypto/tendermint"
+	"github.com/stratosnet/tx-client/crypto/tendermint/tmhash"
 	cryptotypes "github.com/stratosnet/tx-client/crypto/types"
 )
 
@@ -31,6 +30,16 @@ const (
 var (
 	_ cryptotypes.PrivKey = &PrivKey{}
 )
+
+// Generate generates an ed25519 private key from the given bytes.
+func Generate(bz []byte) cryptotypes.PrivKey {
+	bzArr := make([]byte, PrivKeySize)
+	copy(bzArr, bz)
+
+	return &PrivKey{
+		Key: bzArr,
+	}
+}
 
 // Bytes returns the privkey byte format.
 func (privKey *PrivKey) Bytes() []byte {
@@ -90,7 +99,7 @@ func (privKey *PrivKey) Type() string {
 // It uses OS randomness in conjunction with the current global random seed
 // in tendermint/libs/common to generate the private key.
 func GenPrivKey() *PrivKey {
-	return genPrivKey(crypto.CReader())
+	return genPrivKey(tmcrypto.CReader())
 }
 
 // genPrivKey generates a new ed25519 private key using the provided reader.
@@ -111,7 +120,7 @@ func genPrivKey(rand io.Reader) *PrivKey {
 // NOTE: secret should be the output of a KDF like bcrypt,
 // if it's derived from user input.
 func GenPrivKeyFromSecret(secret []byte) *PrivKey {
-	seed := crypto.Sha256(secret) // Not Ripemd160 because we want 32 bytes.
+	seed := tmcrypto.Sha256(secret) // Not Ripemd160 because we want 32 bytes.
 
 	return &PrivKey{Key: ed25519.NewKeyFromSeed(seed)}
 }
@@ -125,13 +134,13 @@ var (
 // Address is the SHA256-20 of the raw pubkey bytes.
 // It doesn't implement ADR-28 addresses and it must not be used
 // in SDK except in a tendermint validator context.
-func (pubKey *PubKey) Address() crypto.Address {
+func (pubKey *PubKey) Address() cryptotypes.Address {
 	if len(pubKey.Key) != PubKeySize {
 		panic("pubkey is incorrect size")
 	}
 	// For ADR-28 compatible address we would need to
 	// return address.Hash(proto.MessageName(pubKey), pubKey.Key)
-	return crypto.Address(tmhash.SumTruncated(pubKey.Key))
+	return cryptotypes.Address(tmhash.SumTruncated(pubKey.Key))
 }
 
 // Bytes returns the PubKey byte format.

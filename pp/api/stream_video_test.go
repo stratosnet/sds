@@ -2,18 +2,18 @@ package api
 
 import (
 	ed25519crypto "crypto/ed25519"
-	mbase "github.com/multiformats/go-multibase"
-	mh "github.com/multiformats/go-multihash"
 	"testing"
 
+	mbase "github.com/multiformats/go-multibase"
+	mh "github.com/multiformats/go-multihash"
+
 	"github.com/ipfs/go-cid"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/framework/utils/crypto/ed25519"
+	"github.com/stratosnet/sds-api/header"
+	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	//"github.com/tendermint/tendermint/libs/bech32"
-	"github.com/cosmos/cosmos-sdk/types/bech32"
+	"github.com/stratosnet/tx-client/types/bech32"
 )
 
 func init() {

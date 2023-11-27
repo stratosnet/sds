@@ -2,8 +2,9 @@ package types
 
 import (
 	"github.com/cosmos/gogoproto/proto"
-	tmcrypto "github.com/tendermint/tendermint/crypto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+
+	"github.com/stratosnet/tx-client/crypto/tendermint/libs/bytes"
 )
 
 // PubKey defines a public key and extends proto.Message.
@@ -42,5 +43,5 @@ type PrivKey interface {
 }
 
 type (
-	Address = tmcrypto.Address
+	Address = bytes.HexBytes
 )

@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
+	potv1 "github.com/stratosnet/stratos-chain/api/stratos/pot/v1"
 
 	authv1beta1 "cosmossdk.io/api/cosmos/auth/v1beta1"
 	abciv1beta1 "cosmossdk.io/api/cosmos/base/abci/v1beta1"
@@ -134,4 +135,21 @@ func QueryTxByHash(txHash string) (*abciv1beta1.TxResponse, error) {
 		return nil, errors.New(errMsg)
 	}
 	return resp.TxResponse, nil
+}
+
+func QueryVolumeReport(epoch int64) (*potv1.QueryVolumeReportResponse, error) {
+	conn, err := CreateGrpcConn()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	client := potv1.NewQueryClient(conn)
+	ctx := context.Background()
+	req := potv1.QueryVolumeReportRequest{Epoch: epoch}
+
+	resp, err := client.VolumeReport(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
