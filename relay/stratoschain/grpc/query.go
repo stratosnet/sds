@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"math/big"
 
 	"github.com/cosmos/cosmos-sdk/types"
 	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
@@ -13,6 +14,7 @@ import (
 	"github.com/stratosnet/sds/relay"
 	relaytypes "github.com/stratosnet/sds/relay/stratoschain/types"
 	"github.com/stratosnet/sds/utils"
+	pottypes "github.com/stratosnet/stratos-chain/x/pot/types"
 	registertypes "github.com/stratosnet/stratos-chain/x/register/types"
 )
 
@@ -130,4 +132,50 @@ func QueryTxByHash(txHash string) (*types.TxResponse, error) {
 		return nil, errors.New(errMsg)
 	}
 	return resp.TxResponse, nil
+}
+
+func QueryRemainingOzoneLimit() (*big.Int, error) {
+	conn, err := CreateGrpcConn()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	client := registertypes.NewQueryClient(conn)
+	ctx := context.Background()
+	req := registertypes.QueryRemainingOzoneLimitRequest{}
+	resp, err := client.RemainingOzoneLimit(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+
+	limit := resp.OzoneLimit.BigInt()
+	if resp.OzoneLimit == nil {
+		return nil, errors.New("remaining ozone limit is nil in the response from stchain")
+	}
+
+	return limit, nil
+}
+
+func QueryVolumeReport(epoch *big.Int) (*pottypes.ReportInfo, error) {
+	conn, err := CreateGrpcConn()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	client := pottypes.NewQueryClient(conn)
+	ctx := context.Background()
+	req := pottypes.QueryVolumeReportRequest{Epoch: epoch.Int64()}
+
+	resp, err := client.VolumeReport(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.GetReportInfo().GetTxHash() == "" {
+		return resp.GetReportInfo(), errors.New("tx hash is empty in response from stchain")
+	}
+
+	return resp.GetReportInfo(), nil
 }
