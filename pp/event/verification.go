@@ -6,15 +6,16 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/framework/core"
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/framework/utils/types"
-	"github.com/stratosnet/sds-api/header"
-	"github.com/stratosnet/sds-api/protos"
+	"google.golang.org/protobuf/proto"
+
+	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/types"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"google.golang.org/protobuf/proto"
+	"github.com/stratosnet/sds/sds-msg/header"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 func verifyRspUploadFile(msg *protos.RspUploadFile) error {

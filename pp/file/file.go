@@ -17,10 +17,10 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/exp/mmap"
 
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/sds-api/protos"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 const (

@@ -3,15 +3,15 @@ package event
 import (
 	"context"
 
-	"github.com/stratosnet/framework/core"
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/sds-api/header"
-	"github.com/stratosnet/sds-api/protos"
+	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/sds-msg/header"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 func CheckAndSendRetryMessage(ctx context.Context, dTask *task.DownloadTask) {

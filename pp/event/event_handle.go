@@ -4,8 +4,8 @@ package event
 import (
 	"context"
 
-	"github.com/stratosnet/framework/core"
-	"github.com/stratosnet/sds-api/header"
+	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/sds-msg/header"
 )
 
 type VerifierFunc func(context.Context, header.MsgType, interface{}) error

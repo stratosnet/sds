@@ -3,15 +3,15 @@ package event
 import (
 	"context"
 
-	"github.com/stratosnet/framework/utils/crypto/ed25519"
-	"github.com/stratosnet/framework/utils/crypto/secp256k1"
-	"github.com/stratosnet/framework/utils/types"
-	"github.com/stratosnet/sds-api/protos"
+	"github.com/stratosnet/sds/framework/utils/crypto/ed25519"
+	"github.com/stratosnet/sds/framework/utils/crypto/secp256k1"
+	"github.com/stratosnet/sds/framework/utils/types"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	pptypes "github.com/stratosnet/sds/pp/types"
-	txclienttx "github.com/stratosnet/tx-client/tx"
-	txclienttypes "github.com/stratosnet/tx-client/types"
+	"github.com/stratosnet/sds/sds-msg/protos"
+	txclienttx "github.com/stratosnet/sds/tx-client/tx"
+	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 

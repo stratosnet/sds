@@ -12,7 +12,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/framework/utils"
+
+	"github.com/stratosnet/sds/framework/utils"
+
 	"github.com/stratosnet/sds/pp/setting"
 )
 

@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 const (

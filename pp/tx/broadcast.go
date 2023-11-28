@@ -2,7 +2,7 @@ package tx
 
 import (
 	txv1beta1 "cosmossdk.io/api/cosmos/tx/v1beta1"
-	"github.com/stratosnet/tx-client/grpc"
+	"github.com/stratosnet/sds/tx-client/grpc"
 )
 
 func BroadcastTx(txBytes []byte) error {

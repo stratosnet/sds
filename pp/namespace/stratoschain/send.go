@@ -3,15 +3,15 @@ package stratoschain
 import (
 	"context"
 
-	"github.com/stratosnet/framework/core"
-	"github.com/stratosnet/framework/utils/types"
+	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/framework/utils/types"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/tx"
 	pptypes "github.com/stratosnet/sds/pp/types"
-	txclienttx "github.com/stratosnet/tx-client/tx"
-	txclienttypes "github.com/stratosnet/tx-client/types"
+	txclienttx "github.com/stratosnet/sds/tx-client/tx"
+	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 

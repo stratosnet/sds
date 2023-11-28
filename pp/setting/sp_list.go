@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/sds-api/protos"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 var SPMap = &sync.Map{}

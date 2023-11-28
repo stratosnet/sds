@@ -10,12 +10,13 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/stratosnet/framework/types"
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/framework/utils/console"
+
+	"github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/console"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
-	txclienttypes "github.com/stratosnet/tx-client/types"
+	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 )
 
 const (

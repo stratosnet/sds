@@ -9,10 +9,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/stratosnet/framework/client/cf"
-	"github.com/stratosnet/framework/core"
-	"github.com/stratosnet/framework/utils"
-	utilstypes "github.com/stratosnet/framework/utils/types"
+	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/framework/utils"
+	fwutiltypes "github.com/stratosnet/sds/framework/utils/types"
+
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
@@ -44,9 +45,9 @@ type P2pServer struct {
 	peerList        types.PeerList
 	bufferedSpConns []*cf.ClientConn
 
-	p2pPrivKey utilstypes.P2pPrivKey
-	p2pPubKey  utilstypes.P2pPubKey
-	p2pAddress utilstypes.Address
+	p2pPrivKey fwutiltypes.P2pPrivKey
+	p2pPubKey  fwutiltypes.P2pPubKey
+	p2pAddress fwutiltypes.Address
 
 	// client conn
 	// offlineChan
@@ -91,9 +92,9 @@ func (p *P2pServer) Init() error {
 		return errors.New("couldn't decrypt P2P key file: " + err.Error())
 	}
 
-	p.p2pPrivKey = utilstypes.BytesToP2pPrivKey(p2pKey.PrivateKey)
+	p.p2pPrivKey = fwutiltypes.BytesToP2pPrivKey(p2pKey.PrivateKey)
 	p.p2pPubKey = p.p2pPrivKey.PubKey()
-	p.p2pAddress, err = utilstypes.P2pAddressFromBech(setting.Config.Keys.P2PAddress)
+	p.p2pAddress, err = fwutiltypes.P2pAddressFromBech(setting.Config.Keys.P2PAddress)
 	return err
 }
 

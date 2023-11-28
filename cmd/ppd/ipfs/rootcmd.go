@@ -11,12 +11,13 @@ import (
 	"time"
 
 	cmds "github.com/ipfs/go-ipfs-cmds"
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/framework/utils/datamesh"
-	"github.com/stratosnet/framework/utils/types"
-	"github.com/stratosnet/sds-api/protos"
+
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/datamesh"
+	"github.com/stratosnet/sds/framework/utils/types"
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 const (

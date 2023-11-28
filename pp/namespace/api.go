@@ -13,14 +13,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/stratosnet/framework/core"
-	"github.com/stratosnet/framework/metrics"
-	"github.com/stratosnet/framework/types"
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/framework/utils/datamesh"
-	utiltypes "github.com/stratosnet/framework/utils/types"
-	"github.com/stratosnet/sds-api/header"
-	"github.com/stratosnet/sds-api/protos"
+
+	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/framework/metrics"
+	"github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/datamesh"
+	fwutiltypes "github.com/stratosnet/sds/framework/utils/types"
 	"github.com/stratosnet/sds/pp"
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/event"
@@ -32,7 +31,9 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/rpc"
-	txclienttypes "github.com/stratosnet/tx-client/types"
+	"github.com/stratosnet/sds/sds-msg/header"
+	"github.com/stratosnet/sds/sds-msg/protos"
+	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 )
 
 const (
@@ -132,7 +133,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 	reqTime := param.ReqTime
 
 	// verify if wallet and public key match
-	if utiltypes.VerifyWalletAddr(pubkey, walletAddr) != 0 {
+	if fwutiltypes.VerifyWalletAddr(pubkey, walletAddr) != 0 {
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
@@ -448,7 +449,7 @@ func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamRe
 	signature := param.Signature.Signature
 
 	// wallet pubkey and wallet signature will be carried in sds messages in []byte format
-	wpk, err := utiltypes.WalletPubkeyFromBech(pubkey)
+	wpk, err := fwutiltypes.WalletPubkeyFromBech(pubkey)
 	if err != nil {
 		utils.ErrorLog("wrong wallet pubkey")
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
@@ -460,7 +461,7 @@ func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamRe
 	}
 
 	// verify if wallet and public key match
-	if utiltypes.VerifyWalletAddrBytes(wpk.Bytes(), wallet) != 0 {
+	if fwutiltypes.VerifyWalletAddrBytes(wpk.Bytes(), wallet) != 0 {
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
@@ -528,7 +529,7 @@ func (api *rpcPubApi) RequestVideoDownload(ctx context.Context, param rpc_api.Pa
 	signature := param.Signature.Signature
 
 	// wallet pubkey and wallet signature will be carried in sds messages in []byte format
-	wpk, err := utiltypes.WalletPubkeyFromBech(pubkey)
+	wpk, err := fwutiltypes.WalletPubkeyFromBech(pubkey)
 	if err != nil {
 		utils.ErrorLog("wrong wallet pubkey")
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
@@ -540,7 +541,7 @@ func (api *rpcPubApi) RequestVideoDownload(ctx context.Context, param rpc_api.Pa
 	}
 
 	// verify if wallet and public key match
-	if utiltypes.VerifyWalletAddrBytes(wpk.Bytes(), wallet) != 0 {
+	if fwutiltypes.VerifyWalletAddrBytes(wpk.Bytes(), wallet) != 0 {
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
@@ -668,7 +669,7 @@ func (api *rpcPubApi) RequestList(ctx context.Context, param rpc_api.ParamReqFil
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
 
 	// convert wallet pubkey to []byte which format is to be used in protobuf messages
-	wpk, err := utiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
+	wpk, err := fwutiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
 	if err != nil {
 		result := &rpc_api.FileListResult{Return: rpc_api.SIGNATURE_FAILURE + ", wrong wallet pubkey"}
 		return *result
@@ -708,7 +709,7 @@ func (api *rpcPubApi) RequestClearExpiredShareLinks(ctx context.Context, param r
 	defer cancel()
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
 	// convert wallet pubkey to []byte which format is to be used in protobuf messages
-	wpk, err := utiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
+	wpk, err := fwutiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
 	if err != nil {
 		result := &rpc_api.ClearExpiredShareLinksResult{Return: rpc_api.SIGNATURE_FAILURE + ", wrong wallet pubkey"}
 		return *result
@@ -746,7 +747,7 @@ func (api *rpcPubApi) RequestShare(ctx context.Context, param rpc_api.ParamReqSh
 	defer cancel()
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
 	// convert wallet pubkey to []byte which format is to be used in protobuf messages
-	wpk, err := utiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
+	wpk, err := fwutiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
 	if err != nil {
 		result := &rpc_api.FileShareResult{Return: rpc_api.SIGNATURE_FAILURE + ", wrong wallet pubkey"}
 		return *result
@@ -786,7 +787,7 @@ func (api *rpcPubApi) RequestListShare(ctx context.Context, param rpc_api.ParamR
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
 
 	// convert wallet pubkey to []byte which format is to be used in protobuf messages
-	wpk, err := utiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
+	wpk, err := fwutiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
 	if err != nil {
 		result := &rpc_api.FileShareResult{Return: rpc_api.SIGNATURE_FAILURE + ", wrong wallet pubkey"}
 		return *result
@@ -825,7 +826,7 @@ func (api *rpcPubApi) RequestStopShare(ctx context.Context, param rpc_api.ParamR
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
 
 	// convert wallet pubkey to []byte which format is to be used in protobuf messages
-	wpk, err := utiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
+	wpk, err := fwutiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
 	if err != nil {
 		result := &rpc_api.FileShareResult{Return: rpc_api.SIGNATURE_FAILURE + ", wrong wallet pubkey"}
 		return *result
@@ -862,14 +863,14 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 	pubkey := param.Signature.Pubkey
 
 	// wallet pubkey and wallet signature will be carried in sds messages in []byte format
-	wpk, err := utiltypes.WalletPubkeyFromBech(pubkey)
+	wpk, err := fwutiltypes.WalletPubkeyFromBech(pubkey)
 	if err != nil {
 		utils.ErrorLog("wrong wallet pubkey")
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
 	// verify if wallet and public key match
-	if utiltypes.VerifyWalletAddrBytes(wpk.Bytes(), wallet) != 0 {
+	if fwutiltypes.VerifyWalletAddrBytes(wpk.Bytes(), wallet) != 0 {
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
@@ -919,14 +920,14 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 
 func (api *rpcPubApi) RequestDownloadShared(ctx context.Context, param rpc_api.ParamReqDownloadShared) rpc_api.Result {
 	// wallet pubkey and wallet signature will be carried in sds messages in []byte format
-	wpk, err := utiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
+	wpk, err := fwutiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
 	if err != nil {
 		utils.ErrorLog("wrong wallet pubkey")
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
 	// verify if wallet and public key match
-	if utiltypes.VerifyWalletAddrBytes(wpk.Bytes(), param.Signature.Address) != 0 {
+	if fwutiltypes.VerifyWalletAddrBytes(wpk.Bytes(), param.Signature.Address) != 0 {
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
@@ -1001,14 +1002,14 @@ func (api *rpcPubApi) RequestDownloadShared(ctx context.Context, param rpc_api.P
 
 func (api *rpcPubApi) RequestDownloadSharedVideo(ctx context.Context, param rpc_api.ParamReqDownloadShared) rpc_api.Result {
 	// wallet pubkey and wallet signature will be carried in sds messages in []byte format
-	wpk, err := utiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
+	wpk, err := fwutiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
 	if err != nil {
 		utils.ErrorLog("wrong wallet pubkey")
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
 	// verify if wallet and public key match
-	if utiltypes.VerifyWalletAddrBytes(wpk.Bytes(), param.Signature.Address) != 0 {
+	if fwutiltypes.VerifyWalletAddrBytes(wpk.Bytes(), param.Signature.Address) != 0 {
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
@@ -1087,7 +1088,7 @@ func (api *rpcPrivApi) RequestRegisterNewPP(ctx context.Context, param rpc_api.P
 	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
 	wsignMsg := utils.RegisterNewPPWalletSignMessage(setting.WalletAddress, nowSec)
-	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	wsign, err := fwutiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
 	if err != nil {
 		result := &rpc_api.RPResult{Return: rpc_api.SIGNATURE_FAILURE + ", wrong wallet signature"}
 		return *result
@@ -1153,12 +1154,12 @@ func (api *rpcPrivApi) RequestActivate(ctx context.Context, param rpc_api.ParamR
 
 func (api *rpcPrivApi) RequestPrepay(ctx context.Context, param rpc_api.ParamReqPrepay) rpc_api.PrepayResult {
 	metrics.RpcReqCount.WithLabelValues("RequestPrepay").Inc()
-	beneficiaryAddr, err := utiltypes.WalletAddressFromBech(setting.WalletAddress)
+	beneficiaryAddr, err := fwutiltypes.WalletAddressFromBech(setting.WalletAddress)
 	if err != nil {
 		return rpc_api.PrepayResult{Return: rpc_api.WRONG_WALLET_ADDRESS}
 	}
 	if len(param.Signature.Address) > 0 {
-		beneficiaryAddr, err = utiltypes.WalletAddressFromBech(param.Signature.Address)
+		beneficiaryAddr, err = fwutiltypes.WalletAddressFromBech(param.Signature.Address)
 		if err != nil {
 			return rpc_api.PrepayResult{Return: rpc_api.WRONG_WALLET_ADDRESS}
 		}
@@ -1182,7 +1183,7 @@ func (api *rpcPrivApi) RequestPrepay(ctx context.Context, param rpc_api.ParamReq
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
 
 	// convert wallet pubkey to []byte which format is to be used in protobuf messages
-	wpk, err := utiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
+	wpk, err := fwutiltypes.WalletPubkeyFromBech(param.Signature.Pubkey)
 	if err != nil {
 		result := &rpc_api.PrepayResult{Return: rpc_api.SIGNATURE_FAILURE + ", wrong wallet pubkey"}
 		return *result
@@ -1245,11 +1246,11 @@ func (api *rpcPrivApi) RequestWithdraw(ctx context.Context, param rpc_api.ParamR
 	if err != nil {
 		return rpc_api.WithdrawResult{Return: rpc_api.WRONG_INPUT}
 	}
-	_, err = utiltypes.WalletAddressFromBech(setting.WalletAddress)
+	_, err = fwutiltypes.WalletAddressFromBech(setting.WalletAddress)
 	if err != nil {
 		return rpc_api.WithdrawResult{Return: rpc_api.WRONG_WALLET_ADDRESS}
 	}
-	targetAddr, err := utiltypes.WalletAddressFromBech(param.TargetAddress)
+	targetAddr, err := fwutiltypes.WalletAddressFromBech(param.TargetAddress)
 	if err != nil {
 		return rpc_api.WithdrawResult{Return: rpc_api.WRONG_WALLET_ADDRESS}
 	}
@@ -1296,11 +1297,11 @@ func (api *rpcPrivApi) RequestSend(ctx context.Context, param rpc_api.ParamReqSe
 	if err != nil {
 		return rpc_api.SendResult{Return: rpc_api.WRONG_INPUT}
 	}
-	_, err = utiltypes.WalletAddressFromBech(setting.WalletAddress)
+	_, err = fwutiltypes.WalletAddressFromBech(setting.WalletAddress)
 	if err != nil {
 		return rpc_api.SendResult{Return: rpc_api.WRONG_WALLET_ADDRESS}
 	}
-	toAddr, err := utiltypes.WalletAddressFromBech(param.To)
+	toAddr, err := fwutiltypes.WalletAddressFromBech(param.To)
 	if err != nil {
 		return rpc_api.SendResult{Return: rpc_api.WRONG_WALLET_ADDRESS}
 	}

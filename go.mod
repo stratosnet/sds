@@ -2,11 +2,11 @@ module github.com/stratosnet/sds
 
 go 1.19
 
-replace (
-	github.com/stratosnet/framework => ./framework
-	github.com/stratosnet/sds-api => ./sds-api
-	github.com/stratosnet/tx-client => ./tx-client
-)
+//replace (
+//	github.com/stratosnet/sds/framework => ./framework  // for development on local
+//	github.com/stratosnet/sds/sds-msg => ./sds-msg  // for development on local
+//	github.com/stratosnet/sds/tx-client => ./tx-client  // for development on local
+//)
 
 require (
 	cosmossdk.io/api v0.7.2
@@ -30,9 +30,9 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.6.1
-	github.com/stratosnet/framework v0.0.0-00010101000000-000000000000
-	github.com/stratosnet/sds-api v0.0.0-00010101000000-000000000000
-	github.com/stratosnet/tx-client v0.0.0-00010101000000-000000000000
+	github.com/stratosnet/sds/framework v0.0.0-20231128191014-169cb82668b8
+	github.com/stratosnet/sds/sds-msg v0.0.0-20231128190750-a3a5ff99118e
+	github.com/stratosnet/sds/tx-client v0.0.0-20231128191210-a8ded32412c4
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce

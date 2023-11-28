@@ -5,7 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/sds/framework/utils"
+
 	"github.com/stratosnet/sds/rpc"
 )
 

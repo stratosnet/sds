@@ -11,11 +11,14 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"github.com/stratosnet/framework/core"
-	"github.com/stratosnet/framework/metrics"
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/framework/utils/datamesh"
-	utiltypes "github.com/stratosnet/framework/utils/types"
+
+	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/framework/metrics"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/datamesh"
+	fwutiltypes "github.com/stratosnet/sds/framework/utils/types"
+	txclienttypes "github.com/stratosnet/sds/tx-client/types"
+
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/account"
 	"github.com/stratosnet/sds/pp/event"
@@ -26,7 +29,6 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
-	txclienttypes "github.com/stratosnet/tx-client/types"
 )
 
 const (
@@ -74,7 +76,7 @@ func (api *terminalCmd) Getoz(ctx context.Context, param []string) (CmdResult, e
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
 
-	if _, err := utiltypes.WalletAddressFromBech(param[0]); err != nil {
+	if _, err := fwutiltypes.WalletAddressFromBech(param[0]); err != nil {
 		return CmdResult{Msg: ""}, err
 	}
 
@@ -124,7 +126,7 @@ func (api *terminalCmd) RegisterPP(ctx context.Context, param []string) (CmdResu
 	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
 	wsignMsg := utils.RegisterNewPPWalletSignMessage(setting.WalletAddress, nowSec)
-	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	wsign, err := fwutiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
 	}
@@ -257,7 +259,7 @@ func (api *terminalCmd) FileStatus(ctx context.Context, param []string) (CmdResu
 	fileHash := param[0]
 	timestamp := time.Now().Unix()
 
-	signature, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetFileStatusWalletSignMessage(fileHash, setting.WalletAddress, timestamp)))
+	signature, err := fwutiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetFileStatusWalletSignMessage(fileHash, setting.WalletAddress, timestamp)))
 	if err != nil {
 		return CmdResult{Msg: ""}, err
 	}
@@ -334,25 +336,25 @@ func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, 
 		Simulate: true,
 	}
 
-	var beneficiaryAddr utiltypes.Address
+	var beneficiaryAddr fwutiltypes.Address
 	if len(param) == 2 {
 		// use wallet address as default beneficiary address
-		beneficiaryAddr, _ = utiltypes.WalletAddressFromBech(setting.WalletAddress)
+		beneficiaryAddr, _ = fwutiltypes.WalletAddressFromBech(setting.WalletAddress)
 	} else if len(param) == 3 {
 		// if only have 3 params, then the 3rd param could be beneficiaryAddress OR gas
-		beneficiaryAddr, err = utiltypes.WalletAddressFromBech(param[2])
+		beneficiaryAddr, err = fwutiltypes.WalletAddressFromBech(param[2])
 		if err != nil {
 			// if the third parameter is not beneficiaryAddress, then it should be gas
 			gas, errGas := strconv.ParseUint(param[2], 10, 64)
 			if errGas != nil {
 				return CmdResult{Msg: ""}, errors.New("invalid third param. Should be a valid bech32 wallet address (beneficiary address) OR a positive integer (gas)")
 			}
-			beneficiaryAddr, _ = utiltypes.WalletAddressFromBech(setting.WalletAddress)
+			beneficiaryAddr, _ = fwutiltypes.WalletAddressFromBech(setting.WalletAddress)
 			txFee.Gas = gas
 			txFee.Simulate = false
 		}
 	} else if len(param) == 4 {
-		beneficiaryAddr, err = utiltypes.WalletAddressFromBech(param[2])
+		beneficiaryAddr, err = fwutiltypes.WalletAddressFromBech(param[2])
 		if err != nil {
 			return CmdResult{Msg: ""}, errors.New("invalid beneficiary param. Should be a valid bech32 wallet address" + err.Error())
 		}
@@ -370,7 +372,7 @@ func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, 
 	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
 	wsignMsg := utils.PrepayWalletSignMessage(setting.WalletAddress, nowSec)
-	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	wsign, err := fwutiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
 	}
@@ -513,7 +515,7 @@ func (api *terminalCmd) List(ctx context.Context, param []string) (CmdResult, er
 	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
 	wsignMsg := utils.FindMyFileListWalletSignMessage(setting.WalletAddress, nowSec)
-	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	wsign, err := fwutiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
 	}
@@ -547,7 +549,7 @@ func (api *terminalCmd) ClearExpShare(ctx context.Context, param []string) (CmdR
 	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
 	wsignMsg := utils.ClearExpiredShareLinksWalletSignMessage(setting.WalletAddress, nowSec)
-	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	wsign, err := fwutiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
 	}
@@ -613,7 +615,7 @@ func (api *terminalCmd) DeleteFn(ctx context.Context, param []string) (CmdResult
 	fileHash := param[0]
 	// sign the wallet signature by wallet private key
 	wsignMsg := utils.DeleteFileWalletSignMessage(fileHash, setting.WalletAddress, nowSec)
-	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	wsign, err := fwutiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
 	}
@@ -694,7 +696,7 @@ func (api *terminalCmd) SharePath(ctx context.Context, param []string) (CmdResul
 	fileHash := param[0]
 	// sign the wallet signature by wallet private key
 	wsignMsg := utils.ShareFileWalletSignMessage(fileHash, setting.WalletAddress, nowSec)
-	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	wsign, err := fwutiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
 	}
@@ -738,7 +740,7 @@ func (api *terminalCmd) ShareFile(ctx context.Context, param []string) (CmdResul
 	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
 	wsignMsg := utils.ShareFileWalletSignMessage(fileHash, setting.WalletAddress, nowSec)
-	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	wsign, err := fwutiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
 	}
@@ -761,7 +763,7 @@ func (api *terminalCmd) AllShare(ctx context.Context, param []string) (CmdResult
 	// sign the wallet signature by wallet private key
 	nowSec := time.Now().Unix()
 	wsignMsg := utils.ShareLinkWalletSignMessage(setting.WalletAddress, nowSec)
-	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	wsign, err := fwutiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
 	}
@@ -793,7 +795,7 @@ func (api *terminalCmd) CancelShare(ctx context.Context, param []string) (CmdRes
 	shareId := param[0]
 	// sign the wallet signature by wallet private key
 	wsignMsg := utils.DeleteShareWalletSignMessage(shareId, setting.WalletAddress, nowSec)
-	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	wsign, err := fwutiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
 	}
@@ -818,7 +820,7 @@ func (api *terminalCmd) GetShareFile(ctx context.Context, param []string) (CmdRe
 	shareId := param[0]
 	// sign the wallet signature by wallet private key
 	wsignMsg := utils.GetShareFileWalletSignMessage(shareId, setting.WalletAddress, nowSec)
-	wsign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	wsign, err := fwutiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
 	}
@@ -994,25 +996,25 @@ func (api *terminalCmd) Withdraw(ctx context.Context, param []string) (CmdResult
 		Simulate: true,
 	}
 
-	var targetAddr utiltypes.Address
+	var targetAddr fwutiltypes.Address
 	if len(param) == 2 {
 		// use wallet address as default target address
-		targetAddr, _ = utiltypes.WalletAddressFromBech(setting.WalletAddress)
+		targetAddr, _ = fwutiltypes.WalletAddressFromBech(setting.WalletAddress)
 	} else if len(param) == 3 {
 		// if only have 3 params, then the 3rd param could be targetAddress OR gas
-		targetAddr, err = utiltypes.WalletAddressFromBech(param[2])
+		targetAddr, err = fwutiltypes.WalletAddressFromBech(param[2])
 		if err != nil {
 			// if the third parameter is not targetAddress, then it should be gas
 			gas, errGas := strconv.ParseUint(param[2], 10, 64)
 			if errGas != nil {
 				return CmdResult{Msg: ""}, errors.New("invalid third param. Should be a valid bech32 wallet address (target address) OR a positive integer (gas)")
 			}
-			targetAddr, _ = utiltypes.WalletAddressFromBech(setting.WalletAddress)
+			targetAddr, _ = fwutiltypes.WalletAddressFromBech(setting.WalletAddress)
 			txFee.Gas = gas
 			txFee.Simulate = false
 		}
 	} else if len(param) == 4 {
-		targetAddr, err = utiltypes.WalletAddressFromBech(param[2])
+		targetAddr, err = fwutiltypes.WalletAddressFromBech(param[2])
 		if err != nil {
 			return CmdResult{Msg: ""}, errors.New("invalid beneficiary param. Should be a valid bech32 wallet address" + err.Error())
 		}
@@ -1045,7 +1047,7 @@ func (api *terminalCmd) Send(ctx context.Context, param []string) (CmdResult, er
 			errors.New("expecting at least 3 params. Input amount of tokens, to address, fee amount,and (optional) gas amount")
 	}
 
-	toAddr, err := utiltypes.WalletAddressFromBech(param[0])
+	toAddr, err := fwutiltypes.WalletAddressFromBech(param[0])
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("invalid to param. Should be a valid bech32 wallet address" + err.Error())
 	}

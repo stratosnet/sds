@@ -7,13 +7,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/stratosnet/framework/client/cf"
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/sds-api/header"
-	"github.com/stratosnet/sds-api/protos"
+	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/sds-msg/header"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 type CandidateSp struct {

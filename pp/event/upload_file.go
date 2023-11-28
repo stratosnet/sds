@@ -11,15 +11,15 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/framework/client/cf"
-	"github.com/stratosnet/framework/core"
-	"github.com/stratosnet/framework/metrics"
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/framework/utils/encryption"
-	"github.com/stratosnet/framework/utils/encryption/hdkey"
-	"github.com/stratosnet/framework/utils/types"
-	"github.com/stratosnet/sds-api/header"
-	"github.com/stratosnet/sds-api/protos"
+	"google.golang.org/protobuf/proto"
+
+	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/framework/metrics"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/encryption"
+	"github.com/stratosnet/sds/framework/utils/encryption/hdkey"
+	"github.com/stratosnet/sds/framework/utils/types"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
@@ -27,7 +27,8 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"google.golang.org/protobuf/proto"
+	"github.com/stratosnet/sds/sds-msg/header"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 var (

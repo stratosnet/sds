@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/stratosnet/sds-api/protos"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/types"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 // GetPPList

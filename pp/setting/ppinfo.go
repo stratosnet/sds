@@ -5,7 +5,7 @@ import (
 	"time"
 
 	externalip "github.com/glendc/go-external-ip"
-	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/sds/framework/utils"
 	ppTypes "github.com/stratosnet/sds/pp/types"
 )
 

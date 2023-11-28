@@ -3,7 +3,8 @@ package namespace
 import (
 	"context"
 
-	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/sds/framework/utils"
+
 	"github.com/stratosnet/sds/rpc"
 )
 

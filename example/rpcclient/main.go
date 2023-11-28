@@ -8,8 +8,10 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/framework/utils/types"
+
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/types"
+
 	"github.com/stratosnet/sds/cmd/common"
 )
 

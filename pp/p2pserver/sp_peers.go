@@ -10,16 +10,16 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/stratosnet/framework/client/cf"
-	"github.com/stratosnet/framework/core"
-	"github.com/stratosnet/framework/msg"
-	"github.com/stratosnet/framework/utils"
-	utilstypes "github.com/stratosnet/framework/utils/types"
-	"github.com/stratosnet/sds-api/header"
-	"github.com/stratosnet/sds-api/protos"
+	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/framework/msg"
+	"github.com/stratosnet/sds/framework/utils"
+	fwutiltypes "github.com/stratosnet/sds/framework/utils/types"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
+	"github.com/stratosnet/sds/sds-msg/header"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 var (
@@ -65,7 +65,7 @@ func (p *P2pServer) StoreRequestInfo(reqId int64, reqMsgType uint8) {
 	requestInfoMap.Store((reqId&0x7FFFFFFFFFFFFF00)|int64(reqMsgType), reqMsgType)
 }
 
-func (p *P2pServer) GetP2PAddrInTypeAddress() utilstypes.Address {
+func (p *P2pServer) GetP2PAddrInTypeAddress() fwutiltypes.Address {
 	return p.p2pAddress
 }
 

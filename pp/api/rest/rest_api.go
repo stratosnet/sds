@@ -3,7 +3,7 @@ package rest
 import (
 	"context"
 
-	"github.com/stratosnet/framework/utils/httpserv"
+	"github.com/stratosnet/sds/framework/utils/httpserv"
 	"github.com/stratosnet/sds/pp/api"
 	"github.com/stratosnet/sds/pp/setting"
 )

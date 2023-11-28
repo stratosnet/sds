@@ -5,10 +5,8 @@ import (
 	"fmt"
 
 	sdkmath "cosmossdk.io/math"
-	"github.com/stratosnet/framework/core"
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/sds-api/header"
-	"github.com/stratosnet/sds-api/protos"
+	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/network"
@@ -17,8 +15,10 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/tx"
 	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/tx-client/grpc"
-	txclienttypes "github.com/stratosnet/tx-client/types"
+	"github.com/stratosnet/sds/sds-msg/header"
+	"github.com/stratosnet/sds/sds-msg/protos"
+	"github.com/stratosnet/sds/tx-client/grpc"
+	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 )
 
 // Activate Inactive PP node becomes active

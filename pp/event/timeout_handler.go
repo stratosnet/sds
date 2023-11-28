@@ -6,12 +6,12 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"github.com/stratosnet/framework/core"
-	"github.com/stratosnet/framework/msg"
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/sds-api/protos"
+	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/framework/msg"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 const DOWNLOAD_SLICE_TIMEOUT = 300

@@ -6,9 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/stratosnet/framework/types"
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/framework/utils/crypto/secp256k1"
+	"github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/crypto/secp256k1"
+
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
 )
