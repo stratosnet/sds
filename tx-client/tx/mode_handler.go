@@ -5,7 +5,7 @@ import (
 
 	signingv1beta1 "cosmossdk.io/api/cosmos/tx/signing/v1beta1"
 
-	authsigning "github.com/stratosnet/tx-client/types/auth/signing"
+	authsigning "github.com/stratosnet/sds/tx-client/types/auth/signing"
 )
 
 // DefaultSignModes are the default sign modes enabled for protobuf transactions.

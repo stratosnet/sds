@@ -13,15 +13,16 @@ import (
 	basev1beta1 "cosmossdk.io/api/cosmos/base/v1beta1"
 	txv1beta1 "cosmossdk.io/api/cosmos/tx/v1beta1"
 
-	"github.com/stratosnet/framework/crypto/ed25519"
-	"github.com/stratosnet/framework/crypto/secp256k1"
-	cryptotypes "github.com/stratosnet/framework/crypto/types"
-	"github.com/stratosnet/tx-client/grpc"
-	"github.com/stratosnet/tx-client/types"
-	authsigning "github.com/stratosnet/tx-client/types/auth/signing"
-	authtx "github.com/stratosnet/tx-client/types/auth/tx"
-	"github.com/stratosnet/tx-client/types/tx/signing"
-	"github.com/stratosnet/tx-client/utils"
+	"github.com/stratosnet/sds/framework/crypto/ed25519"
+	"github.com/stratosnet/sds/framework/crypto/secp256k1"
+	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
+
+	"github.com/stratosnet/sds/tx-client/grpc"
+	"github.com/stratosnet/sds/tx-client/types"
+	authsigning "github.com/stratosnet/sds/tx-client/types/auth/signing"
+	authtx "github.com/stratosnet/sds/tx-client/types/auth/tx"
+	"github.com/stratosnet/sds/tx-client/types/tx/signing"
+	"github.com/stratosnet/sds/tx-client/utils"
 )
 
 func CreateAndSimulateTx(msg *anypb.Any, msgType string, txFee types.TxFee, memo string,
@@ -103,8 +104,8 @@ func buildAndSignStdTx(txConfig TxConfig, unsignedTx *txv1beta1.Tx, chainId stri
 	// First round: we gather all the signer infos. We use the "set empty
 	// signature" hack to do that.
 	for _, signatureKey := range signaturesToDo {
-		var privKey cryptotypes.PrivKey
-		var pubkey cryptotypes.PubKey
+		var privKey fwcryptotypes.PrivKey
+		var pubkey fwcryptotypes.PubKey
 		var err error
 		switch signatureKey.Type {
 		case types.SignatureEd25519:
@@ -147,7 +148,7 @@ func buildAndSignStdTx(txConfig TxConfig, unsignedTx *txv1beta1.Tx, chainId stri
 			Sequence:      signatureKey.AccountSequence,
 		}
 
-		var privKey cryptotypes.PrivKey
+		var privKey fwcryptotypes.PrivKey
 		switch signatureKey.Type {
 		case types.SignatureEd25519:
 			privKey = &ed25519.PrivKey{Key: signatureKey.PrivateKey}

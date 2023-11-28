@@ -5,7 +5,7 @@ import (
 
 	signingv1beta1 "cosmossdk.io/api/cosmos/tx/signing/v1beta1"
 
-	cryptotypes "github.com/stratosnet/framework/crypto/types"
+	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
 )
 
 // SignatureV2 is a convenience type that is easier to use in application logic
@@ -15,7 +15,7 @@ import (
 // signatures.
 type SignatureV2 struct {
 	// PubKey is the public key to use for verifying the signature
-	PubKey cryptotypes.PubKey
+	PubKey fwcryptotypes.PubKey
 
 	// Data is the actual data of the signature which includes SignMode's and
 	// the signatures themselves for either single or multi-signatures.
@@ -103,5 +103,5 @@ func SignatureDataFromProto(descData *signingv1beta1.SignatureDescriptor_Data) S
 //
 //// UnpackInterfaces implements the UnpackInterfaceMessages.UnpackInterfaces method
 //func (sd *SignatureDescriptor) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
-//	return unpacker.UnpackAny(sd.PublicKey, new(cryptotypes.PubKey))
+//	return unpacker.UnpackAny(sd.PublicKey, new(fwcryptotypes.PubKey))
 //}

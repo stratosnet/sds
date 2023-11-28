@@ -15,8 +15,9 @@ import (
 	txv1beta1 "cosmossdk.io/api/cosmos/tx/v1beta1"
 
 	registerv1 "github.com/stratosnet/stratos-chain/api/stratos/register/v1"
-	"github.com/stratosnet/tx-client/types"
-	"github.com/stratosnet/tx-client/utils"
+
+	"github.com/stratosnet/sds/tx-client/types"
+	"github.com/stratosnet/sds/tx-client/utils"
 )
 
 func QueryAccount(address string) (*authv1beta1.BaseAccount, error) {

@@ -8,7 +8,7 @@ import (
 	multisigv1beta1 "cosmossdk.io/api/cosmos/crypto/multisig/v1beta1"
 	txv1beta1 "cosmossdk.io/api/cosmos/tx/v1beta1"
 
-	txsigning "github.com/stratosnet/tx-client/types/tx/signing"
+	txsigning "github.com/stratosnet/sds/tx-client/types/tx/signing"
 )
 
 // SignatureDataToModeInfoAndSig converts a SignatureData to a ModeInfo and raw bytes signature

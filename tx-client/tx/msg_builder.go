@@ -11,13 +11,14 @@ import (
 	basev1beta1 "cosmossdk.io/api/cosmos/base/v1beta1"
 	sdkmath "cosmossdk.io/math"
 
-	"github.com/stratosnet/framework/crypto/ed25519"
-	"github.com/stratosnet/framework/types"
-	"github.com/stratosnet/framework/types/bech32"
 	potv1 "github.com/stratosnet/stratos-chain/api/stratos/pot/v1"
 	registerv1 "github.com/stratosnet/stratos-chain/api/stratos/register/v1"
 	sdsv1 "github.com/stratosnet/stratos-chain/api/stratos/sds/v1"
-	txclienttypes "github.com/stratosnet/tx-client/types"
+
+	"github.com/stratosnet/sds/framework/crypto/ed25519"
+	"github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/types/bech32"
+	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 )
 
 // Stratos-chain 'pot' module

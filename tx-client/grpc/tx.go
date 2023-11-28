@@ -6,7 +6,7 @@ import (
 	abciv1beta1 "cosmossdk.io/api/cosmos/base/abci/v1beta1"
 	txv1beta1 "cosmossdk.io/api/cosmos/tx/v1beta1"
 
-	"github.com/stratosnet/tx-client/utils"
+	"github.com/stratosnet/sds/tx-client/utils"
 )
 
 func BroadcastTx(txBytes []byte, mode txv1beta1.BroadcastMode) (*txv1beta1.BroadcastTxResponse, error) {

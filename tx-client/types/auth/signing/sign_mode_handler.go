@@ -4,7 +4,7 @@ import (
 	signingv1beta1 "cosmossdk.io/api/cosmos/tx/signing/v1beta1"
 	txv1beta1 "cosmossdk.io/api/cosmos/tx/v1beta1"
 
-	cryptotypes "github.com/stratosnet/framework/crypto/types"
+	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
 )
 
 // SignModeHandler defines a interface to be implemented by types which will handle
@@ -50,5 +50,5 @@ type SignerData struct {
 	//
 	// In case of multisigs, this should be the pubkey of the member of the
 	// multisig that is signing the current sign doc.
-	PubKey cryptotypes.PubKey
+	PubKey fwcryptotypes.PubKey
 }
