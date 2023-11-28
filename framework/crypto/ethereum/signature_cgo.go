@@ -24,8 +24,8 @@ import (
 	"crypto/elliptic"
 	"fmt"
 
-	"github.com/stratosnet/framework/crypto/ethereum/secp256k1"
-	"github.com/stratosnet/framework/crypto/math"
+	"github.com/stratosnet/sds/framework/crypto/ethereum/secp256k1"
+	"github.com/stratosnet/sds/framework/crypto/math"
 )
 
 // Ecrecover returns the uncompressed public key that created the given signature.

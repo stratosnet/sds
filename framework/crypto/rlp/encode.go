@@ -23,7 +23,7 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/stratosnet/framework/crypto/rlp/internal/rlpstruct"
+	"github.com/stratosnet/sds/framework/crypto/rlp/internal/rlpstruct"
 )
 
 var (

@@ -9,7 +9,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec/v2"
 
-	"github.com/stratosnet/framework/crypto/sha3"
+	"github.com/stratosnet/sds/framework/crypto/sha3"
 )
 
 var (

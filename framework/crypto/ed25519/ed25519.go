@@ -7,9 +7,9 @@ import (
 
 	"github.com/hdevalence/ed25519consensus"
 
-	tmcrypto "github.com/stratosnet/framework/crypto/tendermint"
-	"github.com/stratosnet/framework/crypto/tendermint/tmhash"
-	cryptotypes "github.com/stratosnet/framework/crypto/types"
+	tmcrypto "github.com/stratosnet/sds/framework/crypto/tendermint"
+	"github.com/stratosnet/sds/framework/crypto/tendermint/tmhash"
+	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
 )
 
 const (
@@ -28,11 +28,11 @@ const (
 )
 
 var (
-	_ cryptotypes.PrivKey = &PrivKey{}
+	_ fwcryptotypes.PrivKey = &PrivKey{}
 )
 
 // Generate generates an ed25519 private key from the given bytes.
-func Generate(bz []byte) cryptotypes.PrivKey {
+func Generate(bz []byte) fwcryptotypes.PrivKey {
 	bzArr := make([]byte, PrivKeySize)
 	copy(bzArr, bz)
 
@@ -60,7 +60,7 @@ func (privKey *PrivKey) Sign(msg []byte) ([]byte, error) {
 // PubKey gets the corresponding public key from the private key.
 //
 // Panics if the private key is not initialized.
-func (privKey *PrivKey) PubKey() cryptotypes.PubKey {
+func (privKey *PrivKey) PubKey() fwcryptotypes.PubKey {
 	// If the latter 32 bytes of the privkey are all zero, privkey is not
 	// initialized.
 	initialized := false
@@ -82,7 +82,7 @@ func (privKey *PrivKey) PubKey() cryptotypes.PubKey {
 
 // Equals - you probably don't need to use this.
 // Runs in constant time based on length of the keys.
-func (privKey *PrivKey) Equals(other cryptotypes.LedgerPrivKey) bool {
+func (privKey *PrivKey) Equals(other fwcryptotypes.LedgerPrivKey) bool {
 	if privKey.Type() != other.Type() {
 		return false
 	}
@@ -128,19 +128,19 @@ func GenPrivKeyFromSecret(secret []byte) *PrivKey {
 //-------------------------------------
 
 var (
-	_ cryptotypes.PubKey = &PubKey{}
+	_ fwcryptotypes.PubKey = &PubKey{}
 )
 
 // Address is the SHA256-20 of the raw pubkey bytes.
 // It doesn't implement ADR-28 addresses and it must not be used
 // in SDK except in a tendermint validator context.
-func (pubKey *PubKey) Address() cryptotypes.Address {
+func (pubKey *PubKey) Address() fwcryptotypes.Address {
 	if len(pubKey.Key) != PubKeySize {
 		panic("pubkey is incorrect size")
 	}
 	// For ADR-28 compatible address we would need to
 	// return address.Hash(proto.MessageName(pubKey), pubKey.Key)
-	return cryptotypes.Address(tmhash.SumTruncated(pubKey.Key))
+	return fwcryptotypes.Address(tmhash.SumTruncated(pubKey.Key))
 }
 
 // Bytes returns the PubKey byte format.
@@ -167,7 +167,7 @@ func (pubKey *PubKey) Type() string {
 	return keyType
 }
 
-func (pubKey *PubKey) Equals(other cryptotypes.PubKey) bool {
+func (pubKey *PubKey) Equals(other fwcryptotypes.PubKey) bool {
 	if pubKey.Type() != other.Type() {
 		return false
 	}

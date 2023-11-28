@@ -3,9 +3,9 @@ package database
 import (
 	"reflect"
 
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/framework/utils/database/config"
-	"github.com/stratosnet/framework/utils/database/drivers"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/database/config"
+	"github.com/stratosnet/sds/framework/utils/database/drivers"
 )
 
 // @version 0.0.2

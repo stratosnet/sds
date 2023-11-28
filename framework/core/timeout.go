@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/stratosnet/sds-api/header"
+	"github.com/stratosnet/sds/sds-msg/header"
 
-	"github.com/stratosnet/framework/msg"
+	"github.com/stratosnet/sds/framework/msg"
 )
 
 var (

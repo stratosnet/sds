@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/stratosnet/framework/utils/cache"
-	"github.com/stratosnet/framework/utils/database/config"
+	"github.com/stratosnet/sds/framework/utils/cache"
+	"github.com/stratosnet/sds/framework/utils/database/config"
 )
 
 // CTable Table's cache version

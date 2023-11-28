@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/stratosnet/framework/utils/crypto"
-
 	"github.com/google/uuid"
+
+	"github.com/stratosnet/sds/framework/utils/crypto"
 )
 
 const (

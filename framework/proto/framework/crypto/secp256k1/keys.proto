@@ -1,7 +1,7 @@
 syntax = "proto3";
 package framework.crypto.secp256k1;
 
-option go_package = "github.com/stratosnet/framework/crypto/secp256k1";
+option go_package = "github.com/stratosnet/sds/framework/crypto/secp256k1";
 
 // PubKey defines a type alias for an ecdsa.PublicKey that implements
 // Tendermint's PubKey interface. It represents the 33-byte compressed public

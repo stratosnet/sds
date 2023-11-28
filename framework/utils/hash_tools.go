@@ -14,7 +14,7 @@ import (
 	mbase "github.com/multiformats/go-multibase"
 	mh "github.com/multiformats/go-multihash"
 
-	"github.com/stratosnet/framework/utils/crypto"
+	"github.com/stratosnet/sds/framework/utils/crypto"
 )
 
 const (

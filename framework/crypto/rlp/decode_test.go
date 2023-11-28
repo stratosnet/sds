@@ -27,7 +27,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stratosnet/framework/crypto/math"
+	"github.com/stratosnet/sds/framework/crypto/math"
 )
 
 func TestStreamKind(t *testing.T) {

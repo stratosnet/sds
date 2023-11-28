@@ -29,9 +29,9 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/stratosnet/framework/crypto/ethereum/common"
-	"github.com/stratosnet/framework/crypto/math"
-	"github.com/stratosnet/framework/crypto/rlp"
+	"github.com/stratosnet/sds/framework/crypto/ethereum/common"
+	"github.com/stratosnet/sds/framework/crypto/math"
+	"github.com/stratosnet/sds/framework/crypto/rlp"
 	"golang.org/x/crypto/sha3"
 )
 

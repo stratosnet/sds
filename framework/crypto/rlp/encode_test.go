@@ -26,7 +26,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stratosnet/framework/crypto/math"
+	"github.com/stratosnet/sds/framework/crypto/math"
 )
 
 type testEncoder struct {

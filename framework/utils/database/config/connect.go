@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 // Connect config

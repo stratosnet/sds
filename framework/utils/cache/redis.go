@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 // Redis client

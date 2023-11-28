@@ -7,8 +7,9 @@ import (
 
 	"github.com/bsipos/thist"
 	"github.com/google/uuid"
-	"github.com/stratosnet/framework/utils"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 func init() {

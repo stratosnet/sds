@@ -3,10 +3,10 @@ package drivers
 import (
 	"errors"
 
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/framework/utils/database/config"
-	"github.com/stratosnet/framework/utils/database/rows"
-	"github.com/stratosnet/framework/utils/database/sql"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/database/config"
+	"github.com/stratosnet/sds/framework/utils/database/rows"
+	"github.com/stratosnet/sds/framework/utils/database/sql"
 
 	_ "github.com/mattn/go-sqlite3"
 )

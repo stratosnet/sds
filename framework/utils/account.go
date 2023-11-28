@@ -20,11 +20,11 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
 
-	cryptosecp256k1 "github.com/stratosnet/framework/crypto/secp256k1"
-	"github.com/stratosnet/framework/utils/crypto"
-	"github.com/stratosnet/framework/utils/crypto/ed25519"
-	"github.com/stratosnet/framework/utils/crypto/secp256k1"
-	"github.com/stratosnet/framework/utils/types"
+	fwsecp256k1 "github.com/stratosnet/sds/framework/crypto/secp256k1"
+	"github.com/stratosnet/sds/framework/utils/crypto"
+	"github.com/stratosnet/sds/framework/utils/crypto/ed25519"
+	"github.com/stratosnet/sds/framework/utils/crypto/secp256k1"
+	"github.com/stratosnet/sds/framework/utils/types"
 )
 
 const (
@@ -74,7 +74,7 @@ type hdKeyBytes struct {
 
 // CreateWallet creates a new stratos-chain wallet with the given nickname and password, and saves the key data into the dir folder
 func CreateWallet(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPath string) (types.Address, error) {
-	privateKey, err := cryptosecp256k1.Derive(mnemonic, bip39Passphrase, hdPath)
+	privateKey, err := fwsecp256k1.Derive(mnemonic, bip39Passphrase, hdPath)
 	if err != nil {
 		return types.Address{}, err
 	}

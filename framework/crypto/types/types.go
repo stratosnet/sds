@@ -4,7 +4,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	"github.com/stratosnet/framework/crypto/tendermint/libs/bytes"
+	"github.com/stratosnet/sds/framework/crypto/tendermint/libs/bytes"
 )
 
 // PubKey defines a public key and extends proto.Message.

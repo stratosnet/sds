@@ -21,7 +21,7 @@ import (
 	"encoding/hex"
 	"errors"
 
-	"github.com/stratosnet/framework/crypto/ethereum/common/hexutil"
+	"github.com/stratosnet/sds/framework/crypto/ethereum/common/hexutil"
 )
 
 // FromHex returns the bytes represented by the hexadecimal string s.

@@ -5,7 +5,7 @@ import (
 	"runtime/debug"
 	"unsafe"
 
-	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 type taskFunc func()

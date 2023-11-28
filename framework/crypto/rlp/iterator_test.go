@@ -19,7 +19,7 @@ package rlp
 import (
 	"testing"
 
-	"github.com/stratosnet/framework/crypto/ethereum/common/hexutil"
+	"github.com/stratosnet/sds/framework/crypto/ethereum/common/hexutil"
 )
 
 // TestIterator tests some basic things about the ListIterator. A more

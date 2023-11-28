@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/framework/utils/cache"
-	"github.com/stratosnet/framework/utils/database/rows"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/cache"
+	"github.com/stratosnet/sds/framework/utils/database/rows"
 )
 
 // @version 0.0.1

@@ -3,17 +3,18 @@ package secp256k1
 import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/pkg/errors"
-	"github.com/stratosnet/framework/crypto/secp256k1"
-	cryptotypes "github.com/stratosnet/framework/crypto/types"
-	"github.com/stratosnet/framework/utils/types"
+
+	"github.com/stratosnet/sds/framework/crypto/secp256k1"
+	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
+	"github.com/stratosnet/sds/framework/utils/types"
 )
 
-func PrivKeyToSdkPrivKey(privKey []byte) cryptotypes.PrivKey {
+func PrivKeyToSdkPrivKey(privKey []byte) fwcryptotypes.PrivKey {
 	return secp256k1.Generate(privKey)
 }
 
 // PrivKeyToPubKey returns the public key associated with the given private key
-func PrivKeyToPubKey(privKey []byte) cryptotypes.PubKey {
+func PrivKeyToPubKey(privKey []byte) fwcryptotypes.PubKey {
 	return PrivKeyToSdkPrivKey(privKey).PubKey()
 }
 
@@ -24,7 +25,7 @@ func PrivKeyToAddress(privKey []byte) types.Address {
 }
 
 // PubKeyToSdkPubKey converts pubKey bytes to a secp256k1 public key.
-func PubKeyToSdkPubKey(pubKey []byte) (cryptotypes.PubKey, error) {
+func PubKeyToSdkPubKey(pubKey []byte) (fwcryptotypes.PubKey, error) {
 	ecdsaPubKey, err := btcec.ParsePubKey(pubKey) // Works for both compressed and uncompressed pubkey formats
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid secp256k1 public key")

@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/stratosnet/framework/utils/encryption"
+	"github.com/stratosnet/sds/framework/utils/encryption"
 )
 
 func WriteFull(c net.Conn, data []byte) error {

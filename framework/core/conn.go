@@ -13,26 +13,26 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/stratosnet/sds-api/header"
-	"github.com/stratosnet/sds-api/protos"
+	"github.com/stratosnet/sds/sds-msg/header"
+	"github.com/stratosnet/sds/sds-msg/protos"
 
-	tmed25519 "github.com/stratosnet/framework/crypto/ed25519"
-	"github.com/stratosnet/framework/metrics"
-	message "github.com/stratosnet/framework/msg"
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/framework/utils/crypto/ed25519"
-	"github.com/stratosnet/framework/utils/encryption"
-	"github.com/stratosnet/framework/utils/types"
+	fwed25519 "github.com/stratosnet/sds/framework/crypto/ed25519"
+	"github.com/stratosnet/sds/framework/metrics"
+	fwmsg "github.com/stratosnet/sds/framework/msg"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/crypto/ed25519"
+	"github.com/stratosnet/sds/framework/utils/encryption"
+	"github.com/stratosnet/sds/framework/utils/types"
 )
 
 type MsgHandler struct {
-	message   message.RelayMsgBuf
+	message   fwmsg.RelayMsgBuf
 	handler   HandlerFunc
 	recvStart int64
 }
 
 type WriteCloser interface {
-	Write(*message.RelayMsgBuf, context.Context) error
+	Write(*fwmsg.RelayMsgBuf, context.Context) error
 	Close()
 }
 
@@ -54,7 +54,7 @@ type ServerConn struct {
 
 	once      *sync.Once
 	wg        *sync.WaitGroup
-	sendCh    chan *message.RelayMsgBuf
+	sendCh    chan *fwmsg.RelayMsgBuf
 	handlerCh chan MsgHandler
 
 	mu    sync.Mutex // guards following
@@ -81,7 +81,7 @@ func CreateServerConn(id int64, s *Server, c net.Conn) *ServerConn {
 		spbConn:   c,
 		once:      &sync.Once{},
 		wg:        &sync.WaitGroup{},
-		sendCh:    make(chan *message.RelayMsgBuf, s.opts.bufferSize),
+		sendCh:    make(chan *fwmsg.RelayMsgBuf, s.opts.bufferSize),
 		handlerCh: make(chan MsgHandler, s.opts.bufferSize),
 		heart:     time.Now().UnixNano(),
 	}
@@ -171,7 +171,7 @@ func (sc *ServerConn) handshake() (error, bool) {
 	}
 
 	// This is either a client creating a connection, or a temporary connection made for a handshake
-	// Read the first message from the connection. It should indicate what kind of connection it is
+	// Read the first fwmsg from the connection. It should indicate what kind of connection it is
 	buffer := make([]byte, ConnFirstMsgSize)
 	if _, err := io.ReadFull(sc.spbConn, buffer); err != nil {
 		return err, false
@@ -201,7 +201,7 @@ func (sc *ServerConn) handshake() (error, bool) {
 			return err, false
 		}
 
-		// Write the connection type as first message
+		// Write the connection type as first fwmsg
 		firstMessage := CreateFirstMessage(ConnTypeHandshake, nil, 0, channelId)
 		if err = WriteFull(handshakeConn, firstMessage); err != nil {
 			return err, false
@@ -222,13 +222,13 @@ func (sc *ServerConn) handshake() (error, bool) {
 		}
 
 		// Read tmp key from original conn and verify
-		buffer = make([]byte, tmed25519.PubKeySize+tmed25519.SignatureSize)
+		buffer = make([]byte, fwed25519.PubKeySize+fwed25519.SignatureSize)
 		if _, err = io.ReadFull(sc.spbConn, buffer); err != nil {
 			return err, false
 		}
-		peerPubKeyBytes := buffer[:tmed25519.PubKeySize]
+		peerPubKeyBytes := buffer[:fwed25519.PubKeySize]
 		peerPubKey := ed25519.PubKeyBytesToPubKey(peerPubKeyBytes)
-		peerSignature := buffer[tmed25519.PubKeySize:]
+		peerSignature := buffer[fwed25519.PubKeySize:]
 		if !peerPubKey.VerifySignature([]byte(HandshakeMessage), peerSignature) {
 			return errors.New("Invalid signature in tmp key from peer"), false
 		}
@@ -262,7 +262,7 @@ func (sc *ServerConn) handshake() (error, bool) {
 		_ = handshakeConn.Close()
 	case ConnTypeHandshake:
 		// Read tmp key from conn
-		buffer = make([]byte, tmed25519.PubKeySize+tmed25519.SignatureSize)
+		buffer = make([]byte, fwed25519.PubKeySize+fwed25519.SignatureSize)
 		if _, err := io.ReadFull(sc.spbConn, buffer); err != nil {
 			return err, false
 		}
@@ -322,14 +322,14 @@ func (sc *ServerConn) Start() {
 /*
 error is caught at application layer, if it's utils.ErrWouldBlock，sleep and then continue write
 */
-func (sc *ServerConn) Write(message *message.RelayMsgBuf, ctx context.Context) error {
+func (sc *ServerConn) Write(message *fwmsg.RelayMsgBuf, ctx context.Context) error {
 	if message.MSGSign.P2pAddress == "" || message.MSGSign.P2pPubKey == nil {
 		return errors.New("missing sign related information")
 	}
 	return asyncWrite(sc, message, ctx)
 }
 
-func asyncWrite(c interface{}, m *message.RelayMsgBuf, ctx context.Context) (err error) {
+func asyncWrite(c interface{}, m *fwmsg.RelayMsgBuf, ctx context.Context) (err error) {
 	defer func() {
 		if p := recover(); p != nil {
 			err = errors.Wrapf(utils.ErrServerClosed, "recover occurred during asyncWrite, err: %v", p)
@@ -404,7 +404,7 @@ func (sc *ServerConn) SendBadVersionMsg(version uint16, cmd uint8) {
 		return
 	}
 
-	err = sc.Write(&message.RelayMsgBuf{
+	err = sc.Write(&fwmsg.RelayMsgBuf{
 		MSGHead: header.MakeMessageHeader(1, sc.minAppVer, uint32(len(data)), header.RspBadVersion),
 		MSGBody: data,
 	}, context.Background())
@@ -421,7 +421,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 		sDone     <-chan struct{}
 		onMessage onMessageFunc
 		handlerCh chan MsgHandler
-		msg       *message.RelayMsgBuf
+		msg       *fwmsg.RelayMsgBuf
 		sc        *ServerConn
 	)
 
@@ -442,7 +442,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 	}()
 
 	var msgH header.MessageHead
-	var msgS message.MessageSign
+	var msgS fwmsg.MessageSign
 	var headerBytes []byte
 	var n int
 	var err error
@@ -481,10 +481,10 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				msgH.Decode(msgBuf[:header.MsgHeaderLen])
 				if msgH.Version < sc.minAppVer {
 					sc.SendBadVersionMsg(msgH.Version, msgH.Cmd)
-					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "message versions don't match")
+					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "fwmsg versions don't match")
 					return
 				}
-				// no matter the body is empty or not, message is always handled in the second part, after the signature verified.
+				// no matter the body is empty or not, fwmsg is always handled in the second part, after the signature verified.
 				listenHeader = false
 			} else {
 				// listen to the second part: body + sign + data. They are concatenated to the header in msgBuf.
@@ -510,7 +510,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					pos += n
 					sc.increaseReadFlow(n)
 					if err != nil {
-						Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "message body err: "+err.Error())
+						Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "fwmsg body err: "+err.Error())
 						return
 					}
 				}
@@ -519,12 +519,12 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				if uint32(i) == secondPartLen {
 					posBody := uint32(header.MsgHeaderLen)
 					posSign := posBody + msgH.Len
-					posData := posSign + message.MsgSignLen
+					posData := posSign + fwmsg.MsgSignLen
 					var posEnd uint32
 					if sc.encryptMessage {
 						secondPart, err := encryption.DecryptAES(sc.sharedKey, msgBuf[posBody:posBody+secondPartLen], nonce, true)
 						if err != nil {
-							Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "message body decryption err: "+err.Error())
+							Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "fwmsg body decryption err: "+err.Error())
 							return
 						}
 						posEnd = posBody + uint32(len(secondPart))
@@ -533,13 +533,13 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					}
 
 					// verify signature
-					msgS.Decode(msgBuf[posSign : posSign+message.MsgSignLen])
+					msgS.Decode(msgBuf[posSign : posSign+fwmsg.MsgSignLen])
 					if err = msgS.Verify(msgBuf[:posSign], sc.remoteP2pAddress); err != nil {
 						Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "read err: failed signature verification: "+err.Error())
 						continue
 					}
-					// message body goes to field MSGBody, data goes to field MSGData if it exists
-					msg = &message.RelayMsgBuf{
+					// fwmsg body goes to field MSGBody, data goes to field MSGData if it exists
+					msg = &fwmsg.RelayMsgBuf{
 						MSGHead: header.CopyMessageHeader(msgH),
 						MSGBody: make([]byte, posSign-posBody),
 					}
@@ -555,7 +555,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 						if onMessage != nil {
 							onMessage(*msg, c)
 						} else {
-							Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for message: "+strconv.FormatUint(uint64(msgH.Cmd), 10))
+							Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for fwmsg: "+strconv.FormatUint(uint64(msgH.Cmd), 10))
 						}
 						msgH.Len = 0
 						i = 0
@@ -570,9 +570,9 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					listenHeader = true
 				} else {
 					if msgType := header.GetMsgTypeFromId(msgH.Cmd); msgType != nil {
-						Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "msgH.Len doesn't match the size of data for message: "+msgType.Name)
+						Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "msgH.Len doesn't match the size of data for fwmsg: "+msgType.Name)
 					} else {
-						Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, fmt.Sprintf("msgH.Len doesn't match the size of data for an invalid message: %d", msgH.Cmd))
+						Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, fmt.Sprintf("msgH.Len doesn't match the size of data for an invalid fwmsg: %d", msgH.Cmd))
 					}
 					return
 				}
@@ -583,10 +583,10 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 
 func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 	var (
-		sendCh chan *message.RelayMsgBuf
+		sendCh chan *fwmsg.RelayMsgBuf
 		cDone  <-chan struct{}
 		sDone  <-chan struct{}
-		packet *message.RelayMsgBuf
+		packet *fwmsg.RelayMsgBuf
 		sc     *ServerConn
 	)
 
@@ -642,14 +642,14 @@ func writeLoop(c WriteCloser, wg *sync.WaitGroup) {
 	}
 }
 
-func (sc *ServerConn) writePacket(m *message.RelayMsgBuf) error {
+func (sc *ServerConn) writePacket(m *fwmsg.RelayMsgBuf) error {
 	var encodedHeader []byte
 	var encodedData []byte
 	var onereadlen = 1024
 	var n int
 	var err error
 	var key []byte
-	packet := &message.RelayMsgBuf{
+	packet := &fwmsg.RelayMsgBuf{
 		MSGHead:  m.MSGHead,
 		MSGSign:  m.MSGSign,
 		PacketId: m.PacketId,
@@ -679,7 +679,7 @@ func (sc *ServerConn) writePacket(m *message.RelayMsgBuf) error {
 	}
 	sc.increaseWriteFlow(len(encodedHeader))
 
-	// pack the message data
+	// pack the fwmsg data
 	encodedData, err = Pack(key, packet.GetBytesAfterHeader())
 	if err != nil {
 		return errors.Wrap(err, "server cannot encrypt msg")
@@ -727,7 +727,7 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 	var log string
 	defer func() {
 		if p := recover(); p != nil {
-			Mylog(sc.belong.opts.logOpen, LOG_MODULE_HANDLELOOP, fmt.Sprintf("panic when handle message (%v), %v", log, p))
+			Mylog(sc.belong.opts.logOpen, LOG_MODULE_HANDLELOOP, fmt.Sprintf("panic when handle fwmsg (%v), %v", log, p))
 		}
 		wg.Done()
 		GoroutineMap.Delete(sc.GetName() + "handle")

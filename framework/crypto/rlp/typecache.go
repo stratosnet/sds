@@ -22,7 +22,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/stratosnet/framework/crypto/rlp/internal/rlpstruct"
+	"github.com/stratosnet/sds/framework/crypto/rlp/internal/rlpstruct"
 )
 
 // typeinfo is an entry in the type cache.

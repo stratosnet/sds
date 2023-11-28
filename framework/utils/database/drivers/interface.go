@@ -3,8 +3,8 @@ package drivers
 import (
 	"database/sql"
 
-	"github.com/stratosnet/framework/utils/cache"
-	"github.com/stratosnet/framework/utils/database/config"
+	"github.com/stratosnet/sds/framework/utils/cache"
+	"github.com/stratosnet/sds/framework/utils/database/config"
 )
 
 // DBDriver interface

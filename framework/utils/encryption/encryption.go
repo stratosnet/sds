@@ -4,7 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 
-	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 func EncryptAES(key, plaintext []byte, nonce uint64) ([]byte, error) {

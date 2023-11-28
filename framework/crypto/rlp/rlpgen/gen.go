@@ -23,7 +23,7 @@ import (
 	"go/types"
 	"sort"
 
-	"github.com/stratosnet/framework/crypto/rlp/internal/rlpstruct"
+	"github.com/stratosnet/sds/framework/crypto/rlp/internal/rlpstruct"
 )
 
 // buildContext keeps the data needed for make*Op.

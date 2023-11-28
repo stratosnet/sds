@@ -3,7 +3,7 @@ package console
 import (
 	"fmt"
 
-	"github.com/stratosnet/framework/utils/cmd"
+	"github.com/stratosnet/sds/framework/utils/cmd"
 )
 
 // getPassPhrase retrieves the password associated with an account, either fetched

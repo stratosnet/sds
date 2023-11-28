@@ -10,8 +10,9 @@ import (
 	"reflect"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/stratosnet/framework/utils/crypto/sha3"
-	"github.com/stratosnet/framework/utils/types"
+
+	"github.com/stratosnet/sds/framework/utils/crypto/sha3"
+	"github.com/stratosnet/sds/framework/utils/types"
 )
 
 var (

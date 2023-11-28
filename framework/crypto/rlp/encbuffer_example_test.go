@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/stratosnet/framework/crypto/rlp"
+	"github.com/stratosnet/sds/framework/crypto/rlp"
 )
 
 func ExampleEncoderBuffer() {

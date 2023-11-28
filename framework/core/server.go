@@ -11,9 +11,9 @@ import (
 
 	"github.com/alex023/clock"
 
-	"github.com/stratosnet/framework/metrics"
-	"github.com/stratosnet/framework/msg"
-	"github.com/stratosnet/framework/utils"
+	"github.com/stratosnet/sds/framework/metrics"
+	"github.com/stratosnet/sds/framework/msg"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 var (

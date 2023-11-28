@@ -28,7 +28,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/stratosnet/framework/crypto/rlp/internal/rlpstruct"
+	"github.com/stratosnet/sds/framework/crypto/rlp/internal/rlpstruct"
 )
 
 //lint:ignore ST1012 EOL is not an error.

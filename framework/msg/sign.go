@@ -4,8 +4,9 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/framework/utils/types"
+
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/types"
 )
 
 const (

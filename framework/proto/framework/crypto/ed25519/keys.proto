@@ -1,7 +1,7 @@
 syntax = "proto3";
 package framework.crypto.ed25519;
 
-option go_package = "github.com/stratosnet/framework/crypto/ed25519";
+option go_package = "github.com/stratosnet/sds/framework/crypto/ed25519";
 
 // PubKey is an ed25519 public key for handling Tendermint keys in SDK.
 // It's needed for Any serialization and SDK compatibility.

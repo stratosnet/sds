@@ -3,7 +3,7 @@ package utils
 import (
 	"strconv"
 
-	"github.com/stratosnet/sds-api/protos"
+	"github.com/stratosnet/sds/sds-msg/protos"
 	"google.golang.org/protobuf/proto"
 )
 

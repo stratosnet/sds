@@ -27,7 +27,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-const pathOfPackageRLP = "github.com/stratosnet/framework/crypto/rlp"
+const pathOfPackageRLP = "github.com/stratosnet/sds/framework/crypto/rlp"
 
 func main() {
 	var (

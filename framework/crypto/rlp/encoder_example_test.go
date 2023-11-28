@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/stratosnet/framework/crypto/rlp"
+	"github.com/stratosnet/sds/framework/crypto/rlp"
 )
 
 type MyCoolType struct {

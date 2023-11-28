@@ -8,12 +8,11 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/stratosnet/framework/crypto/ed25519"
-	"github.com/stratosnet/framework/crypto/secp256k1"
-	"github.com/stratosnet/framework/types"
-	"github.com/stratosnet/framework/types/bech32"
-
-	"github.com/stratosnet/framework/utils/crypto/sha3"
+	"github.com/stratosnet/sds/framework/crypto/ed25519"
+	"github.com/stratosnet/sds/framework/crypto/secp256k1"
+	"github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/types/bech32"
+	"github.com/stratosnet/sds/framework/utils/crypto/sha3"
 )
 
 // Lengths of hashes and addresses in bytes.

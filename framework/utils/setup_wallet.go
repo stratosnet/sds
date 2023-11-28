@@ -5,8 +5,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/framework/types"
-	"github.com/stratosnet/framework/utils/console"
+
+	"github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils/console"
 )
 
 func SetupWallet(accountDir, defaultHDPath string, updateConfig func(walletKeyAddressString, password string)) error {

@@ -4,7 +4,8 @@ import (
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/stratosnet/framework/utils"
+
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 func Initialize(port string) error {

@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/stratosnet/framework/utils"
-	"github.com/stratosnet/framework/utils/database/drivers"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/database/drivers"
 )
 
 const (

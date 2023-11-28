@@ -9,9 +9,9 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/tyler-smith/go-bip39"
 
-	ethcrypto "github.com/stratosnet/framework/crypto/ethereum"
-	"github.com/stratosnet/framework/crypto/ethereum/common"
-	cryptotypes "github.com/stratosnet/framework/crypto/types"
+	ethcrypto "github.com/stratosnet/sds/framework/crypto/ethereum"
+	"github.com/stratosnet/sds/framework/crypto/ethereum/common"
+	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
 )
 
 //-----------------------------------------------------------------------------------------------
@@ -29,11 +29,11 @@ const (
 // secp256k1 Private Key
 
 var (
-	_ cryptotypes.PrivKey = &PrivKey{}
+	_ fwcryptotypes.PrivKey = &PrivKey{}
 )
 
 // Generate generates an eth_secp256k1 private key from the given bytes.
-func Generate(bz []byte) cryptotypes.PrivKey {
+func Generate(bz []byte) fwcryptotypes.PrivKey {
 	bzArr := make([]byte, PrivKeySize)
 	copy(bzArr, bz)
 
@@ -96,7 +96,7 @@ func GenerateKey() (*PrivKey, error) {
 	}, nil
 }
 
-func MakePubKey(key []byte) cryptotypes.PubKey {
+func MakePubKey(key []byte) fwcryptotypes.PubKey {
 	return &PubKey{Key: key}
 }
 
@@ -110,7 +110,7 @@ func (privKey *PrivKey) Bytes() []byte {
 
 // PubKey returns the ECDSA private key's public key. If the privkey is not valid
 // it returns a nil value.
-func (privKey *PrivKey) PubKey() cryptotypes.PubKey {
+func (privKey *PrivKey) PubKey() fwcryptotypes.PubKey {
 	ecdsaPrivKey, err := privKey.ToECDSA()
 	if err != nil {
 		return nil
@@ -122,7 +122,7 @@ func (privKey *PrivKey) PubKey() cryptotypes.PubKey {
 }
 
 // Equals returns true if two ECDSA private keys are equal and false otherwise.
-func (privKey *PrivKey) Equals(other cryptotypes.LedgerPrivKey) bool {
+func (privKey *PrivKey) Equals(other fwcryptotypes.LedgerPrivKey) bool {
 	return privKey.Type() == other.Type() && subtle.ConstantTimeCompare(privKey.Bytes(), other.Bytes()) == 1
 }
 
@@ -157,18 +157,18 @@ func (privKey *PrivKey) ToECDSA() (*ecdsa.PrivateKey, error) {
 // secp256k1 Public Key
 
 var (
-	_ cryptotypes.PubKey = &PubKey{}
+	_ fwcryptotypes.PubKey = &PubKey{}
 )
 
 // Address returns the address of the ECDSA public key.
 // The function will return an empty address if the public key is invalid.
-func (pubKey *PubKey) Address() cryptotypes.Address {
+func (pubKey *PubKey) Address() fwcryptotypes.Address {
 	pubk, err := ethcrypto.DecompressPubkey(pubKey.Key)
 	if err != nil {
 		return nil
 	}
 
-	return cryptotypes.Address(ethcrypto.PubkeyToAddress(*pubk).Bytes())
+	return fwcryptotypes.Address(ethcrypto.PubkeyToAddress(*pubk).Bytes())
 }
 
 // Bytes returns the raw bytes of the ECDSA public key.
@@ -190,7 +190,7 @@ func (pubKey *PubKey) Type() string {
 }
 
 // Equals returns true if the pubkey type is the same and their bytes are deeply equal.
-func (pubKey *PubKey) Equals(other cryptotypes.PubKey) bool {
+func (pubKey *PubKey) Equals(other fwcryptotypes.PubKey) bool {
 	return pubKey.Type() == other.Type() && bytes.Equal(pubKey.Bytes(), other.Bytes())
 }
 
