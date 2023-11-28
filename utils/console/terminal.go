@@ -7,6 +7,7 @@ type "exit" to exit console
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/peterh/liner"
@@ -18,12 +19,13 @@ var (
 	cmdPos   int
 )
 
-//Mystdin default terminal process
+// Mystdin default terminal process
 var Mystdin = NewTerminal()
 
-//ProcessFunc
+// ProcessFunc
+// param parameters
+//
 //line command
-//param parameters
 type ProcessFunc func(line string, param []string) bool
 type ProcessCmd struct {
 	pFunc     ProcessFunc
@@ -96,8 +98,12 @@ func (c *Terminal) Run() {
 
 	for c.Isrun {
 		if name, err := c.Prompt(">"); err == nil {
-			//log.Print("Got: ", name)
-			cmdstring := strings.Split(name, " ")
+			//log.Print("Got: " + name)
+			name = strings.TrimSpace(name)               // Trim leading and trailing whitespaces
+			re := regexp.MustCompile(`\s+`)              // Matches one or more consecutive whitespace characters
+			trimmedCmd := re.ReplaceAllString(name, " ") // Replace with a single space
+			//log.Print("Trimmed: " + trimmedCmd)
+			cmdstring := strings.Split(trimmedCmd, " ")
 			// if len(cmdstring) == 2 {
 			// 	param = strings.Split(cmdstring[1], " ")
 			// 	utils.DebugLog("param", param)
