@@ -11,7 +11,7 @@ require (
 	cosmossdk.io/math v1.2.0
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/pkg/errors v0.9.1
-	github.com/stratosnet/sds/framework v0.0.0-20231128184533-3f0f08822703
+	github.com/stratosnet/sds/framework v0.0.0-20231128191014-169cb82668b8
 	github.com/stratosnet/stratos-chain/api v0.0.0-20231113204325-6de660f174b5
 	github.com/tendermint/go-amino v0.16.0
 	google.golang.org/grpc v1.57.0
