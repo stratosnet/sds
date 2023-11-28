@@ -3,7 +3,7 @@ package relay
 import (
 	"math/big"
 
-	"github.com/stratosnet/sds-api/protos"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 type ActivatedPPReq struct {

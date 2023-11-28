@@ -1,4 +1,4 @@
-module github.com/stratosnet/sds-api
+module github.com/stratosnet/sds/sds-msg
 
 go 1.19
 

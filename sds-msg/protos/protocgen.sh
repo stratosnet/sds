@@ -3,6 +3,6 @@
 
 protoc --go_out=./ *.proto
 
-cp -r github.com/stratosnet/sds-api/* ../
+cp -r github.com/stratosnet/sds/sds-msg/* ../
 
 rm -rf github.com
