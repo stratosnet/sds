@@ -9,7 +9,6 @@ import (
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/tx"
-	pptypes "github.com/stratosnet/sds/pp/types"
 	txclienttx "github.com/stratosnet/sds/tx-client/tx"
 	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -60,7 +59,7 @@ func reqSendData(_ context.Context, amount txclienttypes.Coin, toAddr []byte, tx
 		return nil, err
 	}
 
-	txBytes, err := txclienttx.CreateAndSimulateTx(msgAny, pptypes.TypeMsgSend, txFee, "", signatureKeys, chainId, gasAdjustment)
+	txBytes, err := txclienttx.CreateAndSimulateTx(msgAny, txFee, "", signatureKeys, chainId, gasAdjustment)
 	if err != nil {
 		return nil, err
 	}

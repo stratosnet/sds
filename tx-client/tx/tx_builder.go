@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/cosmos/gogoproto/proto"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	authv1beta1 "cosmossdk.io/api/cosmos/auth/v1beta1"
@@ -25,13 +25,13 @@ import (
 	"github.com/stratosnet/sds/tx-client/utils"
 )
 
-func CreateAndSimulateTx(msg *anypb.Any, msgType string, txFee types.TxFee, memo string,
+func CreateAndSimulateTx(msg *anypb.Any, txFee types.TxFee, memo string,
 	signatureKeys []*types.SignatureKey, chainId string, gasAdjustment float64) ([]byte, error) {
 
 	txConfig, unsignedTx := CreateTxConfigAndTxBuilder()
 	setMsgInfoToTxBuilder(unsignedTx, msg, txFee.Fee, txFee.Gas, memo)
 
-	unsignedMsgs := []*types.UnsignedMsg{{Msg: msg, SignatureKeys: signatureKeys, Type: msgType}}
+	unsignedMsgs := []*types.UnsignedMsg{{Msg: msg, SignatureKeys: signatureKeys, Type: msg.TypeUrl}}
 	txBytes, err := BuildTxBytes(txConfig, unsignedTx, chainId, unsignedMsgs)
 	if err != nil {
 		return nil, err
@@ -54,16 +54,21 @@ func CreateAndSimulateTx(msg *anypb.Any, msgType string, txFee types.TxFee, memo
 }
 
 func setMsgInfoToTxBuilder(unsignedTx *txv1beta1.Tx, txMsg *anypb.Any, fee types.Coin, gas uint64, memo string) {
-	unsignedTx.Body.Messages = []*anypb.Any{txMsg}
-	unsignedTx.Body.Memo = memo
-	unsignedTx.AuthInfo.Fee.Amount = []*basev1beta1.Coin{
-		{
-			Denom:  fee.Denom,
-			Amount: fee.Amount.String(),
+	unsignedTx.Body = &txv1beta1.TxBody{
+		Messages: []*anypb.Any{txMsg},
+		Memo:     memo,
+	}
+	unsignedTx.AuthInfo = &txv1beta1.AuthInfo{
+		Fee: &txv1beta1.Fee{
+			Amount: []*basev1beta1.Coin{
+				{
+					Denom:  fee.Denom,
+					Amount: fee.Amount.String(),
+				},
+			},
+			GasLimit: gas,
 		},
 	}
-	unsignedTx.AuthInfo.Fee.GasLimit = gas
-
 	return
 }
 
@@ -105,7 +110,6 @@ func buildAndSignStdTx(txConfig TxConfig, unsignedTx *txv1beta1.Tx, chainId stri
 	// signature" hack to do that.
 	for _, signatureKey := range signaturesToDo {
 		var privKey fwcryptotypes.PrivKey
-		var pubkey fwcryptotypes.PubKey
 		var err error
 		switch signatureKey.Type {
 		case types.SignatureEd25519:
@@ -116,14 +120,14 @@ func buildAndSignStdTx(txConfig TxConfig, unsignedTx *txv1beta1.Tx, chainId stri
 		default:
 			privKey = secp256k1.Generate(signatureKey.PrivateKey)
 		}
-		pubkey = privKey.PubKey()
 
+		pubKeyAny, err := getPackedPubKeyAnyByPrivKey(privKey)
 		if err != nil {
 			return nil, err
 		}
 
 		sigV2 := signing.SignatureV2{
-			PubKey: pubkey,
+			PubKey: pubKeyAny,
 			Data: &signing.SingleSignatureData{
 				SignMode:  txConfig.SignModeHandler().DefaultMode(),
 				Signature: nil,
@@ -185,12 +189,8 @@ func SetSignatures(tx *txv1beta1.Tx, signatures ...signing.SignatureV2) (*txv1be
 		var modeInfo *txv1beta1.ModeInfo
 		modeInfo, rawSigs[i] = authtx.SignatureDataToModeInfoAndSig(sig.Data)
 
-		pubKeyAny, err := anypb.New(sig.PubKey)
-		if err != nil {
-			return tx, err
-		}
 		signerInfos[i] = &txv1beta1.SignerInfo{
-			PublicKey: pubKeyAny,
+			PublicKey: sig.PubKey,
 			ModeInfo:  modeInfo,
 			Sequence:  sig.Sequence,
 		}

@@ -4,8 +4,7 @@ import (
 	"fmt"
 
 	signingv1beta1 "cosmossdk.io/api/cosmos/tx/signing/v1beta1"
-
-	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // SignatureV2 is a convenience type that is easier to use in application logic
@@ -15,7 +14,7 @@ import (
 // signatures.
 type SignatureV2 struct {
 	// PubKey is the public key to use for verifying the signature
-	PubKey fwcryptotypes.PubKey
+	PubKey *anypb.Any
 
 	// Data is the actual data of the signature which includes SignMode's and
 	// the signatures themselves for either single or multi-signatures.

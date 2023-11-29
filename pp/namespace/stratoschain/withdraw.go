@@ -3,7 +3,7 @@ package stratoschain
 import (
 	"context"
 
-	"google.golang.org/protobuf/types/known/anypb"
+	"github.com/cosmos/cosmos-proto/anyutil"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/framework/utils/types"
@@ -14,7 +14,6 @@ import (
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/tx"
-	pptypes "github.com/stratosnet/sds/pp/types"
 )
 
 // Broadcast withdraw tx to stratos-chain directly
@@ -57,12 +56,12 @@ func reqWithdrawData(_ context.Context, amount txclienttypes.Coin, targetAddr []
 	chainId := setting.Config.Blockchain.ChainId
 	gasAdjustment := setting.Config.Blockchain.GasAdjustment
 
-	msgAny, err := anypb.New(txMsg)
+	msgAny, err := anyutil.New(txMsg)
 	if err != nil {
 		return nil, err
 	}
 
-	txBytes, err := txclienttx.CreateAndSimulateTx(msgAny, pptypes.TypeMsgWithdraw, txFee, "", signatureKeys, chainId, gasAdjustment)
+	txBytes, err := txclienttx.CreateAndSimulateTx(msgAny, txFee, "", signatureKeys, chainId, gasAdjustment)
 	if err != nil {
 		return nil, err
 	}

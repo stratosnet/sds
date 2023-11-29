@@ -24,7 +24,7 @@ const (
 	// private key representations used by RFC 8032.
 	SeedSize = 32
 
-	keyType = "ed25519"
+	KeyType = "ed25519"
 )
 
 var (
@@ -91,7 +91,7 @@ func (privKey *PrivKey) Equals(other fwcryptotypes.LedgerPrivKey) bool {
 }
 
 func (privKey *PrivKey) Type() string {
-	return keyType
+	return KeyType
 }
 
 // GenPrivKey generates a new ed25519 private key. These ed25519 keys must not
@@ -164,7 +164,7 @@ func (pubKey *PubKey) VerifySignature(msg []byte, sig []byte) bool {
 //}
 
 func (pubKey *PubKey) Type() string {
-	return keyType
+	return KeyType
 }
 
 func (pubKey *PubKey) Equals(other fwcryptotypes.PubKey) bool {

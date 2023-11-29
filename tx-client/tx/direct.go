@@ -3,7 +3,7 @@ package tx
 import (
 	"fmt"
 
-	"github.com/cosmos/gogoproto/proto"
+	"google.golang.org/protobuf/proto"
 
 	signingv1beta1 "cosmossdk.io/api/cosmos/tx/signing/v1beta1"
 	txv1beta1 "cosmossdk.io/api/cosmos/tx/v1beta1"

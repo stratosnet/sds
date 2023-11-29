@@ -8,7 +8,6 @@ import (
 	"github.com/stratosnet/sds/framework/utils/types"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
-	pptypes "github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/sds-msg/protos"
 	txclienttx "github.com/stratosnet/sds/tx-client/tx"
 	txclienttypes "github.com/stratosnet/sds/tx-client/types"
@@ -39,7 +38,7 @@ func reqActivateData(ctx context.Context, amount txclienttypes.Coin, txFee txcli
 		return nil, err
 	}
 
-	txBytes, err := txclienttx.CreateAndSimulateTx(msgAny, pptypes.TypeMsgCreateResourceNode, txFee, "", signatureKeys, chainId, gasAdjustment)
+	txBytes, err := txclienttx.CreateAndSimulateTx(msgAny, txFee, "", signatureKeys, chainId, gasAdjustment)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +73,7 @@ func reqUpdateDepositData(ctx context.Context, depositDelta txclienttypes.Coin, 
 		return nil, err
 	}
 
-	txBytes, err := txclienttx.CreateAndSimulateTx(msgAny, pptypes.TypeMsgUpdateResourceNodeDeposit, txFee, "", signatureKeys, chainId, gasAdjustment)
+	txBytes, err := txclienttx.CreateAndSimulateTx(msgAny, txFee, "", signatureKeys, chainId, gasAdjustment)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +106,7 @@ func reqDeactivateData(ctx context.Context, txFee txclienttypes.TxFee) (*protos.
 		return nil, err
 	}
 
-	txBytes, err := txclienttx.CreateAndSimulateTx(msgAny, pptypes.TypeMsgRemoveResourceNode, txFee, "", signatureKeys, chainId, gasAdjustment)
+	txBytes, err := txclienttx.CreateAndSimulateTx(msgAny, txFee, "", signatureKeys, chainId, gasAdjustment)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +139,7 @@ func reqPrepayData(ctx context.Context, beneficiary []byte, amount txclienttypes
 		return nil, err
 	}
 
-	txBytes, err := txclienttx.CreateAndSimulateTx(msgAny, pptypes.TypeMsgPrepay, txFee, "", signatureKeys, chainId, gasAdjustment)
+	txBytes, err := txclienttx.CreateAndSimulateTx(msgAny, txFee, "", signatureKeys, chainId, gasAdjustment)
 	if err != nil {
 		return nil, err
 	}

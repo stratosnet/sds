@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strconv"
 
-	"google.golang.org/protobuf/types/known/anypb"
+	"github.com/cosmos/cosmos-proto/anyutil"
 
 	bankv1beta1 "cosmossdk.io/api/cosmos/bank/v1beta1"
 	basev1beta1 "cosmossdk.io/api/cosmos/base/v1beta1"
@@ -17,7 +17,6 @@ import (
 
 	"github.com/stratosnet/sds/framework/crypto/ed25519"
 	"github.com/stratosnet/sds/framework/types"
-	"github.com/stratosnet/sds/framework/types/bech32"
 	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 )
 
@@ -32,7 +31,7 @@ func BuildVolumeReportMsg(traffic []*txclienttypes.Traffic, reporterAddress, rep
 
 	var nodesVolume []*potv1.SingleWalletVolume
 	for walletAddressString, volume := range aggregatedVolume {
-		_, _, err := bech32.DecodeAndConvert(walletAddressString)
+		_, err := types.AccAddressFromBech32(walletAddressString)
 		if err != nil {
 			return nil, []byte{}, err
 		}
@@ -112,15 +111,15 @@ func BuildUpdateEffectiveDepositMsg(spP2pAddress []types.SdsAddress, spWalletAdd
 }
 
 // Stratos-chain 'register' module
-func BuildCreateResourceNodeMsg(nodeType txclienttypes.NodeType, pubKey []byte, depositAmount txclienttypes.Coin,
+func BuildCreateResourceNodeMsg(nodeType txclienttypes.NodeType, p2pPubKey []byte, depositAmount txclienttypes.Coin,
 	ownerAddress types.AccAddress, p2pAddress types.SdsAddress) (*registerv1.MsgCreateResourceNode, error) {
 
 	if nodeType == 0 {
 		nodeType = txclienttypes.STORAGE
 	}
 
-	pk := &ed25519.PubKey{Key: pubKey}
-	pkAny, err := anypb.New(pk)
+	pk := &ed25519.PubKey{Key: p2pPubKey}
+	pkAny, err := anyutil.New(pk)
 	if err != nil {
 		return nil, err
 	}
@@ -140,11 +139,11 @@ func BuildCreateResourceNodeMsg(nodeType txclienttypes.NodeType, pubKey []byte, 
 	}, nil
 }
 
-func BuildCreateMetaNodeMsg(pubKey []byte, depositAmount txclienttypes.Coin, ownerAddress types.AccAddress,
+func BuildCreateMetaNodeMsg(p2pPubKey []byte, depositAmount txclienttypes.Coin, ownerAddress types.AccAddress,
 	p2pAddress types.SdsAddress) (*registerv1.MsgCreateMetaNode, error) {
 
-	pk := &ed25519.PubKey{Key: pubKey}
-	pkAny, err := anypb.New(pk)
+	pk := &ed25519.PubKey{Key: p2pPubKey}
+	pkAny, err := anyutil.New(pk)
 	if err != nil {
 		return nil, err
 	}

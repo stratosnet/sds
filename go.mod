@@ -13,6 +13,7 @@ require (
 	cosmossdk.io/math v1.2.0
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137
 	github.com/alex023/clock v0.0.0-20191208111215-c265f1b2ab18
+	github.com/cosmos/cosmos-proto v1.0.0-beta.3
 	github.com/deckarep/golang-set v1.8.0
 	github.com/glendc/go-external-ip v0.1.0
 	github.com/google/uuid v1.3.1
@@ -46,7 +47,6 @@ require (
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cosmos/btcutil v1.0.5 // indirect
-	github.com/cosmos/cosmos-proto v1.0.0-beta.3 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/cosmos/gogoproto v1.4.11 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

@@ -84,7 +84,7 @@ func rootPreRunE(cmd *cobra.Command, _ []string) error {
 	}
 	setting.HomePath = homePath
 	_ = utils.NewDefaultLogger(filepath.Join(homePath, "tmp/logs/stdout.log"), true, true)
-	_ = txclientutils.NewDefaultLogger(filepath.Join(homePath, "tmp/logs/tx-client-stdout.log"), true, true)
+	_ = txclientutils.NewDefaultLogger(filepath.Join(homePath, "tmp/logs/relayer-tx-client-stdout.log"), true, true)
 	return nil
 }
 
