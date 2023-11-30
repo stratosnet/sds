@@ -150,7 +150,7 @@ func QueryRemainingOzoneLimit() (*big.Int, error) {
 	}
 
 	limit := resp.OzoneLimit.BigInt()
-	if resp.OzoneLimit == nil {
+	if limit == nil {
 		return nil, errors.New("remaining ozone limit is nil in the response from stchain")
 	}
 

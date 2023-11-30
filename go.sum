@@ -1666,8 +1666,8 @@ github.com/src-d/envconfig v1.0.0/go.mod h1:Q9YQZ7BKITldTBnoxsE5gOeB5y66RyPXeue/
 github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4 h1:Gb2Tyox57NRNuZ2d3rmvB3pcmbu7O1RS3m8WRx7ilrg=
 github.com/stratosnet/cosmos-sdk v0.45.12-0.20230124002546-fd8c3abd07d5 h1:WjTdRjQkoPKDtp2gaGu9s/Cv5QC4ahRI9VRuex+XvQE=
 github.com/stratosnet/cosmos-sdk v0.45.12-0.20230124002546-fd8c3abd07d5/go.mod h1:p8Nf05bzxH7rGhbEuC0L+GEX4Fwvq3MgYFbdTlprZLc=
-github.com/stratosnet/stratos-chain v0.11.3-0.20231127224921-2662fcba18e0 h1:m9hGOhVyO8F0+L8ZO3LtLcbZcC6ivO46ntV8aMJkbpI=
-github.com/stratosnet/stratos-chain v0.11.3-0.20231127224921-2662fcba18e0/go.mod h1:EmtOcMWltRB0g7b5DCkOMqPSWXyTtwpVsHH6OgB9guc=
+github.com/stratosnet/stratos-chain v0.11.3-0.20231130234748-c56b1461976e h1:iG+ULrv02coZAoRqybPytFNhNNvm88W6FKfhyEsRbtQ=
+github.com/stratosnet/stratos-chain v0.11.3-0.20231130234748-c56b1461976e/go.mod h1:EmtOcMWltRB0g7b5DCkOMqPSWXyTtwpVsHH6OgB9guc=
 github.com/streadway/amqp v0.0.0-20190404075320-75d898a42a94/go.mod h1:AZpEONHx3DKn8O/DFsRAY58/XVQiIPMTMB1SddzLXVw=
 github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271/go.mod h1:AZpEONHx3DKn8O/DFsRAY58/XVQiIPMTMB1SddzLXVw=
 github.com/streadway/handy v0.0.0-20190108123426-d5acb3125c2a/go.mod h1:qNTQ5P5JnDBl6z3cMAg/SywNDC5ABu5ApDIw6lUbRmI=
