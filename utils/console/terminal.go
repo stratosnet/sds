@@ -23,7 +23,6 @@ var (
 var Mystdin = NewTerminal()
 
 // ProcessFunc
-// param parameters
 //
 //line command
 type ProcessFunc func(line string, param []string) bool
