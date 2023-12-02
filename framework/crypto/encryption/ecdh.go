@@ -3,6 +3,7 @@ package encryption
 import (
 	"errors"
 	"fmt"
+
 	"github.com/oasisprotocol/ed25519/extra/x25519"
 	"golang.org/x/crypto/curve25519"
 )

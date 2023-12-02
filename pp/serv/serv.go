@@ -200,7 +200,7 @@ func (bs *BaseServer) startP2pServer() error {
 		return errors.Wrap(err, "failed init p2p server ")
 	}
 
-	err := utils.InitIdWorker(bs.p2pServ.GetP2PAddrInTypeAddress()[0])
+	err := utils.InitIdWorker(bs.p2pServ.GetP2PAddress().Bytes()[0])
 	if err != nil {
 		utils.FatalLogfAndExit(-4, "Fatal error: "+err.Error())
 	}

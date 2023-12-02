@@ -2,14 +2,14 @@ package types
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/stratosnet/sds/framework/crypto/ed25519"
-	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
+	"github.com/stratosnet/sds/framework/crypto/sha3"
 	"github.com/stratosnet/sds/framework/types/bech32"
 )
 
@@ -19,41 +19,24 @@ const (
 	MaxAddrLen = 255
 
 	StratosBech32Prefix = "st"
-
-	// PrefixAccount is the prefix for account keys
-	PrefixAccount = "acc"
-	// PrefixValidator is the prefix for validator keys
-	PrefixValidator = "val"
-	// PrefixConsensus is the prefix for consensus keys
-	PrefixConsensus = "cons"
 	// PrefixPublic is the prefix for public keys
 	PrefixPublic = "pub"
-	// PrefixOperator is the prefix for operator keys
-	PrefixOperator = "oper"
 	// PrefixSds is the prefix for sds keys
 	PrefixSds = "sds"
 
-	// AccountAddressPrefix defines the Bech32 prefix of an account's address (st)
-	AccountAddressPrefix = StratosBech32Prefix
-	// AccountPubKeyPrefix defines the Bech32 prefix of an account's public key (stpub)
-	AccountPubKeyPrefix = StratosBech32Prefix + PrefixPublic
-	// ValidatorAddressPrefix defines the Bech32 prefix of a validator's operator address (stvaloper)
-	ValidatorAddressPrefix = StratosBech32Prefix + PrefixValidator + PrefixOperator
-	// ValidatorPubKeyPrefix defines the Bech32 prefix of a validator's operator public key (stvaloperpub)
-	ValidatorPubKeyPrefix = StratosBech32Prefix + PrefixValidator + PrefixOperator + PrefixPublic
-	// ConsNodeAddressPrefix defines the Bech32 prefix of a consensus node address (stvalcons)
-	ConsNodeAddressPrefix = StratosBech32Prefix + PrefixValidator + PrefixConsensus
-	// ConsNodePubKeyPrefix defines the Bech32 prefix of a consensus node public key (stvalconspub)
-	ConsNodePubKeyPrefix = StratosBech32Prefix + PrefixValidator + PrefixConsensus + PrefixPublic
-	// SdsNodeP2PPubkeyPrefix defines the Bech32 prefix of an sds account's public key (stsdspub)
-	SdsNodeP2PPubkeyPrefix = StratosBech32Prefix + PrefixSds + PrefixPublic
-	// SdsNodeP2PAddressPrefix defines the Bech32 prefix of an sds account's address (stsds)
-	SdsNodeP2PAddressPrefix = StratosBech32Prefix + PrefixSds
+	// WalletAddressPrefix defines the Bech32 prefix of an account's address (st)
+	WalletAddressPrefix = StratosBech32Prefix
+	// WalletPubKeyPrefix defines the Bech32 prefix of an account's public key (stpub)
+	WalletPubKeyPrefix = StratosBech32Prefix + PrefixPublic
+	// P2PPubkeyPrefix defines the Bech32 prefix of an sds account's public key (stsdspub)
+	P2PPubkeyPrefix = StratosBech32Prefix + PrefixSds + PrefixPublic
+	// P2PAddressPrefix defines the Bech32 prefix of an sds account's address (stsds)
+	P2PAddressPrefix = StratosBech32Prefix + PrefixSds
 )
 
 var (
-	_ Address = SdsAddress{}
-	_ Address = AccAddress{}
+	_ Address = P2PAddress{}
+	_ Address = WalletAddress{}
 )
 
 // Address is a common interface for different types of addresses used by the SDK
@@ -65,27 +48,41 @@ type Address interface {
 	Bytes() []byte
 	String() string
 	Format(s fmt.State, verb rune)
+	Hex() string
 }
 
 // ----------------------------------------------------------------------------
 // account
 // ----------------------------------------------------------------------------
 
-// AccAddress a wrapper around bytes meant to represent an account address.
+// WalletAddress a wrapper around bytes meant to represent an account address.
 // When marshaled to a string or JSON, it uses Bech32.
-type AccAddress []byte
+type WalletAddress []byte
 
-func AccAddressBytesToBech32(addr []byte) string {
-	return addrBytesToBech32(addr, AccountAddressPrefix)
+func WalletAddressFromHex(s string) WalletAddress {
+	if len(s) > 1 {
+		if s[0:2] == "0x" || s[0:2] == "0X" {
+			s = s[2:]
+		}
+	}
+	if len(s)%2 == 1 {
+		s = "0" + s
+	}
+	bz, _ := hex.DecodeString(s)
+	return WalletAddress(bz)
 }
 
-// AccAddressFromBech32 creates an AccAddress from a Bech32 string.
-func AccAddressFromBech32(address string) (addr AccAddress, err error) {
+func WalletAddressBytesToBech32(addr []byte) string {
+	return addrBytesToBech32(addr, WalletAddressPrefix)
+}
+
+// WalletAddressFromBech32 creates an WalletAddress from a Bech32 string.
+func WalletAddressFromBech32(address string) (addr WalletAddress, err error) {
 	if len(strings.TrimSpace(address)) == 0 {
-		return AccAddress{}, fmt.Errorf("empty address string is not allowed")
+		return WalletAddress{}, fmt.Errorf("empty address string is not allowed")
 	}
 
-	bz, err := GetFromBech32(address, AccountAddressPrefix)
+	bz, err := GetFromBech32(address, WalletAddressPrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -95,11 +92,11 @@ func AccAddressFromBech32(address string) (addr AccAddress, err error) {
 		return nil, err
 	}
 
-	return AccAddress(bz), nil
+	return WalletAddress(bz), nil
 }
 
 // Returns boolean for whether two AccAddresses are Equal
-func (aa AccAddress) Equals(aa2 Address) bool {
+func (aa WalletAddress) Equals(aa2 Address) bool {
 	if aa.Empty() && aa2.Empty() {
 		return true
 	}
@@ -107,47 +104,47 @@ func (aa AccAddress) Equals(aa2 Address) bool {
 	return bytes.Equal(aa.Bytes(), aa2.Bytes())
 }
 
-// Returns boolean for whether an AccAddress is empty
-func (aa AccAddress) Empty() bool {
+// Returns boolean for whether an WalletAddress is empty
+func (aa WalletAddress) Empty() bool {
 	return len(aa) == 0
 }
 
 // Marshal returns the raw address bytes. It is needed for protobuf
 // compatibility.
-func (aa AccAddress) Marshal() ([]byte, error) {
+func (aa WalletAddress) Marshal() ([]byte, error) {
 	return aa, nil
 }
 
 // Unmarshal sets the address to the given data. It is needed for protobuf
 // compatibility.
-func (aa *AccAddress) Unmarshal(data []byte) error {
+func (aa *WalletAddress) Unmarshal(data []byte) error {
 	*aa = data
 	return nil
 }
 
 // MarshalJSON marshals to JSON using Bech32.
-func (aa AccAddress) MarshalJSON() ([]byte, error) {
+func (aa WalletAddress) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aa.String())
 }
 
 // MarshalYAML marshals to YAML using Bech32.
-func (aa AccAddress) MarshalYAML() (interface{}, error) {
+func (aa WalletAddress) MarshalYAML() (interface{}, error) {
 	return aa.String(), nil
 }
 
 // UnmarshalJSON unmarshals from JSON assuming Bech32 encoding.
-func (aa *AccAddress) UnmarshalJSON(data []byte) error {
+func (aa *WalletAddress) UnmarshalJSON(data []byte) error {
 	var s string
 	err := json.Unmarshal(data, &s)
 	if err != nil {
 		return err
 	}
 	if s == "" {
-		*aa = AccAddress{}
+		*aa = WalletAddress{}
 		return nil
 	}
 
-	aa2, err := AccAddressFromBech32(s)
+	aa2, err := WalletAddressFromBech32(s)
 	if err != nil {
 		return err
 	}
@@ -157,18 +154,18 @@ func (aa *AccAddress) UnmarshalJSON(data []byte) error {
 }
 
 // UnmarshalYAML unmarshals from JSON assuming Bech32 encoding.
-func (aa *AccAddress) UnmarshalYAML(data []byte) error {
+func (aa *WalletAddress) UnmarshalYAML(data []byte) error {
 	var s string
 	err := yaml.Unmarshal(data, &s)
 	if err != nil {
 		return err
 	}
 	if s == "" {
-		*aa = AccAddress{}
+		*aa = WalletAddress{}
 		return nil
 	}
 
-	aa2, err := AccAddressFromBech32(s)
+	aa2, err := WalletAddressFromBech32(s)
 	if err != nil {
 		return err
 	}
@@ -178,18 +175,18 @@ func (aa *AccAddress) UnmarshalYAML(data []byte) error {
 }
 
 // Bytes returns the raw address bytes.
-func (aa AccAddress) Bytes() []byte {
+func (aa WalletAddress) Bytes() []byte {
 	return aa
 }
 
 // String implements the Stringer interface.
-func (aa AccAddress) String() string {
+func (aa WalletAddress) String() string {
 	if aa.Empty() {
 		return ""
 	}
-	bech32Addr, err := bech32.ConvertAndEncode(AccountAddressPrefix, aa.Bytes())
+	bech32Addr, err := bech32.ConvertAndEncode(WalletAddressPrefix, aa.Bytes())
 	if err != nil {
-		panic(err)
+		return ""
 	}
 
 	return bech32Addr
@@ -197,7 +194,7 @@ func (aa AccAddress) String() string {
 
 // Format implements the fmt.Formatter interface.
 
-func (aa AccAddress) Format(s fmt.State, verb rune) {
+func (aa WalletAddress) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 's':
 		s.Write([]byte(aa.String()))
@@ -208,42 +205,57 @@ func (aa AccAddress) Format(s fmt.State, verb rune) {
 	}
 }
 
-// ----------------------------------------------------------------------------
-// SdsAddress
-// ----------------------------------------------------------------------------
+func (aa WalletAddress) Hex() string {
+	unchecksummed := hex.EncodeToString(aa[:])
+	sha := sha3.NewKeccak256()
+	sha.Write([]byte(unchecksummed))
+	hash := sha.Sum(nil)
 
-type SdsAddress []byte
-
-// SdsPubKeyFromBech32 returns an ed25519 SdsPublicKey from a Bech32 string.
-func SdsPubKeyFromBech32(pubkeyStr string) (fwcryptotypes.PubKey, error) {
-	_, sdsPubKeyBytes, err := bech32.DecodeAndConvert(pubkeyStr)
-	if err != nil {
-		return nil, err
+	result := []byte(unchecksummed)
+	for i := 0; i < len(result); i++ {
+		hashByte := hash[i/2]
+		if i%2 == 0 {
+			hashByte = hashByte >> 4
+		} else {
+			hashByte &= 0xf
+		}
+		if result[i] > '9' && hashByte > 7 {
+			result[i] -= 32
+		}
 	}
-	pubKey := ed25519.PubKey{Key: sdsPubKeyBytes}
-	return &pubKey, nil
+	return "0x" + string(result)
 }
 
-// SdsPubKeyToBech32 convert a SdsPublicKey to a Bech32 string.
-func SdsPubKeyToBech32(pubkey fwcryptotypes.PubKey) (string, error) {
-	bech32Pub, err := bech32.ConvertAndEncode(SdsNodeP2PPubkeyPrefix, pubkey.Bytes())
-	if err != nil {
-		panic(err)
+// ----------------------------------------------------------------------------
+// P2PAddress
+// ----------------------------------------------------------------------------
+
+type P2PAddress []byte
+
+func P2PAddressFromHex(s string) P2PAddress {
+	if len(s) > 1 {
+		if s[0:2] == "0x" || s[0:2] == "0X" {
+			s = s[2:]
+		}
 	}
-	return bech32Pub, nil
+	if len(s)%2 == 1 {
+		s = "0" + s
+	}
+	bz, _ := hex.DecodeString(s)
+	return P2PAddress(bz)
 }
 
-func SdsAddressBytesToBech32(addr []byte) string {
-	return addrBytesToBech32(addr, SdsNodeP2PAddressPrefix)
+func P2PAddressBytesToBech32(addr []byte) string {
+	return addrBytesToBech32(addr, P2PAddressPrefix)
 }
 
-// SdsAddressFromBech32 creates an SdsAddress from a Bech32 string.
-func SdsAddressFromBech32(address string) (addr SdsAddress, err error) {
+// P2PAddressFromBech32 creates an P2PAddress from a Bech32 string.
+func P2PAddressFromBech32(address string) (addr P2PAddress, err error) {
 	if len(strings.TrimSpace(address)) == 0 {
-		return SdsAddress{}, fmt.Errorf("empty address string is not allowed")
+		return P2PAddress{}, fmt.Errorf("empty address string is not allowed")
 	}
 
-	bz, err := GetFromBech32(address, SdsNodeP2PAddressPrefix)
+	bz, err := GetFromBech32(address, P2PAddressPrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -253,11 +265,11 @@ func SdsAddressFromBech32(address string) (addr SdsAddress, err error) {
 		return nil, err
 	}
 
-	return SdsAddress(bz), nil
+	return P2PAddress(bz), nil
 }
 
-// Equals Returns boolean for whether two SdsAddress are Equal
-func (aa SdsAddress) Equals(aa2 Address) bool {
+// Equals Returns boolean for whether two P2PAddress are Equal
+func (aa P2PAddress) Equals(aa2 Address) bool {
 	if aa.Empty() && aa2.Empty() {
 		return true
 	}
@@ -265,36 +277,36 @@ func (aa SdsAddress) Equals(aa2 Address) bool {
 	return bytes.Equal(aa.Bytes(), aa2.Bytes())
 }
 
-// Empty Returns boolean for whether a SdsAddress is empty
-func (aa SdsAddress) Empty() bool {
+// Empty Returns boolean for whether a P2PAddress is empty
+func (aa P2PAddress) Empty() bool {
 	return aa == nil || len(aa) == 0
 }
 
 // Marshal returns the raw address bytes. It is needed for protobuf
 // compatibility.
-func (aa SdsAddress) Marshal() ([]byte, error) {
+func (aa P2PAddress) Marshal() ([]byte, error) {
 	return aa, nil
 }
 
 // Unmarshal sets the address to the given data. It is needed for protobuf
 // compatibility.
-func (aa *SdsAddress) Unmarshal(data []byte) error {
+func (aa *P2PAddress) Unmarshal(data []byte) error {
 	*aa = data
 	return nil
 }
 
 // MarshalJSON marshals to JSON using Bech32.
-func (aa SdsAddress) MarshalJSON() ([]byte, error) {
+func (aa P2PAddress) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aa.String())
 }
 
 // MarshalYAML marshals to YAML using Bech32.
-func (aa SdsAddress) MarshalYAML() (interface{}, error) {
+func (aa P2PAddress) MarshalYAML() (interface{}, error) {
 	return aa.String(), nil
 }
 
 // UnmarshalJSON unmarshals from JSON assuming Bech32 encoding.
-func (aa *SdsAddress) UnmarshalJSON(data []byte) error {
+func (aa *P2PAddress) UnmarshalJSON(data []byte) error {
 	var s string
 	err := json.Unmarshal(data, &s)
 
@@ -302,11 +314,11 @@ func (aa *SdsAddress) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if s == "" {
-		*aa = SdsAddress{}
+		*aa = P2PAddress{}
 		return nil
 	}
 
-	aa2, err := SdsAddressFromBech32(s)
+	aa2, err := P2PAddressFromBech32(s)
 	if err != nil {
 		return err
 	}
@@ -316,25 +328,25 @@ func (aa *SdsAddress) UnmarshalJSON(data []byte) error {
 }
 
 // Bytes returns the raw address bytes.
-func (aa SdsAddress) Bytes() []byte {
+func (aa P2PAddress) Bytes() []byte {
 	return aa
 }
 
 // String implements the Stringer interface.
-func (aa SdsAddress) String() string {
+func (aa P2PAddress) String() string {
 	if aa.Empty() {
 		return ""
 	}
-	bech32Addr, err := bech32.ConvertAndEncode(SdsNodeP2PAddressPrefix, aa.Bytes())
+	bech32Addr, err := bech32.ConvertAndEncode(P2PAddressPrefix, aa.Bytes())
 	if err != nil {
-		panic(err)
+		return ""
 	}
 
 	return bech32Addr
 }
 
 // Format implements the fmt.Formatter interface.
-func (aa SdsAddress) Format(s fmt.State, verb rune) {
+func (aa P2PAddress) Format(s fmt.State, verb rune) {
 	switch verb {
 	case 's':
 		s.Write([]byte(aa.String()))
@@ -343,6 +355,27 @@ func (aa SdsAddress) Format(s fmt.State, verb rune) {
 	default:
 		s.Write([]byte(fmt.Sprintf("%X", []byte(aa))))
 	}
+}
+
+func (aa P2PAddress) Hex() string {
+	unchecksummed := hex.EncodeToString(aa[:])
+	sha := sha3.NewKeccak256()
+	sha.Write([]byte(unchecksummed))
+	hash := sha.Sum(nil)
+
+	result := []byte(unchecksummed)
+	for i := 0; i < len(result); i++ {
+		hashByte := hash[i/2]
+		if i%2 == 0 {
+			hashByte = hashByte >> 4
+		} else {
+			hashByte &= 0xf
+		}
+		if result[i] > '9' && hashByte > 7 {
+			result[i] -= 32
+		}
+	}
+	return "0x" + string(result)
 }
 
 //--------------------------------------------------------------------
@@ -353,7 +386,7 @@ func addrBytesToBech32(addr []byte, addrPrefix string) string {
 	}
 	bech32Addr, err := bech32.ConvertAndEncode(addrPrefix, addr)
 	if err != nil {
-		panic(err)
+		return ""
 	}
 
 	return bech32Addr

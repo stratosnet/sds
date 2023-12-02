@@ -32,7 +32,7 @@ var (
 )
 
 // Generate generates an ed25519 private key from the given bytes.
-func Generate(bz []byte) fwcryptotypes.PrivKey {
+func Generate(bz []byte) *PrivKey {
 	bzArr := make([]byte, PrivKeySize)
 	copy(bzArr, bz)
 
@@ -173,4 +173,10 @@ func (pubKey *PubKey) Equals(other fwcryptotypes.PubKey) bool {
 	}
 
 	return subtle.ConstantTimeCompare(pubKey.Bytes(), other.Bytes()) == 1
+}
+
+func PubKeyFromBytes(bz []byte) fwcryptotypes.PubKey {
+	var pubKey []byte
+	copy(pubKey[:], bz)
+	return &PubKey{Key: pubKey}
 }

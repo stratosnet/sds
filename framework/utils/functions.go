@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/stratosnet/sds/framework/crypto"
 )
 
 func init() {
@@ -188,7 +189,7 @@ func Get8BitUUID() string {
 	uuidInString := uuid.New().String()
 	for i := 0; i < 8; i++ {
 		str := []byte(uuidInString[i*4 : i*4+4])
-		buff.WriteString(chars[CalcCRC32(str)%0x3E])
+		buff.WriteString(chars[crypto.CalcCRC32(str)%0x3E])
 	}
 	return buff.String()
 }

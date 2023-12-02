@@ -5,9 +5,8 @@ import (
 	"sync"
 
 	"github.com/stratosnet/sds/framework/core"
+	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
-	"github.com/stratosnet/sds/framework/utils/datamesh"
-	"github.com/stratosnet/sds/framework/utils/types"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
@@ -67,7 +66,7 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 	if reqMsg, loaded := uploadRequestMap.LoadAndDelete(requests.GetReqIdFromMessage(ctx)); loaded {
 		rmsg := reqMsg.(*protos.ReqUploadFile)
 		walletString := utils.GetFileUploadWalletSignMessage(rmsg.FileInfo.FileHash, setting.WalletAddress, target.SequenceNumber, rmsg.ReqTime)
-		wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(walletString))
+		wsign, err := setting.WalletPrivateKey.Sign([]byte(walletString))
 		if err != nil {
 			return
 		}
@@ -78,12 +77,12 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 
 	if reqMsg, loaded := downloadRequestMap.LoadAndDelete(requests.GetReqIdFromMessage(ctx)); loaded {
 		rmsg := reqMsg.(*protos.ReqFileStorageInfo)
-		_, _, fileHash, _, err := datamesh.ParseFileHandle(rmsg.FileIndexes.FilePath)
+		_, _, fileHash, _, err := fwtypes.ParseFileHandle(rmsg.FileIndexes.FilePath)
 		if err != nil {
 			return
 		}
 		walletString := utils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, target.SequenceNumber, rmsg.ReqTime)
-		wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(walletString))
+		wsign, err := setting.WalletPrivateKey.Sign([]byte(walletString))
 		if err != nil {
 			return
 		}

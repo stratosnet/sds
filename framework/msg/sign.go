@@ -5,16 +5,18 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/stratosnet/sds/framework/utils"
-	"github.com/stratosnet/sds/framework/utils/types"
+	"github.com/stratosnet/sds/framework/crypto"
+	fwed25519 "github.com/stratosnet/sds/framework/crypto/ed25519"
+	fwtypes "github.com/stratosnet/sds/framework/types"
 )
 
 const (
-	MsgSignLen                = types.P2pSignatureLength + types.P2pAddressBech32Length + types.P2pPublicKeyLength
+	P2pAddressBech32Length    = 44
+	MsgSignLen                = fwed25519.SignatureSize + P2pAddressBech32Length + fwed25519.PubKeySize
 	ThresholdToHashBeforeSign = 128
 )
 
-type Signer func([]byte) []byte
+type Signer func([]byte) ([]byte, error)
 
 // MessageSign
 type MessageSign struct {
@@ -28,11 +30,15 @@ func (s *MessageSign) Sign(hb []byte) error {
 	// add check for the length
 	var signMsg []byte
 	if len(hb) > ThresholdToHashBeforeSign {
-		signMsg = utils.CalcHashBytes(hb)
+		signMsg = crypto.CalcHashBytes(hb)
 	} else {
 		signMsg = hb
 	}
-	s.Signature = s.Signer(signMsg)
+	signature, err := s.Signer(signMsg)
+	if err != nil {
+		return err
+	}
+	s.Signature = signature
 	return nil
 }
 
@@ -44,16 +50,16 @@ func (s *MessageSign) Verify(hb []byte, remoteP2pAddr string) error {
 		return errors.New(fmt.Sprintf("wrong source p2p address from msg: %s, loc: %s", s.P2pAddress, remoteP2pAddr))
 	}
 	// verify node p2p address
-	if !types.VerifyP2pAddrBytes(s.P2pPubKey, s.P2pAddress) {
+	if !fwtypes.VerifyP2pAddrBytes(s.P2pPubKey, s.P2pAddress) {
 		return errors.New("p2p address doesn't match public key")
 	}
 	var signMsg []byte
 	if len(hb) > ThresholdToHashBeforeSign {
-		signMsg = utils.CalcHashBytes(hb)
+		signMsg = crypto.CalcHashBytes(hb)
 	} else {
 		signMsg = hb
 	}
-	if !types.VerifyP2pSignBytes(s.P2pPubKey, s.Signature, signMsg) {
+	if !fwtypes.VerifyP2pSignBytes(s.P2pPubKey, s.Signature, signMsg) {
 		return errors.New("wrong signature")
 	}
 	return nil
@@ -69,11 +75,12 @@ func (s *MessageSign) Encode(sign []byte) int {
 
 func (s *MessageSign) Decode(sign []byte) int {
 	var i = 0
-	s.P2pAddress = string(sign[i : i+types.P2pAddressBech32Length])
-	i += types.P2pAddressBech32Length
-	s.P2pPubKey = sign[i : i+types.P2pPublicKeyLength]
-	i += types.P2pPublicKeyLength
-	s.Signature = sign[i : i+types.P2pSignatureLength]
-	i += types.P2pSignatureLength
+	s.P2pAddress = string(sign[i : i+P2pAddressBech32Length])
+	i += P2pAddressBech32Length
+
+	s.P2pPubKey = sign[i : i+fwed25519.PubKeySize]
+	i += fwed25519.PubKeySize
+	s.Signature = sign[i : i+fwed25519.SignatureSize]
+	i += fwed25519.SignatureSize
 	return i
 }

@@ -11,8 +11,9 @@ import (
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
+	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
+	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
-	fwutiltypes "github.com/stratosnet/sds/framework/utils/types"
 
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
@@ -45,9 +46,9 @@ type P2pServer struct {
 	peerList        types.PeerList
 	bufferedSpConns []*cf.ClientConn
 
-	p2pPrivKey fwutiltypes.P2pPrivKey
-	p2pPubKey  fwutiltypes.P2pPubKey
-	p2pAddress fwutiltypes.Address
+	p2pPrivKey fwcryptotypes.PrivKey
+	p2pPubKey  fwcryptotypes.PubKey
+	p2pAddress fwtypes.P2PAddress
 
 	// client conn
 	// offlineChan
@@ -87,15 +88,15 @@ func (p *P2pServer) Init() error {
 		return errors.New("couldn't read P2P key file: " + err.Error())
 	}
 
-	p2pKey, err := utils.DecryptKey(p2pKeyFile, setting.Config.Keys.P2PPassword)
+	p2pKey, err := fwtypes.DecryptKey(p2pKeyFile, setting.Config.Keys.P2PPassword, false)
 	if err != nil {
 		return errors.New("couldn't decrypt P2P key file: " + err.Error())
 	}
 
-	p.p2pPrivKey = fwutiltypes.BytesToP2pPrivKey(p2pKey.PrivateKey)
+	p.p2pPrivKey = p2pKey.PrivateKey
 	p.p2pPubKey = p.p2pPrivKey.PubKey()
-	p.p2pAddress, err = fwutiltypes.P2pAddressFromBech(setting.Config.Keys.P2PAddress)
-	return err
+	p.p2pAddress = fwtypes.P2PAddress(p.p2pPubKey.Address())
+	return nil
 }
 
 func (p *P2pServer) StartListenServer(ctx context.Context, port string) {
@@ -140,7 +141,7 @@ func (p *P2pServer) newServer(ctx context.Context) *core.Server {
 		core.BufferSizeOption(10000),
 		core.LogOpenOption(true),
 		core.MinAppVersionOption(setting.Config.Version.MinAppVer),
-		core.P2pAddressOption(p.GetP2PAddress()),
+		core.P2pAddressOption(p.GetP2PAddress().String()),
 		core.MaxConnectionsOption(maxConnections),
 		core.ContextKVOption(ckv),
 	)

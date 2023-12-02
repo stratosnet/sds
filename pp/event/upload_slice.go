@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/framework/crypto"
 	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
@@ -132,7 +133,7 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	newSlice := slice
 	sliceSizeFromMsg := slice.SliceOffset.SliceOffsetEnd - slice.SliceOffset.SliceOffsetStart
 
-	if slice.PpInfo.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
+	if slice.PpInfo.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress().String() {
 		rsp := &protos.RspUploadFileSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
@@ -176,7 +177,12 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 			utils.ErrorLog("Failed getting slice data", err.Error())
 			return
 		}
-		if utils.CalcSliceHash(sliceData, fileHash, target.SliceNumber) == target.SliceHash {
+		sliceHash, err := crypto.CalcSliceHash(sliceData, fileHash, target.SliceNumber)
+		if err != nil {
+			utils.ErrorLog("Failed to calc slice hash", err.Error())
+			return
+		}
+		if sliceHash == target.SliceHash {
 			_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspUploadFileSliceData(ctx, &target), header.RspUploadFileSlice)
 			// report upload result to SP
 			newSlice.SliceHash = target.SliceHash
@@ -288,7 +294,7 @@ func ReqBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 	}
 	sliceSizeFromMsg := slice.SliceOffset.SliceOffsetEnd - slice.SliceOffset.SliceOffsetStart
 
-	if slice.PpInfo.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
+	if slice.PpInfo.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress().String() {
 		rsp := &protos.RspBackupFileSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
@@ -334,7 +340,12 @@ func ReqBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 			utils.ErrorLog("Failed getting slice data", err.Error())
 			return
 		}
-		if utils.CalcSliceHash(sliceData, fileHash, target.SliceNumber) == target.SliceHash {
+		sliceHash, err := crypto.CalcSliceHash(sliceData, fileHash, target.SliceNumber)
+		if err != nil {
+			utils.ErrorLog("Failed to calc slice hash", err)
+			return
+		}
+		if sliceHash == target.SliceHash {
 			_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspBackupFileSliceData(&target), header.RspBackupFileSlice)
 			// report upload result to SP
 
@@ -345,7 +356,7 @@ func ReqBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 				target.RspBackupFile.TaskId,
 				target.RspBackupFile.FileHash,
 				target.RspBackupFile.SpP2PAddress,
-				p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+				p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 				true,
 				slice,
 				totalCostTime)
@@ -390,7 +401,7 @@ func RspBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 				target.TaskId,
 				target.FileHash,
 				target.SpP2PAddress,
-				p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+				p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 				false,
 				target.Slice,
 				ctStat.TotalCostTime)

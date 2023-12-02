@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-
-	"github.com/stratosnet/sds/framework/utils"
-	"github.com/stratosnet/sds/framework/utils/types"
+	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
+	fwtypes "github.com/stratosnet/sds/framework/types"
 
 	"github.com/stratosnet/sds/cmd/common"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 const (
@@ -21,8 +21,8 @@ const (
 )
 
 var (
-	WalletPrivateKey types.AccPrivKey
-	WalletPublicKey  types.AccPubKey
+	WalletPrivateKey fwcryptotypes.PrivKey //types.AccPrivKey
+	WalletPublicKey  fwcryptotypes.PubKey  //types.AccPubKey
 	WalletAddress    string
 
 	Url string
@@ -112,17 +112,18 @@ func rootPreRunE(cmd *cobra.Command, _ []string) error {
 		return errors.New(utils.FormatError(err))
 	}
 
-	key, err := utils.DecryptKey(keyjson, password)
+	key, err := fwtypes.DecryptKey(keyjson, password, true)
 	if err != nil {
 		return errors.New(utils.FormatError(err))
 	}
 
-	WalletAddress, err = key.Address.WalletAddressToBech()
-	if err != nil {
-		return errors.New(utils.FormatError(err))
+	WalletAddress = fwtypes.WalletAddress(key.Address).String()
+	if WalletAddress == "" {
+		return errors.New("Failed to parse wallet address. ")
 	}
-	WalletPrivateKey = types.BytesToAccPriveKey(key.PrivateKey)
-	WalletPublicKey = WalletPrivateKey.PubKeyFromPrivKey()
+
+	WalletPrivateKey = key.PrivateKey
+	WalletPublicKey = WalletPrivateKey.PubKey()
 
 	return nil
 }

@@ -108,7 +108,7 @@ func (p *P2pServer) newClient(ctx context.Context, server string, heartbeat, rec
 		cf.HeartCloseOption(!heartbeat),
 		cf.LogOpenOption(true),
 		cf.MinAppVersionOption(setting.Config.Version.MinAppVer),
-		cf.P2pAddressOption(p.GetP2PAddress()),
+		cf.P2pAddressOption(p.GetP2PAddress().String()),
 		cf.ServerIpOption(setting.NetworkIP),
 		serverPortOpt,
 		cf.ContextKVOption(ckv),

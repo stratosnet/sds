@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/stratosnet/sds/framework/crypto"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/framework/utils/cache"
 	"github.com/stratosnet/sds/framework/utils/database/rows"
@@ -125,7 +126,7 @@ func (exec *Executor) QueryCache(cacheOpt map[string]interface{}, sql string, ar
 					cacheKey = strings.Replace(cacheKey, "?", "'"+val+"'", 1)
 				}
 			}
-			cacheKey = "mysql_cache#" + utils.CalcHash([]byte(cacheKey))
+			cacheKey = "mysql_cache#" + crypto.CalcHash([]byte(cacheKey))
 		}
 
 		if t, isCacheLifeTime := cacheOpt["lifeTime"]; isCacheLifeTime {

@@ -9,8 +9,8 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/stratosnet/sds/framework/core"
+	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
-	"github.com/stratosnet/sds/framework/utils/types"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
@@ -29,7 +29,7 @@ func verifyRspUploadFile(msg *protos.RspUploadFile) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get sp's pubkey, ")
 	}
-	if !types.VerifyP2pAddrBytes(spP2pPubkey, msg.SpP2PAddress) {
+	if !fwtypes.VerifyP2pAddrBytes(spP2pPubkey.Bytes(), msg.SpP2PAddress) {
 		return errors.Wrap(err, "failed to verify p2p address, ")
 	}
 
@@ -39,7 +39,7 @@ func verifyRspUploadFile(msg *protos.RspUploadFile) error {
 	if err != nil {
 		return errors.New("failed getting sp's sign message")
 	}
-	if !types.VerifyP2pSignBytes(spP2pPubkey, nodeSign, signmsg) {
+	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, signmsg) {
 		return errors.New("failed verifying sp's signature")
 	}
 	return nil
@@ -100,7 +100,7 @@ func verifyRspBackupStatus(msg *protos.RspBackupStatus) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get sp's pubkey, ")
 	}
-	if !types.VerifyP2pAddrBytes(spP2pPubkey, msg.SpP2PAddress) {
+	if !fwtypes.VerifyP2pAddrBytes(spP2pPubkey.Bytes(), msg.SpP2PAddress) {
 		return errors.Wrap(err, "failed to verify p2p address, ")
 	}
 	nodeSign := msg.NodeSign
@@ -109,7 +109,7 @@ func verifyRspBackupStatus(msg *protos.RspBackupStatus) error {
 	if err != nil {
 		return errors.New("failed getting sp's sign message")
 	}
-	if !types.VerifyP2pSignBytes(spP2pPubkey, nodeSign, signmsg) {
+	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, signmsg) {
 		return errors.New("failed verifying sp's signature")
 	}
 	return nil
@@ -166,7 +166,7 @@ func verifyNoticeFileSliceBackup(msg *protos.NoticeFileSliceBackup) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get sp's pubkey, ")
 	}
-	if !types.VerifyP2pAddrBytes(spP2pPubkey, msg.SpP2PAddress) {
+	if !fwtypes.VerifyP2pAddrBytes(spP2pPubkey.Bytes(), msg.SpP2PAddress) {
 		return errors.Wrap(err, "failed to verify p2p address, ")
 	}
 	nodeSign := msg.NodeSign
@@ -175,7 +175,7 @@ func verifyNoticeFileSliceBackup(msg *protos.NoticeFileSliceBackup) error {
 	if err != nil {
 		return errors.New("failed getting sp's sign message")
 	}
-	if !types.VerifyP2pSignBytes(spP2pPubkey, nodeSign, signmsg) {
+	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, signmsg) {
 		return errors.New("failed verifying sp's signature")
 	}
 	return nil
@@ -213,7 +213,7 @@ func verifyRspFileStorageInfo(msg *protos.RspFileStorageInfo) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get sp's pubkey, ")
 	}
-	if !types.VerifyP2pAddrBytes(spP2pPubkey, msg.SpP2PAddress) {
+	if !fwtypes.VerifyP2pAddrBytes(spP2pPubkey.Bytes(), msg.SpP2PAddress) {
 		return errors.Wrap(err, "failed to verify p2p address, ")
 	}
 	nodeSign := msg.NodeSign
@@ -223,7 +223,7 @@ func verifyRspFileStorageInfo(msg *protos.RspFileStorageInfo) error {
 	if err != nil {
 		return errors.New("failed getting sp's sign message")
 	}
-	if !types.VerifyP2pSignBytes(spP2pPubkey, nodeSign, signmsg) {
+	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, signmsg) {
 		return errors.New("failed verifying sp's signature")
 	}
 	return nil

@@ -17,12 +17,11 @@ import (
 	"github.com/stratosnet/sds/sds-msg/protos"
 
 	fwed25519 "github.com/stratosnet/sds/framework/crypto/ed25519"
+	"github.com/stratosnet/sds/framework/crypto/encryption"
 	"github.com/stratosnet/sds/framework/metrics"
 	fwmsg "github.com/stratosnet/sds/framework/msg"
+	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
-	"github.com/stratosnet/sds/framework/utils/crypto/ed25519"
-	"github.com/stratosnet/sds/framework/utils/encryption"
-	"github.com/stratosnet/sds/framework/utils/types"
 )
 
 type MsgHandler struct {
@@ -208,9 +207,9 @@ func (sc *ServerConn) handshake() (error, bool) {
 		}
 
 		// Create tmp key
-		tmpPrivKeyBytes := ed25519.NewKey()
-		tmpPrivKey := ed25519.PrivKeyBytesToPrivKey(tmpPrivKeyBytes)
-		tmpPubKeyBytes := ed25519.PrivKeyBytesToPubKeyBytes(tmpPrivKeyBytes)
+		tmpPrivKey := fwed25519.GenPrivKey()
+		tmpPrivKeyBytes := tmpPrivKey.Bytes()
+		tmpPubKeyBytes := tmpPrivKey.PubKey().Bytes()
 
 		// Write tmp key to handshake conn
 		handshakeSignature, err := tmpPrivKey.Sign([]byte(HandshakeMessage))
@@ -227,7 +226,7 @@ func (sc *ServerConn) handshake() (error, bool) {
 			return err, false
 		}
 		peerPubKeyBytes := buffer[:fwed25519.PubKeySize]
-		peerPubKey := ed25519.PubKeyBytesToPubKey(peerPubKeyBytes)
+		peerPubKey := fwed25519.PubKeyFromBytes(peerPubKeyBytes)
 		peerSignature := buffer[fwed25519.PubKeySize:]
 		if !peerPubKey.VerifySignature([]byte(HandshakeMessage), peerSignature) {
 			return errors.New("Invalid signature in tmp key from peer"), false
@@ -255,7 +254,7 @@ func (sc *ServerConn) handshake() (error, bool) {
 			return err, false
 		}
 		sc.remoteP2pAddress = string(p2pAddressBytes)
-		if _, err = types.P2pAddressFromBech(sc.remoteP2pAddress); err != nil {
+		if _, err = fwtypes.P2PAddressFromBech32(sc.remoteP2pAddress); err != nil {
 			return errors.Wrap(err, "incorrect P2pAddress"), false
 		}
 

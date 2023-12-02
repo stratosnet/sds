@@ -1,4 +1,4 @@
-package utils
+package types
 
 import (
 	"bytes"
@@ -20,11 +20,11 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/crypto/scrypt"
 
+	fwcrypto "github.com/stratosnet/sds/framework/crypto"
+	fwed25519 "github.com/stratosnet/sds/framework/crypto/ed25519"
 	fwsecp256k1 "github.com/stratosnet/sds/framework/crypto/secp256k1"
-	"github.com/stratosnet/sds/framework/utils/crypto"
-	"github.com/stratosnet/sds/framework/utils/crypto/ed25519"
-	"github.com/stratosnet/sds/framework/utils/crypto/secp256k1"
-	"github.com/stratosnet/sds/framework/utils/types"
+	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 const (
@@ -73,40 +73,53 @@ type hdKeyBytes struct {
 }
 
 // CreateWallet creates a new stratos-chain wallet with the given nickname and password, and saves the key data into the dir folder
-func CreateWallet(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPath string) (types.Address, error) {
-	privateKey, err := fwsecp256k1.Derive(mnemonic, bip39Passphrase, hdPath)
+func CreateWallet(dir, nickname, password, mnemonic, bip39Passphrase, hdPath string) (fwcryptotypes.Address, error) {
+	privateKeyBytes, err := fwsecp256k1.Derive(mnemonic, bip39Passphrase, hdPath)
 	if err != nil {
-		return types.Address{}, err
+		return nil, err
 	}
+	privateKey := fwsecp256k1.Generate(privateKeyBytes)
 
-	return saveAccountKey(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPath, scryptN, scryptP, privateKey, true)
+	return saveAccountKey(dir, nickname, password, mnemonic, bip39Passphrase, hdPath, scryptN, scryptP, privateKey, true)
 }
 
 // CreateP2PKey creates a P2P key to be used by one of the SDS nodes, and saves the key data into the dir folder
-func CreateP2PKey(dir, nickname, password, hrp string) (types.Address, error) {
-	privateKey := ed25519.NewKey()
+func CreateP2PKey(dir, nickname, password string) (fwcryptotypes.Address, error) {
+	privateKey := fwed25519.GenPrivKey()
 
-	return saveAccountKey(dir, nickname, password, hrp, "", "", "", scryptN, scryptP, privateKey, false)
+	return saveAccountKey(dir, nickname, password, "", "", "", scryptN, scryptP, privateKey, false)
 }
 
-func saveAccountKey(dir, nickname, password, hrp, mnemonic, bip39Passphrase, hdPath string, scryptN, scryptP int, privateKey []byte, isWallet bool) (types.Address, error) {
+func saveAccountKey(dir, nickname, password, mnemonic, bip39Passphrase, hdPath string, scryptN, scryptP int,
+	privateKey fwcryptotypes.PrivKey, isWallet bool) (fwcryptotypes.Address, error) {
+
 	keyStore := &KeyStorePassphrase{dir, scryptN, scryptP}
 
-	key := newKeyFromBytes(privateKey, isWallet)
-	key.Name = nickname
-	key.HdPath = hdPath
-	key.Mnemonic = mnemonic
-	key.Passphrase = bip39Passphrase
+	id := uuid.NewRandom()
+	key := &AccountKey{
+		Id:         id,
+		PrivateKey: privateKey,
+		Address:    privateKey.PubKey().Address(),
+		Name:       nickname,
+		HdPath:     hdPath,
+		Mnemonic:   mnemonic,
+		Passphrase: bip39Passphrase,
+	}
 
-	address, err := key.Address.ToBech(hrp)
-	if err != nil {
-		return types.Address{}, err
+	var address string
+	if isWallet {
+		address = WalletAddressBytesToBech32(key.Address.Bytes())
+	} else {
+		address = P2PAddressBytesToBech32(key.Address.Bytes())
+	}
+	if address == "" {
+		return nil, fmt.Errorf("Failed to parse address. ")
 	}
 
 	filename := dir + "/" + address
-	if err = keyStore.StoreKey(filename, key, password); err != nil {
-		zeroKey(key.PrivateKey)
-		return types.Address{}, err
+	if err := keyStore.StoreKey(filename, key, password); err != nil {
+		zeroKey(key.PrivateKey.Bytes())
+		return nil, err
 	}
 	return key.Address, nil
 }
@@ -118,20 +131,6 @@ func NewMnemonic() (string, error) {
 	}
 
 	return bip39.NewMnemonic(entropy)
-}
-
-func newKeyFromBytes(privateKey []byte, isWallet bool) *AccountKey {
-	id := uuid.NewRandom()
-	key := &AccountKey{
-		Id:         id,
-		PrivateKey: privateKey,
-	}
-	if isWallet {
-		key.Address = secp256k1.PrivKeyToAddress(privateKey)
-	} else {
-		key.Address = ed25519.PrivKeyBytesToAddress(privateKey)
-	}
-	return key
 }
 
 // EncryptKey encrypts a key using the specified scrypt parameters into a json
@@ -152,7 +151,7 @@ func EncryptKey(key *AccountKey, auth string) ([]byte, error) {
 		HdPath:     []byte(key.HdPath),
 		Mnemonic:   []byte(key.Mnemonic),
 		Passphrase: []byte(key.Passphrase),
-		PrivKey:    key.PrivateKey,
+		PrivKey:    key.PrivateKey.Bytes(),
 	}
 	hdKeyEncoded, err := msgpack.Marshal(hdKeyBytesObject)
 	if err != nil {
@@ -167,7 +166,7 @@ func EncryptKey(key *AccountKey, auth string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	mac := crypto.Keccak256(derivedKey[16:32], cipherText)
+	mac := fwcrypto.Keccak256(derivedKey[16:32], cipherText)
 
 	scryptParamsJSON := make(map[string]interface{}, 5)
 	scryptParamsJSON["n"] = scryptN
@@ -199,7 +198,7 @@ func EncryptKey(key *AccountKey, auth string) ([]byte, error) {
 }
 
 // DecryptKey decrypts a key from a json blob, returning the private key itself.
-func DecryptKey(keyjson []byte, auth string) (*AccountKey, error) {
+func DecryptKey(keyjson []byte, auth string, isWallet bool) (*AccountKey, error) {
 	// Parse the json into a simple map to fetch the key version
 	m := make(map[string]interface{})
 	if err := json.Unmarshal(keyjson, &m); err != nil {
@@ -226,14 +225,21 @@ func DecryptKey(keyjson []byte, auth string) (*AccountKey, error) {
 		return nil, err
 	}
 
+	var privKey fwcryptotypes.PrivKey
+	if isWallet {
+		privKey = fwsecp256k1.Generate(hdKeyBytesObject.PrivKey)
+	} else {
+		privKey = fwed25519.Generate(hdKeyBytesObject.PrivKey)
+	}
+
 	return &AccountKey{
 		Id:         uuid.UUID(keyId),
 		Name:       k.Name,
-		Address:    secp256k1.PrivKeyToAddress(hdKeyBytesObject.PrivKey),
+		Address:    privKey.PubKey().Address(),
 		HdPath:     string(hdKeyBytesObject.HdPath),
 		Mnemonic:   string(hdKeyBytesObject.Mnemonic),
 		Passphrase: string(hdKeyBytesObject.Passphrase),
-		PrivateKey: hdKeyBytesObject.PrivKey,
+		PrivateKey: privKey,
 	}, nil
 }
 
@@ -323,7 +329,7 @@ func decryptKeyV3(keyProtected *encryptedKeyJSONV3, auth string) (keyBytes []byt
 		return nil, nil, err
 	}
 
-	calculatedMAC := crypto.Keccak256(derivedKey[16:32], cipherText)
+	calculatedMAC := fwcrypto.Keccak256(derivedKey[16:32], cipherText)
 	if !bytes.Equal(calculatedMAC, mac) {
 		return nil, nil, errors.New("could not decrypt key with given passphrase")
 	}
@@ -377,7 +383,7 @@ func ensureInt(x interface{}) int {
 type AccountKey struct {
 	Id uuid.UUID // Version 4 "random" for unique id not derived from key data
 	// to simplify lookups we also store the address
-	Address types.Address
+	Address fwcryptotypes.Address
 	// The HD path to use to derive this key
 	HdPath string
 	// The mnemonic for the underlying HD wallet
@@ -388,14 +394,14 @@ type AccountKey struct {
 	Passphrase string
 	// we only store privkey as pubkey/address can be derived from it
 	// privkey in this struct is always in plaintext
-	PrivateKey []byte
+	PrivateKey fwcryptotypes.PrivKey
 }
 
 // ChangePassword
 func ChangePassword(walletAddress, dir, auth string, key *AccountKey) error {
 	files, _ := os.ReadDir(dir)
 	if len(files) == 0 {
-		ErrorLog("not exist")
+		utils.ErrorLog("not exist")
 		return nil
 	}
 	for _, info := range files {

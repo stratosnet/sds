@@ -2,9 +2,7 @@ module github.com/stratosnet/sds/tx-client
 
 go 1.19
 
-//replace (
-//	github.com/stratosnet/sds/framework => ../framework // for development on local
-//)
+replace github.com/stratosnet/sds/framework => ../framework // for development on local
 
 require (
 	cosmossdk.io/api v0.3.1
@@ -12,7 +10,7 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-beta.3
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/pkg/errors v0.9.1
-	github.com/stratosnet/sds/framework v0.0.0-20231128191014-169cb82668b8
+	github.com/stratosnet/sds/framework v0.0.0-20231129214657-f955307cd2d7
 	github.com/stratosnet/stratos-chain/api v0.0.0-20231113204325-6de660f174b5
 	github.com/stretchr/testify v1.8.4
 	github.com/tendermint/go-amino v0.16.0

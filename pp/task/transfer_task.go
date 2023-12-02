@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/stratosnet/sds/framework/crypto"
 	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/file"
@@ -131,7 +132,11 @@ func SaveTransferData(target *protos.RspTransferDownload) (bool, error) {
 	if err != nil {
 		return false, errors.Wrap(err, "Failed getting slice data")
 	}
-	if tTask.SliceStorageInfo.SliceHash != utils.CalcSliceHash(sliceData, tTask.FileHash, tTask.SliceNum) {
+	sliceHash, err := crypto.CalcSliceHash(sliceData, tTask.FileHash, tTask.SliceNum)
+	if err != nil {
+		return false, err
+	}
+	if tTask.SliceStorageInfo.SliceHash != sliceHash {
 		return false, errors.New("whole slice received, but slice hash doesn't match")
 	}
 	utils.DebugLogf("whole slice received, sliceHash=%v", tTask.SliceStorageInfo.SliceHash)

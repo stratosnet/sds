@@ -40,7 +40,7 @@ func RspRegisterNewPP(ctx context.Context, conn core.WriteCloser) {
 	rpcResult := &rpc.RPResult{}
 	reqId := core.GetRemoteReqId(ctx)
 	if reqId != "" {
-		defer pp.SetRPCResult(p2pserver.GetP2pServer(ctx).GetP2PAddress()+setting.WalletAddress+reqId, rpcResult)
+		defer pp.SetRPCResult(p2pserver.GetP2pServer(ctx).GetP2PAddress().String()+setting.WalletAddress+reqId, rpcResult)
 	}
 	pp.Log(ctx, "get RspRegisterNewPP", target.Result.State, target.Result.Msg)
 	rpcResult.AlreadyPp = target.AlreadyPp

@@ -20,8 +20,8 @@ import (
 	mbase "github.com/multiformats/go-multibase"
 	mh "github.com/multiformats/go-multihash"
 
-	"github.com/stratosnet/sds/framework/utils/crypto"
-	"github.com/stratosnet/sds/framework/utils/crypto/math"
+	fwcrypto "github.com/stratosnet/sds/framework/crypto"
+	"github.com/stratosnet/sds/framework/crypto/math"
 )
 
 func init() {
@@ -41,11 +41,11 @@ func TestECCSignAndVerify(t *testing.T) {
 	if err != nil {
 		t.Fatal("couldn't derive private key from seed: " + err.Error())
 	}
-	privateKeyECDSA := crypto.ToECDSAUnsafe(derivedKey[:])
+	privateKeyECDSA := fwcrypto.ToECDSAUnsafe(derivedKey[:])
 	privKeyBytes := math.PaddedBigBytes(privateKeyECDSA.D, 32)
 
 	publicKeyECDSA := &privateKeyECDSA.PublicKey
-	pubKeyBytes := crypto.FromECDSAPub(publicKeyECDSA)
+	pubKeyBytes := fwcrypto.FromECDSAPub(publicKeyECDSA)
 
 	msg := []byte("this is a random message")
 	sig1, err := ECCSign(msg, privateKeyECDSA)
@@ -87,25 +87,33 @@ func TestCid(t *testing.T) {
 		}
 
 		filehash, _ := mh.Sum(fileData[:], mh.KECCAK_256, 20)
-		fileCid := cid.NewCidV1(uint64(SDS_CODEC), filehash)
+		fileCid := cid.NewCidV1(uint64(fwcrypto.SDS_CODEC), filehash)
 		encoder, _ := mbase.NewEncoder(mbase.Base32hex)
 		fh := fileCid.Encode(encoder)
 
-		sliceHash := CalcSliceHash(sliceData[:], fh, uint64(i))
+		sliceHash, err := fwcrypto.CalcSliceHash(sliceData[:], fh, uint64(i))
+		if err != nil {
+			t.Fatal("calc slice hash failed", err)
+		}
 
-		if !ValidateHash(fh) {
+		if !fwcrypto.ValidateHash(fh) {
 			t.Fatal("generated file hash is invalid")
 		}
-		if !ValidateHash(sliceHash) {
+		if !fwcrypto.ValidateHash(sliceHash) {
 			t.Fatal("generated slice hash is invalid")
 		}
 
 		fakeFileHash := "t05ahm87h28vdd04qu3pbv0op4jnjnkpete9eposh2l6r1hp8i0hbqictcc======"
-		if sliceHash == CalcSliceHash(sliceData[:], fakeFileHash, uint64(i)) {
+		newSlashHash, err := fwcrypto.CalcSliceHash(sliceData[:], fakeFileHash, uint64(i))
+		if err != nil {
+			t.Fatal("calc slice hash failed", err)
+		}
+
+		if sliceHash == newSlashHash {
 			t.Fatal("slice hash should be different when being generated with different file hash")
 		}
 
-		if ValidateHash(fakeFileHash) {
+		if fwcrypto.ValidateHash(fakeFileHash) {
 			t.Fatal("Fake file hash should have failed verification")
 		}
 	}
@@ -126,7 +134,7 @@ func TestCidLargeFile(t *testing.T) {
 	t.Log(filehash)
 	t.Log(elapsed)
 
-	if !ValidateHash(fh) {
+	if !fwcrypto.ValidateHash(fh) {
 		t.Fatal("generated file hash is invalid")
 	}
 }

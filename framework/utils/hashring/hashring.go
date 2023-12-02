@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/HuKeping/rbtree"
+	"github.com/stratosnet/sds/framework/crypto"
 
 	"github.com/stratosnet/sds/framework/utils"
 )
@@ -38,7 +39,7 @@ func (n *Node) SetDiskUsage(diskSize, freeDisk uint64) {
 
 // Less of rbtree
 func (n *Node) Less(than rbtree.Item) bool {
-	return utils.CalcCRC32([]byte(n.ID)) < utils.CalcCRC32([]byte(than.(*Node).ID))
+	return crypto.CalcCRC32([]byte(n.ID)) < crypto.CalcCRC32([]byte(than.(*Node).ID))
 }
 
 // VNode virtual node
@@ -252,7 +253,7 @@ func (r *HashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
 	down := r.NRing.Min().(*Node).ID
 
 	r.NRing.Descend(&Node{ID: NodeID}, func(item rbtree.Item) bool {
-		if utils.CalcCRC32([]byte(NodeID)) == utils.CalcCRC32([]byte(item.(*Node).ID)) {
+		if crypto.CalcCRC32([]byte(NodeID)) == crypto.CalcCRC32([]byte(item.(*Node).ID)) {
 			return true
 		}
 		up = item.(*Node).ID
@@ -260,7 +261,7 @@ func (r *HashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
 	})
 
 	r.NRing.Ascend(&Node{ID: NodeID}, func(item rbtree.Item) bool {
-		if utils.CalcCRC32([]byte(NodeID)) == utils.CalcCRC32([]byte(item.(*Node).ID)) {
+		if crypto.CalcCRC32([]byte(NodeID)) == crypto.CalcCRC32([]byte(item.(*Node).ID)) {
 			return true
 		}
 		down = item.(*Node).ID
@@ -331,7 +332,7 @@ func (r *HashRing) TraversalVRing() {
 // TraversalNRing traverse non-virtual rbtree
 func (r *HashRing) TraversalNRing() {
 	r.NRing.Ascend(r.NRing.Min(), func(item rbtree.Item) bool {
-		fmt.Printf("Node %d => %s\n", utils.CalcCRC32([]byte(item.(*Node).ID)), item.(*Node).ID)
+		fmt.Printf("Node %d => %s\n", crypto.CalcCRC32([]byte(item.(*Node).ID)), item.(*Node).ID)
 		return true
 	})
 }
@@ -360,11 +361,11 @@ func virtualKey(nodeID string, index uint32) string {
 }
 
 func hashKey(key string) string {
-	return utils.CalcHash([]byte(key))
+	return crypto.CalcHash([]byte(key))
 }
 
 func hashToCRC32(hashInString string) uint32 {
-	return utils.CalcCRC32([]byte(hashInString))
+	return crypto.CalcCRC32([]byte(hashInString))
 }
 
 func calcIndex(key string) uint32 {

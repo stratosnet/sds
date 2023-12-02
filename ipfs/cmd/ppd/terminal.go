@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/stratosnet/sds/cmd/common"
+	"github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/framework/utils/console"
 	"github.com/stratosnet/sds/pp/serv"
@@ -92,7 +93,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	}
 
 	newwallet := func(line string, param []string) bool {
-		err := utils.SetupWallet(setting.Config.Home.AccountsPath, setting.HDPath, updateWalletConfig)
+		err := types.SetupWallet(setting.Config.Home.AccountsPath, setting.HDPath, updateWalletConfig)
 		if err != nil {
 			fmt.Println(err)
 			return false

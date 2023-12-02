@@ -17,7 +17,7 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/google/uuid"
 
-	"github.com/stratosnet/sds/framework/utils/crypto"
+	fwcrypto "github.com/stratosnet/sds/framework/crypto"
 )
 
 const (
@@ -166,7 +166,7 @@ func Struct2Map(obj interface{}) map[string]interface{} {
 
 // ECCSign signs the given text
 func ECCSign(text []byte, prk *ecdsa.PrivateKey) ([]byte, error) {
-	randSign := CalcHash([]byte(uuid.New().String() + "#" + strconv.FormatInt(time.Now().UnixNano(), 10)))
+	randSign := fwcrypto.CalcHash([]byte(uuid.New().String() + "#" + strconv.FormatInt(time.Now().UnixNano(), 10)))
 	r, s, err := ecdsa.Sign(strings.NewReader(randSign), prk, text)
 	if err != nil {
 		return nil, err
@@ -242,7 +242,7 @@ func ECCVerify(text []byte, signature []byte, key *ecdsa.PublicKey) bool {
 
 // ECCVerifyBytes converts the public key bytes to an ecdsa.PublicKey and then verifies the given signature
 func ECCVerifyBytes(text, signature, publicKey []byte) bool {
-	pubKey, err := crypto.UnmarshalPubkey(publicKey)
+	pubKey, err := fwcrypto.UnmarshalPubkey(publicKey)
 	if err != nil {
 		return false
 	}

@@ -6,14 +6,12 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/stratosnet/sds/framework/crypto/secp256k1"
 	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/tx-client/grpc"
 
 	"github.com/stratosnet/sds/relayer/cmd/relayd/setting"
-	"github.com/stratosnet/sds/relayer/types"
 )
 
 type MultiClient struct {
@@ -24,7 +22,7 @@ type MultiClient struct {
 	sdsConn     connection
 	stchainConn connection
 
-	WalletAddress    string
+	WalletAddress    fwtypes.WalletAddress
 	WalletPrivateKey fwcryptotypes.PrivKey
 }
 
@@ -56,13 +54,13 @@ func (m *MultiClient) loadKeys(spHomePath string) error {
 		return err
 	}
 
-	walletKey, err := types.DecryptKey(walletJson, setting.Config.Keys.WalletPassword)
+	walletKey, err := fwtypes.DecryptKey(walletJson, setting.Config.Keys.WalletPassword, true)
 	if err != nil {
 		return err
 	}
 
-	m.WalletPrivateKey = secp256k1.Generate(walletKey.PrivateKey)
-	m.WalletAddress = fwtypes.AccAddress(m.WalletPrivateKey.PubKey().Address()).String()
+	m.WalletPrivateKey = walletKey.PrivateKey
+	m.WalletAddress = fwtypes.WalletAddress(m.WalletPrivateKey.PubKey().Address())
 
 	utils.DebugLogf("verified wallet key successfully! walletAddr is %v", m.WalletAddress)
 	return nil

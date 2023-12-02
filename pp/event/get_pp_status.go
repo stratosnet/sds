@@ -34,7 +34,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	rpcResult := &rpc.StatusResult{Return: rpc.SUCCESS}
 	reqId := core.GetRemoteReqId(ctx)
 	if reqId != "" {
-		defer pp.SetRPCResult(p2pserver.GetP2pServer(ctx).GetP2PAddress()+reqId, rpcResult)
+		defer pp.SetRPCResult(p2pserver.GetP2pServer(ctx).GetP2PAddress().String()+reqId, rpcResult)
 	}
 	pp.DebugLogf(ctx, "get GetPPStatus RSP, activation status = %v", target.IsActive)
 	setSoftMemoryCap(target.OngoingTier)

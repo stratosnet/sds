@@ -3,8 +3,10 @@ package utils
 import (
 	"strconv"
 
-	"github.com/stratosnet/sds/sds-msg/protos"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/stratosnet/sds/framework/crypto"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 // GetFileUploadWalletSignMessage upload: wallet sign message for file upload request from the (rpc or cmd) user
@@ -23,7 +25,7 @@ func GetRspUploadFileSpNodeSignMessage(rspMsg *protos.RspUploadFile) ([]byte, er
 	if err != nil {
 		return nil, err
 	}
-	return CalcHashBytes(msg), nil
+	return crypto.CalcHashBytes(msg), nil
 }
 
 func GetRspBackupFileSpNodeSignMessage(rspMsg *protos.RspBackupStatus) ([]byte, error) {
@@ -31,7 +33,7 @@ func GetRspBackupFileSpNodeSignMessage(rspMsg *protos.RspBackupStatus) ([]byte, 
 	if err != nil {
 		return nil, err
 	}
-	return CalcHashBytes(msg), nil
+	return crypto.CalcHashBytes(msg), nil
 }
 
 func GetNoticeFileSliceBackupSpNodeSignMessage(reqMsg *protos.NoticeFileSliceBackup) ([]byte, error) {
@@ -39,7 +41,7 @@ func GetNoticeFileSliceBackupSpNodeSignMessage(reqMsg *protos.NoticeFileSliceBac
 	if err != nil {
 		return nil, err
 	}
-	return CalcHashBytes(msg), nil
+	return crypto.CalcHashBytes(msg), nil
 }
 
 // GetRspFileStorageInfoNodeSignMessage download: node sign message for download file response, between sp and downloader pp
@@ -48,7 +50,7 @@ func GetRspFileStorageInfoNodeSignMessage(rspMsg *protos.RspFileStorageInfo) ([]
 	if err != nil {
 		return nil, err
 	}
-	return CalcHashBytes(msg), nil
+	return crypto.CalcHashBytes(msg), nil
 }
 
 // GetFileReplicaInfoWalletSignMessage replica info: wallet sign message for get file replica info request from the (rpc or cmd) user

@@ -12,9 +12,8 @@ import (
 
 	cmds "github.com/ipfs/go-ipfs-cmds"
 
+	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
-	"github.com/stratosnet/sds/framework/utils/datamesh"
-	"github.com/stratosnet/sds/framework/utils/types"
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/sds-msg/protos"
@@ -126,7 +125,7 @@ func get(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error
 
 	sdmPath := req.Arguments[0]
 	utils.Log("- start downloading the file: ", sdmPath)
-	_, _, fileHash, _, err := datamesh.ParseFileHandle(sdmPath)
+	_, _, fileHash, _, err := fwtypes.ParseFileHandle(sdmPath)
 	if err != nil {
 		return emitError(re, "sdm format error", nil)
 	}
@@ -277,7 +276,7 @@ func reqUploadMsg(filePath, hash, sn string) (*rpc_api.ParamReqUploadFile, error
 	if err != nil {
 		return nil, err
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +308,7 @@ func uploadDataMsg(hash, data, sn string) (rpc_api.ParamUploadData, error) {
 	if err != nil {
 		return rpc_api.ParamUploadData{}, err
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return rpc_api.ParamUploadData{}, err
 	}
@@ -338,7 +337,7 @@ func reqDownloadMsg(hash, sdmPath, sn string) (*rpc_api.ParamReqDownloadFile, er
 	if err != nil {
 		return nil, err
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -383,7 +382,7 @@ func reqListMsg(page uint64) (*rpc_api.ParamReqFileList, error) {
 	if err != nil {
 		return nil, err
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil, err
 	}
@@ -414,13 +413,13 @@ func readWalletKeys(wallet string) bool {
 		return false
 	}
 
-	key, err := utils.DecryptKey(keyjson, WalletPassword)
+	key, err := fwtypes.DecryptKey(keyjson, WalletPassword, true)
 	if utils.CheckError(err) {
 		utils.ErrorLog("getPublicKey DecryptKey", err)
 		return false
 	}
-	WalletPrivateKey = types.BytesToAccPriveKey(key.PrivateKey)
-	WalletPublicKey = WalletPrivateKey.PubKeyFromPrivKey()
+	WalletPrivateKey = key.PrivateKey
+	WalletPublicKey = WalletPrivateKey.PubKey()
 	return true
 }
 

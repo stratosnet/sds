@@ -1,4 +1,4 @@
-package utils
+package types
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/framework/utils/console"
 )
 
@@ -44,22 +44,21 @@ func SetupWallet(accountDir, defaultHDPath string, updateConfig func(walletKeyAd
 		hdPath = defaultHDPath
 	}
 	//hrp, mnemonic, bip39Passphrase, hdPath
-	walletKeyAddress, err := CreateWallet(accountDir, nickname, password,
-		types.StratosBech32Prefix, mnemonic, "", hdPath)
+	walletKeyAddress, err := CreateWallet(accountDir, nickname, password, mnemonic, "", hdPath)
 	if err != nil {
 		return errors.New("couldn't create WalletAddress: " + err.Error())
 	}
 
-	walletKeyAddressString, err := walletKeyAddress.ToBech(types.StratosBech32Prefix)
-	if err != nil {
-		return errors.New("couldn't convert wallet address to bech string: " + err.Error())
+	walletKeyAddressString := WalletAddressBytesToBech32(walletKeyAddress.Bytes())
+	if walletKeyAddressString != "" {
+		return errors.New("couldn't convert wallet address to bech string")
 	}
 
 	fmt.Println("save the mnemonic phase properly for future recovery: \n" +
 		"=======================================================================  \n" +
 		mnemonic + "\n" +
 		"======================================================================= \n")
-	Logf("Wallet %s has been generated successfully", walletKeyAddressString)
+	utils.Logf("Wallet %s has been generated successfully", walletKeyAddressString)
 
 	save, err := console.Stdin.PromptInput("Do you want to use this wallet as your node wallet: Y(es)/N(o): ")
 	if err != nil {

@@ -6,7 +6,7 @@ import (
 	"github.com/cosmos/cosmos-proto/anyutil"
 
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/framework/utils/types"
+	fwtypes "github.com/stratosnet/sds/framework/types"
 	txclienttx "github.com/stratosnet/sds/tx-client/tx"
 	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 
@@ -17,7 +17,7 @@ import (
 )
 
 // Broadcast withdraw tx to stratos-chain directly
-func Withdraw(ctx context.Context, amount txclienttypes.Coin, targetAddr []byte, txFee txclienttypes.TxFee) error {
+func Withdraw(ctx context.Context, amount txclienttypes.Coin, targetAddr fwtypes.WalletAddress, txFee txclienttypes.TxFee) error {
 	withdrawTxBytes, err := reqWithdrawData(ctx, amount, targetAddr, txFee)
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't build withdraw transaction: "+err.Error())
@@ -42,15 +42,15 @@ func Withdraw(ctx context.Context, amount txclienttypes.Coin, targetAddr []byte,
 	return nil
 }
 
-func reqWithdrawData(_ context.Context, amount txclienttypes.Coin, targetAddr []byte, txFee txclienttypes.TxFee) ([]byte, error) {
-	senderAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
+func reqWithdrawData(_ context.Context, amount txclienttypes.Coin, targetAddr fwtypes.WalletAddress, txFee txclienttypes.TxFee) ([]byte, error) {
+	senderAddress, err := fwtypes.WalletAddressFromBech32(setting.WalletAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	txMsg := txclienttx.BuildWithdrawMsg(amount, senderAddress.Bytes(), targetAddr)
+	txMsg := txclienttx.BuildWithdrawMsg(amount, senderAddress, targetAddr)
 	signatureKeys := []*txclienttypes.SignatureKey{
-		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: txclienttypes.SignatureSecp256k1},
+		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey.Bytes(), Type: txclienttypes.SignatureSecp256k1},
 	}
 
 	chainId := setting.Config.Blockchain.ChainId

@@ -15,8 +15,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
-	"github.com/stratosnet/sds/framework/utils/datamesh"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/sds-msg/protos"
@@ -36,7 +37,8 @@ func reqUploadMsg(filePath, hash, sn string) []byte {
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -72,7 +74,7 @@ func uploadDataMsg(hash, data, sn string) []byte {
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -192,7 +194,7 @@ func reqUploadStreamMsg(filePath, hash, sn string) []byte {
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -313,7 +315,7 @@ func getFileStatus(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return err
 	}
@@ -367,7 +369,7 @@ func reqDownloadMsg(hash, sdmPath, sn string) []byte {
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -437,7 +439,7 @@ func get(cmd *cobra.Command, args []string) error {
 	// args[0] is the fileHash
 	sdmPath := args[0]
 	utils.Log("- start downloading the file: ", sdmPath)
-	_, _, fileHash, _, err := datamesh.ParseFileHandle(sdmPath)
+	_, _, fileHash, _, err := fwtypes.ParseFileHandle(sdmPath)
 	if err != nil {
 		utils.ErrorLog("sdm format error")
 		return nil
@@ -560,7 +562,7 @@ func reqListMsg(page uint64) []byte {
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -594,7 +596,7 @@ func reqRpMsg() []byte {
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -646,7 +648,7 @@ func reqPrepayMsg(prepayAmount, fee string, gasUint64 uint64) []byte {
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -897,7 +899,7 @@ func reqListShareMsg(page uint64) []byte {
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -973,7 +975,7 @@ func reqShareMsg(hash string) []byte {
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -1046,7 +1048,7 @@ func reqStopShareMsg(shareId string) []byte {
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -1108,7 +1110,7 @@ func stopshare(cmd *cobra.Command, args []string) error {
 
 func reqGetSharedMsg(shareLink string) []byte {
 
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -1151,7 +1153,7 @@ func reqDownloadSharedMsg(fileHash, reqId, sn string) []byte {
 		return nil
 	}
 
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}

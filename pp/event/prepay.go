@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/stratosnet/sds/framework/core"
+	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
@@ -17,7 +18,7 @@ import (
 )
 
 // Prepay PP node sends a prepay transaction
-func Prepay(ctx context.Context, beneficiary []byte, amount txclienttypes.Coin, txFee txclienttypes.TxFee,
+func Prepay(ctx context.Context, beneficiary fwtypes.WalletAddress, amount txclienttypes.Coin, txFee txclienttypes.TxFee,
 	walletAddr string, walletPubkey, wsign []byte, reqTime int64) error {
 	prepayReq, err := reqPrepayData(ctx, beneficiary, amount, txFee, walletAddr, walletPubkey, wsign, reqTime)
 	if err != nil {

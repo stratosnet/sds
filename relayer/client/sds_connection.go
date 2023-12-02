@@ -282,7 +282,7 @@ func (s *sdsConnection) txBroadcasterLoop() {
 			}
 			for i := range msg.SignatureKeys {
 				// For messages coming from SP, add the wallet private key that was loaded on start-up
-				if len(msg.SignatureKeys[i].PrivateKey) == 0 && msg.SignatureKeys[i].Address == s.client.WalletAddress {
+				if len(msg.SignatureKeys[i].PrivateKey) == 0 && msg.SignatureKeys[i].Address == s.client.WalletAddress.String() {
 					msg.SignatureKeys[i].PrivateKey = s.client.WalletPrivateKey.Bytes()
 				}
 			}

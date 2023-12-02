@@ -6,9 +6,8 @@ import (
 	"sync"
 
 	"github.com/stratosnet/sds/framework/core"
+	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
-	"github.com/stratosnet/sds/framework/utils/datamesh"
-	"github.com/stratosnet/sds/framework/utils/types"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
@@ -28,23 +27,41 @@ var (
 
 func GetAllShareLink(ctx context.Context, walletAddr string, page uint64, walletPubkey, wsign []byte, reqTime int64) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqShareLinkData(walletAddr, p2pserver.GetP2pServer(ctx).GetP2PAddress(), page, walletPubkey, wsign, reqTime), header.ReqShareLink)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(
+			ctx,
+			requests.ReqShareLinkData(
+				walletAddr, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
+				page, walletPubkey, wsign, reqTime,
+			),
+			header.ReqShareLink,
+		)
 	}
 }
 
 func GetReqShareFile(ctx context.Context, fileHash, pathHash, walletAddr string, shareTime int64, isPrivate bool,
 	walletPubkey, wsign []byte, reqTime int64) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx,
-			requests.ReqShareFileData(fileHash, pathHash, walletAddr,
-				p2pserver.GetP2pServer(ctx).GetP2PAddress(), isPrivate, shareTime,
-				walletPubkey, wsign, reqTime), header.ReqShareFile)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(
+			ctx,
+			requests.ReqShareFileData(
+				fileHash, pathHash, walletAddr, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
+				isPrivate, shareTime, walletPubkey, wsign, reqTime,
+			),
+			header.ReqShareFile,
+		)
 	}
 }
 
 func DeleteShare(ctx context.Context, shareID, walletAddress string, walletPubkey, wsign []byte, reqTime int64) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqDeleteShareData(shareID, walletAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress(), walletPubkey, wsign, reqTime), header.ReqDeleteShare)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(
+			ctx,
+			requests.ReqDeleteShareData(
+				shareID, walletAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
+				walletPubkey, wsign, reqTime,
+			),
+			header.ReqDeleteShare,
+		)
 	}
 }
 
@@ -67,7 +84,7 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 		defer file.SetFileShareResult(target.WalletAddress+reqId, rpcResult)
 	}
 
-	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
+	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress().String() {
 		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return
@@ -127,7 +144,7 @@ func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 		defer file.SetFileShareResult(target.WalletAddress+reqId, rpcResult)
 	}
 
-	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
+	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress().String() {
 		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return
@@ -163,7 +180,7 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 		defer file.SetFileShareResult(target.WalletAddress+reqId, rpcResult)
 	}
 
-	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
+	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress().String() {
 		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return
@@ -182,7 +199,14 @@ func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAdd
 	isVideoStream bool, wsign []byte, reqTime int64) {
 	pp.DebugLog(ctx, "GetShareFile for file ", keyword)
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, requests.ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr, p2pserver.GetP2pServer(ctx).GetP2PAddress(), walletPubkey, wsign, isVideoStream, reqTime), header.ReqGetShareFile)
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(
+			ctx,
+			requests.ReqGetShareFileData(
+				keyword, sharePassword, saveAs, walletAddr, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
+				walletPubkey, wsign, isVideoStream, reqTime,
+			),
+			header.ReqGetShareFile,
+		)
 	}
 }
 
@@ -212,7 +236,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	if target.ShareRequest.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
+	if target.ShareRequest.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress().String() {
 		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.ShareRequest.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return
@@ -226,7 +250,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 		if idx == 0 {
 			saveAs = target.ShareRequest.SaveAs
 		}
-		filePath := datamesh.DataMeshId{
+		filePath := fwtypes.DataMeshId{
 			Owner: fileInfo.OwnerWalletAddress,
 			Hash:  fileInfo.FileHash,
 		}.String()
@@ -247,9 +271,9 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 			}
 
 			file.StartLocalDownload(fileInfo.FileHash)
-			req = requests.ReqFileStorageInfoData(ctx, filePath, "", saveAs, setting.WalletAddress, setting.WalletPublicKey, nil, target.ShareRequest, target.ShareRequest.ReqTime)
+			req = requests.ReqFileStorageInfoData(ctx, filePath, "", saveAs, setting.WalletAddress, setting.WalletPublicKey.Bytes(), nil, target.ShareRequest, target.ShareRequest.ReqTime)
 			sigMsg := utils.GetFileDownloadWalletSignMessage(fileInfo.FileHash, setting.WalletAddress, target.SequenceNumber, target.ShareRequest.ReqTime)
-			sign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(sigMsg))
+			sign, err := setting.WalletPrivateKey.Sign([]byte(sigMsg))
 			if err != nil {
 				return
 			}

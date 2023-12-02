@@ -2,11 +2,13 @@ package utils
 
 import (
 	"crypto/rand"
-	mbase "github.com/multiformats/go-multibase"
-	mh "github.com/multiformats/go-multihash"
 	"testing"
 
 	"github.com/ipfs/go-cid"
+	mbase "github.com/multiformats/go-multibase"
+	mh "github.com/multiformats/go-multihash"
+
+	"github.com/stratosnet/sds/framework/crypto"
 )
 
 func BenchmarkSliceHash(b *testing.B) {
@@ -30,7 +32,7 @@ func BenchmarkSliceHash(b *testing.B) {
 
 	b.Run("BenchmarkSliceHash", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_ = CalcSliceHash(sliceList[i%sliceCnt], fh, uint64(i))
+			_, _ = crypto.CalcSliceHash(sliceList[i%sliceCnt], fh, uint64(i))
 		}
 	})
 }

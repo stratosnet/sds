@@ -33,7 +33,7 @@ var (
 )
 
 // Generate generates an eth_secp256k1 private key from the given bytes.
-func Generate(bz []byte) fwcryptotypes.PrivKey {
+func Generate(bz []byte) *PrivKey {
 	bzArr := make([]byte, PrivKeySize)
 	copy(bzArr, bz)
 
@@ -207,4 +207,10 @@ func (pubKey *PubKey) VerifySignature(msg, sig []byte) bool {
 
 	// the signature needs to be in [R || S] format when provided to VerifySignature
 	return ethcrypto.VerifySignature(pubKey.Key, ethcrypto.Keccak256Hash(msg).Bytes(), sig)
+}
+
+func PubKeyFromBytes(bz []byte) fwcryptotypes.PubKey {
+	var pubKey []byte
+	copy(pubKey[:], bz)
+	return &PubKey{Key: pubKey}
 }

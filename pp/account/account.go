@@ -6,31 +6,28 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/stratosnet/sds/framework/types"
+	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
-	"github.com/stratosnet/sds/framework/utils/crypto/secp256k1"
-
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
 )
 
 func CreateWallet(ctx context.Context, password, name, mnemonic, hdPath string) string {
 	if mnemonic == "" {
-		newMnemonic, err := utils.NewMnemonic()
+		newMnemonic, err := fwtypes.NewMnemonic()
 		if err != nil {
 			pp.ErrorLog(ctx, "Couldn't generate new mnemonic", err)
 			return ""
 		}
 		mnemonic = newMnemonic
 	}
-	account, err := utils.CreateWallet(setting.Config.Home.AccountsPath, name, password, types.StratosBech32Prefix,
-		mnemonic, "", hdPath)
+	account, err := fwtypes.CreateWallet(setting.Config.Home.AccountsPath, name, password, mnemonic, "", hdPath)
 	if utils.CheckError(err) {
 		pp.ErrorLog(ctx, "CreateWallet error", err)
 		return ""
 	}
-	setting.WalletAddress, err = account.ToBech(types.StratosBech32Prefix)
-	if utils.CheckError(err) {
+	setting.WalletAddress = fwtypes.WalletAddressBytesToBech32(account.Bytes())
+	if setting.WalletAddress == "" {
 		pp.ErrorLog(ctx, "CreateWallet error", err)
 		return ""
 	}
@@ -38,7 +35,7 @@ func CreateWallet(ctx context.Context, password, name, mnemonic, hdPath string) 
 		setting.Config.Keys.WalletAddress = setting.WalletAddress
 		_ = setting.FlushConfig()
 	}
-	getPublicKey(ctx, filepath.Join(setting.Config.Home.AccountsPath, setting.WalletAddress+".json"), password)
+	getWalletPublicKey(ctx, filepath.Join(setting.Config.Home.AccountsPath, setting.WalletAddress+".json"), password)
 	utils.Log("Create account success ,", setting.WalletAddress)
 	return setting.WalletAddress
 }
@@ -62,7 +59,7 @@ func GetWalletAddress(ctx context.Context) error {
 			continue
 		}
 		utils.Log(info.Name())
-		if getPublicKey(ctx, filepath.Join(setting.Config.Home.AccountsPath, fileName), password) {
+		if getWalletPublicKey(ctx, filepath.Join(setting.Config.Home.AccountsPath, fileName), password) {
 			setting.WalletAddress = walletAddress
 			return nil
 		}
@@ -71,21 +68,23 @@ func GetWalletAddress(ctx context.Context) error {
 	return errors.New("could not find the account file corresponds to the configured wallet address")
 }
 
-func getPublicKey(ctx context.Context, filePath, password string) bool {
+func getWalletPublicKey(ctx context.Context, filePath, password string) bool {
 	keyjson, err := os.ReadFile(filePath)
 	if utils.CheckError(err) {
-		pp.ErrorLog(ctx, "getPublicKey ioutil.ReadFile", err)
+		pp.ErrorLog(ctx, "getWalletPublicKey ioutil.ReadFile", err)
 		return false
 	}
-	key, err := utils.DecryptKey(keyjson, password)
+	key, err := fwtypes.DecryptKey(keyjson, password, true)
 
 	if utils.CheckError(err) {
-		pp.ErrorLog(ctx, "getPublicKey DecryptKey", err)
+		pp.ErrorLog(ctx, "getWalletPublicKey DecryptKey", err)
 		return false
 	}
 	setting.WalletPrivateKey = key.PrivateKey
-	setting.WalletPublicKey = secp256k1.PrivKeyToPubKey(key.PrivateKey).Bytes()
-	pp.DebugLog(ctx, "publicKey", setting.WalletPublicKey)
+	setting.WalletPublicKey = key.PrivateKey.PubKey()
+
+	bech32PubKey, _ := fwtypes.WalletPubKeyToBech32(setting.WalletPublicKey)
+	pp.DebugLog(ctx, "publicKey", bech32PubKey)
 	pp.Log(ctx, "unlock wallet successfully ", setting.WalletAddress)
 	return true
 }
@@ -96,7 +95,7 @@ func Wallets(ctx context.Context) []string {
 	var wallets []string
 	for _, file := range files {
 		fileName := file.Name()
-		if fileName[len(fileName)-5:] == ".json" && fileName[:len(types.SdsNodeP2PAddressPrefix)] != types.SdsNodeP2PAddressPrefix {
+		if fileName[len(fileName)-5:] == ".json" && fileName[:len(fwtypes.P2PAddressPrefix)] != fwtypes.P2PAddressPrefix {
 			wallets = append(wallets, fileName[:len(fileName)-5])
 		}
 	}

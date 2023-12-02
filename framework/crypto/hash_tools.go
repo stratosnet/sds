@@ -1,4 +1,4 @@
-package utils
+package crypto
 
 import (
 	"bytes"
@@ -13,8 +13,6 @@ import (
 	"github.com/ipfs/go-cid"
 	mbase "github.com/multiformats/go-multibase"
 	mh "github.com/multiformats/go-multihash"
-
-	"github.com/stratosnet/sds/framework/utils/crypto"
 )
 
 const (
@@ -41,44 +39,41 @@ func CalcCRC32OfSlices(data [][]byte) uint32 {
 	return iEEE.Sum32()
 }
 
-func CalcFileMD5(filePath string) []byte {
+func CalcFileMD5(filePath string) ([]byte, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		Log(err.Error())
-		return nil
+		return nil, err
 	}
 	defer func() {
 		_ = file.Close()
 	}()
 	MD5 := md5.New()
 	_, _ = io.Copy(MD5, file)
-	return MD5.Sum(nil)
+	return MD5.Sum(nil), nil
 }
 
-func CalcMD5OfSplitFiles(filePath []string) []byte {
+func CalcMD5OfSplitFiles(filePath []string) ([]byte, error) {
 	MD5 := md5.New()
 	for _, path := range filePath {
 		file, err := os.Open(path)
 		if err != nil {
-			Log(err.Error())
-			return nil
+			return nil, err
 		}
 		defer file.Close()
 		_, _ = io.Copy(MD5, file)
 	}
-	return MD5.Sum(nil)
+	return MD5.Sum(nil), nil
 }
 
-func CalcFileKeccak(filePath string) mh.Multihash {
+func CalcFileKeccak(filePath string) (mh.Multihash, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		Log(err.Error())
-		return nil
+		return nil, err
 	}
 	defer file.Close()
 
 	sliceKeccak256, _ := mh.SumStream(file, mh.KECCAK_256, hashLen)
-	return sliceKeccak256
+	return sliceKeccak256, nil
 }
 
 func CalcKeccakOfSplitFiles(files []string) []byte {
@@ -96,38 +91,40 @@ func CalcKeccakOfSplitFiles(files []string) []byte {
 	return sliceKeccak256
 }
 
-func CalcFileCRC32(filePath string) uint32 {
+func CalcFileCRC32(filePath string) (uint32, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		Log(err.Error())
-		return 0
+		return 0, err
 	}
 	defer func() {
 		_ = file.Close()
 	}()
 	iEEE := crc32.NewIEEE()
 	_, _ = io.Copy(iEEE, file)
-	return iEEE.Sum32()
+	return iEEE.Sum32(), nil
 }
 
-func CalcFileHash(filePath, encryptionTag string, codec byte) string {
+func CalcFileHash(filePath, encryptionTag string, codec byte) (string, error) {
 	if filePath == "" {
-		Log(errors.New("CalcFileHash: missing file path"))
-		return ""
+		return "", errors.New("CalcFileHash: missing file path")
 	}
 	var data []byte
+	var encodedFile []byte
+	var err error
 	switch codec {
 	case cid.Raw:
-		data = append([]byte(encryptionTag), CalcFileMD5(filePath)...)
+		encodedFile, err = CalcFileMD5(filePath)
+		data = append([]byte(encryptionTag), encodedFile...)
 	case VIDEO_CODEC, SDS_CODEC:
-		data = append([]byte(encryptionTag), CalcFileKeccak(filePath)...)
+		encodedFile, err = CalcFileKeccak(filePath)
+		data = append([]byte(encryptionTag), encodedFile...)
 	default:
-		return ""
+		return "", errors.New("CalcFileHash: coded not supported")
 	}
 	filehash, _ := mh.Sum(data, mh.KECCAK_256, hashLen)
 	fileCid := cid.NewCidV1(uint64(codec), filehash)
 	encoder, _ := mbase.NewEncoder(mbase.Base32hex)
-	return fileCid.Encode(encoder)
+	return fileCid.Encode(encoder), err
 }
 
 func CalcFileHashFromSlices(files []string, encryptionTag string) string {
@@ -139,22 +136,21 @@ func CalcFileHashFromSlices(files []string, encryptionTag string) string {
 }
 
 func CalcHash(data []byte) string {
-	return hex.EncodeToString(crypto.Keccak256(data))
+	return hex.EncodeToString(Keccak256(data))
 }
 
 func CalcHashBytes(data []byte) []byte {
-	return crypto.Keccak256(data)
+	return Keccak256(data)
 }
 
-func CalcSliceHash(data []byte, fileHash string, sliceNumber uint64) string {
+func CalcSliceHash(data []byte, fileHash string, sliceNumber uint64) (string, error) {
 	fileCid, _ := cid.Decode(fileHash)
 	fileKeccak256 := fileCid.Hash()
 	sliceNumBytes := uint64ToBytes(sliceNumber)
 	data = append(sliceNumBytes, data...)
 	sliceKeccak256, _ := mh.Sum(data, mh.KECCAK_256, hashLen)
 	if len(fileKeccak256) != len(sliceKeccak256) {
-		Log(errors.New("length of fileKeccak256 and sliceKeccak256 doesn't match"))
-		return ""
+		return "", errors.New("length of fileKeccak256 and sliceKeccak256 doesn't match")
 	}
 	sliceHash := make([]byte, len(fileKeccak256))
 	for i := 0; i < len(fileKeccak256); i++ {
@@ -163,7 +159,7 @@ func CalcSliceHash(data []byte, fileHash string, sliceNumber uint64) string {
 	sliceHash, _ = mh.Sum(sliceHash, mh.KECCAK_256, hashLen)
 	sliceCid := cid.NewCidV1(cid.Raw, sliceHash)
 	encoder, _ := mbase.NewEncoder(mbase.Base32hex)
-	return sliceCid.Encode(encoder)
+	return sliceCid.Encode(encoder), nil
 }
 
 func uint64ToBytes(n uint64) []byte {

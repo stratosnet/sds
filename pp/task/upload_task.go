@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/stratosnet/sds/framework/crypto"
 	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
@@ -70,10 +71,15 @@ func CreateBackupFileTask(target *protos.RspBackupStatus) *UploadFileTask {
 		return nil
 	}
 
+	fileCRC, err := crypto.CalcFileCRC32(file.GetFilePath(target.FileHash))
+	if err != nil {
+		utils.ErrorLog(err)
+	}
+
 	task := &UploadFileTask{
 		RspUploadFile:     nil,
 		RspBackupFile:     target,
-		FileCRC:           utils.CalcFileCRC32(file.GetFilePath(target.FileHash)),
+		FileCRC:           fileCRC,
 		Type:              protos.UploadType_BACKUP,
 		Destinations:      make(map[string]*SlicesPerDestination),
 		ConcurrentUploads: 0,
@@ -105,10 +111,15 @@ func CreateUploadFileTask(target *protos.RspUploadFile) *UploadFileTask {
 		return nil
 	}
 
+	fileCRC, err := crypto.CalcFileCRC32(file.GetFilePath(target.FileHash))
+	if err != nil {
+		utils.ErrorLog(err)
+	}
+
 	task := &UploadFileTask{
 		RspUploadFile:     target,
 		RspBackupFile:     nil,
-		FileCRC:           utils.CalcFileCRC32(file.GetFilePath(target.FileHash)),
+		FileCRC:           fileCRC,
 		Type:              protos.UploadType_NEW_UPLOAD,
 		Destinations:      make(map[string]*SlicesPerDestination),
 		ConcurrentUploads: 0,

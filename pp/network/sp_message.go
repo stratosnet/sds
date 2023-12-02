@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/stratosnet/sds/framework/utils"
-	"github.com/stratosnet/sds/framework/utils/types"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
@@ -18,18 +17,18 @@ func (p *Network) RegisterToSP(ctx context.Context, toSP bool) {
 	nowSec := time.Now().Unix()
 	//// sign the wallet signature by wallet private key
 	wsignMsg := utils.RegisterWalletSignMessage(setting.WalletAddress, nowSec)
-	wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		return
 	}
 	if toSP {
 		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx,
-			requests.ReqRegisterData(ctx, setting.WalletAddress, setting.WalletPublicKey, wsign, nowSec),
+			requests.ReqRegisterData(ctx, setting.WalletAddress, setting.WalletPublicKey.Bytes(), wsign, nowSec),
 			header.ReqRegister)
 		pp.Log(ctx, "SendMessage(conn, req, header.ReqRegister) to SP")
 	} else {
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, p2pserver.GetP2pServer(ctx).GetPpConn(),
-			requests.ReqRegisterData(ctx, setting.WalletAddress, setting.WalletPublicKey, wsign, nowSec),
+			requests.ReqRegisterData(ctx, setting.WalletAddress, setting.WalletPublicKey.Bytes(), wsign, nowSec),
 			header.ReqRegister)
 		pp.Log(ctx, "SendMessage(conn, req, header.ReqRegister) to PP")
 	}
@@ -60,12 +59,12 @@ func (p *Network) GetSPList(ctx context.Context) func() {
 		pp.DebugLogf(ctx, "SendMessage(client.spConn, req, header.ReqGetSPList)")
 		nowSec := time.Now().Unix()
 		wsignMsg := utils.GetSPListWalletSignMessage(setting.WalletAddress, nowSec)
-		wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+		wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 		if err != nil {
 			return
 		}
 		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx,
-			requests.ReqGetSPlistData(ctx, setting.WalletAddress, setting.WalletPublicKey, wsign, nowSec),
+			requests.ReqGetSPlistData(ctx, setting.WalletAddress, setting.WalletPublicKey.Bytes(), wsign, nowSec),
 			header.ReqGetSPList)
 	}
 }

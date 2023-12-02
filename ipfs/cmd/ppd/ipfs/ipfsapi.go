@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
 	"github.com/stratosnet/sds/framework/utils"
-	"github.com/stratosnet/sds/framework/utils/types"
 	"github.com/stratosnet/sds/ipfs/pp/ipfs"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
@@ -39,8 +39,8 @@ const (
 )
 
 var (
-	WalletPrivateKey types.AccPrivKey
-	WalletPublicKey  types.AccPubKey
+	WalletPrivateKey fwcryptotypes.PrivKey
+	WalletPublicKey  fwcryptotypes.PubKey
 	WalletAddress    string
 	WalletPassword   string
 )

@@ -1,12 +1,12 @@
-package datamesh
+package types
 
 import (
 	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/framework/utils"
-	"github.com/stratosnet/sds/framework/utils/types"
+
+	"github.com/stratosnet/sds/framework/crypto"
 )
 
 const DATA_MESH_PREFIX = "sdm://"
@@ -35,11 +35,12 @@ func DataMeshIdFromString(idString string) (*DataMeshId, error) {
 	if len(parts) != 2 {
 		return nil, errors.New("invalid data mesh id, no owner or no hash")
 	}
-	_, err := types.WalletAddressFromBech(parts[0])
+
+	_, err := WalletAddressFromBech32(parts[0])
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to decode owner")
 	}
-	ok := utils.ValidateHash(parts[1])
+	ok := crypto.ValidateHash(parts[1])
 	if !ok {
 		return nil, errors.New("failed to decode hash")
 	}

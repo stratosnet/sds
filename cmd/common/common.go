@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/stratosnet/sds/framework/types"
+	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/framework/utils/console"
 	"github.com/stratosnet/sds/pp/serv"
@@ -157,15 +157,14 @@ func SetupP2PKey() error {
 			return errors.New("invalid. The two passwords don't match")
 		}
 
-		p2pKeyAddress, err := utils.CreateP2PKey(setting.Config.Home.AccountsPath, nickname, password,
-			types.SdsNodeP2PAddressPrefix)
+		p2pKeyAddress, err := fwtypes.CreateP2PKey(setting.Config.Home.AccountsPath, nickname, password)
 		if err != nil {
 			return errors.New("couldn't create p2p key: " + err.Error())
 		}
 
-		p2pKeyAddressString, err := p2pKeyAddress.ToBech(types.SdsNodeP2PAddressPrefix)
-		if err != nil {
-			return errors.New("couldn't convert P2P key address to bech string: " + err.Error())
+		p2pKeyAddressString := fwtypes.P2PAddressBytesToBech32(p2pKeyAddress.Bytes())
+		if p2pKeyAddressString == "" {
+			return errors.New("couldn't convert P2P key address to bech string: ")
 		}
 		setting.Config.Keys.P2PAddress = p2pKeyAddressString
 		setting.Config.Keys.P2PPassword = password

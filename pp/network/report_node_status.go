@@ -35,7 +35,7 @@ func (p *Network) doReportNodeStatus(ctx context.Context) func() {
 
 // doReportNodeStatus
 func (p *Network) ReportNodeStatus(ctx context.Context) {
-	status := requests.ReqNodeStatusData(p2pserver.GetP2pServer(ctx).GetP2PAddress())
+	status := requests.ReqNodeStatusData(p2pserver.GetP2pServer(ctx).GetP2PAddress().String())
 	pp.DebugLog(ctx, "Sending RNS message to SP! "+status.String())
 
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, status, header.ReqReportNodeStatus)

@@ -1,4 +1,4 @@
-package datamesh
+package types
 
 import (
 	"reflect"

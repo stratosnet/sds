@@ -5,6 +5,8 @@ import (
 	"time"
 
 	externalip "github.com/glendc/go-external-ip"
+
+	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
 	"github.com/stratosnet/sds/framework/utils"
 	ppTypes "github.com/stratosnet/sds/pp/types"
 )
@@ -20,9 +22,9 @@ var OnlineTime int64 = 0
 var WalletAddress string
 
 // WalletPublicKey Public key in compressed format
-var WalletPublicKey []byte
+var WalletPublicKey fwcryptotypes.PubKey
 
-var WalletPrivateKey []byte
+var WalletPrivateKey fwcryptotypes.PrivKey
 
 var NetworkAddress string
 

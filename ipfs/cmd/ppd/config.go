@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/stratosnet/sds/cmd/common"
+	"github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/setting"
 )
@@ -74,7 +75,7 @@ func genConfig(cmd *cobra.Command, _ []string) error {
 func SetupWalletKey() error {
 	if setting.Config.Keys.WalletAddress == "" {
 		fmt.Println("No wallet key specified in config. Attempting to create one...")
-		err := utils.SetupWallet(setting.Config.Home.AccountsPath, setting.HDPath, updateWalletConfig)
+		err := types.SetupWallet(setting.Config.Home.AccountsPath, setting.HDPath, updateWalletConfig)
 		if err != nil {
 			utils.ErrorLog(err)
 			return err

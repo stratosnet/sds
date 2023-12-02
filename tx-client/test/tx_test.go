@@ -10,6 +10,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-proto/anyutil"
 
+	"github.com/stratosnet/sds/framework/crypto/ed25519"
 	"github.com/stratosnet/sds/framework/crypto/secp256k1"
 	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
 	"github.com/stratosnet/sds/tx-client/grpc"
@@ -31,7 +32,12 @@ const (
 	hdPath                = "m/44'/606'/0'/0/0"
 )
 
-func TestSend(t *testing.T) {
+func TestTxBroadcast(t *testing.T) {
+	//testSend(t)
+	testCreateResourceNode(t)
+}
+
+func testSend(t *testing.T) {
 	fmt.Println("------------------ TestSend() start ------------------")
 	initGrpcSettings()
 	senderKey := generateSenderKey(t)
@@ -62,15 +68,36 @@ func TestSend(t *testing.T) {
 	require.Equal(t, retCodeOK, resp.GetTxResponse().GetCode())
 }
 
-//func TestCreateResourceNode(t *testing.T) {
-//	fmt.Println("------------------ TestCreateResourceNode() start ------------------")
-//	initGrpcSettings()
-//	senderKey := generateSenderKey(t)
-//
-//	p2pPubKey := ed25519.GenPrivKey()
-//
-//	msg := tx.BuildCreateResourceNodeMsg(txclienttypes.STORAGE)
-//}
+func testCreateResourceNode(t *testing.T) {
+	fmt.Println("------------------ TestCreateResourceNode() start ------------------")
+	initGrpcSettings()
+	senderKey := generateSenderKey(t)
+	p2pKey := ed25519.GenPrivKey()
+	depositAmt := txclienttypes.Coin{
+		Denom:  txclienttypes.Wei,
+		Amount: sdkmath.NewInt(5e18),
+	}
+	senderAddr := senderKey.PubKey().Address()
+
+	msg, err := tx.BuildCreateResourceNodeMsg(txclienttypes.STORAGE, p2pKey.PubKey(), depositAmt, senderAddr.Bytes())
+	require.NoError(t, err)
+	signatureKeys := []*txclienttypes.SignatureKey{
+		{Address: senderAddrBech32, PrivateKey: senderKey.Bytes(), Type: txclienttypes.SignatureSecp256k1},
+	}
+
+	msgAny, err := anyutil.New(msg)
+	require.NoError(t, err)
+	fmt.Println("msgAny = ", msgAny)
+
+	txBytes, err := tx.CreateAndSimulateTx(msgAny, defaultTxFee(), "", signatureKeys, chainId, gasAdjustment)
+	require.NoError(t, err)
+
+	resp, err := grpc.BroadcastTx(txBytes, txv1beta1.BroadcastMode_BROADCAST_MODE_SYNC)
+	require.NoError(t, err)
+	fmt.Println(resp)
+
+	require.Equal(t, retCodeOK, resp.GetTxResponse().GetCode())
+}
 
 func generateSenderKey(t *testing.T) fwcryptotypes.PrivKey {
 	senderKeyBytes, err := secp256k1.Derive(senderMnemonic, senderBip39Passphrase, hdPath)

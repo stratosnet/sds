@@ -13,8 +13,7 @@ import (
 
 	"github.com/HuKeping/rbtree"
 	"github.com/google/uuid"
-
-	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/crypto"
 )
 
 type WeightedNode struct {
@@ -31,7 +30,7 @@ func (n *WeightedNode) nodeKey() string {
 
 // Less of rbtree
 func (n *WeightedNode) Less(than rbtree.Item) bool {
-	return utils.CalcCRC32([]byte(n.ID)) < utils.CalcCRC32([]byte(than.(*WeightedNode).ID))
+	return crypto.CalcCRC32([]byte(n.ID)) < crypto.CalcCRC32([]byte(than.(*WeightedNode).ID))
 }
 
 // VWeightedNode virtual node
@@ -263,7 +262,7 @@ func (r *WeightedHashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
 	down := r.NRing.Min().(*WeightedNode).ID
 
 	r.NRing.Descend(&WeightedNode{ID: NodeID}, func(item rbtree.Item) bool {
-		if utils.CalcCRC32([]byte(NodeID)) == utils.CalcCRC32([]byte(item.(*WeightedNode).ID)) {
+		if crypto.CalcCRC32([]byte(NodeID)) == crypto.CalcCRC32([]byte(item.(*WeightedNode).ID)) {
 			return true
 		}
 		up = item.(*WeightedNode).ID
@@ -271,7 +270,7 @@ func (r *WeightedHashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
 	})
 
 	r.NRing.Ascend(&WeightedNode{ID: NodeID}, func(item rbtree.Item) bool {
-		if utils.CalcCRC32([]byte(NodeID)) == utils.CalcCRC32([]byte(item.(*WeightedNode).ID)) {
+		if crypto.CalcCRC32([]byte(NodeID)) == crypto.CalcCRC32([]byte(item.(*WeightedNode).ID)) {
 			return true
 		}
 		down = item.(*WeightedNode).ID
@@ -342,7 +341,7 @@ func (r *WeightedHashRing) TraversalVRing() {
 // TraversalNRing traverse non-virtual rbtree
 func (r *WeightedHashRing) TraversalNRing() {
 	r.NRing.Ascend(r.NRing.Min(), func(item rbtree.Item) bool {
-		fmt.Printf("Node %d => %s\n", utils.CalcCRC32([]byte(item.(*WeightedNode).ID)), item.(*WeightedNode).ID)
+		fmt.Printf("Node %d => %s\n", crypto.CalcCRC32([]byte(item.(*WeightedNode).ID)), item.(*WeightedNode).ID)
 		return true
 	})
 }

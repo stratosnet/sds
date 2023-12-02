@@ -3,37 +3,35 @@ package event
 import (
 	"context"
 
-	"github.com/stratosnet/sds/framework/utils/crypto/ed25519"
-	"github.com/stratosnet/sds/framework/utils/crypto/secp256k1"
-	"github.com/stratosnet/sds/framework/utils/types"
+	"github.com/cosmos/cosmos-proto/anyutil"
+
+	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/sds-msg/protos"
 	txclienttx "github.com/stratosnet/sds/tx-client/tx"
 	txclienttypes "github.com/stratosnet/sds/tx-client/types"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 func reqActivateData(ctx context.Context, amount txclienttypes.Coin, txFee txclienttypes.TxFee) (*protos.ReqActivatePP, error) {
 	// Create and sign transaction to add new resource node
-	ownerAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
+	ownerAddress, err := fwtypes.WalletAddressFromBech32(setting.WalletAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	p2pAddress := p2pserver.GetP2pServer(ctx).GetP2PAddrInTypeAddress()
-	txMsg, err := txclienttx.BuildCreateResourceNodeMsg(txclienttypes.STORAGE, p2pserver.GetP2pServer(ctx).GetP2PPublicKey(), amount, ownerAddress.Bytes(), p2pAddress.Bytes())
+	txMsg, err := txclienttx.BuildCreateResourceNodeMsg(txclienttypes.STORAGE, p2pserver.GetP2pServer(ctx).GetP2PPublicKey(), amount, ownerAddress)
 	if err != nil {
 		return nil, err
 	}
 	signatureKeys := []*txclienttypes.SignatureKey{
-		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: txclienttypes.SignatureSecp256k1},
+		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey.Bytes(), Type: txclienttypes.SignatureSecp256k1},
 	}
 
 	chainId := setting.Config.Blockchain.ChainId
 	gasAdjustment := setting.Config.Blockchain.GasAdjustment
 
-	msgAny, err := anypb.New(txMsg)
+	msgAny, err := anyutil.New(txMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -54,21 +52,18 @@ func reqActivateData(ctx context.Context, amount txclienttypes.Coin, txFee txcli
 
 func reqUpdateDepositData(ctx context.Context, depositDelta txclienttypes.Coin, txFee txclienttypes.TxFee) (*protos.ReqUpdateDepositPP, error) {
 	// Create and sign transaction to update deposit for existing resource node
-	networkAddr := ed25519.PubKeyBytesToAddress(p2pserver.GetP2pServer(ctx).GetP2PPublicKey())
-	ownerAddr, err := secp256k1.PubKeyToAddress(setting.WalletPublicKey)
-	if err != nil {
-		return nil, err
-	}
+	networkAddr := p2pserver.GetP2pServer(ctx).GetP2PAddress()
+	ownerAddr := fwtypes.WalletAddress(setting.WalletPublicKey.Address())
 
-	txMsg := txclienttx.BuildUpdateResourceNodeDepositMsg(networkAddr.Bytes(), ownerAddr.Bytes(), depositDelta)
+	txMsg := txclienttx.BuildUpdateResourceNodeDepositMsg(networkAddr, ownerAddr, depositDelta)
 	signatureKeys := []*txclienttypes.SignatureKey{
-		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: txclienttypes.SignatureSecp256k1},
+		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey.Bytes(), Type: txclienttypes.SignatureSecp256k1},
 	}
 
 	chainId := setting.Config.Blockchain.ChainId
 	gasAdjustment := setting.Config.Blockchain.GasAdjustment
 
-	msgAny, err := anypb.New(txMsg)
+	msgAny, err := anyutil.New(txMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -80,28 +75,25 @@ func reqUpdateDepositData(ctx context.Context, depositDelta txclienttypes.Coin, 
 
 	req := &protos.ReqUpdateDepositPP{
 		Tx:         txBytes,
-		P2PAddress: p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+		P2PAddress: p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 	}
 	return req, nil
 }
 
 func reqDeactivateData(ctx context.Context, txFee txclienttypes.TxFee) (*protos.ReqDeactivatePP, error) {
 	// Create and sign transaction to remove a resource node
-	nodeAddress := ed25519.PubKeyBytesToAddress(p2pserver.GetP2pServer(ctx).GetP2PPublicKey())
-	ownerAddress, err := secp256k1.PubKeyToAddress(setting.WalletPublicKey)
-	if err != nil {
-		return nil, err
-	}
+	nodeAddress := p2pserver.GetP2pServer(ctx).GetP2PAddress()
+	ownerAddress := fwtypes.WalletAddress(setting.WalletPublicKey.Address())
 
-	txMsg := txclienttx.BuildRemoveResourceNodeMsg(nodeAddress.Bytes(), ownerAddress.Bytes())
+	txMsg := txclienttx.BuildRemoveResourceNodeMsg(nodeAddress, ownerAddress)
 	signatureKeys := []*txclienttypes.SignatureKey{
-		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: txclienttypes.SignatureSecp256k1},
+		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey.Bytes(), Type: txclienttypes.SignatureSecp256k1},
 	}
 
 	chainId := setting.Config.Blockchain.ChainId
 	gasAdjustment := setting.Config.Blockchain.GasAdjustment
 
-	msgAny, err := anypb.New(txMsg)
+	msgAny, err := anyutil.New(txMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -113,28 +105,28 @@ func reqDeactivateData(ctx context.Context, txFee txclienttypes.TxFee) (*protos.
 
 	req := &protos.ReqDeactivatePP{
 		Tx:         txBytes,
-		P2PAddress: p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+		P2PAddress: p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 	}
 	return req, nil
 }
 
-func reqPrepayData(ctx context.Context, beneficiary []byte, amount txclienttypes.Coin, txFee txclienttypes.TxFee,
+func reqPrepayData(ctx context.Context, beneficiary fwtypes.WalletAddress, amount txclienttypes.Coin, txFee txclienttypes.TxFee,
 	walletAddr string, walletPubkey, wsign []byte, reqTime int64) (*protos.ReqPrepay, error) {
 	// Create and sign a prepay transaction
-	senderAddress, err := types.WalletAddressFromBech(setting.WalletAddress)
+	senderAddress, err := fwtypes.WalletAddressFromBech32(setting.WalletAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	txMsg := txclienttx.BuildPrepayMsg(senderAddress.Bytes(), beneficiary, amount)
+	txMsg := txclienttx.BuildPrepayMsg(senderAddress, beneficiary, amount)
 	signatureKeys := []*txclienttypes.SignatureKey{
-		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey, Type: txclienttypes.SignatureSecp256k1},
+		{Address: setting.WalletAddress, PrivateKey: setting.WalletPrivateKey.Bytes(), Type: txclienttypes.SignatureSecp256k1},
 	}
 
 	chainId := setting.Config.Blockchain.ChainId
 	gasAdjustment := setting.Config.Blockchain.GasAdjustment
 
-	msgAny, err := anypb.New(txMsg)
+	msgAny, err := anyutil.New(txMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +144,7 @@ func reqPrepayData(ctx context.Context, beneficiary []byte, amount txclienttypes
 	}
 	req := &protos.ReqPrepay{
 		Tx:         txBytes,
-		P2PAddress: p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+		P2PAddress: p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 		Signature:  walletSign,
 		ReqTime:    reqTime,
 	}

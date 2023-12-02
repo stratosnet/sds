@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/framework/crypto"
 	"github.com/stratosnet/sds/framework/metrics"
+	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
-	"github.com/stratosnet/sds/framework/utils/datamesh"
 	"github.com/stratosnet/sds/framework/utils/httpserv"
-	"github.com/stratosnet/sds/framework/utils/types"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
@@ -39,7 +39,7 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, w ht
 		utils.DebugLog("invalid path length")
 		return
 	}
-	_, walletAddress, fileHash, _, err := datamesh.ParseFileHandle(path)
+	_, walletAddress, fileHash, _, err := fwtypes.ParseFileHandle(path)
 	if err != nil {
 		pp.ErrorLog(ctx, "please input correct download link, eg: sdm://address/fileHash|filename(optional)")
 		if w != nil {
@@ -63,11 +63,11 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, w ht
 	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
 	wsignMsg := utils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, "", nowSec) // need to retrieve sn first
-	wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		return
 	}
-	req := requests.ReqFileStorageInfoData(ctx, path, savePath, saveAs, setting.WalletAddress, setting.WalletPublicKey, wsign, nil, nowSec)
+	req := requests.ReqFileStorageInfoData(ctx, path, savePath, saveAs, setting.WalletAddress, setting.WalletPublicKey.Bytes(), wsign, nil, nowSec)
 	metrics.DownloadPerformanceLogNow(fileHash + ":SND_STORAGE_INFO_SP:")
 	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 }
@@ -79,7 +79,7 @@ func ClearFileInfoAndDownloadTask(ctx context.Context, fileHash string, fileReqI
 		req := &protos.ReqClearDownloadTask{
 			WalletAddress: setting.WalletAddress,
 			FileHash:      fileHash,
-			P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+			P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 		}
 		p2pServer := p2pserver.GetP2pServer(ctx)
 		_ = p2pServer.SendMessage(ctx, p2pServer.GetPpConn(), req, header.ReqClearDownloadTask)
@@ -167,7 +167,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		task.CleanDownloadFileAndConnMap(ctx, target.FileHash, fileReqId)
 		task.DownloadFileMap.Store(target.FileHash+fileReqId, newTarget)
 		task.AddDownloadTask(newTarget)
-		if utils.IsVideoStream(target.FileHash) {
+		if crypto.IsVideoStream(target.FileHash) {
 			file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.DOWNLOAD_OK, FileHash: target.FileHash})
 			return
 		}
@@ -185,7 +185,7 @@ func GetFileReplicaInfo(ctx context.Context, path string, replicaIncreaseNum uin
 		utils.DebugLog("invalid path length")
 		return
 	}
-	_, _, fileHash, _, err := datamesh.ParseFileHandle(path)
+	_, _, fileHash, _, err := fwtypes.ParseFileHandle(path)
 	if err != nil {
 		pp.ErrorLog(ctx, "please input correct file link, eg: sdm://address/fileHash|filename(optional)")
 		return
@@ -195,13 +195,15 @@ func GetFileReplicaInfo(ctx context.Context, path string, replicaIncreaseNum uin
 	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
 	wsignMsg := utils.GetFileReplicaInfoWalletSignMessage(fileHash, setting.WalletAddress, nowSec)
-	wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(wsignMsg))
+	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		return
 	}
 
-	req := requests.ReqFileReplicaInfo(path, setting.WalletAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress(), replicaIncreaseNum,
-		setting.WalletPublicKey, wsign, nowSec)
+	req := requests.ReqFileReplicaInfo(
+		path, setting.WalletAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
+		replicaIncreaseNum, setting.WalletPublicKey.Bytes(), wsign, nowSec,
+	)
 	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileReplicaInfo)
 }
 

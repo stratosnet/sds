@@ -92,7 +92,6 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/rogpeppe/go-internal v1.11.0 h1:cWPaGQEPrBb5/AsnsZesgZZ9yb1OQ+GOISoDNXVBh4M=
 github.com/rogpeppe/go-internal v1.11.0/go.mod h1:ddIwULY96R17DhadqLgMfk9H9tvdUzkipdSkR5nkCZA=
-github.com/stratosnet/sds/framework v0.0.0-20231128191014-169cb82668b8/go.mod h1:c5gW00+2H/9fDtx0zRk4UtkBvE4OqIhNFf+aMParYCo=
 github.com/stratosnet/stratos-chain/api v0.0.0-20231113204325-6de660f174b5 h1:QaWftAB4E0BpllB1FQZHqU7oC4JdhHkU0X5pZtKDJds=
 github.com/stratosnet/stratos-chain/api v0.0.0-20231113204325-6de660f174b5/go.mod h1:vkw6I5afI8joLTqywHoauzXlt4yXt/zeCuRFHTsJsd0=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

@@ -2,9 +2,13 @@ module github.com/stratosnet/sds/ipfs
 
 go 1.19
 
-//replace (
-//	github.com/stratosnet/sds => ../  // for development on local
-//)
+replace (
+	github.com/stratosnet/sds => ../ // for development on local
+	github.com/stratosnet/sds/framework => ../framework // for development on local
+	github.com/stratosnet/sds/sds-msg => ../sds-msg // for development on local
+	github.com/stratosnet/sds/tx-client => ../tx-client // for development on local
+
+)
 
 require (
 	github.com/alex023/clock v0.0.0-20191208111215-c265f1b2ab18
@@ -16,7 +20,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.6.1
 	github.com/stratosnet/sds v0.11.3-0.20231128205447-7af421caadcd
-	github.com/stratosnet/sds/framework v0.0.0-20231128191014-169cb82668b8
+	github.com/stratosnet/sds/framework v0.0.0-20231129214657-f955307cd2d7
 	github.com/stratosnet/sds/sds-msg v0.0.0-20231128190750-a3a5ff99118e
 )
 

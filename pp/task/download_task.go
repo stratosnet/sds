@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/stratosnet/sds/framework/crypto"
 	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
@@ -257,7 +258,7 @@ func GetDownloadSlice(target *protos.ReqDownloadSlice, slice *protos.DownloadSli
 		}
 	}
 	dSlice := &DownloadSliceData{
-		FileCrc: utils.CalcCRC32OfSlices(buffers),
+		FileCrc: crypto.CalcCRC32OfSlices(buffers),
 		Data:    buffers,
 		RawSize: rawSize,
 	}

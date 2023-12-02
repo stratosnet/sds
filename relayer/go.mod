@@ -2,11 +2,11 @@ module github.com/stratosnet/sds/relayer
 
 go 1.19
 
-//replace (
-//	github.com/stratosnet/sds/framework => ../framework  // for development on local
-//	github.com/stratosnet/sds/sds-msg => ../sds-msg  // for development on local
-//	github.com/stratosnet/sds/tx-client => ../tx-client  // for development on local
-//)
+replace (
+	github.com/stratosnet/sds/framework => ../framework // for development on local
+	github.com/stratosnet/sds/sds-msg => ../sds-msg // for development on local
+	github.com/stratosnet/sds/tx-client => ../tx-client // for development on local
+)
 
 require (
 	cosmossdk.io/api v0.7.2
@@ -14,16 +14,13 @@ require (
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/deckarep/golang-set v1.8.0
 	github.com/gorilla/websocket v1.5.0
-	github.com/pborman/uuid v1.2.1
 	github.com/pkg/errors v0.9.1
 	github.com/rs/cors v1.8.2
 	github.com/spf13/cobra v1.6.1
-	github.com/stratosnet/sds/framework v0.0.0-20231128191014-169cb82668b8
+	github.com/stratosnet/sds/framework v0.0.0-20231129214657-f955307cd2d7
 	github.com/stratosnet/sds/sds-msg v0.0.0-20231128190750-a3a5ff99118e
 	github.com/stratosnet/sds/tx-client v0.0.0-20231128191210-a8ded32412c4
 	github.com/tendermint/tendermint v0.34.25-0.20221221220620-936221e0a8d9
-	github.com/vmihailenco/msgpack v4.0.4+incompatible
-	golang.org/x/crypto v0.14.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
 )
@@ -70,6 +67,7 @@ require (
 	github.com/multiformats/go-multihash v0.2.3 // indirect
 	github.com/multiformats/go-varint v0.0.6 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
+	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/peterh/liner v1.2.1 // indirect
 	github.com/petermattis/goid v0.0.0-20230904192822-1876fd5063bc // indirect
@@ -88,6 +86,8 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
+	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
+	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect

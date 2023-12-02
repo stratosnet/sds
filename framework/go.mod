@@ -2,7 +2,7 @@ module github.com/stratosnet/sds/framework
 
 go 1.19
 
-//replace github.com/stratosnet/sds/sds-msg => ../sds-msg // for development on local
+replace github.com/stratosnet/sds/sds-msg => ../sds-msg // for development on local
 
 require (
 	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
