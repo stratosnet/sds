@@ -8,15 +8,15 @@ import (
 )
 
 const (
-	Version       = "v0.10.2"
-	AppVersion    = 10
-	MinAppVersion = 10
+	Version       = "v0.12.0"
+	AppVersion    = 12
+	MinAppVersion = 12
 
 	HDPath        = "m/44'/606'/0'/0/0"
 	P2pServerType = "tcp4"
 
-	NodeReportIntervalSec         = 5 * 60 // Interval of node stat report, in seconds
-	PpLatencyCheckInterval        = 60     // interval for checking the latency to next PP
+	NodeReportIntervalSec         = 5 * 60       // Interval of node stat report, in seconds
+	PpLatencyCheckInterval        = 60 * 60 * 24 // interval for checking the latency peer PPs, in seconds
 	DEFAULT_DATA_BUFFER_POOL_SIZE = 2000
 
 	MaxData            = 1024 * 1024 * 3 // max size of a piece in a slice

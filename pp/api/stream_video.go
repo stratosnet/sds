@@ -94,7 +94,7 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 	}.String()
 
 	r := reqDownloadMsg(fileHash, sdmPath, sn)
-	res := namespace.RpcPubApi().RequestDownload(ctx, r)
+	res := namespace.RpcPubApi().RequestVideoDownload(ctx, r)
 
 	if res.Return != rpctypes.DOWNLOAD_OK {
 		w.WriteHeader(setting.FAILCode)
@@ -143,7 +143,7 @@ func streamSharedVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 
 	fileHash := res.FileHash
 	reqDownloadShared := reqDownloadShared(fileHash, sn, res.ReqId)
-	res = namespace.RpcPubApi().RequestDownloadShared(ctx, reqDownloadShared)
+	res = namespace.RpcPubApi().RequestDownloadSharedVideo(ctx, reqDownloadShared)
 	if res.Return != rpctypes.DOWNLOAD_OK {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get file storage info").ToBytes())
@@ -184,7 +184,7 @@ func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 	}.String()
 
 	r := reqDownloadMsg(fileHash, sdmPath, sn)
-	res := namespace.RpcPubApi().RequestDownload(ctx, r)
+	res := namespace.RpcPubApi().RequestVideoDownload(ctx, r)
 
 	if res.Return != rpctypes.DOWNLOAD_OK {
 		w.WriteHeader(setting.FAILCode)
@@ -399,7 +399,7 @@ func cacheVideoSlices(ctx context.Context, fInfo *protos.RspFileStorageInfo) {
 }
 
 func checkSliceExist(fileHash, sliceHash string) (bool, string) {
-	folder := file.GetDownloadPath(filepath.Join(setting.VideoPath, fileHash))
+	folder := filepath.Join(file.GetTmpDownloadPath(), setting.VideoPath, fileHash)
 	slicePath := filepath.Join(folder, sliceHash)
 	return file.CheckFilePathEx(slicePath), slicePath
 }
@@ -466,7 +466,13 @@ func getSliceData(ctx context.Context, fInfo *protos.RspFileStorageInfo, sliceIn
 	if err != nil {
 		return nil, err
 	}
-	fileMg, _ := os.OpenFile(slicePath, os.O_CREATE|os.O_RDWR, 0600)
+	fileMg, err := os.OpenFile(slicePath, os.O_CREATE|os.O_RDWR, 0600)
+	if err != nil {
+		fileMg, err = file.CreateFolderAndReopenFile(filepath.Dir(slicePath), filepath.Base(slicePath))
+		if err != nil {
+			return nil, err
+		}
+	}
 	defer func() {
 		_ = fileMg.Close()
 	}()

@@ -60,13 +60,14 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 				return
 			}
 			for _, slice := range target.SliceInfo {
-				utils.DebugLog(ctx, "taskid ======= ", slice.TaskId)
-				if file.CheckSliceExisting(target.FileHash, target.FileName, slice.SliceStorageInfo.SliceHash, target.SavePath, fileReqId) {
+				utils.DebugLog("taskid ======= ", slice.TaskId)
+				if file.CheckSliceExisting(target.FileHash, target.FileName, slice.SliceStorageInfo.SliceHash, fileReqId) {
 					pp.Log(ctx, "slice exist already,", slice.SliceStorageInfo.SliceHash)
 					setDownloadSliceSuccess(ctx, slice.SliceStorageInfo.SliceHash, dTask)
 					task.DownloadProgress(ctx, target.FileHash, fileReqId, slice.SliceOffset.SliceOffsetEnd-slice.SliceOffset.SliceOffsetStart)
 				} else {
 					pp.DebugLog(ctx, "request download data")
+					task.DownloadSliceProgress.Store(slice.TaskId+slice.SliceStorageInfo.SliceHash+fileReqId, uint64(0))
 					req := requests.ReqDownloadSliceData(ctx, &target, slice)
 					newCtx := createAndRegisterSliceReqId(ctx, fileReqId)
 					SendReqDownloadSlice(newCtx, target.FileHash, slice, req, fileReqId)
@@ -75,7 +76,7 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 			pp.DebugLog(ctx, "DownloadFileSlice(&target)", &target)
 		} else {
 			task.DeleteDownloadTask(target.FileHash, target.WalletAddress, task.LOCAL_REQID)
-			task.LogDownloadResult(ctx, target.FileHash, false, target.Result.Msg)
+			task.DownloadResult(ctx, target.FileHash, false, target.Result.Msg)
 		}
 	}
 }

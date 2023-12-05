@@ -237,6 +237,8 @@ func (bs *BaseServer) startClearTmpFileJob() error {
 
 func (bs *BaseServer) startReportTransferFailureJob() error {
 	ctx := context.Background()
+	ctx = context.WithValue(ctx, types.P2P_SERVER_KEY, bs.p2pServ)
+	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
 	event.StartReportTransferFailureJob(ctx)
 	return nil
 }

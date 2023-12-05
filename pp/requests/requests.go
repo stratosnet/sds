@@ -107,16 +107,6 @@ func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize 
 		encryptionTag = utils.GetRandomString(8)
 	}
 
-	// verify file hash
-	var paths []string
-	for _, slice := range slices {
-		path := file.GetTmpSlicePath(fileHash, slice.SliceHash)
-		paths = append(paths, path)
-	}
-
-	if utils.CalcFileHashFromSlices(paths, encryptionTag) != fileHash {
-		return nil, errors.New("failed verifying file hash")
-	}
 	utils.Log("fileHash: ", fileHash)
 
 	file.SaveRemoteFileHash(fileHash, fileName, fileSize)
@@ -212,6 +202,10 @@ func RequestDownloadFile(ctx context.Context, fileHash, sdmPath, walletAddr stri
 
 func RspDownloadSliceData(ctx context.Context, target *protos.ReqDownloadSlice, slice *protos.DownloadSliceInfo) (*protos.RspDownloadSlice, [][]byte) {
 	sliceData := task.GetDownloadSlice(target, slice)
+	if sliceData == nil {
+		utils.ErrorLog("failed get download slice from the file")
+		return nil, nil
+	}
 	return &protos.RspDownloadSlice{
 		P2PAddress:    target.P2PAddress,
 		WalletAddress: target.RspFileStorageInfo.WalletAddress,

@@ -134,7 +134,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	fileReqId := core.GetRemoteReqId(ctx)
 	rpcRequested := !strings.HasPrefix(fileReqId, task.LOCAL_REQID)
 	if target.Result.State == protos.ResultState_RES_FAIL {
-		pp.ErrorLog(ctx, "Received fail massage from sp: ", target.Result.Msg)
+		task.DownloadResult(ctx, target.FileHash, false, "failed ReqFileStorageInfo, "+target.Result.Msg)
 		if rpcRequested {
 			file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
 		}
@@ -172,9 +172,6 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 			return
 		}
 		DownloadFileSlices(ctx, newTarget, fileReqId)
-	} else {
-		file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
-		pp.Log(ctx, "failed to download，", target.Result.Msg)
 	}
 }
 

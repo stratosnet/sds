@@ -51,7 +51,9 @@ func reqUploadMsg(filePath, hash, sn string) []byte {
 			Pubkey:    wpk,
 			Signature: hex.EncodeToString(sign),
 		},
-		ReqTime: nowSec,
+		ReqTime:         nowSec,
+		DesiredTier:     2,
+		AllowHigherTier: true,
 	})
 
 	pm, e := json.Marshal(params)
@@ -205,7 +207,9 @@ func reqUploadStreamMsg(filePath, hash, sn string) []byte {
 			Pubkey:    wpk,
 			Signature: hex.EncodeToString(sign),
 		},
-		ReqTime: nowSec,
+		ReqTime:         nowSec,
+		DesiredTier:     2,
+		AllowHigherTier: true,
 	})
 
 	pm, e := json.Marshal(params)

@@ -290,7 +290,9 @@ func reqUploadMsg(filePath, hash, sn string) (*rpc_api.ParamReqUploadFile, error
 			Pubkey:    wpk,
 			Signature: hex.EncodeToString(sign),
 		},
-		ReqTime: nowSec,
+		ReqTime:         nowSec,
+		DesiredTier:     2,
+		AllowHigherTier: true,
 	}, nil
 }
 
@@ -411,7 +413,7 @@ func readWalletKeys(wallet string) bool {
 		return false
 	}
 
-	key, err := utils.DecryptKey(keyjson, "aaa")
+	key, err := utils.DecryptKey(keyjson, WalletPassword)
 	if utils.CheckError(err) {
 		utils.ErrorLog("getPublicKey DecryptKey", err)
 		return false

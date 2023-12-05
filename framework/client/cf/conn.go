@@ -17,7 +17,6 @@ import (
 	"github.com/stratosnet/sds/metrics"
 	"github.com/stratosnet/sds/msg"
 	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/utils/cmem"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/encryption"
 	"github.com/stratosnet/sds/utils/types"
@@ -66,6 +65,7 @@ type options struct {
 	logOpen    bool
 	minAppVer  uint16
 	p2pAddress string
+	serverIp   net.IP
 	serverPort uint16
 	contextkv  []ContextKV
 }
@@ -75,7 +75,7 @@ type ClientOption func(*options)
 
 type WriteHook struct {
 	MessageId uint8
-	Fn        func(packetId, costTime int64)
+	Fn        core.WriteHookFunc
 }
 
 type ClientConn struct {
@@ -156,6 +156,13 @@ func LogOpenOption(b bool) ClientOption {
 func P2pAddressOption(p2pAddress string) ClientOption {
 	return func(o *options) {
 		o.p2pAddress = p2pAddress
+	}
+}
+
+// ServerIpOption sets the IP used by the server conn when establishing the handshake
+func ServerIpOption(serverIp net.IP) ClientOption {
+	return func(o *options) {
+		o.serverIp = serverIp
 	}
 }
 
@@ -296,13 +303,14 @@ func (cc *ClientConn) handshake() error {
 	// Create a channel to receive tmp key from handshake connection
 	handshakeChan := make(chan []byte)
 	channelId := rand.Uint32()
-	core.HandshakeChanMap.Store(strconv.FormatUint(uint64(channelId), 10), handshakeChan)
+	channelIdString := strconv.FormatUint(uint64(channelId), 10)
+	core.HandshakeChanMap.Store(channelIdString, handshakeChan)
 	defer func() {
-		core.HandshakeChanMap.Delete(cc.GetRemoteAddr())
+		core.HandshakeChanMap.Delete(channelIdString)
 	}()
 
 	// Write the connection type as first message
-	firstMessage := core.CreateFirstMessage(core.ConnTypeClient, cc.opts.serverPort, channelId)
+	firstMessage := core.CreateFirstMessage(core.ConnTypeClient, cc.opts.serverIp, cc.opts.serverPort, channelId)
 	if err := core.WriteFull(cc.spbConn, firstMessage); err != nil {
 		return err
 	}
@@ -644,7 +652,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			return
 		default:
 			recvStart := time.Now().UnixMilli()
-			_ = spbConn.SetDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
+			_ = spbConn.SetReadDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
 			if listenHeader {
 				// listen to the header
 				headerBytes, n, err = core.Unpack(spbConn, key, utils.MessageBeatLen)
@@ -694,7 +702,6 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 					if int(secondPartLen)-i < 1024 {
 						onereadlen = int(secondPartLen) - i
 					}
-					_ = spbConn.SetDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
 					n, err = io.ReadFull(spbConn, msgBuf[pos:pos+onereadlen])
 					pos += n
 					cc.secondReadFlowA = cc.secondReadAtomA.AddAndGetNew(int64(n))
@@ -759,7 +766,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 						}
 						msgH.Len = 0
 						i = 0
-						msgBuf = nil
+						listenHeader = true
 						continue
 					}
 					handlerCh <- MsgHandler{*message, handler, recvStart}
@@ -829,7 +836,13 @@ func (cc *ClientConn) writePacket(m *msg.RelayMsgBuf) error {
 		MSGSign:  m.MSGSign,
 		PacketId: m.PacketId,
 	}
+
 	packet.PutIntoBuffer(m)
+	defer packet.ReleaseAlloc()
+
+	if len(m.MSGData) > 0 {
+		defer utils.ReleaseBuffer(m.MSGData)
+	}
 	cmd := packet.MSGHead.Cmd
 
 	var key []byte
@@ -845,7 +858,7 @@ func (cc *ClientConn) writePacket(m *msg.RelayMsgBuf) error {
 	if err != nil {
 		return errors.Wrap(err, "server cannot encrypt header")
 	}
-	_ = cc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
+	_ = cc.spbConn.SetWriteDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
 	if err = core.WriteFull(cc.spbConn, encodedHeader); err != nil {
 		return errors.Wrap(err, "client write err")
 	}
@@ -858,19 +871,14 @@ func (cc *ClientConn) writePacket(m *msg.RelayMsgBuf) error {
 	}
 	writeStart := time.Now()
 	for i := 0; i < len(encodedData); i = i + n {
-		// Mylog(cc.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
 		if len(encodedData)-i < 1024 {
 			onereadlen = len(encodedData) - i
-			// Mylog(cc.opts.logOpen,"onereadlen:", onereadlen)
 		}
-		_ = cc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
 		n, err = cc.spbConn.Write(encodedData[i : i+onereadlen])
-		cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(n))
-		// Mylog(cc.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
-		// Mylog(cc.opts.logOpen,"i+onereadlen:", i+onereadlen)
 		if err != nil {
-			return errors.Wrap(err, "client write err")
+			break
 		}
+		cc.secondWriteFlowA = cc.secondWriteAtomA.AddAndGetNew(int64(n))
 		if cmd == header.ReqUploadFileSlice.Id {
 			if maxUploadRate > 0 {
 				lr.SetRate(maxUploadRate)
@@ -882,13 +890,10 @@ func (cc *ClientConn) writePacket(m *msg.RelayMsgBuf) error {
 	costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
 	for _, c := range cc.writeHook {
 		if cmd == c.MessageId && c.Fn != nil {
-			c.Fn(packet.PacketId, costTime)
+			c.Fn(cc.ctx, packet.PacketId, costTime, cc)
 		}
 	}
-	cmem.Free(packet.Alloc)
-	if len(m.MSGData) > 0 {
-		utils.ReleaseBuffer(m.MSGData)
-	}
+
 	return nil
 }
 

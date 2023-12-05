@@ -16,7 +16,6 @@ import (
 	"github.com/stratosnet/sds/msg/header"
 	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/cmem"
 	"github.com/stratosnet/sds/utils/crypto/ed25519"
 	"github.com/stratosnet/sds/utils/encryption"
 	"github.com/stratosnet/sds/utils/types"
@@ -37,7 +36,7 @@ type WriteCloser interface {
 
 type WriteHook struct {
 	MessageId uint8
-	Fn        func(packetId, costTime int64)
+	Fn        WriteHookFunc
 }
 
 var (
@@ -60,9 +59,10 @@ type ServerConn struct {
 	name  string
 	heart int64
 
-	minAppVer        uint16
-	sharedKey        []byte // ECDH shared key derived during handshake
-	remoteP2pAddress string
+	minAppVer            uint16
+	sharedKey            []byte // ECDH shared key derived during handshake
+	remoteP2pAddress     string
+	remoteNetworkAddress string // Actual network address of the remote node
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -132,10 +132,20 @@ func (sc *ServerConn) GetLocalAddr() string {
 	return sc.spbConn.LocalAddr().String()
 }
 
+// GetRemoteAddr returns the address from which the connection is directly coming from. In a VM with port forwarding, this might be the address of the host machine
 func (sc *ServerConn) GetRemoteAddr() string {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
 	return sc.spbConn.RemoteAddr().String()
+}
+
+// GetRemoteNetworkAddress returns the actual remote network address, as advertised by the remote node itself
+func (sc *ServerConn) GetRemoteNetworkAddress() string {
+	return sc.remoteNetworkAddress
+}
+
+func (sc *ServerConn) SetRemoteNetworkAddress(networkAddress string) {
+	sc.remoteNetworkAddress = networkAddress
 }
 
 func (sc *ServerConn) GetLocalP2pAddress() string {
@@ -164,18 +174,15 @@ func (sc *ServerConn) handshake() (error, bool) {
 	if _, err := io.ReadFull(sc.spbConn, buffer); err != nil {
 		return err, false
 	}
-	connType, serverPort, channelId, err := ParseFirstMessage(buffer)
+	connType, serverIP, serverPort, channelId, err := ParseFirstMessage(buffer)
 	if err != nil {
 		return err, false
 	}
 
 	switch connType {
 	case ConnTypeClient:
-		host, _, err := net.SplitHostPort(sc.GetRemoteAddr())
-		if err != nil {
-			return err, false
-		}
-		remoteServer := host + ":" + strconv.FormatUint(uint64(serverPort), 10)
+		remoteServer := serverIP.String() + ":" + strconv.FormatUint(uint64(serverPort), 10)
+		sc.remoteNetworkAddress = remoteServer
 
 		// Open a new tcp connection to the remote addr from current conn
 		handshakeAddr, err := net.ResolveTCPAddr("tcp4", remoteServer)
@@ -193,7 +200,7 @@ func (sc *ServerConn) handshake() (error, bool) {
 		}
 
 		// Write the connection type as first message
-		firstMessage := CreateFirstMessage(ConnTypeHandshake, 0, channelId)
+		firstMessage := CreateFirstMessage(ConnTypeHandshake, nil, 0, channelId)
 		if err = WriteFull(handshakeConn, firstMessage); err != nil {
 			return err, false
 		}
@@ -459,7 +466,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 			return
 		default:
 			recvStart := time.Now().UnixMilli()
-			_ = spbConn.SetDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
+			_ = spbConn.SetReadDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
 			if listenHeader {
 				// listen to the header
 				headerBytes, n, err = Unpack(spbConn, key, utils.MessageBeatLen)
@@ -497,7 +504,6 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					if int(secondPartLen)-i < 1024 {
 						onereadlen = int(secondPartLen) - i
 					}
-					_ = spbConn.SetDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
 					n, err = io.ReadFull(spbConn, msgBuf[pos:pos+onereadlen])
 					pos += n
 					sc.increaseReadFlow(n)
@@ -551,7 +557,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 						}
 						msgH.Len = 0
 						i = 0
-						msgBuf = nil
+						listenHeader = true
 						continue
 					}
 					if msgType := header.GetMsgTypeFromId(msgH.Cmd); msgType != nil {
@@ -647,11 +653,13 @@ func (sc *ServerConn) writePacket(m *message.RelayMsgBuf) error {
 		PacketId: m.PacketId,
 	}
 	packet.PutIntoBuffer(m)
-	cmd := packet.MSGHead.Cmd
+	defer packet.ReleaseAlloc()
+
 	if len(m.MSGData) > 0 {
 		defer utils.ReleaseBuffer(m.MSGData)
 	}
 
+	cmd := packet.MSGHead.Cmd
 	// pack the header
 	if sc.encryptMessage {
 		key = sc.sharedKey
@@ -663,7 +671,7 @@ func (sc *ServerConn) writePacket(m *message.RelayMsgBuf) error {
 		return errors.Wrap(err, "server cannot encrypt header")
 	}
 
-	_ = sc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
+	_ = sc.spbConn.SetWriteDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
 	if err = WriteFull(sc.spbConn, encodedHeader); err != nil {
 		return errors.Wrap(err, "server write err")
 	}
@@ -677,31 +685,23 @@ func (sc *ServerConn) writePacket(m *message.RelayMsgBuf) error {
 
 	writeStart := time.Now()
 	for i := 0; i < len(encodedData); i = i + n {
-		// Mylog(s.opts.logOpen,"len(msgBuf[0:msgH.Len]):", i)
 		if len(encodedData)-i < 1024 {
 			onereadlen = len(encodedData) - i
-			// Mylog(s.opts.logOpen,"onereadlen:", onereadlen)
 		}
-		_ = sc.spbConn.SetDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
 		n, err = sc.spbConn.Write(encodedData[i : i+onereadlen])
-		// Mylog(s.opts.logOpen,"server n = ", msgBuf[0:msgH.Len])
-		// Mylog(s.opts.logOpen,"i+onereadlen:", i+onereadlen)
-		sc.increaseWriteFlow(n)
 		if err != nil {
-			return errors.Wrap(err, "server write err")
-		} /*else {
-			Mylog(s.opts.logOpen,"i", i)
-		}*/
+			break
+		}
+		sc.increaseWriteFlow(n)
 	}
 	writeEnd := time.Now()
 	costTime := writeEnd.Sub(writeStart).Milliseconds() + 1 // +1 in case of LT 1 ms
 
 	for _, c := range sc.writeHook {
 		if cmd == c.MessageId && c.Fn != nil {
-			c.Fn(packet.PacketId, costTime)
+			c.Fn(sc.ctx, packet.PacketId, costTime, sc)
 		}
 	}
-	cmem.Free(packet.Alloc)
 	return nil
 }
 

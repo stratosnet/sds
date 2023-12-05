@@ -432,7 +432,7 @@ func (api *terminalCmd) Upload(ctx context.Context, param []string) (CmdResult, 
 		desiredTier = uint32(tier)
 	}
 
-	allowHigherTier := false
+	allowHigherTier := true
 	if len(param) > 3 {
 		allowHigherTierBool, err := strconv.ParseBool(param[3])
 		if err != nil {
@@ -442,9 +442,8 @@ func (api *terminalCmd) Upload(ctx context.Context, param []string) (CmdResult, 
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
-	nowSec := time.Now().Unix()
 	event.RequestUploadFile(ctx, pathStr, isEncrypted, false, desiredTier, allowHigherTier,
-		setting.WalletAddress, setting.WalletPublicKey, nil, nowSec)
+		setting.WalletAddress, setting.WalletPublicKey, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -474,7 +473,7 @@ func (api *terminalCmd) UploadStream(ctx context.Context, param []string) (CmdRe
 		desiredTier = uint32(tier)
 	}
 
-	allowHigherTier := false
+	allowHigherTier := true
 	if len(param) > 2 {
 		allowHigherTierBool, err := strconv.ParseBool(param[2])
 		if err != nil {
@@ -485,9 +484,8 @@ func (api *terminalCmd) UploadStream(ctx context.Context, param []string) (CmdRe
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
 	ctx = core.RegisterRemoteReqId(ctx, uuid.New().String())
-	nowSec := time.Now().Unix()
 	event.RequestUploadFile(ctx, pathStr, false, true, desiredTier, allowHigherTier,
-		setting.WalletAddress, setting.WalletPublicKey, nil, nowSec)
+		setting.WalletAddress, setting.WalletPublicKey, nil)
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
@@ -583,6 +581,11 @@ func (api *terminalCmd) Download(ctx context.Context, param []string) (CmdResult
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
 	core.RegisterReqId(ctx, task.LOCAL_REQID)
 	nowSec := time.Now().Unix()
+	if task.CheckDownloadTask(fileHash, setting.WalletAddress, task.LOCAL_REQID) {
+		return CmdResult{Msg: ""}, errors.New("* This file is being downloaded, please wait and try later")
+	}
+
+	file.StartLocalDownload(fileHash)
 	req := requests.ReqFileStorageInfoData(ctx, param[0], "", saveAs, setting.WalletAddress, setting.WalletPublicKey, nil, nil, nowSec)
 	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, task.LOCAL_REQID, req); err != nil {
 		return CmdResult{Msg: ""}, err
