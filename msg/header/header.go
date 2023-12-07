@@ -147,6 +147,10 @@ const (
 	MSG_ID_NOTICE_SP_UNDERMAINTENANCE
 	MSG_ID_REQ_CLEAR_EXPIRED_SHARE_LINKS
 	MSG_ID_RSP_CLEAR_EXPIRED_SHARE_LINKS
+
+	MSG_ID_REQ_MESSAGE_FORWARD
+	MSG_ID_RSP_MESSAGE_FORWARE
+
 	NUMBER_MESSAGE_TYPES
 )
 
@@ -282,6 +286,9 @@ var (
 
 	ReqClearExpiredShareLinks MsgType
 	RspClearExpiredShareLinks MsgType
+
+	ReqMessageForward MsgType
+	RspMessageForward MsgType
 
 	registeredMessages [NUMBER_MESSAGE_TYPES]*MsgType
 )
@@ -435,6 +442,9 @@ func init() {
 
 	registerOneMessageType(&ReqClearExpiredShareLinks, MSG_ID_REQ_CLEAR_EXPIRED_SHARE_LINKS, "ReqCESL")
 	registerOneMessageType(&RspClearExpiredShareLinks, MSG_ID_RSP_CLEAR_EXPIRED_SHARE_LINKS, "RspCESL")
+
+	registerOneMessageType(&ReqMessageForward, MSG_ID_REQ_MESSAGE_FORWARD, "ReqMF")
+	registerOneMessageType(&RspMessageForward, MSG_ID_RSP_MESSAGE_FORWARE, "RspMF")
 }
 
 func GetMsgTypeFromId(id uint8) *MsgType {

@@ -78,7 +78,11 @@ func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb p
 		},
 	}
 
+	// the type of request message is part of ReqId. If a message is to be wrapped into a 'message forward' message,
+	// the type of embedded request message is used for the ReqId.
+	cmdReqId := cmd
 	switch cmd.Id {
+	// data carried by four types of msg is specially handled
 	case header.MSG_ID_REQ_UPLOAD_FILESLICE:
 		msgBuf.MSGData = pb.(*protos.ReqUploadFileSlice).Data
 		pb.(*protos.ReqUploadFileSlice).Data = nil
@@ -91,17 +95,55 @@ func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb p
 	case header.MSG_ID_RSP_TRANSFER_DOWNLOAD:
 		msgBuf.MSGData = pb.(*protos.RspTransferDownload).Data
 		pb.(*protos.RspTransferDownload).Data = nil
+
+	// wrap ReqMessageForward around the five forward-able msg types
+	case header.MSG_ID_REQ_UPLOAD_SLICES_WRONG,
+		header.MSG_ID_REQ_TRANSFER_DOWNLOAD_WRONG,
+		header.MSG_ID_REQ_REPORT_UPLOAD_SLICE_RESULT,
+		header.MSG_ID_REQ_REPORT_DOWNLOAD_RESULT,
+		header.MSG_ID_REQ_REPORT_BACKUP_SLICE_RESULT:
+		body, err := proto.Marshal(pb)
+		if err != nil {
+			pp.ErrorLog(ctx, "error decoding")
+			return errors.New("error decoding")
+		}
+
+		var dstp2p string
+		switch cmd.Id {
+		case header.MSG_ID_REQ_UPLOAD_SLICES_WRONG:
+			dstp2p = pb.(*protos.ReqUploadSlicesWrong).SpP2PAddress
+			cmdReqId = header.ReqUploadSlicesWrong
+		case header.MSG_ID_REQ_TRANSFER_DOWNLOAD_WRONG:
+			dstp2p = pb.(*protos.ReqTransferDownloadWrong).SpP2PAddress
+			cmdReqId = header.ReqTransferDownloadWrong
+		case header.MSG_ID_REQ_REPORT_UPLOAD_SLICE_RESULT:
+			dstp2p = pb.(*protos.ReportUploadSliceResult).SpP2PAddress
+			cmdReqId = header.ReqReportUploadSliceResult
+		case header.MSG_ID_REQ_REPORT_DOWNLOAD_RESULT:
+			dstp2p = pb.(*protos.ReqReportDownloadResult).SpP2PAddress
+			cmdReqId = header.ReqReportDownloadResult
+		case header.MSG_ID_REQ_REPORT_BACKUP_SLICE_RESULT:
+			dstp2p = pb.(*protos.ReqReportBackupSliceResult).SpP2PAddress
+			cmdReqId = header.ReqReportBackupSliceResult
+		}
+		pb = &protos.ReqMessageForward{
+			CmdType:   uint32(cmd.Id),
+			DestP2P:   dstp2p,
+			SourceP2P: setting.Config.Keys.P2PAddress,
+			Msg:       body,
+		}
+		cmd = header.ReqMessageForward
 	}
 
-	if strings.HasPrefix(cmd.Name, "Req") {
+	if strings.HasPrefix(cmdReqId.Name, "Req") {
 		reqId := core.GetReqIdFromContext(ctx)
 		if reqId == 0 {
-			reqId = core.GenerateNewReqId(cmd.Id)
+			reqId = core.GenerateNewReqId(cmdReqId.Id)
 			core.InheritRpcLoggerFromParentReqId(ctx, reqId)
 			core.InheritRemoteReqIdFromParentReqId(ctx, reqId)
 		}
 		msgBuf.MSGHead.ReqId = reqId
-		p.StoreRequestInfo(reqId, cmd.Id)
+		p.StoreRequestInfo(reqId, cmdReqId.Id)
 	}
 
 	body, err := proto.Marshal(pb)

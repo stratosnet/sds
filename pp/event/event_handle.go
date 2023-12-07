@@ -64,6 +64,7 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspSpLatencyCheck, RspSpLatencyCheck, SpRspVerifier)
 	registerEvent(header.RspDeleteFile, RspDeleteFile, SpRspVerifier)
 	registerEvent(header.RspClearExpiredShareLinks, RspClearExpiredShareLinks, SpRspVerifier)
+	registerEvent(header.RspMessageForward, RspMessageForward, nil)
 
 	// not_pp---sp--(*rsp*)--pp
 	registerEvent(header.NoticeActivatedPP, NoticeActivatedPP, SpAddressVerifier)

@@ -785,3 +785,16 @@ func (sc *ServerConn) increaseReadFlow(n int) {
 		sc.belong.volRecOpts.inbound = sc.belong.volRecOpts.inboundAtomic.AddAndGetNew(int64(n))
 	}
 }
+
+var _ WriteCloser = &LocalChan{}
+
+type LocalChan struct {
+}
+
+func (c *LocalChan) Write(msg *message.RelayMsgBuf, ctx context.Context) error {
+	ch := ctx.Value("MSG_WRAP_CHAN")
+	ch.(chan *message.RelayMsgBuf) <- msg
+	return nil
+}
+func (c *LocalChan) Close() {
+}
