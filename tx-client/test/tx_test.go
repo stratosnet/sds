@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stretchr/testify/require"
 
 	txv1beta1 "cosmossdk.io/api/cosmos/tx/v1beta1"
@@ -46,8 +47,8 @@ func testSend(t *testing.T) {
 	receiverKey, err := secp256k1.GenerateKey()
 	require.NoError(t, err)
 
-	senderAddr := senderKey.PubKey().Address().Bytes()
-	receiverAddr := receiverKey.PubKey().Address().Bytes()
+	senderAddr := fwtypes.WalletAddress(senderKey.PubKey().Address())
+	receiverAddr := fwtypes.WalletAddress(receiverKey.PubKey().Address())
 
 	msg := tx.BuildSendMsg(senderAddr, receiverAddr, amount)
 	signatureKeys := []*txclienttypes.SignatureKey{
@@ -77,9 +78,9 @@ func testCreateResourceNode(t *testing.T) {
 		Denom:  txclienttypes.Wei,
 		Amount: sdkmath.NewInt(5e18),
 	}
-	senderAddr := senderKey.PubKey().Address()
+	senderAddr := fwtypes.WalletAddress(senderKey.PubKey().Address())
 
-	msg, err := tx.BuildCreateResourceNodeMsg(txclienttypes.STORAGE, p2pKey.PubKey(), depositAmt, senderAddr.Bytes())
+	msg, err := tx.BuildCreateResourceNodeMsg(txclienttypes.STORAGE, p2pKey.PubKey(), depositAmt, senderAddr)
 	require.NoError(t, err)
 	signatureKeys := []*txclienttypes.SignatureKey{
 		{Address: senderAddrBech32, PrivateKey: senderKey.Bytes(), Type: txclienttypes.SignatureSecp256k1},
