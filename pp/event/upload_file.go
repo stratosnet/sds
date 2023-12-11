@@ -42,15 +42,6 @@ func RequestUploadFile(ctx context.Context, path string, isEncrypted, isVideoStr
 		return
 	}
 
-	var fileHash string
-	if isVideoStream {
-		fileHash = file.GetFileHashForVideoStream(path, "")
-	} else {
-		fileHash = file.GetFileHash(path, "")
-	}
-
-	metrics.UploadPerformanceLogNow(fileHash + ":RCV_CMD_START:")
-
 	isFile, err := file.IsFile(path)
 	if err != nil {
 		pp.ErrorLog(ctx, err)
@@ -503,6 +494,8 @@ func (UploadRawFileHandler) PreUpload(ctx context.Context, filePath, encryptionT
 	fileHash := file.GetFileHash(filePath, encryptionTag)
 	sliceSize := uint64(setting.DefaultSliceBlockSize)
 	sliceCount := uint64(math.Ceil(float64(info.Size()) / float64(sliceSize)))
+
+	metrics.UploadPerformanceLogNow(fileHash + ":RCV_CMD_START:")
 
 	var slices []*protos.SliceHashAddr
 	for sliceNumber := uint64(1); sliceNumber <= sliceCount; sliceNumber++ {
