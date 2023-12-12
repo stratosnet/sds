@@ -85,7 +85,7 @@ func ReqBackupStatus(ctx context.Context, fileHash string) {
 
 // RspUploadFile response of upload file event, SP -> upgrader, upgrader -> dest PP
 func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
-	pp.DebugLog(ctx, "get RspUploadFile")
+	pp.DebugLog(ctx, "get rspUploadFile")
 	target := &protos.RspUploadFile{}
 	if err := VerifyMessage(ctx, header.RspUploadFile, target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
@@ -128,7 +128,12 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 	task.UploadTaskIdMap.Store(target.FileHash, target.TaskId)
 
 	if len(target.Slices) != 0 {
-		go startUploadTask(ctx, target)
+		// create the upload file task
+		uploadTask := task.CreateUploadFileTask(target, uploadTaskHelper)
+		p2pserver.GetP2pServer(ctx).CleanUpConnMap(target.FileHash)
+		task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
+
+		go startUploadTask(ctx, target.FileHash, uploadTask)
 	} else {
 		pp.Log(ctx, "file upload successful！  fileHash", target.FileHash)
 		//var p float32 = 100
@@ -198,10 +203,9 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 	for _, slice := range target.Slices {
 		totalSize += int64(slice.GetSliceSize())
 	}
-	uploadTask := task.CreateBackupFileTask(target)
+	uploadTask := task.CreateBackupFileTask(target, uploadTaskHelper)
 	p2pserver.GetP2pServer(ctx).CleanUpConnMap("upload#" + target.FileHash)
 	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
-
 	p := &task.UploadProgress{
 		Total:     totalSize,
 		HasUpload: 0,
@@ -209,121 +213,57 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 	task.UploadProgressMap.Store(target.FileHash, p)
 
 	// Start uploading
-	startUploadingFileSlices(ctx, target.FileHash)
+	startUploadTask(ctx, target.FileHash, uploadTask)
 }
 
-func startUploadTask(ctx context.Context, target *protos.RspUploadFile) {
-	// Create upload task
-	uploadTask := task.CreateUploadFileTask(target)
-
-	p2pserver.GetP2pServer(ctx).CleanUpConnMap(target.FileHash)
-	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
-
-	// Start uploading
-	startUploadingFileSlices(ctx, target.FileHash)
+func startUploadTask(ctx context.Context, fileHash string, uploadTask *task.UploadFileTask) {
+	uploadTaskHelper(ctx, fileHash)
+	uploadTask.SetScheduledJob(func() { uploadTaskHelper(ctx, fileHash) })
 }
 
-func startUploadingFileSlices(ctx context.Context, fileHash string) {
+func uploadTaskHelper(ctx context.Context, fileHash string) {
+	err := uploadTaskHandler(ctx, fileHash)
+	if errors.Is(err, task.UploadErrMaxRetries) || errors.Is(err, task.UploadFinished) || errors.Is(err, task.UploadErrFatalError) {
+		task.StopRepeatedUploadTaskJob(fileHash)
+		task.UploadFileTaskMap.Delete(fileHash)
+		return
+	}
+}
+
+func uploadTaskHandler(ctx context.Context, fileHash string) error {
 	value, ok := task.UploadFileTaskMap.Load(fileHash)
 	if !ok {
-		pp.ErrorLogf(ctx, "File upload task cannot be found for file %v", fileHash)
-		return
+		utils.DebugLog("upload task for file", fileHash, "failed, can't find the task data")
+		return task.UploadErrNoUploadTask
 	}
-	fileTask := value.(*task.UploadFileTask)
+	uploadTask := value.(*task.UploadFileTask)
 
-	// Send signals to start slice uploads
-	fileTask.SignalNewDestinations()
-
-	err := waitForUploadFinished(ctx, fileTask)
-	if err != nil {
-		pp.ErrorLog(ctx, "File upload task will be cancelled: ", utils.FormatError(err))
-		return
-	}
-
-	task.UploadFileTaskMap.Delete(fileHash)
-}
-
-func waitForUploadFinished(ctx context.Context, uploadTask *task.UploadFileTask) error {
-	for {
-		// Wait until a new destination can be uploaded to, or until some time has passed
-		select {
-		case keepGoing, ok := <-uploadTask.UpChan:
-			if !ok {
-				return nil
-			}
-			if !keepGoing {
-				continue
-			}
-		case <-time.After(task.UPLOAD_TIMER_INTERVAL * time.Second):
-		}
-
-		if uploadTask.IsFinished() {
-			return nil
-		}
-
-		if err := uploadTask.IsFatal(); err != nil {
-			utils.DebugLog("Fatal error")
-			return err
-		}
-
-		// Report slice failures to SP to get assigned new slice destinations
-		slicesToReDownload, failedSlices := uploadTask.SliceFailuresToReport()
-		if len(slicesToReDownload) > 0 {
+	if time.Since(uploadTask.GetLastTouch()) > task.UPLOAD_WAIT_TIMEOUT*time.Second {
+		slicesToReUpload, failedSlices := uploadTask.SliceFailuresToReport()
+		if len(slicesToReUpload) > 0 {
+			uploadTask.Touch()
 			if !uploadTask.CanRetry() {
-				return errors.New("max upload retry count reached")
+				utils.DebugLog("upload task for file", fileHash, "failed, retried too many times.")
+				return task.UploadErrMaxRetries
 			}
-			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqUploadSlicesWrong(ctx, uploadTask, uploadTask.RspUploadFile.SpP2PAddress, slicesToReDownload, failedSlices), header.ReqUploadSlicesWrong)
-		}
-
-		// Start uploading to next destination
-		nextDestination := uploadTask.NextDestination()
-		if nextDestination != nil {
-			go uploadSlicesToDestination(ctx, uploadTask, nextDestination)
+			utils.DebugLog("request upload retry", len(slicesToReUpload), "slices")
+			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqUploadSlicesWrong(ctx, uploadTask, slicesToReUpload, failedSlices), header.ReqUploadSlicesWrong)
 		}
 	}
-}
 
-func uploadSlicesToDestination(ctx context.Context, uploadTask *task.UploadFileTask, destination *task.SlicesPerDestination) {
-	defer func() {
-		uploadTask.UpChan <- true
-	}()
-	for _, slice := range destination.Slices {
-		if uploadTask.FatalError != nil {
-			return
-		}
-
-		var uploadSliceTask *task.UploadSliceTask
-		var err error
-		switch uploadTask.Type {
-		case protos.UploadType_NEW_UPLOAD:
-			uploadSliceTask, err = task.CreateUploadSliceTask(ctx, slice, uploadTask)
-			if err != nil {
-				slice.SetError(err, true, uploadTask)
-				return
-			}
-			pp.DebugLogf(ctx, "starting to upload slice %v for file %v", slice.Slice.SliceNumber, uploadTask.RspUploadFile.FileHash)
-			err = UploadFileSlice(ctx, uploadSliceTask)
-			if err != nil {
-				utils.ErrorLogf("Error uploading slice %v: %v", uploadSliceTask.SliceHash, err.Error())
-				slice.SetError(err, false, uploadTask)
-				return
-			}
-		case protos.UploadType_BACKUP:
-			uploadSliceTask, err = task.GetReuploadSliceTask(ctx, slice, destination.PpInfo, uploadTask)
-			if err != nil {
-				slice.SetError(err, true, uploadTask)
-				return
-			}
-			pp.DebugLogf(ctx, "starting to backup slice %v for file %v", slice.Slice.SliceNumber, uploadTask.RspUploadFile.FileHash)
-			err = BackupFileSlice(ctx, uploadSliceTask)
-			if err != nil {
-				slice.SetError(err, false, uploadTask)
-				return
-			}
-		}
-
-		slice.SetStatus(task.SLICE_STATUS_FINISHED, uploadTask)
+	if uploadTask.IsFinished() {
+		utils.DebugLog("upload task for file", fileHash, "finished")
+		return task.UploadFinished
 	}
+
+	if err := uploadTask.IsFatal(); err != nil {
+		utils.DebugLog("upload task for file", fileHash, "failed", err.Error())
+		return task.UploadErrFatalError
+	}
+
+	// Start uploading to next destination
+	uploadTask.UploadToDestination(ctx, UploadFileSlice)
+	return nil
 }
 
 func UploadPause(ctx context.Context, fileHash, reqID string, w http.ResponseWriter) {
