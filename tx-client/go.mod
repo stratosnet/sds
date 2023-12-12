@@ -13,14 +13,14 @@ require (
 	github.com/stratosnet/sds/framework v0.0.0-20231129214657-f955307cd2d7
 	github.com/stratosnet/stratos-chain/api v0.0.0-20231113204325-6de660f174b5
 	github.com/stretchr/testify v1.8.4
-	github.com/tendermint/go-amino v0.16.0
-	google.golang.org/grpc v1.57.0
+	google.golang.org/grpc v1.58.3
 	google.golang.org/protobuf v1.31.0
 )
 
 require (
 	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b // indirect
+	github.com/Nik-U/pbc v0.0.0-20181205041846-3e516ca0c5d6 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/alex023/clock v0.0.0-20191208111215-c265f1b2ab18 // indirect
 	github.com/btcsuite/btcd v0.23.4 // indirect

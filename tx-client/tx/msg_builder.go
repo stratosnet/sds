@@ -142,8 +142,8 @@ func BuildCreateResourceNodeMsg(nodeType txclienttypes.NodeType, p2pPubKey fwcry
 	}, nil
 }
 
-func BuildCreateMetaNodeMsg(p2pPubKey fwcryptotypes.PubKey, depositAmount txclienttypes.Coin, ownerAddress types.WalletAddress,
-) (*registerv1.MsgCreateMetaNode, error) {
+func BuildCreateMetaNodeMsg(p2pPubKey fwcryptotypes.PubKey, depositAmount txclienttypes.Coin,
+	ownerAddress types.WalletAddress, beneficiaryAddress types.WalletAddress) (*registerv1.MsgCreateMetaNode, error) {
 
 	p2pAddress := types.P2PAddress(p2pPubKey.Address())
 
@@ -160,7 +160,8 @@ func BuildCreateMetaNodeMsg(p2pPubKey fwcryptotypes.PubKey, depositAmount txclie
 			Denom:  depositAmount.Denom,
 			Amount: depositAmount.Amount.String(),
 		},
-		OwnerAddress: ownerAddress.String(),
+		OwnerAddress:       ownerAddress.String(),
+		BeneficiaryAddress: beneficiaryAddress.String(),
 		Description: &registerv1.Description{
 			Moniker: p2pAddress.String(),
 		},
