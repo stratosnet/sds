@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	Version       = "v0.11.6"
-	AppVersion    = 11
-	MinAppVersion = 11
+	Version       = "v0.12.0"
+	AppVersion    = 12
+	MinAppVersion = 12
 
 	HDPath        = "m/44'/606'/0'/0/0"
 	P2pServerType = "tcp4"
