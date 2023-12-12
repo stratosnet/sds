@@ -67,7 +67,27 @@ type SharedFileInfo struct {
 	OwnerAddress string
 }
 
+func PrepareVideoFileCache(w http.ResponseWriter, req *http.Request) {
+	walletAddress := req.Header.Get("Wallet-Address")
+	pubKey := req.Header.Get("Public-Key")
+	signature := req.Header.Get("Signature")
+	if walletAddress == "" || pubKey == "" || signature == "" {
+		_, _ = w.Write(httpserv.NewErrorJson(http.StatusBadRequest, "Cannot find wallet address in request header").ToBytes())
+		return
+	}
+	sig := rpctypes.Signature{
+		Address:   walletAddress,
+		Pubkey:    pubKey,
+		Signature: signature,
+	}
+	streamVideoInfoCacheHelper(w, req, &sig)
+}
+
 func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
+	streamVideoInfoCacheHelper(w, req, nil)
+}
+
+func streamVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, walletSign *rpctypes.Signature) {
 	ctx := req.Context()
 	ownerWalletAddress, fileHash, err := parseFilePath(req.RequestURI)
 	if err != nil {
@@ -93,7 +113,7 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 		Hash:  fileHash,
 	}.String()
 
-	r := reqDownloadMsg(fileHash, sdmPath, sn)
+	r := reqDownloadMsg(fileHash, sdmPath, sn, walletSign)
 	res := namespace.RpcPubApi().RequestVideoDownload(ctx, r)
 
 	if res.Return != rpctypes.DOWNLOAD_OK {
@@ -183,7 +203,7 @@ func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 		Hash:  fileHash,
 	}.String()
 
-	r := reqDownloadMsg(fileHash, sdmPath, sn)
+	r := reqDownloadMsg(fileHash, sdmPath, sn, nil)
 	res := namespace.RpcPubApi().RequestVideoDownload(ctx, r)
 
 	if res.Return != rpctypes.DOWNLOAD_OK {
@@ -203,7 +223,15 @@ func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 	_, _ = w.Write(ret)
 }
 
+func GetVideoSliceCache(w http.ResponseWriter, req *http.Request) {
+	streamVideoP2PHelper(w, req)
+}
+
 func streamVideoP2P(w http.ResponseWriter, req *http.Request) {
+	streamVideoP2PHelper(w, req)
+}
+
+func streamVideoP2PHelper(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	sliceHash := parseSliceHash(req.URL)
 
@@ -566,19 +594,21 @@ func getSliceInfoBySliceNumber(fInfo *protos.RspFileStorageInfo, sliceNumber uin
 	return nil
 }
 
-func reqDownloadMsg(hash, sdmPath, sn string) rpctypes.ParamReqDownloadFile {
+func reqDownloadMsg(hash, sdmPath, sn string, walletSign *rpctypes.Signature) rpctypes.ParamReqDownloadFile {
 	// param
 	nowSec := time.Now().Unix()
 	sign, _ := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetFileDownloadWalletSignMessage(hash, setting.WalletAddress, sn, nowSec)))
 	walletPublicKey, _ := utiltypes.BytesToAccPubKey(setting.WalletPublicKey).ToBech()
-	walletSign := rpctypes.Signature{
-		Address:   setting.WalletAddress,
-		Pubkey:    walletPublicKey,
-		Signature: hex.EncodeToString(sign),
+	if walletSign == nil {
+		walletSign = &rpctypes.Signature{
+			Address:   setting.WalletAddress,
+			Pubkey:    walletPublicKey,
+			Signature: hex.EncodeToString(sign),
+		}
 	}
 	return rpctypes.ParamReqDownloadFile{
 		FileHandle: sdmPath,
-		Signature:  walletSign,
+		Signature:  *walletSign,
 		ReqTime:    nowSec,
 	}
 }
