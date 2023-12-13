@@ -138,7 +138,7 @@ func QueryTxByHash(txHash string) (*abciv1beta1.TxResponse, error) {
 	return resp.TxResponse, nil
 }
 
-func QueryVolumeReport(epoch int64) (*potv1.QueryVolumeReportResponse, error) {
+func QueryVolumeReport(epoch *big.Int) (*potv1.QueryVolumeReportResponse, error) {
 	conn, err := CreateGrpcConn()
 	if err != nil {
 		return nil, err
@@ -146,11 +146,38 @@ func QueryVolumeReport(epoch int64) (*potv1.QueryVolumeReportResponse, error) {
 	defer conn.Close()
 	client := potv1.NewQueryClient(conn)
 	ctx := context.Background()
-	req := potv1.QueryVolumeReportRequest{Epoch: epoch}
+	req := potv1.QueryVolumeReportRequest{Epoch: epoch.Int64()}
 
 	resp, err := client.VolumeReport(ctx, &req)
 	if err != nil {
 		return nil, err
 	}
 	return resp, nil
+}
+
+func QueryRemainingOzoneLimit() (*big.Int, error) {
+	conn, err := CreateGrpcConn()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	client := registerv1.NewQueryClient(conn)
+	ctx := context.Background()
+	req := registerv1.QueryRemainingOzoneLimitRequest{}
+	resp, err := client.RemainingOzoneLimit(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.GetOzoneLimit() == "" {
+		return nil, errors.New("remaining ozone limit is nil in the response from stchain")
+	}
+
+	limit, err := strconv.ParseInt(resp.GetOzoneLimit(), 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	return big.NewInt(limit), nil
 }

@@ -141,8 +141,8 @@ github.com/spaolacci/murmur3 v1.1.0 h1:7c1g84S4BPRrfL5Xrdp6fOJ206sU9y293DDHaoy0b
 github.com/spaolacci/murmur3 v1.1.0/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/stratosnet/sds/sds-msg v0.0.0-20231128190750-a3a5ff99118e h1:rQ+S9XZGkV6Ix5St7jGKDyB+Re+qD2qAwYrv8q6zkhY=
 github.com/stratosnet/sds/sds-msg v0.0.0-20231128190750-a3a5ff99118e/go.mod h1:Kka5l0sHUjpWmCnGCZieLs/6hrprDITb0me+oiljBe4=
-github.com/stratosnet/stratos-chain/api v0.0.0-20231113204325-6de660f174b5 h1:QaWftAB4E0BpllB1FQZHqU7oC4JdhHkU0X5pZtKDJds=
-github.com/stratosnet/stratos-chain/api v0.0.0-20231113204325-6de660f174b5/go.mod h1:vkw6I5afI8joLTqywHoauzXlt4yXt/zeCuRFHTsJsd0=
+github.com/stratosnet/stratos-chain/api v0.0.0-20231213144458-496a5e4754ff h1:kl0o0UufsWz5t4VypjaRjVlGyevH4v/AnVLLd59+yrw=
+github.com/stratosnet/stratos-chain/api v0.0.0-20231213144458-496a5e4754ff/go.mod h1:cmd+23oKQApo0M9aooZL3+DY9/XiiXCGOQBOoNa95CM=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
 github.com/stretchr/objx v0.5.0/go.mod h1:Yh+to48EsGEfYuaHDzXPcE3xhTkx73EhmCGUpEOglKo=

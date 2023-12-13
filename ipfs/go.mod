@@ -219,7 +219,7 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stratosnet/sds/tx-client v0.0.0-20231128191210-a8ded32412c4 // indirect
-	github.com/stratosnet/stratos-chain/api v0.0.0-20231113204325-6de660f174b5 // indirect
+	github.com/stratosnet/stratos-chain/api v0.0.0-20231213144458-496a5e4754ff // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/texttheater/golang-levenshtein v0.0.0-20180516184445-d188e65d659e // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect

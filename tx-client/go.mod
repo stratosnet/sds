@@ -11,7 +11,7 @@ require (
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/pkg/errors v0.9.1
 	github.com/stratosnet/sds/framework v0.0.0-20231129214657-f955307cd2d7
-	github.com/stratosnet/stratos-chain/api v0.0.0-20231113204325-6de660f174b5
+	github.com/stratosnet/stratos-chain/api v0.0.0-20231213144458-496a5e4754ff
 	github.com/stretchr/testify v1.8.4
 	google.golang.org/grpc v1.58.3
 	google.golang.org/protobuf v1.31.0
