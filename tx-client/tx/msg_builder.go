@@ -22,7 +22,7 @@ import (
 )
 
 // Stratos-chain 'pot' module
-func BuildVolumeReportMsg(traffic []*txclienttypes.Traffic, reporterAddress, reporterOwnerAddress []byte, epoch uint64,
+func BuildVolumeReportMsg(traffic []*txclienttypes.Traffic, reporterAddress types.P2PAddress, reporterOwnerAddress types.WalletAddress, epoch uint64,
 	reportReference string, blsTxDataHash, blsSignature []byte, blsPubKeys [][]byte) (*potv1.MsgVolumeReport, []byte, error) {
 
 	aggregatedVolume := make(map[string]uint64)
