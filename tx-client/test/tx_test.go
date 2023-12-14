@@ -7,7 +7,6 @@ import (
 
 	"github.com/cosmos/cosmos-proto/anyutil"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
 
 	txv1beta1 "cosmossdk.io/api/cosmos/tx/v1beta1"
 	sdkmath "cosmossdk.io/math"
@@ -100,18 +99,6 @@ func TestTxBroadcast(t *testing.T) {
 
 }
 
-func getBLSSignBytes(msg *potv1.MsgVolumeReport) ([]byte, error) {
-	newMsg := potv1.MsgVolumeReport{
-		WalletVolumes:   msg.GetWalletVolumes(),
-		Reporter:        msg.GetReporter(),
-		Epoch:           msg.GetEpoch(),
-		ReportReference: msg.GetReportReference(),
-		ReporterOwner:   msg.GetReporterOwner(),
-		BLSSignature:    &potv1.BLSSignatureInfo{},
-	}
-	return proto.Marshal(&newMsg)
-}
-
 func testVolumeReport(t *testing.T, senderKey fwcryptotypes.PrivKey, metaP2PPrivKeys ...*fwed25519.PrivKey) {
 
 	fmt.Println("------------------ TestVolumeReport() start ------------------")
@@ -134,7 +121,7 @@ func testVolumeReport(t *testing.T, senderKey fwcryptotypes.PrivKey, metaP2PPriv
 	require.NoError(t, err)
 
 	// ------------------------ bls sign start ------------------------
-	blsSignBytes, err := getBLSSignBytes(msg)
+	blsSignBytes, err := utils.GetBLSSignBytes(msg)
 	require.NoError(t, err)
 	blsSignBytesHash := crypto.Keccak256(blsSignBytes)
 
