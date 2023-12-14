@@ -176,7 +176,6 @@ func (pubKey *PubKey) Equals(other fwcryptotypes.PubKey) bool {
 }
 
 func PubKeyFromBytes(bz []byte) fwcryptotypes.PubKey {
-	var pubKey []byte
-	copy(pubKey[:], bz)
+	pubKey := bz
 	return &PubKey{Key: pubKey}
 }

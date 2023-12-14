@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cosmos/gogoproto/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
 	"google.golang.org/protobuf/types/known/anypb"
 

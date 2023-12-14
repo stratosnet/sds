@@ -210,7 +210,6 @@ func (pubKey *PubKey) VerifySignature(msg, sig []byte) bool {
 }
 
 func PubKeyFromBytes(bz []byte) fwcryptotypes.PubKey {
-	var pubKey []byte
-	copy(pubKey[:], bz)
+	pubKey := bz
 	return &PubKey{Key: pubKey}
 }
