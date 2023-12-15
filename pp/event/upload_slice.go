@@ -156,11 +156,25 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	timeEntry := time.Now().UnixMicro() - core.TimeRcv
 	pieceSize := target.PieceOffset.SliceOffsetEnd - target.PieceOffset.SliceOffsetStart
 	_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.UploadSpeedOfProgressData(fileHash, pieceSize, (target.SliceNumber-1)*33554432+target.PieceOffset.SliceOffsetStart, timeEntry), header.UploadSpeedOfProgress)
-	if err := task.SaveUploadFile(&target); err != nil {
-		// save failed, not handling yet
-		utils.ErrorLog("SaveUploadFile failed", err.Error())
-		return
+
+	needToSave := true
+	sliceSize, _ := file.GetSliceSize(target.SliceHash)
+	if target.PieceOffset.SliceOffsetStart < uint64(sliceSize) {
+		if target.PieceOffset.SliceOffsetEnd != sliceSizeFromMsg {
+			return
+		}
+		needToSave = false
 	}
+
+	if needToSave {
+		if err := task.SaveUploadFile(&target); err != nil {
+			// failed saving the packet. It is not handled.
+			utils.ErrorLog("SaveUploadFile failed", err.Error())
+			return
+		}
+	}
+
+	// get the size again after saving the packet
 	sliceSize, err := file.GetSliceSize(target.SliceHash)
 	if err != nil {
 		utils.ErrorLog("Failed getting slice size", err.Error())
@@ -201,6 +215,9 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 			utils.DebugLog("storage PP report to SP upload task finished: ", target.SliceHash)
 		} else {
 			utils.ErrorLog("newly stored sliceHash is not equal to target sliceHash!")
+			if err = file.DeleteSlice(target.SliceHash); err != nil {
+				utils.ErrorLog("failed removing slice file!")
+			}
 		}
 	}
 }
@@ -217,12 +234,17 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	}
 	metrics.UploadPerformanceLogNow(target.FileHash + ":RCV_RSP_SLICE:" + strconv.FormatInt(int64(target.Slice.SliceNumber), 10))
 
-	pp.DebugLogf(ctx, "get RspUploadFileSlice for file %v  sliceNumber %v  size %v",
-		target.FileHash, target.Slice.SliceNumber, target.Slice.SliceSize)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		pp.ErrorLog(ctx, "RspUploadFileSlice failure:", target.Result.Msg)
 		return
 	}
+	if target.Slice == nil {
+		pp.ErrorLog(ctx, "RspUploadFileSlice failure: no slice included")
+		return
+	}
+	pp.DebugLogf(ctx, "get RspUploadFileSlice for file %v  sliceNumber %v  size %v",
+		target.FileHash, target.Slice.SliceNumber, target.Slice.SliceSize)
+
 	tkSlice := target.TaskId + strconv.FormatUint(target.Slice.SliceNumber, 10)
 	UpSendCostTimeMap.mux.Lock()
 	defer UpSendCostTimeMap.mux.Unlock()
@@ -230,6 +252,18 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		ctStat := val.(CostTimeStat)
 		utils.DebugLogf("ctStat is %v", ctStat)
 		if ctStat.PacketCount == 0 && ctStat.TotalCostTime > 0 {
+			value, ok := task.UploadFileTaskMap.Load(target.FileHash)
+			if !ok {
+				utils.DebugLog("failed finding upload task for file", target.FileHash)
+				return
+			}
+			fileTask := value.(*task.UploadFileTask)
+			if err := fileTask.SetUploadSliceStatus(target.SliceHash, task.SLICE_STATUS_FINISHED); err != nil {
+				utils.DebugLog("failed setting upload slice status,", err.Error())
+				return
+			}
+			fileTask.Touch()
+
 			target.Slice.SliceHash = target.SliceHash
 			reportReq := requests.ReqReportUploadSliceResultData(ctx,
 				target.TaskId,
@@ -428,7 +462,7 @@ func RspUploadSlicesWrong(ctx context.Context, _ core.WriteCloser) {
 
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		pp.ErrorLog(ctx, "RspUploadSlicesWrong failure:", target.Result.Msg)
-		uploadTask.FatalError = errors.New(target.Result.Msg)
+		uploadTask.SetFatalError(errors.New(target.Result.Msg))
 		return
 	}
 
@@ -437,11 +471,9 @@ func RspUploadSlicesWrong(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	uploadTask.UpdateSliceDestinations(target.Slices)
-	uploadTask.RetryCount++
-
+	uploadTask.UpdateSliceDestinationsForRetry(target.Slices)
 	// Start upload for all new destinations
-	uploadTask.SignalNewDestinations()
+	uploadTask.SignalNewDestinations(ctx)
 }
 
 // RspReportUploadSliceResult  SP-P OR SP-PP
@@ -530,7 +562,7 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 		utils.DebugLogf("upSendPacketMap.Store <== K:%v, V:%v]", tkSliceUID, ctStat)
 		var cmd header.MsgType
 		if dataEnd <= tkDataLen {
-			pp.DebugLogf(newCtx, "Uploading slice data %v-%v (total %v)", dataStart, dataEnd, tkDataLen)
+			utils.DebugLogf("Uploading slice data %v-%v (total %v)", dataStart, dataEnd, tkDataLen)
 			var pb proto.Message
 			if tk.Type == protos.UploadType_BACKUP {
 				pb = requests.ReqBackupFileSliceData(ctx, tk, pieceOffset, packet)
@@ -546,7 +578,7 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 			dataStart += setting.MaxData
 			dataEnd += setting.MaxData
 		} else {
-			pp.DebugLogf(newCtx, "Uploading slice data %v-%v (total %v)", dataStart, tkDataLen, tkDataLen)
+			utils.DebugLogf("Uploading slice data %v-%v (total %v)", dataStart, tkDataLen, tkDataLen)
 			var pb proto.Message
 			pieceOffset.SliceOffsetEnd = uint64(tkDataLen)
 			if tk.Type == protos.UploadType_BACKUP {
@@ -564,10 +596,7 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 
 func BackupFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 	var slice *protos.SliceHashAddr
-	utils.DebugLog("tk.SliceNumber:", tk.SliceNumber)
-	utils.DebugLog(tk)
 	for _, slice = range tk.RspBackupFile.Slices {
-		utils.DebugLogf("slice.SliceNumber: %d", slice.SliceNumber)
 		if slice.SliceNumber == tk.SliceNumber {
 			break
 		}
@@ -580,10 +609,7 @@ func BackupFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 
 func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 	var slice *protos.SliceHashAddr
-	utils.DebugLog("tk.SliceNumber:", tk.SliceNumber)
-	utils.DebugLog(tk)
 	for _, slice = range tk.RspUploadFile.Slices {
-		utils.DebugLogf("slice.SliceNumber: %d", slice.SliceNumber)
 		if slice.SliceNumber == tk.SliceNumber {
 			break
 		}
@@ -595,8 +621,7 @@ func UploadFileSlice(ctx context.Context, tk *task.UploadSliceTask) error {
 }
 
 func sendSlice(ctx context.Context, pb proto.Message, fileHash, p2pAddress, networkAddress string, cmd header.MsgType) error {
-	pp.DebugLog(ctx, "sendSlice(pb proto.MsgType, fileHash, p2pAddress, networkAddress string)",
-		fileHash, p2pAddress, networkAddress)
+	utils.DebugLog("sendSlice(pb proto.MsgType, fileHash, p2pAddress, networkAddress string)", fileHash, p2pAddress, networkAddress)
 	key := "upload#" + fileHash + p2pAddress
 	//msg := pb.(*protos.ReqUploadFileSlice)
 	//metrics.UploadPerformanceLogNow(fileHash + ":SND_FILE_DATA:" + strconv.FormatInt(int64(msg.PieceOffset.SliceOffsetStart+(msg.SliceNumber-1)*33554432), 10) + ":" + networkAddress)
