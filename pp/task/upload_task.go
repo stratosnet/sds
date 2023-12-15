@@ -35,6 +35,10 @@ const (
 	UPLOAD_TIMER_INTERVAL = 10 // seconds
 	MAX_UPLOAD_RETRY      = 5
 	UPLOAD_WAIT_TIMEOUT   = 60 // in seconds
+	STATE_NOT_STARTED     = 0
+	STATE_RUNNING         = 1
+	STATE_DONE            = 2
+	STATE_PAUSED          = 3
 )
 
 var (
@@ -47,11 +51,13 @@ var (
 
 // UploadFileTask represents a file upload task that is in progress
 type UploadFileTask struct {
-	rspUploadFile     *protos.RspUploadFile
+	rspUploadFile     map[int]*protos.RspUploadFile
 	rspBackupFile     *protos.RspBackupStatus
 	uploadType        protos.UploadType
 	fileCRC           uint32
 	destinations      map[string]*SlicesPerDestination
+	state             int
+	pause             bool
 	concurrentUploads int
 	fatalError        error
 	retryCount        int
@@ -117,7 +123,7 @@ func CreateUploadFileTask(target *protos.RspUploadFile, fn func(ctx context.Cont
 	}
 
 	task := &UploadFileTask{
-		rspUploadFile:     target,
+		rspUploadFile:     make(map[int]*protos.RspUploadFile),
 		rspBackupFile:     nil,
 		fileCRC:           utils.CalcFileCRC32(file.GetFilePath(target.FileHash)),
 		uploadType:        protos.UploadType_NEW_UPLOAD,
@@ -128,6 +134,7 @@ func CreateUploadFileTask(target *protos.RspUploadFile, fn func(ctx context.Cont
 		lastTouch:         time.Now(),
 		helper:            fn,
 	}
+	task.rspUploadFile[0] = target
 
 	for _, slice := range target.Slices {
 		_, ok := task.destinations[slice.PpInfo.P2PAddress]
@@ -156,7 +163,7 @@ func (u *UploadFileTask) addNewSlice(slice *protos.SliceHashAddr) {
 		}
 		u.destinations[slice.PpInfo.P2PAddress] = slicesPerDestination
 	}
-
+	u.destinations[slice.PpInfo.P2PAddress].started = false
 	slicesPerDestination.slices = append(slicesPerDestination.slices, &SliceWithStatus{
 		slice:  slice,
 		Status: SLICE_STATUS_STARTED,
@@ -164,11 +171,9 @@ func (u *UploadFileTask) addNewSlice(slice *protos.SliceHashAddr) {
 }
 
 func (u *UploadFileTask) SignalNewDestinations(ctx context.Context) {
-	u.mutex.RLock()
-	defer u.mutex.RUnlock()
 	fileHash := ""
 	if u.rspUploadFile != nil {
-		fileHash = u.rspUploadFile.FileHash
+		fileHash = u.rspUploadFile[0].FileHash
 	}
 	if u.rspBackupFile != nil {
 		fileHash = u.rspBackupFile.FileHash
@@ -227,14 +232,14 @@ func (u *UploadFileTask) GetUploadFileHash() string {
 	u.mutex.RLock()
 	defer u.mutex.RUnlock()
 
-	return u.rspUploadFile.FileHash
+	return u.rspUploadFile[0].FileHash
 }
 
 func (u *UploadFileTask) GetUploadTaskId() string {
 	u.mutex.RLock()
 	defer u.mutex.RUnlock()
 
-	return u.rspUploadFile.TaskId
+	return u.rspUploadFile[0].TaskId
 }
 
 func (u *UploadFileTask) GetUploadType() protos.UploadType {
@@ -247,7 +252,13 @@ func (u *UploadFileTask) GetUploadType() protos.UploadType {
 func (u *UploadFileTask) GetUploadSpP2pAddress() string {
 	u.mutex.RLock()
 	defer u.mutex.RUnlock()
-	return u.rspUploadFile.SpP2PAddress
+	return u.rspUploadFile[0].SpP2PAddress
+}
+
+func (u *UploadFileTask) SetRspUploadFile(rspUploadFile *protos.RspUploadFile) {
+	u.mutex.RLock()
+	defer u.mutex.RUnlock()
+	u.rspUploadFile[u.retryCount] = rspUploadFile
 }
 
 // SliceFailuresToReport returns the list of slices that will require a new destination, and a boolean list of the same length indicating which slices actually failed
@@ -260,7 +271,7 @@ func (u *UploadFileTask) SliceFailuresToReport() ([]*protos.SliceHashAddr, []boo
 	for _, slicesPerDestination := range u.destinations {
 		failure := false
 		for _, slice := range slicesPerDestination.slices {
-			if slice.Status == SLICE_STATUS_FAILED || slice.Status == SLICE_STATUS_STARTED {
+			if slice.Status == SLICE_STATUS_FAILED || slice.Status == SLICE_STATUS_STARTED || slice.Status == SLICE_STATUS_WAITING_FOR_SP {
 				slicesToReDownload = append(slicesToReDownload, slice.slice)
 				failedSlices = append(failedSlices, slice.Status == SLICE_STATUS_FAILED)
 				slice.Status = SLICE_STATUS_WAITING_FOR_SP
@@ -278,6 +289,12 @@ func (u *UploadFileTask) SliceFailuresToReport() ([]*protos.SliceHashAddr, []boo
 
 func (u *UploadFileTask) CanRetry() bool {
 	return u.retryCount < MAX_UPLOAD_RETRY
+}
+
+func (u *UploadFileTask) UpdateRetryCount() {
+	u.mutex.RLock()
+	defer u.mutex.RUnlock()
+	u.retryCount++
 }
 
 func (u *UploadFileTask) GetExcludedDestinations() []*protos.PPBaseInfo {
@@ -318,12 +335,18 @@ func (u *UploadFileTask) NextDestination() *SlicesPerDestination {
 func (u *UploadFileTask) UpdateSliceDestinationsForRetry(newDestinations []*protos.SliceHashAddr) {
 	u.mutex.Lock()
 	defer u.mutex.Unlock()
+	if u.state != STATE_NOT_STARTED {
+		return
+	}
 
 	// Get original destination for each slice
 	originalDestinations := make(map[uint64]string)
 	for p2pAddress, destination := range u.destinations {
 		for _, slice := range destination.slices {
-			originalDestinations[slice.slice.SliceNumber] = p2pAddress
+			// this slice might have been tried before and already set to SLICE_STATUS_REPLACED
+			if slice.Status != SLICE_STATUS_REPLACED {
+				originalDestinations[slice.slice.SliceNumber] = p2pAddress
+			}
 		}
 	}
 
@@ -346,7 +369,30 @@ func (u *UploadFileTask) UpdateSliceDestinationsForRetry(newDestinations []*prot
 			}
 		}
 	}
-	u.retryCount++
+}
+
+func (u *UploadFileTask) Pause() {
+	u.mutex.Lock()
+	defer u.mutex.Unlock()
+	u.pause = true
+}
+
+func (u *UploadFileTask) Continue() {
+	u.mutex.Lock()
+	defer u.mutex.Unlock()
+	u.pause = false
+}
+
+func (u *UploadFileTask) GetState() int {
+	u.mutex.Lock()
+	defer u.mutex.Unlock()
+	return u.state
+}
+
+func (u *UploadFileTask) SetState(state int) {
+	u.mutex.Lock()
+	defer u.mutex.Unlock()
+	u.state = state
 }
 
 func (u *UploadFileTask) SetUploadSliceStatus(sliceHash string, status int) error {
@@ -362,6 +408,10 @@ func (u *UploadFileTask) SetUploadSliceStatus(sliceHash string, status int) erro
 				if status != SLICE_STATUS_STARTED && s.Status == SLICE_STATUS_STARTED {
 					u.concurrentUploads--
 				}
+
+				if s.Status == SLICE_STATUS_REPLACED {
+					continue
+				}
 				s.Status = status
 				return nil
 			}
@@ -371,24 +421,37 @@ func (u *UploadFileTask) SetUploadSliceStatus(sliceHash string, status int) erro
 }
 
 func (u *UploadFileTask) UploadToDestination(ctx context.Context, fn func(ctx context.Context, tk *UploadSliceTask) error) {
-	u.mutex.Lock()
-	defer u.mutex.Unlock()
-	if u.concurrentUploads < MAXSLICE {
-		for _, destination := range u.destinations {
-			if destination == nil {
-				continue
+	// start it if it's not started
+	if u.state == STATE_NOT_STARTED {
+		u.state = STATE_RUNNING
+		if u.concurrentUploads < MAXSLICE {
+			for _, destination := range u.destinations {
+				if destination == nil {
+					continue
+				}
+				if !destination.started {
+					destination.started = true
+					u.concurrentUploads++
+					u.uploadSlicesToDestination(ctx, destination, fn)
+				}
 			}
-			if !destination.started {
-				destination.started = true
-				u.concurrentUploads++
-				u.uploadSlicesToDestination(ctx, destination, fn)
-			}
+			u.state = STATE_DONE
+			return
 		}
+	}
+
+	if u.state == STATE_DONE && u.pause {
+		u.state = STATE_PAUSED
 	}
 }
 
 func (u *UploadFileTask) uploadSlicesToDestination(ctx context.Context, destination *SlicesPerDestination, fn func(ctx context.Context, tk *UploadSliceTask) error) {
 	for _, slice := range destination.slices {
+		if u.pause {
+			u.state = STATE_PAUSED
+			return
+		}
+
 		if u.fatalError != nil {
 			return
 		}
@@ -406,10 +469,8 @@ func (u *UploadFileTask) uploadSlicesToDestination(ctx context.Context, destinat
 				slice.setError(err, true)
 				return
 			}
-			utils.DebugLogf("starting to upload slice %v for file %v", slice.slice.SliceNumber, u.rspUploadFile.FileHash)
-			u.mutex.Unlock()
+			utils.DebugLogf("starting to upload slice %v for file %v", slice.slice.SliceNumber, u.rspUploadFile[0].FileHash)
 			err = fn(ctx, uploadSliceTask)
-			u.mutex.Lock()
 			if err != nil {
 				utils.ErrorLogf("Error uploading slice %v: %v", uploadSliceTask.SliceHash, err.Error())
 				slice.setError(err, false)
@@ -421,10 +482,8 @@ func (u *UploadFileTask) uploadSlicesToDestination(ctx context.Context, destinat
 				slice.setError(err, true)
 				return
 			}
-			pp.DebugLogf(ctx, "starting to backup slice %v for file %v", slice.slice.SliceNumber, u.rspUploadFile.FileHash)
-			u.mutex.Unlock()
+			pp.DebugLogf(ctx, "starting to backup slice %v for file %v", slice.slice.SliceNumber, u.rspUploadFile[0].FileHash)
 			err = fn(ctx, uploadSliceTask)
-			u.mutex.Lock()
 			if err != nil {
 				slice.setError(err, false)
 				return
@@ -465,7 +524,7 @@ var UploadTaskIdMap = utils.NewAutoCleanMap(1 * time.Hour) // map[fileHash]taskI
 func CreateUploadSliceTask(ctx context.Context, slice *SliceWithStatus, uploadTask *UploadFileTask) (*UploadSliceTask, error) {
 	utils.DebugLogf("sliceNumber %v  offsetStart = %v  offsetEnd = %v", slice.slice.SliceNumber, slice.slice.SliceOffset.SliceOffsetStart, slice.slice.SliceOffset.SliceOffsetEnd)
 	tk := &UploadSliceTask{
-		RspUploadFile: uploadTask.rspUploadFile,
+		RspUploadFile: uploadTask.rspUploadFile[uploadTask.retryCount],
 		SliceHash:     slice.slice.SliceHash,
 		SliceNumber:   slice.slice.SliceNumber,
 	}

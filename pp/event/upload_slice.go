@@ -232,7 +232,6 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-	metrics.UploadPerformanceLogNow(target.FileHash + ":RCV_RSP_SLICE:" + strconv.FormatInt(int64(target.Slice.SliceNumber), 10))
 
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		pp.ErrorLog(ctx, "RspUploadFileSlice failure:", target.Result.Msg)
@@ -242,6 +241,7 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 		pp.ErrorLog(ctx, "RspUploadFileSlice failure: no slice included")
 		return
 	}
+	metrics.UploadPerformanceLogNow(target.FileHash + ":RCV_RSP_SLICE:" + strconv.FormatInt(int64(target.Slice.SliceNumber), 10))
 	pp.DebugLogf(ctx, "get RspUploadFileSlice for file %v  sliceNumber %v  size %v",
 		target.FileHash, target.Slice.SliceNumber, target.Slice.SliceSize)
 
@@ -452,10 +452,10 @@ func RspUploadSlicesWrong(ctx context.Context, _ core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-
-	value, ok := task.UploadFileTaskMap.Load(target.FileHash)
+	rspUploadFile := target.RspUploadFile
+	value, ok := task.UploadFileTaskMap.Load(rspUploadFile.FileHash)
 	if !ok {
-		pp.ErrorLogf(ctx, "File upload task cannot be found for file %v", target.FileHash)
+		pp.ErrorLogf(ctx, "File upload task cannot be found for file %v", rspUploadFile.FileHash)
 		return
 	}
 	uploadTask := value.(*task.UploadFileTask)
@@ -466,12 +466,15 @@ func RspUploadSlicesWrong(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	if len(target.Slices) == 0 {
-		pp.ErrorLogf(ctx, "No new slices in RspUploadSlicesWrong for file %v. Cannot update slice destinations", target.FileHash)
+	if len(rspUploadFile.Slices) == 0 {
+		pp.ErrorLogf(ctx, "No new slices in RspUploadSlicesWrong for file %v. Cannot update slice destinations", rspUploadFile.FileHash)
+		uploadTask.SetFatalError(errors.New("No new slices in RspUploadSlicesWrong for file"))
 		return
 	}
 
-	uploadTask.UpdateSliceDestinationsForRetry(target.Slices)
+	uploadTask.UpdateSliceDestinationsForRetry(rspUploadFile.Slices)
+
+	uploadTask.SetRspUploadFile(target.RspUploadFile)
 	// Start upload for all new destinations
 	uploadTask.SignalNewDestinations(ctx)
 }
@@ -540,6 +543,11 @@ func uploadSlice(ctx context.Context, slice *protos.SliceHashAddr, tk *task.Uplo
 		}
 		return sendSlice(newCtx, pb, fileHash, storageP2pAddress, storageNetworkAddress, cmd)
 	}
+
+	// initialize cost time map, or clean the entry if this is a retry for the same slice
+	UpSendCostTimeMap.mux.Lock()
+	UpSendCostTimeMap.dataMap.Store(tkSliceUID, ctStat)
+	UpSendCostTimeMap.mux.Unlock()
 
 	dataStart := 0
 	dataEnd := setting.MaxData
@@ -640,7 +648,7 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 
 	prg, ok := task.UploadProgressMap.Load(target.FileHash)
 	if !ok {
-		pp.DebugLog(ctx, "paused!!")
+		utils.DebugLog(ctx, "can't load upload progress map...")
 		return
 	}
 	metrics.UploadPerformanceLogNow(target.FileHash + ":RCV_PROGRESS:" + strconv.FormatInt(int64(target.SliceOffStart), 10))

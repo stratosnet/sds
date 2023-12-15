@@ -228,6 +228,10 @@ func uploadTaskHelper(ctx context.Context, fileHash string) {
 		task.UploadFileTaskMap.Delete(fileHash)
 		return
 	}
+	if errors.Is(err, task.UploadErrNoUploadTask) {
+		task.StopRepeatedUploadTaskJob(fileHash)
+		return
+	}
 }
 
 func uploadTaskHandler(ctx context.Context, fileHash string) error {
@@ -237,18 +241,31 @@ func uploadTaskHandler(ctx context.Context, fileHash string) error {
 		return task.UploadErrNoUploadTask
 	}
 	uploadTask := value.(*task.UploadFileTask)
-
+	// trigger retry
 	if time.Since(uploadTask.GetLastTouch()) > task.UPLOAD_WAIT_TIMEOUT*time.Second {
-		slicesToReUpload, failedSlices := uploadTask.SliceFailuresToReport()
+		utils.DebugLog("upload wait timeout")
+		slicesToReUpload, _ := uploadTask.SliceFailuresToReport()
 		if len(slicesToReUpload) > 0 {
 			uploadTask.Touch()
+			uploadTask.UpdateRetryCount()
 			if !uploadTask.CanRetry() {
 				utils.DebugLog("upload task for file", fileHash, "failed, retried too many times.")
 				return task.UploadErrMaxRetries
 			}
+			if uploadTask.GetState() == task.STATE_DONE {
+				uploadTask.SetState(task.STATE_PAUSED)
+			}
+			uploadTask.Pause()
 			utils.DebugLog("request upload retry", len(slicesToReUpload), "slices")
-			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqUploadSlicesWrong(ctx, uploadTask, slicesToReUpload, failedSlices), header.ReqUploadSlicesWrong)
 		}
+	}
+
+	if uploadTask.GetState() == task.STATE_PAUSED {
+		uploadTask.SetState(task.STATE_NOT_STARTED)
+		uploadTask.Continue()
+		slicesToReUpload, failedSlices := uploadTask.SliceFailuresToReport()
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqUploadSlicesWrong(ctx, uploadTask, slicesToReUpload, failedSlices), header.ReqUploadSlicesWrong)
+		return nil
 	}
 
 	if uploadTask.IsFinished() {
