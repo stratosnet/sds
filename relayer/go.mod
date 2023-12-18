@@ -2,24 +2,23 @@ module github.com/stratosnet/sds/relayer
 
 go 1.19
 
-replace (
-	github.com/stratosnet/sds/framework => ../framework // for development on local
-	github.com/stratosnet/sds/sds-msg => ../sds-msg // for development on local
-	github.com/stratosnet/sds/tx-client => ../tx-client // for development on local
-)
+//replace (
+//	github.com/stratosnet/sds/framework => ../framework // for development on local
+//	github.com/stratosnet/sds/sds-msg => ../sds-msg // for development on local
+//	github.com/stratosnet/sds/tx-client => ../tx-client // for development on local
+//)
 
 require (
 	cosmossdk.io/api v0.7.2
 	cosmossdk.io/math v1.2.0
-	github.com/cosmos/gogoproto v1.4.11
 	github.com/deckarep/golang-set v1.8.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/rs/cors v1.8.2
 	github.com/spf13/cobra v1.6.1
-	github.com/stratosnet/sds/framework v0.0.0-20231129214657-f955307cd2d7
-	github.com/stratosnet/sds/sds-msg v0.0.0-20231128190750-a3a5ff99118e
-	github.com/stratosnet/sds/tx-client v0.0.0-20231128191210-a8ded32412c4
+	github.com/stratosnet/sds/framework v0.0.0-20231218174517-d9c0a260707a
+	github.com/stratosnet/sds/sds-msg v0.0.0-20231218162551-99b9bde57a35
+	github.com/stratosnet/sds/tx-client v0.0.0-20231218175214-8e0c9164efef
 	github.com/tendermint/tendermint v0.34.25-0.20221221220620-936221e0a8d9
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
@@ -39,6 +38,7 @@ require (
 	github.com/cosmos/btcutil v1.0.5 // indirect
 	github.com/cosmos/cosmos-proto v1.0.0-beta.3 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
+	github.com/cosmos/gogoproto v1.4.11 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
 	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect

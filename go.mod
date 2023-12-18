@@ -2,11 +2,11 @@ module github.com/stratosnet/sds
 
 go 1.19
 
-replace (
-	github.com/stratosnet/sds/framework => ./framework // for development on local
-	github.com/stratosnet/sds/sds-msg => ./sds-msg // for development on local
-	github.com/stratosnet/sds/tx-client => ./tx-client // for development on local
-)
+//replace (
+//	github.com/stratosnet/sds/framework => ./framework // for development on local
+//	github.com/stratosnet/sds/sds-msg => ./sds-msg // for development on local
+//	github.com/stratosnet/sds/tx-client => ./tx-client // for development on local
+//)
 
 require (
 	cosmossdk.io/api v0.7.2
@@ -16,6 +16,7 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-beta.3
 	github.com/deckarep/golang-set v1.8.0
 	github.com/glendc/go-external-ip v0.1.0
+	github.com/golang/protobuf v1.5.3
 	github.com/google/uuid v1.3.1
 	github.com/gorilla/websocket v1.5.0
 	github.com/ipfs/go-cid v0.3.2
@@ -27,9 +28,9 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.6.1
-	github.com/stratosnet/sds/framework v0.0.0-20231129214657-f955307cd2d7
-	github.com/stratosnet/sds/sds-msg v0.0.0-20231128190750-a3a5ff99118e
-	github.com/stratosnet/sds/tx-client v0.0.0-20231128191210-a8ded32412c4
+	github.com/stratosnet/sds/framework v0.0.0-20231218174517-d9c0a260707a
+	github.com/stratosnet/sds/sds-msg v0.0.0-20231218162551-99b9bde57a35
+	github.com/stratosnet/sds/tx-client v0.0.0-20231218175214-8e0c9164efef
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
@@ -51,7 +52,6 @@ require (
 	github.com/cosmos/gogoproto v1.4.11 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
 	github.com/go-ole/go-ole v1.2.5 // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/hdevalence/ed25519consensus v0.1.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
