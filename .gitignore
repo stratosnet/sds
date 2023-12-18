@@ -29,3 +29,5 @@ tmp
 bp-list
 pp-list
 sp/
+/example/relayd/
+/example/rpcclient/rpc_client
