@@ -10,9 +10,9 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/tx"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/sds-msg/header"
 	"github.com/stratosnet/sds/sds-msg/protos"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 )
 
@@ -46,7 +46,7 @@ func RspUpdateDeposit(ctx context.Context, conn core.WriteCloser) {
 	}
 	setting.State = target.UpdateState
 
-	if target.UpdateState != types.PP_ACTIVE {
+	if target.UpdateState != msgtypes.PP_ACTIVE {
 		pp.Log(ctx, "Current node isn't activated now")
 		return
 	}
@@ -81,7 +81,7 @@ func NoticeUpdatedDeposit(ctx context.Context, conn core.WriteCloser) {
 		depositBalanceAfter.IsZero() &&
 		target.NodeTier == "0" {
 		// change pp state to unbonding
-		setting.State = types.PP_UNBONDING
+		setting.State = msgtypes.PP_UNBONDING
 		pp.Log(ctx, "All tokens are being unbonded(taking around 180 days to complete)"+
 			"\n --- This node will be forced to suspend very soon! ---")
 	}

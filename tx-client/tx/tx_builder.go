@@ -4,6 +4,7 @@ import (
 	ed25519crypto "crypto/ed25519"
 	"encoding/hex"
 	"fmt"
+	"github.com/pkg/errors"
 	"sync"
 
 	"google.golang.org/protobuf/proto"
@@ -40,13 +41,13 @@ func CreateAndSimulateTx(msg *anypb.Any, txFee types.TxFee, memo string,
 	if txFee.Simulate {
 		gasInfo, err := grpc.Simulate(txBytes)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(fmt.Errorf("failed to get gasInfo from chain"), err.Error())
 		}
 		unsignedTx.AuthInfo.Fee.GasLimit = uint64(float64(gasInfo.GasUsed) * gasAdjustment)
 
 		txBytes, err = BuildTxBytes(txConfig, unsignedTx, chainId, unsignedMsgs)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(fmt.Errorf("failed to build txBytes"), err.Error())
 		}
 	}
 	return txBytes, nil

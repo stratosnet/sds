@@ -15,9 +15,9 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	ppTypes "github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/sds-msg/header"
 	"github.com/stratosnet/sds/sds-msg/protos"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 	"github.com/stratosnet/sds/utils/environment"
 )
 
@@ -51,14 +51,14 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	setting.State = target.IsActive
-	if setting.State == ppTypes.PP_ACTIVE {
+	if setting.State == msgtypes.PP_ACTIVE {
 		setting.IsPP = true
 		setting.IsPPSyncedWithSP = true
 	}
 
 	rpcResult.Message = formatRspGetPPStatus(ctx, &target)
 
-	if target.IsActive == ppTypes.PP_ACTIVE {
+	if target.IsActive == msgtypes.PP_ACTIVE {
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_ACTIVATED)
 	} else {
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATUS_INACTIVE)
@@ -77,11 +77,11 @@ func formatRspGetPPStatus(ctx context.Context, response *protos.RspGetPPStatus) 
 	activation, state := "", ""
 
 	switch response.IsActive {
-	case ppTypes.PP_ACTIVE:
+	case msgtypes.PP_ACTIVE:
 		activation = "Active"
-	case ppTypes.PP_INACTIVE:
+	case msgtypes.PP_INACTIVE:
 		activation = "Inactive"
-	case ppTypes.PP_UNBONDING:
+	case msgtypes.PP_UNBONDING:
 		activation = "Unbonding"
 	default:
 		activation = "Unknown"

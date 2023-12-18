@@ -17,12 +17,13 @@ import (
 	sdsv1 "github.com/stratosnet/stratos-chain/api/stratos/sds/v1"
 
 	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
-	"github.com/stratosnet/sds/framework/types"
+	fwtypes "github.com/stratosnet/sds/framework/types"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 )
 
 // Stratos-chain 'pot' module
-func BuildVolumeReportMsg(traffic []*txclienttypes.Traffic, reporterAddress types.P2PAddress, reporterOwnerAddress types.WalletAddress, epoch uint64,
+func BuildVolumeReportMsg(traffic []*txclienttypes.Traffic, reporterAddress fwtypes.P2PAddress, reporterOwnerAddress fwtypes.WalletAddress, epoch uint64,
 	reportReference string, blsTxDataHash, blsSignature []byte, blsPubKeys [][]byte) (*potv1.MsgVolumeReport, []byte, error) {
 
 	aggregatedVolume := make(map[string]uint64)
@@ -32,7 +33,7 @@ func BuildVolumeReportMsg(traffic []*txclienttypes.Traffic, reporterAddress type
 
 	var nodesVolume []*potv1.SingleWalletVolume
 	for walletAddressString, volume := range aggregatedVolume {
-		_, err := types.WalletAddressFromBech32(walletAddressString)
+		_, err := fwtypes.WalletAddressFromBech32(walletAddressString)
 		if err != nil {
 			return nil, []byte{}, err
 		}
@@ -56,10 +57,10 @@ func BuildVolumeReportMsg(traffic []*txclienttypes.Traffic, reporterAddress type
 
 	volumeReportMsg := &potv1.MsgVolumeReport{
 		WalletVolumes:   nodesVolume,
-		Reporter:        types.P2PAddressBytesToBech32(reporterAddress),
+		Reporter:        fwtypes.P2PAddressBytesToBech32(reporterAddress),
 		Epoch:           sdkmath.NewIntFromUint64(epoch).String(),
 		ReportReference: reportReference,
-		ReporterOwner:   types.WalletAddressBytesToBech32(reporterOwnerAddress),
+		ReporterOwner:   fwtypes.WalletAddressBytesToBech32(reporterOwnerAddress),
 		BLSSignature:    blsSignatureInfo,
 	}
 
@@ -68,8 +69,8 @@ func BuildVolumeReportMsg(traffic []*txclienttypes.Traffic, reporterAddress type
 	return volumeReportMsg, msgBytes, nil
 }
 
-func BuildSlashingResourceNodeMsg(spP2pAddress []types.P2PAddress, spWalletAddress []types.WalletAddress,
-	ppP2pAddress types.P2PAddress, ppWalletAddress types.WalletAddress, slashingAmount *big.Int, suspend bool,
+func BuildSlashingResourceNodeMsg(spP2pAddress []fwtypes.P2PAddress, spWalletAddress []fwtypes.WalletAddress,
+	ppP2pAddress fwtypes.P2PAddress, ppWalletAddress fwtypes.WalletAddress, slashingAmount *big.Int, suspend bool,
 ) *potv1.MsgSlashingResourceNode {
 
 	var spP2pAddressesBech32 []string
@@ -91,8 +92,8 @@ func BuildSlashingResourceNodeMsg(spP2pAddress []types.P2PAddress, spWalletAddre
 	}
 }
 
-func BuildUpdateEffectiveDepositMsg(spP2pAddress []types.P2PAddress, spWalletAddress []types.WalletAddress,
-	ppP2pAddress types.P2PAddress, newEffectiveDeposit *big.Int) *registerv1.MsgUpdateEffectiveDeposit {
+func BuildUpdateEffectiveDepositMsg(spP2pAddress []fwtypes.P2PAddress, spWalletAddress []fwtypes.WalletAddress,
+	ppP2pAddress fwtypes.P2PAddress, newEffectiveDeposit *big.Int) *registerv1.MsgUpdateEffectiveDeposit {
 
 	var spP2pAddressSdk []string
 	for _, p2pAddress := range spP2pAddress {
@@ -112,14 +113,14 @@ func BuildUpdateEffectiveDepositMsg(spP2pAddress []types.P2PAddress, spWalletAdd
 }
 
 // Stratos-chain 'register' module
-func BuildCreateResourceNodeMsg(nodeType txclienttypes.NodeType, p2pPubKey fwcryptotypes.PubKey, depositAmount txclienttypes.Coin,
-	ownerAddress types.WalletAddress) (*registerv1.MsgCreateResourceNode, error) {
+func BuildCreateResourceNodeMsg(nodeType msgtypes.NodeType, p2pPubKey fwcryptotypes.PubKey, depositAmount txclienttypes.Coin,
+	ownerAddress fwtypes.WalletAddress) (*registerv1.MsgCreateResourceNode, error) {
 
 	if nodeType == 0 {
-		nodeType = txclienttypes.STORAGE
+		nodeType = msgtypes.STORAGE
 	}
 
-	p2pAddress := types.P2PAddress(p2pPubKey.Address())
+	p2pAddress := fwtypes.P2PAddress(p2pPubKey.Address())
 
 	pk := &sdked25519.PubKey{Key: p2pPubKey.Bytes()}
 	pkAny, err := anyutil.New(pk)
@@ -143,9 +144,9 @@ func BuildCreateResourceNodeMsg(nodeType txclienttypes.NodeType, p2pPubKey fwcry
 }
 
 func BuildCreateMetaNodeMsg(p2pPubKey fwcryptotypes.PubKey, depositAmount txclienttypes.Coin,
-	ownerAddress types.WalletAddress, beneficiaryAddress types.WalletAddress) (*registerv1.MsgCreateMetaNode, error) {
+	ownerAddress fwtypes.WalletAddress, beneficiaryAddress fwtypes.WalletAddress) (*registerv1.MsgCreateMetaNode, error) {
 
-	p2pAddress := types.P2PAddress(p2pPubKey.Address())
+	p2pAddress := fwtypes.P2PAddress(p2pPubKey.Address())
 
 	pk := &sdked25519.PubKey{Key: p2pPubKey.Bytes()}
 	pkAny, err := anyutil.New(pk)
@@ -169,7 +170,7 @@ func BuildCreateMetaNodeMsg(p2pPubKey fwcryptotypes.PubKey, depositAmount txclie
 }
 
 // Stratos-chain 'register' module
-func BuildUpdateResourceNodeDepositMsg(networkAddr types.P2PAddress, ownerAddr types.WalletAddress,
+func BuildUpdateResourceNodeDepositMsg(networkAddr fwtypes.P2PAddress, ownerAddr fwtypes.WalletAddress,
 	depositDelta txclienttypes.Coin) *registerv1.MsgUpdateResourceNodeDeposit {
 
 	return &registerv1.MsgUpdateResourceNodeDeposit{
@@ -182,7 +183,7 @@ func BuildUpdateResourceNodeDepositMsg(networkAddr types.P2PAddress, ownerAddr t
 	}
 }
 
-func BuildUpdateMetaNodeDepositMsg(networkAddr types.P2PAddress, ownerAddr types.WalletAddress,
+func BuildUpdateMetaNodeDepositMsg(networkAddr fwtypes.P2PAddress, ownerAddr fwtypes.WalletAddress,
 	depositDelta txclienttypes.Coin) *registerv1.MsgUpdateMetaNodeDeposit {
 
 	return &registerv1.MsgUpdateMetaNodeDeposit{
@@ -195,7 +196,7 @@ func BuildUpdateMetaNodeDepositMsg(networkAddr types.P2PAddress, ownerAddr types
 	}
 }
 
-func BuildRemoveResourceNodeMsg(nodeAddress types.P2PAddress, ownerAddress types.WalletAddress,
+func BuildRemoveResourceNodeMsg(nodeAddress fwtypes.P2PAddress, ownerAddress fwtypes.WalletAddress,
 ) *registerv1.MsgRemoveResourceNode {
 
 	return &registerv1.MsgRemoveResourceNode{
@@ -204,7 +205,7 @@ func BuildRemoveResourceNodeMsg(nodeAddress types.P2PAddress, ownerAddress types
 	}
 }
 
-func BuildRemoveMetaNodeMsg(nodeAddress types.P2PAddress, ownerAddress types.WalletAddress,
+func BuildRemoveMetaNodeMsg(nodeAddress fwtypes.P2PAddress, ownerAddress fwtypes.WalletAddress,
 ) *registerv1.MsgRemoveMetaNode {
 
 	return &registerv1.MsgRemoveMetaNode{
@@ -214,8 +215,8 @@ func BuildRemoveMetaNodeMsg(nodeAddress types.P2PAddress, ownerAddress types.Wal
 
 }
 
-func BuildMetaNodeRegistrationVoteMsg(candidateNetworkAddress types.P2PAddress, candidateOwnerAddress types.WalletAddress,
-	voterNetworkAddress types.P2PAddress, voterOwnerAddress types.WalletAddress, voteOpinion bool,
+func BuildMetaNodeRegistrationVoteMsg(candidateNetworkAddress fwtypes.P2PAddress, candidateOwnerAddress fwtypes.WalletAddress,
+	voterNetworkAddress fwtypes.P2PAddress, voterOwnerAddress fwtypes.WalletAddress, voteOpinion bool,
 ) *registerv1.MsgMetaNodeRegistrationVote {
 
 	return &registerv1.MsgMetaNodeRegistrationVote{
@@ -227,7 +228,7 @@ func BuildMetaNodeRegistrationVoteMsg(candidateNetworkAddress types.P2PAddress, 
 	}
 }
 
-func BuildWithdrawMetaNodeRegistrationDepositMsg(networkAddress types.P2PAddress, ownerAddress types.WalletAddress,
+func BuildWithdrawMetaNodeRegistrationDepositMsg(networkAddress fwtypes.P2PAddress, ownerAddress fwtypes.WalletAddress,
 ) *registerv1.MsgWithdrawMetaNodeRegistrationDeposit {
 
 	return &registerv1.MsgWithdrawMetaNodeRegistrationDeposit{
@@ -237,8 +238,8 @@ func BuildWithdrawMetaNodeRegistrationDepositMsg(networkAddress types.P2PAddress
 }
 
 // Stratos-chain 'sds' module
-func BuildFileUploadMsg(fileHash string, from types.WalletAddress, reporterAddress types.P2PAddress,
-	uploaderAddress types.WalletAddress) *sdsv1.MsgFileUpload {
+func BuildFileUploadMsg(fileHash string, from fwtypes.WalletAddress, reporterAddress fwtypes.P2PAddress,
+	uploaderAddress fwtypes.WalletAddress) *sdsv1.MsgFileUpload {
 
 	return &sdsv1.MsgFileUpload{
 		FileHash: fileHash,
@@ -248,7 +249,7 @@ func BuildFileUploadMsg(fileHash string, from types.WalletAddress, reporterAddre
 	}
 }
 
-func BuildPrepayMsg(senderAddress types.WalletAddress, beneficiaryAddress types.WalletAddress, amount txclienttypes.Coin,
+func BuildPrepayMsg(senderAddress fwtypes.WalletAddress, beneficiaryAddress fwtypes.WalletAddress, amount txclienttypes.Coin,
 ) *sdsv1.MsgPrepay {
 
 	return &sdsv1.MsgPrepay{
@@ -264,7 +265,7 @@ func BuildPrepayMsg(senderAddress types.WalletAddress, beneficiaryAddress types.
 
 }
 
-func BuildWithdrawMsg(amount txclienttypes.Coin, senderAddress types.WalletAddress, targetAddress types.WalletAddress,
+func BuildWithdrawMsg(amount txclienttypes.Coin, senderAddress fwtypes.WalletAddress, targetAddress fwtypes.WalletAddress,
 ) *potv1.MsgWithdraw {
 
 	return &potv1.MsgWithdraw{
@@ -279,7 +280,7 @@ func BuildWithdrawMsg(amount txclienttypes.Coin, senderAddress types.WalletAddre
 	}
 }
 
-func BuildSendMsg(senderAddress types.WalletAddress, toAddress types.WalletAddress, amount txclienttypes.Coin) *bankv1beta1.MsgSend {
+func BuildSendMsg(senderAddress fwtypes.WalletAddress, toAddress fwtypes.WalletAddress, amount txclienttypes.Coin) *bankv1beta1.MsgSend {
 
 	return &bankv1beta1.MsgSend{
 		FromAddress: senderAddress.String(),

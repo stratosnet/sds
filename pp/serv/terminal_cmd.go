@@ -17,6 +17,7 @@ import (
 	"github.com/stratosnet/sds/framework/metrics"
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 
 	"github.com/stratosnet/sds/pp"
@@ -28,7 +29,6 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/pp/types"
 )
 
 const (
@@ -300,7 +300,7 @@ func (api *terminalCmd) Deactivate(ctx context.Context, param []string) (CmdResu
 		txFee.Simulate = false
 	}
 
-	if setting.State == types.PP_INACTIVE {
+	if setting.State == msgtypes.PP_INACTIVE {
 		return CmdResult{Msg: "The node is already inactive"}, nil
 	}
 

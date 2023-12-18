@@ -10,9 +10,9 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/tx"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/sds-msg/header"
 	"github.com/stratosnet/sds/sds-msg/protos"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 )
 
@@ -48,7 +48,7 @@ func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 
 	setting.State = target.ActivationState
 
-	if target.ActivationState == types.PP_INACTIVE {
+	if target.ActivationState == msgtypes.PP_INACTIVE {
 		pp.Log(ctx, "Current node is already inactive")
 		return
 	}
@@ -63,13 +63,13 @@ func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 
 // NoticeUnbondingPP Notice when this PP node unbonded all its deposit
 func NoticeUnbondingPP(ctx context.Context, conn core.WriteCloser) {
-	setting.State = types.PP_UNBONDING
+	setting.State = msgtypes.PP_UNBONDING
 	pp.Log(ctx, "Deactivation submitted, all tokens are being unbonded(taking around 180 days to complete)"+
 		"\n --- This node will be forced to suspend very soon! ---")
 }
 
 // NoticeDeactivatedPP Notice when this PP node was successfully deactivated after threshold period (180 days)
 func NoticeDeactivatedPP(ctx context.Context, conn core.WriteCloser) {
-	setting.State = types.PP_INACTIVE
+	setting.State = msgtypes.PP_INACTIVE
 	pp.Log(ctx, "This PP node is now deactivated")
 }

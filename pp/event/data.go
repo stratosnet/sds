@@ -9,6 +9,7 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/sds-msg/protos"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 	txclienttx "github.com/stratosnet/sds/tx-client/tx"
 	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 )
@@ -20,7 +21,7 @@ func reqActivateData(ctx context.Context, amount txclienttypes.Coin, txFee txcli
 		return nil, err
 	}
 
-	txMsg, err := txclienttx.BuildCreateResourceNodeMsg(txclienttypes.STORAGE, p2pserver.GetP2pServer(ctx).GetP2PPublicKey(), amount, ownerAddress)
+	txMsg, err := txclienttx.BuildCreateResourceNodeMsg(msgtypes.STORAGE, p2pserver.GetP2pServer(ctx).GetP2PPublicKey(), amount, ownerAddress)
 	if err != nil {
 		return nil, err
 	}

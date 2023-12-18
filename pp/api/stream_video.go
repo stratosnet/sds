@@ -29,9 +29,9 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/sds-msg/header"
 	"github.com/stratosnet/sds/sds-msg/protos"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 )
 
 type StreamReqBody struct {
@@ -73,7 +73,7 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if setting.State == types.PP_ACTIVE {
+	if setting.State == msgtypes.PP_ACTIVE {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "Current node is activated and is not allowed to cache video").ToBytes())
 		return
@@ -116,7 +116,7 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 func streamSharedVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
-	if setting.State == types.PP_ACTIVE {
+	if setting.State == msgtypes.PP_ACTIVE {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "Current node is activated and is not allowed to cache video").ToBytes())
 		return
@@ -212,7 +212,7 @@ func streamVideoP2P(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if setting.State == types.PP_ACTIVE {
+	if setting.State == msgtypes.PP_ACTIVE {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "Current node is activated and is not allowed to cache video").ToBytes())
 		return

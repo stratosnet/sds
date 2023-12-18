@@ -2,7 +2,10 @@ module github.com/stratosnet/sds/tx-client
 
 go 1.19
 
-replace github.com/stratosnet/sds/framework => ../framework // for development on local
+replace (
+	github.com/stratosnet/sds/framework => ../framework // for development on local
+	github.com/stratosnet/sds/sds-msg => ../sds-msg // for development on local
+)
 
 require (
 	cosmossdk.io/api v0.3.1
@@ -11,6 +14,7 @@ require (
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/pkg/errors v0.9.1
 	github.com/stratosnet/sds/framework v0.0.0-20231129214657-f955307cd2d7
+	github.com/stratosnet/sds/sds-msg v0.0.0-20231128190750-a3a5ff99118e
 	github.com/stratosnet/stratos-chain/api v0.0.0-20231213144458-496a5e4754ff
 	github.com/stretchr/testify v1.8.4
 	google.golang.org/grpc v1.58.3
@@ -54,7 +58,6 @@ require (
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
-	github.com/stratosnet/sds/sds-msg v0.0.0-20231128190750-a3a5ff99118e // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect

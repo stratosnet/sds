@@ -16,6 +16,7 @@ import (
 
 	registerv1 "github.com/stratosnet/stratos-chain/api/stratos/register/v1"
 
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 	"github.com/stratosnet/sds/tx-client/types"
 	"github.com/stratosnet/sds/tx-client/utils"
 )
@@ -46,7 +47,7 @@ func QueryAccount(address string) (*authv1beta1.BaseAccount, error) {
 
 func QueryResourceNodeState(p2pAddress string) (state types.ResourceNodeState, err error) {
 	state = types.ResourceNodeState{
-		IsActive:  types.PP_INACTIVE,
+		IsActive:  msgtypes.PP_INACTIVE,
 		Suspended: true,
 	}
 	conn, err := CreateGrpcConn()
@@ -71,11 +72,11 @@ func QueryResourceNodeState(p2pAddress string) (state types.ResourceNodeState, e
 	state.Suspended = resourceNode.Suspend
 	switch resourceNode.GetStatus() {
 	case stakingv1beta1.BondStatus_BOND_STATUS_BONDED:
-		state.IsActive = types.PP_ACTIVE
+		state.IsActive = msgtypes.PP_ACTIVE
 	case stakingv1beta1.BondStatus_BOND_STATUS_UNBONDING:
-		state.IsActive = types.PP_UNBONDING
+		state.IsActive = msgtypes.PP_UNBONDING
 	case stakingv1beta1.BondStatus_BOND_STATUS_UNBONDED:
-		state.IsActive = types.PP_INACTIVE
+		state.IsActive = msgtypes.PP_INACTIVE
 	}
 
 	tokenInt64, err := strconv.ParseInt(resourceNode.Tokens, 10, 64)

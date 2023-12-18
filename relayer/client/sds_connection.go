@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	basev1beta1 "cosmossdk.io/api/cosmos/base/v1beta1"
@@ -224,7 +224,6 @@ func (s *sdsConnection) txBroadcasterLoop() {
 		}()
 
 		setMsgInfoToTxBuilder(unsignedTx, unsignedSdkMsgs)
-
 		txBytes, err := tx.BuildTxBytes(txConfig, unsignedTx, setting.Config.BlockchainInfo.ChainId, unsignedMsgs)
 		if err != nil {
 			utils.ErrorLog("couldn't build tx bytes", err)
@@ -277,7 +276,7 @@ func (s *sdsConnection) txBroadcasterLoop() {
 				utils.ErrorLog("The stratos-chain tx broadcaster channel has been closed")
 				return
 			}
-			if msg.Type != "slashing_resource_node" { // Not printing slashing messages, since SP can slash up to 500 PPs at once, polluting the logs
+			if msg.Type != txclienttypes.MSG_TYPE_SLASHING_RESOURCE_NODE { // Not printing slashing messages, since SP can slash up to 500 PPs at once, polluting the logs
 				utils.DebugLogf("Received a new msg of type [%v] to broadcast! ", msg.Type)
 			}
 			for i := range msg.SignatureKeys {
@@ -318,15 +317,17 @@ func countMsgsByType(unsignedMsgs []*txclienttypes.UnsignedMsg) string {
 	return "[" + countString + "]"
 }
 
-func setMsgInfoToTxBuilder(tx *txv1beta1.Tx, txMsgs []*anypb.Any) {
-	tx.Body.Messages = txMsgs
-	tx.Body.Memo = ""
-	tx.AuthInfo.Fee.GasLimit = 0
+func setMsgInfoToTxBuilder(unsignedTx *txv1beta1.Tx, txMsgs []*anypb.Any) {
+	unsignedTx.Body = &txv1beta1.TxBody{
+		Messages: txMsgs,
+		Memo:     "",
+	}
+	unsignedTx.AuthInfo = &txv1beta1.AuthInfo{
+		Fee: &txv1beta1.Fee{
+			Amount:   []*basev1beta1.Coin{},
+			GasLimit: 0,
+		},
+	}
+
 	return
 }
-
-//func createTxConfigAndTxBuilder() (client.TxConfig, *txv1beta1.Tx) {
-//	txConfig := authtx.NewTxConfig([]signingv1beta1.SignMode{signingv1beta1.SignMode_SIGN_MODE_DIRECT})
-//	tx := &txv1beta1.Tx{}
-//	return txConfig, tx
-//}

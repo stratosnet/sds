@@ -7,19 +7,9 @@ import (
 	potv1 "github.com/stratosnet/stratos-chain/api/stratos/pot/v1"
 )
 
-type NodeType uint32
-
 const (
-	STORAGE     NodeType = 4
-	DATABASE    NodeType = 2
-	COMPUTATION NodeType = 1
-
-	PP_INACTIVE  uint32 = iota
-	PP_ACTIVE           = 1
-	PP_UNBONDING        = 2
-
-	SignatureSecp256k1 = iota
-	SignatureEd25519
+	SignatureSecp256k1 = 0
+	SignatureEd25519   = 1
 )
 
 type ResourceNodeState struct {
