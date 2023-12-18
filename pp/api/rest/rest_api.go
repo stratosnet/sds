@@ -10,6 +10,9 @@ import (
 
 func StartHTTPServ(ctx context.Context) {
 	httpServ := httpserv.MyNewHTTPServ(setting.Config.Streaming.RestPort)
-	httpServ.MyRoute("/videoSlice/", api.GetVideoSlice)
+	httpServ.MyRoute("/getOzone/", api.GetOzone)
+	httpServ.MyRoute("/prepareVideoFileCache/", api.PrepareVideoFileCache)
+	httpServ.MyRoute("/getVideoSliceCache/", api.GetVideoSliceCache)
+	httpServ.MyRoute("/findVideoSlice/", api.GetVideoSlice)
 	httpServ.MyStart(ctx)
 }
