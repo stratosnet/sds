@@ -13,9 +13,10 @@ import (
 	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/framework/msg/header"
 	fwtypes "github.com/stratosnet/sds/framework/types"
-	"github.com/stratosnet/sds/framework/utils"
+	fwutils "github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/framework/utils/httpserv"
 	"github.com/stratosnet/sds/sds-msg/protos"
+	msgutils "github.com/stratosnet/sds/sds-msg/utils"
 
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
@@ -28,7 +29,7 @@ import (
 
 // GetFileStorageInfo p to pp. The downloader is assumed the default wallet of this node, if this function is invoked.
 func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, w http.ResponseWriter) {
-	utils.DebugLog("GetFileStorageInfo")
+	fwutils.DebugLog("GetFileStorageInfo")
 
 	if !setting.CheckLogin() {
 		if w != nil {
@@ -37,7 +38,7 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, w ht
 		return
 	}
 	if len(path) < setting.DownloadPathMinLen {
-		utils.DebugLog("invalid path length")
+		fwutils.DebugLog("invalid path length")
 		return
 	}
 	_, walletAddress, fileHash, _, err := fwtypes.ParseFileHandle(path)
@@ -63,7 +64,7 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, w ht
 
 	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
-	wsignMsg := utils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, "", nowSec) // need to retrieve sn first
+	wsignMsg := msgutils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, "", nowSec) // need to retrieve sn first
 	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		return
@@ -95,7 +96,7 @@ func ClearFileInfoAndDownloadTask(ctx context.Context, fileHash string, fileReqI
 func ReqClearDownloadTask(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqClearDownloadTask
 	if err := VerifyMessage(ctx, header.ReqClearDownloadTask, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
+		fwutils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
 	if requests.UnmarshalData(ctx, &target) {
@@ -107,9 +108,9 @@ func ReqClearDownloadTask(ctx context.Context, conn core.WriteCloser) {
 func ReqFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	var target protos.ReqFileStorageInfo
 	if err := VerifyMessage(ctx, header.ReqFileStorageInfo, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
+		fwutils.ErrorLog("failed verifying the message, ", err.Error())
 	}
-	utils.Log("pp get ReqFileStorageInfo directly transfer to SP")
+	fwutils.Log("pp get ReqFileStorageInfo directly transfer to SP")
 	p2pserver.GetP2pServer(ctx).TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
 }
 
@@ -119,7 +120,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	pp.Log(ctx, "get，RspFileStorageInfo")
 	var target protos.RspFileStorageInfo
 	if err := VerifyMessage(ctx, header.RspFileStorageInfo, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
+		fwutils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
@@ -177,13 +178,13 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 }
 
 func GetFileReplicaInfo(ctx context.Context, path string, replicaIncreaseNum uint32) {
-	utils.DebugLog("GetFileReplicaInfo")
+	fwutils.DebugLog("GetFileReplicaInfo")
 
 	if !setting.CheckLogin() {
 		return
 	}
 	if len(path) < setting.DownloadPathMinLen {
-		utils.DebugLog("invalid path length")
+		fwutils.DebugLog("invalid path length")
 		return
 	}
 	_, _, fileHash, _, err := fwtypes.ParseFileHandle(path)
@@ -195,7 +196,7 @@ func GetFileReplicaInfo(ctx context.Context, path string, replicaIncreaseNum uin
 
 	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
-	wsignMsg := utils.GetFileReplicaInfoWalletSignMessage(fileHash, setting.WalletAddress, nowSec)
+	wsignMsg := msgutils.GetFileReplicaInfoWalletSignMessage(fileHash, setting.WalletAddress, nowSec)
 	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		return
@@ -212,7 +213,7 @@ func RspFileReplicaInfo(ctx context.Context, conn core.WriteCloser) {
 	pp.Log(ctx, "get，RspGetFileReplicaInfo")
 	var target protos.RspFileReplicaInfo
 	if err := VerifyMessage(ctx, header.RspFileReplicaInfo, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
+		fwutils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {

@@ -23,6 +23,10 @@ import (
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/framework/utils/httpserv"
+	"github.com/stratosnet/sds/sds-msg/protos"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
+	msgutils "github.com/stratosnet/sds/sds-msg/utils"
+
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
@@ -30,8 +34,6 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/sds-msg/protos"
-	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 )
 
 type StreamReqBody struct {
@@ -571,7 +573,7 @@ func getSliceInfoBySliceNumber(fInfo *protos.RspFileStorageInfo, sliceNumber uin
 func reqDownloadMsg(hash, sdmPath, sn string) rpc_api.ParamReqDownloadFile {
 	// param
 	nowSec := time.Now().Unix()
-	sign, _ := setting.WalletPrivateKey.Sign([]byte(utils.GetFileDownloadWalletSignMessage(hash, setting.WalletAddress, sn, nowSec)))
+	sign, _ := setting.WalletPrivateKey.Sign([]byte(msgutils.GetFileDownloadWalletSignMessage(hash, setting.WalletAddress, sn, nowSec)))
 	walletPublicKey, _ := fwtypes.WalletPubKeyToBech32(setting.WalletPublicKey)
 	walletSign := rpc_api.Signature{
 		Address:   setting.WalletAddress,
@@ -599,7 +601,7 @@ func reqDownloadDataMsg(fInfo *protos.RspFileStorageInfo, sliceInfo *protos.Down
 
 func reqGetSharedMsg(shareLink string) rpc_api.ParamReqGetShared {
 	nowSec := time.Now().Unix()
-	sign, _ := setting.WalletPrivateKey.Sign([]byte(utils.GetShareFileWalletSignMessage(shareLink, setting.WalletAddress, nowSec)))
+	sign, _ := setting.WalletPrivateKey.Sign([]byte(msgutils.GetShareFileWalletSignMessage(shareLink, setting.WalletAddress, nowSec)))
 	walletPublicKey, _ := fwtypes.WalletPubKeyToBech32(setting.WalletPublicKey)
 	walletSign := rpc_api.Signature{
 		Address:   setting.WalletAddress,
@@ -615,7 +617,7 @@ func reqGetSharedMsg(shareLink string) rpc_api.ParamReqGetShared {
 
 func reqDownloadShared(fileHash, sn, reqId string) rpc_api.ParamReqDownloadShared {
 	nowSec := time.Now().Unix()
-	sign, _ := setting.WalletPrivateKey.Sign([]byte(utils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, sn, nowSec)))
+	sign, _ := setting.WalletPrivateKey.Sign([]byte(msgutils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, sn, nowSec)))
 	walletPublicKey, _ := fwtypes.WalletPubKeyToBech32(setting.WalletPublicKey)
 	walletSign := rpc_api.Signature{
 		Address:   setting.WalletAddress,

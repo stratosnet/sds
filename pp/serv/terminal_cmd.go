@@ -18,6 +18,7 @@ import (
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
 	msgtypes "github.com/stratosnet/sds/sds-msg/types"
+	msgutils "github.com/stratosnet/sds/sds-msg/utils"
 	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 
 	"github.com/stratosnet/sds/pp"
@@ -125,7 +126,7 @@ func (api *terminalCmd) RegisterPP(ctx context.Context, param []string) (CmdResu
 
 	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
-	wsignMsg := utils.RegisterNewPPWalletSignMessage(setting.WalletAddress, nowSec)
+	wsignMsg := msgutils.RegisterNewPPWalletSignMessage(setting.WalletAddress, nowSec)
 	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
@@ -259,7 +260,7 @@ func (api *terminalCmd) FileStatus(ctx context.Context, param []string) (CmdResu
 	fileHash := param[0]
 	timestamp := time.Now().Unix()
 
-	signature, err := setting.WalletPrivateKey.Sign([]byte(utils.GetFileStatusWalletSignMessage(fileHash, setting.WalletAddress, timestamp)))
+	signature, err := setting.WalletPrivateKey.Sign([]byte(msgutils.GetFileStatusWalletSignMessage(fileHash, setting.WalletAddress, timestamp)))
 	if err != nil {
 		return CmdResult{Msg: ""}, err
 	}
@@ -371,7 +372,7 @@ func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, 
 
 	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
-	wsignMsg := utils.PrepayWalletSignMessage(setting.WalletAddress, nowSec)
+	wsignMsg := msgutils.PrepayWalletSignMessage(setting.WalletAddress, nowSec)
 	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
@@ -514,7 +515,7 @@ func (api *terminalCmd) List(ctx context.Context, param []string) (CmdResult, er
 
 	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
-	wsignMsg := utils.FindMyFileListWalletSignMessage(setting.WalletAddress, nowSec)
+	wsignMsg := msgutils.FindMyFileListWalletSignMessage(setting.WalletAddress, nowSec)
 	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
@@ -548,7 +549,7 @@ func (api *terminalCmd) ClearExpShare(ctx context.Context, param []string) (CmdR
 	}
 	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
-	wsignMsg := utils.ClearExpiredShareLinksWalletSignMessage(setting.WalletAddress, nowSec)
+	wsignMsg := msgutils.ClearExpiredShareLinksWalletSignMessage(setting.WalletAddress, nowSec)
 	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
@@ -614,7 +615,7 @@ func (api *terminalCmd) DeleteFn(ctx context.Context, param []string) (CmdResult
 	nowSec := time.Now().Unix()
 	fileHash := param[0]
 	// sign the wallet signature by wallet private key
-	wsignMsg := utils.DeleteFileWalletSignMessage(fileHash, setting.WalletAddress, nowSec)
+	wsignMsg := msgutils.DeleteFileWalletSignMessage(fileHash, setting.WalletAddress, nowSec)
 	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
@@ -695,7 +696,7 @@ func (api *terminalCmd) SharePath(ctx context.Context, param []string) (CmdResul
 	}
 	fileHash := param[0]
 	// sign the wallet signature by wallet private key
-	wsignMsg := utils.ShareFileWalletSignMessage(fileHash, setting.WalletAddress, nowSec)
+	wsignMsg := msgutils.ShareFileWalletSignMessage(fileHash, setting.WalletAddress, nowSec)
 	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
@@ -739,7 +740,7 @@ func (api *terminalCmd) ShareFile(ctx context.Context, param []string) (CmdResul
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
 	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
-	wsignMsg := utils.ShareFileWalletSignMessage(fileHash, setting.WalletAddress, nowSec)
+	wsignMsg := msgutils.ShareFileWalletSignMessage(fileHash, setting.WalletAddress, nowSec)
 	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
@@ -762,7 +763,7 @@ func (api *terminalCmd) AllShare(ctx context.Context, param []string) (CmdResult
 
 	// sign the wallet signature by wallet private key
 	nowSec := time.Now().Unix()
-	wsignMsg := utils.ShareLinkWalletSignMessage(setting.WalletAddress, nowSec)
+	wsignMsg := msgutils.ShareLinkWalletSignMessage(setting.WalletAddress, nowSec)
 	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
@@ -794,7 +795,7 @@ func (api *terminalCmd) CancelShare(ctx context.Context, param []string) (CmdRes
 	nowSec := time.Now().Unix()
 	shareId := param[0]
 	// sign the wallet signature by wallet private key
-	wsignMsg := utils.DeleteShareWalletSignMessage(shareId, setting.WalletAddress, nowSec)
+	wsignMsg := msgutils.DeleteShareWalletSignMessage(shareId, setting.WalletAddress, nowSec)
 	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
@@ -819,7 +820,7 @@ func (api *terminalCmd) GetShareFile(ctx context.Context, param []string) (CmdRe
 	nowSec := time.Now().Unix()
 	shareId := param[0]
 	// sign the wallet signature by wallet private key
-	wsignMsg := utils.GetShareFileWalletSignMessage(shareId, setting.WalletAddress, nowSec)
+	wsignMsg := msgutils.GetShareFileWalletSignMessage(shareId, setting.WalletAddress, nowSec)
 	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")

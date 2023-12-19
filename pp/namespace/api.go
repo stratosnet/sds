@@ -20,6 +20,10 @@ import (
 	"github.com/stratosnet/sds/framework/msg/header"
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
+	msgutils "github.com/stratosnet/sds/sds-msg/utils"
+	txclienttypes "github.com/stratosnet/sds/tx-client/types"
+
 	"github.com/stratosnet/sds/pp"
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/event"
@@ -31,8 +35,6 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/rpc"
-	"github.com/stratosnet/sds/sds-msg/protos"
-	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 )
 
 const (
@@ -1095,7 +1097,7 @@ func (api *rpcPrivApi) RequestRegisterNewPP(ctx context.Context, param rpc_api.P
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
 	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
-	wsignMsg := utils.RegisterNewPPWalletSignMessage(setting.WalletAddress, nowSec)
+	wsignMsg := msgutils.RegisterNewPPWalletSignMessage(setting.WalletAddress, nowSec)
 	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		result := &rpc_api.RPResult{Return: rpc_api.SIGNATURE_FAILURE + ", wrong wallet signature"}

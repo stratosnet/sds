@@ -8,7 +8,10 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/framework/msg/header"
 	fwtypes "github.com/stratosnet/sds/framework/types"
-	"github.com/stratosnet/sds/framework/utils"
+	fwutils "github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
+	msgutils "github.com/stratosnet/sds/sds-msg/utils"
+
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
@@ -16,7 +19,6 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 var (
@@ -69,7 +71,7 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 	pp.DebugLog(ctx, "RspShareLink(ctx context.Context, conn core.WriteCloser) {RspShareLink(ctx context.Context, conn core.WriteCloser) {")
 	var target protos.RspShareLink
 	if err := VerifyMessage(ctx, header.RspShareLink, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
+		fwutils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
 	rpcResult := &rpc.FileShareResult{}
@@ -130,7 +132,7 @@ func RspShareLink(ctx context.Context, conn core.WriteCloser) {
 func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspShareFile
 	if err := VerifyMessage(ctx, header.RspShareFile, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
+		fwutils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
 	rpcResult := &rpc.FileShareResult{}
@@ -166,7 +168,7 @@ func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspDeleteShare
 	if err := VerifyMessage(ctx, header.RspDeleteShare, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
+		fwutils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
 	rpcResult := &rpc.FileShareResult{}
@@ -213,7 +215,7 @@ func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAdd
 func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	var target protos.RspGetShareFile
 	if err := VerifyMessage(ctx, header.RspGetShareFile, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
+		fwutils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
@@ -232,7 +234,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	}
 
 	if target.ShareRequest == nil {
-		utils.ErrorLog("got empty ShareRequest from sp")
+		fwutils.ErrorLog("got empty ShareRequest from sp")
 		return
 	}
 
@@ -242,8 +244,8 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	utils.Log("get RspGetShareFile", target.Result.State, target.Result.Msg)
-	utils.Log("FileInfo:", target.FileInfo)
+	fwutils.Log("get RspGetShareFile", target.Result.State, target.Result.Msg)
+	fwutils.Log("FileInfo:", target.FileInfo)
 
 	for idx, fileInfo := range target.FileInfo {
 		saveAs := ""
@@ -272,7 +274,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 
 			file.StartLocalDownload(fileInfo.FileHash)
 			req = requests.ReqFileStorageInfoData(ctx, filePath, "", saveAs, setting.WalletAddress, setting.WalletPublicKey.Bytes(), nil, target.ShareRequest, target.ShareRequest.ReqTime)
-			sigMsg := utils.GetFileDownloadWalletSignMessage(fileInfo.FileHash, setting.WalletAddress, target.SequenceNumber, target.ShareRequest.ReqTime)
+			sigMsg := msgutils.GetFileDownloadWalletSignMessage(fileInfo.FileHash, setting.WalletAddress, target.SequenceNumber, target.ShareRequest.ReqTime)
 			sign, err := setting.WalletPrivateKey.Sign([]byte(sigMsg))
 			if err != nil {
 				return
@@ -286,7 +288,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 func GetFilePath(key string) string {
 	filePath, ok := sdmMap.Load(key)
 	if !ok {
-		utils.DebugLog("FAILED!")
+		fwutils.DebugLog("FAILED!")
 		return ""
 	}
 
