@@ -11,9 +11,12 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/framework/crypto"
 	"github.com/stratosnet/sds/framework/metrics"
+	"github.com/stratosnet/sds/framework/msg/header"
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/framework/utils/httpserv"
+	"github.com/stratosnet/sds/sds-msg/protos"
+
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
@@ -21,8 +24,6 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/sds-msg/header"
-	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 // GetFileStorageInfo p to pp. The downloader is assumed the default wallet of this node, if this function is invoked.

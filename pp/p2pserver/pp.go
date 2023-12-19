@@ -14,6 +14,8 @@ import (
 	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
@@ -126,6 +128,9 @@ func (p *P2pServer) newServer(ctx context.Context) *core.Server {
 		netID := conn.(*core.ServerConn).GetNetID()
 		p.PPDisconnectedNetId(ctx, netID)
 	})
+	onBadAppVerOption := core.OnBadAppVerOption(func(version uint16, cmd uint8, minAppVer uint16) []byte {
+		return p.BuildBadVersionMsg(version, cmd, minAppVer)
+	})
 
 	maxConnections := setting.DefaultMaxConnections
 	if setting.Config.Traffic.MaxConnections > maxConnections {
@@ -138,6 +143,7 @@ func (p *P2pServer) newServer(ctx context.Context) *core.Server {
 	server := core.CreateServer(onConnectOption,
 		onErrorOption,
 		onCloseOption,
+		onBadAppVerOption,
 		core.BufferSizeOption(10000),
 		core.LogOpenOption(true),
 		core.MinAppVersionOption(setting.Config.Version.MinAppVer),
@@ -191,6 +197,20 @@ func (p *P2pServer) initQuitChs(ctx context.Context) context.Context {
 
 func (p *P2pServer) AddConnConntextKey(key interface{}) {
 	p.connContextKey = append(p.connContextKey, key)
+}
+
+func (p *P2pServer) BuildBadVersionMsg(version uint16, cmd uint8, minAppVer uint16) []byte {
+	req := &protos.RspBadVersion{
+		Version:        int32(version),
+		MinimumVersion: int32(minAppVer),
+		Command:        uint32(cmd),
+	}
+	data, err := proto.Marshal(req)
+	if err != nil {
+		utils.ErrorLog(err)
+		return nil
+	}
+	return data
 }
 
 func GetP2pServer(ctx context.Context) *P2pServer {

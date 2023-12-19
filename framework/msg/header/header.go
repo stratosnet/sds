@@ -11,7 +11,7 @@ package header
 */
 
 import (
-	"github.com/stratosnet/sds/sds-msg/utils"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 const (

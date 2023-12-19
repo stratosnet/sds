@@ -17,6 +17,7 @@ import (
 	"github.com/stratosnet/sds/framework/crypto/encryption"
 	"github.com/stratosnet/sds/framework/crypto/encryption/hdkey"
 	"github.com/stratosnet/sds/framework/metrics"
+	"github.com/stratosnet/sds/framework/msg/header"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/file"
@@ -24,7 +25,6 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/sds-msg/header"
 	"github.com/stratosnet/sds/sds-msg/protos"
 )
 

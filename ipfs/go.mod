@@ -2,12 +2,12 @@ module github.com/stratosnet/sds/ipfs
 
 go 1.19
 
-//replace (
-//	github.com/stratosnet/sds => ../ // for development on local
-//	github.com/stratosnet/sds/framework => ../framework // for development on local
-//	github.com/stratosnet/sds/sds-msg => ../sds-msg // for development on local
-//	github.com/stratosnet/sds/tx-client => ../tx-client // for development on local
-//)
+replace (
+	github.com/stratosnet/sds => ../ // for development on local
+	github.com/stratosnet/sds/framework => ../framework // for development on local
+	github.com/stratosnet/sds/sds-msg => ../sds-msg // for development on local
+	github.com/stratosnet/sds/tx-client => ../tx-client // for development on local
+)
 
 require (
 	github.com/alex023/clock v0.0.0-20191208111215-c265f1b2ab18

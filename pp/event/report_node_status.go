@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/framework/msg/header"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/requests"
-	"github.com/stratosnet/sds/sds-msg/header"
 	"github.com/stratosnet/sds/sds-msg/protos"
 )
 

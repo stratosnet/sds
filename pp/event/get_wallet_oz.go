@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/framework/msg/header"
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
@@ -13,7 +14,6 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/sds-msg/header"
 	"github.com/stratosnet/sds/sds-msg/protos"
 )
 

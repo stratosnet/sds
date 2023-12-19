@@ -19,6 +19,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/stratosnet/sds/framework/crypto"
+	"github.com/stratosnet/sds/framework/msg/header"
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/framework/utils/httpserv"
@@ -29,7 +30,6 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/sds-msg/header"
 	"github.com/stratosnet/sds/sds-msg/protos"
 	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 )

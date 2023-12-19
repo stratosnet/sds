@@ -5,7 +5,7 @@ import (
 	"context"
 
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/sds-msg/header"
+	"github.com/stratosnet/sds/framework/msg/header"
 )
 
 type VerifierFunc func(context.Context, header.MsgType, interface{}) error

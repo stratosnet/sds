@@ -4,9 +4,9 @@ import (
 	"reflect"
 	"unsafe"
 
+	"github.com/stratosnet/sds/framework/msg/header"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/framework/utils/cmem"
-	"github.com/stratosnet/sds/sds-msg/header"
 )
 
 // RelayMsgBuf application layer internal buffer for msg，

@@ -6,6 +6,7 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	"github.com/stratosnet/sds/framework/core"
+	"github.com/stratosnet/sds/framework/msg/header"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
@@ -14,7 +15,6 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/tx"
-	"github.com/stratosnet/sds/sds-msg/header"
 	"github.com/stratosnet/sds/sds-msg/protos"
 	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 	"github.com/stratosnet/sds/tx-client/grpc"

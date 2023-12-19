@@ -15,13 +15,12 @@ import (
 	"github.com/alex023/clock"
 	"github.com/pkg/errors"
 
-	"github.com/stratosnet/sds/sds-msg/header"
-
 	"github.com/stratosnet/sds/framework/core"
 	fwed25519 "github.com/stratosnet/sds/framework/crypto/ed25519"
 	"github.com/stratosnet/sds/framework/crypto/encryption"
 	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/framework/msg"
+	"github.com/stratosnet/sds/framework/msg/header"
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
 )

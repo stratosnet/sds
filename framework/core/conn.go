@@ -11,15 +11,12 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
-
-	"github.com/stratosnet/sds/sds-msg/header"
-	"github.com/stratosnet/sds/sds-msg/protos"
 
 	fwed25519 "github.com/stratosnet/sds/framework/crypto/ed25519"
 	"github.com/stratosnet/sds/framework/crypto/encryption"
 	"github.com/stratosnet/sds/framework/metrics"
 	fwmsg "github.com/stratosnet/sds/framework/msg"
+	"github.com/stratosnet/sds/framework/msg/header"
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
 )
@@ -391,19 +388,8 @@ func (sc *ServerConn) Close() {
 	})
 }
 
-func (sc *ServerConn) SendBadVersionMsg(version uint16, cmd uint8) {
-	req := &protos.RspBadVersion{
-		Version:        int32(version),
-		MinimumVersion: int32(sc.minAppVer),
-		Command:        uint32(cmd),
-	}
-	data, err := proto.Marshal(req)
-	if err != nil {
-		utils.ErrorLog(err)
-		return
-	}
-
-	err = sc.Write(&fwmsg.RelayMsgBuf{
+func (sc *ServerConn) SendBadVersionMsg(data []byte) {
+	err := sc.Write(&fwmsg.RelayMsgBuf{
 		MSGHead: header.MakeMessageHeader(1, sc.minAppVer, uint32(len(data)), header.RspBadVersion),
 		MSGBody: data,
 	}, context.Background())
@@ -479,7 +465,8 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 				copy(msgBuf[:header.MsgHeaderLen], headerBytes[:header.MsgHeaderLen])
 				msgH.Decode(msgBuf[:header.MsgHeaderLen])
 				if msgH.Version < sc.minAppVer {
-					sc.SendBadVersionMsg(msgH.Version, msgH.Cmd)
+					badAppVerReqData := sc.belong.opts.onBadAppVer(msgH.Version, msgH.Cmd, sc.minAppVer)
+					sc.SendBadVersionMsg(badAppVerReqData)
 					Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "fwmsg versions don't match")
 					return
 				}

@@ -6,8 +6,7 @@ import (
 
 	"github.com/magiconair/properties/assert"
 
-	"github.com/stratosnet/sds/sds-msg/header"
-
+	"github.com/stratosnet/sds/framework/msg/header"
 	"github.com/stratosnet/sds/framework/utils"
 )
 
