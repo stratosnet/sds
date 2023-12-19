@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/stratosnet/sds/framework/core"
+	fwcrypto "github.com/stratosnet/sds/framework/crypto"
 	"github.com/stratosnet/sds/framework/msg/header"
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
@@ -39,7 +40,7 @@ func verifyRspUploadFile(msg *protos.RspUploadFile) error {
 	if err != nil {
 		return errors.New("failed encoding sp's sign message")
 	}
-	msgSignBytes := utils.GetProtoMsgSignBytes(msgBytes)
+	msgSignBytes := fwcrypto.CalcHashBytes(msgBytes)
 	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, msgSignBytes) {
 		return errors.New("failed verifying sp's signature")
 	}
@@ -110,7 +111,7 @@ func verifyRspBackupStatus(msg *protos.RspBackupStatus) error {
 	if err != nil {
 		return errors.New("failed to encoding sp's sign message")
 	}
-	msgSignBytes := utils.GetProtoMsgSignBytes(msgBytes)
+	msgSignBytes := fwcrypto.CalcHashBytes(msgBytes)
 	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, msgSignBytes) {
 		return errors.New("failed verifying sp's signature")
 	}
@@ -177,7 +178,7 @@ func verifyNoticeFileSliceBackup(msg *protos.NoticeFileSliceBackup) error {
 	if err != nil {
 		return errors.New("failed to encoding sp's sign message")
 	}
-	signBytes := utils.GetProtoMsgSignBytes(msgBytes)
+	signBytes := fwcrypto.CalcHashBytes(msgBytes)
 	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, signBytes) {
 		return errors.New("failed verifying sp's signature")
 	}
@@ -227,7 +228,7 @@ func verifyRspFileStorageInfo(msg *protos.RspFileStorageInfo) error {
 	if err != nil {
 		return errors.New("failed to encoding sp's sign message")
 	}
-	msgSignBytes := utils.GetProtoMsgSignBytes(msgBytes)
+	msgSignBytes := fwcrypto.CalcHashBytes(msgBytes)
 
 	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, msgSignBytes) {
 		return errors.New("failed verifying sp's signature")

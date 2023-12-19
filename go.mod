@@ -28,9 +28,9 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.6.1
-	github.com/stratosnet/sds/framework v0.0.0-20231219195608-0f13519636a1
-	github.com/stratosnet/sds/sds-msg v0.0.0-20231219192552-9f49da4e2932
-	github.com/stratosnet/sds/tx-client v0.0.0-20231219200303-89880a39900b
+	github.com/stratosnet/sds/framework v0.0.0-20231219203512-d3114d91d78b
+	github.com/stratosnet/sds/sds-msg v0.0.0-20231219203512-d3114d91d78b
+	github.com/stratosnet/sds/tx-client v0.0.0-20231219204044-a8ad8fa953b2
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
