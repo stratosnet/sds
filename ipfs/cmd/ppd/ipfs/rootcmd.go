@@ -17,6 +17,7 @@ import (
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/sds-msg/protos"
+	msgutils "github.com/stratosnet/sds/sds-msg/utils"
 )
 
 const (
@@ -272,7 +273,7 @@ func reqUploadMsg(filePath, hash, sn string) (*rpc_api.ParamReqUploadFile, error
 	}
 	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
 	if err != nil {
 		return nil, err
 	}
@@ -304,7 +305,7 @@ func uploadDataMsg(hash, data, sn string) (rpc_api.ParamUploadData, error) {
 	}
 	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
 	if err != nil {
 		return rpc_api.ParamUploadData{}, err
 	}
@@ -333,7 +334,7 @@ func reqDownloadMsg(hash, sdmPath, sn string) (*rpc_api.ParamReqDownloadFile, er
 	}
 	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileDownloadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetFileDownloadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
 	if err != nil {
 		return nil, err
 	}
@@ -378,7 +379,7 @@ func reqListMsg(page uint64) (*rpc_api.ParamReqFileList, error) {
 	}
 	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.FindMyFileListWalletSignMessage(WalletAddress, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.FindMyFileListWalletSignMessage(WalletAddress, nowSec)))
 	if err != nil {
 		return nil, err
 	}

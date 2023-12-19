@@ -2,12 +2,12 @@ module github.com/stratosnet/sds/ipfs
 
 go 1.19
 
-replace (
-	github.com/stratosnet/sds => ../ // for development on local
-	github.com/stratosnet/sds/framework => ../framework // for development on local
-	github.com/stratosnet/sds/sds-msg => ../sds-msg // for development on local
-	github.com/stratosnet/sds/tx-client => ../tx-client // for development on local
-)
+//replace (
+//	github.com/stratosnet/sds => ../ // for development on local
+//	github.com/stratosnet/sds/framework => ../framework // for development on local
+//	github.com/stratosnet/sds/sds-msg => ../sds-msg // for development on local
+//	github.com/stratosnet/sds/tx-client => ../tx-client // for development on local
+//)
 
 require (
 	github.com/alex023/clock v0.0.0-20191208111215-c265f1b2ab18
@@ -18,9 +18,9 @@ require (
 	github.com/ipfs/kubo v0.17.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.6.1
-	github.com/stratosnet/sds v0.11.3-0.20231218181454-09eaf64698ae
-	github.com/stratosnet/sds/framework v0.0.0-20231218174517-d9c0a260707a
-	github.com/stratosnet/sds/sds-msg v0.0.0-20231218162551-99b9bde57a35
+	github.com/stratosnet/sds v0.11.3-0.20231219210612-f055bc0393a7
+	github.com/stratosnet/sds/framework v0.0.0-20231219203512-d3114d91d78b
+	github.com/stratosnet/sds/sds-msg v0.0.0-20231219203512-d3114d91d78b
 )
 
 require (
@@ -217,8 +217,8 @@ require (
 	github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stratosnet/sds/tx-client v0.0.0-20231218175214-8e0c9164efef // indirect
-	github.com/stratosnet/stratos-chain/api v0.0.0-20231213144458-496a5e4754ff // indirect
+	github.com/stratosnet/sds/tx-client v0.0.0-20231219204044-a8ad8fa953b2 // indirect
+	github.com/stratosnet/stratos-chain/api v0.0.0-20231219162708-4941432f869c // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/texttheater/golang-levenshtein v0.0.0-20180516184445-d188e65d659e // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
