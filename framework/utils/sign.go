@@ -3,10 +3,7 @@ package utils
 import (
 	"strconv"
 
-	"google.golang.org/protobuf/proto"
-
 	"github.com/stratosnet/sds/framework/crypto"
-	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 // GetFileUploadWalletSignMessage upload: wallet sign message for file upload request from the (rpc or cmd) user
@@ -19,38 +16,9 @@ func GetFileDownloadWalletSignMessage(fileHash, walletAddr, sn string, timestamp
 	return fileHash + walletAddr + sn + strconv.FormatInt(timestamp, 10)
 }
 
-// GetRspUploadFileSpNodeSignMessage upload: node sign message for upload file response, between sp and uploader pp, the dest pp verify this too
-func GetRspUploadFileSpNodeSignMessage(rspMsg *protos.RspUploadFile) ([]byte, error) {
-	msg, err := proto.Marshal(rspMsg)
-	if err != nil {
-		return nil, err
-	}
-	return crypto.CalcHashBytes(msg), nil
-}
-
-func GetRspBackupFileSpNodeSignMessage(rspMsg *protos.RspBackupStatus) ([]byte, error) {
-	msg, err := proto.Marshal(rspMsg)
-	if err != nil {
-		return nil, err
-	}
-	return crypto.CalcHashBytes(msg), nil
-}
-
-func GetNoticeFileSliceBackupSpNodeSignMessage(reqMsg *protos.NoticeFileSliceBackup) ([]byte, error) {
-	msg, err := proto.Marshal(reqMsg)
-	if err != nil {
-		return nil, err
-	}
-	return crypto.CalcHashBytes(msg), nil
-}
-
-// GetRspFileStorageInfoNodeSignMessage download: node sign message for download file response, between sp and downloader pp
-func GetRspFileStorageInfoNodeSignMessage(rspMsg *protos.RspFileStorageInfo) ([]byte, error) {
-	msg, err := proto.Marshal(rspMsg)
-	if err != nil {
-		return nil, err
-	}
-	return crypto.CalcHashBytes(msg), nil
+// GetProtoMsgSignBytes download: node sign message for download file response, between sp and downloader pp
+func GetProtoMsgSignBytes(rspMsg []byte) []byte {
+	return crypto.CalcHashBytes(rspMsg)
 }
 
 // GetFileReplicaInfoWalletSignMessage replica info: wallet sign message for get file replica info request from the (rpc or cmd) user

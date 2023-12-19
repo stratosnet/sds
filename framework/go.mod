@@ -2,8 +2,6 @@ module github.com/stratosnet/sds/framework
 
 go 1.19
 
-replace github.com/stratosnet/sds/sds-msg => ../sds-msg // for development on local
-
 require (
 	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
 	github.com/Nik-U/pbc v0.0.0-20181205041846-3e516ca0c5d6
@@ -34,7 +32,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.17.0
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
-	github.com/stratosnet/sds/sds-msg v0.0.0-20231218162551-99b9bde57a35
 	github.com/stretchr/testify v1.8.4
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/vmihailenco/msgpack v4.0.4+incompatible

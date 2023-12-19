@@ -35,11 +35,12 @@ func verifyRspUploadFile(msg *protos.RspUploadFile) error {
 
 	nodeSign := msg.NodeSign
 	msg.NodeSign = nil
-	signmsg, err := utils.GetRspUploadFileSpNodeSignMessage(msg)
+	msgBytes, err := proto.Marshal(msg)
 	if err != nil {
-		return errors.New("failed getting sp's sign message")
+		return errors.New("failed encoding sp's sign message")
 	}
-	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, signmsg) {
+	msgSignBytes := utils.GetProtoMsgSignBytes(msgBytes)
+	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, msgSignBytes) {
 		return errors.New("failed verifying sp's signature")
 	}
 	return nil
@@ -105,11 +106,12 @@ func verifyRspBackupStatus(msg *protos.RspBackupStatus) error {
 	}
 	nodeSign := msg.NodeSign
 	msg.NodeSign = nil
-	signmsg, err := utils.GetRspBackupFileSpNodeSignMessage(msg)
+	msgBytes, err := proto.Marshal(msg)
 	if err != nil {
-		return errors.New("failed getting sp's sign message")
+		return errors.New("failed to encoding sp's sign message")
 	}
-	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, signmsg) {
+	msgSignBytes := utils.GetProtoMsgSignBytes(msgBytes)
+	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, msgSignBytes) {
 		return errors.New("failed verifying sp's signature")
 	}
 	return nil
@@ -171,11 +173,12 @@ func verifyNoticeFileSliceBackup(msg *protos.NoticeFileSliceBackup) error {
 	}
 	nodeSign := msg.NodeSign
 	msg.NodeSign = nil
-	signmsg, err := utils.GetNoticeFileSliceBackupSpNodeSignMessage(msg)
+	msgBytes, err := proto.Marshal(msg)
 	if err != nil {
-		return errors.New("failed getting sp's sign message")
+		return errors.New("failed to encoding sp's sign message")
 	}
-	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, signmsg) {
+	signBytes := utils.GetProtoMsgSignBytes(msgBytes)
+	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, signBytes) {
 		return errors.New("failed verifying sp's signature")
 	}
 	return nil
@@ -219,11 +222,14 @@ func verifyRspFileStorageInfo(msg *protos.RspFileStorageInfo) error {
 	nodeSign := msg.NodeSign
 	msg.NodeSign = nil
 	msg.ReqId = ""
-	signmsg, err := utils.GetRspFileStorageInfoNodeSignMessage(msg)
+
+	msgBytes, err := proto.Marshal(msg)
 	if err != nil {
-		return errors.New("failed getting sp's sign message")
+		return errors.New("failed to encoding sp's sign message")
 	}
-	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, signmsg) {
+	msgSignBytes := utils.GetProtoMsgSignBytes(msgBytes)
+
+	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, msgSignBytes) {
 		return errors.New("failed verifying sp's signature")
 	}
 	return nil
