@@ -2,8 +2,6 @@ package utils
 
 import (
 	"strconv"
-
-	"github.com/stratosnet/sds/framework/crypto"
 )
 
 // GetFileUploadWalletSignMessage upload: wallet sign message for file upload request from the (rpc or cmd) user
@@ -14,11 +12,6 @@ func GetFileUploadWalletSignMessage(fileHash, walletAddr, sn string, timestamp i
 // GetFileDownloadWalletSignMessage download: wallet sign message for download request from the (rpc or cmd) user
 func GetFileDownloadWalletSignMessage(fileHash, walletAddr, sn string, timestamp int64) string {
 	return fileHash + walletAddr + sn + strconv.FormatInt(timestamp, 10)
-}
-
-// GetProtoMsgSignBytes download: node sign message for download file response, between sp and downloader pp
-func GetProtoMsgSignBytes(rspMsg []byte) []byte {
-	return crypto.CalcHashBytes(rspMsg)
 }
 
 // GetFileReplicaInfoWalletSignMessage replica info: wallet sign message for get file replica info request from the (rpc or cmd) user
