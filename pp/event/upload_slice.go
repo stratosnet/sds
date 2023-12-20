@@ -263,6 +263,9 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 				return
 			}
 			fileTask.Touch()
+			p := fileTask.GetUploadProgress()
+			pp.Logf(ctx, "fileHash: %v  uploaded：%.2f %% ", target.FileHash, p)
+			setting.ShowProgress(ctx, p)
 
 			target.Slice.SliceHash = target.SliceHash
 			reportReq := requests.ReqReportUploadSliceResultData(ctx,
@@ -655,9 +658,9 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 	metrics.UploadPerformanceLogData(target.FileHash+":RCV_PROGRESS_DETAIL:"+strconv.FormatInt(int64(target.SliceOffStart), 10), target.HandleTime)
 	progress := prg.(*task.UploadProgress)
 	progress.HasUpload += int64(target.SliceSize)
-	p := float32(progress.HasUpload) / float32(progress.Total) * 100
-	pp.Logf(ctx, "fileHash: %v  uploaded：%.2f %% ", target.FileHash, p)
-	setting.ShowProgress(ctx, p)
+	//p := float32(progress.HasUpload) / float32(progress.Total) * 100
+	//pp.Logf(ctx, "fileHash: %v  uploaded：%.2f %% ", target.FileHash, p)
+	//setting.ShowProgress(ctx, p)
 	//ProgressMap.Store(target.FileHash, p)
 	if progress.HasUpload >= progress.Total {
 		task.UploadProgressMap.Delete(target.FileHash)

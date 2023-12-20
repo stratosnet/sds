@@ -228,6 +228,25 @@ func (u *UploadFileTask) Touch() {
 	u.lastTouch = time.Now()
 }
 
+func (u *UploadFileTask) GetUploadProgress() float32 {
+	totalCount := 0
+	finishedCount := 0
+	for _, d := range u.destinations {
+		for _, s := range d.slices {
+			if s.Status != SLICE_STATUS_REPLACED {
+				totalCount++
+			}
+			if s.Status == SLICE_STATUS_FINISHED {
+				finishedCount++
+			}
+		}
+	}
+	if totalCount == 0 {
+		return 0.0
+	}
+	return float32(finishedCount) / float32(totalCount) * 100
+}
+
 func (u *UploadFileTask) GetUploadFileHash() string {
 	u.mutex.RLock()
 	defer u.mutex.RUnlock()
