@@ -221,8 +221,36 @@ func startUploadTask(ctx context.Context, fileHash string, uploadTask *task.Uplo
 	uploadTask.SetScheduledJob(func() { uploadTaskHelper(ctx, fileHash) })
 }
 
+func uploadResult(ctx context.Context, filehash string, err error) {
+	pp.Log(ctx, "******************************************************")
+	if errors.Is(err, task.UploadFinished) {
+		pp.Log(ctx, "* File ", filehash)
+		pp.Log(ctx, "* has been sent to destinations")
+	}
+
+	if errors.Is(err, task.UploadErrMaxRetries) {
+		pp.Log(ctx, "* The task to upload file ", filehash)
+		pp.Log(ctx, "* has failed, tried too many times")
+	}
+
+	if errors.Is(err, task.UploadErrFatalError) {
+		pp.Log(ctx, "* The task to upload file ", filehash)
+		pp.Log(ctx, "* has failed, fatal error occurred")
+	}
+
+	if errors.Is(err, task.UploadErrNoUploadTask) {
+		pp.Log(ctx, "* Upload task to upload file ", filehash)
+		pp.Log(ctx, "* has failed, can't find the task")
+	}
+
+	pp.Log(ctx, "******************************************************")
+}
+
 func uploadTaskHelper(ctx context.Context, fileHash string) {
 	err := uploadTaskHandler(ctx, fileHash)
+	if err != nil {
+		uploadResult(ctx, fileHash, err)
+	}
 	if errors.Is(err, task.UploadErrMaxRetries) || errors.Is(err, task.UploadFinished) || errors.Is(err, task.UploadErrFatalError) {
 		task.StopRepeatedUploadTaskJob(fileHash)
 		task.UploadFileTaskMap.Delete(fileHash)
