@@ -14,7 +14,7 @@ import (
 	"github.com/stratosnet/sds/utils"
 )
 
-const DOWNLOAD_SLICE_TIMEOUT = 300
+const DOWNLOAD_SLICE_TIMEOUT = 180
 
 type DownloadTimeoutHandler struct {
 }
