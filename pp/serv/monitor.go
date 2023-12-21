@@ -11,10 +11,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/stratosnet/sds/framework/crypto"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
-	"github.com/stratosnet/sds/utils"
 )
 
 const (
@@ -130,13 +131,13 @@ func TrafficInfoToMonitorClient(t TrafficInfo) {
 // CreateInitialToken the initial token is used to generate all following tokens
 func CreateInitialToken() string {
 	epoch := strconv.FormatInt(time.Now().Unix(), 10)
-	return utils.CalcHash([]byte(epoch + setting.Config.Keys.P2PAddress))
+	return crypto.CalcHash([]byte(epoch + setting.Config.Keys.P2PAddress))
 }
 
 // calculateToken
 func calculateToken(time int64) string {
 	t := strconv.FormatInt(time, 10)
-	return utils.CalcHash([]byte(t + setting.MonitorInitialToken))
+	return crypto.CalcHash([]byte(t + setting.MonitorInitialToken))
 }
 
 // GetCurrentToken

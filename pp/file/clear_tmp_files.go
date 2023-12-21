@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/alex023/clock"
-	"github.com/stratosnet/sds/pp/setting"
 
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/pp/setting"
 )
 
 const (

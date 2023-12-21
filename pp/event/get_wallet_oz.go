@@ -5,17 +5,18 @@ import (
 	"sync"
 
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/msg/header"
+	fwtypes "github.com/stratosnet/sds/framework/types"
+	fwutils "github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
+	msgutils "github.com/stratosnet/sds/sds-msg/utils"
+
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/datamesh"
-	"github.com/stratosnet/sds/utils/types"
 )
 
 var (
@@ -46,7 +47,7 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 	pp.DebugLog(ctx, "get GetWalletOz RSP")
 	var target protos.RspGetWalletOz
 	if err := VerifyMessage(ctx, header.RspGetWalletOz, &target); err != nil {
-		utils.ErrorLog("failed verifying the message, ", err.Error())
+		fwutils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
@@ -66,8 +67,8 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 
 	if reqMsg, loaded := uploadRequestMap.LoadAndDelete(requests.GetReqIdFromMessage(ctx)); loaded {
 		rmsg := reqMsg.(*protos.ReqUploadFile)
-		walletString := utils.GetFileUploadWalletSignMessage(rmsg.FileInfo.FileHash, setting.WalletAddress, target.SequenceNumber, rmsg.ReqTime)
-		wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(walletString))
+		walletString := msgutils.GetFileUploadWalletSignMessage(rmsg.FileInfo.FileHash, setting.WalletAddress, target.SequenceNumber, rmsg.ReqTime)
+		wsign, err := setting.WalletPrivateKey.Sign([]byte(walletString))
 		if err != nil {
 			return
 		}
@@ -78,12 +79,12 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 
 	if reqMsg, loaded := downloadRequestMap.LoadAndDelete(requests.GetReqIdFromMessage(ctx)); loaded {
 		rmsg := reqMsg.(*protos.ReqFileStorageInfo)
-		_, _, fileHash, _, err := datamesh.ParseFileHandle(rmsg.FileIndexes.FilePath)
+		_, _, fileHash, _, err := fwtypes.ParseFileHandle(rmsg.FileIndexes.FilePath)
 		if err != nil {
 			return
 		}
-		walletString := utils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, target.SequenceNumber, rmsg.ReqTime)
-		wsign, err := types.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(walletString))
+		walletString := msgutils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, target.SequenceNumber, rmsg.ReqTime)
+		wsign, err := setting.WalletPrivateKey.Sign([]byte(walletString))
 		if err != nil {
 			return
 		}

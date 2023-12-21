@@ -1,0 +1,22 @@
+{
+  "address": "1ba7b459e654d4e190fed36c602af7c6327b7ac2",
+  "name": "sp2",
+  "crypto": {
+    "cipher": "aes-128-ctr",
+    "ciphertext": "f50392d90119b0f137f84ec62624e8d8639effd0e2b34452a8db6c630b362944abd050cee4b21cbed65518a0b988658a84b7ebdc899c0dbb8ad8e2e8fc2e7fac9c7ca9e5d123cf155e5717601a2c1c27e07f02d1b80277f314289e21e5ab9c4ee8f59b4fc479335713f623b0dc382356c5a3a05a646c60ee9511295f9077edce8c85c72d504a9809b1dd388f8166d86ac75428060f645be3f349294fdd393db7ee053990b4144bd48ebbea09dfcada0072dd0d5483abf8275b7e4b32e61a78aebcc592319d8f8dbf4c94da9b5d0cb642d1e1e496c98ed8aaaa1c04037804b12d40abcc3502764e581d17cc3c7b33f7e646184e447bdc8c425903fd5efc",
+    "cipherparams": {
+      "iv": "3635fa4f889cf3c62c7b259719ddf81f"
+    },
+    "kdf": "scrypt",
+    "kdfparams": {
+      "dklen": 32,
+      "n": 4096,
+      "p": 6,
+      "r": 8,
+      "salt": "09e10a9dd427ff1e4dd4a5fe74690b56bf77fe3111702af6112be042f708ab57"
+    },
+    "mac": "ddb6f0663a669953eef58d6c1e54744a8074f5c77e4eea62aed61ed068a78d25"
+  },
+  "id": "091f41b7-21aa-4b5f-8b21-27c5e1e83c9c",
+  "version": 3
+}

@@ -12,39 +12,36 @@ import (
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
+	"github.com/stratosnet/sds/framework/msg"
+	"github.com/stratosnet/sds/framework/msg/header"
+	fwtypes "github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/utils"
-	utilstypes "github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 var (
 	requestInfoMap = utils.NewAutoCleanMap(60 * time.Minute) // used for req-rsp message pair verifications
 )
 
-func (p *P2pServer) SignP2pMessage(signMsg []byte) []byte {
+func (p *P2pServer) SignP2pMessage(signMsg []byte) ([]byte, error) {
 	return p.p2pPrivKey.Sign(signMsg)
 }
 
-func (p *P2pServer) GetP2PPublicKey() []byte {
-	return p.p2pPubKey.Bytes()
+func (p *P2pServer) GetP2PPublicKey() fwcryptotypes.PubKey {
+	return p.p2pPubKey
 }
 
-func (p *P2pServer) GetP2PAddress() string {
-	addr, err := p.p2pAddress.P2pAddressToBech()
-	if err != nil {
-		return ""
-	}
-	return addr
+func (p *P2pServer) GetP2PAddress() fwtypes.P2PAddress {
+	return p.p2pAddress
 }
 
 func (p *P2pServer) GetPPInfo() *protos.PPBaseInfo {
 	return &protos.PPBaseInfo{
-		P2PAddress:     p.GetP2PAddress(),
+		P2PAddress:     p.p2pAddress.String(),
 		WalletAddress:  setting.WalletAddress,
 		NetworkAddress: setting.NetworkAddress,
 		RestAddress:    setting.RestAddress,
@@ -65,15 +62,11 @@ func (p *P2pServer) StoreRequestInfo(reqId int64, reqMsgType uint8) {
 	requestInfoMap.Store((reqId&0x7FFFFFFFFFFFFF00)|int64(reqMsgType), reqMsgType)
 }
 
-func (p *P2pServer) GetP2PAddrInTypeAddress() utilstypes.Address {
-	return p.p2pAddress
-}
-
 func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb proto.Message, cmd header.MsgType) error {
 	msgBuf := &msg.RelayMsgBuf{
 		MSGSign: msg.MessageSign{
-			P2pPubKey:  p.GetP2PPublicKey(),
-			P2pAddress: p.GetP2PAddress(),
+			P2pPubKey:  p.GetP2PPublicKey().Bytes(),
+			P2pAddress: p.GetP2PAddress().String(),
 			Signer:     p.SignP2pMessage,
 		},
 	}
@@ -144,8 +137,8 @@ func (p *P2pServer) TransferSendMessageToPPServ(ctx context.Context, addr string
 		return errors.New(fmt.Sprintf("invalid message type %d", msgBuf.MSGHead.Cmd))
 	}
 	msgBuf.MSGSign = msg.MessageSign{
-		P2pPubKey:  p.GetP2PPublicKey(),
-		P2pAddress: p.GetP2PAddress(),
+		P2pPubKey:  p.GetP2PPublicKey().Bytes(),
+		P2pAddress: p.GetP2PAddress().String(),
 		Signer:     p.SignP2pMessage,
 	}
 	if strings.HasPrefix(cmd.Name, "Req") {
@@ -196,8 +189,8 @@ func (p *P2pServer) TransferSendMessageToSPServer(ctx context.Context, message *
 		return
 	}
 	message.MSGSign = msg.MessageSign{
-		P2pPubKey:  p.GetP2PPublicKey(),
-		P2pAddress: p.GetP2PAddress(),
+		P2pPubKey:  p.GetP2PPublicKey().Bytes(),
+		P2pAddress: p.GetP2PAddress().String(),
 		Signer:     p.SignP2pMessage,
 	}
 

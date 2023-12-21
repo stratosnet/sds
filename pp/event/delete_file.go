@@ -4,19 +4,19 @@ import (
 	"context"
 
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/msg/header"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 func DeleteFile(ctx context.Context, fileHash string, walletAddr string, walletPubkey, wsign []byte, reqTime int64) {
 	if setting.CheckLogin() {
 		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx,
-			requests.ReqDeleteFileData(fileHash, p2pserver.GetP2pServer(ctx).GetP2PAddress(), walletAddr, walletPubkey, wsign, reqTime),
+			requests.ReqDeleteFileData(fileHash, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(), walletAddr, walletPubkey, wsign, reqTime),
 			header.ReqDeleteFile)
 	}
 }
@@ -27,7 +27,7 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
 	}
 	if requests.UnmarshalData(ctx, &target) {
-		if target.P2PAddress == p2pserver.GetP2pServer(ctx).GetP2PAddress() {
+		if target.P2PAddress == p2pserver.GetP2pServer(ctx).GetP2PAddress().String() {
 			if target.Result.State == protos.ResultState_RES_SUCCESS {
 				pp.Log(ctx, "delete success ", target.Result.Msg)
 			} else {

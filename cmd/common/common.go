@@ -7,20 +7,20 @@ import (
 	"runtime/debug"
 	"syscall"
 
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
+	sdkmath "cosmossdk.io/math"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	fwtypes "github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/console"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/console"
-	"github.com/stratosnet/sds/utils/types"
-	stchaintypes "github.com/stratosnet/stratos-chain/types"
+	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 )
 
 const (
 	Home              string = "home"
-	SpHome            string = "sp-home"
 	Config            string = "config"
 	DefaultConfigPath string = "./config/config.toml"
 )
@@ -157,15 +157,14 @@ func SetupP2PKey() error {
 			return errors.New("invalid. The two passwords don't match")
 		}
 
-		p2pKeyAddress, err := utils.CreateP2PKey(setting.Config.Home.AccountsPath, nickname, password,
-			stchaintypes.SdsNodeP2PAddressPrefix)
+		p2pKeyAddress, err := fwtypes.CreateP2PKey(setting.Config.Home.AccountsPath, nickname, password)
 		if err != nil {
 			return errors.New("couldn't create p2p key: " + err.Error())
 		}
 
-		p2pKeyAddressString, err := p2pKeyAddress.ToBech(stchaintypes.SdsNodeP2PAddressPrefix)
-		if err != nil {
-			return errors.New("couldn't convert P2P key address to bech string: " + err.Error())
+		p2pKeyAddressString := fwtypes.P2PAddressBytesToBech32(p2pKeyAddress.Bytes())
+		if p2pKeyAddressString == "" {
+			return errors.New("couldn't convert P2P key address to bech string: ")
 		}
 		setting.Config.Keys.P2PAddress = p2pKeyAddressString
 		setting.Config.Keys.P2PPassword = password
@@ -199,13 +198,13 @@ func NodePP(_ *cobra.Command, _ []string) error {
 
 // RegisterDenoms registers the denominations to the PP.
 func RegisterDenoms() error {
-	if err := types.RegisterDenom(types.Stos, sdktypes.OneDec()); err != nil {
+	if err := txclienttypes.RegisterDenom(txclienttypes.Stos, sdkmath.LegacyOneDec()); err != nil {
 		return err
 	}
-	if err := types.RegisterDenom(types.Gwei, sdktypes.NewDecWithPrec(1, types.GweiDenomUnit)); err != nil {
+	if err := txclienttypes.RegisterDenom(txclienttypes.Gwei, sdkmath.LegacyNewDecWithPrec(1, txclienttypes.GweiDenomUnit)); err != nil {
 		return err
 	}
-	if err := types.RegisterDenom(types.Wei, sdktypes.NewDecWithPrec(1, types.WeiDenomUnit)); err != nil {
+	if err := txclienttypes.RegisterDenom(txclienttypes.Wei, sdkmath.LegacyNewDecWithPrec(1, txclienttypes.WeiDenomUnit)); err != nil {
 		return err
 	}
 

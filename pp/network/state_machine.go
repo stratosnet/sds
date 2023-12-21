@@ -3,7 +3,7 @@ package network
 import (
 	"context"
 
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 const (
