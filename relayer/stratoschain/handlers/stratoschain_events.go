@@ -10,29 +10,27 @@ import (
 	"strconv"
 	"time"
 
+	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/pkg/errors"
+	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 
 	abciv1beta1 "cosmossdk.io/api/cosmos/base/abci/v1beta1"
 	stakingv1beta1 "cosmossdk.io/api/cosmos/staking/v1beta1"
-
-	tmrpccoretypes "github.com/tendermint/tendermint/rpc/core/types"
 
 	"github.com/stratosnet/sds/framework/crypto"
 	"github.com/stratosnet/sds/framework/crypto/ed25519"
 	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
 	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/relayer/cmd/relayd/setting"
 	"github.com/stratosnet/sds/sds-msg/protos"
 	"github.com/stratosnet/sds/sds-msg/relay"
-	txclienttypes "github.com/stratosnet/sds/tx-client/types"
-
-	"github.com/stratosnet/sds/relayer/cmd/relayd/setting"
 )
 
-var Handlers map[string]func(tmrpccoretypes.ResultEvent)
+var Handlers map[string]func(coretypes.ResultEvent)
 var cache *utils.AutoCleanMap // Cache with a TTL to make sure each event is only handled once
 
 func init() {
-	Handlers = make(map[string]func(tmrpccoretypes.ResultEvent))
+	Handlers = make(map[string]func(coretypes.ResultEvent))
 	Handlers[txclienttypes.MSG_TYPE_CREATE_RESOURCE_NODE] = CreateResourceNodeMsgHandler()
 	Handlers[txclienttypes.MSG_TYPE_UPDATE_RESOURCE_NODE_DEPOSIT] = UpdateResourceNodeDepositMsgHandler()
 	Handlers[txclienttypes.MSG_TYPE_REMOVE_RESOURCE_NODE] = UnbondingResourceNodeMsgHandler()
@@ -52,7 +50,7 @@ func init() {
 	cache = utils.NewAutoCleanMap(time.Minute)
 }
 
-func ProcessEvents(response *abciv1beta1.TxResponse) map[string]tmrpccoretypes.ResultEvent {
+func ProcessEvents(response *abciv1beta1.TxResponse) map[string]coretypes.ResultEvent {
 	// Read the events from each msg in the log
 	var events []map[string]string
 	for _, msg := range response.Logs {
@@ -88,10 +86,10 @@ func ProcessEvents(response *abciv1beta1.TxResponse) map[string]tmrpccoretypes.R
 		aggregatedEvents[typeStr] = currentMap
 	}
 
-	// Convert to tmrpccoretypes.ResultEvent
-	resultMap := make(map[string]tmrpccoretypes.ResultEvent)
+	// Convert to coretypes.ResultEvent
+	resultMap := make(map[string]coretypes.ResultEvent)
 	for key, value := range aggregatedEvents {
-		resultMap[key] = tmrpccoretypes.ResultEvent{
+		resultMap[key] = coretypes.ResultEvent{
 			Query:  "",
 			Data:   nil,
 			Events: value,
@@ -100,8 +98,8 @@ func ProcessEvents(response *abciv1beta1.TxResponse) map[string]tmrpccoretypes.R
 	return resultMap
 }
 
-func CreateResourceNodeMsgHandler() func(event tmrpccoretypes.ResultEvent) {
-	return func(result tmrpccoretypes.ResultEvent) {
+func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(EventTypeCreateResourceNode,
 			AttributeKeyNetworkAddress,
 			AttributeKeyPubKey,
@@ -150,8 +148,8 @@ func CreateResourceNodeMsgHandler() func(event tmrpccoretypes.ResultEvent) {
 	}
 }
 
-func UpdateResourceNodeDepositMsgHandler() func(event tmrpccoretypes.ResultEvent) {
-	return func(result tmrpccoretypes.ResultEvent) {
+func UpdateResourceNodeDepositMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(EventTypeUpdateResourceNodeDeposit,
 			AttributeKeyNetworkAddress,
 			AttributeKeyOZoneLimitChanges,
@@ -198,8 +196,8 @@ func UpdateResourceNodeDepositMsgHandler() func(event tmrpccoretypes.ResultEvent
 	}
 }
 
-func UnbondingResourceNodeMsgHandler() func(event tmrpccoretypes.ResultEvent) {
-	return func(result tmrpccoretypes.ResultEvent) {
+func UnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(EventTypeUnbondingResourceNode,
 			AttributeKeyResourceNode,
 			AttributeKeyUnbondingMatureTime,
@@ -240,8 +238,8 @@ func UnbondingResourceNodeMsgHandler() func(event tmrpccoretypes.ResultEvent) {
 	}
 }
 
-func CompleteUnbondingResourceNodeMsgHandler() func(event tmrpccoretypes.ResultEvent) {
-	return func(result tmrpccoretypes.ResultEvent) {
+func CompleteUnbondingResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(EventTypeCompleteUnbondingResourceNode,
 			AttributeKeyNetworkAddress,
 		)
@@ -278,15 +276,15 @@ func CompleteUnbondingResourceNodeMsgHandler() func(event tmrpccoretypes.ResultE
 	}
 }
 
-func CreateMetaNodeMsgHandler() func(event tmrpccoretypes.ResultEvent) {
-	return func(result tmrpccoretypes.ResultEvent) {
+func CreateMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
 		// TODO
 		utils.Logf("%+v", result)
 	}
 }
 
-func UpdateMetaNodeDepositMsgHandler() func(event tmrpccoretypes.ResultEvent) {
-	return func(result tmrpccoretypes.ResultEvent) {
+func UpdateMetaNodeDepositMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(EventTypeUpdateMetaNodeDeposit,
 			AttributeKeyNetworkAddress,
 			AttributeKeyOZoneLimitChanges,
@@ -333,8 +331,8 @@ func UpdateMetaNodeDepositMsgHandler() func(event tmrpccoretypes.ResultEvent) {
 	}
 }
 
-func UnbondingMetaNodeMsgHandler() func(event tmrpccoretypes.ResultEvent) {
-	return func(result tmrpccoretypes.ResultEvent) {
+func UnbondingMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(EventTypeUnbondingMetaNode,
 			AttributeKeyMetaNode,
 			AttributeKeyUnbondingMatureTime,
@@ -375,8 +373,8 @@ func UnbondingMetaNodeMsgHandler() func(event tmrpccoretypes.ResultEvent) {
 	}
 }
 
-func WithdrawnDepositHandler() func(event tmrpccoretypes.ResultEvent) {
-	return func(result tmrpccoretypes.ResultEvent) {
+func WithdrawnDepositHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(EventTypeWithdrawMetaNodeRegistrationDeposit,
 			AttributeKeyNetworkAddress,
 			AttributeKeyUnbondingMatureTime,
@@ -423,15 +421,15 @@ func WithdrawnDepositHandler() func(event tmrpccoretypes.ResultEvent) {
 
 }
 
-func CompleteUnbondingMetaNodeMsgHandler() func(event tmrpccoretypes.ResultEvent) {
-	return func(result tmrpccoretypes.ResultEvent) {
+func CompleteUnbondingMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
 		// TODO
 		utils.Logf("%+v", result)
 	}
 }
 
-func MetaNodeVoteMsgHandler() func(event tmrpccoretypes.ResultEvent) {
-	return func(result tmrpccoretypes.ResultEvent) {
+func MetaNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(EventTypeMetaNodeRegistrationVote,
 			AttributeKeyCandidateNetworkAddress,
 			AttributeKeyCandidateStatus,
@@ -476,8 +474,8 @@ func MetaNodeVoteMsgHandler() func(event tmrpccoretypes.ResultEvent) {
 	}
 }
 
-func PrepayMsgHandler() func(event tmrpccoretypes.ResultEvent) {
-	return func(result tmrpccoretypes.ResultEvent) {
+func PrepayMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
 		utils.Logf("%+v", result)
 		requiredAttributes := GetEventAttributes(EventTypePrepay,
 			AttributeKeySender,
@@ -518,8 +516,8 @@ func PrepayMsgHandler() func(event tmrpccoretypes.ResultEvent) {
 	}
 }
 
-func FileUploadMsgHandler() func(event tmrpccoretypes.ResultEvent) {
-	return func(result tmrpccoretypes.ResultEvent) {
+func FileUploadMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(EventTypeFileUpload,
 			AttributeKeyReporter,
 			AttributeKeyUploader,
@@ -560,8 +558,8 @@ func FileUploadMsgHandler() func(event tmrpccoretypes.ResultEvent) {
 	}
 }
 
-func VolumeReportHandler() func(event tmrpccoretypes.ResultEvent) {
-	return func(result tmrpccoretypes.ResultEvent) {
+func VolumeReportHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(EventTypeVolumeReport,
 			AttributeKeyEpoch,
 		)
@@ -595,8 +593,8 @@ func VolumeReportHandler() func(event tmrpccoretypes.ResultEvent) {
 	}
 }
 
-func SlashingResourceNodeHandler() func(event tmrpccoretypes.ResultEvent) {
-	return func(result tmrpccoretypes.ResultEvent) {
+func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(EventTypeSlashing,
 			AttributeKeyNodeP2PAddress,
 			AttributeKeyNodeSuspended,
@@ -651,8 +649,8 @@ func SlashingResourceNodeHandler() func(event tmrpccoretypes.ResultEvent) {
 	}
 }
 
-func UpdateEffectiveDepositHandler() func(event tmrpccoretypes.ResultEvent) {
-	return func(result tmrpccoretypes.ResultEvent) {
+func UpdateEffectiveDepositHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(EventTypeUpdateEffectiveDeposit,
 			AttributeKeyNetworkAddress,
 			AttributeKeyIsUnsuspended,
@@ -786,7 +784,7 @@ func processHexPubkey(attribute string) (fwcryptotypes.PubKey, error) {
 	return p2pPubkey, nil
 }
 
-func getCacheKey(requiredAttributes []string, result tmrpccoretypes.ResultEvent) string {
+func getCacheKey(requiredAttributes []string, result coretypes.ResultEvent) string {
 	rawKey := ""
 	if len(result.Events["tx.hash"]) > 0 {
 		rawKey = result.Events["tx.hash"][0]

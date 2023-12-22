@@ -6,10 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cometbft/cometbft/rpc/client/http"
+	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/pkg/errors"
-
-	tmHttp "github.com/tendermint/tendermint/rpc/client/http"
-	tmrpccoretypes "github.com/tendermint/tendermint/rpc/core/types"
 
 	"github.com/stratosnet/sds/framework/utils"
 
@@ -32,8 +31,8 @@ type stchainConnection struct {
 }
 
 type websocketSubscription struct {
-	channel <-chan tmrpccoretypes.ResultEvent
-	client  *tmHttp.HTTP
+	channel <-chan coretypes.ResultEvent
+	client  *http.HTTP
 	query   string
 }
 
@@ -143,7 +142,7 @@ func (s *stchainConnection) refresh() {
 	s.client.cancel() // Cancel global context
 }
 
-func (s *stchainConnection) stratosSubscriptionReaderLoop(subscription websocketSubscription, handler func(tmrpccoretypes.ResultEvent)) {
+func (s *stchainConnection) stratosSubscriptionReaderLoop(subscription websocketSubscription, handler func(coretypes.ResultEvent)) {
 	s.wg.Add(1)
 
 	defer func() {
