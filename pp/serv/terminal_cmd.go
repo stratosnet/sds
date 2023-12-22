@@ -974,9 +974,9 @@ func (api *terminalCmd) Withdraw(ctx context.Context, param []string) (CmdResult
 		return CmdResult{Msg: ""}, err
 	}
 
-	if len(param) < 2 {
+	if len(param) < 2 || len(param) > 4 {
 		return CmdResult{Msg: ""},
-			errors.New("expecting at least 2 params. Input amount of tokens, fee amount, (optional) target address, and (optional) gas amount")
+			errors.New("expecting 2 ~ 4 params. Input amount of tokens, fee amount, (optional) target address, and (optional) gas amount")
 	}
 
 	amount, err := utiltypes.ParseCoinNormalized(param[0])

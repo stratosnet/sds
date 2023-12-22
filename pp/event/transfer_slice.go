@@ -31,7 +31,6 @@ var (
 // NoticeFileSliceBackup An SP node wants this PP node to fetch the specified slice from the PP node who stores it.
 // Both backups and transfers use the same method
 func NoticeFileSliceBackup(ctx context.Context, conn core.WriteCloser) {
-	utils.DebugLog("get NoticeFileSliceBackup")
 	target := &protos.NoticeFileSliceBackup{}
 	if err := VerifyMessage(ctx, header.NoticeFileSliceBackup, target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
@@ -40,7 +39,7 @@ func NoticeFileSliceBackup(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, target) {
 		return
 	}
-	utils.DebugLog("target = ", target)
+	utils.DebugLog("get NoticeFileSliceBackup, target = ", target)
 
 	if target.PpInfo.P2PAddress == p2pserver.GetP2pServer(ctx).GetP2PAddress() {
 		utils.DebugLog("Ignoring slice backup notice because this node already owns the file")
@@ -76,7 +75,7 @@ func NoticeFileSliceBackup(ctx context.Context, conn core.WriteCloser) {
 
 // ReqTransferDownload Another PP wants to download a slice from the current PP
 func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
-	utils.Log("get ReqTransferDownload")
+	utils.DetailLog("get ReqTransferDownload")
 	var target protos.ReqTransferDownload
 	if err := VerifyMessage(ctx, header.ReqTransferDownload, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
@@ -167,7 +166,7 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 // RspTransferDownload The receiver PP gets this response from the uploader PP
 func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	costTime := core.GetRecvCostTimeFromContext(ctx)
-	utils.Log("get RspTransferDownload")
+	utils.DetailLog("get RspTransferDownload")
 	var target protos.RspTransferDownload
 	if err := VerifyMessage(ctx, header.RspTransferDownload, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
@@ -204,7 +203,7 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 
 // RspTransferDownloadResult The receiver PP sends this msg when the download is finished. If successful, we can report the result and delete the file
 func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
-	utils.Log("get RspTransferDownloadResult")
+	utils.DetailLog("get RspTransferDownloadResult")
 	var target protos.RspTransferDownloadResult
 	if err := VerifyMessage(ctx, header.RspTransferDownloadResult, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())

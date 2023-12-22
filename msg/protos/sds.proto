@@ -130,10 +130,11 @@ message ReqUploadSlicesWrong {
 
 message RspUploadSlicesWrong {
   Result result = 1;
-  string file_hash = 2;
+  string file_hash = 2;               // obsolete, keep it for backward compatibility
   UploadType upload_type = 3;
-  string task_id = 4;
-  repeated SliceHashAddr slices = 5;
+  string task_id = 4;                 // obsolete, keep it for backward compatibility
+  repeated SliceHashAddr slices = 5;  // obsolete, keep it for backward compatibility
+  RspUploadFile rsp_upload_file = 6;
 }
 
 message ReqBackupFileSlice {
