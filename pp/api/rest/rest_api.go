@@ -3,9 +3,9 @@ package rest
 import (
 	"context"
 
+	"github.com/stratosnet/sds/framework/utils/httpserv"
 	"github.com/stratosnet/sds/pp/api"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils/httpserv"
 )
 
 func StartHTTPServ(ctx context.Context) {

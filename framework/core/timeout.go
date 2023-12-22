@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/framework/msg"
+	"github.com/stratosnet/sds/framework/msg/header"
 )
 
 var (

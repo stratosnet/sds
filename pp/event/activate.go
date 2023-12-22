@@ -4,37 +4,37 @@ import (
 	"context"
 	"fmt"
 
-	sdktypes "github.com/cosmos/cosmos-sdk/types"
-	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
+	sdkmath "cosmossdk.io/math"
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/msg/header"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/relay/stratoschain/grpc"
-	"github.com/stratosnet/sds/utils"
-	utiltypes "github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/sds/pp/tx"
+	"github.com/stratosnet/sds/sds-msg/protos"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
+	"github.com/stratosnet/sds/tx-client/grpc"
+	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 )
 
 // Activate Inactive PP node becomes active
-func Activate(ctx context.Context, amount utiltypes.Coin, txFee utiltypes.TxFee) error {
+func Activate(ctx context.Context, amount txclienttypes.Coin, txFee txclienttypes.TxFee) error {
 	// Query blockchain to know if this node is already a resource node
-	ppState, _ := grpc.QueryResourceNodeState(p2pserver.GetP2pServer(ctx).GetP2PAddress())
+	ppState, _ := grpc.QueryResourceNodeState(p2pserver.GetP2pServer(ctx).GetP2PAddress().String())
 
 	var activateReq *protos.ReqActivatePP
 	var err error
 	switch ppState.IsActive {
-	case types.PP_ACTIVE:
+	case msgtypes.PP_ACTIVE:
 		pp.Log(ctx, "This node is already active on the blockchain. Waiting for SP node to confirm...")
 		activateReq = &protos.ReqActivatePP{
 			PpInfo:         p2pserver.GetP2pServer(ctx).GetPPInfo(),
 			AlreadyActive:  true,
-			InitialDeposit: utiltypes.NewCoin(utiltypes.Wei, sdktypes.NewIntFromBigInt(ppState.Tokens)).String(),
+			InitialDeposit: txclienttypes.NewCoin(txclienttypes.Wei, sdkmath.NewIntFromBigInt(ppState.Tokens)).String(),
 		}
 	default:
 		activateReq, err = reqActivateData(ctx, amount, txFee)
@@ -81,23 +81,23 @@ func RspActivate(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	rpcResult.ActivationState = target.ActivationState
-	if target.ActivationState == types.PP_ACTIVE {
+	if target.ActivationState == msgtypes.PP_ACTIVE {
 		pp.Log(ctx, "Current node is already active")
 		setting.State = target.ActivationState
 		return
 	}
 
 	switch target.ActivationState {
-	case types.PP_INACTIVE:
-		err := grpc.BroadcastTx(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
+	case msgtypes.PP_INACTIVE:
+		err := tx.BroadcastTx(target.Tx)
 		if err != nil {
 			pp.ErrorLog(ctx, "The activation transaction couldn't be broadcast", err)
 		} else {
 			pp.Log(ctx, "The activation transaction was broadcast")
 		}
-	case types.PP_ACTIVE:
+	case msgtypes.PP_ACTIVE:
 		pp.Log(ctx, "This node is already active, no need to re-activate it again")
-	case types.PP_UNBONDING:
+	case msgtypes.PP_UNBONDING:
 		pp.Log(ctx, "This node is unbonding")
 	}
 	rpcResult.Return = rpc.SUCCESS
@@ -112,7 +112,7 @@ func NoticeActivatedPP(ctx context.Context, conn core.WriteCloser) {
 	}
 	utils.Log("get NoticeActivatedPP", target.Result.State, target.Result.Msg)
 
-	setting.State = types.PP_ACTIVE
+	setting.State = msgtypes.PP_ACTIVE
 	network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_ACTIVATED)
 	utils.Log("This PP node is now active, waiting for state change to be completed")
 }

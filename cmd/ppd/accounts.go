@@ -6,10 +6,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+
+	fwtypes "github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils/console"
+
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/console"
-	"github.com/stratosnet/stratos-chain/types"
 )
 
 const (
@@ -31,15 +32,14 @@ func createAccounts(cmd *cobra.Command, args []string) error {
 
 	if len(p2pkeyfiles) < 1 || newP2pKey {
 		fmt.Println("generating new p2p key")
-		p2pKeyAddress, err := utils.CreateP2PKey(setting.Config.Home.AccountsPath, "p2pkey", p2ppass,
-			types.SdsNodeP2PAddressPrefix)
+		p2pKeyAddress, err := fwtypes.CreateP2PKey(setting.Config.Home.AccountsPath, "p2pkey", p2ppass)
 		if err != nil {
 			return errors.New("couldn't create p2pkey: " + err.Error())
 		}
 
-		p2pKeyAddressString, err := p2pKeyAddress.ToBech(types.SdsNodeP2PAddressPrefix)
-		if err != nil {
-			return errors.New("couldn't convert P2P key address to bech string: " + err.Error())
+		p2pKeyAddressString := fwtypes.P2PAddressBytesToBech32(p2pKeyAddress.Bytes())
+		if p2pKeyAddressString == "" {
+			return errors.New("couldn't convert P2P key address to bech string")
 		}
 		setting.Config.Keys.P2PAddress = p2pKeyAddressString
 		setting.Config.Keys.P2PPassword = p2ppass
@@ -65,7 +65,7 @@ func createAccounts(cmd *cobra.Command, args []string) error {
 
 	mnemonic, _ := cmd.Flags().GetString(mnemonicFlag)
 	if len(mnemonic) <= 0 {
-		newMnemonic, err := utils.NewMnemonic()
+		newMnemonic, err := fwtypes.NewMnemonic()
 		if err != nil {
 			return errors.Wrap(err, "Couldn't generate new mnemonic")
 		}
@@ -84,15 +84,14 @@ func createAccounts(cmd *cobra.Command, args []string) error {
 		hdPath = setting.HDPath
 	}
 	//hrp, mnemonic, bip39Passphrase, hdPath
-	walletKeyAddress, err := utils.CreateWallet(setting.Config.Home.AccountsPath, nickname, password,
-		types.StratosBech32Prefix, mnemonic, "", hdPath)
+	walletKeyAddress, err := fwtypes.CreateWallet(setting.Config.Home.AccountsPath, nickname, password, mnemonic, "", hdPath)
 	if err != nil {
 		return errors.New("couldn't create WalletAddress: " + err.Error())
 	}
 
-	walletKeyAddressString, err := walletKeyAddress.ToBech(types.StratosBech32Prefix)
-	if err != nil {
-		return errors.New("couldn't convert wallet address to bech string: " + err.Error())
+	walletKeyAddressString := fwtypes.WalletAddressBytesToBech32(walletKeyAddress.Bytes()) //walletKeyAddress.ToBech(fwtypes.StratosBech32Prefix)
+	if walletKeyAddressString == "" {
+		return errors.New("couldn't convert wallet address to bech string")
 	}
 	setting.Config.Keys.WalletAddress = walletKeyAddressString
 
@@ -119,7 +118,7 @@ func findp2pKeyFiles() []string {
 	var p2pkeyfiles []string
 	for _, file := range files {
 		fileName := file.Name()
-		if fileName[len(fileName)-5:] == ".json" && fileName[:len(types.SdsNodeP2PAddressPrefix)] == types.SdsNodeP2PAddressPrefix {
+		if fileName[len(fileName)-5:] == ".json" && fileName[:len(fwtypes.P2PAddressPrefix)] == fwtypes.P2PAddressPrefix {
 			p2pkeyfiles = append(p2pkeyfiles, fileName)
 		}
 	}

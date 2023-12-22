@@ -5,15 +5,15 @@ import (
 	"context"
 
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/msg/header"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 // RegisterNewPP P-SP P register to become PP
@@ -40,7 +40,7 @@ func RspRegisterNewPP(ctx context.Context, conn core.WriteCloser) {
 	rpcResult := &rpc.RPResult{}
 	reqId := core.GetRemoteReqId(ctx)
 	if reqId != "" {
-		defer pp.SetRPCResult(p2pserver.GetP2pServer(ctx).GetP2PAddress()+setting.WalletAddress+reqId, rpcResult)
+		defer pp.SetRPCResult(p2pserver.GetP2pServer(ctx).GetP2PAddress().String()+setting.WalletAddress+reqId, rpcResult)
 	}
 	pp.Log(ctx, "get RspRegisterNewPP", target.Result.State, target.Result.Msg)
 	rpcResult.AlreadyPp = target.AlreadyPp

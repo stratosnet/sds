@@ -15,25 +15,25 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/types/bech32"
 	"github.com/ipfs/go-cid"
 	"github.com/pkg/errors"
 
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
-	rpctypes "github.com/stratosnet/sds/pp/api/rpc"
+	"github.com/stratosnet/sds/framework/crypto"
+	"github.com/stratosnet/sds/framework/msg/header"
+	fwtypes "github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/httpserv"
+	"github.com/stratosnet/sds/sds-msg/protos"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
+	msgutils "github.com/stratosnet/sds/sds-msg/utils"
+
+	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/namespace"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/utils"
-	utiled25519 "github.com/stratosnet/sds/utils/crypto/ed25519"
-	"github.com/stratosnet/sds/utils/datamesh"
-	"github.com/stratosnet/sds/utils/httpserv"
-	utiltypes "github.com/stratosnet/sds/utils/types"
 )
 
 type StreamReqBody struct {
@@ -75,7 +75,7 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if setting.State == types.PP_ACTIVE {
+	if setting.State == msgtypes.PP_ACTIVE {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "Current node is activated and is not allowed to cache video").ToBytes())
 		return
@@ -88,7 +88,7 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	sdmPath := datamesh.DataMeshId{
+	sdmPath := fwtypes.DataMeshId{
 		Owner: ownerWalletAddress,
 		Hash:  fileHash,
 	}.String()
@@ -96,7 +96,7 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 	r := reqDownloadMsg(fileHash, sdmPath, sn)
 	res := namespace.RpcPubApi().RequestVideoDownload(ctx, r)
 
-	if res.Return != rpctypes.DOWNLOAD_OK {
+	if res.Return != rpc_api.DOWNLOAD_OK {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get file storage info").ToBytes())
 		return
@@ -118,7 +118,7 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 func streamSharedVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
-	if setting.State == types.PP_ACTIVE {
+	if setting.State == msgtypes.PP_ACTIVE {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "Current node is activated and is not allowed to cache video").ToBytes())
 		return
@@ -135,7 +135,7 @@ func streamSharedVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 	reqGetSharedMsg := reqGetSharedMsg(shareLink)
 	res := namespace.RpcPubApi().RequestGetShared(ctx, reqGetSharedMsg)
 
-	if res.Return != rpctypes.SHARED_DL_START {
+	if res.Return != rpc_api.SHARED_DL_START {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get file storage info").ToBytes())
 		return
@@ -144,7 +144,7 @@ func streamSharedVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 	fileHash := res.FileHash
 	reqDownloadShared := reqDownloadShared(fileHash, sn, res.ReqId)
 	res = namespace.RpcPubApi().RequestDownloadSharedVideo(ctx, reqDownloadShared)
-	if res.Return != rpctypes.DOWNLOAD_OK {
+	if res.Return != rpc_api.DOWNLOAD_OK {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get file storage info").ToBytes())
 		return
@@ -178,7 +178,7 @@ func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	sdmPath := datamesh.DataMeshId{
+	sdmPath := fwtypes.DataMeshId{
 		Owner: ownerWalletAddress,
 		Hash:  fileHash,
 	}.String()
@@ -186,7 +186,7 @@ func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 	r := reqDownloadMsg(fileHash, sdmPath, sn)
 	res := namespace.RpcPubApi().RequestVideoDownload(ctx, r)
 
-	if res.Return != rpctypes.DOWNLOAD_OK {
+	if res.Return != rpc_api.DOWNLOAD_OK {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get file storage info").ToBytes())
 		return
@@ -214,7 +214,7 @@ func streamVideoP2P(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if setting.State == types.PP_ACTIVE {
+	if setting.State == msgtypes.PP_ACTIVE {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "Current node is activated and is not allowed to cache video").ToBytes())
 		return
@@ -304,7 +304,7 @@ func GetVideoSlice(w http.ResponseWriter, req *http.Request) {
 			ppInfo = sliceInfo.StoragePpInfo
 		}
 
-		if ppInfo.P2PAddress != p2pserver.GetP2pServer(req.Context()).GetP2PAddress() {
+		if ppInfo.P2PAddress != p2pserver.GetP2pServer(req.Context()).GetP2PAddress().String() {
 			utils.DebugLog("Current P2PAddress does not have the requested slice")
 			targetAddress := ppInfo.RestAddress
 			redirectURL := fmt.Sprintf("http://%s/videoSlice/%s", targetAddress, sliceHash)
@@ -415,7 +415,7 @@ func getStreamInfo(ctx context.Context, fileHash, reqId string) (*StreamInfo, er
 		return nil, errors.New("http stream video failed to get file storage info!")
 	}
 
-	if !utils.IsVideoStream(fInfo.FileHash) {
+	if !crypto.IsVideoStream(fInfo.FileHash) {
 		return nil, errors.New("the file was not uploaded as video stream")
 	}
 
@@ -458,7 +458,7 @@ func getSliceData(ctx context.Context, fInfo *protos.RspFileStorageInfo, sliceIn
 	r := reqDownloadDataMsg(fInfo, sliceInfo)
 	res := namespace.RpcPubApi().RequestDownloadSliceData(ctx, r)
 
-	if res.Return != rpctypes.DOWNLOAD_OK {
+	if res.Return != rpc_api.DOWNLOAD_OK {
 		return nil, errors.New("failed to get video slice")
 	}
 
@@ -499,7 +499,7 @@ func verifyStreamReqBody(req *http.Request) (*StreamReqBody, error) {
 		return nil, errors.Wrap(err, "incorrect file fileHash")
 	}
 
-	if _, err := utiltypes.P2pAddressFromBech(reqBody.P2PAddress); err != nil {
+	if _, err := fwtypes.P2PAddressFromBech32(reqBody.P2PAddress); err != nil {
 		return nil, errors.Wrap(err, "incorrect P2P address")
 	}
 
@@ -507,7 +507,7 @@ func verifyStreamReqBody(req *http.Request) (*StreamReqBody, error) {
 		return nil, errors.New("please give file name")
 	}
 
-	if _, err := utiltypes.P2pAddressFromBech(reqBody.SpP2pAddress); err != nil {
+	if _, err := fwtypes.P2PAddressFromBech32(reqBody.SpP2pAddress); err != nil {
 		return nil, errors.Wrap(err, "incorrect SP P2P address")
 	}
 
@@ -527,19 +527,23 @@ func verifySignature(reqBody *StreamReqBody, sliceHash string, data []byte) bool
 		return false
 	}
 
-	_, pubKeyRaw, err := bech32.DecodeAndConvert(spInfo.P2PPublicKey)
+	p2pPubKey, err := fwtypes.P2PPubKeyFromBech32(spInfo.P2PPublicKey)
 	if err != nil {
 		utils.ErrorLog("Error when trying to decode P2P pubKey bech32", err)
 		return false
 	}
 
-	p2pPubKey := utiled25519.PubKeyBytesToPubKey(pubKeyRaw)
 	msg := []byte(reqBody.P2PAddress + reqBody.FileHash + header.ReqDownloadSlice.Name)
 	if !p2pPubKey.VerifySignature(msg, reqBody.Sign) {
 		return false
 	}
 
-	return sliceHash == utils.CalcSliceHash(data, reqBody.FileHash, reqBody.SliceInfo.SliceNumber)
+	newSlashHash, err := crypto.CalcSliceHash(data, reqBody.FileHash, reqBody.SliceInfo.SliceNumber)
+	if err != nil {
+		utils.ErrorLog(err)
+		return false
+	}
+	return sliceHash == newSlashHash
 }
 
 func sendReportStreamResult(ctx context.Context, body *StreamReqBody, sliceHash string, isPP bool) {
@@ -566,25 +570,25 @@ func getSliceInfoBySliceNumber(fInfo *protos.RspFileStorageInfo, sliceNumber uin
 	return nil
 }
 
-func reqDownloadMsg(hash, sdmPath, sn string) rpctypes.ParamReqDownloadFile {
+func reqDownloadMsg(hash, sdmPath, sn string) rpc_api.ParamReqDownloadFile {
 	// param
 	nowSec := time.Now().Unix()
-	sign, _ := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetFileDownloadWalletSignMessage(hash, setting.WalletAddress, sn, nowSec)))
-	walletPublicKey, _ := utiltypes.BytesToAccPubKey(setting.WalletPublicKey).ToBech()
-	walletSign := rpctypes.Signature{
+	sign, _ := setting.WalletPrivateKey.Sign([]byte(msgutils.GetFileDownloadWalletSignMessage(hash, setting.WalletAddress, sn, nowSec)))
+	walletPublicKey, _ := fwtypes.WalletPubKeyToBech32(setting.WalletPublicKey)
+	walletSign := rpc_api.Signature{
 		Address:   setting.WalletAddress,
 		Pubkey:    walletPublicKey,
 		Signature: hex.EncodeToString(sign),
 	}
-	return rpctypes.ParamReqDownloadFile{
+	return rpc_api.ParamReqDownloadFile{
 		FileHandle: sdmPath,
 		Signature:  walletSign,
 		ReqTime:    nowSec,
 	}
 }
 
-func reqDownloadDataMsg(fInfo *protos.RspFileStorageInfo, sliceInfo *protos.DownloadSliceInfo) rpctypes.ParamReqDownloadData {
-	return rpctypes.ParamReqDownloadData{
+func reqDownloadDataMsg(fInfo *protos.RspFileStorageInfo, sliceInfo *protos.DownloadSliceInfo) rpc_api.ParamReqDownloadData {
+	return rpc_api.ParamReqDownloadData{
 		FileHash:       fInfo.FileHash,
 		ReqId:          fInfo.ReqId,
 		SliceHash:      sliceInfo.SliceStorageInfo.SliceHash,
@@ -595,32 +599,32 @@ func reqDownloadDataMsg(fInfo *protos.RspFileStorageInfo, sliceInfo *protos.Down
 	}
 }
 
-func reqGetSharedMsg(shareLink string) rpctypes.ParamReqGetShared {
+func reqGetSharedMsg(shareLink string) rpc_api.ParamReqGetShared {
 	nowSec := time.Now().Unix()
-	sign, _ := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetShareFileWalletSignMessage(shareLink, setting.WalletAddress, nowSec)))
-	walletPublicKey, _ := utiltypes.BytesToAccPubKey(setting.WalletPublicKey).ToBech()
-	walletSign := rpctypes.Signature{
+	sign, _ := setting.WalletPrivateKey.Sign([]byte(msgutils.GetShareFileWalletSignMessage(shareLink, setting.WalletAddress, nowSec)))
+	walletPublicKey, _ := fwtypes.WalletPubKeyToBech32(setting.WalletPublicKey)
+	walletSign := rpc_api.Signature{
 		Address:   setting.WalletAddress,
 		Pubkey:    walletPublicKey,
 		Signature: hex.EncodeToString(sign),
 	}
-	return rpctypes.ParamReqGetShared{
+	return rpc_api.ParamReqGetShared{
 		Signature: walletSign,
 		ReqTime:   nowSec,
 		ShareLink: shareLink,
 	}
 }
 
-func reqDownloadShared(fileHash, sn, reqId string) rpctypes.ParamReqDownloadShared {
+func reqDownloadShared(fileHash, sn, reqId string) rpc_api.ParamReqDownloadShared {
 	nowSec := time.Now().Unix()
-	sign, _ := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, sn, nowSec)))
-	walletPublicKey, _ := utiltypes.BytesToAccPubKey(setting.WalletPublicKey).ToBech()
-	walletSign := rpctypes.Signature{
+	sign, _ := setting.WalletPrivateKey.Sign([]byte(msgutils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, sn, nowSec)))
+	walletPublicKey, _ := fwtypes.WalletPubKeyToBech32(setting.WalletPublicKey)
+	walletSign := rpc_api.Signature{
 		Address:   setting.WalletAddress,
 		Pubkey:    walletPublicKey,
 		Signature: hex.EncodeToString(sign),
 	}
-	return rpctypes.ParamReqDownloadShared{
+	return rpc_api.ParamReqDownloadShared{
 		FileHash:  fileHash,
 		Signature: walletSign,
 		ReqTime:   nowSec,
@@ -630,11 +634,11 @@ func reqDownloadShared(fileHash, sn, reqId string) rpctypes.ParamReqDownloadShar
 
 func handleGetOzone(ctx context.Context, walletAddress string) (string, error) {
 	utils.Log("- request ozone balance (method: user_requestGetOzone)")
-	res := namespace.RpcPubApi().RequestGetOzone(ctx, rpctypes.ParamReqGetOzone{
+	res := namespace.RpcPubApi().RequestGetOzone(ctx, rpc_api.ParamReqGetOzone{
 		WalletAddr: walletAddress,
 	})
 
-	if res.Return == rpctypes.SUCCESS {
+	if res.Return == rpc_api.SUCCESS {
 		utils.Log("- received response (return: SUCCESS)")
 		ozone, _ := strconv.ParseFloat(res.Ozone, 64)
 		utils.Log("OZONE balance: ", ozone/1000000000.0)

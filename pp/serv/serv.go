@@ -4,11 +4,10 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/stratosnet/sds/utils/environment"
-
 	"github.com/pkg/errors"
 
-	"github.com/stratosnet/sds/metrics"
+	"github.com/stratosnet/sds/framework/metrics"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/account"
 	"github.com/stratosnet/sds/pp/api"
 	"github.com/stratosnet/sds/pp/api/rest"
@@ -20,7 +19,7 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/rpc"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/environment"
 )
 
 // BaseServer base pp server
@@ -201,7 +200,7 @@ func (bs *BaseServer) startP2pServer() error {
 		return errors.Wrap(err, "failed init p2p server ")
 	}
 
-	err := utils.InitIdWorker(bs.p2pServ.GetP2PAddrInTypeAddress()[0])
+	err := utils.InitIdWorker(bs.p2pServ.GetP2PAddress().Bytes()[0])
 	if err != nil {
 		utils.FatalLogfAndExit(-4, "Fatal error: "+err.Error())
 	}

@@ -12,20 +12,20 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/pp/p2pserver"
-
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/crypto"
+	"github.com/stratosnet/sds/framework/crypto/encryption"
+	"github.com/stratosnet/sds/framework/crypto/encryption/hdkey"
+	"github.com/stratosnet/sds/framework/metrics"
+	"github.com/stratosnet/sds/framework/msg/header"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/encryption"
-	"github.com/stratosnet/sds/utils/encryption/hdkey"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 const (
@@ -587,7 +587,7 @@ func decryptSliceData(dataToDecrypt []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	key, err := hdkey.MasterKeyForSliceEncryption(setting.WalletPrivateKey, encryptedSlice.HdkeyNonce)
+	key, err := hdkey.MasterKeyForSliceEncryption(setting.WalletPrivateKey.Bytes(), encryptedSlice.HdkeyNonce)
 	if err != nil {
 		utils.ErrorLog("Couldn't generate slice encryption master key", err)
 		return nil, err
@@ -601,7 +601,13 @@ func verifyDownloadSliceHash(fileHash string, sliceNumber uint64, slice *protos.
 	for _, buffer := range buffers {
 		data = append(data, buffer...)
 	}
-	return slice.SliceStorageInfo.SliceHash == utils.CalcSliceHash(data, fileHash, sliceNumber)
+	sliceHash, err := crypto.CalcSliceHash(data, fileHash, sliceNumber)
+	if err != nil {
+		utils.ErrorLog(err)
+		return false
+	}
+
+	return slice.SliceStorageInfo.SliceHash == sliceHash
 }
 
 func setDownloadSliceSuccess(ctx context.Context, sliceHash string, dTask *task.DownloadTask) {

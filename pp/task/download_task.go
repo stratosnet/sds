@@ -14,14 +14,15 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/crypto"
+	"github.com/stratosnet/sds/framework/metrics"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 const LOCAL_REQID string = "local"
@@ -257,7 +258,7 @@ func GetDownloadSlice(target *protos.ReqDownloadSlice, slice *protos.DownloadSli
 		}
 	}
 	dSlice := &DownloadSliceData{
-		FileCrc: utils.CalcCRC32OfSlices(buffers),
+		FileCrc: crypto.CalcCRC32OfSlices(buffers),
 		Data:    buffers,
 		RawSize: rawSize,
 	}
