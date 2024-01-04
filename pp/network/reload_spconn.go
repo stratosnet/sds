@@ -11,7 +11,7 @@ import (
 
 const (
 	MIN_RELOAD_SP_INTERVAL = 3
-	MAX_RELOAD_SP_INTERVAL = 900 //15 min
+	MAX_RELOAD_SP_INTERVAL = 300 //5 min
 )
 
 // reloadConnectSP
