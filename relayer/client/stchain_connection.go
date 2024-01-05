@@ -164,6 +164,7 @@ func (s *stchainConnection) stratosSubscriptionReaderLoop(subscription websocket
 				return
 			}
 			utils.Logf("Received a new message of type [%v] from stratos-chain!", subscription.query)
+			cleanEventStrings(message)
 			handler(message)
 		}
 	}
@@ -209,4 +210,15 @@ func (s *stchainConnection) subscribeToStratosChainEvents() error {
 		}
 	}
 	return nil
+}
+
+func cleanEventStrings(resultEvent coretypes.ResultEvent) {
+	for name, values := range resultEvent.Events {
+		for i, value := range values {
+			if len(value) >= 2 && value[0:1] == "\"" && value[len(value)-1:] == "\"" {
+				values[i] = value[1 : len(value)-1]
+			}
+		}
+		resultEvent.Events[name] = values
+	}
 }
