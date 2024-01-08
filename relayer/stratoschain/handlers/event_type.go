@@ -25,7 +25,7 @@ const (
 	AttributeKeyResourceNode            = "resource_node"
 	AttributeKeyMetaNode                = "meta_node"
 	AttributeKeyNetworkAddress          = "network_address"
-	AttributeKeyPubKey                  = "pub_key"
+	AttributeKeyPubKey                  = "pubkey"
 	AttributeKeyCandidateNetworkAddress = "candidate_network_address"
 	AttributeKeyVoterNetworkAddress     = "voter_network_address"
 	AttributeKeyCandidateStatus         = "candidate_status"
