@@ -104,26 +104,22 @@ func (p *P2pServer) Init() error {
 func (p *P2pServer) StartListenServer(ctx context.Context, port string) {
 	netListen, err := net.Listen(setting.P2pServerType, ":"+port)
 	if err != nil {
-		pp.ErrorLog(ctx, "StartListenServer", err)
+		utils.ErrorLog("StartListenServer Error", err)
+		return
 	}
 	spbServer := p.newServer(ctx)
 	p.server = spbServer
-	pp.Log(ctx, "StartListenServer!!! ", port)
+	utils.DebugLog("StartListenServer!!! ", port)
 	err = spbServer.Start(netListen)
 	if err != nil {
-		pp.ErrorLog(ctx, "StartListenServer Error", err)
+		utils.ErrorLog("StartListenServer Error", err)
 	}
 }
 
 // newServer returns a server.
 func (p *P2pServer) newServer(ctx context.Context) *core.Server {
-	onConnectOption := core.OnConnectOption(func(conn core.WriteCloser) bool {
-		pp.Log(ctx, "on connect")
-		return true
-	})
-	onErrorOption := core.OnErrorOption(func(conn core.WriteCloser) {
-		pp.Log(ctx, "on error")
-	})
+	onConnectOption := core.OnConnectOption(func(conn core.WriteCloser) bool { return true })
+	onErrorOption := core.OnErrorOption(func(conn core.WriteCloser) {})
 	onCloseOption := core.OnCloseOption(func(conn core.WriteCloser) {
 		netID := conn.(*core.ServerConn).GetNetID()
 		p.PPDisconnectedNetId(ctx, netID)
@@ -158,7 +154,6 @@ func (p *P2pServer) newServer(ctx context.Context) *core.Server {
 		core.LogInboundOption(PP_LOG_INBOUND),
 		core.LogOutboundOption(PP_LOG_OUTBOUND),
 		core.OnStartLogOption(func(s *core.Server) {
-			pp.Log(ctx, "on start volume log")
 			s.AddVolumeLogJob(PP_LOG_ALL, PP_LOG_READ, PP_LOG_WRITE, PP_LOG_INBOUND, PP_LOG_OUTBOUND)
 		}),
 	)

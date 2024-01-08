@@ -32,7 +32,6 @@ var (
 // NoticeFileSliceBackup An SP node wants this PP node to fetch the specified slice from the PP node who stores it.
 // Both backups and transfers use the same method
 func NoticeFileSliceBackup(ctx context.Context, conn core.WriteCloser) {
-	utils.DebugLog("get NoticeFileSliceBackup")
 	target := &protos.NoticeFileSliceBackup{}
 	if err := VerifyMessage(ctx, header.NoticeFileSliceBackup, target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
@@ -41,7 +40,7 @@ func NoticeFileSliceBackup(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, target) {
 		return
 	}
-	utils.DebugLog("target = ", target)
+	utils.DebugLog("get NoticeFileSliceBackup, target = ", target)
 
 	if target.PpInfo.P2PAddress == p2pserver.GetP2pServer(ctx).GetP2PAddress().String() {
 		utils.DebugLog("Ignoring slice backup notice because this node already owns the file")
@@ -77,7 +76,7 @@ func NoticeFileSliceBackup(ctx context.Context, conn core.WriteCloser) {
 
 // ReqTransferDownload Another PP wants to download a slice from the current PP
 func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
-	utils.Log("get ReqTransferDownload")
+	utils.DetailLog("get ReqTransferDownload")
 	var target protos.ReqTransferDownload
 	if err := VerifyMessage(ctx, header.ReqTransferDownload, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
@@ -91,12 +90,13 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	noticeFileSliceBackup := target.NoticeFileSliceBackup
 
 	// spam check
-	key := noticeFileSliceBackup.TaskId + strconv.FormatInt(int64(noticeFileSliceBackup.SliceNumber), 10)
+	key := noticeFileSliceBackup.TaskId + strconv.FormatInt(int64(noticeFileSliceBackup.SliceNumber), 10) +
+		noticeFileSliceBackup.ToP2PAddress + strconv.FormatInt(noticeFileSliceBackup.TimeStamp, 10)
 	if _, ok := transferSliceSpamCheckMap.Load(key); ok {
 		rsp := &protos.RspTransferDownload{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
-				Msg:   "failed transferring file slice, re-transfer",
+				Msg:   "repeated transfer message, refused",
 			},
 		}
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspTransferDownload)
@@ -167,13 +167,21 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 // RspTransferDownload The receiver PP gets this response from the uploader PP
 func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 	costTime := core.GetRecvCostTimeFromContext(ctx)
-	utils.Log("get RspTransferDownload")
+	utils.DetailLog("get RspTransferDownload")
 	var target protos.RspTransferDownload
 	if err := VerifyMessage(ctx, header.RspTransferDownload, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
+		return
+	}
+	if target.Result != nil && target.Result.State == protos.ResultState_RES_FAIL {
+		utils.ErrorLog("received failed transfer download,", target.Result.Msg)
+		return
+	}
+	if target.Data == nil {
+		utils.ErrorLog("no data contained in the message")
 		return
 	}
 	defer utils.ReleaseBuffer(target.Data)
@@ -188,14 +196,15 @@ func RspTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		utils.DebugLogf("slice data saved, waiting for more data of this slice[%v]", target.SliceHash)
 		return
 	}
-	// All data has been received
+
+	// data is received
 	SendReportBackupSliceResult(ctx, target.TaskId, target.SliceHash, target.SpP2PAddress, true, false, totalCostTIme)
 	_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, requests.RspTransferDownloadResultData(target.TaskId, target.SliceHash, target.SpP2PAddress), header.RspTransferDownloadResult)
 }
 
 // RspTransferDownloadResult The receiver PP sends this msg when the download is finished. If successful, we can report the result and delete the file
 func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
-	utils.Log("get RspTransferDownloadResult")
+	utils.DetailLog("get RspTransferDownloadResult")
 	var target protos.RspTransferDownloadResult
 	if err := VerifyMessage(ctx, header.RspTransferDownloadResult, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
@@ -233,6 +242,7 @@ func RspTransferDownloadResult(ctx context.Context, conn core.WriteCloser) {
 func SendReportBackupSliceResult(ctx context.Context, taskId, sliceHash, spP2pAddress string, result bool, originDeleted bool, costTime int64) {
 	tTask, ok := task.GetTransferTask(taskId, sliceHash)
 	if !ok {
+		utils.ErrorLog("Transfer/backup task is already removed.")
 		return
 	}
 	opponentP2PAddress := tTask.PpInfo.P2PAddress
