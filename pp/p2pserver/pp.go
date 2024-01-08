@@ -17,7 +17,6 @@ import (
 	"github.com/stratosnet/sds/sds-msg/protos"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 )

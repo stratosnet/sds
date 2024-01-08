@@ -102,7 +102,7 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 	streamVideoInfoCacheHelper(w, req, getWalletSignFromLocal)
 }
 
-func streamVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, getSignature func(req *http.Request, walletAddress, fileHash string) (*rpctypes.Signature, int64, error)) {
+func streamVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, getSignature func(req *http.Request, walletAddress, fileHash string) (*rpc_api.Signature, int64, error)) {
 	ctx := req.Context()
 	ownerWalletAddress, fileHash, err := parseFilePath(req.RequestURI)
 	if err != nil {
@@ -528,7 +528,7 @@ func getSliceData(ctx context.Context, fInfo *protos.RspFileStorageInfo, sliceIn
 	return decoded, nil
 }
 
-func getWalletSignFromRequest(req *http.Request, walletAddress, fileHash string) (*rpctypes.Signature, int64, error) {
+func getWalletSignFromRequest(req *http.Request, walletAddress, fileHash string) (*rpc_api.Signature, int64, error) {
 	body, err := verifyStreamInfoBody(req)
 	if err != nil {
 		return nil, 0, errors.New("failed to parse request body")
@@ -546,21 +546,21 @@ func getWalletSignFromRequest(req *http.Request, walletAddress, fileHash string)
 	return &sig, body.ReqTime, nil
 }
 
-func getWalletSignFromLocal(req *http.Request, walletAddress, fileHash string) (*rpctypes.Signature, int64, error) {
+func getWalletSignFromLocal(req *http.Request, walletAddress, fileHash string) (*rpc_api.Signature, int64, error) {
 	sn, err := handleGetOzone(req.Context(), walletAddress)
 	if err != nil {
 		return nil, 0, err
 	}
 	nowSec := time.Now().Unix()
-	sign, err := utiltypes.BytesToAccPriveKey(setting.WalletPrivateKey).Sign([]byte(utils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, sn, nowSec)))
+	sign, err := setting.WalletPrivateKey.Sign([]byte(msgutils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, sn, nowSec)))
 	if err != nil {
 		return nil, 0, err
 	}
-	walletPublicKey, err := utiltypes.BytesToAccPubKey(setting.WalletPublicKey).ToBech()
+	walletPublicKey, err := fwtypes.WalletPubKeyToBech32(setting.WalletPublicKey)
 	if err != nil {
 		return nil, 0, err
 	}
-	return &rpctypes.Signature{
+	return &rpc_api.Signature{
 		Address:   walletAddress,
 		Pubkey:    walletPublicKey,
 		Signature: hex.EncodeToString(sign),
@@ -675,7 +675,7 @@ func getSliceInfoBySliceNumber(fInfo *protos.RspFileStorageInfo, sliceNumber uin
 	return nil
 }
 
-func reqDownloadMsg(sdmPath string, walletSign *rpc_api.Signature, nowSec int64) rpctypes.ParamReqDownloadFile {
+func reqDownloadMsg(sdmPath string, walletSign *rpc_api.Signature, nowSec int64) rpc_api.ParamReqDownloadFile {
 	return rpc_api.ParamReqDownloadFile{
 		FileHandle: sdmPath,
 		Signature:  *walletSign,
