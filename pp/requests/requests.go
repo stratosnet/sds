@@ -60,7 +60,7 @@ func ReqRegisterDataTR(ctx context.Context, target *protos.ReqRegister) *msg.Rel
 }
 
 func ReqMiningData(ctx context.Context) *protos.ReqMining {
-	return &protos.ReqMining{Address: p2pserver.GetP2pServer(ctx).GetPPInfo()}
+	return &protos.ReqMining{Address: p2pserver.GetP2pServer(ctx).GetPPInfo(), Version: setting.Version}
 }
 
 func ReqGetPPlistData(ctx context.Context) *protos.ReqGetPPList {
@@ -336,15 +336,15 @@ func RspBackupFileSliceData(target *protos.ReqBackupFileSlice) *protos.RspBackup
 		SpP2PAddress: target.RspBackupFile.SpP2PAddress,
 	}
 }
-func ReqUploadSlicesWrong(ctx context.Context, uploadTask *task.UploadFileTask, spP2pAddress string, slicesToDownload []*protos.SliceHashAddr, failedSlices []bool) *protos.ReqUploadSlicesWrong {
+func ReqUploadSlicesWrong(ctx context.Context, uploadTask *task.UploadFileTask, slicesToUpload []*protos.SliceHashAddr, failedSlices []bool) *protos.ReqUploadSlicesWrong {
 	return &protos.ReqUploadSlicesWrong{
-		FileHash:             uploadTask.RspUploadFile.FileHash,
-		TaskId:               uploadTask.RspUploadFile.TaskId,
-		UploadType:           uploadTask.Type,
+		FileHash:             uploadTask.GetUploadFileHash(),
+		TaskId:               uploadTask.GetUploadTaskId(),
+		UploadType:           uploadTask.GetUploadType(),
 		MyAddress:            p2pserver.GetP2pServer(ctx).GetPPInfo(),
-		SpP2PAddress:         spP2pAddress,
+		SpP2PAddress:         uploadTask.GetUploadSpP2pAddress(),
 		ExcludedDestinations: uploadTask.GetExcludedDestinations(),
-		Slices:               slicesToDownload,
+		Slices:               slicesToUpload,
 		FailedSlices:         failedSlices,
 	}
 }

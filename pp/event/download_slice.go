@@ -188,12 +188,13 @@ func ReqDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	// spam check
-	key := target.RspFileStorageInfo.TaskId + strconv.FormatInt(int64(target.SliceNumber), 10)
+	key := target.RspFileStorageInfo.TaskId + strconv.FormatInt(int64(target.SliceNumber), 10) +
+		target.P2PAddress + strconv.FormatInt(target.RspFileStorageInfo.TimeStamp, 10)
 	if _, ok := downloadSliceSpamCheckMap.Load(key); ok {
 		rsp := &protos.RspDownloadSlice{
 			Result: &protos.Result{
 				State: protos.ResultState_RES_FAIL,
-				Msg:   "failed downloading file slice, re-download",
+				Msg:   "repeated download slice request, refused",
 			},
 		}
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, conn, rsp, header.RspDownloadSlice)

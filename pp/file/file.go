@@ -126,14 +126,9 @@ func GetFileData(filePath string, offset *protos.SliceOffset) ([]byte, error) {
 	return data, nil
 }
 
-func ReadFileDataToPackets(path string) (size int64, buffer [][]byte, err error) {
+func ReadFileDataToPackets(r *mmap.ReaderAt, path string) (size int64, buffer [][]byte, err error) {
 	size = 0
 	buffer = nil
-	r, err := mmap.Open(path)
-	if err != nil {
-		return 0, nil, err
-	}
-
 	info, err := GetFileInfo(path)
 	if err != nil {
 		return
@@ -152,19 +147,35 @@ func ReadFileDataToPackets(path string) (size int64, buffer [][]byte, err error)
 }
 
 func ReadSliceDataFromTmp(fileHash, sliceHash string) (int64, [][]byte, error) {
-	return ReadFileDataToPackets(GetTmpSlicePath(fileHash, sliceHash))
+	slicePath := GetTmpSlicePath(fileHash, sliceHash)
+	r, err := mmap.Open(slicePath)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return ReadFileDataToPackets(r, slicePath)
 }
 
 func GetSliceDataFromTmp(fileHash, sliceHash string) ([]byte, error) {
 	return GetWholeFileData(GetTmpSlicePath(fileHash, sliceHash))
 }
 
-func ReadSliceData(sliceHash string) (int64, [][]byte, error) {
+func ReadSliceData(fileHash, sliceHash string) (int64, [][]byte, error) {
+
 	slicePath, err := getSlicePath(sliceHash)
 	if err != nil {
 		return 0, nil, err
 	}
-	return ReadFileDataToPackets(slicePath)
+	r, err := mmap.Open(slicePath)
+	if err != nil {
+		slicePath = GetTmpSlicePath(fileHash, sliceHash)
+		r, err = mmap.Open(slicePath)
+		if err != nil {
+			return 0, nil, err
+		}
+	}
+
+	return ReadFileDataToPackets(r, slicePath)
 }
 
 func GetSliceData(sliceHash string) ([]byte, error) {

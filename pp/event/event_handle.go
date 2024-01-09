@@ -50,7 +50,7 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspReportUploadSliceResult, RspReportUploadSliceResult, SpRspVerifier)
 	registerEvent(header.RspRegisterNewPP, RspRegisterNewPP, SpRspVerifier)
 	registerEvent(header.RspReportDownloadResult, RspReportDownloadResult, SpRspVerifier)
-	registerEvent(header.RspUploadSlicesWrong, RspUploadSlicesWrong, SpRspVerifier)
+	registerEvent(header.RspUploadSlicesWrong, RspUploadSlicesWrong, RspUploadFileWithNoReqIdVerifier)
 	registerEvent(header.RspReportBackupSliceResult, RspReportBackupSliceResult, SpRspVerifier)
 	registerEvent(header.RspFileBackupStatus, RspBackupStatus, RspBackupStatusVerifier)
 	registerEvent(header.RspFileStorageInfo, RspFileStorageInfo, RspFileStorageInfoVerifier)
