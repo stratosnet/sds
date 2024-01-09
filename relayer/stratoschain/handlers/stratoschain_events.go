@@ -694,7 +694,7 @@ func UpdateEffectiveDepositHandler() func(event coretypes.ResultEvent) {
 		}
 
 		if len(updatedPPs) > 0 {
-			utils.ErrorLogf("updatedEffectiveDeposit message handler is processing events to unsuspend pp "+
+			utils.DebugLogf("updatedEffectiveDeposit message handler is processing events to unsuspend pp "+
 				"(ToBeUnsuspended Events: %v, Invalid Events: %v, Total : %v",
 				len(updatedPPs), initialEventCount-len(processedEvents), initialEventCount)
 		}

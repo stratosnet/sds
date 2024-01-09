@@ -12,7 +12,6 @@ import (
 	sdkmath "cosmossdk.io/math"
 	potv1 "github.com/stratosnet/stratos-chain/api/stratos/pot/v1"
 
-	"github.com/stratosnet/sds/framework/crypto"
 	"github.com/stratosnet/sds/framework/crypto/bls"
 	fwed25519 "github.com/stratosnet/sds/framework/crypto/ed25519"
 	fwsecp256k1 "github.com/stratosnet/sds/framework/crypto/secp256k1"
@@ -121,7 +120,6 @@ func testVolumeReport(t *testing.T, senderKey fwcryptotypes.PrivKey, metaP2PPriv
 	// ------------------------ bls sign start ------------------------
 	blsSignBytes, err := utils.GetBLSSignBytes(msg)
 	require.NoError(t, err)
-	blsSignBytesHash := crypto.Keccak256(blsSignBytes)
 
 	var blsSignatures = make([][]byte, len(metaP2PPrivKeys))
 	var blsPrivKeys = make([][]byte, len(metaP2PPrivKeys))
@@ -133,12 +131,12 @@ func testVolumeReport(t *testing.T, senderKey fwcryptotypes.PrivKey, metaP2PPriv
 	}
 
 	for i, blsPrivKey := range blsPrivKeys {
-		blsSignatures[i], err = bls.Sign(blsSignBytesHash, blsPrivKey)
+		blsSignatures[i], err = bls.Sign(blsSignBytes, blsPrivKey)
 		require.NoError(t, err)
 	}
 
 	finalBlsSignature, err := bls.AggregateSignatures(blsSignatures...)
-	signature := &potv1.BLSSignatureInfo{PubKeys: blsPubKeys, Signature: finalBlsSignature, TxData: blsSignBytesHash}
+	signature := &potv1.BLSSignatureInfo{PubKeys: blsPubKeys, Signature: finalBlsSignature, TxData: blsSignBytes}
 	msg.BLSSignature = signature
 	// ------------------------ bls sign end ------------------------
 
