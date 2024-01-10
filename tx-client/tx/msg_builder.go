@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/cosmos/cosmos-proto/anyutil"
+	"github.com/stratosnet/sds/tx-client/utils"
 
 	bankv1beta1 "cosmossdk.io/api/cosmos/bank/v1beta1"
 	basev1beta1 "cosmossdk.io/api/cosmos/base/v1beta1"
@@ -23,6 +24,7 @@ import (
 )
 
 // Stratos-chain 'pot' module
+
 func BuildVolumeReportMsg(traffic []*txclienttypes.Traffic, reporterAddress fwtypes.P2PAddress, reporterOwnerAddress fwtypes.WalletAddress, epoch uint64,
 	reportReference string, blsTxDataHash, blsSignature []byte, blsPubKeys [][]byte) (*potv1.MsgVolumeReport, []byte, error) {
 
@@ -64,7 +66,10 @@ func BuildVolumeReportMsg(traffic []*txclienttypes.Traffic, reporterAddress fwty
 		BLSSignature:    blsSignatureInfo,
 	}
 
-	msgBytes := txclienttypes.GetVolumeReportMsgBytes(volumeReportMsg)
+	msgBytes, err := utils.GetVolumeReportMsgBytes(volumeReportMsg)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	return volumeReportMsg, msgBytes, nil
 }
@@ -113,6 +118,7 @@ func BuildUpdateEffectiveDepositMsg(spP2pAddress []fwtypes.P2PAddress, spWalletA
 }
 
 // Stratos-chain 'register' module
+
 func BuildCreateResourceNodeMsg(nodeType msgtypes.NodeType, p2pPubKey fwcryptotypes.PubKey, depositAmount txclienttypes.Coin,
 	ownerAddress fwtypes.WalletAddress) (*registerv1.MsgCreateResourceNode, error) {
 
@@ -170,6 +176,7 @@ func BuildCreateMetaNodeMsg(p2pPubKey fwcryptotypes.PubKey, depositAmount txclie
 }
 
 // Stratos-chain 'register' module
+
 func BuildUpdateResourceNodeDepositMsg(networkAddr fwtypes.P2PAddress, ownerAddr fwtypes.WalletAddress,
 	depositDelta txclienttypes.Coin) *registerv1.MsgUpdateResourceNodeDeposit {
 
@@ -238,6 +245,7 @@ func BuildWithdrawMetaNodeRegistrationDepositMsg(networkAddress fwtypes.P2PAddre
 }
 
 // Stratos-chain 'sds' module
+
 func BuildFileUploadMsg(fileHash string, from fwtypes.WalletAddress, reporterAddress fwtypes.P2PAddress,
 	uploaderAddress fwtypes.WalletAddress) *sdsv1.MsgFileUpload {
 

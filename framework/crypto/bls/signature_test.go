@@ -85,6 +85,56 @@ func TestSignAndAggregate(t *testing.T) {
 	}
 }
 
+func TestAggregateSignatures(t *testing.T) {
+	priv, pub, err := NewKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+	priv2, pub2, err := NewKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+	priv3, pub3, err := NewKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+	priv4, pub4, err := NewKeyPair()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data := []byte("this is some kind of data")
+	signature, err := Sign(data, priv)
+	if err != nil {
+		t.Fatal(err)
+	}
+	signature2, err := Sign(data, priv2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	signature3, err := Sign(data, priv3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	signature4, err := Sign(data, priv4)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	aggregatedSignature, err := AggregateSignatures(signature, signature2, signature3, signature4)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	verified, err := Verify(data, aggregatedSignature, pub, pub2, pub3, pub4)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !verified {
+		t.Fatal("couldn't verify signature")
+	}
+}
+
 func TestStoreLoadKeyPair(t *testing.T) {
 	privKey, pubKey, err := NewKeyPair()
 	if err != nil {
