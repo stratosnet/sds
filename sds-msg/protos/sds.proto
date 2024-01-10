@@ -347,6 +347,7 @@ message ReqRegisterNewPP {
   bytes   pub_key = 10;
   string  network_address = 11;
   int64   req_time = 12;
+  string beneficiary_address = 13;
 }
 
 message RspRegisterNewPP {
