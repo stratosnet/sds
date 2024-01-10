@@ -49,6 +49,14 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, w ht
 		}
 		return
 	}
+	if walletAddress != setting.WalletAddress {
+		errMsg := "only the file owner is allowed to download via sdm url"
+		pp.ErrorLog(ctx, errMsg)
+		if w != nil {
+			_, _ = w.Write(httpserv.NewJson(nil, setting.FAILCode, errMsg).ToBytes())
+		}
+		return
+	}
 	metrics.DownloadPerformanceLogNow(fileHash + ":RCV_CMD_START:")
 
 	pp.DebugLog(ctx, "path:", path)
