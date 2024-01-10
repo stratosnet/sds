@@ -448,15 +448,20 @@ func (api *rpcPubApi) GetFileStatus(ctx context.Context, param rpc_api.ParamGetF
 
 func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamReqDownloadFile) rpc_api.Result {
 	metrics.RpcReqCount.WithLabelValues("RequestDownload").Inc()
-	_, _, fileHash, _, err := fwtypes.ParseFileHandle(param.FileHandle)
+	_, ownerWalletAddress, fileHash, _, err := fwtypes.ParseFileHandle(param.FileHandle)
 	if err != nil {
 		return rpc_api.Result{Return: rpc_api.WRONG_INPUT}
 	}
-
-	metrics.UploadPerformanceLogNow(fileHash + ":RCV_REQ_DOWNLOAD_CLIENT")
 	wallet := param.Signature.Address
 	pubkey := param.Signature.Pubkey
 	signature := param.Signature.Signature
+
+	if ownerWalletAddress != wallet {
+		utils.ErrorLog("only the file owner is allowed to download via sdm url")
+		return rpc_api.Result{Return: rpc_api.WRONG_WALLET_ADDRESS}
+	}
+
+	metrics.UploadPerformanceLogNow(fileHash + ":RCV_REQ_DOWNLOAD_CLIENT")
 
 	// wallet pubkey and wallet signature will be carried in sds messages in []byte format
 	wpk, err := fwtypes.WalletPubKeyFromBech32(pubkey)
