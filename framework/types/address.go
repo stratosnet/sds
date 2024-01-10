@@ -252,7 +252,7 @@ func P2PAddressBytesToBech32(addr []byte) string {
 // P2PAddressFromBech32 creates an P2PAddress from a Bech32 string.
 func P2PAddressFromBech32(address string) (addr P2PAddress, err error) {
 	if len(strings.TrimSpace(address)) == 0 {
-		return P2PAddress{}, fmt.Errorf("empty address string is not allowed")
+		return P2PAddress{}, nil
 	}
 
 	bz, err := GetFromBech32(address, P2PAddressPrefix)
