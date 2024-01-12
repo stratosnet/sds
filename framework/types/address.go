@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 
 	"github.com/stratosnet/sds/framework/crypto/sha3"
@@ -37,6 +38,8 @@ const (
 var (
 	_ Address = P2PAddress{}
 	_ Address = WalletAddress{}
+
+	ErrEmptyAddress = errors.New("address is empty")
 )
 
 // Address is a common interface for different types of addresses used by the SDK
@@ -79,7 +82,7 @@ func WalletAddressBytesToBech32(addr []byte) string {
 // WalletAddressFromBech32 creates an WalletAddress from a Bech32 string.
 func WalletAddressFromBech32(address string) (addr WalletAddress, err error) {
 	if len(strings.TrimSpace(address)) == 0 {
-		return WalletAddress{}, fmt.Errorf("empty address string is not allowed")
+		return WalletAddress{}, ErrEmptyAddress
 	}
 
 	bz, err := GetFromBech32(address, WalletAddressPrefix)
@@ -252,7 +255,7 @@ func P2PAddressBytesToBech32(addr []byte) string {
 // P2PAddressFromBech32 creates an P2PAddress from a Bech32 string.
 func P2PAddressFromBech32(address string) (addr P2PAddress, err error) {
 	if len(strings.TrimSpace(address)) == 0 {
-		return P2PAddress{}, fmt.Errorf("empty address string is not allowed")
+		return P2PAddress{}, ErrEmptyAddress
 	}
 
 	bz, err := GetFromBech32(address, P2PAddressPrefix)
