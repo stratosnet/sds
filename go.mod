@@ -29,7 +29,7 @@ require (
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.6.1
 	github.com/stratosnet/sds/framework v0.0.0-20240110141944-5eee53bc92ac
-	github.com/stratosnet/sds/sds-msg v0.0.0-20240110141944-5eee53bc92ac
+	github.com/stratosnet/sds/sds-msg v0.0.0-20240115171135-f350df219dd3
 	github.com/stratosnet/sds/tx-client v0.0.0-20240110141944-5eee53bc92ac
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	google.golang.org/protobuf v1.31.0
