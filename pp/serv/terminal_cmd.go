@@ -572,9 +572,13 @@ func (api *terminalCmd) Download(ctx context.Context, param []string) (CmdResult
 		saveAs = param[1]
 	}
 
-	_, _, fileHash, _, err := fwtypes.ParseFileHandle(param[0])
+	_, ownerWalletAddress, fileHash, _, err := fwtypes.ParseFileHandle(param[0])
 	if err != nil {
 		err = errors.New("wrong file path format, failed to parse")
+		return CmdResult{Msg: ""}, err
+	}
+	if ownerWalletAddress != setting.WalletAddress {
+		err = errors.New("only the file owner is allowed to download via sdm url")
 		return CmdResult{Msg: ""}, err
 	}
 	if crypto.IsVideoStream(fileHash) {

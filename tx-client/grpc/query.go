@@ -79,11 +79,12 @@ func QueryResourceNodeState(p2pAddress string) (state types.ResourceNodeState, e
 		state.IsActive = msgtypes.PP_INACTIVE
 	}
 
-	tokenInt64, err := strconv.ParseInt(resourceNode.Tokens, 10, 64)
-	if err != nil {
-		return state, err
+	tokens, success := big.NewInt(0).SetString(resourceNode.Tokens, 10)
+	if !success {
+		return state, errors.Errorf("token amount [%v] is an invalid big.Int string", resourceNode.Tokens)
 	}
-	state.Tokens = big.NewInt(tokenInt64)
+
+	state.Tokens = tokens
 	return state, nil
 }
 

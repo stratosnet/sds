@@ -5,28 +5,27 @@ import (
 )
 
 const (
-
 	// register module ---------------------------------------------------------
 
-	EventTypeCompleteUnbondingResourceNode = "complete_unbonding_resource_node"
-	EventTypeCompleteUnbondingMetaNode     = "complete_unbonding_meta_node"
+	EventTypeCompleteUnbondingResourceNode = "stratos.register.v1.EventCompleteUnBondingResourceNode"
+	EventTypeCompleteUnbondingMetaNode     = "stratos.register.v1.EventCompleteUnBondingMetaNode"
 
-	EventTypeCreateResourceNode                  = "create_resource_node"
-	EventTypeUnbondingResourceNode               = "unbonding_resource_node"
-	EventTypeUpdateResourceNode                  = "update_resource_node"
-	EventTypeUpdateResourceNodeDeposit           = "update_resource_node_deposit"
-	EventTypeUpdateEffectiveDeposit              = "update_effective_deposit"
-	EventTypeCreateMetaNode                      = "create_meta_node"
-	EventTypeUnbondingMetaNode                   = "unbonding_Meta_node"
-	EventTypeUpdateMetaNode                      = "update_meta_node"
-	EventTypeUpdateMetaNodeDeposit               = "update_meta_node_deposit"
-	EventTypeMetaNodeRegistrationVote            = "meta_node_reg_vote"
-	EventTypeWithdrawMetaNodeRegistrationDeposit = "withdraw_meta_node_reg_deposit"
+	EventTypeCreateResourceNode                  = "stratos.register.v1.EventCreateResourceNode"
+	EventTypeUnbondingResourceNode               = "stratos.register.v1.EventUnBondingResourceNode"
+	EventTypeUpdateResourceNode                  = "stratos.register.v1.EventUpdateResourceNode"
+	EventTypeUpdateResourceNodeDeposit           = "stratos.register.v1.EventUpdateResourceNodeDeposit"
+	EventTypeUpdateEffectiveDeposit              = "stratos.register.v1.EventUpdateEffectiveDeposit"
+	EventTypeCreateMetaNode                      = "stratos.register.v1.EventCreateMetaNode"
+	EventTypeUnbondingMetaNode                   = "stratos.register.v1.EventUnBondingMetaNode"
+	EventTypeUpdateMetaNode                      = "stratos.register.v1.EventUpdateMetaNode"
+	EventTypeUpdateMetaNodeDeposit               = "stratos.register.v1.EventUpdateMetaNodeDeposit"
+	EventTypeMetaNodeRegistrationVote            = "stratos.register.v1.EventMetaNodeRegistrationVote"
+	EventTypeWithdrawMetaNodeRegistrationDeposit = "stratos.register.v1.EventWithdrawMetaNodeRegistrationDeposit"
 
 	AttributeKeyResourceNode            = "resource_node"
 	AttributeKeyMetaNode                = "meta_node"
 	AttributeKeyNetworkAddress          = "network_address"
-	AttributeKeyPubKey                  = "pub_key"
+	AttributeKeyPubKey                  = "pubkey"
 	AttributeKeyCandidateNetworkAddress = "candidate_network_address"
 	AttributeKeyVoterNetworkAddress     = "voter_network_address"
 	AttributeKeyCandidateStatus         = "candidate_status"
@@ -46,11 +45,10 @@ const (
 
 	// pot module ---------------------------------------------------------
 
-	EventTypeVolumeReport      = "volume_report"
-	EventTypeWithdraw          = "withdraw"
-	EventTypeLegacyWithdraw    = "legacy_withdraw"
-	EventTypeFoundationDeposit = "foundation_deposit"
-	EventTypeSlashing          = "slashing"
+	EventTypeVolumeReport      = "stratos.pot.v1.EventVolumeReport"
+	EventTypeWithdraw          = "stratos.pot.v1.EventWithdraw"
+	EventTypeFoundationDeposit = "stratos.pot.v1.EventFoundationDeposit"
+	EventTypeSlashing          = "stratos.pot.v1.EventSlashing"
 
 	AttributeKeyEpoch               = "epoch"
 	AttributeKeyReportReference     = "report_reference"
@@ -63,8 +61,8 @@ const (
 
 	// sds module ---------------------------------------------------------
 
-	EventTypeFileUpload = "FileUpload"
-	EventTypePrepay     = "Prepay"
+	EventTypeFileUpload = "stratos.sds.v1.EventFileUpload"
+	EventTypePrepay     = "stratos.sds.v1.EventPrePay"
 
 	AttributeKeyReporter = "reporter"
 	AttributeKeyFileHash = "file_hash"
