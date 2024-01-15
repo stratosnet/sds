@@ -15,11 +15,13 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/msg/protos"
+	"golang.org/x/exp/mmap"
+
+	"github.com/stratosnet/sds/framework/crypto"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"golang.org/x/exp/mmap"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 const (
@@ -77,14 +79,20 @@ func GetFileSuffix(fileName string) string {
 }
 
 func GetFileHash(filePath, encryptionTag string) string {
-	filehash := utils.CalcFileHash(filePath, encryptionTag, utils.SDS_CODEC)
+	filehash, err := crypto.CalcFileHash(filePath, encryptionTag, crypto.SDS_CODEC)
+	if err != nil {
+		utils.ErrorLog(err)
+	}
 	utils.DebugLog("filehash", filehash)
 	fileMap[filehash] = filePath
 	return filehash
 }
 
 func GetFileHashForVideoStream(filePath, encryptionTag string) string {
-	filehash := utils.CalcFileHash(filePath, encryptionTag, utils.VIDEO_CODEC)
+	filehash, err := crypto.CalcFileHash(filePath, encryptionTag, crypto.VIDEO_CODEC)
+	if err != nil {
+		utils.ErrorLog(err)
+	}
 	utils.DebugLog("filehash", filehash)
 	fileMap[filehash] = filePath
 	return filehash
@@ -388,7 +396,10 @@ func CheckFileExisting(ctx context.Context, fileHash, fileName, savePath, encryp
 		return false
 	}
 
-	hash := utils.CalcFileHash(filePath, encryptionTag, utils.SDS_CODEC)
+	hash, err := crypto.CalcFileHash(filePath, encryptionTag, crypto.SDS_CODEC)
+	if err != nil {
+		utils.ErrorLog(err)
+	}
 	utils.DebugLog("hash", hash)
 	if hash == fileHash {
 		pp.DebugLog(ctx, "file hash matched")

@@ -12,11 +12,17 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/crypto"
+	"github.com/stratosnet/sds/framework/crypto/encryption"
+	"github.com/stratosnet/sds/framework/crypto/encryption/hdkey"
+	"github.com/stratosnet/sds/framework/metrics"
+	"github.com/stratosnet/sds/framework/msg/header"
+	fwtypes "github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
@@ -24,11 +30,7 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/encryption"
-	"github.com/stratosnet/sds/utils/encryption/hdkey"
-	"github.com/stratosnet/sds/utils/types"
-	"google.golang.org/protobuf/proto"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 var (
@@ -177,7 +179,7 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 	}
 
 	// verify sp address
-	if !types.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
+	if !fwtypes.VerifyP2pAddrBytes(spP2pPubkey.Bytes(), target.SpP2PAddress) {
 		pp.ErrorLog(ctx, "failed verifying sp's p2p address")
 		return
 	}
@@ -318,7 +320,7 @@ func encryptSliceData(rawData []byte) ([]byte, error) {
 	}
 	aesNonce := rand.Uint64()
 
-	key, err := hdkey.MasterKeyForSliceEncryption(setting.WalletPrivateKey, hdKeyNonce)
+	key, err := hdkey.MasterKeyForSliceEncryption(setting.WalletPrivateKey.Bytes(), hdKeyNonce)
 	if err != nil {
 		return nil, err
 	}
@@ -420,7 +422,11 @@ func (UploadStreamFileHandler) PreUpload(ctx context.Context, filePath, encrypti
 				return nil, nil, errors.Wrap(err, "Couldn't encrypt slice data")
 			}
 		}
-		sliceHash := utils.CalcSliceHash(data, fileHash, sliceNumber)
+		sliceHash, err := crypto.CalcSliceHash(data, fileHash, sliceNumber)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to calc slice hash")
+		}
+
 		err = file.SaveTmpSliceData(fileHash, sliceHash, data)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "failed to save to temp file")
@@ -437,7 +443,7 @@ func (UploadStreamFileHandler) PreUpload(ctx context.Context, filePath, encrypti
 		}
 		slices = append(slices, slice)
 		totalSize += sliceSize
-		err := file.SaveTmpSliceData(fileHash, sliceHash, data)
+		err = file.SaveTmpSliceData(fileHash, sliceHash, data)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -488,7 +494,10 @@ func (UploadRawFileHandler) PreUpload(ctx context.Context, filePath, encryptionT
 				return nil, nil, errors.Wrap(err, "Couldn't encrypt slice data")
 			}
 		}
-		sliceHash := utils.CalcSliceHash(data, fileHash, sliceNumber)
+		sliceHash, err := crypto.CalcSliceHash(data, fileHash, sliceNumber)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to calc slice hash")
+		}
 		err = file.SaveTmpSliceData(fileHash, sliceHash, data)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "failed to save to temp file")

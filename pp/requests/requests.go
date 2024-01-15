@@ -8,26 +8,24 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
-	"google.golang.org/protobuf/proto"
-
-	"github.com/stratosnet/sds/pp/p2pserver"
-
-	"github.com/cosmos/cosmos-sdk/types/bech32"
 
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
+	"github.com/stratosnet/sds/framework/metrics"
+	"github.com/stratosnet/sds/framework/msg"
+	"github.com/stratosnet/sds/framework/msg/header"
+	fwtypes "github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 const INVALID_STAT = int64(-1)
@@ -42,7 +40,7 @@ func ReqRegisterData(ctx context.Context, walletAddr string, walletPubkey, wsig 
 	return &protos.ReqRegister{
 		Address:   p2pserver.GetP2pServer(ctx).GetPPInfo(),
 		MyAddress: p2pserver.GetP2pServer(ctx).GetPPInfo(),
-		PublicKey: p2pserver.GetP2pServer(ctx).GetP2PPublicKey(),
+		PublicKey: p2pserver.GetP2pServer(ctx).GetP2PPublicKey().Bytes(),
 		Signature: walletSign,
 		ReqTime:   reqTime,
 	}
@@ -112,7 +110,7 @@ func RequestUploadFile(ctx context.Context, fileName, fileHash string, fileSize 
 	file.SaveRemoteFileHash(fileHash, fileName, fileSize)
 
 	// convert wallet pubkey to []byte which format is to be used in protobuf messages
-	wpk, err := types.WalletPubkeyFromBech(walletPubkey)
+	wpk, err := fwtypes.WalletPubKeyFromBech32(walletPubkey)
 	if err != nil {
 		utils.ErrorLog("wrong wallet pubkey")
 		return nil, errors.New("wrong wallet pubkey")
@@ -221,7 +219,7 @@ func RspDownloadSliceData(ctx context.Context, target *protos.ReqDownloadSlice, 
 		Result:            &protos.Result{State: protos.ResultState_RES_SUCCESS, Msg: ""},
 		IsEncrypted:       target.RspFileStorageInfo.EncryptionTag != "",
 		SpP2PAddress:      target.RspFileStorageInfo.SpP2PAddress,
-		StorageP2PAddress: p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+		StorageP2PAddress: p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 		SliceNumber:       target.SliceNumber,
 	}, sliceData.Data
 }
@@ -281,7 +279,7 @@ func ReqUploadFileSliceData(ctx context.Context, task *task.UploadSliceTask, pie
 		Data:          data,
 		WalletAddress: setting.WalletAddress,
 		PieceOffset:   pieceOffset,
-		P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+		P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 	}
 }
 
@@ -296,7 +294,7 @@ func RspUploadFileSliceData(ctx context.Context, target *protos.ReqUploadFileSli
 		TaskId:        target.RspUploadFile.TaskId,
 		FileHash:      target.RspUploadFile.FileHash,
 		SliceHash:     target.SliceHash,
-		P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+		P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 		WalletAddress: target.WalletAddress,
 		Slice:         slice,
 		Result: &protos.Result{
@@ -314,7 +312,7 @@ func ReqBackupFileSliceData(ctx context.Context, task *task.UploadSliceTask, pie
 		Data:          data,
 		WalletAddress: setting.WalletAddress,
 		PieceOffset:   pieceOffset,
-		P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+		P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 	}
 }
 
@@ -359,7 +357,7 @@ func ReqReportUploadSliceResultData(ctx context.Context, taskId, fileHash, spP2p
 		IsPP:               isPp,
 		UploadSuccess:      true,
 		FileHash:           fileHash,
-		P2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+		P2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 		WalletAddress:      setting.WalletAddress,
 		SpP2PAddress:       spP2pAddr,
 		CostTime:           costTime,
@@ -373,7 +371,7 @@ func ReqReportDownloadResultData(ctx context.Context, target *protos.RspDownload
 		IsPP:                 isPP,
 		DownloaderP2PAddress: target.P2PAddress,
 		WalletAddress:        target.WalletAddress,
-		PpP2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+		PpP2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 		PpWalletAddress:      setting.WalletAddress,
 		FileHash:             target.FileHash,
 		TaskId:               target.TaskId,
@@ -422,7 +420,7 @@ func ReqReportStreamResultData(ctx context.Context, target *protos.RspDownloadSl
 		IsPP:                 isPP,
 		DownloaderP2PAddress: target.P2PAddress,
 		WalletAddress:        target.WalletAddress,
-		PpP2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+		PpP2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 		PpWalletAddress:      setting.WalletAddress,
 		FileHash:             target.FileHash,
 		TaskId:               target.TaskId,
@@ -466,7 +464,7 @@ func ReqDownloadSliceData(ctx context.Context, target *protos.RspFileStorageInfo
 	return &protos.ReqDownloadSlice{
 		RspFileStorageInfo: target,
 		SliceNumber:        slice.SliceNumber,
-		P2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+		P2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 	}
 }
 
@@ -480,7 +478,7 @@ func ReqRegisterNewPPData(ctx context.Context, walletAddr string, walletPubkey, 
 		Type:      protos.SignatureType_WALLET,
 	}
 	return &protos.ReqRegisterNewPP{
-		P2PAddress:     p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+		P2PAddress:     p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 		Signature:      walletSign,
 		DiskSize:       sysInfo.DiskSize,
 		FreeDisk:       sysInfo.FreeDisk,
@@ -489,7 +487,7 @@ func ReqRegisterNewPPData(ctx context.Context, walletAddr string, walletPubkey, 
 		CpuInfo:        sysInfo.CPUInfo,
 		MacAddress:     sysInfo.MacAddress,
 		Version:        uint32(setting.Config.Version.AppVer),
-		PubKey:         p2pserver.GetP2pServer(ctx).GetP2PPublicKey(),
+		PubKey:         p2pserver.GetP2pServer(ctx).GetP2PPublicKey().Bytes(),
 		NetworkAddress: setting.NetworkAddress,
 		ReqTime:        reqTime,
 	}
@@ -500,7 +498,7 @@ func ReqTransferDownloadData(ctx context.Context, notice *protos.NoticeFileSlice
 	protoMsg := &protos.ReqTransferDownload{
 		NoticeFileSliceBackup: notice,
 		NewPp:                 p2pserver.GetP2pServer(ctx).GetPPInfo(),
-		P2PAddress:            p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+		P2PAddress:            p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 	}
 	body, err := proto.Marshal(protoMsg)
 	if err != nil {
@@ -528,7 +526,7 @@ func ReqTransferDownloadWrongData(ctx context.Context, notice *protos.NoticeFile
 func ReqFileStorageInfoData(ctx context.Context, path, savePath, saveAs, walletAddr string, walletPUbkey, wsig []byte, shareRequest *protos.ReqGetShareFile, reqTime int64) *protos.ReqFileStorageInfo {
 	return &protos.ReqFileStorageInfo{
 		FileIndexes: &protos.FileIndexes{
-			P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+			P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 			WalletAddress: walletAddr,
 			FilePath:      path,
 			SavePath:      savePath,
@@ -893,7 +891,7 @@ func GetReqIdFromMessage(ctx context.Context) int64 {
 	return msgBuf.MSGHead.ReqId
 }
 
-func GetSpPubkey(spP2pAddr string) ([]byte, error) {
+func GetSpPubkey(spP2pAddr string) (fwcryptotypes.PubKey, error) {
 	// find the stored SP public key
 	val, ok := setting.SPMap.Load(spP2pAddr)
 	if !ok {
@@ -903,7 +901,7 @@ func GetSpPubkey(spP2pAddr string) ([]byte, error) {
 	if !ok {
 		return nil, errors.New("failed to parse SP info")
 	}
-	_, spP2pPubkey, err := bech32.DecodeAndConvert(spInfo.P2PPublicKey)
+	spP2pPubkey, err := fwtypes.P2PPubKeyFromBech32(spInfo.P2PPublicKey)
 	if err != nil {
 		return nil, errors.Wrap(err, "error decoding P2P pubKey from bech32")
 	}

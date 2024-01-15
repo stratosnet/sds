@@ -4,13 +4,13 @@ import (
 	"context"
 
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/msg/header"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/relay/stratoschain/grpc"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
+	"github.com/stratosnet/sds/tx-client/grpc"
 )
 
 func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
@@ -31,9 +31,18 @@ func RspGetSPList(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	srcP2pAddress := core.GetSrcP2pAddrFromContext(ctx)
-	err := grpc.QueryMetaNode(srcP2pAddress)
+	metaNode, err := grpc.QueryMetaNode(srcP2pAddress)
 	if err != nil {
 		utils.Log("failed to verify SP, ", err.Error())
+		return
+	}
+	if metaNode.GetNetworkAddress() != srcP2pAddress {
+		utils.Log("failed to verify SP, P2P address not match")
+		return
+	}
+
+	if metaNode.Suspend {
+		utils.Log("failed to verify SP, node is suspended")
 		return
 	}
 

@@ -7,17 +7,18 @@ import (
 	"time"
 
 	"github.com/alex023/clock"
+
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/msg/header"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 const CHECK_TRANFER_FAILURE_INTERVAL = 60 // in seconds
@@ -41,7 +42,7 @@ func NoticeFileSliceBackup(ctx context.Context, conn core.WriteCloser) {
 	}
 	utils.DebugLog("get NoticeFileSliceBackup, target = ", target)
 
-	if target.PpInfo.P2PAddress == p2pserver.GetP2pServer(ctx).GetP2PAddress() {
+	if target.PpInfo.P2PAddress == p2pserver.GetP2pServer(ctx).GetP2PAddress().String() {
 		utils.DebugLog("Ignoring slice backup notice because this node already owns the file")
 		return
 	}
@@ -151,11 +152,11 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 			noticeFileSliceBackup.TaskId, sliceHash, costTimeStat)
 		if int64(dataEnd) > sliceDataLen {
 			_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspTransferDownload(data, noticeFileSliceBackup.TaskId, sliceHash,
-				noticeFileSliceBackup.SpP2PAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress(), uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
+				noticeFileSliceBackup.SpP2PAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(), uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 			return
 		}
 		_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspTransferDownload(data, noticeFileSliceBackup.TaskId, sliceHash,
-			noticeFileSliceBackup.SpP2PAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress(), uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
+			noticeFileSliceBackup.SpP2PAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(), uint64(dataStart), uint64(sliceDataLen)), header.RspTransferDownload)
 		dataStart += setting.MaxData
 		dataEnd += setting.MaxData
 		// add AlreadySize to transfer task
@@ -260,9 +261,9 @@ func SendReportBackupSliceResult(ctx context.Context, taskId, sliceHash, spP2pAd
 		PpInfo:             p2pserver.GetP2pServer(ctx).GetPPInfo(),
 		SpP2PAddress:       spP2pAddress,
 		CostTime:           costTime,
-		PpP2PAddress:       p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+		PpP2PAddress:       p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 		OpponentP2PAddress: opponentP2PAddress,
-		P2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+		P2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 	}
 	utils.DebugLogf("---SendReportBackupSliceResult, %v", req)
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqReportBackupSliceResult)

@@ -2,16 +2,17 @@ package file
 
 import (
 	"context"
-	b64 "encoding/base64"
+	"encoding/base64"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/msg/protos"
+
+	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/pp/api/rpc"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 const NUMBER_OF_UPLOAD_CHAN_BUFFER = 5
@@ -236,7 +237,7 @@ func SaveRemoteFileData(key, fileName string, data []byte, offset uint64) error 
 		Return:      rpc.DOWNLOAD_OK,
 		OffsetStart: &offset,
 		OffsetEnd:   &offsetend,
-		FileData:    b64.StdEncoding.EncodeToString(data),
+		FileData:    base64.StdEncoding.EncodeToString(data),
 		FileName:    fileName,
 	}
 
@@ -255,7 +256,7 @@ func SaveRemoteSliceData(key, fileName string, data []byte, offset uint64) error
 		Return:      rpc.DOWNLOAD_OK,
 		OffsetStart: &offset,
 		OffsetEnd:   &offsetend,
-		FileData:    b64.StdEncoding.EncodeToString(data),
+		FileData:    base64.StdEncoding.EncodeToString(data),
 		FileName:    fileName,
 	}
 

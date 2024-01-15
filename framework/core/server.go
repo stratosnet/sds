@@ -9,11 +9,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/stratosnet/sds/metrics"
-
 	"github.com/alex023/clock"
-	"github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/utils"
+
+	"github.com/stratosnet/sds/framework/metrics"
+	"github.com/stratosnet/sds/framework/msg"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 var (
@@ -28,6 +28,7 @@ type onConnectFunc func(WriteCloser) bool
 type onMessageFunc func(msg.RelayMsgBuf, WriteCloser)
 type onCloseFunc func(WriteCloser)
 type onErrorFunc func(WriteCloser)
+type onBadAppVerFunc func(version uint16, cmd uint8, minAppVer uint16) []byte
 type ContextKV struct {
 	Key   interface{}
 	Value interface{}
@@ -37,6 +38,7 @@ type options struct {
 	onMessage      onMessageFunc
 	onClose        onCloseFunc
 	onError        onErrorFunc
+	onBadAppVer    onBadAppVerFunc
 	bufferSize     int
 	logOpen        bool
 	maxConnections int
@@ -297,6 +299,12 @@ func OnCloseOption(cb func(WriteCloser)) ServerOption {
 func OnErrorOption(cb func(WriteCloser)) ServerOption {
 	return func(o *options) {
 		o.onError = cb
+	}
+}
+
+func OnBadAppVerOption(cb func(uint16, uint8, uint16) []byte) ServerOption {
+	return func(o *options) {
+		o.onBadAppVer = cb
 	}
 }
 

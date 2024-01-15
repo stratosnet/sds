@@ -12,19 +12,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	"github.com/stratosnet/sds/utils/encryption"
-	"github.com/stratosnet/sds/utils/types"
-	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
-
-	"github.com/stratosnet/sds/utils"
-
 	"github.com/alex023/clock"
+	"github.com/pkg/errors"
+
+	"github.com/stratosnet/sds/framework/core"
+	fwed25519 "github.com/stratosnet/sds/framework/crypto/ed25519"
+	"github.com/stratosnet/sds/framework/crypto/encryption"
+	"github.com/stratosnet/sds/framework/metrics"
+	"github.com/stratosnet/sds/framework/msg"
+	"github.com/stratosnet/sds/framework/msg/header"
+	fwtypes "github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 var (
@@ -316,9 +314,9 @@ func (cc *ClientConn) handshake() error {
 	}
 
 	// Create tmp key
-	tmpPrivKeyBytes := ed25519.NewKey()
-	tmpPrivKey := ed25519.PrivKeyBytesToPrivKey(tmpPrivKeyBytes)
-	tmpPubKeyBytes := ed25519.PrivKeyBytesToPubKeyBytes(tmpPrivKeyBytes)
+	tmpPrivKey := fwed25519.GenPrivKey()
+	tmpPrivKeyBytes := tmpPrivKey.Bytes()
+	tmpPubKeyBytes := tmpPrivKey.PubKey().Bytes()
 
 	// Write tmp key to conn
 	handshakeSignature, err := tmpPrivKey.Sign([]byte(core.HandshakeMessage))
@@ -333,16 +331,17 @@ func (cc *ClientConn) handshake() error {
 	var tmpKeyMsg []byte
 	select {
 	case tmpKeyMsg = <-handshakeChan:
-		if len(tmpKeyMsg) < tmed25519.PubKeySize+tmed25519.SignatureSize {
+		if len(tmpKeyMsg) < fwed25519.PubKeySize+fwed25519.SignatureSize {
 			return errors.Errorf("Handshake message too small (%v bytes)", len(tmpKeyMsg))
 		}
 	case <-time.After(utils.HandshakeTimeOut * time.Second):
 		return errors.New("Timed out when reading from server channel")
 	}
 
-	peerPubKeyBytes := tmpKeyMsg[:tmed25519.PubKeySize]
-	peerPubKey := ed25519.PubKeyBytesToPubKey(peerPubKeyBytes)
-	peerSignature := tmpKeyMsg[tmed25519.PubKeySize:]
+	peerPubKeyBytes := tmpKeyMsg[:fwed25519.PubKeySize]
+
+	peerPubKey := fwed25519.PubKeyFromBytes(peerPubKeyBytes)
+	peerSignature := tmpKeyMsg[fwed25519.PubKeySize:]
 	if !peerPubKey.VerifySignature([]byte(core.HandshakeMessage), peerSignature) {
 		return errors.New("Invalid signature in tmp key from peer")
 	}
@@ -369,7 +368,7 @@ func (cc *ClientConn) handshake() error {
 		return err
 	}
 	cc.remoteP2pAddress = string(p2pAddressBytes)
-	if _, err = types.P2pAddressFromBech(cc.remoteP2pAddress); err != nil {
+	if _, err = fwtypes.P2PAddressFromBech32(cc.remoteP2pAddress); err != nil {
 		return errors.Wrap(err, "incorrect P2pAddress")
 	}
 

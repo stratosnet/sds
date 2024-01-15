@@ -6,15 +6,17 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	fwcrypto "github.com/stratosnet/sds/framework/crypto"
+	"github.com/stratosnet/sds/framework/msg/header"
+	fwtypes "github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/types"
-	"google.golang.org/protobuf/proto"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 func verifyRspUploadFile(msg *protos.RspUploadFile) error {
@@ -28,17 +30,18 @@ func verifyRspUploadFile(msg *protos.RspUploadFile) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get sp's pubkey, ")
 	}
-	if !types.VerifyP2pAddrBytes(spP2pPubkey, msg.SpP2PAddress) {
+	if !fwtypes.VerifyP2pAddrBytes(spP2pPubkey.Bytes(), msg.SpP2PAddress) {
 		return errors.Wrap(err, "failed to verify p2p address, ")
 	}
 
 	nodeSign := msg.NodeSign
 	msg.NodeSign = nil
-	signmsg, err := utils.GetRspUploadFileSpNodeSignMessage(msg)
+	msgBytes, err := proto.Marshal(msg)
 	if err != nil {
-		return errors.New("failed getting sp's sign message")
+		return errors.New("failed encoding sp's sign message")
 	}
-	if !types.VerifyP2pSignBytes(spP2pPubkey, nodeSign, signmsg) {
+	msgSignBytes := fwcrypto.CalcHashBytes(msgBytes)
+	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, msgSignBytes) {
 		return errors.New("failed verifying sp's signature")
 	}
 	return nil
@@ -99,16 +102,17 @@ func verifyRspBackupStatus(msg *protos.RspBackupStatus) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get sp's pubkey, ")
 	}
-	if !types.VerifyP2pAddrBytes(spP2pPubkey, msg.SpP2PAddress) {
+	if !fwtypes.VerifyP2pAddrBytes(spP2pPubkey.Bytes(), msg.SpP2PAddress) {
 		return errors.Wrap(err, "failed to verify p2p address, ")
 	}
 	nodeSign := msg.NodeSign
 	msg.NodeSign = nil
-	signmsg, err := utils.GetRspBackupFileSpNodeSignMessage(msg)
+	msgBytes, err := proto.Marshal(msg)
 	if err != nil {
-		return errors.New("failed getting sp's sign message")
+		return errors.New("failed to encoding sp's sign message")
 	}
-	if !types.VerifyP2pSignBytes(spP2pPubkey, nodeSign, signmsg) {
+	msgSignBytes := fwcrypto.CalcHashBytes(msgBytes)
+	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, msgSignBytes) {
 		return errors.New("failed verifying sp's signature")
 	}
 	return nil
@@ -165,16 +169,17 @@ func verifyNoticeFileSliceBackup(msg *protos.NoticeFileSliceBackup) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get sp's pubkey, ")
 	}
-	if !types.VerifyP2pAddrBytes(spP2pPubkey, msg.SpP2PAddress) {
+	if !fwtypes.VerifyP2pAddrBytes(spP2pPubkey.Bytes(), msg.SpP2PAddress) {
 		return errors.Wrap(err, "failed to verify p2p address, ")
 	}
 	nodeSign := msg.NodeSign
 	msg.NodeSign = nil
-	signmsg, err := utils.GetNoticeFileSliceBackupSpNodeSignMessage(msg)
+	msgBytes, err := proto.Marshal(msg)
 	if err != nil {
-		return errors.New("failed getting sp's sign message")
+		return errors.New("failed to encoding sp's sign message")
 	}
-	if !types.VerifyP2pSignBytes(spP2pPubkey, nodeSign, signmsg) {
+	signBytes := fwcrypto.CalcHashBytes(msgBytes)
+	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, signBytes) {
 		return errors.New("failed verifying sp's signature")
 	}
 	return nil
@@ -212,17 +217,20 @@ func verifyRspFileStorageInfo(msg *protos.RspFileStorageInfo) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get sp's pubkey, ")
 	}
-	if !types.VerifyP2pAddrBytes(spP2pPubkey, msg.SpP2PAddress) {
+	if !fwtypes.VerifyP2pAddrBytes(spP2pPubkey.Bytes(), msg.SpP2PAddress) {
 		return errors.Wrap(err, "failed to verify p2p address, ")
 	}
 	nodeSign := msg.NodeSign
 	msg.NodeSign = nil
 	msg.ReqId = ""
-	signmsg, err := utils.GetRspFileStorageInfoNodeSignMessage(msg)
+
+	msgBytes, err := proto.Marshal(msg)
 	if err != nil {
-		return errors.New("failed getting sp's sign message")
+		return errors.New("failed to encoding sp's sign message")
 	}
-	if !types.VerifyP2pSignBytes(spP2pPubkey, nodeSign, signmsg) {
+	msgSignBytes := fwcrypto.CalcHashBytes(msgBytes)
+
+	if !fwtypes.VerifyP2pSignBytes(spP2pPubkey.Bytes(), nodeSign, msgSignBytes) {
 		return errors.New("failed verifying sp's signature")
 	}
 	return nil

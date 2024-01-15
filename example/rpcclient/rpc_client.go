@@ -15,11 +15,13 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/stratosnet/sds/msg/protos"
+
+	fwtypes "github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/datamesh"
+	"github.com/stratosnet/sds/sds-msg/protos"
+	msgutils "github.com/stratosnet/sds/sds-msg/utils"
 )
 
 func reqUploadMsg(filePath, hash, sn string) []byte {
@@ -32,11 +34,12 @@ func reqUploadMsg(filePath, hash, sn string) []byte {
 	fileName := info.Name()
 	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -68,11 +71,11 @@ func reqUploadMsg(filePath, hash, sn string) []byte {
 func uploadDataMsg(hash, data, sn string) []byte {
 	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -188,11 +191,11 @@ func reqUploadStreamMsg(filePath, hash, sn string) []byte {
 	fileName := info.Name()
 	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -308,12 +311,12 @@ func getFileStatus(_ *cobra.Command, args []string) error {
 	fileHash := args[0]
 
 	timestamp := time.Now().Unix()
-	signature, err := WalletPrivateKey.Sign([]byte(utils.GetFileStatusWalletSignMessage(fileHash, WalletAddress, timestamp)))
+	signature, err := WalletPrivateKey.Sign([]byte(msgutils.GetFileStatusWalletSignMessage(fileHash, WalletAddress, timestamp)))
 	if err != nil {
 		return err
 	}
 
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return err
 	}
@@ -363,11 +366,11 @@ func getFileStatus(_ *cobra.Command, args []string) error {
 func reqDownloadMsg(hash, sdmPath, sn string) []byte {
 	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileDownloadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetFileDownloadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -437,7 +440,7 @@ func get(cmd *cobra.Command, args []string) error {
 	// args[0] is the fileHash
 	sdmPath := args[0]
 	utils.Log("- start downloading the file: ", sdmPath)
-	_, _, fileHash, _, err := datamesh.ParseFileHandle(sdmPath)
+	_, _, fileHash, _, err := fwtypes.ParseFileHandle(sdmPath)
 	if err != nil {
 		utils.ErrorLog("sdm format error")
 		return nil
@@ -556,11 +559,11 @@ func get(cmd *cobra.Command, args []string) error {
 func reqListMsg(page uint64) []byte {
 	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.FindMyFileListWalletSignMessage(WalletAddress, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.FindMyFileListWalletSignMessage(WalletAddress, nowSec)))
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -590,11 +593,11 @@ func reqRpMsg() []byte {
 	// param
 	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.RegisterNewPPWalletSignMessage(WalletAddress, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.RegisterNewPPWalletSignMessage(WalletAddress, nowSec)))
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -642,11 +645,11 @@ func reqPrepayMsg(prepayAmount, fee string, gasUint64 uint64) []byte {
 	// param
 	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.PrepayWalletSignMessage(WalletAddress, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.PrepayWalletSignMessage(WalletAddress, nowSec)))
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -893,11 +896,11 @@ func reqListShareMsg(page uint64) []byte {
 	// param
 	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.FindMyFileListWalletSignMessage(WalletAddress, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.FindMyFileListWalletSignMessage(WalletAddress, nowSec)))
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -969,11 +972,11 @@ func reqShareMsg(hash string) []byte {
 	// param
 	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetShareFileWalletSignMessage(hash, WalletAddress, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetShareFileWalletSignMessage(hash, WalletAddress, nowSec)))
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -1042,11 +1045,11 @@ func reqStopShareMsg(shareId string) []byte {
 	// param
 	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.DeleteShareWalletSignMessage(shareId, WalletAddress, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.DeleteShareWalletSignMessage(shareId, WalletAddress, nowSec)))
 	if err != nil {
 		return nil
 	}
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -1108,7 +1111,7 @@ func stopshare(cmd *cobra.Command, args []string) error {
 
 func reqGetSharedMsg(shareLink string) []byte {
 
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}
@@ -1116,7 +1119,7 @@ func reqGetSharedMsg(shareLink string) []byte {
 	// param
 	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetShareFileWalletSignMessage(shareLink, WalletAddress, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetShareFileWalletSignMessage(shareLink, WalletAddress, nowSec)))
 	if err != nil {
 		return nil
 	}
@@ -1146,12 +1149,12 @@ func reqDownloadSharedMsg(fileHash, reqId, sn string) []byte {
 
 	nowSec := time.Now().Unix()
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(utils.GetFileDownloadWalletSignMessage(fileHash, WalletAddress, sn, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetFileDownloadWalletSignMessage(fileHash, WalletAddress, sn, nowSec)))
 	if err != nil {
 		return nil
 	}
 
-	wpk, err := WalletPublicKey.ToBech()
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
 		return nil
 	}

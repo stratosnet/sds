@@ -3,22 +3,21 @@ package event
 import (
 	"context"
 
-	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/msg/header"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/relay/stratoschain/grpc"
-	"github.com/stratosnet/sds/utils"
-	utiltypes "github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/sds/pp/tx"
+	"github.com/stratosnet/sds/sds-msg/protos"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
+	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 )
 
 // UpdateDeposit Update deposit of node
-func UpdateDeposit(ctx context.Context, depositDelta utiltypes.Coin, txFee utiltypes.TxFee) error {
+func UpdateDeposit(ctx context.Context, depositDelta txclienttypes.Coin, txFee txclienttypes.TxFee) error {
 	updateDepositReq, err := reqUpdateDepositData(ctx, depositDelta, txFee)
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't build update PP deposit request: "+err.Error())
@@ -47,12 +46,12 @@ func RspUpdateDeposit(ctx context.Context, conn core.WriteCloser) {
 	}
 	setting.State = target.UpdateState
 
-	if target.UpdateState != types.PP_ACTIVE {
+	if target.UpdateState != msgtypes.PP_ACTIVE {
 		pp.Log(ctx, "Current node isn't activated now")
 		return
 	}
 
-	err := grpc.BroadcastTx(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
+	err := tx.BroadcastTx(target.Tx)
 	if err != nil {
 		pp.ErrorLog(ctx, "The UpdateDeposit transaction couldn't be broadcast", err)
 	} else {
@@ -74,7 +73,7 @@ func NoticeUpdatedDeposit(ctx context.Context, conn core.WriteCloser) {
 	utils.Logf("get NoticeUpdatedDepositPP, DepositBalance: %v, NodeTier: %v, Weight_Score: %v", target.DepositBalance, target.NodeTier, target.WeightScore)
 
 	// msg is not empty after deposit being updated to 0wei
-	depositBalanceAfter, err := utiltypes.ParseCoinNormalized(target.DepositBalance)
+	depositBalanceAfter, err := txclienttypes.ParseCoinNormalized(target.DepositBalance)
 	if err != nil {
 		return
 	}
@@ -82,7 +81,7 @@ func NoticeUpdatedDeposit(ctx context.Context, conn core.WriteCloser) {
 		depositBalanceAfter.IsZero() &&
 		target.NodeTier == "0" {
 		// change pp state to unbonding
-		setting.State = types.PP_UNBONDING
+		setting.State = msgtypes.PP_UNBONDING
 		pp.Log(ctx, "All tokens are being unbonded(taking around 180 days to complete)"+
 			"\n --- This node will be forced to suspend very soon! ---")
 	}

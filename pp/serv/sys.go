@@ -8,10 +8,11 @@ import (
 	"github.com/alex023/clock"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
+
 	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
 )
 
 var myClock = clock.NewClock()

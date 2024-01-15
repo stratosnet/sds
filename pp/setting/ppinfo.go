@@ -5,24 +5,26 @@ import (
 	"time"
 
 	externalip "github.com/glendc/go-external-ip"
-	ppTypes "github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/utils"
+
+	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
+	"github.com/stratosnet/sds/framework/utils"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 )
 
 var IsPP = false
 
 var IsPPSyncedWithSP = false
 
-var State uint32 = ppTypes.PP_INACTIVE
+var State uint32 = msgtypes.PP_INACTIVE
 
 var OnlineTime int64 = 0
 
 var WalletAddress string
 
 // WalletPublicKey Public key in compressed format
-var WalletPublicKey []byte
+var WalletPublicKey fwcryptotypes.PubKey
 
-var WalletPrivateKey []byte
+var WalletPrivateKey fwcryptotypes.PrivKey
 
 var NetworkAddress string
 

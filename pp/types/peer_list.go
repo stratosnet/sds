@@ -9,9 +9,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/msg/protos"
+
+	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/pp"
-	"github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 const (
@@ -34,7 +35,7 @@ type PeerInfo struct {
 }
 
 func (peerInfo *PeerInfo) String() string {
-	return types.NetworkID{P2pAddress: peerInfo.P2pAddress, NetworkAddress: peerInfo.NetworkAddress}.String()
+	return fwtypes.NetworkID{P2pAddress: peerInfo.P2pAddress, NetworkAddress: peerInfo.NetworkAddress}.String()
 }
 
 type PeerList struct {
@@ -75,7 +76,7 @@ func (peerList *PeerList) loadPPListFromFile(ctx context.Context) error {
 			pp.ErrorLogf(ctx, "LoadPPListFromFile ppList record is incomplete. %v fields (%v expected)", len(item), 5)
 			continue
 		}
-		networkID, err := types.IDFromString(item[0])
+		networkID, err := fwtypes.IDFromString(item[0])
 		if err != nil {
 			pp.ErrorLog(ctx, "LoadPPListFromFile invalid networkId ["+item[0]+"]", err)
 			continue
@@ -134,7 +135,7 @@ func (peerList *PeerList) SavePPListToFile(ctx context.Context) error {
 		}
 
 		line := []string{
-			types.NetworkID{P2pAddress: ppNode.P2pAddress, NetworkAddress: ppNode.NetworkAddress}.String(),
+			fwtypes.NetworkID{P2pAddress: ppNode.P2pAddress, NetworkAddress: ppNode.NetworkAddress}.String(),
 			ppNode.RestAddress,
 			ppNode.NetworkAddress,
 			strconv.FormatInt(ppNode.DiscoveryTime, 10),
