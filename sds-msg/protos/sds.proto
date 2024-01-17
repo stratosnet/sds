@@ -104,6 +104,7 @@ message ReqUploadFileSlice {
   SliceOffset     piece_offset = 5;
   string          p2p_address = 6;
   string          wallet_address = 7;
+  string          beneficiary_address = 8;
 }
 
 message RspUploadFileSlice {
@@ -115,6 +116,7 @@ message RspUploadFileSlice {
   string       wallet_address = 6;
   string       task_id = 7;
   string       sp_p2p_address = 8;
+  string       beneficiary_address = 9;
 }
 
 message ReqUploadSlicesWrong {
@@ -176,6 +178,7 @@ message ReportUploadSliceResult {
   string     sp_p2p_address = 8;
   int64      cost_time = 9;
   string     opponent_p2p_address = 10;
+  string     beneficiary_address = 11;
 }
 
 message RspReportUploadSliceResult {
@@ -321,6 +324,7 @@ message ReqReportDownloadResult {
   string sp_p2p_address = 9;
   string opponent_p2p_address = 10;
   int64  cost_time = 11;
+  string beneficiary_address = 12;
 }
 
 message RspReportDownloadResult {

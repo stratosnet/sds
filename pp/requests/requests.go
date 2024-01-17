@@ -273,13 +273,14 @@ func RspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 
 func ReqUploadFileSliceData(ctx context.Context, task *task.UploadSliceTask, pieceOffset *protos.SliceOffset, data []byte) *protos.ReqUploadFileSlice {
 	return &protos.ReqUploadFileSlice{
-		RspUploadFile: task.RspUploadFile,
-		SliceNumber:   task.SliceNumber,
-		SliceHash:     task.SliceHash,
-		Data:          data,
-		WalletAddress: setting.WalletAddress,
-		PieceOffset:   pieceOffset,
-		P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
+		RspUploadFile:      task.RspUploadFile,
+		SliceNumber:        task.SliceNumber,
+		SliceHash:          task.SliceHash,
+		Data:               data,
+		WalletAddress:      setting.WalletAddress,
+		PieceOffset:        pieceOffset,
+		P2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
+		BeneficiaryAddress: setting.BeneficiaryAddress,
 	}
 }
 
@@ -300,7 +301,8 @@ func RspUploadFileSliceData(ctx context.Context, target *protos.ReqUploadFileSli
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
-		SpP2PAddress: target.RspUploadFile.SpP2PAddress,
+		SpP2PAddress:       target.RspUploadFile.SpP2PAddress,
+		BeneficiaryAddress: target.BeneficiaryAddress,
 	}
 }
 
@@ -362,6 +364,7 @@ func ReqReportUploadSliceResultData(ctx context.Context, taskId, fileHash, spP2p
 		SpP2PAddress:       spP2pAddr,
 		CostTime:           costTime,
 		OpponentP2PAddress: opponentP2pAddress,
+		BeneficiaryAddress: setting.BeneficiaryAddress,
 	}
 }
 
@@ -372,11 +375,12 @@ func ReqReportDownloadResultData(ctx context.Context, target *protos.RspDownload
 		DownloaderP2PAddress: target.P2PAddress,
 		WalletAddress:        target.WalletAddress,
 		PpP2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
-		PpWalletAddress:      setting.BeneficiaryAddress,
+		PpWalletAddress:      setting.WalletAddress,
 		FileHash:             target.FileHash,
 		TaskId:               target.TaskId,
 		SpP2PAddress:         target.SpP2PAddress,
 		CostTime:             costTime,
+		BeneficiaryAddress:   setting.BeneficiaryAddress,
 	}
 	if isPP {
 		utils.Log("PP ReportDownloadResult ")
@@ -421,10 +425,11 @@ func ReqReportStreamResultData(ctx context.Context, target *protos.RspDownloadSl
 		DownloaderP2PAddress: target.P2PAddress,
 		WalletAddress:        target.WalletAddress,
 		PpP2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
-		PpWalletAddress:      setting.BeneficiaryAddress,
+		PpWalletAddress:      setting.WalletAddress,
 		FileHash:             target.FileHash,
 		TaskId:               target.TaskId,
 		SpP2PAddress:         target.SpP2PAddress,
+		BeneficiaryAddress:   setting.BeneficiaryAddress,
 	}
 	if isPP {
 		utils.Log("PP ReportDownloadResult ")
@@ -478,18 +483,19 @@ func ReqRegisterNewPPData(ctx context.Context, walletAddr string, walletPubkey, 
 		Type:      protos.SignatureType_WALLET,
 	}
 	return &protos.ReqRegisterNewPP{
-		P2PAddress:     p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
-		Signature:      walletSign,
-		DiskSize:       sysInfo.DiskSize,
-		FreeDisk:       sysInfo.FreeDisk,
-		MemorySize:     sysInfo.MemorySize,
-		OsAndVer:       sysInfo.OSInfo,
-		CpuInfo:        sysInfo.CPUInfo,
-		MacAddress:     sysInfo.MacAddress,
-		Version:        uint32(setting.Config.Version.AppVer),
-		PubKey:         p2pserver.GetP2pServer(ctx).GetP2PPublicKey().Bytes(),
-		NetworkAddress: setting.NetworkAddress,
-		ReqTime:        reqTime,
+		P2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
+		Signature:          walletSign,
+		DiskSize:           sysInfo.DiskSize,
+		FreeDisk:           sysInfo.FreeDisk,
+		MemorySize:         sysInfo.MemorySize,
+		OsAndVer:           sysInfo.OSInfo,
+		CpuInfo:            sysInfo.CPUInfo,
+		MacAddress:         sysInfo.MacAddress,
+		Version:            uint32(setting.Config.Version.AppVer),
+		PubKey:             p2pserver.GetP2pServer(ctx).GetP2PPublicKey().Bytes(),
+		NetworkAddress:     setting.NetworkAddress,
+		ReqTime:            reqTime,
+		BeneficiaryAddress: setting.BeneficiaryAddress,
 	}
 }
 
