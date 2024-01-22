@@ -770,6 +770,7 @@ message ReqGetShareFile {
   string share_password = 4;//
   string save_as = 5;
   int64 req_time = 6;
+  string wallet_address = 7;
 }
 
 

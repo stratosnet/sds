@@ -593,7 +593,6 @@ func (api *terminalCmd) Download(ctx context.Context, param []string) (CmdResult
 		return CmdResult{Msg: ""}, errors.New("* This file is being downloaded, please wait and try later")
 	}
 
-	file.StartLocalDownload(fileHash)
 	req := requests.ReqFileStorageInfoData(ctx, param[0], "", saveAs, setting.WalletAddress, setting.WalletPublicKey.Bytes(), nil, nil, nowSec)
 	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, task.LOCAL_REQID, req); err != nil {
 		return CmdResult{Msg: ""}, err

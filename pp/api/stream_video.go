@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 	"io"
 	"net/http"
 	"net/url"
@@ -24,7 +25,6 @@ import (
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/framework/utils/httpserv"
 	"github.com/stratosnet/sds/sds-msg/protos"
-	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 	msgutils "github.com/stratosnet/sds/sds-msg/utils"
 
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
@@ -159,26 +159,10 @@ func streamSharedVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	sn, err := handleGetOzone(ctx, setting.WalletAddress)
-	if err != nil {
-		w.WriteHeader(setting.FAILCode)
-		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get ozone").ToBytes())
-		return
-	}
-
 	shareLink, _, _ := parseShareLink(req.RequestURI)
 	reqGetSharedMsg := reqGetSharedMsg(shareLink)
-	res := namespace.RpcPubApi().RequestGetShared(ctx, reqGetSharedMsg)
+	res := namespace.RpcPubApi().RequestGetVideoShared(ctx, reqGetSharedMsg)
 
-	if res.Return != rpc_api.SHARED_DL_START {
-		w.WriteHeader(setting.FAILCode)
-		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get file storage info").ToBytes())
-		return
-	}
-
-	fileHash := res.FileHash
-	reqDownloadShared := reqDownloadShared(fileHash, sn, res.ReqId)
-	res = namespace.RpcPubApi().RequestDownloadSharedVideo(ctx, reqDownloadShared)
 	if res.Return != rpc_api.DOWNLOAD_OK {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get file storage info").ToBytes())
