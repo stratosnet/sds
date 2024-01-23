@@ -703,7 +703,7 @@ func ReqDeleteShareData(shareID, walletAddr, p2pAddress string, walletPubkey, ws
 	}
 }
 
-func ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr, p2pAddress string, walletPubkey, wsign []byte, isVideoStream bool, reqTime int64) *protos.ReqGetShareFile {
+func ReqGetShareFileData(keyword, sharePassword, saveAs, walletAddr, p2pAddress string, walletPubkey, wsign []byte, reqTime int64) *protos.ReqGetShareFile {
 	walletSign := &protos.Signature{
 		Address:   walletAddr,
 		Pubkey:    walletPubkey,

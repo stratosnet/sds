@@ -59,7 +59,7 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspDownloadFileWrong, RspDownloadFileWrong, RspFileStorageInfoVerifier)
 	registerEvent(header.RspShareLink, RspShareLink, SpRspVerifier)
 	registerEvent(header.RspShareFile, RspShareFile, SpRspVerifier)
-	registerEvent(header.RspGetShareFile, RspGetShareFile, SpRspVerifier)
+	registerEvent(header.RspGetShareFile, RspGetShareFile, RspFileStorageInfoVerifier)
 	registerEvent(header.RspDeleteShare, RspDeleteShare, SpRspVerifier)
 	registerEvent(header.RspSpLatencyCheck, RspSpLatencyCheck, SpRspVerifier)
 	registerEvent(header.RspDeleteFile, RspDeleteFile, SpRspVerifier)
