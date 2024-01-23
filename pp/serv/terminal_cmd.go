@@ -821,19 +821,18 @@ func (api *terminalCmd) GetShareFile(ctx context.Context, param []string) (CmdRe
 	}
 
 	nowSec := time.Now().Unix()
-	shareId := param[0]
+	shareLink, err := fwtypes.ParseShareLink(param[0])
+	if err != nil {
+		return CmdResult{Msg: ""}, err
+	}
 	// sign the wallet signature by wallet private key
-	wsignMsg := msgutils.GetShareFileWalletSignMessage(shareId, setting.WalletAddress, nowSec)
+	wsignMsg := msgutils.GetShareFileWalletSignMessage(shareLink.ShareLink, setting.WalletAddress, nowSec)
 	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
 	}
 
-	if len(param) < 2 {
-		event.GetShareFile(ctx, param[0], "", "", setting.WalletAddress, setting.WalletPublicKey.Bytes(), false, wsign, nowSec)
-	} else {
-		event.GetShareFile(ctx, param[0], param[1], "", setting.WalletAddress, setting.WalletPublicKey.Bytes(), false, wsign, nowSec)
-	}
+	event.GetShareFile(ctx, shareLink.ShareLink, shareLink.Password, "", setting.WalletAddress, setting.WalletPublicKey.Bytes(), wsign, nowSec)
 
 	return CmdResult{Msg: DefaultMsg}, nil
 }

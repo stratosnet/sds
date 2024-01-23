@@ -3,8 +3,10 @@ package event
 import (
 	"context"
 	"github.com/stratosnet/sds/framework/crypto"
+	"github.com/stratosnet/sds/framework/metrics"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/framework/msg/header"
@@ -195,15 +197,14 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAddr string, walletPubkey []byte,
-	isVideoStream bool, wsign []byte, reqTime int64) {
+func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAddr string, walletPubkey []byte, wsign []byte, reqTime int64) {
 	pp.DebugLog(ctx, "GetShareFile for file ", keyword)
 	if setting.CheckLogin() {
 		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(
 			ctx,
 			requests.ReqGetShareFileData(
 				keyword, sharePassword, saveAs, walletAddr, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
-				walletPubkey, wsign, isVideoStream, reqTime,
+				walletPubkey, wsign, reqTime,
 			),
 			header.ReqGetShareFile,
 		)
@@ -216,12 +217,28 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 		fwutils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
+
+	// SPAM check
+	if time.Now().Unix()-target.TimeStamp > setting.SpamThresholdSpSignLatency {
+		pp.ErrorLog(ctx, "sp's get shared file response was expired")
+		return
+	}
+
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
 	reqId := core.GetRemoteReqId(ctx)
 	rpcRequested := !strings.HasPrefix(reqId, task.LOCAL_REQID)
 	rpcResult := &rpc.FileShareResult{}
+	if target.Result.State == protos.ResultState_RES_FAIL {
+		task.DownloadResult(ctx, target.FileHash, false, "failed ReqGetSharedFile, "+target.Result.Msg)
+		if rpcRequested {
+			file.SetRemoteFileResult(target.FileHash+reqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
+		}
+		return
+	}
+	metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_STORAGE_INFO_SP:")
+
 	if rpcRequested {
 		defer file.SetFileShareResult(target.WalletAddress+reqId, rpcResult)
 	}

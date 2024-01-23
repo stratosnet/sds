@@ -895,14 +895,19 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
+	shareLink, err := fwtypes.ParseShareLink(param.ShareLink)
+	if err != nil {
+		utils.ErrorLog("wrong share link")
+		return rpc_api.Result{Return: rpc_api.WRONG_INPUT}
+	}
+
 	reqId := uuid.New().String()
 	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
 	defer cancel()
 	key := param.Signature.Address + reqId
 
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
-	event.GetShareFile(reqCtx, param.ShareLink, "", "", param.Signature.Address, wpk.Bytes(),
-		false, wsig, param.ReqTime)
+	event.GetShareFile(reqCtx, shareLink.ShareLink, shareLink.Password, "", param.Signature.Address, wpk.Bytes(), wsig, param.ReqTime)
 
 	// the application gives FileShareResult type of result
 	var res *rpc_api.FileShareResult
@@ -988,14 +993,19 @@ func (api *rpcPubApi) RequestGetVideoShared(ctx context.Context, param rpc_api.P
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
+	shareLink, err := fwtypes.ParseShareLink(param.ShareLink)
+	if err != nil {
+		utils.ErrorLog("wrong share link")
+		return rpc_api.Result{Return: rpc_api.WRONG_INPUT}
+	}
+
 	reqId := uuid.New().String()
 	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
 	defer cancel()
 	key := param.Signature.Address + reqId
 
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
-	event.GetShareFile(reqCtx, param.ShareLink, "", "", param.Signature.Address, wpk.Bytes(),
-		false, wsig, param.ReqTime)
+	event.GetShareFile(reqCtx, shareLink.ShareLink, shareLink.Password, "", param.Signature.Address, wpk.Bytes(), wsig, param.ReqTime)
 
 	// the application gives FileShareResult type of result
 	var res *rpc_api.FileShareResult
@@ -1013,6 +1023,7 @@ func (api *rpcPubApi) RequestGetVideoShared(ctx context.Context, param rpc_api.P
 				}
 
 				fileHash := res.FileInfo[0].FileHash
+				file.SaveRemoteFileHash(fileHash+reqId, "", 0)
 				// if the file is being downloaded in an existing download session
 				// the result is read, but it's nil
 				return rpc_api.Result{
