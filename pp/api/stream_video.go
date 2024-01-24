@@ -34,6 +34,7 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	pptypes "github.com/stratosnet/sds/pp/types"
 )
 
 type StreamInfoBody struct {
@@ -160,7 +161,7 @@ func streamSharedVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 	}
 
 	shareLink, password, _ := parseShareLink(req.RequestURI)
-	reqGetSharedMsg := reqGetSharedMsg(fwtypes.GetShareFile{ShareLink: shareLink, Password: password})
+	reqGetSharedMsg := reqGetSharedMsg(pptypes.GetShareFile{ShareLink: shareLink, Password: password})
 	res := namespace.RpcPubApi().RequestGetVideoShared(ctx, reqGetSharedMsg)
 
 	if res.Return != rpc_api.DOWNLOAD_OK {
@@ -679,7 +680,7 @@ func reqDownloadDataMsg(fInfo *protos.RspFileStorageInfo, sliceInfo *protos.Down
 	}
 }
 
-func reqGetSharedMsg(shareLink fwtypes.GetShareFile) rpc_api.ParamReqGetShared {
+func reqGetSharedMsg(shareLink pptypes.GetShareFile) rpc_api.ParamReqGetShared {
 	nowSec := time.Now().Unix()
 	sign, _ := setting.WalletPrivateKey.Sign([]byte(msgutils.GetShareFileWalletSignMessage(shareLink.ShareLink, setting.WalletAddress, nowSec)))
 	walletPublicKey, _ := fwtypes.WalletPubKeyToBech32(setting.WalletPublicKey)

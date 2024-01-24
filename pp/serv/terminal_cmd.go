@@ -30,6 +30,7 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	pptypes "github.com/stratosnet/sds/pp/types"
 )
 
 const (
@@ -821,7 +822,7 @@ func (api *terminalCmd) GetShareFile(ctx context.Context, param []string) (CmdRe
 	}
 
 	nowSec := time.Now().Unix()
-	shareLink, err := fwtypes.ParseShareLink(param[0])
+	shareLink, err := pptypes.ParseShareLink(param[0])
 	if err != nil {
 		return CmdResult{Msg: ""}, err
 	}
