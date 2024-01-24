@@ -34,6 +34,7 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	pptypes "github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/rpc"
 )
 
@@ -895,7 +896,7 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
-	shareLink, err := fwtypes.ParseShareLink(param.ShareLink)
+	shareLink, err := pptypes.ParseShareLink(param.ShareLink)
 	if err != nil {
 		utils.ErrorLog("wrong share link")
 		return rpc_api.Result{Return: rpc_api.WRONG_INPUT}
@@ -993,7 +994,7 @@ func (api *rpcPubApi) RequestGetVideoShared(ctx context.Context, param rpc_api.P
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
-	shareLink, err := fwtypes.ParseShareLink(param.ShareLink)
+	shareLink, err := pptypes.ParseShareLink(param.ShareLink)
 	if err != nil {
 		utils.ErrorLog("wrong share link")
 		return rpc_api.Result{Return: rpc_api.WRONG_INPUT}
