@@ -55,7 +55,8 @@ func refillPool() func() {
 }
 
 func RequestBuffer() []byte {
-	DebugLog(len(globalBufferPool.pool), "-")
+	start := time.Now().UnixMilli()
+	//DebugLog(len(globalBufferPool.pool), "-")
 	globalBufferPool.mutex.Lock()
 	if len(globalBufferPool.pool) == 0 {
 		if job == nil {
@@ -69,17 +70,22 @@ func RequestBuffer() []byte {
 		}
 	}
 	globalBufferPool.mutex.Unlock()
-	return globalBufferPool.requestBuffer()
+	buffer := globalBufferPool.requestBuffer()
+	costTime := time.Now().UnixMilli() - start
+	DebugLog(len(globalBufferPool.pool), "-", "cost_time= ", costTime, " ms")
+	return buffer
 }
 
 func ReleaseBuffer(buffer []byte) {
-	DebugLog(len(globalBufferPool.pool), "+")
+	start := time.Now().UnixMilli()
 	globalBufferPool.mutex.Lock()
 	timer.Reset()
 	job = nil
 	globalBufferPool.mutex.Unlock()
 
 	globalBufferPool.releaseBuffer(buffer)
+	costTime := time.Now().UnixMilli() - start
+	DebugLog(len(globalBufferPool.pool), "+", "cost_time= ", costTime, " ms")
 }
 
 func (bp *bufferPool) requestBuffer() []byte {
