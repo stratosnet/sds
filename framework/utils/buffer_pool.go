@@ -72,6 +72,7 @@ func RequestBuffer() []byte {
 	globalBufferPool.mutex.Unlock()
 	buffer := globalBufferPool.requestBuffer()
 	costTime := time.Now().UnixMilli() - start
+	// TO BE DELETE
 	DebugLog(len(globalBufferPool.pool), "-", "cost_time= ", costTime, " ms")
 	return buffer
 }
@@ -85,6 +86,7 @@ func ReleaseBuffer(buffer []byte) {
 
 	globalBufferPool.releaseBuffer(buffer)
 	costTime := time.Now().UnixMilli() - start
+	// TO BE DELETE
 	DebugLog(len(globalBufferPool.pool), "+", "cost_time= ", costTime, " ms")
 }
 

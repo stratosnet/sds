@@ -551,6 +551,7 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					if msgType := header.GetMsgTypeFromId(msgH.Cmd); msgType != nil {
 						metrics.Events.WithLabelValues(msgType.Name).Inc()
 					}
+					// TO BE DELETE
 					if msg.MSGHead.Cmd == header.RspDownloadSlice.Id || msg.MSGHead.Cmd == header.RspTransferDownload.Id {
 						utils.DebugLogf("before going into handlerCh, cumulative cost_time= %d ms", time.Now().UnixMilli()-recvStart)
 					}
@@ -732,6 +733,7 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 			Mylog(sc.belong.opts.logOpen, LOG_MODULE_HANDLELOOP, "closes by server")
 			return
 		case msgHandler := <-handlerCh:
+			// TO BE DELETE
 			if msgHandler.message.MSGHead.Cmd == header.RspDownloadSlice.Id || msgHandler.message.MSGHead.Cmd == header.RspTransferDownload.Id {
 				utils.DebugLogf("enter handlerCh, cumulative cost_time= %d ms", time.Now().UnixMilli()-msgHandler.recvStart)
 			}
