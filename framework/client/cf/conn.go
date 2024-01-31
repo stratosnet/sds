@@ -257,7 +257,7 @@ func (cc *ClientConn) GetPort() string {
 func (cc *ClientConn) GetLocalAddr() string {
 	cc.mu.Lock()
 	defer cc.mu.Unlock()
-	if cc.spbConn == nil {
+	if cc.spbConn == nil || cc.spbConn.LocalAddr() == nil {
 		return ""
 	}
 	return cc.spbConn.LocalAddr().String()
@@ -266,7 +266,7 @@ func (cc *ClientConn) GetLocalAddr() string {
 func (cc *ClientConn) GetRemoteAddr() string {
 	cc.mu.Lock()
 	defer cc.mu.Unlock()
-	if cc.spbConn == nil {
+	if cc.spbConn == nil || cc.spbConn.RemoteAddr() == nil {
 		return ""
 	}
 	return cc.spbConn.RemoteAddr().String()
