@@ -63,10 +63,6 @@ func ReqMiningData(ctx context.Context) *protos.ReqMining {
 	return &protos.ReqMining{Address: p2pserver.GetP2pServer(ctx).GetPPInfo(), Version: setting.Version}
 }
 
-func ReqGetPPlistData(ctx context.Context) *protos.ReqGetPPList {
-	return &protos.ReqGetPPList{MyAddress: p2pserver.GetP2pServer(ctx).GetPPInfo()}
-}
-
 func ReqGetSPlistData(ctx context.Context, walletAddr string, walletPubkey, wsig []byte, reqTime int64) *protos.ReqGetSPList {
 	//nowSec := time.Now().Unix()
 	walletSign := &protos.Signature{
@@ -83,10 +79,9 @@ func ReqGetSPlistData(ctx context.Context, walletAddr string, walletPubkey, wsig
 	return req
 }
 
-func ReqGetPPStatusData(ctx context.Context, initPPList bool) *protos.ReqGetPPStatus {
+func ReqGetPPStatusData(ctx context.Context) *protos.ReqGetPPStatus {
 	return &protos.ReqGetPPStatus{
-		MyAddress:  p2pserver.GetP2pServer(ctx).GetPPInfo(),
-		InitPpList: initPPList,
+		MyAddress: p2pserver.GetP2pServer(ctx).GetPPInfo(),
 	}
 }
 

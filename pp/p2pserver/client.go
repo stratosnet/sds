@@ -58,32 +58,20 @@ func (p *P2pServer) newClient(ctx context.Context, server string, heartbeat, rec
 		delete(p.connMap, c.(*cf.ClientConn).GetName())
 		p.clientMutex.Unlock()
 
-		if p.ppConn != nil {
-			if p.ppConn == c.(*cf.ClientConn) {
-				utils.DebugLog("lost gateway PP conn, delete and change to new PP")
-				select {
-				case p.offlineChan <- &offline{
-					IsSp:           false,
-					NetworkAddress: p.ppConn.GetRemoteAddr(),
-				}:
-				default:
-					break
-				}
-			}
+		offlineInfo := &offline{
+			IsSp:           false,
+			NetworkAddress: c.(*cf.ClientConn).GetRemoteAddr(),
+		}
+		if p.mainSpConn != nil && p.mainSpConn.GetName() == c.(*cf.ClientConn).GetName() {
+			utils.DebugLog("lost SP conn, name: ", p.mainSpConn.GetName(), " netId is ", p.mainSpConn.GetNetID())
+			p.mainSpConn = nil
+			offlineInfo.IsSp = true
 		}
 
-		if p.mainSpConn != nil {
-			if p.mainSpConn.GetName() == c.(*cf.ClientConn).GetName() {
-				utils.DebugLog("lost SP conn, name: ", p.mainSpConn.GetName(), " netId is ", p.mainSpConn.GetNetID())
-				p.mainSpConn = nil
-				select {
-				case p.offlineChan <- &offline{
-					IsSp: true,
-				}:
-				default:
-					break
-				}
-			}
+		select {
+		case p.offlineChan <- offlineInfo:
+		default:
+			break
 		}
 	})
 
@@ -159,10 +147,6 @@ func (p *P2pServer) CleanUpConnMap(fileHash string) {
 	})
 }
 
-func (p *P2pServer) SetPpClientConn(ppConn *cf.ClientConn) {
-	p.ppConn = ppConn
-}
-
 func (p *P2pServer) ReadOfflineChan() chan *offline {
 	return p.offlineChan
 }
@@ -210,10 +194,6 @@ func (p *P2pServer) RangeCachedConn(prefix string, rf func(k, v interface{}) boo
 
 func (p *P2pServer) GetSpConn() *cf.ClientConn {
 	return p.mainSpConn
-}
-
-func (p *P2pServer) GetPpConn() *cf.ClientConn {
-	return p.ppConn
 }
 
 // RecordSpMaintenance return boolean flag of switching to new SP

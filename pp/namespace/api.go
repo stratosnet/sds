@@ -501,7 +501,7 @@ func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamRe
 		// rpc normal download initiate a local download
 		ctx = core.RegisterRemoteReqId(ctx, task.LOCAL_REQID)
 		req := requests.ReqFileStorageInfoData(ctx, param.FileHandle, "", "", wallet, wpk.Bytes(), wsig, nil, param.ReqTime)
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqFileStorageInfo)
 		success := <-task.SubscribeDownloadResult(key)
 		task.UnsubscribeDownloadResult(key)
 		if !success {
@@ -565,7 +565,7 @@ func (api *rpcPubApi) RequestVideoDownload(ctx context.Context, param rpc_api.Pa
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
 	// request for downloading file
 	req := requests.RequestDownloadFile(ctx, fileHash, param.FileHandle, wallet, reqId, wsig, wpk.Bytes(), nil, param.ReqTime)
-	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqFileStorageInfo)
 
 	key := fileHash + reqId
 
@@ -1089,7 +1089,7 @@ func (api *rpcPubApi) RequestDownloadShared(ctx context.Context, param rpc_api.P
 			return rpc_api.Result{Return: rpc_api.INTERNAL_COMM_FAILURE}
 		}
 		req := requests.ReqFileStorageInfoData(ctx, filePath, "", "", param.Signature.Address, wpk.Bytes(), wsig, nil, param.ReqTime)
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqFileStorageInfo)
 		success := <-task.SubscribeDownloadResult(key)
 		task.UnsubscribeDownloadResult(key)
 		if !success {

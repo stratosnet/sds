@@ -487,7 +487,7 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 func SendReportDownloadResult(ctx context.Context, target *protos.RspDownloadSlice, costTime int64, isPP bool) *protos.ReqReportDownloadResult {
 	utils.DebugLog("ReportDownloadResult report result target.fileHash = ", target.FileHash)
 	req := requests.ReqReportDownloadResultData(ctx, target, costTime, isPP)
-	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqReportDownloadResult)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqReportDownloadResult)
 	return req
 }
 
