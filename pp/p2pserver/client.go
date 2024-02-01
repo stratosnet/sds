@@ -53,16 +53,26 @@ func (p *P2pServer) newClient(ctx context.Context, server string, heartbeat, rec
 		utils.Log("on error")
 	})
 	onClose := cf.OnCloseOption(func(c core.WriteCloser) {
-		utils.Log("on close", c.(*cf.ClientConn).GetName())
+		cc, ok := c.(*cf.ClientConn)
+		if !ok {
+			utils.DebugLogf("Closing client conn %v. The conn object is invalid", server)
+			return
+		}
+		if cc == nil {
+			utils.DebugLogf("Closing client conn %v. The conn object is nil", server)
+			return
+		}
+
+		utils.Log("on close", cc.GetName())
 		p.clientMutex.Lock()
-		delete(p.connMap, c.(*cf.ClientConn).GetName())
+		delete(p.connMap, cc.GetName())
 		p.clientMutex.Unlock()
 
 		offlineInfo := &offline{
 			IsSp:           false,
-			NetworkAddress: c.(*cf.ClientConn).GetRemoteAddr(),
+			NetworkAddress: cc.GetRemoteAddr(),
 		}
-		if p.mainSpConn != nil && p.mainSpConn.GetName() == c.(*cf.ClientConn).GetName() {
+		if p.mainSpConn != nil && p.mainSpConn.GetName() == cc.GetName() {
 			utils.DebugLog("lost SP conn, name: ", p.mainSpConn.GetName(), " netId is ", p.mainSpConn.GetNetID())
 			p.mainSpConn = nil
 			offlineInfo.IsSp = true
