@@ -20,6 +20,7 @@ import (
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
+	pptypes "github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/sds-msg/protos"
 	msgutils "github.com/stratosnet/sds/sds-msg/utils"
 )
@@ -1118,8 +1119,15 @@ func reqGetSharedMsg(shareLink string) []byte {
 
 	// param
 	nowSec := time.Now().Unix()
+
+	parsedLink, err := pptypes.ParseShareLink(shareLink)
+	if err != nil {
+		utils.ErrorLog("failed to parse share link")
+		return nil
+	}
+
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetShareFileWalletSignMessage(shareLink, WalletAddress, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetShareFileWalletSignMessage(parsedLink.ShareLink, WalletAddress, nowSec)))
 	if err != nil {
 		return nil
 	}
@@ -1209,31 +1217,8 @@ func getshared(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return nil
 	}
-	if res.Return != rpc.SHARED_DL_START {
-		return nil
-	}
-	utils.Log("- received response (return: SHARED_DL_START)")
 
 	fileHash := res.FileHash
-
-	// compose second request: download
-	r = reqDownloadSharedMsg(fileHash, res.ReqId, res.SequenceNumber)
-	utils.Log("- request downloading shared file (method: user_requestDownloadShared)")
-	// http request-respond
-	body = httpRequest(r)
-	if body == nil {
-		utils.ErrorLog("json marshal error")
-		return nil
-	}
-	// handle response
-	err = json.Unmarshal(body, &rsp)
-	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(rsp.Result, &res)
-	if err != nil {
-		return nil
-	}
 
 	var fileSize uint64 = 0
 	var pieceCount uint64 = 0

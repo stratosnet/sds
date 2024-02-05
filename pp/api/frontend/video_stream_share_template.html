@@ -42,7 +42,7 @@
             options.uri = `http://${url}:${internalPort}/streamVideo/${sliceInfo.slice_storage_info.slice_hash}`
             options.method = 'POST';
             options.body = JSON.stringify({
-                fileHash,
+                fileHash: streamInfo.FileInfo.file_hash,
                 fileName: streamInfo.FileInfo.file_name,
                 p2pAddress: streamInfo.FileInfo.p2p_address,
                 restAddress: sliceInfo.storage_pp_info.rest_address,

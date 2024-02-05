@@ -34,6 +34,7 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	pptypes "github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/rpc"
 )
 
@@ -895,14 +896,19 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
+	shareLink, err := pptypes.ParseShareLink(param.ShareLink)
+	if err != nil {
+		utils.ErrorLog("wrong share link")
+		return rpc_api.Result{Return: rpc_api.WRONG_INPUT}
+	}
+
 	reqId := uuid.New().String()
 	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
 	defer cancel()
 	key := param.Signature.Address + reqId
 
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
-	event.GetShareFile(reqCtx, param.ShareLink, "", "", param.Signature.Address, wpk.Bytes(),
-		false, wsig, param.ReqTime)
+	event.GetShareFile(reqCtx, shareLink.ShareLink, shareLink.Password, "", param.Signature.Address, wpk.Bytes(), wsig, param.ReqTime)
 
 	// the application gives FileShareResult type of result
 	var res *rpc_api.FileShareResult
@@ -916,16 +922,115 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 		default:
 			res, found = file.GetFileShareResult(key)
 			if found {
-				// the result is read, but it's nil
 				if res == nil {
 					return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
-				} else {
-					return rpc_api.Result{
-						Return:         res.Return,
-						ReqId:          reqId,
-						FileHash:       res.FileInfo[0].FileHash,
-						SequenceNumber: res.SequenceNumber,
+				}
+
+				fileHash := res.FileInfo[0].FileHash
+				// if the file is being downloaded in an existing download session
+				reqId := uuid.New().String()
+				key := fileHash + reqId
+
+				// if there is already downloading session in progress, wait for the result
+				if task.CheckDownloadTask(fileHash, setting.WalletAddress, task.LOCAL_REQID) {
+					success := <-task.SubscribeDownloadResult(key)
+					task.UnsubscribeDownloadResult(key)
+					if !success {
+						return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
 					}
+				}
+
+				// check if the file is already cached in download folder and if it's valid
+				err = file.CheckDownloadCache(fileHash)
+
+				// check the cached file again before send it to the client
+				err = file.CheckDownloadCache(fileHash)
+				if err != nil {
+					return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+				}
+
+				// initialize the cursor reading the file from the beginning
+				data, start, end, _ := file.ReadDownloadCachedData(fileHash, reqId)
+				if data == nil {
+					return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE}
+				}
+
+				// the result is read, but it's nil
+				return rpc_api.Result{
+					Return:      rpc_api.DOWNLOAD_OK,
+					OffsetStart: &start,
+					OffsetEnd:   &end,
+					FileHash:    fileHash,
+					FileName:    file.GetFileName(fileHash),
+					FileData:    b64.StdEncoding.EncodeToString(data),
+					ReqId:       reqId,
+				}
+			}
+		}
+	}
+	return rpc_api.Result{Return: rpc_api.TIME_OUT}
+}
+
+func (api *rpcPubApi) RequestGetVideoShared(ctx context.Context, param rpc_api.ParamReqGetShared) rpc_api.Result {
+	metrics.RpcReqCount.WithLabelValues("RequestGetShared").Inc()
+	wallet := param.Signature.Address
+	pubkey := param.Signature.Pubkey
+
+	// wallet pubkey and wallet signature will be carried in sds messages in []byte format
+	wpk, err := fwtypes.WalletPubKeyFromBech32(pubkey)
+	if err != nil {
+		utils.ErrorLog("wrong wallet pubkey")
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
+	// verify if wallet and public key match
+	if !fwtypes.VerifyWalletAddrBytes(wpk.Bytes(), wallet) {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
+	// decode the hex encoded signature back to []byte which is used in protobuf messages
+	wsig, err := hex.DecodeString(param.Signature.Signature)
+	if err != nil {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
+	shareLink, err := pptypes.ParseShareLink(param.ShareLink)
+	if err != nil {
+		utils.ErrorLog("wrong share link")
+		return rpc_api.Result{Return: rpc_api.WRONG_INPUT}
+	}
+
+	reqId := uuid.New().String()
+	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
+	defer cancel()
+	key := param.Signature.Address + reqId
+
+	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
+	event.GetShareFile(reqCtx, shareLink.ShareLink, shareLink.Password, "", param.Signature.Address, wpk.Bytes(), wsig, param.ReqTime)
+
+	// the application gives FileShareResult type of result
+	var res *rpc_api.FileShareResult
+
+	found := false
+	for !found {
+		select {
+		case <-ctx.Done():
+			return rpc_api.Result{Return: rpc_api.TIME_OUT}
+		default:
+			res, found = file.GetFileShareResult(key)
+			if found {
+				if res == nil {
+					return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+				}
+
+				fileHash := res.FileInfo[0].FileHash
+				file.SaveRemoteFileHash(fileHash+reqId, "", 0)
+				// if the file is being downloaded in an existing download session
+				// the result is read, but it's nil
+				return rpc_api.Result{
+					Return:   rpc_api.DOWNLOAD_OK,
+					FileHash: fileHash,
+					ReqId:    reqId,
 				}
 			}
 		}

@@ -30,6 +30,7 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	pptypes "github.com/stratosnet/sds/pp/types"
 )
 
 const (
@@ -593,7 +594,6 @@ func (api *terminalCmd) Download(ctx context.Context, param []string) (CmdResult
 		return CmdResult{Msg: ""}, errors.New("* This file is being downloaded, please wait and try later")
 	}
 
-	file.StartLocalDownload(fileHash)
 	req := requests.ReqFileStorageInfoData(ctx, param[0], "", saveAs, setting.WalletAddress, setting.WalletPublicKey.Bytes(), nil, nil, nowSec)
 	if err := event.ReqGetWalletOzForDownload(ctx, setting.WalletAddress, task.LOCAL_REQID, req); err != nil {
 		return CmdResult{Msg: ""}, err
@@ -822,19 +822,18 @@ func (api *terminalCmd) GetShareFile(ctx context.Context, param []string) (CmdRe
 	}
 
 	nowSec := time.Now().Unix()
-	shareId := param[0]
+	shareLink, err := pptypes.ParseShareLink(param[0])
+	if err != nil {
+		return CmdResult{Msg: ""}, err
+	}
 	// sign the wallet signature by wallet private key
-	wsignMsg := msgutils.GetShareFileWalletSignMessage(shareId, setting.WalletAddress, nowSec)
+	wsignMsg := msgutils.GetShareFileWalletSignMessage(shareLink.ShareLink, setting.WalletAddress, nowSec)
 	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
 	}
 
-	if len(param) < 2 {
-		event.GetShareFile(ctx, param[0], "", "", setting.WalletAddress, setting.WalletPublicKey.Bytes(), false, wsign, nowSec)
-	} else {
-		event.GetShareFile(ctx, param[0], param[1], "", setting.WalletAddress, setting.WalletPublicKey.Bytes(), false, wsign, nowSec)
-	}
+	event.GetShareFile(ctx, shareLink.ShareLink, shareLink.Password, "", setting.WalletAddress, setting.WalletPublicKey.Bytes(), wsign, nowSec)
 
 	return CmdResult{Msg: DefaultMsg}, nil
 }

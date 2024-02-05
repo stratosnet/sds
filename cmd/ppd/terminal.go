@@ -55,7 +55,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"                                                               e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/v05ahm50ugfjrgd3ga8mqi6bqka32ks3dooe1p9g\n" +
 		"sharefile <filehash> <duration> <is_private>                   share an uploaded file\n" +
 		"allshare                                                       list all shared files\n" +
-		"getsharefile <sharelink> <password>                            download a shared file, need to consume ozone\n" +
+		"getsharefile sds://<sharelink>/<password>                      download a shared file, need to consume ozone\n" +
 		"cancelshare <shareID>                                          cancel a shared file\n" +
 		"clearexpshare                                                  clear all expired share links\n" +
 		"ver                                                            version\n" +
