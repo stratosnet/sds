@@ -273,17 +273,17 @@ func RspDownloadSliceDataSplit(rsp *protos.RspDownloadSlice, dataStart, dataEnd,
 
 func ReqUploadFileSliceData(ctx context.Context, task *task.UploadSliceTask, pieceOffset *protos.SliceOffset, data []byte) *protos.ReqUploadFileSlice {
 	return &protos.ReqUploadFileSlice{
-		RspUploadFile:      task.RspUploadFile,
-		SliceNumber:        task.SliceNumber,
-		SliceHash:          task.SliceHash,
-		Data:               data,
-		WalletAddress:      setting.WalletAddress,
-		PieceOffset:        pieceOffset,
-		P2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
-		BeneficiaryAddress: setting.BeneficiaryAddress,
+		RspUploadFile: task.RspUploadFile,
+		SliceNumber:   task.SliceNumber,
+		SliceHash:     task.SliceHash,
+		Data:          data,
+		WalletAddress: task.RspUploadFile.OwnerWalletAddress, // owner's wallet address
+		PieceOffset:   pieceOffset,
+		P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 	}
 }
 
+// storage PP response to the the PP who initiated uploading
 func RspUploadFileSliceData(ctx context.Context, target *protos.ReqUploadFileSlice) *protos.RspUploadFileSlice {
 	var slice *protos.SliceHashAddr
 	for _, slice = range target.RspUploadFile.Slices {
@@ -296,13 +296,13 @@ func RspUploadFileSliceData(ctx context.Context, target *protos.ReqUploadFileSli
 		FileHash:      target.RspUploadFile.FileHash,
 		SliceHash:     target.SliceHash,
 		P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
-		WalletAddress: target.WalletAddress,
+		WalletAddress: target.WalletAddress, // file owner's wallet address
 		Slice:         slice,
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
 		SpP2PAddress:       target.RspUploadFile.SpP2PAddress,
-		BeneficiaryAddress: target.BeneficiaryAddress,
+		BeneficiaryAddress: setting.BeneficiaryAddress,
 	}
 }
 

@@ -103,8 +103,7 @@ message ReqUploadFileSlice {
   bytes           data = 4;
   SliceOffset     piece_offset = 5;
   string          p2p_address = 6;
-  string          wallet_address = 7;
-  string          beneficiary_address = 8;
+  string          wallet_address = 7; // file owner's wallet address
 }
 
 message RspUploadFileSlice {
