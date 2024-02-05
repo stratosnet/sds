@@ -17,9 +17,9 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rs/cors v1.8.2
 	github.com/spf13/cobra v1.6.1
-	github.com/stratosnet/sds/framework v0.0.0-20240111180401-7a98f6132013
-	github.com/stratosnet/sds/sds-msg v0.0.0-20240110213541-8006da03def1
-	github.com/stratosnet/sds/tx-client v0.0.0-20240115205726-9b22ab2bf0c9
+	github.com/stratosnet/sds/framework v0.0.0-20240205194855-dfb795ed9ab5
+	github.com/stratosnet/sds/sds-msg v0.0.0-20240205195437-bb2a37c98531
+	github.com/stratosnet/sds/tx-client v0.0.0-20240117033316-4e518f15e6ae
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
 )
