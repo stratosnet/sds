@@ -106,7 +106,7 @@ func (bp *bufferPool) releaseBuffer(buffer []byte) {
 	if cap(buffer) == bp.bufferSize && len(bp.pool) < bp.poolMaxSize {
 		bp.pool <- buffer
 	} else {
-		ErrorLogf("Buffer not released, actual: cap(buffer) == %d, expected: %d, len(bp.pool) = %d, bp.poolMaxSize = %d",
-			cap(buffer), bp.bufferSize, len(bp.pool), bp.poolMaxSize)
+		ErrorLogf("Buffer not released, ACTUAL: len(buffer) = %d, cap(buffer) = %d, EXPECTED: cap(buffer) = %d, len(bp.pool) = %d, bp.poolMaxSize = %d",
+			len(buffer), cap(buffer), bp.bufferSize, len(bp.pool), bp.poolMaxSize)
 	}
 }
