@@ -73,18 +73,21 @@ func RequestBuffer() []byte {
 	buffer := globalBufferPool.requestBuffer()
 	costTime := time.Now().UnixMilli() - start
 	// TO BE DELETED
-	DebugLog(len(globalBufferPool.pool), "-", "cost_time= ", costTime, " ms")
+	DebugLog(len(globalBufferPool.pool), "-", "cost_time =", costTime, " ms, &buffer =", &buffer[0])
 	return buffer
 }
 
 func ReleaseBuffer(buffer []byte) {
-	DebugLog(len(globalBufferPool.pool), "+")
+	start := time.Now().UnixMilli()
 	globalBufferPool.mutex.Lock()
 	timer.Reset()
 	job = nil
 	globalBufferPool.mutex.Unlock()
 
 	globalBufferPool.releaseBuffer(buffer)
+	costTime := time.Now().UnixMilli() - start
+	// TO BE DELETED
+	DebugLog(len(globalBufferPool.pool), "+", "cost_time =", costTime, " ms, &buffer =", &buffer[0])
 }
 
 func (bp *bufferPool) requestBuffer() []byte {
@@ -106,7 +109,7 @@ func (bp *bufferPool) releaseBuffer(buffer []byte) {
 	if cap(buffer) == bp.bufferSize && len(bp.pool) < bp.poolMaxSize {
 		bp.pool <- buffer
 	} else {
-		ErrorLogf("Buffer not released, ACTUAL: len(buffer) = %d, cap(buffer) = %d, EXPECTED: cap(buffer) = %d, len(bp.pool) = %d, bp.poolMaxSize = %d",
-			len(buffer), cap(buffer), bp.bufferSize, len(bp.pool), bp.poolMaxSize)
+		ErrorLogf("Buffer[addr=%v] not released, ACTUAL: len(buffer) = %d, cap(buffer) = %d, EXPECTED: cap(buffer) = %d, len(bp.pool) = %d, bp.poolMaxSize = %d",
+			&buffer[0], len(buffer), cap(buffer), bp.bufferSize, len(bp.pool), bp.poolMaxSize)
 	}
 }
