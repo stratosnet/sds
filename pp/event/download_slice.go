@@ -127,9 +127,9 @@ func (drc *downRecvCostTime) AddCostTime(tkSliceHashKey string, costTime int64) 
 	}
 	if costTime > 0 {
 		drc.dataMap.Store(tkSliceHashKey, totalCostTime)
+		utils.DebugLogf("--- downRecvCostTime.AddCostTime --- add %d ms from newly received packet, total: %d ms",
+			costTime, totalCostTime)
 	}
-	utils.DebugLogf("--- downRecvCostTime.AddCostTime --- add %d ms from newly received packet, total: %d ms",
-		costTime, totalCostTime)
 	return totalCostTime
 }
 

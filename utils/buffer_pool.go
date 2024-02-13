@@ -55,7 +55,8 @@ func refillPool() func() {
 }
 
 func RequestBuffer() []byte {
-	DebugLog(len(globalBufferPool.pool), "-")
+	start := time.Now().UnixMilli()
+	//DebugLog(len(globalBufferPool.pool), "-")
 	globalBufferPool.mutex.Lock()
 	if len(globalBufferPool.pool) == 0 {
 		if job == nil {
@@ -69,7 +70,11 @@ func RequestBuffer() []byte {
 		}
 	}
 	globalBufferPool.mutex.Unlock()
-	return globalBufferPool.requestBuffer()
+	buffer := globalBufferPool.requestBuffer()
+	costTime := time.Now().UnixMilli() - start
+	// TO BE DELETED
+	DebugLog(len(globalBufferPool.pool), "-", "cost_time= ", costTime, " ms")
+	return buffer
 }
 
 func ReleaseBuffer(buffer []byte) {
@@ -100,5 +105,8 @@ func (bp *bufferPool) releaseBuffer(buffer []byte) {
 
 	if cap(buffer) == bp.bufferSize && len(bp.pool) < bp.poolMaxSize {
 		bp.pool <- buffer
+	} else {
+		ErrorLogf("Buffer not released, actual: cap(buffer) == %d, expected: %d, len(bp.pool) = %d, bp.poolMaxSize = %d",
+			cap(buffer), bp.bufferSize, len(bp.pool), bp.poolMaxSize)
 	}
 }
