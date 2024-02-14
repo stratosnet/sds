@@ -17,9 +17,9 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rs/cors v1.8.2
 	github.com/spf13/cobra v1.6.1
-	github.com/stratosnet/sds/framework v0.0.0-20240110141944-5eee53bc92ac
-	github.com/stratosnet/sds/sds-msg v0.0.0-20240110141944-5eee53bc92ac
-	github.com/stratosnet/sds/tx-client v0.0.0-20240110141944-5eee53bc92ac
+	github.com/stratosnet/sds/framework v0.0.0-20240111180401-7a98f6132013
+	github.com/stratosnet/sds/sds-msg v0.0.0-20240214191254-d2075ed22e4c
+	github.com/stratosnet/sds/tx-client v0.0.0-20240214191254-d2075ed22e4c
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
 )
@@ -77,7 +77,7 @@ require (
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stratosnet/stratos-chain/api v0.0.0-20231219162708-4941432f869c // indirect
+	github.com/stratosnet/stratos-chain/api v0.0.0-20240209191348-6f4cecb7e03c // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect

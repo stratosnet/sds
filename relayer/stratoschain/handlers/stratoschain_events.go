@@ -38,7 +38,7 @@ func init() {
 	Handlers[txclienttypes.MSG_TYPE_CREATE_META_NODE] = CreateMetaNodeMsgHandler()
 	Handlers[txclienttypes.MSG_TYPE_UPDATE_META_NODE_DEPOSIT] = UpdateMetaNodeDepositMsgHandler()
 	Handlers[txclienttypes.MSG_TYPE_REMOVE_META_NODE] = UnbondingMetaNodeMsgHandler()
-	Handlers[txclienttypes.MSG_TYPE_WITHDRAWN_META_NODE_REG_DEPOSIT] = WithdrawnDepositHandler()
+	//Handlers[txclienttypes.MSG_TYPE_WITHDRAWN_META_NODE_REG_DEPOSIT] = WithdrawnDepositHandler()
 	//Handlers["complete_unbonding_meta_node"] = CompleteUnbondingMetaNodeMsgHandler()
 	Handlers[txclienttypes.MSG_TYPE_META_NODE_REG_VOTE] = MetaNodeVoteMsgHandler()
 	Handlers[txclienttypes.MSG_TYPE_PREPAY] = PrepayMsgHandler()
@@ -373,53 +373,53 @@ func UnbondingMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
 	}
 }
 
-func WithdrawnDepositHandler() func(event coretypes.ResultEvent) {
-	return func(result coretypes.ResultEvent) {
-		requiredAttributes := GetEventAttributes(EventTypeWithdrawMetaNodeRegistrationDeposit,
-			AttributeKeyNetworkAddress,
-			AttributeKeyUnbondingMatureTime,
-		)
-
-		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
-		key := getCacheKey(requiredAttributes, result)
-		if _, ok := cache.Load(key); ok {
-			utils.DebugLogf("Event withdraw_meta_node_reg_deposit was already handled for tx [%v]. Ignoring...", txHash)
-			return
-		}
-		cache.Store(key, true)
-
-		req := &relay.WithdrawnDepositSPReq{}
-		for _, event := range processedEvents {
-			networkAddr := event[GetEventAttribute(EventTypeWithdrawMetaNodeRegistrationDeposit, AttributeKeyNetworkAddress)]
-			unbondingMatureTime := event[GetEventAttribute(EventTypeWithdrawMetaNodeRegistrationDeposit, AttributeKeyUnbondingMatureTime)]
-
-			if len(networkAddr) == 0 || len(unbondingMatureTime) == 0 {
-				continue
-			}
-
-			req.SPList = append(req.SPList, &protos.ReqWithdrawnDepositSP{
-				P2PAddress:          networkAddr,
-				UnbondingMatureTime: unbondingMatureTime,
-				TxHash:              txHash,
-			})
-		}
-
-		if len(req.SPList) != initialEventCount {
-			utils.ErrorLogf("Indexing node vote message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
-				len(req.SPList), initialEventCount-len(processedEvents), len(processedEvents)-len(req.SPList))
-		}
-		if len(req.SPList) == 0 {
-			return
-		}
-
-		err := postToSP("/chain/withdrawn", req)
-		if err != nil {
-			utils.ErrorLog(err)
-			return
-		}
-	}
-
-}
+//func WithdrawnDepositHandler() func(event coretypes.ResultEvent) {
+//	return func(result coretypes.ResultEvent) {
+//		requiredAttributes := GetEventAttributes(EventTypeWithdrawMetaNodeRegistrationDeposit,
+//			AttributeKeyNetworkAddress,
+//			AttributeKeyUnbondingMatureTime,
+//		)
+//
+//		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
+//		key := getCacheKey(requiredAttributes, result)
+//		if _, ok := cache.Load(key); ok {
+//			utils.DebugLogf("Event withdraw_meta_node_reg_deposit was already handled for tx [%v]. Ignoring...", txHash)
+//			return
+//		}
+//		cache.Store(key, true)
+//
+//		req := &relay.WithdrawnDepositSPReq{}
+//		for _, event := range processedEvents {
+//			networkAddr := event[GetEventAttribute(EventTypeWithdrawMetaNodeRegistrationDeposit, AttributeKeyNetworkAddress)]
+//			unbondingMatureTime := event[GetEventAttribute(EventTypeWithdrawMetaNodeRegistrationDeposit, AttributeKeyUnbondingMatureTime)]
+//
+//			if len(networkAddr) == 0 || len(unbondingMatureTime) == 0 {
+//				continue
+//			}
+//
+//			req.SPList = append(req.SPList, &protos.ReqWithdrawnDepositSP{
+//				P2PAddress:          networkAddr,
+//				UnbondingMatureTime: unbondingMatureTime,
+//				TxHash:              txHash,
+//			})
+//		}
+//
+//		if len(req.SPList) != initialEventCount {
+//			utils.ErrorLogf("Indexing node vote message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+//				len(req.SPList), initialEventCount-len(processedEvents), len(processedEvents)-len(req.SPList))
+//		}
+//		if len(req.SPList) == 0 {
+//			return
+//		}
+//
+//		err := postToSP("/chain/withdrawn", req)
+//		if err != nil {
+//			utils.ErrorLog(err)
+//			return
+//		}
+//	}
+//
+//}
 
 func CompleteUnbondingMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
@@ -433,6 +433,7 @@ func MetaNodeVoteMsgHandler() func(event coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(EventTypeMetaNodeRegistrationVote,
 			AttributeKeyCandidateNetworkAddress,
 			AttributeKeyCandidateStatus,
+			AttributeKeyOZoneLimitChanges,
 		)
 
 		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
