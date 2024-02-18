@@ -2,12 +2,6 @@ module github.com/stratosnet/sds/relayer
 
 go 1.19
 
-//replace (
-//	github.com/stratosnet/sds/framework => ../framework // for development on local
-//	github.com/stratosnet/sds/sds-msg => ../sds-msg // for development on local
-//	github.com/stratosnet/sds/tx-client => ../tx-client // for development on local
-//)
-
 require (
 	cosmossdk.io/api v0.7.2
 	cosmossdk.io/math v1.2.0
