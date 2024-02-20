@@ -83,10 +83,11 @@ type HomeConfig struct {
 }
 
 type KeysConfig struct {
-	P2PAddress     string `toml:"p2p_address" comment:"Address of the P2P key. Eg: \"stsdsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\""`
-	P2PPassword    string `toml:"p2p_password"`
-	WalletAddress  string `toml:"wallet_address" comment:"Address of the stratos wallet. Eg: \"stxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\""`
-	WalletPassword string `toml:"wallet_password"`
+	P2PAddress         string `toml:"p2p_address" comment:"Address of the P2P key. Eg: \"stsdsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\""`
+	P2PPassword        string `toml:"p2p_password"`
+	WalletAddress      string `toml:"wallet_address" comment:"Address of the stratos wallet. Eg: \"stxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\""`
+	WalletPassword     string `toml:"wallet_password"`
+	BeneficiaryAddress string `toml:"beneficiary_address" comment:"Address for receiving reward. Eg: \"stxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\""`
 }
 
 type ConnectivityConfig struct {
@@ -258,10 +259,11 @@ func defaultConfig() *config {
 			StoragePath:  "./storage",
 		},
 		Keys: KeysConfig{
-			P2PAddress:     "",
-			P2PPassword:    "",
-			WalletAddress:  "",
-			WalletPassword: "",
+			P2PAddress:         "",
+			P2PPassword:        "",
+			WalletAddress:      "",
+			WalletPassword:     "",
+			BeneficiaryAddress: "",
 		},
 		Node: NodeConfig{
 			AutoStart:    true,

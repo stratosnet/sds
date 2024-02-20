@@ -50,6 +50,7 @@ func GetWalletAddress(ctx context.Context) error {
 		return err
 	}
 
+	setting.BeneficiaryAddress = setting.Config.Keys.BeneficiaryAddress
 	walletAddress := setting.Config.Keys.WalletAddress
 	password := setting.Config.Keys.WalletPassword
 	fileName := walletAddress + ".json"

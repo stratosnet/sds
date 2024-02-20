@@ -277,12 +277,13 @@ func ReqUploadFileSliceData(ctx context.Context, task *task.UploadSliceTask, pie
 		SliceNumber:   task.SliceNumber,
 		SliceHash:     task.SliceHash,
 		Data:          data,
-		WalletAddress: setting.WalletAddress,
+		WalletAddress: task.RspUploadFile.OwnerWalletAddress, // owner's wallet address
 		PieceOffset:   pieceOffset,
 		P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 	}
 }
 
+// storage PP response to the the PP who initiated uploading
 func RspUploadFileSliceData(ctx context.Context, target *protos.ReqUploadFileSlice) *protos.RspUploadFileSlice {
 	var slice *protos.SliceHashAddr
 	for _, slice = range target.RspUploadFile.Slices {
@@ -295,12 +296,13 @@ func RspUploadFileSliceData(ctx context.Context, target *protos.ReqUploadFileSli
 		FileHash:      target.RspUploadFile.FileHash,
 		SliceHash:     target.SliceHash,
 		P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
-		WalletAddress: target.WalletAddress,
+		WalletAddress: target.WalletAddress, // file owner's wallet address
 		Slice:         slice,
 		Result: &protos.Result{
 			State: protos.ResultState_RES_SUCCESS,
 		},
-		SpP2PAddress: target.RspUploadFile.SpP2PAddress,
+		SpP2PAddress:       target.RspUploadFile.SpP2PAddress,
+		BeneficiaryAddress: setting.BeneficiaryAddress,
 	}
 }
 
@@ -362,6 +364,7 @@ func ReqReportUploadSliceResultData(ctx context.Context, taskId, fileHash, spP2p
 		SpP2PAddress:       spP2pAddr,
 		CostTime:           costTime,
 		OpponentP2PAddress: opponentP2pAddress,
+		BeneficiaryAddress: setting.BeneficiaryAddress,
 	}
 }
 
@@ -377,6 +380,7 @@ func ReqReportDownloadResultData(ctx context.Context, target *protos.RspDownload
 		TaskId:               target.TaskId,
 		SpP2PAddress:         target.SpP2PAddress,
 		CostTime:             costTime,
+		BeneficiaryAddress:   setting.BeneficiaryAddress,
 	}
 	if isPP {
 		utils.Log("PP ReportDownloadResult ")
@@ -425,6 +429,7 @@ func ReqReportStreamResultData(ctx context.Context, target *protos.RspDownloadSl
 		FileHash:             target.FileHash,
 		TaskId:               target.TaskId,
 		SpP2PAddress:         target.SpP2PAddress,
+		BeneficiaryAddress:   setting.BeneficiaryAddress,
 	}
 	if isPP {
 		utils.Log("PP ReportDownloadResult ")
@@ -478,18 +483,19 @@ func ReqRegisterNewPPData(ctx context.Context, walletAddr string, walletPubkey, 
 		Type:      protos.SignatureType_WALLET,
 	}
 	return &protos.ReqRegisterNewPP{
-		P2PAddress:     p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
-		Signature:      walletSign,
-		DiskSize:       sysInfo.DiskSize,
-		FreeDisk:       sysInfo.FreeDisk,
-		MemorySize:     sysInfo.MemorySize,
-		OsAndVer:       sysInfo.OSInfo,
-		CpuInfo:        sysInfo.CPUInfo,
-		MacAddress:     sysInfo.MacAddress,
-		Version:        uint32(setting.Config.Version.AppVer),
-		PubKey:         p2pserver.GetP2pServer(ctx).GetP2PPublicKey().Bytes(),
-		NetworkAddress: setting.NetworkAddress,
-		ReqTime:        reqTime,
+		P2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
+		Signature:          walletSign,
+		DiskSize:           sysInfo.DiskSize,
+		FreeDisk:           sysInfo.FreeDisk,
+		MemorySize:         sysInfo.MemorySize,
+		OsAndVer:           sysInfo.OSInfo,
+		CpuInfo:            sysInfo.CPUInfo,
+		MacAddress:         sysInfo.MacAddress,
+		Version:            uint32(setting.Config.Version.AppVer),
+		PubKey:             p2pserver.GetP2pServer(ctx).GetP2PPublicKey().Bytes(),
+		NetworkAddress:     setting.NetworkAddress,
+		ReqTime:            reqTime,
+		BeneficiaryAddress: setting.BeneficiaryAddress,
 	}
 }
 

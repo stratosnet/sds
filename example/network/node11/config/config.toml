@@ -35,6 +35,8 @@ p2p_password = 'aaa'
 # Address of the stratos wallet. Eg: "stxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 wallet_address = 'st1nvh4nrjh6hhy7pxr2d9zp4zrzphg8tdccmf47x'
 wallet_password = 'aaa'
+# "Address for receiving reward. Eg: \"stxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"
+beneficiary_address = 'st1nvh4nrjh6hhy7pxr2d9zp4zrzphg8tdccmf47x'
 
 # Configuration of this node
 [node]
