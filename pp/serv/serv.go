@@ -3,6 +3,7 @@ package serv
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -128,15 +129,10 @@ func (bs *BaseServer) startHttpRPC() error {
 		return err
 	}
 
-	allowModuleList := []string{"user"}
-	// if config
-	if setting.Config.Node.Connectivity.AllowOwnerRpc {
-		allowModuleList = append(allowModuleList, "owner")
-	}
-
+	allowModuleList := strings.Split(setting.Config.Node.Connectivity.RpcNamespaces, ",")
 	var config = namespace.HttpConfig{
 		CorsAllowedOrigins: []string{""},
-		Vhosts:             []string{"localhost"},
+		Vhosts:             []string{""},
 		Modules:            allowModuleList,
 	}
 
