@@ -50,8 +50,8 @@ func GetWalletAddress(ctx context.Context) error {
 		return err
 	}
 
-	setting.BeneficiaryAddress = setting.Config.Keys.BeneficiaryAddress
 	walletAddress := setting.Config.Keys.WalletAddress
+
 	password := setting.Config.Keys.WalletPassword
 	fileName := walletAddress + ".json"
 
@@ -62,11 +62,31 @@ func GetWalletAddress(ctx context.Context) error {
 		utils.Log(info.Name())
 		if getWalletPublicKey(ctx, filepath.Join(setting.Config.Home.AccountsPath, fileName), password) {
 			setting.WalletAddress = walletAddress
+
+			// get beneficiary address after get the wallet address
+			err = getBeneficiaryAddress(walletAddress)
+			if err != nil {
+				return err
+			}
+
 			return nil
 		}
 		return errors.New("wrong password")
 	}
 	return errors.New("could not find the account file corresponds to the configured wallet address")
+}
+
+func getBeneficiaryAddress(walletAddressBech32 string) error {
+	if setting.Config.Keys.BeneficiaryAddress == "" {
+		setting.BeneficiaryAddress = walletAddressBech32
+	} else {
+		_, err := fwtypes.WalletAddressFromBech32(setting.Config.Keys.BeneficiaryAddress)
+		if err != nil {
+			return errors.New("invalid beneficiary address")
+		}
+		setting.BeneficiaryAddress = setting.Config.Keys.BeneficiaryAddress
+	}
+	return nil
 }
 
 func getWalletPublicKey(ctx context.Context, filePath, password string) bool {
