@@ -54,9 +54,10 @@ func RspPrepay(ctx context.Context, conn core.WriteCloser) {
 
 	err := tx.BroadcastTx(target.Tx)
 	if err != nil {
-		pp.ErrorLog(ctx, "The prepay transaction couldn't be broadcast", err)
+		pp.ErrorLog(ctx, "The prepay transaction couldn't be broadcast", err.Error())
+		rpcResult.Return = err.Error()
 	} else {
 		pp.Log(ctx, "The prepay transaction was broadcast")
+		rpcResult.Return = rpc.SUCCESS
 	}
-	rpcResult.Return = rpc.SUCCESS
 }
