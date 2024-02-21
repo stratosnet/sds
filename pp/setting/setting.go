@@ -97,7 +97,7 @@ type ConnectivityConfig struct {
 	NetworkPort    string     `toml:"network_port" comment:"Main port for communication on the network. Must be open to the internet. Eg: \"18081\""`
 	MetricsPort    string     `toml:"metrics_port" comment:"Port for prometheus metrics"`
 	RpcPort        string     `toml:"rpc_port" comment:"Port for the JSON-RPC api. See https://docs.thestratos.org/docs-resource-node/sds-rpc-for-file-operation/"`
-	AllowOwnerRpc  bool       `toml:"allow_owner_rpc" comment:"Enable the node owner RPC API. This API can manipulate the node status and sign txs with the local wallet. Do not open this to the internet  Eg: false"`
+	RpcNamespaces  string     `toml:"rpc_namespaces" comment:"Namespaces enabled in the RPC API. Eg: \"user,owner\"""`
 }
 
 type NodeConfig struct {
@@ -280,7 +280,7 @@ func defaultConfig() *config {
 				NetworkPort:    "18081",
 				MetricsPort:    "18181",
 				RpcPort:        "18281",
-				AllowOwnerRpc:  false,
+				RpcNamespaces:  "user",
 			},
 		},
 		Monitor: MonitorConfig{

@@ -10,6 +10,7 @@ import (
 	fwutils "github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/sds-msg/protos"
 	msgutils "github.com/stratosnet/sds/sds-msg/utils"
+	"github.com/stratosnet/sds/tx-client/utils"
 
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
@@ -44,7 +45,7 @@ func ReqGetWalletOzForDownload(ctx context.Context, walletAddr, reqId string, do
 }
 
 func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
-	pp.DebugLog(ctx, "get GetWalletOz RSP")
+	utils.DebugLog("get GetWalletOz RSP")
 	var target protos.RspGetWalletOz
 	if err := VerifyMessage(ctx, header.RspGetWalletOz, &target); err != nil {
 		fwutils.ErrorLog("failed verifying the message, ", err.Error())

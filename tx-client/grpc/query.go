@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	potv1 "github.com/stratosnet/stratos-chain/api/stratos/pot/v1"
+	sdsv1 "github.com/stratosnet/stratos-chain/api/stratos/sds/v1"
 
 	authv1beta1 "cosmossdk.io/api/cosmos/auth/v1beta1"
 	abciv1beta1 "cosmossdk.io/api/cosmos/base/abci/v1beta1"
@@ -149,29 +150,37 @@ func QueryVolumeReport(epoch *big.Int) (*potv1.QueryVolumeReportResponse, error)
 	return resp, nil
 }
 
-func QueryRemainingOzoneLimit() (*big.Int, error) {
+// QueryNozSupply queries the remaining ozone limit and the total ozone supply from stchain
+func QueryNozSupply() (*big.Int, *big.Int, error) {
 	conn, err := CreateGrpcConn()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer conn.Close()
 
-	client := registerv1.NewQueryClient(conn)
+	client := sdsv1.NewQueryClient(conn)
 	ctx := context.Background()
-	req := registerv1.QueryRemainingOzoneLimitRequest{}
-	resp, err := client.RemainingOzoneLimit(ctx, &req)
+	req := sdsv1.QueryNozSupplyRequest{}
+	resp, err := client.NozSupply(ctx, &req)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	if resp.GetOzoneLimit() == "" {
-		return nil, errors.New("remaining ozone limit is nil in the response from stchain")
+	if resp.GetRemaining() == "" {
+		return nil, nil, errors.New("remaining ozone limit is empty in the response from stchain")
 	}
-
-	limit, err := strconv.ParseInt(resp.GetOzoneLimit(), 10, 64)
+	remaining, err := strconv.ParseInt(resp.GetRemaining(), 10, 64)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return big.NewInt(limit), nil
+	if resp.GetTotal() == "" {
+		return nil, nil, errors.New("total ozone supply is empty in the response from stchain")
+	}
+	total, err := strconv.ParseInt(resp.GetTotal(), 10, 64)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return big.NewInt(remaining), big.NewInt(total), nil
 }
