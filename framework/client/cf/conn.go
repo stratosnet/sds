@@ -768,7 +768,7 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 						listenHeader = true
 						continue
 					}
-					// TO BE DELETE
+					// TO BE DELETED
 					if message.MSGHead.Cmd == header.RspDownloadSlice.Id || message.MSGHead.Cmd == header.RspTransferDownload.Id {
 						utils.DebugLogf("before going into handlerCh, cumulative cost_time= %d ms", time.Now().UnixMilli()-recvStart)
 					}
@@ -930,7 +930,7 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			Mylog(cc.opts.logOpen, LOG_MODULE_HANDLELOOP, "closes by conn")
 			return
 		case msgHandler := <-handlerCh:
-			// TO BE DELETE
+			// TO BE DELETED
 			if msgHandler.message.MSGHead.Cmd == header.RspDownloadSlice.Id || msgHandler.message.MSGHead.Cmd == header.RspTransferDownload.Id {
 				utils.DebugLogf("enter handlerCh, cumulative cost_time= %d ms", time.Now().UnixMilli()-msgHandler.recvStart)
 			}

@@ -392,7 +392,7 @@ func CheckFileExisting(ctx context.Context, fileHash, fileName, savePath, encryp
 		_ = file.Close()
 	}()
 	if err != nil {
-		pp.DebugLog(ctx, "check file existing: file doesn't exist.")
+		utils.DebugLog("check file existing: file doesn't exist.")
 		return false
 	}
 
@@ -402,7 +402,7 @@ func CheckFileExisting(ctx context.Context, fileHash, fileName, savePath, encryp
 	}
 	utils.DebugLog("hash", hash)
 	if hash == fileHash {
-		pp.DebugLog(ctx, "file hash matched")
+		utils.DebugLog("file hash matched")
 		return true
 	}
 	utils.DebugLog("file hash not match")
