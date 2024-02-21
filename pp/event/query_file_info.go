@@ -13,11 +13,9 @@ import (
 	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/framework/msg/header"
 	fwtypes "github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
 	fwutils "github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/framework/utils/httpserv"
-	"github.com/stratosnet/sds/sds-msg/protos"
-	msgutils "github.com/stratosnet/sds/sds-msg/utils"
-
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
@@ -25,6 +23,8 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/sds-msg/protos"
+	msgutils "github.com/stratosnet/sds/sds-msg/utils"
 )
 
 // GetFileStorageInfo p to pp. The downloader is assumed the default wallet of this node, if this function is invoked.
@@ -125,7 +125,6 @@ func ReqFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 // RspFileStorageInfo SP-PP , PP-P
 func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	// PP check whether itself is the storage PP, if not transfer
-	pp.Log(ctx, "get，RspFileStorageInfo")
 	var target protos.RspFileStorageInfo
 	if err := VerifyMessage(ctx, header.RspFileStorageInfo, &target); err != nil {
 		fwutils.ErrorLog("failed verifying the message, ", err.Error())
@@ -172,7 +171,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	newTarget.ReqId = fileReqId
-	pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, fileReqId)
+	utils.DebugLog("file hash, reqid:", target.FileHash, fileReqId)
 	if target.Result.State == protos.ResultState_RES_SUCCESS {
 		task.CleanDownloadFileAndConnMap(ctx, target.FileHash, fileReqId)
 		task.DownloadFileMap.Store(target.FileHash+fileReqId, newTarget)

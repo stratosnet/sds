@@ -19,12 +19,12 @@ import (
 	"github.com/stratosnet/sds/framework/crypto/secp256k1"
 	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
 
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/tx-client/grpc"
 	"github.com/stratosnet/sds/tx-client/types"
 	authsigning "github.com/stratosnet/sds/tx-client/types/auth/signing"
 	authtx "github.com/stratosnet/sds/tx-client/types/auth/tx"
 	"github.com/stratosnet/sds/tx-client/types/tx/signing"
-	"github.com/stratosnet/sds/tx-client/utils"
 )
 
 func CreateAndSimulateTx(msg *anypb.Any, txFee types.TxFee, memo string,

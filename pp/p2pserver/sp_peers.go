@@ -41,10 +41,11 @@ func (p *P2pServer) GetP2PAddress() fwtypes.P2PAddress {
 
 func (p *P2pServer) GetPPInfo() *protos.PPBaseInfo {
 	return &protos.PPBaseInfo{
-		P2PAddress:     p.p2pAddress.String(),
-		WalletAddress:  setting.WalletAddress,
-		NetworkAddress: setting.NetworkAddress,
-		RestAddress:    setting.RestAddress,
+		P2PAddress:         p.p2pAddress.String(),
+		WalletAddress:      setting.WalletAddress,
+		BeneficiaryAddress: setting.BeneficiaryAddress,
+		NetworkAddress:     setting.NetworkAddress,
+		RestAddress:        setting.RestAddress,
 	}
 }
 
