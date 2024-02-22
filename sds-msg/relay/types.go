@@ -68,8 +68,3 @@ type UpdatedEffectiveDepositPPReq struct {
 	PPList []UpdatedEffectiveDepositPP `json:"pp_list"`
 	TxHash string                      `json:"tx_hash"`
 }
-
-//type WithdrawnDepositSPReq struct {
-//	SPList []*protos.ReqWithdrawnDepositSP `json:"sp_list"`
-//	TxHash string                          `json:"tx_hash"`
-//}

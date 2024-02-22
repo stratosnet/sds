@@ -235,15 +235,6 @@ func BuildMetaNodeRegistrationVoteMsg(candidateNetworkAddress fwtypes.P2PAddress
 	}
 }
 
-//func BuildWithdrawMetaNodeRegistrationDepositMsg(networkAddress fwtypes.P2PAddress, ownerAddress fwtypes.WalletAddress,
-//) *registerv1.MsgWithdrawMetaNodeRegistrationDeposit {
-//
-//	return &registerv1.MsgWithdrawMetaNodeRegistrationDeposit{
-//		NetworkAddress: networkAddress.String(),
-//		OwnerAddress:   ownerAddress.String(),
-//	}
-//}
-
 func BuildKickMetaNodeVoteMsg(targetNetworkAddress fwtypes.P2PAddress, opinion bool, voterNetworkAddress fwtypes.P2PAddress,
 	voterOwnerAddress fwtypes.WalletAddress) *registerv1.MsgKickMetaNodeVote {
 

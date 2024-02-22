@@ -24,6 +24,7 @@ import (
 	"github.com/stratosnet/sds/relayer/cmd/relayd/setting"
 	"github.com/stratosnet/sds/relayer/sds"
 	"github.com/stratosnet/sds/relayer/stratoschain"
+	"github.com/stratosnet/sds/relayer/stratoschain/types"
 )
 
 const (
@@ -276,7 +277,7 @@ func (s *sdsConnection) txBroadcasterLoop() {
 				utils.ErrorLog("The stratos-chain tx broadcaster channel has been closed")
 				return
 			}
-			if msg.Type != txclienttypes.MSG_TYPE_SLASHING_RESOURCE_NODE { // Not printing slashing messages, since SP can slash up to 500 PPs at once, polluting the logs
+			if msg.Type != types.MSG_TYPE_SLASHING_RESOURCE_NODE { // Not printing slashing messages, since SP can slash up to 500 PPs at once, polluting the logs
 				utils.DebugLogf("Received a new msg of type [%v] to broadcast! ", msg.Type)
 			}
 			for i := range msg.SignatureKeys {
