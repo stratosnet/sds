@@ -51,7 +51,7 @@ ifeq ($(SDS_GIT_REVISION), LOCAL)
 	$(QUIET)grep -qxF $(SDS_MSG_REPLACE) go.mod || echo $(SDS_MSG_REPLACE) >> go.mod
 	$(QUIET)grep -qxF $(TX_CLIENT_REPLACE) go.mod || echo $(TX_CLIENT_REPLACE) >> go.mod
 else
-	$(QUIET)sed -i "/replace github.com\/stratosnet\/sds/d" go.mod
+	$(QUIET)sed -i"" -e "/replace github.com\/stratosnet\/sds/d" go.mod
 	$(QUIET)go get $(SDS_MSG_UPD)
 	$(QUIET)go get $(FRAMEWORK_UPD)
 	$(QUIET)go get $(TX_CLIENT_UPD)
