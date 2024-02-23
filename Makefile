@@ -62,7 +62,7 @@ ifeq ($(SDS_GIT_REVISION), LOCAL)
 	$(QUIET)grep -qxF $(SDS_MSG_REPLACE) go.mod || echo $(SDS_MSG_REPLACE) >> go.mod
 	$(QUIET)grep -qxF $(TX_CLIENT_REPLACE) go.mod || echo $(TX_CLIENT_REPLACE) >> go.mod
 else
-	$(QUIET)sed -i "/replace github.com\/stratosnet\/sds/d" go.mod
+	$(QUIET)sed -i"" -e "/replace github.com\/stratosnet\/sds/d" go.mod
 	$(QUIET)go get $(SDS_MSG_UPD)
 	$(QUIET)go get $(FRAMEWORK_UPD)
 	$(QUIET)go get $(TX_CLIENT_UPD)
@@ -74,10 +74,10 @@ ifeq ($(SDS_GIT_REVISION), LOCAL)
 	$(QUIET)cd tx-client &&	grep -qxF $(FRAMEWORK_REPLACE_FROM_TX_CLIENT) go.mod || echo $(FRAMEWORK_REPLACE_FROM_TX_CLIENT) >> go.mod
 	$(QUIET)cd tx-client && grep -qxF $(SDS_MSG_REPLACE_FROM_TX_CLIENT) go.mod || echo $(SDS_MSG_REPLACE_FROM_TX_CLIENT) >> go.mod
 else
-	$(QUIET)cd tx-client && sed -i "/replace github.com\/stratosnet\/sds/d" go.mod
-	$(QUIET)$(cd tx-client && go get $(SDS_MSG_UPD))
-	$(QUIET)$(cd tx-client && go get $(FRAMEWORK_UPD))
-	$(QUIET)$(cd tx-client && go mod tidy)
+	$(QUIET)cd tx-client && sed -i"" -e "/replace github.com\/stratosnet\/sds/d" go.mod
+	$(QUIET)cd tx-client && go get $(SDS_MSG_UPD)
+	$(QUIET)cd tx-client && go get $(FRAMEWORK_UPD)
+	$(QUIET)cd tx-client && go mod tidy
 endif
 
 go-mod-update: go-mod-update-sds go-mod-update-tx-client
