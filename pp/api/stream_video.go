@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 	"io"
 	"net/http"
 	"net/url"
@@ -24,7 +25,6 @@ import (
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/framework/utils/httpserv"
 	"github.com/stratosnet/sds/sds-msg/protos"
-	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 	msgutils "github.com/stratosnet/sds/sds-msg/utils"
 
 	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
@@ -34,6 +34,7 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	pptypes "github.com/stratosnet/sds/pp/types"
 )
 
 type StreamInfoBody struct {
@@ -159,26 +160,10 @@ func streamSharedVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	sn, err := handleGetOzone(ctx, setting.WalletAddress)
-	if err != nil {
-		w.WriteHeader(setting.FAILCode)
-		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get ozone").ToBytes())
-		return
-	}
+	shareLink, password, _ := parseShareLink(req.RequestURI)
+	reqGetSharedMsg := reqGetSharedMsg(pptypes.GetShareFile{ShareLink: shareLink, Password: password})
+	res := namespace.RpcPubApi().RequestGetVideoShared(ctx, reqGetSharedMsg)
 
-	shareLink, _, _ := parseShareLink(req.RequestURI)
-	reqGetSharedMsg := reqGetSharedMsg(shareLink)
-	res := namespace.RpcPubApi().RequestGetShared(ctx, reqGetSharedMsg)
-
-	if res.Return != rpc_api.SHARED_DL_START {
-		w.WriteHeader(setting.FAILCode)
-		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get file storage info").ToBytes())
-		return
-	}
-
-	fileHash := res.FileHash
-	reqDownloadShared := reqDownloadShared(fileHash, sn, res.ReqId)
-	res = namespace.RpcPubApi().RequestDownloadSharedVideo(ctx, reqDownloadShared)
 	if res.Return != rpc_api.DOWNLOAD_OK {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get file storage info").ToBytes())
@@ -697,9 +682,9 @@ func reqDownloadDataMsg(fInfo *protos.RspFileStorageInfo, sliceInfo *protos.Down
 	}
 }
 
-func reqGetSharedMsg(shareLink string) rpc_api.ParamReqGetShared {
+func reqGetSharedMsg(shareLink pptypes.GetShareFile) rpc_api.ParamReqGetShared {
 	nowSec := time.Now().Unix()
-	sign, _ := setting.WalletPrivateKey.Sign([]byte(msgutils.GetShareFileWalletSignMessage(shareLink, setting.WalletAddress, nowSec)))
+	sign, _ := setting.WalletPrivateKey.Sign([]byte(msgutils.GetShareFileWalletSignMessage(shareLink.ShareLink, setting.WalletAddress, nowSec)))
 	walletPublicKey, _ := fwtypes.WalletPubKeyToBech32(setting.WalletPublicKey)
 	walletSign := rpc_api.Signature{
 		Address:   setting.WalletAddress,
@@ -709,7 +694,7 @@ func reqGetSharedMsg(shareLink string) rpc_api.ParamReqGetShared {
 	return rpc_api.ParamReqGetShared{
 		Signature: walletSign,
 		ReqTime:   nowSec,
-		ShareLink: shareLink,
+		ShareLink: shareLink.String(),
 	}
 }
 

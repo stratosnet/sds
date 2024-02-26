@@ -2,16 +2,15 @@ package event
 
 import (
 	"context"
+	"github.com/stratosnet/sds/framework/crypto"
+	"github.com/stratosnet/sds/framework/metrics"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/framework/msg/header"
-	fwtypes "github.com/stratosnet/sds/framework/types"
 	fwutils "github.com/stratosnet/sds/framework/utils"
-	"github.com/stratosnet/sds/sds-msg/protos"
-	msgutils "github.com/stratosnet/sds/sds-msg/utils"
-
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
@@ -19,6 +18,7 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 var (
@@ -197,15 +197,14 @@ func RspDeleteShare(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAddr string, walletPubkey []byte,
-	isVideoStream bool, wsign []byte, reqTime int64) {
+func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAddr string, walletPubkey []byte, wsign []byte, reqTime int64) {
 	pp.DebugLog(ctx, "GetShareFile for file ", keyword)
 	if setting.CheckLogin() {
 		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(
 			ctx,
 			requests.ReqGetShareFileData(
 				keyword, sharePassword, saveAs, walletAddr, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
-				walletPubkey, wsign, isVideoStream, reqTime,
+				walletPubkey, wsign, reqTime,
 			),
 			header.ReqGetShareFile,
 		)
@@ -213,75 +212,73 @@ func GetShareFile(ctx context.Context, keyword, sharePassword, saveAs, walletAdd
 }
 
 func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
-	var target protos.RspGetShareFile
+	var target protos.RspFileStorageInfo
 	if err := VerifyMessage(ctx, header.RspGetShareFile, &target); err != nil {
 		fwutils.ErrorLog("failed verifying the message, ", err.Error())
 		return
 	}
+
+	// SPAM check
+	if time.Now().Unix()-target.TimeStamp > setting.SpamThresholdSpSignLatency {
+		pp.ErrorLog(ctx, "sp's get shared file response was expired")
+		return
+	}
+
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
 	reqId := core.GetRemoteReqId(ctx)
 	rpcRequested := !strings.HasPrefix(reqId, task.LOCAL_REQID)
 	rpcResult := &rpc.FileShareResult{}
-	if rpcRequested {
-		defer file.SetFileShareResult(target.ShareRequest.Signature.Address+reqId, rpcResult)
-	}
-
-	if target.Result.State != protos.ResultState_RES_SUCCESS {
-		rpcResult.Return = rpc.GENERIC_ERR
-		return
-	}
-
-	if target.ShareRequest == nil {
-		fwutils.ErrorLog("got empty ShareRequest from sp")
-		return
-	}
-
-	if target.ShareRequest.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress().String() {
-		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.ShareRequest.P2PAddress, core.MessageFromContext(ctx))
-		rpcResult.Return = rpc.WRONG_PP_ADDRESS
-		return
-	}
-
-	fwutils.Log("get RspGetShareFile", target.Result.State, target.Result.Msg)
-	fwutils.Log("FileInfo:", target.FileInfo)
-
-	for idx, fileInfo := range target.FileInfo {
-		saveAs := ""
-		if idx == 0 {
-			saveAs = target.ShareRequest.SaveAs
-		}
-		filePath := fwtypes.DataMeshId{
-			Owner: fileInfo.OwnerWalletAddress,
-			Hash:  fileInfo.FileHash,
-		}.String()
-
-		var req *protos.ReqFileStorageInfo
-		// notify rpc server starting file downloading
+	if target.Result.State == protos.ResultState_RES_FAIL {
+		task.DownloadResult(ctx, target.FileHash, false, "failed ReqGetSharedFile, "+target.Result.Msg)
 		if rpcRequested {
-			f := rpc.FileInfo{FileHash: fileInfo.FileHash}
+			file.SetRemoteFileResult(target.FileHash+reqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
+		}
+		return
+	}
+	metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_STORAGE_INFO_SP:")
+
+	if rpcRequested {
+		defer file.SetFileShareResult(target.WalletAddress+reqId, rpcResult)
+	}
+
+	newTarget := &protos.RspFileStorageInfo{
+		VisitCer:      target.VisitCer,
+		P2PAddress:    target.P2PAddress,
+		WalletAddress: target.WalletAddress,
+		SliceInfo:     target.SliceInfo,
+		FileHash:      target.FileHash,
+		FileName:      target.FileName,
+		Result:        target.Result,
+		ReqId:         target.ReqId,
+		SavePath:      target.SavePath,
+		FileSize:      target.FileSize,
+		RestAddress:   target.RestAddress,
+		NodeSign:      target.NodeSign,
+		SpP2PAddress:  target.SpP2PAddress,
+		EncryptionTag: target.EncryptionTag,
+		TaskId:        target.TaskId,
+		TimeStamp:     target.TimeStamp,
+	}
+
+	newTarget.ReqId = reqId
+	pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, reqId)
+	if target.Result.State == protos.ResultState_RES_SUCCESS {
+		task.CleanDownloadFileAndConnMap(ctx, target.FileHash, reqId)
+		task.DownloadFileMap.Store(target.FileHash+reqId, newTarget)
+		task.AddDownloadTask(newTarget)
+		if !rpcRequested {
+			file.StartLocalDownload(target.FileHash)
+		} else {
+			f := rpc.FileInfo{FileHash: target.FileHash, FileName: target.FileName}
 			rpcResult.Return = rpc.SHARED_DL_START
 			rpcResult.FileInfo = append(rpcResult.FileInfo, f)
-			rpcResult.SequenceNumber = target.SequenceNumber
-			sdmMap.Store(fileInfo.FileHash+reqId, filePath)
-			file.SetFileShareResult(target.ShareRequest.Signature.Address+reqId, rpcResult)
-		} else {
-			if task.CheckDownloadTask(fileInfo.FileHash, setting.WalletAddress, task.LOCAL_REQID) {
-				pp.DebugLog(ctx, "* This file is being downloaded, please wait and try later\n")
-				return
-			}
-
-			file.StartLocalDownload(fileInfo.FileHash)
-			req = requests.ReqFileStorageInfoData(ctx, filePath, "", saveAs, setting.WalletAddress, setting.WalletPublicKey.Bytes(), nil, target.ShareRequest, target.ShareRequest.ReqTime)
-			sigMsg := msgutils.GetFileDownloadWalletSignMessage(fileInfo.FileHash, setting.WalletAddress, target.SequenceNumber, target.ShareRequest.ReqTime)
-			sign, err := setting.WalletPrivateKey.Sign([]byte(sigMsg))
-			if err != nil {
-				return
-			}
-			req.Signature.Signature = sign
-			p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
 		}
+		if crypto.IsVideoStream(target.FileHash) {
+			return
+		}
+		DownloadFileSlices(ctx, newTarget, reqId)
 	}
 }
 

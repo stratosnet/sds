@@ -35,6 +35,8 @@ p2p_password = 'aaa'
 # Address of the stratos wallet. Eg: "stxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 wallet_address = 'st14rtmcurt5rvgy8pu3srleskfjjyry3n9a00nw9'
 wallet_password = 'aaa'
+# "Address for receiving reward. Eg: \"stxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"
+beneficiary_address = 'st14rtmcurt5rvgy8pu3srleskfjjyry3n9a00nw9'
 
 # Configuration of this node
 [node]
@@ -56,8 +58,8 @@ network_port = '9105'
 metrics_port = '9205'
 # Port for the JSON-RPC api. See https://docs.thestratos.org/docs-resource-node/sds-rpc-for-file-operation/
 rpc_port = '9305'
-# Enable the node owner RPC API. This API can manipulate the node status and sign txs with the local wallet. Do not open this to the internet  Eg: false
-allow_owner_rpc = false
+# Namespaces enabled in the RPC API. Eg: "user,owner"
+rpc_namespaces = 'user'
 
 # The first meta node to connect to when starting the node
 [node.connectivity.seed_meta_node]
