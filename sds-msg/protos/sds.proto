@@ -822,6 +822,7 @@ message RspGetPPStatus{
   int32 state = 5;
   bool init_pp_list = 6;
   Result result = 7;
+  bool is_verified = 8;
 }
 
 message ReqGetWalletOz {
