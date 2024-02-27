@@ -28,6 +28,13 @@ func (p *P2pServer) initClient() {
 	p.connMap = make(map[string]*cf.ClientConn)
 }
 
+func (p *P2pServer) SetOptionFunctions(write func(context.Context, *msg.RelayMsgBuf), read func(*msg.RelayMsgBuf),
+	handle func(context.Context, *msg.RelayMsgBuf)) {
+	p.onWriteFunc = write
+	p.onReadFunc = read
+	p.onHandleFunc = handle
+}
+
 func (p *P2pServer) NewClientToMainSp(ctx context.Context, server string) error {
 	utils.DebugLog("NewClientToMainSp: to", server, " hb: true, rec: true")
 	_, err := p.newClient(ctx, server, true, false, true)
@@ -100,7 +107,8 @@ func (p *P2pServer) newClient(ctx context.Context, server string, heartbeat, rec
 		onConnect,
 		onError,
 		onClose,
-		cf.OnMessageOption(func(msg msg.RelayMsgBuf, c core.WriteCloser) {}),
+		cf.OnWriteOption(p.onWriteFunc),
+		cf.OnHandleOption(p.onHandleFunc),
 		cf.BufferSizeOption(100),
 		cf.ReconnectOption(reconnect),
 		cf.HeartCloseOption(!heartbeat),

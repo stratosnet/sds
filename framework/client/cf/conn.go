@@ -45,7 +45,9 @@ type MsgHandler struct {
 }
 
 type onConnectFunc func(core.WriteCloser) bool
-type onMessageFunc func(msg.RelayMsgBuf, core.WriteCloser)
+type onWriteFunc func(context.Context, *msg.RelayMsgBuf)
+type onReadFunc func(*msg.RelayMsgBuf)
+type onHandleFunc func(context.Context, *msg.RelayMsgBuf)
 type onCloseFunc func(core.WriteCloser)
 type onErrorFunc func(core.WriteCloser)
 type ContextKV struct {
@@ -54,7 +56,9 @@ type ContextKV struct {
 }
 type options struct {
 	onConnect   onConnectFunc
-	onMessage   onMessageFunc
+	onWrite     onWriteFunc
+	onRead      onReadFunc
+	onHandle    onHandleFunc
 	onClose     onCloseFunc
 	onError     onErrorFunc
 	bufferSize  int
@@ -608,7 +612,9 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 	m.PacketId = core.GetPacketIdFromContext(ctx)
 
 	sendCh <- m
-	core.TimoutMap.Store(ctx, m.MSGHead.ReqId, m)
+	if c.opts.onWrite != nil {
+		c.opts.onWrite(ctx, m)
+	}
 
 	return
 }
@@ -617,7 +623,6 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	var (
 		spbConn   net.Conn
 		cDone     <-chan struct{}
-		onMessage onMessageFunc
 		handlerCh chan MsgHandler
 		message   *msg.RelayMsgBuf
 		cc        *ClientConn
@@ -625,7 +630,6 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	cc = c.(*ClientConn)
 	spbConn = c.(*ClientConn).spbConn
 	cDone = c.(*ClientConn).ctx.Done()
-	onMessage = c.(*ClientConn).opts.onMessage
 	handlerCh = c.(*ClientConn).handlerCh
 
 	defer func() {
@@ -767,18 +771,16 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 						message.MSGData = utils.RequestBuffer()[:posEnd-posData]
 						copy(message.MSGData[:], msgBuf[posData:posEnd])
 					}
+					if cc.opts.onRead != nil {
+						cc.opts.onRead(message)
+					}
 
 					handler := core.GetHandlerFunc(cmd)
 					if handler == nil {
-						if onMessage != nil {
-							onMessage(*message, c)
+						if msgType := header.GetMsgTypeFromId(msgH.Cmd); msgType != nil {
+							Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for message: "+msgType.Name)
 						} else {
-							if msgType := header.GetMsgTypeFromId(msgH.Cmd); msgType != nil {
-								Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for message: "+msgType.Name)
-							} else {
-								Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, fmt.Sprintf("no handler or onMessage() found for an invalid message: %d", cmd))
-							}
-
+							Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, fmt.Sprintf("no handler or onMessage() found for an invalid message: %d", cmd))
 						}
 						msgH.Len = 0
 						i = 0
@@ -952,7 +954,9 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				utils.DebugLogf("enter handlerCh, cumulative cost_time= %d ms", time.Now().UnixMilli()-msgHandler.recvStart)
 			}
 			msg, handler, recvStart := msgHandler.message, msgHandler.handler, msgHandler.recvStart
-			core.TimoutMap.DeleteByRspMsg(&msg)
+			if cc.opts.onHandle != nil {
+				cc.opts.onHandle(ctx, &msg)
+			}
 			ctxWithParentReqId := core.CreateContextWithParentReqId(ctx, msg.MSGHead.ReqId)
 			ctxWithRecvStart := core.CreateContextWithRecvStartTime(ctxWithParentReqId, recvStart)
 			ctx = core.CreateContextWithMessage(ctxWithRecvStart, &msg)
@@ -974,9 +978,21 @@ func OnConnectOption(cb func(core.WriteCloser) bool) ClientOption {
 	}
 }
 
-func OnMessageOption(cb func(msg.RelayMsgBuf, core.WriteCloser)) ClientOption {
+func OnWriteOption(cb func(context.Context, *msg.RelayMsgBuf)) ClientOption {
 	return func(o *options) {
-		o.onMessage = cb
+		o.onWrite = cb
+	}
+}
+
+func OnReadOption(cb func(*msg.RelayMsgBuf)) ClientOption {
+	return func(o *options) {
+		o.onRead = cb
+	}
+}
+
+func OnHandleOption(cb func(context.Context, *msg.RelayMsgBuf)) ClientOption {
+	return func(o *options) {
+		o.onHandle = cb
 	}
 }
 

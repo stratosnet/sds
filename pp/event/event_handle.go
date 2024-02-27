@@ -98,5 +98,5 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.ReqGetHDInfo, ReqGetHDInfo, nil)
 	registerEvent(header.RspGetHDInfo, RspGetHDInfo, nil)
 
-	core.RegisterTimeoutHandler(header.ReqDownloadSlice, &DownloadTimeoutHandler{})
+	RegisterTimeoutHandler(header.ReqDownloadSlice, &DownloadTimeoutHandler{})
 }

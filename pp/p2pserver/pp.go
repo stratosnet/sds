@@ -12,6 +12,7 @@ import (
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
 	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
+	"github.com/stratosnet/sds/framework/msg"
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
@@ -70,6 +71,10 @@ type P2pServer struct {
 	clientMutex sync.Mutex
 
 	connContextKey []interface{}
+
+	onWriteFunc  func(context.Context, *msg.RelayMsgBuf)
+	onReadFunc   func(*msg.RelayMsgBuf)
+	onHandleFunc func(context.Context, *msg.RelayMsgBuf)
 }
 
 func (p *P2pServer) GetP2pServer() *core.Server {
