@@ -25,7 +25,7 @@
 <script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
 <script>
     const url = "localhost"
-    const internalPort = 9501 //corresponds to the InternalPort in the config of pp node
+    const internalPort = 9303 //corresponds to the InternalPort in the config of pp node
     const shareLink = ""
     const sharePassword = ""
     let streamInfo;
@@ -42,15 +42,23 @@
             options.uri = `http://${url}:${internalPort}/streamVideo/${sliceInfo.slice_storage_info.slice_hash}`
             options.method = 'POST';
             options.body = JSON.stringify({
-                fileHash:  streamInfo.file_hash,
-                fileReqId: streamInfo.req_id,
+                fileHash: streamInfo.FileInfo.file_hash,
+                fileName: streamInfo.FileInfo.file_name,
+                p2pAddress: streamInfo.FileInfo.p2p_address,
+                restAddress: sliceInfo.storage_pp_info.rest_address,
+                sign: streamInfo.FileInfo.sign,
+                spP2pAddress: streamInfo.FileInfo.sp_p2p_address,
+                savePath: streamInfo.FileInfo.save_path,
+                fileReqId: streamInfo.FileInfo.req_id,
+                fileTimeStamp: streamInfo.FileInfo.time_stamp,
                 sliceInfo,
+                sliceInfos: streamInfo.FileInfo.slice_info,
             })
             return options;
         };
         player.ready(function () {
             player.src({
-                src: `http://${url}:${internalPort}/streamVideo/${streamInfo.header_file}`,
+                src: `http://${url}:${internalPort}/streamVideo/${streamInfo.HeaderFile}`,
                 type: 'application/x-mpegURL',
             });
         });
@@ -58,7 +66,7 @@
     }
 
     function getSliceInfo(videoSegment) {
-        return streamInfo.segment_to_slice_info[videoSegment]
+        return streamInfo.SegmentToSliceInfo[videoSegment]
     }
 
     function httpGetAsync(theUrl, callback)
