@@ -25,10 +25,9 @@
 <script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
 <script>
   const url = "localhost"
-  const restPort =  9601 //corresponds to the rest api port in the config of pp node
+  const restPort = 9604 //corresponds to the rest port in the config of pp node
   const fileHash = "";
   const ownerWalletAddress = "";
-  const pubKey = ""
   let streamInfo;
 
   httpGetAsync(`http://${url}:${restPort}/getOzone/${ownerWalletAddress}`, function(ozoneText) {
@@ -37,8 +36,7 @@
     const signMessage = fileHash + ownerWalletAddress + ozoneInfo.sequenceNumber + nowSec
     // TODO sign the message with private key
     const reqBody = JSON.stringify({
-      pubKey: pubKey,
-      walletAddress: ownerWalletAddress,
+      pubKey: "",
       signature: "",
       reqTime: nowSec
     });
@@ -57,14 +55,22 @@
       options.method = 'POST';
       options.body = JSON.stringify({
         fileHash,
-        fileReqId: streamInfo.req_id,
+        fileName: streamInfo.FileInfo.file_name,
+        p2pAddress: streamInfo.FileInfo.p2p_address,
+        restAddress: sliceInfo.storage_pp_info.rest_address,
+        sign: streamInfo.FileInfo.sign,
+        spP2pAddress: streamInfo.FileInfo.sp_p2p_address,
+        savePath: streamInfo.FileInfo.save_path,
+        fileReqId: streamInfo.FileInfo.req_id,
+        fileTimeStamp: streamInfo.FileInfo.time_stamp,
         sliceInfo,
+        sliceInfos: streamInfo.FileInfo.slice_info,
       })
       return options;
     };
     player.ready(function () {
       player.src({
-        src: `http://${url}:${restPort}/getVideoSliceCache/${streamInfo.header_file}`,
+        src: `http://${url}:${restPort}/getVideoSliceCache/${streamInfo.HeaderFile}`,
         type: 'application/x-mpegURL',
       });
     });
@@ -72,7 +78,7 @@
   }
 
   function getSliceInfo(videoSegment) {
-    return streamInfo.segment_to_slice_info[videoSegment]
+    return streamInfo.SegmentToSliceInfo[videoSegment]
   }
 
   function httpGetAsync(theUrl, callback){

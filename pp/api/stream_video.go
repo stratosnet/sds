@@ -37,15 +37,10 @@ import (
 	pptypes "github.com/stratosnet/sds/pp/types"
 )
 
-const (
-	streamInfoFile = "streamInfo"
-)
-
 type StreamInfoBody struct {
-	PubKey        string `json:"pubKey"`
-	WalletAddress string `json:"walletAddress"`
-	Signature     string `json:"signature"`
-	ReqTime       int64  `json:"reqTime"`
+	PubKey    string `json:"pubKey"`
+	Signature string `json:"signature"`
+	ReqTime   int64  `json:"reqTime"`
 }
 
 type StreamReqBody struct {
@@ -60,13 +55,13 @@ type StreamReqBody struct {
 	FileReqId     string
 	FileTimestamp int64
 	SliceInfo     *protos.DownloadSliceInfo
+	SliceInfos    []*protos.DownloadSliceInfo
 }
 
 type StreamInfo struct {
-	HeaderFile         string                               `json:"header_file"`
-	FileHash           string                               `json:"file_hash"`
-	ReqId              string                               `json:"req_id"`
-	SegmentToSliceInfo map[string]*protos.DownloadSliceInfo `json:"segment_to_slice_info"`
+	HeaderFile         string
+	SegmentToSliceInfo map[string]*protos.DownloadSliceInfo
+	FileInfo           *protos.RspFileStorageInfo
 }
 
 type SliceInfo struct {
@@ -108,16 +103,13 @@ func streamVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 	streamVideoInfoCacheHelper(w, req, getWalletSignFromLocal)
 }
 
-func PrepareSharedVideoFileCache(w http.ResponseWriter, req *http.Request) {
-	streamSharedVideoInfoCacheHelper(w, req, getWalletSignFromRequest)
-}
-
-func streamSharedVideoInfoCache(w http.ResponseWriter, req *http.Request) {
-	streamSharedVideoInfoCacheHelper(w, req, getWalletSignFromLocal)
-}
-
-func streamVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, getSignature func(req *http.Request, fileHash string) (*rpc_api.Signature, int64, error)) {
+func streamVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, getSignature func(req *http.Request, walletAddress, fileHash string) (*rpc_api.Signature, int64, error)) {
 	ctx := req.Context()
+	ownerWalletAddress, fileHash, err := parseFilePath(req.RequestURI)
+	if err != nil {
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
+		return
+	}
 
 	if setting.State == msgtypes.PP_ACTIVE {
 		w.WriteHeader(setting.FAILCode)
@@ -125,19 +117,7 @@ func streamVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, getSig
 		return
 	}
 
-	ownerWalletAddress, fileHash, err := parseFilePath(req.RequestURI)
-	if err != nil {
-		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
-		return
-	}
-
-	if cached, streamInfo := checkVideoCached(fileHash); cached {
-		ret, _ := json.Marshal(streamInfo)
-		_, _ = w.Write(ret)
-		return
-	}
-
-	walletSign, reqTime, err := getSignature(req, fileHash)
+	walletSign, reqTime, err := getSignature(req, ownerWalletAddress, fileHash)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
@@ -158,9 +138,7 @@ func streamVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, getSig
 		return
 	}
 
-	streamInfo, fileInfo, err := getStreamInfo(ctx, fileHash, res.ReqId)
-	_ = cacheStreamInfo(fileHash, streamInfo)
-
+	streamInfo, err := getStreamInfo(ctx, fileHash, res.ReqId)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
@@ -170,10 +148,10 @@ func streamVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, getSig
 	ret, _ := json.Marshal(streamInfo)
 	_, _ = w.Write(ret)
 
-	cacheVideoSlices(ctx, fileInfo)
+	cacheVideoSlices(ctx, streamInfo.FileInfo)
 }
 
-func streamSharedVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, getSignature func(req *http.Request, shareLink string) (*rpc_api.Signature, int64, error)) {
+func streamSharedVideoInfoCache(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
 	if setting.State == msgtypes.PP_ACTIVE {
@@ -183,16 +161,7 @@ func streamSharedVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, 
 	}
 
 	shareLink, password, _ := parseShareLink(req.RequestURI)
-
-	if cached, streamInfo := checkVideoCached(shareLink); cached {
-		ret, _ := json.Marshal(streamInfo)
-		_, _ = w.Write(ret)
-		return
-	}
-
-	walletSign, reqTime, err := getSignature(req, shareLink)
-
-	reqGetSharedMsg := reqGetSharedMsg(pptypes.GetShareFile{ShareLink: shareLink, Password: password}, walletSign, reqTime)
+	reqGetSharedMsg := reqGetSharedMsg(pptypes.GetShareFile{ShareLink: shareLink, Password: password})
 	res := namespace.RpcPubApi().RequestGetVideoShared(ctx, reqGetSharedMsg)
 
 	if res.Return != rpc_api.DOWNLOAD_OK {
@@ -201,9 +170,7 @@ func streamSharedVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	streamInfo, fileInfo, err := getStreamInfo(ctx, res.FileHash, res.ReqId)
-	_ = cacheStreamInfo(shareLink, streamInfo)
-
+	streamInfo, err := getStreamInfo(ctx, res.FileHash, res.ReqId)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
@@ -213,33 +180,7 @@ func streamSharedVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, 
 	ret, _ := json.Marshal(streamInfo)
 	_, _ = w.Write(ret)
 
-	cacheVideoSlices(ctx, fileInfo)
-}
-
-func checkVideoCached(folderPath string) (bool, *StreamInfo) {
-	exists, fileInfoPath := checkSliceExist(folderPath, streamInfoFile)
-	if !exists {
-		return false, nil
-	}
-	fileInfoData, err := file.GetWholeFileData(fileInfoPath)
-	if err != nil {
-		return false, nil
-	}
-	streamInfo := &StreamInfo{}
-	if err = json.Unmarshal(fileInfoData, streamInfo); err != nil {
-		return false, nil
-	}
-	for _, slice := range streamInfo.SegmentToSliceInfo {
-		if slice.SliceStorageInfo.SliceHash == "" {
-			return false, nil
-		}
-		sliceExists, _ := checkSliceExist(streamInfo.FileHash, slice.SliceStorageInfo.SliceHash)
-		if !sliceExists {
-			return false, nil
-		}
-	}
-
-	return true, streamInfo
+	cacheVideoSlices(ctx, streamInfo.FileInfo)
 }
 
 func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
@@ -250,7 +191,7 @@ func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	walletSign, reqTime, err := getWalletSignFromLocal(req, fileHash)
+	walletSign, reqTime, err := getWalletSignFromLocal(req, ownerWalletAddress, fileHash)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
@@ -271,7 +212,7 @@ func streamVideoInfoHttp(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	streamInfo, _, err := getStreamInfo(ctx, fileHash, res.ReqId)
+	streamInfo, err := getStreamInfo(ctx, fileHash, res.ReqId)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
@@ -309,7 +250,19 @@ func streamVideoP2PHelper(w http.ResponseWriter, req *http.Request) {
 
 	utils.DebugLog("Send request to retrieve the slice ", sliceHash)
 
-	data, err := getSliceData(ctx, body.FileHash, body.FileReqId, body.SliceInfo)
+	fInfo := &protos.RspFileStorageInfo{
+		FileHash:      body.FileHash,
+		SavePath:      body.SavePath,
+		FileName:      body.FileName,
+		NodeSign:      body.Sign,
+		ReqId:         body.FileReqId,
+		SpP2PAddress:  body.SpP2pAddress,
+		WalletAddress: setting.WalletAddress,
+		TimeStamp:     body.FileTimestamp,
+		SliceInfo:     body.SliceInfos,
+	}
+
+	data, err := getSliceData(ctx, fInfo, body.SliceInfo)
 	if err != nil {
 		utils.ErrorLog("failed to get video slice ", err)
 		w.WriteHeader(setting.FAILCode)
@@ -468,7 +421,7 @@ func cacheVideoSlices(ctx context.Context, fInfo *protos.RspFileStorageInfo) {
 		go func(idx int, sliceInfo *protos.DownloadSliceInfo) {
 			exist, _ := checkSliceExist(fInfo.FileHash, sliceInfo.SliceStorageInfo.SliceHash)
 			if !exist {
-				_, _ = getSliceData(ctx, fInfo.FileHash, fInfo.ReqId, sliceInfo)
+				_, _ = getSliceData(ctx, fInfo, sliceInfo)
 			}
 			if idx < len(slices)-setting.StreamCacheMaxSlice {
 				cacheCh <- true
@@ -479,16 +432,12 @@ func cacheVideoSlices(ctx context.Context, fInfo *protos.RspFileStorageInfo) {
 }
 
 func checkSliceExist(fileHash, sliceHash string) (bool, string) {
-	slicePath := getSlicePath(fileHash, sliceHash)
+	folder := filepath.Join(file.GetTmpDownloadPath(), setting.VideoPath, fileHash)
+	slicePath := filepath.Join(folder, sliceHash)
 	return file.CheckFilePathEx(slicePath), slicePath
 }
 
-func getSlicePath(folderName, sliceHash string) string {
-	folder := filepath.Join(file.GetTmpDownloadPath(), setting.VideoPath, folderName)
-	return filepath.Join(folder, sliceHash)
-}
-
-func getStreamInfo(ctx context.Context, fileHash, reqId string) (*StreamInfo, *protos.RspFileStorageInfo, error) {
+func getStreamInfo(ctx context.Context, fileHash, reqId string) (*StreamInfo, error) {
 	var fInfo *protos.RspFileStorageInfo
 	if f, ok := task.DownloadFileMap.Load(fileHash + reqId); ok {
 		fInfo = f.(*protos.RspFileStorageInfo)
@@ -496,16 +445,16 @@ func getStreamInfo(ctx context.Context, fileHash, reqId string) (*StreamInfo, *p
 	}
 
 	if fInfo == nil {
-		return nil, nil, errors.New("http stream video failed to get file storage info!")
+		return nil, errors.New("http stream video failed to get file storage info!")
 	}
 
-	if !crypto.IsVideoStream(fileHash) {
-		return nil, nil, errors.New("the file was not uploaded as video stream")
+	if !crypto.IsVideoStream(fInfo.FileHash) {
+		return nil, errors.New("the file was not uploaded as video stream")
 	}
 
 	hlsInfo, err := getHlsInfo(ctx, fInfo)
-	if hlsInfo == nil || err != nil {
-		return nil, nil, errors.Wrap(err, "failed to get hls info!")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get hls info!")
 	}
 	if hlsInfo == nil {
 		return nil, errors.New("failed to get hls info!")
@@ -515,56 +464,25 @@ func getStreamInfo(ctx context.Context, fileHash, reqId string) (*StreamInfo, *p
 		segmentInfo := getVideoSliceInfo(segment, fInfo, hlsInfo)
 		segmentToSliceInfo[segment] = segmentInfo
 	}
-	streamInfo := &StreamInfo{
-		FileHash:           fileHash,
-		ReqId:              reqId,
+	StreamInfo := &StreamInfo{
 		HeaderFile:         hlsInfo.HeaderFile,
 		SegmentToSliceInfo: segmentToSliceInfo,
+		FileInfo:           fInfo,
 	}
-	return streamInfo, fInfo, nil
-}
-
-func cacheStreamInfo(folderPath string, streamInfo *StreamInfo) error {
-	SegmentToSliceInfo := make(map[string]*protos.DownloadSliceInfo, len(streamInfo.SegmentToSliceInfo))
-	for key, slice := range streamInfo.SegmentToSliceInfo {
-		SegmentToSliceInfo[key] = &protos.DownloadSliceInfo{
-			SliceStorageInfo: slice.SliceStorageInfo,
-			SliceNumber:      slice.SliceNumber,
-		}
-	}
-	cachedStreamInfo := StreamInfo{
-		HeaderFile:         streamInfo.HeaderFile,
-		FileHash:           streamInfo.FileHash,
-		ReqId:              streamInfo.ReqId,
-		SegmentToSliceInfo: SegmentToSliceInfo,
-	}
-	slicePath := getSlicePath(folderPath, streamInfoFile)
-	rawData, _ := json.Marshal(cachedStreamInfo)
-	fileMg, err := os.OpenFile(slicePath, os.O_CREATE|os.O_RDWR, 0600)
-	if err != nil {
-		fileMg, err = file.CreateFolderAndReopenFile(filepath.Dir(slicePath), filepath.Base(slicePath))
-		if err != nil {
-			return err
-		}
-	}
-	defer func() {
-		_ = fileMg.Close()
-	}()
-	_ = file.WriteFile(rawData, 0, fileMg)
-	return nil
+	return StreamInfo, nil
 }
 
 func getHlsInfo(ctx context.Context, fInfo *protos.RspFileStorageInfo) (*file.HlsInfo, error) {
 	sliceInfo := getSliceInfoBySliceNumber(fInfo, uint64(1))
-	data, err := getSliceData(ctx, fInfo.FileHash, fInfo.ReqId, sliceInfo)
+	data, err := getSliceData(ctx, fInfo, sliceInfo)
 	if err != nil {
 		return nil, err
 	}
 	return file.LoadHlsInfoFromData(data)
 }
 
-func getSliceData(ctx context.Context, fileHash, reqId string, sliceInfo *protos.DownloadSliceInfo) ([]byte, error) {
-	exist, slicePath := checkSliceExist(fileHash, sliceInfo.SliceStorageInfo.SliceHash)
+func getSliceData(ctx context.Context, fInfo *protos.RspFileStorageInfo, sliceInfo *protos.DownloadSliceInfo) ([]byte, error) {
+	exist, slicePath := checkSliceExist(fInfo.FileHash, sliceInfo.SliceStorageInfo.SliceHash)
 	if exist {
 		data, err := file.GetWholeFileData(slicePath)
 		if err == nil {
@@ -572,7 +490,7 @@ func getSliceData(ctx context.Context, fileHash, reqId string, sliceInfo *protos
 		}
 	}
 
-	r := reqDownloadDataMsg(fileHash, reqId, sliceInfo)
+	r := reqDownloadDataMsg(fInfo, sliceInfo)
 	res := namespace.RpcPubApi().RequestDownloadSliceData(ctx, r)
 
 	if res.Return != rpc_api.DOWNLOAD_OK {
@@ -597,7 +515,7 @@ func getSliceData(ctx context.Context, fileHash, reqId string, sliceInfo *protos
 	return decoded, nil
 }
 
-func getWalletSignFromRequest(req *http.Request, keyword string) (*rpc_api.Signature, int64, error) {
+func getWalletSignFromRequest(req *http.Request, walletAddress, fileHash string) (*rpc_api.Signature, int64, error) {
 	body, err := verifyStreamInfoBody(req)
 	if err != nil {
 		return nil, 0, errors.New("failed to parse request body")
@@ -608,20 +526,20 @@ func getWalletSignFromRequest(req *http.Request, keyword string) (*rpc_api.Signa
 	}
 
 	sig := rpc_api.Signature{
-		Address:   body.WalletAddress,
+		Address:   walletAddress,
 		Pubkey:    body.PubKey,
 		Signature: body.Signature,
 	}
 	return &sig, body.ReqTime, nil
 }
 
-func getWalletSignFromLocal(req *http.Request, keyword string) (*rpc_api.Signature, int64, error) {
-	sn, err := handleGetOzone(req.Context(), setting.WalletAddress)
+func getWalletSignFromLocal(req *http.Request, walletAddress, fileHash string) (*rpc_api.Signature, int64, error) {
+	sn, err := handleGetOzone(req.Context(), walletAddress)
 	if err != nil {
 		return nil, 0, err
 	}
 	nowSec := time.Now().Unix()
-	sign, err := setting.WalletPrivateKey.Sign([]byte(msgutils.GetFileDownloadWalletSignMessage(keyword, setting.WalletAddress, sn, nowSec)))
+	sign, err := setting.WalletPrivateKey.Sign([]byte(msgutils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, sn, nowSec)))
 	if err != nil {
 		return nil, 0, err
 	}
@@ -630,7 +548,7 @@ func getWalletSignFromLocal(req *http.Request, keyword string) (*rpc_api.Signatu
 		return nil, 0, err
 	}
 	return &rpc_api.Signature{
-		Address:   setting.WalletAddress,
+		Address:   walletAddress,
 		Pubkey:    walletPublicKey,
 		Signature: hex.EncodeToString(sign),
 	}, nowSec, nil
@@ -655,8 +573,16 @@ func verifyStreamReqBody(req *http.Request) (*StreamReqBody, error) {
 		return nil, errors.Wrap(err, "incorrect file fileHash")
 	}
 
-	if reqBody.FileReqId == "" {
-		return nil, errors.Wrap(err, "incorrect file request id")
+	if _, err := fwtypes.P2PAddressFromBech32(reqBody.P2PAddress); err != nil {
+		return nil, errors.Wrap(err, "incorrect P2P address")
+	}
+
+	if reqBody.FileName == "" {
+		return nil, errors.New("please give file name")
+	}
+
+	if _, err := fwtypes.P2PAddressFromBech32(reqBody.SpP2pAddress); err != nil {
+		return nil, errors.Wrap(err, "incorrect SP P2P address")
 	}
 
 	return &reqBody, nil
@@ -744,10 +670,10 @@ func reqDownloadMsg(sdmPath string, walletSign *rpc_api.Signature, nowSec int64)
 	}
 }
 
-func reqDownloadDataMsg(fileHash, reqId string, sliceInfo *protos.DownloadSliceInfo) rpc_api.ParamReqDownloadData {
+func reqDownloadDataMsg(fInfo *protos.RspFileStorageInfo, sliceInfo *protos.DownloadSliceInfo) rpc_api.ParamReqDownloadData {
 	return rpc_api.ParamReqDownloadData{
-		FileHash:       fileHash,
-		ReqId:          reqId,
+		FileHash:       fInfo.FileHash,
+		ReqId:          fInfo.ReqId,
 		SliceHash:      sliceInfo.SliceStorageInfo.SliceHash,
 		SliceNumber:    sliceInfo.SliceNumber,
 		SliceSize:      sliceInfo.SliceStorageInfo.SliceSize,
@@ -756,11 +682,36 @@ func reqDownloadDataMsg(fileHash, reqId string, sliceInfo *protos.DownloadSliceI
 	}
 }
 
-func reqGetSharedMsg(shareLink pptypes.GetShareFile, walletSign *rpc_api.Signature, nowSec int64) rpc_api.ParamReqGetShared {
+func reqGetSharedMsg(shareLink pptypes.GetShareFile) rpc_api.ParamReqGetShared {
+	nowSec := time.Now().Unix()
+	sign, _ := setting.WalletPrivateKey.Sign([]byte(msgutils.GetShareFileWalletSignMessage(shareLink.ShareLink, setting.WalletAddress, nowSec)))
+	walletPublicKey, _ := fwtypes.WalletPubKeyToBech32(setting.WalletPublicKey)
+	walletSign := rpc_api.Signature{
+		Address:   setting.WalletAddress,
+		Pubkey:    walletPublicKey,
+		Signature: hex.EncodeToString(sign),
+	}
 	return rpc_api.ParamReqGetShared{
-		Signature: *walletSign,
+		Signature: walletSign,
 		ReqTime:   nowSec,
 		ShareLink: shareLink.String(),
+	}
+}
+
+func reqDownloadShared(fileHash, sn, reqId string) rpc_api.ParamReqDownloadShared {
+	nowSec := time.Now().Unix()
+	sign, _ := setting.WalletPrivateKey.Sign([]byte(msgutils.GetFileDownloadWalletSignMessage(fileHash, setting.WalletAddress, sn, nowSec)))
+	walletPublicKey, _ := fwtypes.WalletPubKeyToBech32(setting.WalletPublicKey)
+	walletSign := rpc_api.Signature{
+		Address:   setting.WalletAddress,
+		Pubkey:    walletPublicKey,
+		Signature: hex.EncodeToString(sign),
+	}
+	return rpc_api.ParamReqDownloadShared{
+		FileHash:  fileHash,
+		Signature: walletSign,
+		ReqTime:   nowSec,
+		ReqId:     reqId,
 	}
 }
 

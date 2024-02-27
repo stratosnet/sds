@@ -35,9 +35,6 @@ func FindMyFileListWalletSignMessage(walletAddr string, timestamp int64) string 
 func GetShareFileWalletSignMessage(shareId, walletAddr string, timestamp int64) string {
 	return shareId + walletAddr + strconv.FormatInt(timestamp, 10)
 }
-func GetDownloadShareFileWalletSignMessage(shareId, walletAddr, sn string, timestamp int64) string {
-	return shareId + walletAddr + sn + strconv.FormatInt(timestamp, 10)
-}
 func GetSPListWalletSignMessage(walletAddr string, timestamp int64) string {
 	return walletAddr + strconv.FormatInt(timestamp, 10)
 }

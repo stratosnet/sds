@@ -1110,7 +1110,7 @@ func stopshare(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func reqGetSharedMsg(shareLink, sn string) []byte {
+func reqGetSharedMsg(shareLink string) []byte {
 
 	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
 	if err != nil {
@@ -1127,7 +1127,7 @@ func reqGetSharedMsg(shareLink, sn string) []byte {
 	}
 
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetDownloadShareFileWalletSignMessage(parsedLink.ShareLink, WalletAddress, sn, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetShareFileWalletSignMessage(parsedLink.ShareLink, WalletAddress, nowSec)))
 	if err != nil {
 		return nil
 	}
@@ -1153,15 +1153,48 @@ func reqGetSharedMsg(shareLink, sn string) []byte {
 	return wrapJsonRpc("user_requestGetShared", pm)
 }
 
-func getshared(cmd *cobra.Command, args []string) error {
-	sn, err := handleGetOzone()
+func reqDownloadSharedMsg(fileHash, reqId, sn string) []byte {
+
+	nowSec := time.Now().Unix()
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetFileDownloadWalletSignMessage(fileHash, WalletAddress, sn, nowSec)))
 	if err != nil {
-		return err
+		return nil
 	}
+
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
+	if err != nil {
+		return nil
+	}
+
+	// param
+	var params = []rpc.ParamReqDownloadShared{}
+	params = append(params, rpc.ParamReqDownloadShared{
+		FileHash: fileHash,
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
+		},
+		ReqTime: nowSec,
+		ReqId:   reqId,
+	})
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.ErrorLog("failed marshal param for ReqStopShare")
+		return nil
+	}
+
+	// wrap into request message
+	return wrapJsonRpc("user_requestDownloadShared", pm)
+}
+
+func getshared(cmd *cobra.Command, args []string) error {
 
 	utils.Log("- start downloading the file:", args[0])
 	// compose request: get shared file
-	r := reqGetSharedMsg(args[0], sn)
+	r := reqGetSharedMsg(args[0])
 	if r == nil {
 		return nil
 	}
@@ -1175,7 +1208,7 @@ func getshared(cmd *cobra.Command, args []string) error {
 	}
 	// handle response
 	var rsp jsonrpcMessage
-	err = json.Unmarshal(body, &rsp)
+	err := json.Unmarshal(body, &rsp)
 	if err != nil {
 		return err
 	}
