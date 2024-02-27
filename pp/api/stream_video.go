@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 	"io"
 	"net/http"
 	"net/url"
@@ -15,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 
 	"github.com/ipfs/go-cid"
 	"github.com/pkg/errors"
@@ -506,9 +507,6 @@ func getStreamInfo(ctx context.Context, fileHash, reqId string) (*StreamInfo, *p
 	hlsInfo, err := getHlsInfo(ctx, fInfo)
 	if hlsInfo == nil || err != nil {
 		return nil, nil, errors.Wrap(err, "failed to get hls info!")
-	}
-	if hlsInfo == nil {
-		return nil, errors.New("failed to get hls info!")
 	}
 	segmentToSliceInfo := make(map[string]*protos.DownloadSliceInfo, 0)
 	for segment := range hlsInfo.SegmentToSlice {
