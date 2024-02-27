@@ -46,6 +46,7 @@ type options struct {
 	minAppVersion  uint16
 	p2pAddress     string
 	contextkv      []ContextKV
+	readTimeout    int64
 }
 
 type ServerOption func(*options)
@@ -356,6 +357,11 @@ func P2pAddressOption(p2pAddress string) ServerOption {
 	}
 }
 
+func ReadDeadlineOption(timeout int64) ServerOption {
+	return func(o *options) {
+		o.readTimeout = timeout
+	}
+}
 func (s *Server) Unicast(ctx context.Context, netid int64, msg *msg.RelayMsgBuf) error {
 	v, ok := s.conns.Load(netid)
 	if ok {

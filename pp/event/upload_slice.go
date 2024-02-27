@@ -496,7 +496,7 @@ func RspUploadSlicesWrong(ctx context.Context, _ core.WriteCloser) {
 
 // RspReportUploadSliceResult  SP-P OR SP-PP
 func RspReportUploadSliceResult(ctx context.Context, conn core.WriteCloser) {
-	pp.DebugLog(ctx, "get RspReportUploadSliceResult")
+	utils.DebugLog("get RspReportUploadSliceResult")
 	var target protos.RspReportUploadSliceResult
 	if err := VerifyMessage(ctx, header.RspReportUploadSliceResult, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
@@ -507,10 +507,10 @@ func RspReportUploadSliceResult(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	if target.Result.State == protos.ResultState_RES_SUCCESS {
-		pp.DebugLog(ctx, "ResultState_RES_SUCCESS, sliceNumber，storageAddress，walletAddress",
+		utils.DebugLog("ResultState_RES_SUCCESS, sliceNumber，storageAddress，walletAddress",
 			target.Slice.SliceNumber, target.Slice.PpInfo.NetworkAddress, target.Slice.PpInfo.P2PAddress)
 	} else {
-		pp.Log(ctx, "ResultState_RES_FAIL : ", target.Result.Msg)
+		utils.Log("ResultState_RES_FAIL : ", target.Result.Msg)
 	}
 }
 

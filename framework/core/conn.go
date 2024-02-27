@@ -453,7 +453,11 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 			return
 		default:
 			recvStart := time.Now().UnixMilli()
-			_ = spbConn.SetReadDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
+			deadline := time.Duration(utils.DefReadTimeOut) * time.Second
+			if sc.belong.opts.readTimeout != 0 {
+				deadline = time.Duration(sc.belong.opts.readTimeout) * time.Second
+			}
+			_ = spbConn.SetReadDeadline(time.Now().Add(deadline))
 			if listenHeader {
 				// listen to the header
 				headerBytes, n, err = Unpack(spbConn, key, utils.MessageBeatLen)
@@ -550,6 +554,10 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 					}
 					if msgType := header.GetMsgTypeFromId(msgH.Cmd); msgType != nil {
 						metrics.Events.WithLabelValues(msgType.Name).Inc()
+					}
+					// TO BE DELETED
+					if msg.MSGHead.Cmd == header.RspDownloadSlice.Id || msg.MSGHead.Cmd == header.RspTransferDownload.Id {
+						utils.DebugLogf("before going into handlerCh, cumulative cost_time= %d ms", time.Now().UnixMilli()-recvStart)
 					}
 					handlerCh <- MsgHandler{*msg, handler, recvStart}
 					i = 0
@@ -729,6 +737,10 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 			Mylog(sc.belong.opts.logOpen, LOG_MODULE_HANDLELOOP, "closes by server")
 			return
 		case msgHandler := <-handlerCh:
+			// TO BE DELETED
+			if msgHandler.message.MSGHead.Cmd == header.RspDownloadSlice.Id || msgHandler.message.MSGHead.Cmd == header.RspTransferDownload.Id {
+				utils.DebugLogf("enter handlerCh, cumulative cost_time= %d ms", time.Now().UnixMilli()-msgHandler.recvStart)
+			}
 			msg, handler, recvStart := msgHandler.message, msgHandler.handler, msgHandler.recvStart
 			if handler != nil {
 				// if askForWorker {

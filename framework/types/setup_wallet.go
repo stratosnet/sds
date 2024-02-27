@@ -50,7 +50,7 @@ func SetupWallet(accountDir, defaultHDPath string, updateConfig func(walletKeyAd
 	}
 
 	walletKeyAddressString := WalletAddressBytesToBech32(walletKeyAddress.Bytes())
-	if walletKeyAddressString != "" {
+	if walletKeyAddressString == "" {
 		return errors.New("couldn't convert wallet address to bech string")
 	}
 

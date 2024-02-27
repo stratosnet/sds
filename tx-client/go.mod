@@ -2,20 +2,15 @@ module github.com/stratosnet/sds/tx-client
 
 go 1.19
 
-//replace (
-//	github.com/stratosnet/sds/framework => ../framework // for development on local
-//	github.com/stratosnet/sds/sds-msg => ../sds-msg // for development on local
-//)
-
 require (
 	cosmossdk.io/api v0.3.1
 	cosmossdk.io/math v1.2.0
 	github.com/cosmos/cosmos-proto v1.0.0-beta.3
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/pkg/errors v0.9.1
-	github.com/stratosnet/sds/framework v0.0.0-20231219222348-8922c26dcc48
-	github.com/stratosnet/sds/sds-msg v0.0.0-20240201040219-ed49f485ad46
-	github.com/stratosnet/stratos-chain/api v0.0.0-20231219162708-4941432f869c
+	github.com/stratosnet/sds/framework v0.0.0-20240222002932-ee24cc50d9f7
+	github.com/stratosnet/sds/sds-msg v0.0.0-20240222002932-ee24cc50d9f7
+	github.com/stratosnet/stratos-chain/api v0.0.0-20240221145110-2160a1c27655
 	github.com/stretchr/testify v1.8.4
 	google.golang.org/grpc v1.58.3
 	google.golang.org/protobuf v1.31.0

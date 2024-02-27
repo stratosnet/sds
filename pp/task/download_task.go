@@ -210,7 +210,7 @@ func CleanDownloadTask(ctx context.Context, fileHash, sliceHash, walletAddress, 
 		utils.DebugLogf("PP reported, clean slice task")
 
 		if downloadTask.GetNumberOfSliceInfo() <= 0 {
-			pp.DebugLog(ctx, "PP reported, clean all slice task")
+			utils.DebugLog("PP reported, clean all slice task")
 			DownloadTaskMap.Delete(fileHash + walletAddress + fileReqId)
 		}
 	}

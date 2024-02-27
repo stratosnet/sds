@@ -12,16 +12,8 @@ func GetVolumeReportMsgBytes(msg *potv1.MsgVolumeReport) ([]byte, error) {
 }
 
 func GetBLSSignBytes(msg *potv1.MsgVolumeReport) ([]byte, error) {
-	var volumes []*potv1.SingleWalletVolume
-	for _, volume := range msg.WalletVolumes {
-		volumes = append(volumes, &potv1.SingleWalletVolume{
-			WalletAddress: volume.WalletAddress,
-			Volume:        "0",
-		})
-	}
-
 	newMsg := &potv1.MsgVolumeReport{
-		WalletVolumes:   volumes,
+		WalletVolumes:   msg.GetWalletVolumes(),
 		Reporter:        msg.GetReporter(),
 		Epoch:           msg.GetEpoch(),
 		ReportReference: msg.GetReportReference(),
