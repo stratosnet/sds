@@ -53,19 +53,20 @@ type ContextKV struct {
 	Value interface{}
 }
 type options struct {
-	onConnect  onConnectFunc
-	onMessage  onMessageFunc
-	onClose    onCloseFunc
-	onError    onErrorFunc
-	bufferSize int
-	reconnect  bool // only ClientConn
-	heartClose bool
-	logOpen    bool
-	minAppVer  uint16
-	p2pAddress string
-	serverIp   net.IP
-	serverPort uint16
-	contextkv  []ContextKV
+	onConnect   onConnectFunc
+	onMessage   onMessageFunc
+	onClose     onCloseFunc
+	onError     onErrorFunc
+	bufferSize  int
+	reconnect   bool // only ClientConn
+	heartClose  bool
+	logOpen     bool
+	minAppVer   uint16
+	p2pAddress  string
+	serverIp    net.IP
+	serverPort  uint16
+	contextkv   []ContextKV
+	readTimeout int64
 }
 
 // ClientOption client configuration
@@ -174,6 +175,12 @@ func ServerPortOption(serverPort uint16) ClientOption {
 func ContextKVOption(kv []ContextKV) ClientOption {
 	return func(o *options) {
 		o.contextkv = kv
+	}
+}
+
+func ReadDeadlineOption(timeout int64) ClientOption {
+	return func(o *options) {
+		o.readTimeout = timeout
 	}
 }
 
@@ -657,7 +664,11 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			return
 		default:
 			recvStart := time.Now().UnixMilli()
-			_ = spbConn.SetReadDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
+			deadline := time.Duration(utils.DefReadTimeOut) * time.Second
+			if cc.opts.readTimeout != 0 {
+				deadline = time.Duration(cc.opts.readTimeout) * time.Second
+			}
+			_ = spbConn.SetReadDeadline(time.Now().Add(deadline))
 			if listenHeader {
 				// listen to the header
 				headerBytes, n, err = core.Unpack(spbConn, key, utils.MessageBeatLen)

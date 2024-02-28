@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/stratosnet/sds/framework/utils"
-	txclientutils "github.com/stratosnet/sds/tx-client/utils"
+	frameworkutils "github.com/stratosnet/sds/framework/utils"
 
 	"github.com/stratosnet/sds/relayer/cmd/relayd/setting"
 )
@@ -84,7 +84,7 @@ func rootPreRunE(cmd *cobra.Command, _ []string) error {
 	}
 	setting.HomePath = homePath
 	_ = utils.NewDefaultLogger(filepath.Join(homePath, "tmp/logs/stdout.log"), true, true)
-	_ = txclientutils.NewDefaultLogger(filepath.Join(homePath, "tmp/logs/relayer-tx-client-stdout.log"), true, true)
+	_ = frameworkutils.NewDefaultLogger(filepath.Join(homePath, "tmp/logs/relayer-tx-client-stdout.log"), true, true)
 	return nil
 }
 

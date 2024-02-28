@@ -7,6 +7,7 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/framework/msg/header"
 	fwtypes "github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
 	fwutils "github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/sds-msg/protos"
 	msgutils "github.com/stratosnet/sds/sds-msg/utils"
@@ -20,8 +21,9 @@ import (
 )
 
 var (
-	uploadRequestMap   = &sync.Map{}
-	downloadRequestMap = &sync.Map{}
+	uploadRequestMap       = &sync.Map{}
+	downloadRequestMap     = &sync.Map{}
+	getShareFileRequestMap = &sync.Map{}
 )
 
 // GetWalletOz queries current ozone balance
@@ -43,8 +45,14 @@ func ReqGetWalletOzForDownload(ctx context.Context, walletAddr, reqId string, do
 	return nil
 }
 
+func ReqGetWalletOzForGetShareFile(ctx context.Context, walletAddr, reqId string, getShareFileReq *protos.ReqGetShareFile) error {
+	getShareFileRequestMap.Store(core.GetReqIdFromContext(ctx), getShareFileReq)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqGetWalletOzData(walletAddr, reqId), header.ReqGetWalletOz)
+	return nil
+}
+
 func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
-	pp.DebugLog(ctx, "get GetWalletOz RSP")
+	utils.DebugLog("get GetWalletOz RSP")
 	var target protos.RspGetWalletOz
 	if err := VerifyMessage(ctx, header.RspGetWalletOz, &target); err != nil {
 		fwutils.ErrorLog("failed verifying the message, ", err.Error())
@@ -92,6 +100,19 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, rmsg, header.ReqFileStorageInfo)
 		return
 	}
+
+	if reqMsg, loaded := getShareFileRequestMap.LoadAndDelete(requests.GetReqIdFromMessage(ctx)); loaded {
+		rmsg := reqMsg.(*protos.ReqGetShareFile)
+		walletString := msgutils.GetDownloadShareFileWalletSignMessage(rmsg.Keyword, setting.WalletAddress, target.SequenceNumber, rmsg.ReqTime)
+		wsign, err := setting.WalletPrivateKey.Sign([]byte(walletString))
+		if err != nil {
+			return
+		}
+		rmsg.Signature.Signature = wsign
+		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, rmsg, header.ReqGetShareFile)
+		return
+	}
+
 	pp.Logf(ctx, "get GetWalletOz RSP, the current ozone balance of %v = %v, %s, %v", target.GetWalletAddress(), target.GetWalletOz(), target.SequenceNumber, reqId)
 	rpcResult.Return = rpc.SUCCESS
 	rpcResult.Ozone = target.WalletOz

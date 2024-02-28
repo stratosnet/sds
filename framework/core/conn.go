@@ -459,7 +459,11 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 			return
 		default:
 			recvStart := time.Now().UnixMilli()
-			_ = spbConn.SetReadDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
+			deadline := time.Duration(utils.DefReadTimeOut) * time.Second
+			if sc.belong.opts.readTimeout != 0 {
+				deadline = time.Duration(sc.belong.opts.readTimeout) * time.Second
+			}
+			_ = spbConn.SetReadDeadline(time.Now().Add(deadline))
 			if listenHeader {
 				// listen to the header
 				headerBytes, n, err = Unpack(spbConn, key, utils.MessageBeatLen)

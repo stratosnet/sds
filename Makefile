@@ -1,11 +1,34 @@
 BUILDDIR ?= $(CURDIR)/target
 TEST_DOCKER_REPO=sds-rsnode
 
+QUIET ?= @
+ifndef SDS_GIT_REVISION
 SDS_GIT_REVISION := $(shell git log --pretty=format:"%h" --abbrev-commit -1)
-SDS_MSG_UPD := github.com/stratosnet/sds/sds-msg@$(SDS_GIT_REVISION)
-FRAMEWORK_UPD := github.com/stratosnet/sds/framework@$(SDS_GIT_REVISION)
-TX_CLIENT_UPD := github.com/stratosnet/sds/tx-client@$(SDS_GIT_REVISION)
+endif
 
+# variables for go.mod files
+FRAMEWORK := framework
+SDS_MSG := sds-msg
+TX_CLIENT := tx-client
+REPO_PATH := github.com/stratosnet/sds
+REPLACE := replace
+
+SDS_MSG_PATH := $(REPO_PATH)/$(SDS_MSG)
+FRAMEWORK_PATH := $(REPO_PATH)/$(FRAMEWORK)
+TX_CLIENT_PATH := $(REPO_PATH)/$(TX_CLIENT)
+
+SDS_MSG_UPD := $(SDS_MSG_PATH)@$(SDS_GIT_REVISION)
+FRAMEWORK_UPD := $(FRAMEWORK_PATH)@$(SDS_GIT_REVISION)
+TX_CLIENT_UPD := $(TX_CLIENT_PATH)@$(SDS_GIT_REVISION)
+
+FRAMEWORK_REPLACE := '$(REPLACE) $(FRAMEWORK_PATH) => ./$(FRAMEWORK)'
+SDS_MSG_REPLACE := '$(REPLACE) $(SDS_MSG_PATH) => ./$(SDS_MSG)'
+TX_CLIENT_REPLACE := '$(REPLACE) $(TX_CLIENT_PATH) => ./$(TX_CLIENT)'
+
+FRAMEWORK_REPLACE_FROM_TX_CLIENT := '$(REPLACE) $(FRAMEWORK_PATH) => ../$(FRAMEWORK)'
+SDS_MSG_REPLACE_FROM_TX_CLIENT := '$(REPLACE) $(SDS_MSG_PATH) => ../$(SDS_MSG)'
+
+# targets
 BUILD_TARGETS := build install
 
 build: BUILD_ARGS=-o $(BUILDDIR)/
@@ -33,11 +56,31 @@ build-docker:
 update:
 	go mod vendor
 
-go-mod-update:
-	go get $(SDS_MSG_UPD)
-	go get $(FRAMEWORK_UPD)
-	go get $(TX_CLIENT_UPD)
-	go mod tidy
+go-mod-update-sds:
+ifeq ($(SDS_GIT_REVISION), LOCAL)
+	$(QUIET)grep -qxF $(FRAMEWORK_REPLACE) go.mod || echo $(FRAMEWORK_REPLACE) >> go.mod
+	$(QUIET)grep -qxF $(SDS_MSG_REPLACE) go.mod || echo $(SDS_MSG_REPLACE) >> go.mod
+	$(QUIET)grep -qxF $(TX_CLIENT_REPLACE) go.mod || echo $(TX_CLIENT_REPLACE) >> go.mod
+else
+	$(QUIET)sed -i"" -e "/replace github.com\/stratosnet\/sds/d" go.mod
+	$(QUIET)go get $(SDS_MSG_UPD)
+	$(QUIET)go get $(FRAMEWORK_UPD)
+	$(QUIET)go get $(TX_CLIENT_UPD)
+	$(QUIET)go mod tidy
+endif
+
+go-mod-update-tx-client:
+ifeq ($(SDS_GIT_REVISION), LOCAL)
+	$(QUIET)cd tx-client &&	grep -qxF $(FRAMEWORK_REPLACE_FROM_TX_CLIENT) go.mod || echo $(FRAMEWORK_REPLACE_FROM_TX_CLIENT) >> go.mod
+	$(QUIET)cd tx-client && grep -qxF $(SDS_MSG_REPLACE_FROM_TX_CLIENT) go.mod || echo $(SDS_MSG_REPLACE_FROM_TX_CLIENT) >> go.mod
+else
+	$(QUIET)cd tx-client && sed -i"" -e "/replace github.com\/stratosnet\/sds/d" go.mod
+	$(QUIET)cd tx-client && go get $(SDS_MSG_UPD)
+	$(QUIET)cd tx-client && go get $(FRAMEWORK_UPD)
+	$(QUIET)cd tx-client && go mod tidy
+endif
+
+go-mod-update: go-mod-update-sds go-mod-update-tx-client
 
 coverage:
 	go test ./... -coverprofile cover.out -coverpkg=./...

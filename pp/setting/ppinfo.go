@@ -19,9 +19,10 @@ var State uint32 = msgtypes.PP_INACTIVE
 
 var OnlineTime int64 = 0
 
+var BeneficiaryAddress string
+
 var WalletAddress string
 
-// WalletPublicKey Public key in compressed format
 var WalletPublicKey fwcryptotypes.PubKey
 
 var WalletPrivateKey fwcryptotypes.PrivKey
