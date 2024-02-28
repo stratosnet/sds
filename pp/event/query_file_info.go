@@ -4,6 +4,7 @@ package event
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -287,6 +288,12 @@ func RspFileStatus(ctx context.Context, conn core.WriteCloser) {
 
 	if target.Result.State == protos.ResultState_RES_FAIL {
 		fileStatusResult.Error = target.Result.Msg
+	}
+
+	if target.Result.State == protos.ResultState_RES_SUCCESS && target.Replicas == 0 {
+		errMsg := fmt.Sprintf("No available replicas remains for the file %s, re-upload it if you still want to use it, "+
+			"please be kindly noted that you won't be charged for re-uploading this file", target.FileHash)
+		fileStatusResult.Error = errMsg
 	}
 
 	if bytes, err := json.Marshal(fileStatusResult); err == nil {
