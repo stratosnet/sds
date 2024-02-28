@@ -109,7 +109,7 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 			return
 		}
 		rmsg.Signature.Signature = wsign
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, rmsg, header.ReqGetShareFile)
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, rmsg, header.ReqGetShareFile)
 		return
 	}
 
