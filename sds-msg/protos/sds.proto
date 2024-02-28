@@ -7,19 +7,6 @@ package protos;
 // j
 import "sds_comm.proto";
 
-// upload -----------------------------------
-
-
-
-message ReqGetPPList {
-  PPBaseInfo my_address = 1;
-}
-
-message RspGetPPList{
-  repeated PPBaseInfo pp_list = 1;
-  Result result = 2;
-}
-
 message ReqGetSPList {
   PPBaseInfo my_address = 1;
   Signature signature = 2;
@@ -613,19 +600,6 @@ message RspSpLatencyCheck {
   string sp_index = 4;
 }
 
-message ReqPpLatencyCheck {
-  string p2p_address_pp = 2;
-  string network_address_sp = 3;
-  string sp_index = 4;
-}
-
-message RspPpLatencyCheck {
-  string p2p_address_pp = 2;
-  string network_address_sp = 3;
-  string sp_index = 4;
-}
-
-
 message ReqBalance {
   string wallet_address = 1;
   string id = 2;
@@ -811,7 +785,7 @@ message RspGetPPDowngradeInfo{
 
 message ReqGetPPStatus {
   PPBaseInfo my_address = 1;
-  bool init_pp_list = 2;
+  bool init_pp_list = 2 [deprecated=true];
 }
 
 message RspGetPPStatus{
@@ -820,7 +794,7 @@ message RspGetPPStatus{
   uint32 init_tier = 3;
   uint32 weight_score = 4;
   int32 state = 5;
-  bool init_pp_list = 6;
+  bool init_pp_list = 6 [deprecated=true];
   Result result = 7;
 }
 

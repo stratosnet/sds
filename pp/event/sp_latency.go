@@ -30,10 +30,10 @@ func RspSpLatencyCheck(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	if start, ok := network.GetPeer(ctx).LoadPingTimeMap(response.NetworkAddressSp, true); ok {
+	if start, ok := network.GetPeer(ctx).LoadPingTimeMap(response.NetworkAddressSp); ok {
 		timeCost := rspTime - start
 		updateOptimalSp(ctx, timeCost, &response)
-		network.GetPeer(ctx).DeletePingTimeMap(response.NetworkAddressSp, true)
+		network.GetPeer(ctx).DeletePingTimeMap(response.NetworkAddressSp)
 	}
 }
 

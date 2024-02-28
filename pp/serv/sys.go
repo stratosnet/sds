@@ -72,12 +72,7 @@ func dumpTrafficLog(ctx context.Context) func() {
 				serverInbound = ps.GetP2pServer().GetInboundAndReset()
 				serverOutbound = ps.GetP2pServer().GetOutboundAndReset()
 			}
-			conn := ps.GetPpConn()
-			if conn != nil {
-				clientInbound += conn.GetInboundAndReset()
-				clientOutbound += conn.GetOutboundAndReset()
-			}
-			conn = ps.GetSpConn()
+			conn := ps.GetSpConn()
 			if conn != nil {
 				clientInbound += conn.GetInboundAndReset()
 				clientOutbound += conn.GetOutboundAndReset()
@@ -172,12 +167,7 @@ func monitor(ctx context.Context) func() {
 				r += ps.GetP2pServer().GetSecondReadFlow()
 				w += ps.GetP2pServer().GetSecondWriteFlow()
 			}
-			conn := ps.GetPpConn()
-			if conn != nil {
-				r += conn.GetSecondReadFlow()
-				w += conn.GetSecondWriteFlow()
-			}
-			conn = ps.GetSpConn()
+			conn := ps.GetSpConn()
 			if conn != nil {
 				r += conn.GetSecondReadFlow()
 				w += conn.GetSecondWriteFlow()

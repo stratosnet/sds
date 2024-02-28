@@ -501,7 +501,7 @@ func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamRe
 		// rpc normal download initiate a local download
 		ctx = core.RegisterRemoteReqId(ctx, task.LOCAL_REQID)
 		req := requests.ReqFileStorageInfoData(ctx, param.FileHandle, "", "", wallet, wpk.Bytes(), wsig, nil, param.ReqTime)
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqFileStorageInfo)
 		success := <-task.SubscribeDownloadResult(key)
 		task.UnsubscribeDownloadResult(key)
 		if !success {
@@ -565,7 +565,7 @@ func (api *rpcPubApi) RequestVideoDownload(ctx context.Context, param rpc_api.Pa
 	ctx = core.RegisterRemoteReqId(ctx, reqId)
 	// request for downloading file
 	req := requests.RequestDownloadFile(ctx, fileHash, param.FileHandle, wallet, reqId, wsig, wpk.Bytes(), nil, param.ReqTime)
-	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqFileStorageInfo)
 
 	key := fileHash + reqId
 
@@ -910,7 +910,7 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
 	req := requests.ReqGetShareFileData(shareLink.ShareLink, shareLink.Password, "", param.Signature.Address,
 		p2pserver.GetP2pServer(reqCtx).GetP2PAddress().String(), wpk.Bytes(), wsig, param.ReqTime)
-	p2pserver.GetP2pServer(reqCtx).SendMessageDirectToSPOrViaPP(reqCtx, req, header.ReqGetShareFile)
+	p2pserver.GetP2pServer(reqCtx).SendMessageToSPServer(reqCtx, req, header.ReqGetShareFile)
 
 	// the application gives FileShareResult type of result
 	var res *rpc_api.FileShareResult
@@ -1010,7 +1010,7 @@ func (api *rpcPubApi) RequestGetVideoShared(ctx context.Context, param rpc_api.P
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
 	req := requests.ReqGetShareFileData(shareLink.ShareLink, shareLink.Password, "", param.Signature.Address,
 		p2pserver.GetP2pServer(reqCtx).GetP2PAddress().String(), wpk.Bytes(), wsig, param.ReqTime)
-	p2pserver.GetP2pServer(reqCtx).SendMessageDirectToSPOrViaPP(reqCtx, req, header.ReqGetShareFile)
+	p2pserver.GetP2pServer(reqCtx).SendMessageToSPServer(reqCtx, req, header.ReqGetShareFile)
 
 	// the application gives FileShareResult type of result
 	var res *rpc_api.FileShareResult
