@@ -19,7 +19,6 @@ import (
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
@@ -117,14 +116,6 @@ func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb p
 	}
 }
 
-func (p *P2pServer) SendMessageDirectToSPOrViaPP(ctx context.Context, pb proto.Message, cmd header.MsgType) {
-	if p.mainSpConn != nil {
-		_ = p.SendMessage(ctx, p.mainSpConn, pb, cmd)
-	} else {
-		_ = p.SendMessage(ctx, p.ppConn, pb, cmd)
-	}
-}
-
 func (p *P2pServer) SendMessageToSPServer(ctx context.Context, pb proto.Message, cmd header.MsgType) {
 	if p.mainSpConn != nil {
 		_ = p.SendMessage(ctx, p.mainSpConn, pb, cmd)
@@ -174,15 +165,6 @@ func (p *P2pServer) TransferSendMessageToPPServ(ctx context.Context, addr string
 	return err
 }
 
-func (p *P2pServer) TransferSendMessageToPPServByP2pAddress(ctx context.Context, p2pAddress string, msgBuf *msg.RelayMsgBuf) {
-	ppInfo := p.peerList.GetPPByP2pAddress(ctx, p2pAddress)
-	if ppInfo == nil {
-		utils.ErrorLogf("PP %v missing from local ppList. Cannot transfer message due to missing network address", p2pAddress)
-		return
-	}
-	_ = p.TransferSendMessageToPPServ(ctx, ppInfo.NetworkAddress, msgBuf)
-}
-
 func (p *P2pServer) TransferSendMessageToSPServer(ctx context.Context, message *msg.RelayMsgBuf) {
 	_, err := p.ConnectToSP(ctx)
 	if err != nil {
@@ -196,20 +178,6 @@ func (p *P2pServer) TransferSendMessageToSPServer(ctx context.Context, message *
 	}
 
 	_ = p.mainSpConn.Write(message, ctx)
-}
-
-func (p *P2pServer) ReqTransferSendSP(ctx context.Context, conn core.WriteCloser) {
-	p.TransferSendMessageToSPServer(ctx, core.MessageFromContext(ctx))
-}
-
-func (p *P2pServer) TransferSendMessageToClient(ctx context.Context, p2pAddress string, msgBuf *msg.RelayMsgBuf) {
-	ppNode := p.peerList.GetPPByP2pAddress(ctx, p2pAddress)
-	if ppNode != nil && ppNode.Status == types.PEER_CONNECTED {
-		pp.Log(ctx, "transfer to netid = ", ppNode.NetId)
-		_ = p.GetP2pServer().Unicast(ctx, ppNode.NetId, msgBuf)
-	} else {
-		pp.DebugLog(ctx, "waller ===== ", p2pAddress)
-	}
 }
 
 func (p *P2pServer) GetBufferedSpConns() []*cf.ClientConn {

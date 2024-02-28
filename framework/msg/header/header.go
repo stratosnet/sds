@@ -27,8 +27,6 @@ type MsgType struct {
 const (
 	MSG_ID_INVALID uint8 = iota
 
-	MSG_ID_REQ_GET_PPLIST
-	MSG_ID_RSP_GET_PPLIST
 	MSG_ID_REQ_GET_SPLIST
 	MSG_ID_RSP_GET_SPLIST
 	MSG_ID_REQ_GET_PPSTATUS
@@ -131,10 +129,6 @@ const (
 	MSG_ID_RSP_GET_SHAREFILE
 	MSG_ID_REQ_SP_LATENCY_CHECK
 	MSG_ID_RSP_SP_LATENCY_CHECK
-	MSG_ID_REQ_PP_LATENCY_CHECK
-	MSG_ID_RSP_PP_LATENCY_CHECK
-
-	MSG_ID_REQ_SPLATENCY_CHECK
 
 	MSG_ID_REQ_REPORT_NODESTATUS
 	MSG_ID_RSP_REPORT_NODESTATUS
@@ -151,8 +145,6 @@ const (
 )
 
 var (
-	ReqGetPPList          MsgType
-	RspGetPPList          MsgType
 	ReqGetSPList          MsgType
 	RspGetSPList          MsgType
 	ReqGetPPStatus        MsgType
@@ -265,8 +257,6 @@ var (
 	RspGetShareFile            MsgType
 	ReqSpLatencyCheck          MsgType
 	RspSpLatencyCheck          MsgType
-	ReqPpLatencyCheck          MsgType
-	RspPpLatencyCheck          MsgType
 
 	// report node status
 	ReqReportNodeStatus MsgType
@@ -303,8 +293,6 @@ func registerOneMessageType(msgtype *MsgType, id uint8, name string) {
 }
 
 func init() {
-	registerOneMessageType(&ReqGetPPList, MSG_ID_REQ_GET_PPLIST, "ReqGPPL")                   // request to get pp list
-	registerOneMessageType(&RspGetPPList, MSG_ID_RSP_GET_PPLIST, "RspGPPL")                   // response to get pp list
 	registerOneMessageType(&ReqGetSPList, MSG_ID_REQ_GET_SPLIST, "ReqGSPL")                   // request to get sp list
 	registerOneMessageType(&RspGetSPList, MSG_ID_RSP_GET_SPLIST, "RspGSPL")                   // response to get sp list
 	registerOneMessageType(&ReqGetPPStatus, MSG_ID_REQ_GET_PPSTATUS, "ReqGPPS")               // request to get pp status
@@ -418,8 +406,6 @@ func init() {
 	// heartbeat
 	registerOneMessageType(&ReqSpLatencyCheck, MSG_ID_REQ_SP_LATENCY_CHECK, "ReqSpLat")
 	registerOneMessageType(&RspSpLatencyCheck, MSG_ID_RSP_SP_LATENCY_CHECK, "RspSpLat")
-	registerOneMessageType(&ReqPpLatencyCheck, MSG_ID_REQ_SP_LATENCY_CHECK, "ReqPpLat")
-	registerOneMessageType(&RspPpLatencyCheck, MSG_ID_RSP_SP_LATENCY_CHECK, "RspPpLat")
 
 	// report node status
 	registerOneMessageType(&ReqReportNodeStatus, MSG_ID_REQ_REPORT_NODESTATUS, "ReqRNS")
@@ -446,8 +432,6 @@ func GetMsgTypeFromId(id uint8) *MsgType {
 
 func GetReqIdFromRspId(reqId uint8) uint8 {
 	switch reqId {
-	case MSG_ID_RSP_GET_PPLIST:
-		return MSG_ID_REQ_GET_PPLIST
 	case MSG_ID_RSP_GET_SPLIST:
 		return MSG_ID_REQ_GET_SPLIST
 	case MSG_ID_RSP_GET_PPSTATUS:
@@ -526,8 +510,6 @@ func GetReqIdFromRspId(reqId uint8) uint8 {
 		return MSG_ID_REQ_GET_SHAREFILE
 	case MSG_ID_RSP_SP_LATENCY_CHECK:
 		return MSG_ID_REQ_SP_LATENCY_CHECK
-	case MSG_ID_RSP_PP_LATENCY_CHECK:
-		return MSG_ID_REQ_PP_LATENCY_CHECK
 	case MSG_ID_RSP_REPORT_NODESTATUS:
 		return MSG_ID_REQ_REPORT_NODESTATUS
 	case MSG_ID_RSP_SP_STATUS:

@@ -84,7 +84,7 @@ func (n *Network) InitFsm() {
 		el = append(el, e_list[e])
 	}
 	var fsmTable = []fsmTableItem{
-		{STATE_INIT, EVENT_GET_SP_LIST, utils.TransitionItem{NewState: STATE_GOT_SP_LIST, Action: n.GetPPStatusInitPPList}},
+		{STATE_INIT, EVENT_GET_SP_LIST, utils.TransitionItem{NewState: STATE_GOT_SP_LIST, Action: n.GetPPStatusFromSP}},
 
 		{STATE_GOT_SP_LIST, EVENT_SP_NO_PP_IN_STORE, utils.TransitionItem{NewState: STATE_NOT_CREATED}},
 		{STATE_GOT_SP_LIST, EVENT_RCV_STATUS_INACTIVE, utils.TransitionItem{NewState: STATE_NOT_ACTIVATED}},

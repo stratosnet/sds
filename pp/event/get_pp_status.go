@@ -21,7 +21,6 @@ import (
 	"github.com/stratosnet/sds/utils/environment"
 )
 
-// RspGetPPStatus
 func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspGetPPStatus
 	if err := VerifyMessage(ctx, header.RspGetPPStatus, &target); err != nil {
@@ -64,12 +63,8 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATUS_INACTIVE)
 	}
 
-	if target.InitPpList {
-		network.GetPeer(ctx).InitPPList(ctx)
-	} else {
-		if target.State == int32(protos.PPState_SUSPEND) {
-			network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATUS_SUSPEND)
-		}
+	if target.State == int32(protos.PPState_SUSPEND) {
+		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATUS_SUSPEND)
 	}
 }
 
