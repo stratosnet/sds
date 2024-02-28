@@ -361,6 +361,7 @@ message RspActivatePP {
 message ReqUpdateDepositPP {
   bytes tx = 1;
   string p2p_address = 2;
+  string deposit_delta = 3;
 }
 
 message RspUpdateDepositPP {
