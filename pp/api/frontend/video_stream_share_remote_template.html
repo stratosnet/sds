@@ -25,24 +25,24 @@
 <script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
 <script>
   const url = "localhost"
-  const restPort =  9601 //corresponds to the rest api port in the config of pp node
-  const fileHash = "";
-  const ownerWalletAddress = "";
+  const restPort = 9601 //corresponds to the rest api port in the config of pp node
+  const shareLink = ""
+  const sharePassword = ""
+  const walletAddress = ""
   const pubKey = ""
   let streamInfo;
-
-  httpGetAsync(`http://${url}:${restPort}/getOzone/${ownerWalletAddress}`, function(ozoneText) {
+  httpGetAsync(`http://${url}:${restPort}/getOzone/${walletAddress}`, function(ozoneText) {
     const ozoneInfo = JSON.parse(ozoneText);
     const nowSec = Math.floor(Date.now() / 1000);
-    const signMessage = fileHash + ownerWalletAddress + ozoneInfo.sequenceNumber + nowSec
+    const signMessage = shareLink + walletAddress + ozoneInfo.sequenceNumber + nowSec
     // TODO sign the message with private key
     const reqBody = JSON.stringify({
       pubKey: pubKey,
-      walletAddress: ownerWalletAddress,
+      walletAddress: walletAddress,
       signature: "",
       reqTime: nowSec
     });
-    httpPostAsync(`http://${url}:${restPort}/prepareVideoFileCache/${ownerWalletAddress}/${fileHash}`, reqBody, function(videoInfoText) {
+    httpPostAsync(`http://${url}:${restPort}/prepareSharedVideoFileCache/${shareLink}?password=${sharePassword}`, reqBody, function(videoInfoText) {
       streamInfo = JSON.parse(videoInfoText);
       playVideo();
     });
@@ -56,7 +56,7 @@
       options.uri = `http://${url}:${restPort}/getVideoSliceCache/${sliceInfo.slice_storage_info.slice_hash}`
       options.method = 'POST';
       options.body = JSON.stringify({
-        fileHash,
+        fileHash:  streamInfo.file_hash,
         fileReqId: streamInfo.req_id,
         sliceInfo,
       })

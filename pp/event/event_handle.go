@@ -30,7 +30,6 @@ func VerifyMessage(ctx context.Context, msgType header.MsgType, target interface
 func RegisterAllEventHandlers() {
 
 	// pp--(req)--sp--(*rsp*)--pp
-	registerEvent(header.RspGetPPList, RspGetPPList, SpRspVerifier)
 	registerEvent(header.RspGetSPList, RspGetSPList, SpRspVerifier)
 	registerEvent(header.RspGetPPStatus, RspGetPPStatus, SpRspVerifier)
 	registerEvent(header.RspGetPPDowngradeInfo, RspGetPPDowngradeInfo, SpRspVerifier)
@@ -80,8 +79,6 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspDownloadSlice, RspDownloadSlice, PpRspVerifier)
 	registerEvent(header.ReqTransferDownload, ReqTransferDownload, NoticeFileSliceBackupVerifier)
 	registerEvent(header.RspTransferDownload, RspTransferDownload, nil)
-	registerEvent(header.ReqPpLatencyCheck, ReqPpLatencyCheck, nil)
-	registerEvent(header.RspPpLatencyCheck, RspPpLatencyCheck, PpRspVerifier)
 
 	// pp--(*msg*)--pp
 	registerEvent(header.ReqClearDownloadTask, ReqClearDownloadTask, nil)

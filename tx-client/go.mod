@@ -8,8 +8,8 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-beta.3
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/pkg/errors v0.9.1
-	github.com/stratosnet/sds/framework v0.0.0-20240226154928-664f050eaf5d
-	github.com/stratosnet/sds/sds-msg v0.0.0-20240226154928-664f050eaf5d
+	github.com/stratosnet/sds/framework v0.0.0-20240228184147-b55b87a3ebdd
+	github.com/stratosnet/sds/sds-msg v0.0.0-20240228184147-b55b87a3ebdd
 	github.com/stratosnet/stratos-chain/api v0.0.0-20240221145110-2160a1c27655
 	github.com/stretchr/testify v1.8.4
 	google.golang.org/grpc v1.58.3
