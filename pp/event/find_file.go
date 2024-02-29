@@ -18,7 +18,7 @@ import (
 func FindFileList(ctx context.Context, fileName string, walletAddr string, pageId uint64, keyword string, fileType int,
 	isUp bool, walletPubkey, wsign []byte, reqTime int64) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(
 			ctx,
 			requests.FindFileListData(
 				fileName, walletAddr, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
@@ -50,7 +50,6 @@ func RspFindMyFileList(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress().String() {
-		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		rpcResult.Return = rpc.WRONG_PP_ADDRESS
 		return
 	}

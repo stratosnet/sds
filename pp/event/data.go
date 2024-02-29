@@ -75,8 +75,9 @@ func reqUpdateDepositData(ctx context.Context, depositDelta txclienttypes.Coin, 
 	}
 
 	req := &protos.ReqUpdateDepositPP{
-		Tx:         txBytes,
-		P2PAddress: p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
+		Tx:           txBytes,
+		P2PAddress:   p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
+		DepositDelta: depositDelta.String(),
 	}
 	return req, nil
 }

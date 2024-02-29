@@ -14,6 +14,7 @@ import (
 	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/sds-msg/protos"
 	"google.golang.org/protobuf/proto"
 
@@ -44,7 +45,6 @@ type P2pServer struct {
 	// server for pp to serve event messages
 	server          *core.Server
 	quitChMap       map[types.ContextKey]chan bool
-	peerList        types.PeerList
 	bufferedSpConns []*cf.ClientConn
 
 	p2pPrivKey fwcryptotypes.PrivKey
@@ -60,9 +60,6 @@ type P2pServer struct {
 
 	// SPMaintenanceMap stores records of SpUnderMaintenance, K - SpP2pAddress, V - list of MaintenanceRecord
 	SPMaintenanceMap *utils.AutoCleanMap
-
-	// ppConn current connected pp node
-	ppConn *cf.ClientConn
 
 	// cachedConnMap upload connection
 	cachedConnMap *sync.Map
@@ -120,8 +117,7 @@ func (p *P2pServer) newServer(ctx context.Context) *core.Server {
 	onConnectOption := core.OnConnectOption(func(conn core.WriteCloser) bool { return true })
 	onErrorOption := core.OnErrorOption(func(conn core.WriteCloser) {})
 	onCloseOption := core.OnCloseOption(func(conn core.WriteCloser) {
-		netID := conn.(*core.ServerConn).GetNetID()
-		p.PPDisconnectedNetId(ctx, netID)
+		pp.DebugLogf(ctx, "PP %v with netId %v is offline", conn.(*core.ServerConn).GetRemoteAddr(), conn.(*core.ServerConn).GetNetID())
 	})
 	onBadAppVerOption := core.OnBadAppVerOption(func(version uint16, cmd uint8, minAppVer uint16) []byte {
 		return p.BuildBadVersionMsg(version, cmd, minAppVer)
@@ -166,7 +162,6 @@ func (p *P2pServer) Start(ctx context.Context) {
 
 	ctx = p.initQuitChs(ctx)
 	setting.SetMyNetworkAddress()
-	p.peerList.Init(setting.NetworkAddress, filepath.Join(setting.Config.Home.PeersPath, "pp-list"))
 	go p.StartListenServer(ctx, setting.Config.Node.Connectivity.NetworkPort)
 	p.initClient()
 }

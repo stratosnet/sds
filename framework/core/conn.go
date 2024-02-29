@@ -127,6 +127,9 @@ func (sc *ServerConn) GetPort() string {
 func (sc *ServerConn) GetLocalAddr() string {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
+	if sc.spbConn == nil || sc.spbConn.(*net.TCPConn) == nil || sc.spbConn.LocalAddr() == nil {
+		return ""
+	}
 	return sc.spbConn.LocalAddr().String()
 }
 
@@ -134,6 +137,9 @@ func (sc *ServerConn) GetLocalAddr() string {
 func (sc *ServerConn) GetRemoteAddr() string {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
+	if sc.spbConn == nil || sc.spbConn.(*net.TCPConn) == nil || sc.spbConn.RemoteAddr() == nil {
+		return ""
+	}
 	return sc.spbConn.RemoteAddr().String()
 }
 

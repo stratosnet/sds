@@ -79,20 +79,14 @@ func GetFileStorageInfo(ctx context.Context, path, savePath, saveAs string, w ht
 	}
 	req := requests.ReqFileStorageInfoData(ctx, path, savePath, saveAs, setting.WalletAddress, setting.WalletPublicKey.Bytes(), wsign, nil, nowSec)
 	metrics.DownloadPerformanceLogNow(fileHash + ":SND_STORAGE_INFO_SP:")
-	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStorageInfo)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqFileStorageInfo)
 }
 
 func ClearFileInfoAndDownloadTask(ctx context.Context, fileHash string, fileReqId string, w http.ResponseWriter) {
 	if setting.CheckLogin() {
 		task.DownloadFileMap.Delete(fileHash + fileReqId)
 		task.DeleteDownloadTask(fileHash, setting.WalletAddress, "")
-		req := &protos.ReqClearDownloadTask{
-			WalletAddress: setting.WalletAddress,
-			FileHash:      fileHash,
-			P2PAddress:    p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
-		}
-		p2pServer := p2pserver.GetP2pServer(ctx)
-		_ = p2pServer.SendMessage(ctx, p2pServer.GetPpConn(), req, header.ReqClearDownloadTask)
+
 		_, _ = w.Write([]byte("ok"))
 	} else {
 		if w != nil {
@@ -216,7 +210,7 @@ func GetFileReplicaInfo(ctx context.Context, path string, replicaIncreaseNum uin
 		path, setting.WalletAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 		replicaIncreaseNum, setting.WalletPublicKey.Bytes(), wsign, nowSec,
 	)
-	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileReplicaInfo)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqFileReplicaInfo)
 }
 
 func RspFileReplicaInfo(ctx context.Context, conn core.WriteCloser) {
@@ -263,7 +257,7 @@ func GetFileStatus(ctx context.Context, fileHash, walletAddr string, walletPubke
 
 	// If not, send req to sp
 	req := requests.ReqFileStatus(fileHash, walletAddr, taskId, walletPubkey, walletSign, reqTime)
-	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqFileStatus)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqFileStatus)
 	return nil
 }
 
