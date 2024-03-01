@@ -541,6 +541,9 @@ message RspBackupStatus {
   repeated SliceHashAddr slices = 7;
   bytes  node_sign = 8;
   int64  time_stamp = 9;
+  uint32 desired_replicas = 10;
+  uint32 ongoing_backups = 11;
+  bool   need_reupload = 12;
 }
 
 message ReqTransferDownload {
