@@ -491,6 +491,14 @@ func SendReportDownloadResult(ctx context.Context, target *protos.RspDownloadSli
 	return req
 }
 
+// SendReportDownloadResultForLocallyFoundSlice  PP-SP OR StoragePP-SP
+func SendReportDownloadResultForLocallyFoundSlice(ctx context.Context, fileStorageInfoSP *protos.RspFileStorageInfo, target *protos.DownloadSliceInfo, isPP bool) *protos.ReqReportDownloadResult {
+	utils.DebugLogf("SendReportDownloadResultForLocallyFoundSlice report result target.sliceHash = %v, taskId = %v", target.SliceStorageInfo.SliceHash, target.TaskId)
+	req := requests.ReqReportDownloadResultDataForLocallyFoundSlice(ctx, fileStorageInfoSP, target, isPP)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqReportDownloadResult)
+	return req
+}
+
 // SendReportStreamingResult  P-SP OR PP-SP
 func SendReportStreamingResult(ctx context.Context, target *protos.RspDownloadSlice, isPP bool) {
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqReportStreamResultData(ctx, target, isPP), header.ReqReportDownloadResult)
@@ -510,6 +518,7 @@ func DownloadFileSlices(ctx context.Context, target *protos.RspFileStorageInfo, 
 		TotalSize:      int64(fileSize),
 		DownloadedSize: 0,
 	}
+	slicesLocallyFound := make([]*protos.DownloadSliceInfo, 0)
 	if !file.CheckFileExisting(ctx, target.FileHash, target.FileName, target.SavePath, target.EncryptionTag, reqId) {
 		pp.Log(ctx, "download starts: ")
 		task.DownloadSpeedOfProgress.Store(target.FileHash+reqId, sp)
@@ -520,6 +529,7 @@ func DownloadFileSlices(ctx context.Context, target *protos.RspFileStorageInfo, 
 				task.DownloadProgress(ctx, target.FileHash, reqId, slice.SliceOffset.SliceOffsetEnd-slice.SliceOffset.SliceOffsetStart)
 				task.CleanDownloadTask(ctx, target.FileHash, slice.SliceStorageInfo.SliceHash, target.WalletAddress, reqId)
 				setDownloadSliceSuccess(ctx, slice.SliceStorageInfo.SliceHash, dTask)
+				slicesLocallyFound = append(slicesLocallyFound, slice)
 			} else {
 				re = "request for slice data sent"
 				req := requests.ReqDownloadSliceData(ctx, target, slice)
@@ -533,6 +543,13 @@ func DownloadFileSlices(ctx context.Context, target *protos.RspFileStorageInfo, 
 	} else {
 		task.DownloadResult(ctx, target.FileHash, false, "file exists already.")
 		task.DeleteDownloadTask(target.FileHash, target.WalletAddress, target.ReqId)
+		slicesLocallyFound = append(slicesLocallyFound, target.SliceInfo...)
+	}
+	if len(slicesLocallyFound) > 0 {
+		// report locally found slices to sp
+		for _, slice := range slicesLocallyFound {
+			SendReportDownloadResultForLocallyFoundSlice(ctx, target, slice, false)
+		}
 	}
 }
 
