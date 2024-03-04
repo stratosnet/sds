@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -188,34 +189,21 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	pp.Logf(ctx, "Backup status for file %s: the number of replica is %d", target.FileHash, target.Replicas)
+	pp.Logf(ctx, "Backup status for file %s: current_replica is %d, desired_replica is %d, ongoing_backups is %d, delete_origin is %v, need_reupload is %v",
+		target.FileHash, target.Replicas, target.DesiredReplicas, target.OngoingBackups,
+		strconv.FormatBool(target.DeleteOriginTmp), strconv.FormatBool(target.NeedReupload))
 	if target.DeleteOriginTmp {
 		pp.Logf(ctx, "Backup is finished for file %s, delete all the temporary slices", target.FileHash)
 		file.DeleteTmpFileSlices(ctx, target.FileHash)
 		return
 	}
 
-	if len(target.Slices) == 0 {
-		ScheduleReqBackupStatus(ctx, target.FileHash)
+	if target.NeedReupload {
+		pp.Logf(ctx, "No available replicas remains for the file %s, re-upload it if you still want to use it, "+
+			"please be kindly noted that you won't be charged for re-uploading this file", target.FileHash)
 		return
 	}
-
-	pp.Logf(ctx, "Start re-uploading slices for the file  %s", target.FileHash)
-	totalSize := int64(0)
-	for _, slice := range target.Slices {
-		totalSize += int64(slice.GetSliceSize())
-	}
-	uploadTask := task.CreateBackupFileTask(target, uploadTaskHelper)
-	p2pserver.GetP2pServer(ctx).CleanUpConnMap("upload#" + target.FileHash)
-	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
-	p := &task.UploadProgress{
-		Total:     totalSize,
-		HasUpload: 0,
-	}
-	task.UploadProgressMap.Store(target.FileHash, p)
-
-	// Start uploading
-	startUploadTask(ctx, target.FileHash, uploadTask)
+	pp.Logf(ctx, "No need to re-upload slices for the file  %s", target.FileHash)
 }
 
 func startUploadTask(ctx context.Context, fileHash string, uploadTask *task.UploadFileTask) {
