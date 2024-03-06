@@ -145,6 +145,7 @@ github.com/stratosnet/sds/sds-msg v0.0.0-20240306191754-778565b15493 h1:V7cubYhD
 github.com/stratosnet/sds/sds-msg v0.0.0-20240306191754-778565b15493/go.mod h1:Kka5l0sHUjpWmCnGCZieLs/6hrprDITb0me+oiljBe4=
 github.com/stratosnet/stratos-chain/api v0.0.0-20240221145110-2160a1c27655 h1:Yu2HsJmpZS8+PI/nVqZCt3A5USpplL1yV+a/9Y246bE=
 github.com/stratosnet/stratos-chain/api v0.0.0-20240221145110-2160a1c27655/go.mod h1:FN6crwtoVjf2errz8Nsj0y/zRxuIRtxs5w8qLHKVBqA=
+github.com/stratosnet/stratos-chain/api v0.0.0-20240306173854-f6cea5c437b6/go.mod h1:FN6crwtoVjf2errz8Nsj0y/zRxuIRtxs5w8qLHKVBqA=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
 github.com/stretchr/objx v0.5.0/go.mod h1:Yh+to48EsGEfYuaHDzXPcE3xhTkx73EhmCGUpEOglKo=
