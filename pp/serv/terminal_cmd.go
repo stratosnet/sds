@@ -245,8 +245,8 @@ func (api *terminalCmd) Status(ctx context.Context, param []string) (CmdResult, 
 	//get status from cache
 	cachedStatus := event.GetPPStatusCache()
 	if cachedStatus != nil {
-		event.FormatPPStatusInfo(ctx, cachedStatus)
-		return CmdResult{Msg: DefaultMsg}, nil
+		statusMsg := event.FormatPPStatusInfo(ctx, cachedStatus)
+		return CmdResult{Msg: statusMsg}, nil
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
