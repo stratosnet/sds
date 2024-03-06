@@ -241,6 +241,14 @@ func (api *terminalCmd) Status(ctx context.Context, param []string) (CmdResult, 
 	if err != nil {
 		return CmdResult{Msg: ""}, err
 	}
+
+	//get status from cache
+	cachedStatus := event.GetPPStatusCache()
+	if cachedStatus != nil {
+		event.FormatPPStatusInfo(ctx, cachedStatus)
+		return CmdResult{Msg: DefaultMsg}, nil
+	}
+
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
 
 	network.GetPeer(ctx).GetPPStatusFromSP(ctx)
