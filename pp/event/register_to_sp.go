@@ -29,8 +29,6 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 	}
 	pp.Log(ctx, "target.RspRegister", target.P2PAddress)
 	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress().String() {
-		pp.Log(ctx, "transfer RspRegister to: ", target.P2PAddress)
-		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
 		return
 	}
 
@@ -47,9 +45,6 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 	setting.IsPPSyncedWithSP = true
 	pp.DebugLog(ctx, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@", p2pserver.GetP2pServer(ctx).GetConnectionName(conn))
 	setting.IsPP = target.IsPP
-	if !setting.IsPP {
-		reportDHInfoToPP(ctx)
-	}
 	if setting.IsPP {
 		network.GetPeer(ctx).StartMining(ctx)
 	}

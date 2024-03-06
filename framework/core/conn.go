@@ -127,6 +127,9 @@ func (sc *ServerConn) GetPort() string {
 func (sc *ServerConn) GetLocalAddr() string {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
+	if sc.spbConn == nil || sc.spbConn.(*net.TCPConn) == nil || sc.spbConn.LocalAddr() == nil {
+		return ""
+	}
 	return sc.spbConn.LocalAddr().String()
 }
 
@@ -134,6 +137,9 @@ func (sc *ServerConn) GetLocalAddr() string {
 func (sc *ServerConn) GetRemoteAddr() string {
 	sc.mu.Lock()
 	defer sc.mu.Unlock()
+	if sc.spbConn == nil || sc.spbConn.(*net.TCPConn) == nil || sc.spbConn.RemoteAddr() == nil {
+		return ""
+	}
 	return sc.spbConn.RemoteAddr().String()
 }
 
@@ -453,7 +459,11 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 			return
 		default:
 			recvStart := time.Now().UnixMilli()
-			_ = spbConn.SetReadDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
+			deadline := time.Duration(utils.DefReadTimeOut) * time.Second
+			if sc.belong.opts.readTimeout != 0 {
+				deadline = time.Duration(sc.belong.opts.readTimeout) * time.Second
+			}
+			_ = spbConn.SetReadDeadline(time.Now().Add(deadline))
 			if listenHeader {
 				// listen to the header
 				headerBytes, n, err = Unpack(spbConn, key, utils.MessageBeatLen)

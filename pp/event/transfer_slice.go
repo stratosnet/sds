@@ -17,7 +17,6 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
@@ -106,14 +105,6 @@ func ReqTransferDownload(ctx context.Context, conn core.WriteCloser) {
 		transferSliceSpamCheckMap.Store(key, a)
 	}
 
-	p2pserver.GetP2pServer(ctx).UpdatePP(ctx, &types.PeerInfo{
-		NetworkAddress: target.NewPp.NetworkAddress,
-		P2pAddress:     target.NewPp.P2PAddress,
-		RestAddress:    target.NewPp.RestAddress,
-		WalletAddress:  target.NewPp.WalletAddress,
-		NetId:          core.NetIDFromContext(ctx),
-		Status:         types.PEER_CONNECTED,
-	})
 	tTask := task.TransferTask{
 		IsReceiver:         false,
 		DeleteOrigin:       noticeFileSliceBackup.DeleteOrigin,

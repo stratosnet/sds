@@ -548,7 +548,7 @@ func VolumeReportHandler() func(event coretypes.ResultEvent) {
 func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		requiredAttributes := GetEventAttributes(EventTypeSlashing,
-			AttributeKeyNodeP2PAddress,
+			AttributeKeyNetworkAddress,
 			AttributeKeyNodeSuspended,
 			AttributeKeyAmount,
 		)
@@ -573,7 +573,7 @@ func SlashingResourceNodeHandler() func(event coretypes.ResultEvent) {
 				continue
 			}
 			slashedPP := relay.SlashedPP{
-				P2PAddress: event[GetEventAttribute(EventTypeSlashing, AttributeKeyNodeP2PAddress)],
+				P2PAddress: event[GetEventAttribute(EventTypeSlashing, AttributeKeyNetworkAddress)],
 				QueryFirst: false,
 				Suspended:  suspended,
 				SlashedAmt: slashedAmt,

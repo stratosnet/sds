@@ -8,15 +8,12 @@ import (
 
 	"github.com/stratosnet/sds/framework/utils"
 
-	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/p2pserver"
-	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 )
 
 type Network struct {
 	ppPeerClock          *clock.Clock
-	pingTimePPMap        *sync.Map
 	pingTimeSPMap        *sync.Map
 	reloadConnectSpRetry int
 	reloadRegisterRetry  int
@@ -35,49 +32,12 @@ func GetPeer(ctx context.Context) *Network {
 
 func (p *Network) StartPP(ctx context.Context) {
 	p.ppPeerClock = clock.NewClock()
-	p.pingTimePPMap = &sync.Map{}
 	p.pingTimeSPMap = &sync.Map{}
 	p.InitFsm()
 	p.StartGetSPList(ctx)()
 	p.ScheduleSpLatencyCheck(ctx)
-	p.SchedulePpLatencyCheck(ctx)
 	p.StartStatusReportToSP(ctx)
 	go p.ListenOffline(ctx)
-}
-
-func (p *Network) InitPeer(ctx context.Context) {
-	p.GetSPList(ctx)()
-	p.GetPPStatusInitPPList(ctx)
-	go p.ListenOffline(ctx)
-}
-
-func (p *Network) InitPPList(ctx context.Context) {
-	pplist, total, _ := p2pserver.GetP2pServer(ctx).GetPPList(ctx)
-	if total == 0 {
-		p.GetPPListFromSP(ctx)
-	} else {
-		if success := p.ConnectToGatewayPP(ctx, pplist); !success {
-			p.GetPPListFromSP(ctx)
-			return
-		}
-	}
-}
-
-func (p *Network) ConnectToGatewayPP(ctx context.Context, pplist []*types.PeerInfo) bool {
-	for _, ppInfo := range pplist {
-		if ppInfo.NetworkAddress == setting.NetworkAddress {
-			p2pserver.GetP2pServer(ctx).DeletePPByNetworkAddress(ctx, ppInfo.NetworkAddress)
-			continue
-		}
-		ppConn, err := p2pserver.GetP2pServer(ctx).NewClientToPp(ctx, ppInfo.NetworkAddress, true)
-		if ppConn != nil {
-			p2pserver.GetP2pServer(ctx).SetPpClientConn(ppConn)
-			return true
-		}
-		pp.DebugLogf(ctx, "failed to connect to PP %v: %v", ppInfo, utils.FormatError(err))
-		p2pserver.GetP2pServer(ctx).DeletePPByNetworkAddress(ctx, ppInfo.NetworkAddress)
-	}
-	return false
 }
 
 func (p *Network) ListenOffline(ctx context.Context) {
@@ -92,11 +52,10 @@ func (p *Network) ListenOffline(ctx context.Context) {
 		select {
 		case offline := <-p2pserver.GetP2pServer(ctx).ReadOfflineChan():
 			if offline.IsSp {
-				utils.DebugLogf("SP %v is offline", offline.NetworkAddress)
+				utils.DebugLogf("SP %v has disconnected", offline.NetworkAddress)
 				p.reloadConnectSP(ctx)
 			} else {
-				p2pserver.GetP2pServer(ctx).PPDisconnected(ctx, "", offline.NetworkAddress)
-				p.InitPPList(ctx)
+				utils.DebugLogf("PP %v has disconnected", offline.NetworkAddress)
 			}
 		case <-qch:
 			utils.Log("ListenOffline goroutine terminated")
@@ -105,39 +64,22 @@ func (p *Network) ListenOffline(ctx context.Context) {
 	}
 }
 
-func (p *Network) ClearPingTimeMap(sp bool) {
-	if sp {
-		p.pingTimeSPMap = &sync.Map{}
-	} else {
-		p.pingTimePPMap = &sync.Map{}
-	}
+func (p *Network) ClearPingTimeMap() {
+	p.pingTimeSPMap = &sync.Map{}
 }
 
-func (p *Network) StorePingTimeMap(server string, start int64, sp bool) {
-	if sp {
-		p.pingTimeSPMap.Store(server, start)
-	} else {
-		p.pingTimePPMap.Store(server, start)
-	}
+func (p *Network) StorePingTimeMap(server string, start int64) {
+	p.pingTimeSPMap.Store(server, start)
 }
 
-func (p *Network) LoadPingTimeMap(key string, sp bool) (int64, bool) {
-	chosenMap := p.pingTimePPMap
-	if sp {
-		chosenMap = p.pingTimeSPMap
-	}
-
-	if start, ok := chosenMap.Load(key); ok {
+func (p *Network) LoadPingTimeMap(key string) (int64, bool) {
+	if start, ok := p.pingTimeSPMap.Load(key); ok {
 		return start.(int64), true
 	} else {
 		return 0, false
 	}
 }
 
-func (p *Network) DeletePingTimeMap(key string, sp bool) {
-	if sp {
-		p.pingTimeSPMap.Delete(key)
-	} else {
-		p.pingTimePPMap.Delete(key)
-	}
+func (p *Network) DeletePingTimeMap(key string) {
+	p.pingTimeSPMap.Delete(key)
 }

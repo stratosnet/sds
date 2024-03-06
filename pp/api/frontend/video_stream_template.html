@@ -25,9 +25,9 @@
 <script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
 <script>
     const url = "localhost"
-    const internalPort = 9303 //corresponds to the InternalPort in the config of pp node
-    const fileHash = "v05ahm57b40ficclv3mibfap7668f5i544d7frgg";
-    const ownerWalletAddress = "st1pwptrzhvenhz8pu8jt6x99e4r02vcz8vrw5gkd";
+    const internalPort = 9501 //corresponds to the InternalPort in the config of pp node
+    const fileHash = "";
+    const ownerWalletAddress = "";
     let streamInfo;
     httpGetAsync(`http://${url}:${internalPort}/streamVideoStorageInfo/${ownerWalletAddress}/${fileHash}`, function(responseText) {
         streamInfo = JSON.parse(responseText);
@@ -43,22 +43,14 @@
             options.method = 'POST';
             options.body = JSON.stringify({
                 fileHash,
-                fileName: streamInfo.FileInfo.file_name,
-                p2pAddress: streamInfo.FileInfo.p2p_address,
-                restAddress: sliceInfo.storage_pp_info.rest_address,
-                sign: streamInfo.FileInfo.sign,
-                spP2pAddress: streamInfo.FileInfo.sp_p2p_address,
-                savePath: streamInfo.FileInfo.save_path,
-                fileReqId: streamInfo.FileInfo.req_id,
-                fileTimeStamp: streamInfo.FileInfo.time_stamp,
+                fileReqId: streamInfo.req_id,
                 sliceInfo,
-                sliceInfos: streamInfo.FileInfo.slice_info,
             })
             return options;
         };
         player.ready(function () {
             player.src({
-                src: `http://${url}:${internalPort}/streamVideo/${streamInfo.HeaderFile}`,
+                src: `http://${url}:${internalPort}/streamVideo/${streamInfo.header_file}`,
                 type: 'application/x-mpegURL',
             });
         });
@@ -66,7 +58,7 @@
     }
 
     function getSliceInfo(videoSegment) {
-        return streamInfo.SegmentToSliceInfo[videoSegment]
+        return streamInfo.segment_to_slice_info[videoSegment]
     }
 
     function httpGetAsync(theUrl, callback)

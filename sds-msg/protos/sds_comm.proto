@@ -43,7 +43,7 @@ message PPBaseInfo {
      string wallet_address = 2;
      string network_address = 3;
      string rest_address = 4;
-  string beneficiary_address = 5;
+     string beneficiary_address = 5;
 }
 
 message SPBaseInfo {
