@@ -66,6 +66,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"getoz <walletAddress>                                          get current ozone balance\n" +
 		"status                                                         get current resource node status\n" +
 		"filestatus <filehash>                                          get current state of an uploaded file\n" +
+		"backupstatus <filehash>                                        get backup status of an file\n" +
 		"maintenance start <duration>                                   put the node in maintenance mode for the requested duration (in seconds)\n" +
 		"maintenance stop                                               stop the current maintenance\n" +
 		"downgradeinfo                                                  get information of last downgrade happened on this pp node\n" +

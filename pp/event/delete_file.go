@@ -15,7 +15,7 @@ import (
 
 func DeleteFile(ctx context.Context, fileHash string, walletAddr string, walletPubkey, wsign []byte, reqTime int64) {
 	if setting.CheckLogin() {
-		p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx,
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx,
 			requests.ReqDeleteFileData(fileHash, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(), walletAddr, walletPubkey, wsign, reqTime),
 			header.ReqDeleteFile)
 	}
@@ -26,15 +26,16 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 	if err := VerifyMessage(ctx, header.RspDeleteFile, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
 	}
-	if requests.UnmarshalData(ctx, &target) {
-		if target.P2PAddress == p2pserver.GetP2pServer(ctx).GetP2PAddress().String() {
-			if target.Result.State == protos.ResultState_RES_SUCCESS {
-				pp.Log(ctx, "delete success ", target.Result.Msg)
-			} else {
-				pp.Log(ctx, "delete failed ", target.Result.Msg)
-			}
-		} else {
-			p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
-		}
+	if !requests.UnmarshalData(ctx, &target) {
+		return
+	}
+	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress().String() {
+		return
+	}
+
+	if target.Result.State == protos.ResultState_RES_SUCCESS {
+		pp.Log(ctx, "delete success ", target.Result.Msg)
+	} else {
+		pp.Log(ctx, "delete failed ", target.Result.Msg)
 	}
 }

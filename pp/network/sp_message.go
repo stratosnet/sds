@@ -14,7 +14,7 @@ import (
 )
 
 // RegisterToSP send ReqRegister to SP
-func (p *Network) RegisterToSP(ctx context.Context, toSP bool) {
+func (p *Network) RegisterToSP(ctx context.Context) {
 	nowSec := time.Now().Unix()
 	//// sign the wallet signature by wallet private key
 	wsignMsg := msgutils.RegisterWalletSignMessage(setting.WalletAddress, nowSec)
@@ -22,17 +22,11 @@ func (p *Network) RegisterToSP(ctx context.Context, toSP bool) {
 	if err != nil {
 		return
 	}
-	if toSP {
-		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx,
-			requests.ReqRegisterData(ctx, setting.WalletAddress, setting.WalletPublicKey.Bytes(), wsign, nowSec),
-			header.ReqRegister)
-		pp.Log(ctx, "SendMessage(conn, req, header.ReqRegister) to SP")
-	} else {
-		_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, p2pserver.GetP2pServer(ctx).GetPpConn(),
-			requests.ReqRegisterData(ctx, setting.WalletAddress, setting.WalletPublicKey.Bytes(), wsign, nowSec),
-			header.ReqRegister)
-		pp.Log(ctx, "SendMessage(conn, req, header.ReqRegister) to PP")
-	}
+
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx,
+		requests.ReqRegisterData(ctx, setting.WalletAddress, setting.WalletPublicKey.Bytes(), wsign, nowSec),
+		header.ReqRegister)
+	pp.Log(ctx, "SendMessage(conn, req, header.ReqRegister) to SP")
 }
 
 // StartMining send ReqMining to SP if needed
@@ -45,13 +39,7 @@ func (p *Network) StartMining(ctx context.Context) {
 // GetPPStatusFromSP send ReqGetPPStatus to SP
 func (p *Network) GetPPStatusFromSP(ctx context.Context) {
 	pp.DebugLog(ctx, "SendMessage(client.spConn, req, header.ReqGetPPStatus)")
-	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqGetPPStatusData(ctx, false), header.ReqGetPPStatus)
-}
-
-// GetPPStatusInitPPList P node get node status
-func (p *Network) GetPPStatusInitPPList(ctx context.Context) {
-	pp.DebugLogf(ctx, "SendMessage(client.spConn, req, header.ReqGetPPStatus)")
-	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqGetPPStatusData(ctx, true), header.ReqGetPPStatus)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqGetPPStatusData(ctx), header.ReqGetPPStatus)
 }
 
 // GetSPList node get spList
@@ -68,10 +56,4 @@ func (p *Network) GetSPList(ctx context.Context) func() {
 			requests.ReqGetSPlistData(ctx, setting.WalletAddress, setting.WalletPublicKey.Bytes(), wsign, nowSec),
 			header.ReqGetSPList)
 	}
-}
-
-// GetPPListFromSP node get ppList from sp
-func (p *Network) GetPPListFromSP(ctx context.Context) {
-	pp.DebugLogf(ctx, "SendMessage(client.spConn, req, header.ReqGetPPList)")
-	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqGetPPlistData(ctx), header.ReqGetPPList)
 }

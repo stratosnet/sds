@@ -77,7 +77,7 @@ func (p *Network) SpLatencyCheck(ctx context.Context) func() {
 			}
 			if spConn != nil {
 				start := time.Now().UnixNano()
-				p.StorePingTimeMap(server, start, true)
+				p.StorePingTimeMap(server, start)
 				pb := &protos.ReqSpLatencyCheck{
 					P2PAddressPp:     p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 					NetworkAddressSp: server,
