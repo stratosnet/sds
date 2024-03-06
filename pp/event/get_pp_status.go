@@ -72,6 +72,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	newPPStatus := ResetPPStatusCache(
+		ctx,
 		target.GetIsActive(),
 		target.GetState(),
 		target.GetInitTier(),
@@ -91,7 +92,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-func ResetPPStatusCache(isActive uint32, state int32, initTier uint32, ongoingTier uint32, weightScore uint32) *PPStatusInfo {
+func ResetPPStatusCache(ctx context.Context, isActive uint32, state int32, initTier uint32, ongoingTier uint32, weightScore uint32) *PPStatusInfo {
 	newState := &PPStatusInfo{
 		isActive:    isActive,
 		state:       state,
@@ -100,6 +101,7 @@ func ResetPPStatusCache(isActive uint32, state int32, initTier uint32, ongoingTi
 		weightScore: weightScore,
 	}
 	ppStatusCache.Store(PP_STATUE_CACHE_KEY, newState)
+	pp.DebugLogf(ctx, "pp status cache is reset to: %v", newState)
 	return newState
 }
 
