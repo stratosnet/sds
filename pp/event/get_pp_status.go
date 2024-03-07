@@ -73,7 +73,11 @@ func formatRspGetPPStatus(ctx context.Context, response *protos.RspGetPPStatus) 
 
 	switch response.IsActive {
 	case msgtypes.PP_ACTIVE:
-		activation = "Active"
+		if response.IsVerified {
+			activation = "Active"
+		} else {
+			activation = "Waiting for verification"
+		}
 	case msgtypes.PP_INACTIVE:
 		activation = "Inactive"
 	case msgtypes.PP_UNBONDING:
