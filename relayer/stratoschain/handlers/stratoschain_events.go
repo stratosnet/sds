@@ -12,7 +12,6 @@ import (
 
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
 	"github.com/pkg/errors"
-	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 
 	abciv1beta1 "cosmossdk.io/api/cosmos/base/abci/v1beta1"
 	stakingv1beta1 "cosmossdk.io/api/cosmos/staking/v1beta1"
@@ -22,6 +21,7 @@ import (
 	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/relayer/cmd/relayd/setting"
+	"github.com/stratosnet/sds/relayer/stratoschain/types"
 	"github.com/stratosnet/sds/sds-msg/protos"
 	"github.com/stratosnet/sds/sds-msg/relay"
 )
@@ -31,21 +31,20 @@ var cache *utils.AutoCleanMap // Cache with a TTL to make sure each event is onl
 
 func init() {
 	Handlers = make(map[string]func(coretypes.ResultEvent))
-	Handlers[txclienttypes.MSG_TYPE_CREATE_RESOURCE_NODE] = CreateResourceNodeMsgHandler()
-	Handlers[txclienttypes.MSG_TYPE_UPDATE_RESOURCE_NODE_DEPOSIT] = UpdateResourceNodeDepositMsgHandler()
-	Handlers[txclienttypes.MSG_TYPE_REMOVE_RESOURCE_NODE] = UnbondingResourceNodeMsgHandler()
+	Handlers[types.MSG_TYPE_CREATE_RESOURCE_NODE] = CreateResourceNodeMsgHandler()
+	Handlers[types.MSG_TYPE_UPDATE_RESOURCE_NODE_DEPOSIT] = UpdateResourceNodeDepositMsgHandler()
+	Handlers[types.MSG_TYPE_REMOVE_RESOURCE_NODE] = UnbondingResourceNodeMsgHandler()
 	//Handlers["complete_unbonding_resource_node"] = CompleteUnbondingResourceNodeMsgHandler()
-	Handlers[txclienttypes.MSG_TYPE_CREATE_META_NODE] = CreateMetaNodeMsgHandler()
-	Handlers[txclienttypes.MSG_TYPE_UPDATE_META_NODE_DEPOSIT] = UpdateMetaNodeDepositMsgHandler()
-	Handlers[txclienttypes.MSG_TYPE_REMOVE_META_NODE] = UnbondingMetaNodeMsgHandler()
-	//Handlers[txclienttypes.MSG_TYPE_WITHDRAWN_META_NODE_REG_DEPOSIT] = WithdrawnDepositHandler()
+	Handlers[types.MSG_TYPE_CREATE_META_NODE] = CreateMetaNodeMsgHandler()
+	Handlers[types.MSG_TYPE_UPDATE_META_NODE_DEPOSIT] = UpdateMetaNodeDepositMsgHandler()
+	Handlers[types.MSG_TYPE_REMOVE_META_NODE] = UnbondingMetaNodeMsgHandler()
 	//Handlers["complete_unbonding_meta_node"] = CompleteUnbondingMetaNodeMsgHandler()
-	Handlers[txclienttypes.MSG_TYPE_META_NODE_REG_VOTE] = MetaNodeVoteMsgHandler()
-	Handlers[txclienttypes.MSG_TYPE_PREPAY] = PrepayMsgHandler()
-	Handlers[txclienttypes.MSG_TYPE_FILE_UPLOAD] = FileUploadMsgHandler()
-	Handlers[txclienttypes.MSG_TYPE_VOLUME_REPORT] = VolumeReportHandler()
-	Handlers[txclienttypes.MSG_TYPE_SLASHING_RESOURCE_NODE] = SlashingResourceNodeHandler()
-	Handlers[txclienttypes.MSG_TYPE_UPDATE_EFFECTIVE_DEPOSIT] = UpdateEffectiveDepositHandler()
+	Handlers[types.MSG_TYPE_META_NODE_REG_VOTE] = MetaNodeVoteMsgHandler()
+	Handlers[types.MSG_TYPE_PREPAY] = PrepayMsgHandler()
+	Handlers[types.MSG_TYPE_FILE_UPLOAD] = FileUploadMsgHandler()
+	Handlers[types.MSG_TYPE_VOLUME_REPORT] = VolumeReportHandler()
+	Handlers[types.MSG_TYPE_SLASHING_RESOURCE_NODE] = SlashingResourceNodeHandler()
+	Handlers[types.MSG_TYPE_UPDATE_EFFECTIVE_DEPOSIT] = UpdateEffectiveDepositHandler()
 
 	cache = utils.NewAutoCleanMap(time.Minute)
 }
@@ -372,54 +371,6 @@ func UnbondingMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
 		}
 	}
 }
-
-//func WithdrawnDepositHandler() func(event coretypes.ResultEvent) {
-//	return func(result coretypes.ResultEvent) {
-//		requiredAttributes := GetEventAttributes(EventTypeWithdrawMetaNodeRegistrationDeposit,
-//			AttributeKeyNetworkAddress,
-//			AttributeKeyUnbondingMatureTime,
-//		)
-//
-//		processedEvents, txHash, initialEventCount := processEvents(result.Events, requiredAttributes)
-//		key := getCacheKey(requiredAttributes, result)
-//		if _, ok := cache.Load(key); ok {
-//			utils.DebugLogf("Event withdraw_meta_node_reg_deposit was already handled for tx [%v]. Ignoring...", txHash)
-//			return
-//		}
-//		cache.Store(key, true)
-//
-//		req := &relay.WithdrawnDepositSPReq{}
-//		for _, event := range processedEvents {
-//			networkAddr := event[GetEventAttribute(EventTypeWithdrawMetaNodeRegistrationDeposit, AttributeKeyNetworkAddress)]
-//			unbondingMatureTime := event[GetEventAttribute(EventTypeWithdrawMetaNodeRegistrationDeposit, AttributeKeyUnbondingMatureTime)]
-//
-//			if len(networkAddr) == 0 || len(unbondingMatureTime) == 0 {
-//				continue
-//			}
-//
-//			req.SPList = append(req.SPList, &protos.ReqWithdrawnDepositSP{
-//				P2PAddress:          networkAddr,
-//				UnbondingMatureTime: unbondingMatureTime,
-//				TxHash:              txHash,
-//			})
-//		}
-//
-//		if len(req.SPList) != initialEventCount {
-//			utils.ErrorLogf("Indexing node vote message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
-//				len(req.SPList), initialEventCount-len(processedEvents), len(processedEvents)-len(req.SPList))
-//		}
-//		if len(req.SPList) == 0 {
-//			return
-//		}
-//
-//		err := postToSP("/chain/withdrawn", req)
-//		if err != nil {
-//			utils.ErrorLog(err)
-//			return
-//		}
-//	}
-//
-//}
 
 func CompleteUnbondingMetaNodeMsgHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
