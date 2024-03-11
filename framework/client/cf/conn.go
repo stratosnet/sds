@@ -954,14 +954,14 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				utils.DebugLogf("enter handlerCh, cumulative cost_time= %d ms", time.Now().UnixMilli()-msgHandler.recvStart)
 			}
 			msg, handler, recvStart := msgHandler.message, msgHandler.handler, msgHandler.recvStart
-			if cc.opts.onHandle != nil {
-				cc.opts.onHandle(ctx, &msg)
-			}
 			ctxWithParentReqId := core.CreateContextWithParentReqId(ctx, msg.MSGHead.ReqId)
 			ctxWithRecvStart := core.CreateContextWithRecvStartTime(ctxWithParentReqId, recvStart)
 			ctx = core.CreateContextWithMessage(ctxWithRecvStart, &msg)
 			ctx = core.CreateContextWithNetID(ctx, netID)
 			ctx = core.CreateContextWithSrcP2pAddr(ctx, c.(*ClientConn).remoteP2pAddress)
+			if cc.opts.onHandle != nil {
+				cc.opts.onHandle(ctx, &msg)
+			}
 			if msgType := header.GetMsgTypeFromId(msgHandler.message.MSGHead.Cmd); msgType != nil {
 				log = msgType.Name
 			}

@@ -140,6 +140,8 @@ func (p *P2pServer) newServer(ctx context.Context) *core.Server {
 		onErrorOption,
 		onCloseOption,
 		onBadAppVerOption,
+		core.OnWriteOption(p.onWriteFunc),
+		core.OnHandleOption(p.onHandleFunc),
 		core.BufferSizeOption(10000),
 		core.LogOpenOption(true),
 		core.MinAppVersionOption(setting.Config.Version.MinAppVer),
@@ -150,7 +152,7 @@ func (p *P2pServer) newServer(ctx context.Context) *core.Server {
 	server.SetVolRecOptions(
 		core.LogAllOption(PP_LOG_ALL),
 		core.LogReadOption(PP_LOG_READ),
-		core.OnWriteOption(PP_LOG_WRITE),
+		core.LogWriteOption(PP_LOG_WRITE),
 		core.LogInboundOption(PP_LOG_INBOUND),
 		core.LogOutboundOption(PP_LOG_OUTBOUND),
 		core.OnStartLogOption(func(s *core.Server) {
