@@ -20,8 +20,14 @@ func BroadcastTx(txBytes []byte) error {
 	if setting.Config == nil {
 		return nil // If the relayd config is nil, then this is ppd broadcasting a tx. We don't want to call the event handler in this case
 	}
-	events := handlers.ProcessEvents(resp.TxResponse)
-	for msgType, event := range events {
+
+	if len(resp.TxResponse.Logs) == 0 {
+		return nil
+	}
+
+	events := handlers.ExtractEventsFromTxResponse(resp.TxResponse)
+	for _, event := range events {
+		msgType := handlers.GetMsgType(event)
 		if handler, ok := handlers.Handlers[msgType]; ok {
 			go handler(event)
 		} else {

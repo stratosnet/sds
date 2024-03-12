@@ -39,8 +39,9 @@ func (api *relayCmd) Sync(ctx context.Context, param []string) (CmdResult, error
 	}
 
 	// process relayed events
-	events := handlers.ProcessEvents(txResponse)
-	for msgType, event := range events {
+	events := handlers.ExtractEventsFromTxResponse(txResponse)
+	for _, event := range events {
+		msgType := handlers.GetMsgType(event)
 		if handler, ok := handlers.Handlers[msgType]; ok {
 			go handler(event)
 		} else {
