@@ -8,6 +8,7 @@ import (
 
 	"github.com/cometbft/cometbft/rpc/client/http"
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
+	comettypes "github.com/cometbft/cometbft/types"
 	"github.com/pkg/errors"
 
 	"github.com/stratosnet/sds/framework/utils"
@@ -220,5 +221,18 @@ func cleanEventStrings(resultEvent coretypes.ResultEvent) {
 			}
 		}
 		resultEvent.Events[name] = values
+	}
+
+	eventDataTx, ok := resultEvent.Data.(comettypes.EventDataTx)
+	if !ok {
+		return
+	}
+	for i, event := range eventDataTx.Result.Events {
+		for j, attribute := range event.Attributes {
+			if len(attribute.Value) >= 2 && attribute.Value[0:1] == "\"" && attribute.Value[len(attribute.Value)-1:] == "\"" {
+				event.Attributes[j].Value = attribute.Value[1 : len(attribute.Value)-1]
+			}
+		}
+		eventDataTx.Result.Events[i] = event
 	}
 }
