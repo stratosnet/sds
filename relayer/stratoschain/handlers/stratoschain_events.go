@@ -80,15 +80,17 @@ func ExtractEventsFromTxResponse(response *abciv1beta1.TxResponse) []coretypes.R
 	for _, event := range eventsPerMsg {
 		resultEvents = append(resultEvents, coretypes.ResultEvent{
 			Query: "",
-			Data: abcitypes.TxResult{
-				Height: response.Height,
-				Result: abcitypes.ResponseDeliverTx{
-					Code:      response.Code,
-					Info:      response.Info,
-					GasWanted: response.GasWanted,
-					GasUsed:   response.GasUsed,
-					Events:    event,
-					Codespace: response.Codespace,
+			Data: comettypes.EventDataTx{
+				TxResult: abcitypes.TxResult{
+					Height: response.Height,
+					Result: abcitypes.ResponseDeliverTx{
+						Code:      response.Code,
+						Info:      response.Info,
+						GasWanted: response.GasWanted,
+						GasUsed:   response.GasUsed,
+						Events:    event,
+						Codespace: response.Codespace,
+					},
 				},
 			},
 			Events: txHashEvent,
