@@ -613,7 +613,6 @@ func verifyDownloadSliceHash(fileHash string, sliceNumber uint64, slice *protos.
 
 func setDownloadSliceSuccess(ctx context.Context, sliceHash string, dTask *task.DownloadTask) {
 	dTask.SetSliceSuccess(sliceHash)
-	CheckAndSendRetryMessage(ctx, dTask)
 }
 
 func setDownloadSliceFail(ctx context.Context, sliceHash, taskId, fileReqId string, dTask *task.DownloadTask) {

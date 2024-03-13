@@ -146,17 +146,19 @@ type DownloadSliceData struct {
 }
 
 func AddDownloadTask(target *protos.RspFileStorageInfo) {
+	failedSlice := make(map[string]bool)
 	SliceInfoMap := make(map[string]*protos.DownloadSliceInfo)
 	for _, dlSliceInfo := range target.SliceInfo {
 		key := dlSliceInfo.SliceStorageInfo.SliceHash
 		SliceInfoMap[key] = dlSliceInfo
+		failedSlice[key] = true
 	}
 	dTask := &DownloadTask{
 		WalletAddress: target.WalletAddress,
 		FileHash:      target.FileHash,
 		VisitCer:      target.VisitCer,
 		sliceInfo:     SliceInfoMap,
-		FailedSlice:   make(map[string]bool),
+		FailedSlice:   failedSlice,
 		SuccessSlice:  make(map[string]bool),
 		FailedPPNodes: make(map[string]*protos.PPBaseInfo),
 		SliceCount:    len(target.SliceInfo),
