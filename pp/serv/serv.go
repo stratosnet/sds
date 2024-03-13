@@ -210,6 +210,7 @@ func (bs *BaseServer) startP2pServer() error {
 	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
 	bs.p2pServ.AddConnConntextKey(types.PP_NETWORK_KEY)
 
+	bs.p2pServ.SetOptionFunctions(event.TimoutMap.OnWrite, nil, event.TimoutMap.OnHandle)
 	bs.p2pServ.Start(ctx)
 	_, _ = bs.p2pServ.ConnectToSP(ctx) // Ignore error if we can't connect to any SPs
 	bs.ppNetwork.StartPP(ctx)

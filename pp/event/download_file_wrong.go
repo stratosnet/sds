@@ -49,7 +49,7 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 		pp.DebugLog(ctx, "file hash", target.FileHash)
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
 			pp.Log(ctx, "download starts: ")
-			dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress, fileReqId)
+			dTask, ok := task.GetDownloadTask(target.FileHash + target.WalletAddress + fileReqId)
 			if !ok {
 				pp.DebugLog(ctx, "cannot find the download task")
 				return

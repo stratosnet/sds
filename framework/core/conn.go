@@ -350,6 +350,9 @@ func asyncWrite(c interface{}, m *fwmsg.RelayMsgBuf, ctx context.Context) (err e
 	}
 	m.PacketId = GetPacketIdFromContext(ctx)
 	sendCh <- m
+	if c.(*ServerConn).belong.opts.onWrite != nil {
+		c.(*ServerConn).belong.opts.onWrite(ctx, m)
+	}
 	return
 }
 
@@ -410,7 +413,6 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 		spbConn   net.Conn
 		cDone     <-chan struct{}
 		sDone     <-chan struct{}
-		onMessage onMessageFunc
 		handlerCh chan MsgHandler
 		msg       *fwmsg.RelayMsgBuf
 		sc        *ServerConn
@@ -419,7 +421,6 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 	spbConn = c.(*ServerConn).spbConn
 	cDone = c.(*ServerConn).ctx.Done()
 	sDone = c.(*ServerConn).belong.ctx.Done()
-	onMessage = c.(*ServerConn).belong.opts.onMessage
 	handlerCh = c.(*ServerConn).handlerCh
 	sc = c.(*ServerConn)
 
@@ -545,14 +546,15 @@ func readLoop(c WriteCloser, wg *sync.WaitGroup) {
 						msg.MSGData = utils.RequestBuffer()[:posEnd-posData]
 						copy(msg.MSGData[:], msgBuf[posData:posEnd])
 					}
+
+					if c.(*ServerConn).belong.opts.onRead != nil {
+						c.(*ServerConn).belong.opts.onRead(msg)
+					}
+
 					TimeRcv = time.Now().UnixMicro()
 					handler := GetHandlerFunc(msgH.Cmd)
 					if handler == nil {
-						if onMessage != nil {
-							onMessage(*msg, c)
-						} else {
-							Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for fwmsg: "+strconv.FormatUint(uint64(msgH.Cmd), 10))
-						}
+						Mylog(sc.belong.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for fwmsg: "+strconv.FormatUint(uint64(msgH.Cmd), 10))
 						msgH.Len = 0
 						i = 0
 						listenHeader = true
@@ -672,7 +674,7 @@ func (sc *ServerConn) writePacket(m *fwmsg.RelayMsgBuf) error {
 	if err != nil {
 		return errors.Wrap(err, "server cannot encrypt header")
 	}
-
+	time.Sleep(100 * time.Millisecond)
 	_ = sc.spbConn.SetWriteDeadline(time.Now().Add(time.Duration(utils.WriteTimeOut) * time.Second))
 	if err = WriteFull(sc.spbConn, encodedHeader); err != nil {
 		return errors.Wrap(err, "server write err")
@@ -756,6 +758,11 @@ func handleLoop(c WriteCloser, wg *sync.WaitGroup) {
 					ctx := CreateContextWithMessage(ctxWithRecvStart, &msg)
 					ctx = CreateContextWithNetID(ctx, netID)
 					ctx = CreateContextWithSrcP2pAddr(ctx, sc.remoteP2pAddress)
+					if c.(*ServerConn).belong.opts.onHandle != nil {
+						ctx = context.WithValue(ctx, "conn_type", "server")
+						c.(*ServerConn).belong.opts.onHandle(ctx, &msg)
+					}
+
 					if msgType := header.GetMsgTypeFromId(msgHandler.message.MSGHead.Cmd); msgType != nil {
 						log = msgType.Name
 					}

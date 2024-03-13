@@ -338,7 +338,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress, fileReqId)
+	dTask, ok := task.GetDownloadTask(target.FileHash + target.WalletAddress + fileReqId)
 	if !ok {
 		utils.DebugLog("current task is stopped！！！！！！！！！！！！！！！！！！！！！！！！！！")
 		return
@@ -499,7 +499,7 @@ func SendReportStreamingResult(ctx context.Context, target *protos.RspDownloadSl
 func DownloadFileSlices(ctx context.Context, target *protos.RspFileStorageInfo, reqId string) {
 	utils.DebugLog("DownloadFileSlice(&target)", target)
 	fileSize := uint64(0)
-	dTask, _ := task.GetDownloadTask(target.FileHash, target.WalletAddress, reqId)
+	dTask, _ := task.GetDownloadTask(target.FileHash + target.WalletAddress + reqId)
 	for _, sliceInfo := range target.SliceInfo {
 		fileSize += sliceInfo.SliceOffset.SliceOffsetEnd - sliceInfo.SliceOffset.SliceOffsetStart
 	}
@@ -545,7 +545,7 @@ func SendReqDownloadSlice(ctx context.Context, fileHash string, sliceInfo *proto
 	err := p2pserver.GetP2pServer(ctx).SendMessageByCachedConn(ctx, key, networkAddress, req, header.ReqDownloadSlice, nil)
 	if err != nil {
 		pp.ErrorLogf(ctx, "Failed to create connection with %v: %v", networkAddress, utils.FormatError(err))
-		if dTask, ok := task.GetDownloadTask(fileHash, req.RspFileStorageInfo.WalletAddress, fileReqId); ok {
+		if dTask, ok := task.GetDownloadTask(fileHash + req.RspFileStorageInfo.WalletAddress + fileReqId); ok {
 			setDownloadSliceFail(ctx, sliceInfo.SliceStorageInfo.SliceHash, req.RspFileStorageInfo.TaskId, fileReqId, dTask)
 		}
 	}

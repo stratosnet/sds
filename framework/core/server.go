@@ -25,7 +25,9 @@ func init() {
 }
 
 type onConnectFunc func(WriteCloser) bool
-type onMessageFunc func(msg.RelayMsgBuf, WriteCloser)
+type onWriteFunc func(context.Context, *msg.RelayMsgBuf)
+type onReadFunc func(*msg.RelayMsgBuf)
+type onHandleFunc func(context.Context, *msg.RelayMsgBuf)
 type onCloseFunc func(WriteCloser)
 type onErrorFunc func(WriteCloser)
 type onBadAppVerFunc func(version uint16, cmd uint8, minAppVer uint16) []byte
@@ -35,7 +37,9 @@ type ContextKV struct {
 }
 type options struct {
 	onConnect      onConnectFunc
-	onMessage      onMessageFunc
+	onWrite        onWriteFunc
+	onRead         onReadFunc
+	onHandle       onHandleFunc
 	onClose        onCloseFunc
 	onError        onErrorFunc
 	onBadAppVer    onBadAppVerFunc
@@ -285,9 +289,21 @@ func OnConnectOption(cb func(WriteCloser) bool) ServerOption {
 	}
 }
 
-func OnMessageOption(cb func(msg.RelayMsgBuf, WriteCloser)) ServerOption {
+func OnWriteOption(cb onWriteFunc) ServerOption {
 	return func(o *options) {
-		o.onMessage = cb
+		o.onWrite = cb
+	}
+}
+
+func OnReadOption(cb onReadFunc) ServerOption {
+	return func(o *options) {
+		o.onRead = cb
+	}
+}
+
+func OnHandleOption(cb onHandleFunc) ServerOption {
+	return func(o *options) {
+		o.onHandle = cb
 	}
 }
 
