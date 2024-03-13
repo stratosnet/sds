@@ -35,18 +35,8 @@ func (handler *DownloadTimeoutHandler) TimeoutHandler(ctx context.Context, messa
 		return
 	}
 
-	var slice *protos.DownloadSliceInfo
-	for _, slice = range target.RspFileStorageInfo.SliceInfo {
-		if slice.SliceNumber == target.SliceNumber {
-			break
-		}
-	}
-	if _, ok := dTask.SuccessSlice[slice.SliceStorageInfo.SliceHash]; ok {
-		return
-	}
-
 	newCtx := core.CreateContextWithParentReqId(ctx, message.MSGHead.ReqId)
-	setDownloadSliceFail(newCtx, slice.SliceStorageInfo.SliceHash, target.RspFileStorageInfo.TaskId, task.LOCAL_REQID, dTask)
+	CheckAndSendRetryMessage(newCtx, dTask)
 }
 
 func (handler *DownloadTimeoutHandler) GetId(msg *msg.RelayMsgBuf, isReq bool) string {
