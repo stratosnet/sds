@@ -88,13 +88,11 @@ func (n *Network) InitFsm() {
 
 		{STATE_GOT_SP_LIST, EVENT_SP_NO_PP_IN_STORE, utils.TransitionItem{NewState: STATE_NOT_CREATED}},
 		{STATE_GOT_SP_LIST, EVENT_RCV_STATUS_INACTIVE, utils.TransitionItem{NewState: STATE_NOT_ACTIVATED}},
-		{STATE_GOT_SP_LIST, EVENT_RCV_RSP_ACTIVATED, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}},
 
 		{STATE_NOT_CREATED, EVENT_RCV_RSP_REGISTER_NEW_PP, utils.TransitionItem{NewState: STATE_NOT_ACTIVATED}},
 
 		{STATE_NOT_ACTIVATED, EVENT_RCV_RSP_ACTIVATED, utils.TransitionItem{NewState: STATE_NOT_REGISTERED}},
 
-		{STATE_NOT_REGISTERED, EVENT_RCV_STATE_OFFLINE, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}},
 		{STATE_NOT_REGISTERED, EVENT_START_MINING, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}},
 
 		{STATE_REGISTERING, EVENT_RCV_RSP_FIRST_NODE_STATUS, utils.TransitionItem{NewState: STATE_REGISTERED}},
@@ -103,12 +101,10 @@ func (n *Network) InitFsm() {
 		{STATE_REGISTERED, EVENT_CONN_RECONN, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}},
 		{STATE_REGISTERED, EVENT_RCV_SUSPENDED_STATE, utils.TransitionItem{NewState: STATE_SUSPENDED}},
 		{STATE_REGISTERED, EVENT_MAINTANENCE_START, utils.TransitionItem{NewState: STATE_MAINTANENCE}},
-		{STATE_REGISTERED, EVENT_RCV_STATE_OFFLINE, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}},
 		{STATE_REGISTERED, EVENT_RCV_STATUS_SUSPEND, utils.TransitionItem{NewState: STATE_SUSPENDED}},
 
 		{STATE_MAINTANENCE, EVENT_MAINTANENCE_STOP, utils.TransitionItem{NewState: STATE_REGISTERING}},
 
-		{STATE_SUSPENDED, EVENT_RCV_STATE_OFFLINE, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}},
 		{STATE_SUSPENDED, EVENT_START_MINING, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}},
 		{STATE_SUSPENDED, EVENT_RCV_MINING_NOT_STARTED, utils.TransitionItem{NewState: STATE_NOT_REGISTERED}},
 	}
