@@ -22,9 +22,9 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.6.1
-	github.com/stratosnet/sds/framework v0.0.0-20240229160608-f3d1bd43ea4d
-	github.com/stratosnet/sds/sds-msg v0.0.0-20240307131838-bb8f7e820bb0
-	github.com/stratosnet/sds/tx-client v0.0.0-20240229160608-f3d1bd43ea4d
+	github.com/stratosnet/sds/framework v0.0.0-20240313143438-ddcead97434d
+	github.com/stratosnet/sds/sds-msg v0.0.0-20240313143438-ddcead97434d
+	github.com/stratosnet/sds/tx-client v0.0.0-20240313143438-ddcead97434d
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
@@ -68,7 +68,7 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stratosnet/stratos-chain/api v0.0.0-20240221145110-2160a1c27655 // indirect
+	github.com/stratosnet/stratos-chain/api v0.0.0-20240306173854-f6cea5c437b6 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect

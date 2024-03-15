@@ -14,12 +14,12 @@ import (
 	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
-const DOWNLOAD_SLICE_TIMEOUT = 180
+const DOWNLOAD_SLICE_TIMEOUT = 60
 
 type DownloadTimeoutHandler struct {
 }
 
-func (handler *DownloadTimeoutHandler) Handle(ctx context.Context, message *msg.RelayMsgBuf) {
+func (handler *DownloadTimeoutHandler) TimeoutHandler(ctx context.Context, message *msg.RelayMsgBuf) {
 	target := &protos.ReqDownloadSlice{}
 	if err := proto.Unmarshal(message.MSGBody, target); err != nil {
 		utils.ErrorLog(err)
@@ -30,7 +30,7 @@ func (handler *DownloadTimeoutHandler) Handle(ctx context.Context, message *msg.
 		return
 	}
 
-	dTask, ok := task.GetDownloadTask(target.RspFileStorageInfo.FileHash, target.RspFileStorageInfo.WalletAddress, task.LOCAL_REQID)
+	dTask, ok := task.GetDownloadTask(target.RspFileStorageInfo.FileHash + target.RspFileStorageInfo.WalletAddress + task.LOCAL_REQID)
 	if !ok {
 		return
 	}
@@ -49,6 +49,24 @@ func (handler *DownloadTimeoutHandler) Handle(ctx context.Context, message *msg.
 	setDownloadSliceFail(newCtx, slice.SliceStorageInfo.SliceHash, target.RspFileStorageInfo.TaskId, task.LOCAL_REQID, dTask)
 }
 
+func (handler *DownloadTimeoutHandler) GetId(msg *msg.RelayMsgBuf, isReq bool) string {
+	if isReq {
+		target := &protos.ReqDownloadSlice{}
+		if err := proto.Unmarshal(msg.MSGBody, target); err != nil {
+			utils.ErrorLog(err)
+			return ""
+		}
+		return target.RspFileStorageInfo.FileHash + target.RspFileStorageInfo.WalletAddress + task.LOCAL_REQID
+	}
+
+	target := &protos.RspDownloadSlice{}
+	if err := proto.Unmarshal(msg.MSGBody, target); err != nil {
+		utils.ErrorLog(err)
+		return ""
+	}
+	return target.FileHash + target.WalletAddress + task.LOCAL_REQID
+}
+
 func (handler *DownloadTimeoutHandler) GetDuration() time.Duration {
 	return DOWNLOAD_SLICE_TIMEOUT * time.Second
 }
@@ -63,4 +81,16 @@ func (handler *DownloadTimeoutHandler) CanDelete(rspMessage *msg.RelayMsgBuf) bo
 		return false
 	}
 	return target.NeedReport
+}
+
+func (handler *DownloadTimeoutHandler) Update(key string) bool {
+	_, ok := task.GetDownloadTask(key)
+	if ok {
+		return true
+	}
+	return false
+}
+
+func (handler *DownloadTimeoutHandler) GetType() int {
+	return TYPE_RSP_LAST_TOUCH_TIMER
 }

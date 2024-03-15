@@ -311,6 +311,7 @@ message ReqReportDownloadResult {
   string opponent_p2p_address = 10;
   int64  cost_time = 11;
   string beneficiary_address = 12;
+  bool is_found_locally = 13;
 }
 
 message RspReportDownloadResult {

@@ -53,8 +53,8 @@ func LogReadOption(logOpen bool) ServerVolRecOption {
 	}
 }
 
-// OnWriteOption
-func OnWriteOption(logOpen bool) ServerVolRecOption {
+// LogWriteOption
+func LogWriteOption(logOpen bool) ServerVolRecOption {
 	return func(o *volRecOpts) {
 		o.logWrite = logOpen
 		o.writeAtom = utils.CreateAtomicInt64(0)

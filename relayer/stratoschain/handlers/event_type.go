@@ -19,7 +19,6 @@ const (
 	EventTypeUpdateMetaNode                = "stratos.register.v1.EventUpdateMetaNode"
 	EventTypeUpdateMetaNodeDeposit         = "stratos.register.v1.EventUpdateMetaNodeDeposit"
 	EventTypeMetaNodeRegistrationVote      = "stratos.register.v1.EventMetaNodeRegistrationVote"
-	//EventTypeWithdrawMetaNodeRegistrationDeposit = "stratos.register.v1.EventWithdrawMetaNodeRegistrationDeposit"
 
 	AttributeKeyResourceNode            = "resource_node"
 	AttributeKeyMetaNode                = "meta_node"

@@ -55,13 +55,13 @@ func newLogger(logFilepath string, enableStd, enableFile bool) *CombinedLogger {
 	}
 
 	stdLogger := &Logger{
-		logger:   log.New(os.Stdout, "\r\n", log.Ldate|log.Ltime|log.Lshortfile),
+		logger:   log.New(os.Stdout, "\r\n", log.Ldate|log.Ltime|log.Lshortfile|log.Lmicroseconds),
 		enabled:  enableStd,
 		logLevel: Debug,
 	}
 
 	fileLogger := &Logger{
-		logger:   log.New(outfile, "\r\n", log.Ldate|log.Ltime|log.Lshortfile),
+		logger:   log.New(outfile, "\r\n", log.Ldate|log.Ltime|log.Lshortfile|log.Lmicroseconds),
 		enabled:  enableFile,
 		logLevel: Debug,
 	}

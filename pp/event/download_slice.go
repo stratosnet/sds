@@ -338,7 +338,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress, fileReqId)
+	dTask, ok := task.GetDownloadTask(target.FileHash + target.WalletAddress + fileReqId)
 	if !ok {
 		utils.DebugLog("current task is stopped！！！！！！！！！！！！！！！！！！！！！！！！！！")
 		return
@@ -491,6 +491,14 @@ func SendReportDownloadResult(ctx context.Context, target *protos.RspDownloadSli
 	return req
 }
 
+// SendReportDownloadResultForLocallyFoundSlice  PP-SP OR StoragePP-SP
+func SendReportDownloadResultForLocallyFoundSlice(ctx context.Context, fileStorageInfoSP *protos.RspFileStorageInfo, target *protos.DownloadSliceInfo, isPP bool) *protos.ReqReportDownloadResult {
+	utils.DebugLogf("SendReportDownloadResultForLocallyFoundSlice report result target.sliceHash = %v, taskId = %v", target.SliceStorageInfo.SliceHash, target.TaskId)
+	req := requests.ReqReportDownloadResultDataForLocallyFoundSlice(ctx, fileStorageInfoSP, target, isPP)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqReportDownloadResult)
+	return req
+}
+
 // SendReportStreamingResult  P-SP OR PP-SP
 func SendReportStreamingResult(ctx context.Context, target *protos.RspDownloadSlice, isPP bool) {
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqReportStreamResultData(ctx, target, isPP), header.ReqReportDownloadResult)
@@ -499,7 +507,7 @@ func SendReportStreamingResult(ctx context.Context, target *protos.RspDownloadSl
 func DownloadFileSlices(ctx context.Context, target *protos.RspFileStorageInfo, reqId string) {
 	utils.DebugLog("DownloadFileSlice(&target)", target)
 	fileSize := uint64(0)
-	dTask, _ := task.GetDownloadTask(target.FileHash, target.WalletAddress, reqId)
+	dTask, _ := task.GetDownloadTask(target.FileHash + target.WalletAddress + reqId)
 	for _, sliceInfo := range target.SliceInfo {
 		fileSize += sliceInfo.SliceOffset.SliceOffsetEnd - sliceInfo.SliceOffset.SliceOffsetStart
 	}
@@ -510,6 +518,7 @@ func DownloadFileSlices(ctx context.Context, target *protos.RspFileStorageInfo, 
 		TotalSize:      int64(fileSize),
 		DownloadedSize: 0,
 	}
+	slicesLocallyFound := make([]*protos.DownloadSliceInfo, 0)
 	if !file.CheckFileExisting(ctx, target.FileHash, target.FileName, target.SavePath, target.EncryptionTag, reqId) {
 		pp.Log(ctx, "download starts: ")
 		task.DownloadSpeedOfProgress.Store(target.FileHash+reqId, sp)
@@ -520,6 +529,7 @@ func DownloadFileSlices(ctx context.Context, target *protos.RspFileStorageInfo, 
 				task.DownloadProgress(ctx, target.FileHash, reqId, slice.SliceOffset.SliceOffsetEnd-slice.SliceOffset.SliceOffsetStart)
 				task.CleanDownloadTask(ctx, target.FileHash, slice.SliceStorageInfo.SliceHash, target.WalletAddress, reqId)
 				setDownloadSliceSuccess(ctx, slice.SliceStorageInfo.SliceHash, dTask)
+				slicesLocallyFound = append(slicesLocallyFound, slice)
 			} else {
 				re = "request for slice data sent"
 				req := requests.ReqDownloadSliceData(ctx, target, slice)
@@ -533,6 +543,13 @@ func DownloadFileSlices(ctx context.Context, target *protos.RspFileStorageInfo, 
 	} else {
 		task.DownloadResult(ctx, target.FileHash, false, "file exists already.")
 		task.DeleteDownloadTask(target.FileHash, target.WalletAddress, target.ReqId)
+		slicesLocallyFound = append(slicesLocallyFound, target.SliceInfo...)
+	}
+	if len(slicesLocallyFound) > 0 {
+		// report locally found slices to sp
+		for _, slice := range slicesLocallyFound {
+			SendReportDownloadResultForLocallyFoundSlice(ctx, target, slice, false)
+		}
 	}
 }
 
@@ -545,7 +562,7 @@ func SendReqDownloadSlice(ctx context.Context, fileHash string, sliceInfo *proto
 	err := p2pserver.GetP2pServer(ctx).SendMessageByCachedConn(ctx, key, networkAddress, req, header.ReqDownloadSlice, nil)
 	if err != nil {
 		pp.ErrorLogf(ctx, "Failed to create connection with %v: %v", networkAddress, utils.FormatError(err))
-		if dTask, ok := task.GetDownloadTask(fileHash, req.RspFileStorageInfo.WalletAddress, fileReqId); ok {
+		if dTask, ok := task.GetDownloadTask(fileHash + req.RspFileStorageInfo.WalletAddress + fileReqId); ok {
 			setDownloadSliceFail(ctx, sliceInfo.SliceStorageInfo.SliceHash, req.RspFileStorageInfo.TaskId, fileReqId, dTask)
 		}
 	}

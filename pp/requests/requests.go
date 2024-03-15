@@ -413,6 +413,57 @@ func ReqReportDownloadResultData(ctx context.Context, target *protos.RspDownload
 	return repReq
 }
 
+func ReqReportDownloadResultDataForLocallyFoundSlice(ctx context.Context, fileStorageInfoSP *protos.RspFileStorageInfo, target *protos.DownloadSliceInfo, isPP bool) *protos.ReqReportDownloadResult {
+	utils.DebugLog("#################################################################", target.SliceStorageInfo.SliceHash)
+	repReq := &protos.ReqReportDownloadResult{
+		IsPP:                 isPP,
+		DownloaderP2PAddress: fileStorageInfoSP.P2PAddress,
+		WalletAddress:        fileStorageInfoSP.WalletAddress,
+		PpP2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
+		PpWalletAddress:      setting.WalletAddress,
+		FileHash:             fileStorageInfoSP.FileHash,
+		TaskId:               target.TaskId,
+		SpP2PAddress:         fileStorageInfoSP.SpP2PAddress,
+		CostTime:             0,
+		BeneficiaryAddress:   setting.BeneficiaryAddress,
+		IsFoundLocally:       true,
+	}
+	if isPP {
+		utils.Log("PP ReportDownloadResult ")
+
+		if dlTask, ok := task.DownloadTaskMap.Load(fileStorageInfoSP.FileHash + fileStorageInfoSP.WalletAddress); ok {
+			downloadTask := dlTask.(*task.DownloadTask)
+			utils.DebugLog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^downloadTask", downloadTask)
+			if sInfo, ok := downloadTask.GetSliceInfo(target.SliceStorageInfo.SliceHash); ok {
+				repReq.SliceInfo = sInfo
+				repReq.SliceInfo.VisitResult = true
+			} else {
+				utils.DebugLog("ReportDownloadResult failed~~~~~~~~~~~~~~~~~~~~~~~~~~")
+			}
+
+		} else {
+			repReq.SliceInfo = &protos.DownloadSliceInfo{
+				SliceNumber: target.SliceNumber,
+				SliceStorageInfo: &protos.SliceStorageInfo{
+					SliceHash: target.SliceStorageInfo.SliceHash,
+					SliceSize: target.SliceStorageInfo.SliceSize,
+				},
+			}
+		}
+		repReq.OpponentP2PAddress = fileStorageInfoSP.P2PAddress
+	} else {
+		repReq.SliceInfo = &protos.DownloadSliceInfo{
+			SliceNumber: target.SliceNumber,
+			SliceStorageInfo: &protos.SliceStorageInfo{
+				SliceHash: target.SliceStorageInfo.SliceHash,
+				SliceSize: target.SliceStorageInfo.SliceSize,
+			},
+		}
+		repReq.OpponentP2PAddress = target.StoragePpInfo.P2PAddress
+	}
+	return repReq
+}
+
 func ReqReportStreamResultData(ctx context.Context, target *protos.RspDownloadSlice, isPP bool) *protos.ReqReportDownloadResult {
 	utils.DebugLog("#################################################################", target.SliceInfo.SliceHash)
 	repReq := &protos.ReqReportDownloadResult{

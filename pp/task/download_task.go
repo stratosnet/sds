@@ -185,14 +185,14 @@ func GetDownloadTaskWithSliceReqId(fileHash, walletAddress, sliceReqId string) (
 	return dTask, true
 }
 
-func GetDownloadTask(fileHash, walletAddress, fileReqId string) (*DownloadTask, bool) {
-	task, ok := DownloadTaskMap.Load(fileHash + walletAddress + fileReqId)
+func GetDownloadTask(key string) (*DownloadTask, bool) {
+	task, ok := DownloadTaskMap.Load(key)
 	if !ok {
 		return nil, false
 	}
 	dTask, ok := task.(*DownloadTask)
 	if !ok {
-		utils.ErrorLog("failed to parse the download task for the file ", fileHash)
+		utils.ErrorLog("failed to parse the download task for the file ", key)
 		return nil, false
 	}
 	return dTask, true
