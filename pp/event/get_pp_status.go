@@ -118,7 +118,11 @@ func FormatPPStatusInfo(ctx context.Context, ppStatus *PPStatusInfo) string {
 
 	switch ppStatus.isActive {
 	case msgtypes.PP_ACTIVE:
-		activation = "Active"
+		if response.IsVerified {
+			activation = "Active"
+		} else {
+			activation = "Waiting for verification"
+		}
 	case msgtypes.PP_INACTIVE:
 		activation = "Inactive"
 	case msgtypes.PP_UNBONDING:
