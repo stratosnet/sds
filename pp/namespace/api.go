@@ -138,6 +138,12 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 	if !fwtypes.VerifyWalletAddr(pubkey, walletAddr) {
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
+	if !fwtypes.VerifyWalletSign(pubkey, signature, msgutils.GetFileUploadWalletSignMessage(fileHash, walletAddr, param.SequenceNumber, reqTime)) {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+	if _, ok := signatureInfoMap.Load(fileHash); ok {
+		return rpc_api.Result{Return: rpc_api.CONFLICT_WITH_ANOTHER_SESSION}
+	}
 
 	// Store initial signature info
 	signatureInfoMap.Store(fileHash, signatureInfo{
@@ -153,6 +159,8 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 		sliceSize := uint64(setting.MaxSliceSize)
 		sliceCount := uint64(math.Ceil(float64(fileSize) / float64(sliceSize)))
 
+		defer signatureInfoMap.Delete(fileHash)
+
 		var slices []*protos.SliceHashAddr
 		for sliceNumber := uint64(1); sliceNumber <= sliceCount; sliceNumber++ {
 			sliceOffset := requests.GetSliceOffset(sliceNumber, sliceCount, sliceSize, fileSize)
@@ -160,12 +168,14 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 			tmpSliceName := uuid.NewString()
 			var rawData []byte
 			var err error
-			if file.CacheRemoteFileData(fileHash, sliceOffset, fileHash, tmpSliceName, false) == nil {
-				rawData, err = file.GetSliceDataFromTmp(fileHash, tmpSliceName)
-				if err != nil {
-					file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
-					return
-				}
+			if file.CacheRemoteFileData(fileHash, sliceOffset, fileHash, tmpSliceName, false) != nil {
+				return
+			}
+
+			rawData, err = file.GetSliceDataFromTmp(fileHash, tmpSliceName)
+			if err != nil {
+				file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
+				return
 			}
 
 			//Encrypt slice data if required
@@ -237,21 +247,38 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 
 func (api *rpcPubApi) UploadData(ctx context.Context, param rpc_api.ParamUploadData) rpc_api.Result {
 	metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_SP:")
+	fileHash := param.FileHash
+	walletAddr := param.Signature.Address
+	pubkey := param.Signature.Pubkey
+	signature := param.Signature.Signature
+	reqTime := param.ReqTime
+	stop := param.Stop
 
-	if param.Signature.Signature != "" {
-		// Update signature info every time new data is received
-		signatureInfoMap.Store(param.FileHash, signatureInfo{
-			signature: param.Signature,
-			reqTime:   param.ReqTime,
-		})
+	// verify if wallet and public key match
+	if !fwtypes.VerifyWalletAddr(pubkey, walletAddr) {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+	if !fwtypes.VerifyWalletSign(pubkey, signature, msgutils.GetFileUploadWalletSignMessage(fileHash, walletAddr, param.SequenceNumber, reqTime)) {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
-	content := param.Data
-	fileHash := param.FileHash
-	// content in base64
-	dec, _ := b64.StdEncoding.DecodeString(content)
+	// Update signature info every time new data is received
+	signatureInfoMap.Store(param.FileHash, signatureInfo{
+		signature: param.Signature,
+		reqTime:   param.ReqTime,
+	})
 
+	content := param.Data
+	var dec []byte
+	dec = nil
+	if !stop {
+		// content in base64
+		dec, _ = b64.StdEncoding.DecodeString(content)
+	}
 	file.SendFileDataBack(fileHash, dec)
+	if stop {
+		return rpc_api.Result{Return: rpc_api.SESSION_STOPPED}
+	}
 
 	// first part: if the amount of bytes server requested haven't been finished,
 	// go on asking from the client
