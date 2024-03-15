@@ -39,7 +39,7 @@ func sync(cmd *cobra.Command, args []string) error {
 func callRpc(c *rpc.Client, line string, param []string) bool {
 	var result server.CmdResult
 
-	err := c.Call(&result, "relay_"+line, param)
+	err := c.Call(&result, "relayer_"+line, param)
 	if err != nil {
 		fmt.Println(err)
 		return false

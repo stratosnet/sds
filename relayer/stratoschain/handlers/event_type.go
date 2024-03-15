@@ -1,9 +1,5 @@
 package handlers
 
-import (
-	"fmt"
-)
-
 const (
 	// register module ---------------------------------------------------------
 
@@ -73,16 +69,3 @@ const (
 
 	AttributeKeySender = "sender"
 )
-
-func GetEventAttribute(event, attribute string) string {
-	return fmt.Sprintf("%s.%s", event, attribute)
-}
-
-func GetEventAttributes(event string, attributes ...string) []string {
-	result := make([]string, 0)
-	for _, attr := range attributes {
-		fullAttr := fmt.Sprintf("%s.%s", event, attr)
-		result = append(result, fullAttr)
-	}
-	return result
-}
