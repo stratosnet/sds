@@ -58,6 +58,7 @@ func reqUploadMsg(filePath, hash, sn string) []byte {
 		ReqTime:         nowSec,
 		DesiredTier:     2,
 		AllowHigherTier: true,
+		SequenceNumber:  sn,
 	})
 
 	pm, e := json.Marshal(params)
@@ -89,7 +90,8 @@ func uploadDataMsg(hash, data, sn string) []byte {
 			Pubkey:    wpk,
 			Signature: hex.EncodeToString(sign),
 		},
-		ReqTime: nowSec,
+		ReqTime:        nowSec,
+		SequenceNumber: sn,
 	}}
 	pm, e := json.Marshal(pa)
 	if e != nil {

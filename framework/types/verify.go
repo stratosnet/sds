@@ -1,8 +1,11 @@
 package types
 
 import (
+	"encoding/hex"
+
 	"github.com/stratosnet/sds/framework/crypto/ed25519"
 	"github.com/stratosnet/sds/framework/crypto/secp256k1"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 // VerifyWalletSignBytes []byte version of VerifyWalletKey() for pubkey and signature format
@@ -49,4 +52,20 @@ func VerifyWalletAddr(walletPubkey, walletAddr string) bool {
 		return false
 	}
 	return address.Equals(address2)
+}
+
+// VerifyWalletSign bech32 format of pubkey, the hex encoded signature, and the sign message
+func VerifyWalletSign(walletPubkey, signature, message string) bool {
+	pk, err := WalletPubKeyFromBech32(walletPubkey)
+	if err != nil {
+		return false
+	}
+
+	sig, err := hex.DecodeString(signature)
+	if err != nil {
+		utils.ErrorLog("wrong signature")
+		return false
+	}
+
+	return VerifyWalletSignBytes(pk.Bytes(), sig, message)
 }

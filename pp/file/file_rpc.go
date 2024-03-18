@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/stratosnet/sds/framework/utils"
 
 	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/pp/api/rpc"
@@ -178,6 +179,10 @@ OuterFor:
 			cancel()
 			return errors.New("timeout waiting uploaded sub-slice")
 		case subSlice := <-SubscribeGetRemoteFileData(fileHash):
+			if subSlice == nil {
+				return errors.New("Test error")
+			}
+
 			metrics.UploadPerformanceLogNow(fileHash + ":RCV_SUBSLICE_RPC:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
 			err = WriteFile(subSlice, writeOffset, fileMg)
 			if err != nil {
@@ -201,11 +206,7 @@ OuterFor:
 func SendFileDataBack(hash string, content []byte) {
 	ch, found := rpcUploadDataChan.Load(hash)
 	if found {
-		select {
-		case ch.(chan []byte) <- content:
-		default:
-			UnsubscribeGetRemoteFileData(hash)
-		}
+		ch.(chan []byte) <- content
 	}
 }
 
@@ -297,6 +298,7 @@ func UnsubscribeRemoteFileEvent(key string) {
 
 // SetRemoteFileResult application sends the result of previous operation to rpc server
 func SetRemoteFileResult(key string, result rpc.Result) {
+	utils.DebugLog("--------------------------------------------------", key)
 	fileEventMutex.Lock()
 	defer fileEventMutex.Unlock()
 	ch, found := rpcFileEventChan.Load(key)
