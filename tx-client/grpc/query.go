@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"strconv"
 
 	"github.com/pkg/errors"
 	potv1 "github.com/stratosnet/stratos-chain/api/stratos/pot/v1"
@@ -151,10 +150,10 @@ func QueryVolumeReport(epoch *big.Int) (*potv1.QueryVolumeReportResponse, error)
 }
 
 // QueryNozSupply queries the remaining ozone limit and the total ozone supply from stchain
-func QueryNozSupply() (*big.Int, *big.Int, error) {
+func QueryNozSupply() (*sdsv1.QueryNozSupplyResponse, error) {
 	conn, err := CreateGrpcConn()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	defer conn.Close()
 
@@ -163,24 +162,7 @@ func QueryNozSupply() (*big.Int, *big.Int, error) {
 	req := sdsv1.QueryNozSupplyRequest{}
 	resp, err := client.NozSupply(ctx, &req)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-
-	if resp.GetRemaining() == "" {
-		return nil, nil, errors.New("remaining ozone limit is empty in the response from stchain")
-	}
-	remaining, err := strconv.ParseInt(resp.GetRemaining(), 10, 64)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if resp.GetTotal() == "" {
-		return nil, nil, errors.New("total ozone supply is empty in the response from stchain")
-	}
-	total, err := strconv.ParseInt(resp.GetTotal(), 10, 64)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return big.NewInt(remaining), big.NewInt(total), nil
+	return resp, nil
 }
