@@ -35,6 +35,7 @@ type PPStatusInfo struct {
 	initTier    uint32
 	ongoingTier uint32
 	weightScore uint32
+	isVerified  bool
 }
 
 func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
@@ -78,6 +79,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 		target.GetInitTier(),
 		target.GetOngoingTier(),
 		target.GetWeightScore(),
+		target.GetIsVerified(),
 	)
 	rpcResult.Message = FormatPPStatusInfo(ctx, newPPStatus)
 
@@ -92,7 +94,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	}
 }
 
-func ResetPPStatusCache(ctx context.Context, isActive uint32, state int32, initTier uint32, ongoingTier uint32, weightScore uint32) *PPStatusInfo {
+func ResetPPStatusCache(ctx context.Context, isActive uint32, state int32, initTier uint32, ongoingTier uint32, weightScore uint32, isVerified bool) *PPStatusInfo {
 	newState := &PPStatusInfo{
 		isActive:    isActive,
 		state:       state,
@@ -118,7 +120,7 @@ func FormatPPStatusInfo(ctx context.Context, ppStatus *PPStatusInfo) string {
 
 	switch ppStatus.isActive {
 	case msgtypes.PP_ACTIVE:
-		if response.IsVerified {
+		if ppStatus.isVerified {
 			activation = "Active"
 		} else {
 			activation = "Waiting for verification"
