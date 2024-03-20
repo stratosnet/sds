@@ -14,7 +14,6 @@ import (
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
-	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
 	"github.com/stratosnet/sds/sds-msg/protos"
 )
@@ -81,10 +80,6 @@ func RspStopMaintenance(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	if setting.Config.Node.AutoStart {
-		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_MAINTANENCE_STOP)
-		return
-	}
 }
 
 func taskMonitorFunc(ctx context.Context) func() {
