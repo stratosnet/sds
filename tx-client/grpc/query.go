@@ -132,7 +132,7 @@ func QueryTxByHash(txHash string) (*abciv1beta1.TxResponse, error) {
 	return resp.TxResponse, nil
 }
 
-func QueryVolumeReport(epoch *big.Int) (*potv1.QueryVolumeReportResponse, error) {
+func QueryVolumeReport(epoch int64) (*potv1.QueryVolumeReportResponse, error) {
 	conn, err := CreateGrpcConn()
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func QueryVolumeReport(epoch *big.Int) (*potv1.QueryVolumeReportResponse, error)
 	defer conn.Close()
 	client := potv1.NewQueryClient(conn)
 	ctx := context.Background()
-	req := potv1.QueryVolumeReportRequest{Epoch: epoch.Int64()}
+	req := potv1.QueryVolumeReportRequest{Epoch: epoch}
 
 	resp, err := client.VolumeReport(ctx, &req)
 	if err != nil {
