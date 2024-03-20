@@ -101,7 +101,6 @@ type ConnectivityConfig struct {
 }
 
 type NodeConfig struct {
-	AutoStart    bool               `toml:"auto_start" comment:"Should the node start mining automatically? Eg: true"` // TODO: review usage. Not actually used to start mining automatically
 	Debug        bool               `toml:"debug" comment:"Should debug info be printed out in logs? Eg: false"`
 	MaxDiskUsage uint64             `toml:"max_disk_usage" comment:"When not 0, limit disk usage to this amount (in megabytes) Eg: 7629394 = 8 * 1000 * 1000 * 1000 * 1000 / 1024 / 1024  (8TB) "`
 	Connectivity ConnectivityConfig `toml:"connectivity"`
@@ -266,7 +265,6 @@ func defaultConfig() *config {
 			BeneficiaryAddress: "",
 		},
 		Node: NodeConfig{
-			AutoStart:    true,
 			Debug:        false,
 			MaxDiskUsage: 8 * 1000 * 1000 * 1000 * 1000 / 1024 / 1024, // 8TB,
 			Connectivity: ConnectivityConfig{

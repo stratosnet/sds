@@ -40,8 +40,6 @@ beneficiary_address = 'st1g54kyu2tk2e80wqq4q3t2dl4mm5ydwwyyu4pq5'
 
 # Configuration of this node
 [node]
-# Should the node start mining automatically? Eg: true
-auto_start = true
 # Should debug info be printed out in logs? Eg: false
 debug = true
 # When not 0, limit disk usage to this amount (in megabytes) Eg: 1048576 (1 TB)
