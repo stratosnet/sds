@@ -157,7 +157,7 @@ message ReportUploadSliceResult {
   SliceHashAddr slice = 1; //
   string     file_hash = 2; //
   bool       upload_success = 3;
-  bool       isPP = 4; //
+  bool       isReceiver = 4; //
   string     task_id = 5;
   string     p2p_address = 6;
   string     wallet_address = 7;
@@ -299,7 +299,7 @@ message RspDownloadSlicePause {
 }
 
 message ReqReportDownloadResult {
-  bool isPP = 1;
+  bool is_sender = 1;
   DownloadSliceInfo slice_info = 2;
   string file_hash = 3;
   string downloader_p2p_address = 4;
