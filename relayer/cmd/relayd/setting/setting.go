@@ -15,12 +15,6 @@ const (
 	MIN_APP_VER = 11
 )
 
-type AppVersion struct {
-	AppVer    uint16 `toml:"app_ver"`
-	MinAppVer uint16 `toml:"min_app_ver"`
-	Show      string `toml:"show"`
-}
-
 type connectionRetries struct {
 	Max             int `toml:"max"`
 	SleepDuration   int `toml:"sleep_duration"`   // Milliseconds
@@ -61,6 +55,10 @@ type blockchainInfoConfig struct {
 	Transactions transactionsConfig `toml:"transactions"`
 }
 
+type connectivityConfig struct {
+	RpcPort string `toml:"rpc_port"`
+}
+
 type Version struct {
 	AppVer    uint16 `toml:"app_ver"`
 	MinAppVer uint16 `toml:"min_app_ver"`
@@ -74,6 +72,7 @@ type keysConfig struct {
 
 type config struct {
 	BlockchainInfo blockchainInfoConfig `toml:"blockchain_info"`
+	Connectivity   connectivityConfig   `toml:"connectivity"`
 	Keys           keysConfig           `toml:"keys"`
 	SDS            sds                  `toml:"sds"`
 	StratosChain   stratoschain         `toml:"stratos_chain"`
@@ -103,6 +102,9 @@ func defaultConfig() *config {
 				GasPrice:      "1000000000wei",
 				GasAdjustment: 2.0,
 			},
+		},
+		Connectivity: connectivityConfig{
+			RpcPort: "8887",
 		},
 		Keys: keysConfig{
 			WalletPath:     "config/st1a8ngk4tjvuxneyuvyuy9nvgehkpfa38hm8mp3x.json",

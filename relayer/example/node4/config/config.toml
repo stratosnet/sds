@@ -32,6 +32,9 @@ chain_id = "testchain"
 gas_price = "1000000000wei"
 gas_adjustment = 2.0
 
+[connectivity]
+rpc_port = "38887"
+
 [keys]
 wallet_path = "config/st1ewlfmhl8j0p2jesfd2xrqp0qjeh2222gs9uefh.json"
 wallet_password = "aaa"
