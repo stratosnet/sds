@@ -38,6 +38,7 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		pp.Log(ctx, "Register failed", target.Result.Msg)
+		pp.Log(ctx, "startmining will automatically retry in a few minutes, please wait...")
 		return
 	}
 

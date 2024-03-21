@@ -27,5 +27,5 @@ func RspStateChange(ctx context.Context, conn core.WriteCloser) {
 		utils.Log("State change hasn't been completed")
 		return
 	}
-	pp.Log(ctx, "State change has been completed, pleast start mining.")
+	pp.Log(ctx, "State change has been completed, please start mining.")
 }
