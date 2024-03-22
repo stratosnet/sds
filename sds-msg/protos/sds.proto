@@ -157,14 +157,13 @@ message ReportUploadSliceResult {
   SliceHashAddr slice = 1; //
   string     file_hash = 2; //
   bool       upload_success = 3;
-  bool       isReceiver = 4; //
-  string     task_id = 5;
-  string     p2p_address = 6;
-  string     wallet_address = 7;
-  string     sp_p2p_address = 8;
-  int64      cost_time = 9;
-  string     opponent_p2p_address = 10;
-  string     beneficiary_address = 11;
+  string     task_id = 4;
+  string     p2p_address = 5;
+  string     wallet_address = 6;
+  string     sp_p2p_address = 7;
+  int64      cost_time = 8;
+  string     opponent_p2p_address = 9;
+  string     beneficiary_address = 10;
 }
 
 message RspReportUploadSliceResult {
@@ -299,19 +298,18 @@ message RspDownloadSlicePause {
 }
 
 message ReqReportDownloadResult {
-  bool is_sender = 1;
-  DownloadSliceInfo slice_info = 2;
-  string file_hash = 3;
-  string downloader_p2p_address = 4;
-  string wallet_address = 5;
-  string pp_p2p_address = 6; // PP's P2P key address
-  string pp_wallet_address = 7; // PP's wallet address
-  string task_id = 8;
-  string sp_p2p_address = 9;
-  string opponent_p2p_address = 10;
-  int64  cost_time = 11;
-  string beneficiary_address = 12;
-  bool is_found_locally = 13;
+  DownloadSliceInfo slice_info = 1;
+  string file_hash = 2;
+  string downloader_p2p_address = 3;
+  string wallet_address = 4;
+  string pp_p2p_address = 5; // PP's P2P key address
+  string pp_wallet_address = 6; // PP's wallet address
+  string task_id = 7;
+  string sp_p2p_address = 8;
+  string opponent_p2p_address = 9;
+  int64  cost_time = 10;
+  string beneficiary_address = 11;
+  bool is_found_locally = 12;
 }
 
 message RspReportDownloadResult {
