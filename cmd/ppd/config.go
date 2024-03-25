@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/pelletier/go-toml"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -92,31 +94,55 @@ func updateConfigVersion(cmd *cobra.Command, _ []string) error {
 		MinAppVer: setting.MinAppVersion,
 		Show:      setting.Version,
 	}
-	if err = setting.FlushConfig(); err != nil {
+	curTreeBytes, err := toml.Marshal(setting.Config)
+	if err != nil {
 		return err
 	}
-	curTree, err := toml.LoadFile(configPath)
+	curTree, err := toml.LoadBytes(curTreeBytes)
 	if err != nil {
 		return err
 	}
 	curTreeFlat := flattenTomlTree(curTree)
 
-	// Identify config changes
+	defaultTreeBytes, err := toml.Marshal(setting.DefaultConfig())
+	if err != nil {
+		return err
+	}
+	defaultTree, err := toml.LoadBytes(defaultTreeBytes)
+	if err != nil {
+		return err
+	}
+	defaultTreeFlat := flattenTomlTree(defaultTree)
+
 	if setting.Config.Version.Show != prevVersion {
 		utils.Logf("Updated config version from %v to %v", prevVersion, setting.Config.Version.Show)
 	}
 
+	// Identify deleted entries
 	for key, value := range prevTreeFlat {
 		if _, found := curTreeFlat[key]; !found {
 			utils.Logf("Deleted entry %v = %v", key, value)
 		}
 	}
-	for key, value := range curTreeFlat {
+
+	// Identify added entries
+	for key := range curTreeFlat {
 		if _, found := prevTreeFlat[key]; !found {
-			utils.Logf("Added entry %v = %v", key, value)
+			utils.Logf("Added entry %v = %v", key, defaultTreeFlat[key])
+			splitKey := strings.Split(key, ".")
+			curTree.SetPath(splitKey, defaultTree.GetPath(splitKey)) // Set added entries to default value
 		}
 	}
-	return nil
+
+	// Save changes
+	curTreeBytes, err = curTree.Marshal()
+	if err != nil {
+		return err
+	}
+	if err = toml.Unmarshal(curTreeBytes, setting.Config); err != nil {
+		return err
+	}
+	return setting.FlushConfig()
 }
 
 func flattenTomlTree(root *toml.Tree) map[string]any {

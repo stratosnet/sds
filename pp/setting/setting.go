@@ -242,7 +242,7 @@ func FlushConfig() error {
 	return utils.WriteTomlConfig(Config, ConfigPath)
 }
 
-func defaultConfig() *config {
+func DefaultConfig() *config {
 	return &config{
 		Version: VersionConfig{AppVer: AppVersion, MinAppVer: MinAppVersion, Show: Version},
 		Blockchain: BlockchainConfig{
@@ -307,13 +307,13 @@ func defaultConfig() *config {
 }
 
 func GenDefaultConfig() error {
-	Config = defaultConfig()
+	Config = DefaultConfig()
 	return FlushConfig()
 }
 
 // formalizePaths checks if the configuration is using default paths, and if so, add in the node root path. It also makes all paths absolute
 func formalizePaths() (err error) {
-	defaultValues := defaultConfig()
+	defaultValues := DefaultConfig()
 
 	Config.Home.AccountsPath, err = formalizePath(Config.Home.AccountsPath, defaultValues.Home.AccountsPath)
 	if err != nil {
