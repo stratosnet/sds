@@ -335,7 +335,8 @@ func terminal(cmd *cobra.Command, args []string) {
 }
 
 func terminalPreRunE(cmd *cobra.Command, args []string) error {
-	return common.LoadConfig(cmd)
+	_, _, err := common.LoadConfig(cmd)
+	return err
 }
 
 func callRpc(c *rpc.Client, terminalId string, line string, param []string) bool {
