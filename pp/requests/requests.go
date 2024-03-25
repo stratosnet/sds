@@ -910,7 +910,8 @@ func PPMsgHeader(dataLen uint32, msgType header.MsgType) header.MessageHead {
 
 func UnmarshalData(ctx context.Context, target interface{}) bool {
 	msgBuf := core.MessageFromContext(ctx)
-	utils.DebugLogf("Received message type = %v msgBuf len = %v", reflect.TypeOf(target), len(msgBuf.MSGBody))
+	utils.DebugLogf("Received message type = %v msgBuf len(body) = %v, len(data) = %v, cap(data) = %v",
+		reflect.TypeOf(target), len(msgBuf.MSGBody), len(msgBuf.MSGData), cap(msgBuf.MSGData))
 	ret := UnmarshalMessageData(msgBuf.MSGBody, target)
 	if ret {
 		switch reflect.TypeOf(target) {

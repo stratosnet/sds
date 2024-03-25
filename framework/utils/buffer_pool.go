@@ -84,6 +84,9 @@ func ReleaseBuffer(buffer []byte) {
 	job = nil
 	globalBufferPool.mutex.Unlock()
 
+	if buffer == nil {
+		return
+	}
 	globalBufferPool.releaseBuffer(buffer)
 	costTime := time.Now().UnixMilli() - start
 	// TO BE DELETED
