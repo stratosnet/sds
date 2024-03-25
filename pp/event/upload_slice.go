@@ -663,7 +663,7 @@ func UploadSpeedOfProgress(ctx context.Context, _ core.WriteCloser) {
 
 	prg, ok := task.UploadProgressMap.Load(target.FileHash)
 	if !ok {
-		utils.DebugLog(ctx, "can't load upload progress map...")
+		utils.DebugLog("can't load upload progress map...")
 		return
 	}
 	metrics.UploadPerformanceLogNow(target.FileHash + ":RCV_PROGRESS:" + strconv.FormatInt(int64(target.SliceOffStart), 10))

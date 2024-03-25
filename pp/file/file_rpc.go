@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/framework/utils"
-
 	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/sds-msg/protos"
@@ -66,6 +64,11 @@ var (
 	RpcWaitTimeout time.Duration
 )
 
+type DataWithOffset struct {
+	Data   []byte
+	Offset uint64
+}
+
 func IsFileRpcRemote(key string) bool {
 	str := fileMap[key]
 	if str == "" {
@@ -75,70 +78,18 @@ func IsFileRpcRemote(key string) bool {
 }
 
 // SubscribeGetRemoteFileData application subscribes to remote file data and waits for remote user's feedback
-func SubscribeGetRemoteFileData(key string) chan []byte {
-	event, found := rpcUploadDataChan.Load(key)
+func SubscribeGetRemoteFileData(key string) chan DataWithOffset {
+	data, found := rpcUploadDataChan.Load(key)
 	if !found {
-		event = make(chan []byte, NUMBER_OF_UPLOAD_CHAN_BUFFER)
-		rpcUploadDataChan.Store(key, event)
+		data = make(chan DataWithOffset, NUMBER_OF_UPLOAD_CHAN_BUFFER)
+		rpcUploadDataChan.Store(key, data)
 	}
-	return event.(chan []byte)
+	return data.(chan DataWithOffset)
 }
 
 // UnsubscribeGetRemoteFileData unsubscribe after the application finishes receiving the slice of file data
 func UnsubscribeGetRemoteFileData(key string) {
 	rpcUploadDataChan.Delete(key)
-}
-
-// GetRemoteFileData application calls this func to fetch a (sub)slice of file data from remote user
-func GetRemoteFileData(hash string, offset *protos.SliceOffset) []byte {
-	upSliceMutex.Lock()
-	defer upSliceMutex.Unlock()
-
-	// input check
-	if offset == nil {
-		return nil
-	}
-
-	// compose event, as well notify the remote user
-	r := &rpc.Result{
-		Return:      rpc.UPLOAD_DATA,
-		OffsetStart: &offset.SliceOffsetStart,
-		OffsetEnd:   &offset.SliceOffsetEnd,
-	}
-
-	// send event and open the pipe for coming data
-	SetRemoteFileResult(hash, *r)
-
-	// read on the pipe
-	data := make([]byte, offset.SliceOffsetEnd-offset.SliceOffsetStart)
-	var cursor []byte
-	var read uint64 = 0
-
-	cursor = data[:]
-OuterFor:
-	for {
-		parentCtx := context.Background()
-		ctx, cancel := context.WithTimeout(parentCtx, RpcWaitTimeout)
-
-		select {
-		case <-ctx.Done():
-			cancel()
-			return nil
-		case subSlice := <-SubscribeGetRemoteFileData(hash):
-			metrics.UploadPerformanceLogNow(hash + ":RCV_SUBSLICE_RPC:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
-			copy(cursor, subSlice)
-			// one piece to be sent to client
-			read = read + uint64(len(subSlice))
-			cursor = data[read:]
-			if read >= offset.SliceOffsetEnd-offset.SliceOffsetStart {
-				UnsubscribeGetRemoteFileData(hash)
-				cancel()
-				break OuterFor
-			}
-		}
-	}
-
-	return data
 }
 
 func CacheRemoteFileData(fileHash string, offset *protos.SliceOffset, folderName, fileName string, writeFromStartOffset bool) error {
@@ -153,7 +104,7 @@ func CacheRemoteFileData(fileHash string, offset *protos.SliceOffset, folderName
 	}
 
 	// send event and open the pipe for coming data
-	SetRemoteFileResult(fileHash, *r)
+	SetRemoteFileResultWithRetries(fileHash, *r, 100*time.Millisecond, 5)
 
 	fileMg, err := OpenTmpFile(folderName, fileName)
 	if err != nil {
@@ -178,19 +129,23 @@ OuterFor:
 		case <-ctx.Done():
 			cancel()
 			return errors.New("timeout waiting uploaded sub-slice")
-		case subSlice := <-SubscribeGetRemoteFileData(fileHash):
-			if subSlice == nil {
-				return errors.New("Test error")
+		case packet := <-SubscribeGetRemoteFileData(fileHash):
+			if packet.Data == nil {
+				cancel()
+				return errors.New("stopped")
 			}
-
+			if packet.Offset != offset.SliceOffsetStart+uint64(read)+uint64(len(packet.Data)) {
+				cancel()
+				return errors.New("packet offsets doesn't match ")
+			}
 			metrics.UploadPerformanceLogNow(fileHash + ":RCV_SUBSLICE_RPC:" + strconv.FormatInt(int64(offset.SliceOffsetStart), 10))
-			err = WriteFile(subSlice, writeOffset, fileMg)
+			err = WriteFile(packet.Data, writeOffset, fileMg)
 			if err != nil {
 				cancel()
 				return errors.Wrap(err, "failed writing file")
 			}
-			read = read + int64(len(subSlice))
-			writeOffset = writeOffset + int64(len(subSlice))
+			read = read + int64(len(packet.Data))
+			writeOffset = writeOffset + int64(len(packet.Data))
 			if read >= int64(offset.SliceOffsetEnd-offset.SliceOffsetStart) {
 				UnsubscribeGetRemoteFileData(fileHash)
 				cancel()
@@ -203,10 +158,10 @@ OuterFor:
 }
 
 // SendFileDataBack rpc server feeds file data from remote user to application
-func SendFileDataBack(hash string, content []byte) {
+func SendFileDataBack(hash string, content DataWithOffset) {
 	ch, found := rpcUploadDataChan.Load(hash)
 	if found {
-		ch.(chan []byte) <- content
+		ch.(chan DataWithOffset) <- content
 	}
 }
 
@@ -297,17 +252,27 @@ func UnsubscribeRemoteFileEvent(key string) {
 }
 
 // SetRemoteFileResult application sends the result of previous operation to rpc server
-func SetRemoteFileResult(key string, result rpc.Result) {
-	utils.DebugLog("--------------------------------------------------", key)
+func SetRemoteFileResult(key string, result rpc.Result) error {
 	fileEventMutex.Lock()
 	defer fileEventMutex.Unlock()
 	ch, found := rpcFileEventChan.Load(key)
 	if found {
-		select {
-		case ch.(chan *rpc.Result) <- &result:
-		default:
-			rpcFileEventChan.Delete(key)
+		ch.(chan *rpc.Result) <- &result
+		return nil
+	}
+	return errors.New("Can find listener for remote file result")
+}
+
+// SetRemoteFileResultWithRetries
+func SetRemoteFileResultWithRetries(key string, result rpc.Result, interval time.Duration, retryTimes int) {
+	for i := 0; i < retryTimes; i++ {
+		err := SetRemoteFileResult(key, result)
+		if err == nil {
+			// No error, so break out of the loop
+			break
 		}
+		// Error occurred, so wait for 100 milliseconds before trying again
+		time.Sleep(interval)
 	}
 }
 

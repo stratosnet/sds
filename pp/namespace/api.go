@@ -53,16 +53,13 @@ const (
 )
 
 var (
-	// key: fileHash value: file
-	FileOffset      = make(map[string]*FileFetchOffset)
-	FileOffsetMutex sync.Mutex
-
+	fileOffset       = &sync.Map{}
 	signatureInfoMap = utils.NewAutoCleanMap(SIGNATURE_INFO_TTL)
 )
 
-type FileFetchOffset struct {
-	RemoteRequested   uint64
-	ResourceNodeAsked uint64
+type fileUploadOffset struct {
+	PacketFileOffset uint64
+	SliceFileOffset  uint64
 }
 
 type signatureInfo struct {
@@ -108,11 +105,8 @@ func ResultHook(r *rpc_api.Result, fileHash string) *rpc_api.Result {
 		end := *r.OffsetEnd
 		// have to cut the requested data block into smaller pieces when the size is greater than the limit
 		if end-start > FILE_DATA_SAFE_SIZE {
-			f := &FileFetchOffset{RemoteRequested: start + FILE_DATA_SAFE_SIZE, ResourceNodeAsked: end}
-
-			FileOffsetMutex.Lock()
-			FileOffset[fileHash] = f
-			FileOffsetMutex.Unlock()
+			f := fileUploadOffset{PacketFileOffset: start + FILE_DATA_SAFE_SIZE, SliceFileOffset: end}
+			fileOffset.Store(fileHash, f)
 
 			e := start + FILE_DATA_SAFE_SIZE
 			nr := &rpc_api.Result{
@@ -160,7 +154,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 		sliceCount := uint64(math.Ceil(float64(fileSize) / float64(sliceSize)))
 
 		defer signatureInfoMap.Delete(fileHash)
-
+		defer fileOffset.Delete(fileHash)
 		var slices []*protos.SliceHashAddr
 		for sliceNumber := uint64(1); sliceNumber <= sliceCount; sliceNumber++ {
 			sliceOffset := requests.GetSliceOffset(sliceNumber, sliceCount, sliceSize, fileSize)
@@ -200,6 +194,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 				return
 			}
 		}
+		fileOffset.Delete(fileHash)
 
 		// Get latest signature info and reqTime
 		if info, found := signatureInfoMap.Load(fileHash); found {
@@ -271,46 +266,40 @@ func (api *rpcPubApi) UploadData(ctx context.Context, param rpc_api.ParamUploadD
 	content := param.Data
 	var dec []byte
 	dec = nil
-	if !stop {
-		// content in base64
-		dec, _ = b64.StdEncoding.DecodeString(content)
-	}
-	file.SendFileDataBack(fileHash, dec)
-	if stop {
-		return rpc_api.Result{Return: rpc_api.SESSION_STOPPED}
-	}
 
 	// first part: if the amount of bytes server requested haven't been finished,
 	// go on asking from the client
-	FileOffsetMutex.Lock()
-	fo, found := FileOffset[fileHash]
-	FileOffsetMutex.Unlock()
-	if found {
-		if fo.ResourceNodeAsked-fo.RemoteRequested > FILE_DATA_SAFE_SIZE {
-			start := fo.RemoteRequested
-			end := fo.RemoteRequested + FILE_DATA_SAFE_SIZE
-			nr := rpc_api.Result{
-				Return:      rpc_api.UPLOAD_DATA,
-				OffsetStart: &start,
-				OffsetEnd:   &end,
-			}
-
-			FileOffsetMutex.Lock()
-			FileOffset[fileHash].RemoteRequested = fo.RemoteRequested + FILE_DATA_SAFE_SIZE
-			FileOffsetMutex.Unlock()
-			return nr
-		} else {
-			nr := rpc_api.Result{
-				Return:      rpc_api.UPLOAD_DATA,
-				OffsetStart: &fo.RemoteRequested,
-				OffsetEnd:   &fo.ResourceNodeAsked,
-			}
-
-			FileOffsetMutex.Lock()
-			delete(FileOffset, fileHash)
-			FileOffsetMutex.Unlock()
-			return nr
+	fuo, found := fileOffset.Load(fileHash)
+	if stop || !found {
+		return rpc_api.Result{Return: rpc_api.SESSION_STOPPED}
+	}
+	fo := fuo.(fileUploadOffset)
+	dec, _ = b64.StdEncoding.DecodeString(content)
+	file.SendFileDataBack(fileHash, file.DataWithOffset{Data: dec, Offset: fo.PacketFileOffset})
+	if fo.SliceFileOffset-fo.PacketFileOffset > FILE_DATA_SAFE_SIZE {
+		start := fo.PacketFileOffset
+		end := fo.PacketFileOffset + FILE_DATA_SAFE_SIZE
+		nr := rpc_api.Result{
+			Return:      rpc_api.UPLOAD_DATA,
+			OffsetStart: &start,
+			OffsetEnd:   &end,
 		}
+
+		fo.PacketFileOffset = fo.PacketFileOffset + FILE_DATA_SAFE_SIZE
+		fileOffset.Store(fileHash, fo)
+		return nr
+	}
+	if fo.PacketFileOffset < fo.SliceFileOffset {
+		start := fo.PacketFileOffset
+		end := fo.SliceFileOffset
+		nr := rpc_api.Result{
+			Return:      rpc_api.UPLOAD_DATA,
+			OffsetStart: &start,
+			OffsetEnd:   &end,
+		}
+		fo.PacketFileOffset = fo.SliceFileOffset
+		fileOffset.Store(fileHash, fo)
+		return nr
 	}
 
 	// second part: let the server decide what will be the next step
