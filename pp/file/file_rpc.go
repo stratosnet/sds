@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/framework/utils"
-
 	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/sds-msg/protos"
@@ -298,7 +296,6 @@ func UnsubscribeRemoteFileEvent(key string) {
 
 // SetRemoteFileResult application sends the result of previous operation to rpc server
 func SetRemoteFileResult(key string, result rpc.Result) {
-	utils.DebugLog("--------------------------------------------------", key)
 	fileEventMutex.Lock()
 	defer fileEventMutex.Unlock()
 	ch, found := rpcFileEventChan.Load(key)

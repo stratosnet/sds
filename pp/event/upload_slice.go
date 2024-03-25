@@ -208,7 +208,6 @@ func ReqUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 				target.RspUploadFile.FileHash,
 				target.RspUploadFile.SpP2PAddress,
 				target.P2PAddress,
-				true,
 				newSlice,
 				totalCostTime)
 
@@ -280,7 +279,6 @@ func RspUploadFileSlice(ctx context.Context, conn core.WriteCloser) {
 				target.FileHash,
 				target.SpP2PAddress,
 				target.Slice.PpInfo.P2PAddress,
-				false,
 				target.Slice,
 				ctStat.TotalCostTime)
 			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, reportReq, header.ReqReportUploadSliceResult)
@@ -397,7 +395,6 @@ func ReqBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 				target.RspBackupFile.FileHash,
 				target.RspBackupFile.SpP2PAddress,
 				p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
-				true,
 				slice,
 				totalCostTime)
 			p2pserver.GetP2pServer(ctx).SendMessageToSPServer(newCtx, reportResultReq, header.ReqReportUploadSliceResult)
@@ -442,7 +439,6 @@ func RspBackupFileSlice(ctx context.Context, conn core.WriteCloser) {
 				target.FileHash,
 				target.SpP2PAddress,
 				p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
-				false,
 				target.Slice,
 				ctStat.TotalCostTime)
 
