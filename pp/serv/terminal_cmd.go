@@ -98,7 +98,7 @@ func (api *terminalCmd) NewWallet(ctx context.Context, param []string) (CmdResul
 	return CmdResult{Msg: ""}, nil
 }
 
-func (api *terminalCmd) Start(ctx context.Context, param []string) (CmdResult, error) {
+func (api *terminalCmd) StartMining(ctx context.Context, param []string) (CmdResult, error) {
 	terminalId, _, err := getTerminalIdFromParam(param)
 	if err != nil {
 		return CmdResult{Msg: ""}, err

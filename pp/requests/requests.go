@@ -346,12 +346,11 @@ func ReqUploadSlicesWrong(ctx context.Context, uploadTask *task.UploadFileTask, 
 	}
 }
 
-func ReqReportUploadSliceResultData(ctx context.Context, taskId, fileHash, spP2pAddr, opponentP2pAddress string, isPp bool, slice *protos.SliceHashAddr, costTime int64) *protos.ReportUploadSliceResult {
+func ReqReportUploadSliceResultData(ctx context.Context, taskId, fileHash, spP2pAddr, opponentP2pAddress string, slice *protos.SliceHashAddr, costTime int64) *protos.ReportUploadSliceResult {
 	utils.DebugLog("reqReportUploadSliceResultData____________________", slice.SliceSize)
 	return &protos.ReportUploadSliceResult{
 		TaskId:             taskId,
 		Slice:              slice,
-		IsPP:               isPp,
 		UploadSuccess:      true,
 		FileHash:           fileHash,
 		P2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
@@ -366,7 +365,6 @@ func ReqReportUploadSliceResultData(ctx context.Context, taskId, fileHash, spP2p
 func ReqReportDownloadResultData(ctx context.Context, target *protos.RspDownloadSlice, costTime int64, isPP bool) *protos.ReqReportDownloadResult {
 	utils.DebugLog("#################################################################", target.SliceInfo.SliceHash)
 	repReq := &protos.ReqReportDownloadResult{
-		IsPP:                 isPP,
 		DownloaderP2PAddress: target.P2PAddress,
 		WalletAddress:        target.WalletAddress,
 		PpP2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
@@ -416,7 +414,6 @@ func ReqReportDownloadResultData(ctx context.Context, target *protos.RspDownload
 func ReqReportDownloadResultDataForLocallyFoundSlice(ctx context.Context, fileStorageInfoSP *protos.RspFileStorageInfo, target *protos.DownloadSliceInfo, isPP bool) *protos.ReqReportDownloadResult {
 	utils.DebugLog("#################################################################", target.SliceStorageInfo.SliceHash)
 	repReq := &protos.ReqReportDownloadResult{
-		IsPP:                 isPP,
 		DownloaderP2PAddress: fileStorageInfoSP.P2PAddress,
 		WalletAddress:        fileStorageInfoSP.WalletAddress,
 		PpP2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
@@ -467,7 +464,6 @@ func ReqReportDownloadResultDataForLocallyFoundSlice(ctx context.Context, fileSt
 func ReqReportStreamResultData(ctx context.Context, target *protos.RspDownloadSlice, isPP bool) *protos.ReqReportDownloadResult {
 	utils.DebugLog("#################################################################", target.SliceInfo.SliceHash)
 	repReq := &protos.ReqReportDownloadResult{
-		IsPP:                 isPP,
 		DownloaderP2PAddress: target.P2PAddress,
 		WalletAddress:        target.WalletAddress,
 		PpP2PAddress:         p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),

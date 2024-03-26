@@ -102,8 +102,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		return true
 	}
 
-	start := func(line string, param []string) bool {
-		return callRpc(c, terminalId, "start", param)
+	startMining := func(line string, param []string) bool {
+		return callRpc(c, terminalId, "startMining", param)
 	}
 
 	registerPP := func(line string, param []string) bool {
@@ -246,7 +246,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("wallets", wallets, false)
 	console.Mystdin.RegisterProcessFunc("getoz", getoz, true)
 	console.Mystdin.RegisterProcessFunc("newwallet", newwallet, false)
-	console.Mystdin.RegisterProcessFunc("startmining", start, true)
+	console.Mystdin.RegisterProcessFunc("startmining", startMining, true)
 	console.Mystdin.RegisterProcessFunc("rp", registerPP, true)
 	console.Mystdin.RegisterProcessFunc("registerpeer", registerPP, true)
 	console.Mystdin.RegisterProcessFunc("activate", activate, true)
