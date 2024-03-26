@@ -28,6 +28,9 @@ chain_id = "testchain"
 fee = "30000wei"
 gas = 20000000
 
+[connectivity]
+rpc_port = "8887"
+
 [keys]
 wallet_path = "config/st1a8ngk4tjvuxneyuvyuy9nvgehkpfa38hm8mp3x.json"
 wallet_password = "aaa"
