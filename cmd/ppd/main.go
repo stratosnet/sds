@@ -83,6 +83,7 @@ func getGenConfigCmd() *cobra.Command {
 		RunE:  genConfig,
 	}
 	cmd.AddCommand(getAccountCmd())
+	cmd.AddCommand(getUpdateConfigCmd())
 	cmd.Flags().BoolP(createP2pKeyFlag, "p", false, "create p2p key with config file, need interactive input")
 	cmd.Flags().BoolP(createWalletFlag, "w", false, "create wallet with config file, need interactive input")
 	return cmd
@@ -105,8 +106,17 @@ func getAccountCmd() *cobra.Command {
 	return cmd
 }
 
-func getVersionCmd() *cobra.Command {
+func getUpdateConfigCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "update",
+		Short: "update the config file to the latest version",
+		RunE:  updateConfigVersion,
+	}
 
+	return cmd
+}
+
+func getVersionCmd() *cobra.Command {
 	version := setting.Version
 	cmd := &cobra.Command{
 		Use:   "version",

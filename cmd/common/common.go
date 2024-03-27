@@ -55,7 +55,7 @@ func RootPreRunE(cmd *cobra.Command, _ []string) error {
 }
 
 func NodePreRunE(cmd *cobra.Command, _ []string) error {
-	err := LoadConfig(cmd)
+	_, _, err := LoadConfig(cmd)
 	if err != nil {
 		return err
 	}
@@ -83,44 +83,15 @@ func NodePreRunE(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func LoadConfig(cmd *cobra.Command) error {
-	homePath, err := cmd.Flags().GetString(Home)
-	if err != nil {
-		utils.ErrorLog("failed to get 'home' path for the node")
-		return err
-	}
-	homePath, err = utils.Absolute(homePath)
-	if err != nil {
-		return err
-	}
-	setting.SetupRoot(homePath)
-
-	configPath, err := cmd.Flags().GetString(Config)
-	if err != nil {
-		utils.ErrorLog("failed to get config path for the node")
-		return err
-	}
-	if configPath == DefaultConfigPath {
-		configPath = filepath.Join(homePath, configPath)
-	} else {
-		configPath, err = utils.Absolute(configPath)
-		if err != nil {
-			return err
-		}
-	}
-
-	if _, err := os.Stat(configPath); err != nil {
-		//configPath = filepath.Join(homePath, configPath)
-		if _, err := os.Stat(configPath); err != nil {
-			return errors.Wrap(err, "not able to load config file, generate one with `ppd config`")
-		}
-	}
+func LoadConfig(cmd *cobra.Command) (homePath, configPath string, err error) {
+	homePath, configPath, err = GetPaths(cmd, true)
 
 	setting.SetIPCEndpoint(homePath)
 
 	err = setting.LoadConfig(configPath)
 	if err != nil {
-		return errors.Wrap(err, "failed to load config file")
+		err = errors.Wrap(err, "failed to load config file")
+		return
 	}
 
 	if setting.Config.Node.Debug {
@@ -133,7 +104,42 @@ func LoadConfig(cmd *cobra.Command) error {
 		utils.ErrorLogf("config version and code version not match, config: [%s], code: [%s]", setting.Config.Version.Show, setting.Version)
 	}
 
-	return nil
+	return
+}
+
+func GetPaths(cmd *cobra.Command, errOnMissingDir bool) (homePath, configPath string, err error) {
+	homePath, err = cmd.Flags().GetString(Home)
+	if err != nil {
+		utils.ErrorLog("failed to get 'home' path for the node")
+		return
+	}
+	homePath, err = utils.Absolute(homePath)
+	if err != nil {
+		return
+	}
+	setting.SetupRoot(homePath)
+
+	configPath, err = cmd.Flags().GetString(Config)
+	if err != nil {
+		utils.ErrorLog("failed to get config path for the node")
+		return
+	}
+
+	if configPath == DefaultConfigPath {
+		configPath = filepath.Join(homePath, configPath)
+	} else {
+		configPath, err = utils.Absolute(configPath)
+		if err != nil {
+			return
+		}
+	}
+
+	if _, err = os.Stat(configPath); err != nil {
+		if os.IsNotExist(err) && !errOnMissingDir {
+			err = os.MkdirAll(filepath.Dir(configPath), 0700)
+		}
+	}
+	return
 }
 
 // SetupP2PKey Loads the existing P2P key for this node, or creates a new one if none is available.
