@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -34,12 +35,32 @@ var (
 	wmutex sync.RWMutex
 
 	// key(fileHash) : value(file path)
-	fileMap     = make(map[string]string)
-	infoMutex   sync.Mutex
-	DataBuffer  sync.Mutex
-	fileNameMap = utils.NewAutoCleanMap(1 * time.Hour)
-	downloadMap = utils.NewAutoCleanMap(1 * time.Hour)
+	fileMap           = make(map[string]string)
+	infoMutex         sync.Mutex
+	DataBuffer        sync.Mutex
+	fileInfoMap       = utils.NewAutoCleanMap(1 * time.Hour)
+	downloadMap       = utils.NewAutoCleanMap(1 * time.Hour)
+	downloadSliceChan = &sync.Map{}
 )
+
+type DownloadSlice struct {
+	SliceHash       string
+	SliceFileOffset uint64
+	SliceSize       uint64
+	Handled         bool
+}
+type DownloadFileSlice struct {
+	CurrentSlice       *DownloadSlice
+	CurrentSliceOffset uint64
+	SlicesToDownload   []*DownloadSlice
+}
+
+type DownloadFile struct {
+	FileHash string
+	FileSize uint64
+	FileName string
+	Slices   []DownloadSlice
+}
 
 func RequestBuffersForSlice(size int64) [][]byte {
 	DataBuffer.Lock()
@@ -336,6 +357,7 @@ func SaveDownloadProgress(ctx context.Context, sliceHash, fileName, fileHash, sa
 	}
 	writer.Flush()
 
+	SetDownloadSliceResult(fileHash, true)
 	if err = writer.Error(); err != nil {
 		pp.ErrorLog(ctx, "flush error,", err.Error())
 	}
@@ -632,12 +654,16 @@ func CheckDownloadCache(fileHash string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed get the download file name, ")
 	}
-	fileNameMap.Store(fileHash, fileName)
+
 	filePath := GetDownloadTmpFilePath(fileHash, fileName)
 	if fileHash != GetFileHash(filePath, "") {
 		return errors.New("the cached file doesn't match file hash")
 	}
 	return nil
+}
+
+func SetDownloadFileInfo(fileHash string, fileInfo DownloadFile) {
+	fileInfoMap.Store(fileHash, fileInfo)
 }
 
 // ReadDownloadCachedData read setting.MacData bytes from the cache and store the cursor for next reading; check the end if cursor equals file size.
@@ -655,11 +681,12 @@ func ReadDownloadCachedData(fileHash, reqid string) ([]byte, uint64, uint64, boo
 		offsetStart = start.(uint64)
 	}
 
-	fileName, ok := fileNameMap.Load(fileHash)
+	fi, ok := fileInfoMap.Load(fileHash)
+	fileName := fi.(DownloadFile).FileName
 	if !ok {
 		return nil, offsetStart, offsetEnd, finished
 	}
-	filePath := GetDownloadTmpFilePath(fileHash, fileName.(string))
+	filePath := GetDownloadTmpFilePath(fileHash, fileName)
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		return nil, offsetStart, offsetEnd, finished
@@ -706,11 +733,11 @@ func IsLocalDownload(fileHash string) bool {
 }
 
 func GetFileName(fileHash string) string {
-	fileName, ok := fileNameMap.Load(fileHash)
+	fileInfo, ok := fileInfoMap.Load(fileHash)
 	if !ok {
 		return ""
 	}
-	return fileName.(string)
+	return fileInfo.(DownloadFile).FileName
 }
 
 func CreateFolderAndReopenFile(folderPath, fileName string) (*os.File, error) {
@@ -728,4 +755,203 @@ func CreateFolderAndReopenFile(folderPath, fileName string) (*os.File, error) {
 		return nil, errors.Wrap(err, "failed open the file after second try")
 	}
 	return file, nil
+}
+
+func rangeCsvFile(fileHash, fileName string, f func(sliceInCsv string)) bool {
+	csvFile, err := os.OpenFile(GetDownloadTmpCsvPath(fileHash, fileName), os.O_RDONLY, 0600)
+	defer func() {
+		_ = csvFile.Close()
+	}()
+	if err != nil {
+		// file path not available, accordingly slice not exist
+		return false
+	}
+	reader := csv.NewReader(csvFile)
+	hashs, err := reader.ReadAll()
+	if len(hashs) == 0 || err != nil {
+		return false
+	}
+	for _, hash := range hashs {
+		if len(hash) > 0 {
+			f(hash[0])
+		}
+	}
+	return false
+}
+
+func UpdateDownloadSlices(fileInfo DownloadFile, reqId string) (updated bool) {
+	updated = false
+	d, found := downloadMap.Load(fileInfo.FileHash + reqId)
+	if !found {
+		d = DownloadFileSlice{}
+	}
+	downloadFileSlice := d.(DownloadFileSlice)
+	rangeCsvFile(fileInfo.FileHash, fileInfo.FileName, func(sliceInCsv string) {
+		found = false
+		for _, slice := range downloadFileSlice.SlicesToDownload {
+			if sliceInCsv == slice.SliceHash {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			updated = true
+			for _, slice := range fileInfo.Slices {
+				if slice.SliceHash == sliceInCsv {
+					newSlice := &DownloadSlice{
+						SliceHash:       slice.SliceHash,
+						SliceFileOffset: slice.SliceFileOffset,
+						SliceSize:       slice.SliceSize,
+						Handled:         false,
+					}
+					downloadFileSlice.SlicesToDownload = append(downloadFileSlice.SlicesToDownload, newSlice)
+				}
+			}
+		}
+	})
+	downloadMap.Store(fileInfo.FileHash+reqId, downloadFileSlice)
+	return
+}
+
+func WaitDownloadSlice(fileHash, reqId string) bool {
+	var fileInfo DownloadFile
+	found := false
+	for !found {
+		f, found := fileInfoMap.Load(fileHash)
+		if found {
+			fileInfo = f.(DownloadFile)
+			break
+		}
+		<-SubscribeDownloadSlice(fileHash)
+		UnsubscribeDownloadSlice(fileHash)
+	}
+	if UpdateDownloadSlices(fileInfo, reqId) {
+		return true
+	}
+	if CheckRemoteFileDownloadComplete(fileHash, reqId, fileInfo.FileSize) {
+		return false
+	}
+	done := <-SubscribeDownloadSlice(fileHash)
+	UnsubscribeDownloadSlice(fileHash)
+	if done {
+		UpdateDownloadSlices(fileInfo, reqId)
+	}
+	return true
+}
+
+func CheckRemoteFileDownloadComplete(fileHash, reqid string, fileSize uint64) bool {
+	d, found := downloadMap.Load(fileHash + reqid)
+	if !found {
+
+	}
+	var size uint64
+	for _, slice := range d.(DownloadFileSlice).SlicesToDownload {
+		if slice.Handled {
+			size = size + slice.SliceSize
+		}
+	}
+	if size == fileSize {
+		return true
+	}
+	return false
+}
+
+func NextRemoteDownloadPacket(fileHash, reqid string) ([]byte, uint64, uint64, bool) {
+	var end uint64
+	var start uint64
+	var finished bool
+
+	d, found := downloadMap.Load(fileHash + reqid)
+	if !found {
+		d = DownloadFileSlice{}
+		downloadMap.Store(fileHash+reqid, d)
+	}
+	dslice := d.(DownloadFileSlice)
+	chooseCurrentSlice := func(d DownloadFileSlice) DownloadFileSlice {
+		for _, slice := range d.SlicesToDownload {
+			if !slice.Handled {
+
+				d.CurrentSlice = slice
+				d.CurrentSliceOffset = d.CurrentSlice.SliceFileOffset
+				slice.Handled = true
+				found = true
+				break
+			}
+		}
+		return d
+	}
+
+	if dslice.CurrentSlice == nil ||
+		dslice.CurrentSliceOffset == dslice.CurrentSlice.SliceSize+dslice.CurrentSlice.SliceFileOffset {
+		found = false
+		dslice = chooseCurrentSlice(dslice)
+		if !found {
+			if !WaitDownloadSlice(fileHash, reqid) {
+				return nil, 0, 0, true
+			}
+			d, _ = downloadMap.Load(fileHash + reqid)
+			dslice = chooseCurrentSlice(d.(DownloadFileSlice))
+		}
+		downloadMap.Store(fileHash+reqid, dslice)
+	}
+	end = 0
+	finished = false
+	start = dslice.CurrentSliceOffset
+	sliceEnd := dslice.CurrentSlice.SliceFileOffset + dslice.CurrentSlice.SliceSize
+	fi, ok := fileInfoMap.Load(fileHash)
+	fileName := fi.(DownloadFile).FileName
+	if !ok {
+		return nil, start, end, finished
+	}
+	filePath := GetDownloadTmpFilePath(fileHash, fileName)
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		return nil, start, end, finished
+	}
+
+	if start >= uint64(fileInfo.Size()) {
+		finished = true
+		return nil, start, end, finished
+	}
+
+	if start+setting.MaxData < sliceEnd {
+		end = start + setting.MaxData
+	} else {
+		end = sliceEnd
+	}
+
+	offset := &protos.SliceOffset{
+		SliceOffsetStart: start,
+		SliceOffsetEnd:   end,
+	}
+
+	data, err := GetFileData(filePath, offset)
+	if err != nil {
+		return nil, start, end, finished
+	}
+	dslice.CurrentSliceOffset = end
+	downloadMap.Store(fileHash+reqid, dslice)
+
+	return data, start, end, finished
+
+}
+
+func SubscribeDownloadSlice(key string) chan bool {
+	event := make(chan bool)
+	downloadSliceChan.Store(key, event)
+	return event
+}
+
+func UnsubscribeDownloadSlice(key string) {
+	downloadSliceChan.Delete(key)
+}
+
+func SetDownloadSliceResult(fileHash string, result bool) {
+	downloadSliceChan.Range(func(k, v interface{}) bool {
+		if strings.HasPrefix(k.(string), fileHash) {
+			v.(chan bool) <- result
+		}
+		return true
+	})
 }

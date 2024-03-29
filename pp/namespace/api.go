@@ -500,39 +500,15 @@ func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamRe
 	// if the file is being downloaded in an existing download session
 	var result *rpc_api.Result
 	reqId := uuid.New().String()
-	key := fileHash + reqId
 
-	// if there is already downloading session in progress, wait for the result
-	if task.CheckDownloadTask(fileHash, setting.WalletAddress, task.LOCAL_REQID) {
-		success := <-task.SubscribeDownloadResult(key)
-		task.UnsubscribeDownloadResult(key)
-		if !success {
-			return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
-		}
-	}
+	ctx = core.RegisterRemoteReqId(ctx, task.LOCAL_REQID)
+	req := requests.ReqFileStorageInfoData(ctx, param.FileHandle, "", "", wallet, wpk.Bytes(), wsig, nil, param.ReqTime)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqFileStorageInfo)
 
-	// check if the file is already cached in download folder and if it's valid
-	err = file.CheckDownloadCache(fileHash)
-	if err != nil {
-		// rpc normal download initiate a local download
-		ctx = core.RegisterRemoteReqId(ctx, task.LOCAL_REQID)
-		req := requests.ReqFileStorageInfoData(ctx, param.FileHandle, "", "", wallet, wpk.Bytes(), wsig, nil, param.ReqTime)
-		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqFileStorageInfo)
-		success := <-task.SubscribeDownloadResult(key)
-		task.UnsubscribeDownloadResult(key)
-		if !success {
-			return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
-		}
-	}
+	<-file.SubscribeDownloadSlice(fileHash)
+	file.UnsubscribeDownloadSlice(fileHash)
 
-	// check the cached file again before send it to the client
-	err = file.CheckDownloadCache(fileHash)
-	if err != nil {
-		return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
-	}
-
-	// initialize the cursor reading the file from the beginning
-	data, start, end, _ := file.ReadDownloadCachedData(fileHash, reqId)
+	data, start, end, _ := file.NextRemoteDownloadPacket(fileHash, reqId)
 	if data == nil {
 		return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE}
 	}
@@ -663,7 +639,7 @@ func (api *rpcPubApi) DownloadData(ctx context.Context, param rpc_api.ParamDownl
 
 	// download from the cached file
 	var result *rpc_api.Result
-	data, start, end, finished := file.ReadDownloadCachedData(param.FileHash, param.ReqId)
+	data, start, end, finished := file.NextRemoteDownloadPacket(param.FileHash, param.ReqId)
 	if finished {
 		result = &rpc_api.Result{
 			Return: rpc_api.DL_OK_ASK_INFO,

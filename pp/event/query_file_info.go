@@ -171,6 +171,25 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		task.CleanDownloadFileAndConnMap(ctx, target.FileHash, fileReqId)
 		task.DownloadFileMap.Store(target.FileHash+fileReqId, newTarget)
 		task.AddDownloadTask(newTarget)
+
+		var slice *protos.DownloadSliceInfo
+		var slices []file.DownloadSlice
+		for _, slice = range target.SliceInfo {
+			s := file.DownloadSlice{
+				SliceHash:       slice.SliceStorageInfo.SliceHash,
+				SliceFileOffset: slice.SliceOffset.SliceOffsetStart,
+				SliceSize:       slice.SliceStorageInfo.SliceSize,
+			}
+			slices = append(slices, s)
+		}
+
+		file.SetDownloadFileInfo(target.FileHash, file.DownloadFile{
+			FileHash: target.FileHash,
+			FileSize: target.FileSize,
+			FileName: target.FileName,
+			Slices:   slices,
+		})
+		file.SetDownloadSliceResult(target.FileHash, true)
 		if crypto.IsVideoStream(target.FileHash) {
 			file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.DOWNLOAD_OK, FileHash: target.FileHash})
 			return
