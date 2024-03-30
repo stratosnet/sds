@@ -246,7 +246,7 @@ func (api *terminalCmd) Status(ctx context.Context, param []string) (CmdResult, 
 	//get status from cache
 	cachedStatus := event.GetPPStatusCache()
 	if cachedStatus != nil {
-		statusMsg := event.FormatPPStatusInfo(ctx, cachedStatus)
+		statusMsg := event.FormatPPStatusInfo(ctx, cachedStatus, true)
 		return CmdResult{Msg: statusMsg}, nil
 	}
 

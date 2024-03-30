@@ -81,7 +81,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 		target.GetWeightScore(),
 		target.GetIsVerified(),
 	)
-	rpcResult.Message = FormatPPStatusInfo(ctx, newPPStatus)
+	rpcResult.Message = FormatPPStatusInfo(ctx, newPPStatus, false)
 
 	if target.IsActive == msgtypes.PP_ACTIVE {
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_ACTIVATED)
@@ -115,7 +115,7 @@ func GetPPStatusCache() *PPStatusInfo {
 	return value.(*PPStatusInfo)
 }
 
-func FormatPPStatusInfo(ctx context.Context, ppStatus *PPStatusInfo) string {
+func FormatPPStatusInfo(ctx context.Context, ppStatus *PPStatusInfo, isCache bool) string {
 	activation, state := "", ""
 
 	switch ppStatus.isActive {
@@ -170,7 +170,14 @@ func FormatPPStatusInfo(ctx context.Context, ppStatus *PPStatusInfo) string {
 		spStatus = fmt.Sprintf("%v (%v)", spInfo.GetRemoteP2pAddress(), spInfo.GetName())
 	}
 
-	msgStr := fmt.Sprintf("*** current node status ***\n"+
+	var msgTitle string
+	if isCache {
+		msgTitle = fmt.Sprintf("*** current node status (cached) ***\n")
+	} else {
+		msgTitle = fmt.Sprintf("*** current node status ***\n")
+	}
+
+	msgStr := fmt.Sprintf(msgTitle+
 		"Activation: %v | Registration Status: %v | Mining: %v | Initial tier: %v | Ongoing tier: %v | Weight score: %v | Meta node: %v",
 		activation, regStatStr, state, ppStatus.initTier, ppStatus.ongoingTier, ppStatus.weightScore, spStatus)
 	pp.Log(ctx, msgStr)
