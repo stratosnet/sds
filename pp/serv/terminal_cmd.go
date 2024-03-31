@@ -108,6 +108,7 @@ func (api *terminalCmd) StartMining(ctx context.Context, param []string) (CmdRes
 	switch state := network.GetPeer(ctx).GetStateFromFsm(); state.Id {
 	case network.STATE_NOT_REGISTERED:
 	case network.STATE_SUSPENDED:
+	case network.STATE_OFFLINE:
 	case network.STATE_NOT_ACTIVATED, network.STATE_INIT, network.STATE_NOT_CREATED:
 		return CmdResult{Msg: ""}, errors.New("register and activate the node before start mining")
 	default:
@@ -245,7 +246,7 @@ func (api *terminalCmd) Status(ctx context.Context, param []string) (CmdResult, 
 	//get status from cache
 	cachedStatus := event.GetPPStatusCache()
 	if cachedStatus != nil {
-		statusMsg := event.FormatPPStatusInfo(ctx, cachedStatus)
+		statusMsg := event.FormatPPStatusInfo(ctx, cachedStatus, true)
 		return CmdResult{Msg: statusMsg}, nil
 	}
 
