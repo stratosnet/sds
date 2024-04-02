@@ -94,7 +94,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	}
 
 	newwallet := func(line string, param []string) bool {
-		err := fwtypes.SetupWallet(setting.Config.Home.AccountsPath, setting.HDPath, updateWalletConfig)
+		err := fwtypes.SetupWallet(setting.Config.Home.AccountsPath, setting.HDPath, setting.Bip39Passphrase, updateWalletConfig)
 		if err != nil {
 			fmt.Println(err)
 			return false

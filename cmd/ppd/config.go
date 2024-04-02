@@ -33,6 +33,15 @@ func genConfig(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
+	createWallet, err := cmd.Flags().GetBool(createWalletFlag)
+	if err == nil && createWallet {
+		err = setupWalletKey()
+		if err != nil {
+			utils.ErrorLog(err)
+			return err
+		}
+	}
+
 	createP2pKey, err := cmd.Flags().GetBool(createP2pKeyFlag)
 	if err == nil && createP2pKey {
 		err = common.SetupP2PKey()
@@ -43,14 +52,6 @@ func genConfig(cmd *cobra.Command, _ []string) error {
 		}
 	}
 
-	createWallet, err := cmd.Flags().GetBool(createWalletFlag)
-	if err == nil && createWallet {
-		err = setupWalletKey()
-		if err != nil {
-			utils.ErrorLog(err)
-			return err
-		}
-	}
 	return nil
 }
 
@@ -60,7 +61,7 @@ func setupWalletKey() error {
 	}
 
 	utils.Log("No wallet key specified in config. Attempting to create one...")
-	err := fwtypes.SetupWallet(setting.Config.Home.AccountsPath, setting.HDPath, updateWalletConfig)
+	err := fwtypes.SetupWallet(setting.Config.Home.AccountsPath, setting.HDPath, setting.Bip39Passphrase, updateWalletConfig)
 	if err != nil {
 		utils.ErrorLog(err)
 		return err
@@ -68,10 +69,10 @@ func setupWalletKey() error {
 	return nil
 }
 
-func updateWalletConfig(walletKeyAddressString, password string) {
+func updateWalletConfig(walletKeyAddressString, password string) error {
 	setting.Config.Keys.WalletAddress = walletKeyAddressString
 	setting.Config.Keys.WalletPassword = password
-	_ = setting.FlushConfig()
+	return setting.FlushConfig()
 }
 
 func updateConfigVersion(cmd *cobra.Command, _ []string) error {
