@@ -73,21 +73,68 @@ type hdKeyBytes struct {
 }
 
 // CreateWallet creates a new stratos-chain wallet with the given nickname and password, and saves the key data into the dir folder
-func CreateWallet(dir, nickname, password, mnemonic, bip39Passphrase, hdPath string) (fwcryptotypes.Address, error) {
+func CreateWallet(dir, nickname, password, mnemonic, bip39Passphrase, hdPath string) (walletAddress fwcryptotypes.Address, newlyCreated bool, err error) {
 	privateKeyBytes, err := fwsecp256k1.Derive(mnemonic, bip39Passphrase, hdPath)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
+
 	privateKey := fwsecp256k1.Generate(privateKeyBytes)
 
-	return saveAccountKey(dir, nickname, password, mnemonic, bip39Passphrase, hdPath, scryptN, scryptP, privateKey, true)
+	walletAddress = privateKey.PubKey().Address()
+	exists, err := KeyExists(dir, WalletAddressBytesToBech32(walletAddress.Bytes()))
+	if exists || err != nil {
+		return walletAddress, false, err
+	}
+
+	_, err = saveAccountKey(dir, nickname, password, mnemonic, bip39Passphrase, hdPath, scryptN, scryptP, privateKey, true)
+	return walletAddress, true, err
+}
+
+// KeyExists verifies whether the given key (wallet or p2p) exists in the dir folder
+func KeyExists(dir, address string) (bool, error) {
+	_, err := os.Stat(filepath.Join(dir, address+".json"))
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return false, nil
+		} else {
+			return false, err
+		}
+	}
+	return true, nil
 }
 
 // CreateP2PKey creates a P2P key to be used by one of the SDS nodes, and saves the key data into the dir folder
-func CreateP2PKey(dir, nickname, password string) (fwcryptotypes.Address, error) {
+func CreateP2PKey(dir, nickname, password, privateKeyHex string) (fwcryptotypes.Address, error) {
 	privateKey := fwed25519.GenPrivKey()
+	if privateKeyHex != "" {
+		privateKeyBytes, err := hex.DecodeString(privateKeyHex)
+		if err != nil {
+			return nil, err
+		}
+		privateKey = fwed25519.Generate(privateKeyBytes)
+	}
 
 	return saveAccountKey(dir, nickname, password, "", "", "", scryptN, scryptP, privateKey, false)
+}
+
+// CreateP2PKeyFromHdPath uses a wallet mnemonic to create a P2P key to be used by one of the SDS nodes, and saves the key data into the dir folder
+func CreateP2PKeyFromHdPath(dir, nickname, password, mnemonic, bip39Passphrase, hdPath string) (p2pAddress fwcryptotypes.Address, newlyCreated bool, err error) {
+	secpPrivateKeyBytes, err := fwsecp256k1.Derive(mnemonic, bip39Passphrase, hdPath)
+	if err != nil {
+		return nil, false, err
+	}
+
+	privateKey := fwed25519.GenPrivKeyFromSecret(secpPrivateKeyBytes)
+
+	p2pAddress = privateKey.PubKey().Address()
+	exists, err := KeyExists(dir, P2PAddressBytesToBech32(p2pAddress.Bytes()))
+	if exists || err != nil {
+		return p2pAddress, false, err
+	}
+
+	_, err = saveAccountKey(dir, nickname, password, mnemonic, bip39Passphrase, hdPath, scryptN, scryptP, privateKey, false)
+	return p2pAddress, true, err
 }
 
 func saveAccountKey(dir, nickname, password, mnemonic, bip39Passphrase, hdPath string, scryptN, scryptP int,
