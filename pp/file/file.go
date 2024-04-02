@@ -41,6 +41,7 @@ var (
 	fileInfoMap       = utils.NewAutoCleanMap(1 * time.Hour)
 	downloadMap       = utils.NewAutoCleanMap(1 * time.Hour)
 	downloadSliceChan = &sync.Map{}
+	downloadShareChan = &sync.Map{}
 )
 
 type DownloadSlice struct {

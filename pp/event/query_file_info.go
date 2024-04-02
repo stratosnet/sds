@@ -14,7 +14,6 @@ import (
 	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/framework/msg/header"
 	fwtypes "github.com/stratosnet/sds/framework/types"
-	"github.com/stratosnet/sds/framework/utils"
 	fwutils "github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/framework/utils/httpserv"
 	"github.com/stratosnet/sds/pp"
@@ -166,39 +165,41 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	newTarget.ReqId = fileReqId
-	utils.DebugLog("file hash, reqid:", target.FileHash, fileReqId)
-	if target.Result.State == protos.ResultState_RES_SUCCESS {
-		task.CleanDownloadFileAndConnMap(ctx, target.FileHash, fileReqId)
-		task.DownloadFileMap.Store(target.FileHash+fileReqId, newTarget)
-		task.AddDownloadTask(newTarget)
-
-		var slice *protos.DownloadSliceInfo
-		var slices []file.DownloadSlice
-		for _, slice = range target.SliceInfo {
-			s := file.DownloadSlice{
-				SliceHash:       slice.SliceStorageInfo.SliceHash,
-				SliceFileOffset: slice.SliceOffset.SliceOffsetStart,
-				SliceSize:       slice.SliceStorageInfo.SliceSize,
-			}
-			slices = append(slices, s)
-		}
-
-		file.SetDownloadFileInfo(target.FileHash, file.DownloadFile{
-			FileHash: target.FileHash,
-			FileSize: target.FileSize,
-			FileName: target.FileName,
-			Slices:   slices,
-		})
-		file.SetDownloadSliceResult(target.FileHash, true)
-		if crypto.IsVideoStream(target.FileHash) {
-			file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.DOWNLOAD_OK, FileHash: target.FileHash})
-			return
-		}
-		if !rpcRequested {
-			file.StartLocalDownload(target.FileHash)
-		}
-		DownloadFileSlices(ctx, newTarget, fileReqId)
+	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		file.SetDownloadSliceResult(target.FileHash, false)
+		return
 	}
+
+	task.CleanDownloadFileAndConnMap(ctx, target.FileHash, fileReqId)
+	task.DownloadFileMap.Store(target.FileHash+fileReqId, newTarget)
+	task.AddDownloadTask(newTarget)
+
+	var slice *protos.DownloadSliceInfo
+	var slices []file.DownloadSlice
+	for _, slice = range target.SliceInfo {
+		s := file.DownloadSlice{
+			SliceHash:       slice.SliceStorageInfo.SliceHash,
+			SliceFileOffset: slice.SliceOffset.SliceOffsetStart,
+			SliceSize:       slice.SliceStorageInfo.SliceSize,
+		}
+		slices = append(slices, s)
+	}
+
+	file.SetDownloadFileInfo(target.FileHash, file.DownloadFile{
+		FileHash: target.FileHash,
+		FileSize: target.FileSize,
+		FileName: target.FileName,
+		Slices:   slices,
+	})
+	file.SetDownloadSliceResult(target.FileHash, true)
+	if crypto.IsVideoStream(target.FileHash) {
+		file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.DOWNLOAD_OK, FileHash: target.FileHash})
+		return
+	}
+	if !rpcRequested {
+		file.StartLocalDownload(target.FileHash)
+	}
+	DownloadFileSlices(ctx, newTarget, fileReqId)
 }
 
 func GetFileReplicaInfo(ctx context.Context, path string, replicaIncreaseNum uint32) {
