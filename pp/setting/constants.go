@@ -12,8 +12,10 @@ const (
 	AppVersion    = 12
 	MinAppVersion = 12
 
-	HDPath        = "m/44'/606'/0'/0/0"
-	P2pServerType = "tcp4"
+	HDPath          = "m/44'/606'/0'/0/0"
+	HDPathP2p       = "m/44'/606'/0/0"
+	Bip39Passphrase = ""
+	P2pServerType   = "tcp4"
 
 	NodeReportIntervalSec         = 5 * 60       // Interval of node stat report, in seconds
 	PpLatencyCheckInterval        = 60 * 60 * 24 // interval for checking the latency peer PPs, in seconds

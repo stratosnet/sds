@@ -10,7 +10,7 @@ import (
 	"github.com/stratosnet/sds/framework/utils/console"
 )
 
-func SetupWallet(accountDir, defaultHDPath string, updateConfig func(walletKeyAddressString, password string)) error {
+func SetupWallet(accountDir, defaultHDPath, bip39Passphrase string, updateConfig func(walletKeyAddressString, password string) error) error {
 	nickname, err := console.Stdin.PromptInput("Enter wallet nickname: ")
 	if err != nil {
 		return errors.New("couldn't read nickname from console: " + err.Error())
@@ -43,8 +43,8 @@ func SetupWallet(accountDir, defaultHDPath string, updateConfig func(walletKeyAd
 	if hdPath == "" {
 		hdPath = defaultHDPath
 	}
-	//hrp, mnemonic, bip39Passphrase, hdPath
-	walletKeyAddress, err := CreateWallet(accountDir, nickname, password, mnemonic, "", hdPath)
+
+	walletKeyAddress, created, err := CreateWallet(accountDir, nickname, password, mnemonic, bip39Passphrase, hdPath)
 	if err != nil {
 		return errors.New("couldn't create WalletAddress: " + err.Error())
 	}
@@ -54,19 +54,23 @@ func SetupWallet(accountDir, defaultHDPath string, updateConfig func(walletKeyAd
 		return errors.New("couldn't convert wallet address to bech string")
 	}
 
-	fmt.Println("save the mnemonic phase properly for future recovery: \n" +
-		"=======================================================================  \n" +
-		mnemonic + "\n" +
-		"======================================================================= \n")
-	utils.Logf("Wallet %s has been generated successfully", walletKeyAddressString)
+	if created {
+		fmt.Println("save the mnemonic phase properly for future recovery: \n" +
+			"=======================================================================  \n" +
+			mnemonic + "\n" +
+			"======================================================================= \n")
+		utils.Logf("Wallet %v has been generated successfully", walletKeyAddressString)
+	} else {
+		utils.Logf("Wallet %v already exists", walletKeyAddressString)
+	}
 
 	save, err := console.Stdin.PromptInput("Do you want to use this wallet as your node wallet: Y(es)/N(o): ")
 	if err != nil {
 		return errors.New("couldn't read the input, not saving by default")
 	}
 	if strings.ToLower(save) == "yes" || strings.ToLower(save) == "y" {
-		updateConfig(walletKeyAddressString, password)
+		err = updateConfig(walletKeyAddressString, password)
 	}
 
-	return nil
+	return err
 }

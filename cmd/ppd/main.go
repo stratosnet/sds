@@ -17,11 +17,13 @@ func main() {
 	terminalCmd := getTerminalCmd()
 	configCmd := getGenConfigCmd()
 	verCmd := getVersionCmd()
+	exportCmd := getExportCmd()
 
 	rootCmd.AddCommand(nodeCmd)
 	rootCmd.AddCommand(terminalCmd)
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(verCmd)
+	rootCmd.AddCommand(exportCmd)
 
 	err := rootCmd.Execute()
 	if err != nil {
@@ -97,12 +99,14 @@ func getAccountCmd() *cobra.Command {
 		RunE:    createAccounts,
 	}
 	cmd.Flags().StringP(mnemonicFlag, "m", "", "bip39 mnemonic phrase, will generate one if not provide")
-	cmd.Flags().String(hdPathFlag, setting.HDPath, "hd-path for the wallet created")
+	cmd.Flags().String(hdPathFlag, setting.HDPath, "hd-path for the new wallet")
 	cmd.Flags().StringP(passwordFlag, "p", "", "wallet password, if not provided, will need to input in prompt")
 	cmd.Flags().StringP(nicknameFlag, "n", "wallet", "name of wallet")
 	cmd.Flags().BoolP(savePassFlag, "s", false, "save wallet password to configuration file")
 	cmd.Flags().String(p2pPassFlag, "aaa", "p2p password, optional")
-	cmd.Flags().Bool(newP2pKeyFlag, false, "create a new p2p key even there exist one already")
+	cmd.Flags().Bool(newP2pKeyFlag, false, "create a new p2p key even if there exists one already")
+	cmd.Flags().String(hdPathP2pFlag, setting.HDPathP2p, "hd-path for the new p2p key")
+	cmd.Flags().String(p2pPrivKeyFlag, "", "Hex-encoded p2p private key, optional")
 	return cmd
 }
 
@@ -124,6 +128,37 @@ func getVersionCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println(version)
 		},
+	}
+	return cmd
+}
+
+func getExportCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "export",
+		Short: "export a wallet or p2p key info",
+	}
+	cmd.AddCommand(getExportWalletCmd())
+	cmd.AddCommand(getExportP2pCmd())
+
+	cmd.PersistentFlags().StringP(addressFlag, "a", "", "address of the key to export")
+	cmd.PersistentFlags().StringP(passwordFlag, "p", "aaa", "password of the key to export")
+	return cmd
+}
+
+func getExportWalletCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "wallet",
+		Short: "export a wallet info",
+		RunE:  exportWallet,
+	}
+	return cmd
+}
+
+func getExportP2pCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "p2p",
+		Short: "export a p2p key info",
+		RunE:  exportP2pKey,
 	}
 	return cmd
 }

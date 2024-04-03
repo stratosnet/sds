@@ -10,6 +10,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
 
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
@@ -144,43 +145,97 @@ func GetPaths(cmd *cobra.Command, errOnMissingDir bool) (homePath, configPath st
 
 // SetupP2PKey Loads the existing P2P key for this node, or creates a new one if none is available.
 func SetupP2PKey() error {
-	if setting.Config.Keys.P2PAddress == "" {
-		utils.Log("No P2P key specified in config. Attempting to create one...")
-		//nickname, err := console.Stdin.PromptInput("Enter P2PAddress nickname: ")
-		//if err != nil {
-		//	return errors.New("couldn't read nickname from console: " + err.Error())
-		//}
-		nickname := "p2pkey"
-		password, err := console.Stdin.PromptPassword("Enter password: ")
-		if err != nil {
-			return errors.New("couldn't read password from console: " + err.Error())
-		}
-		confirmation, err := console.Stdin.PromptPassword("Enter password again: ")
-		if err != nil {
-			return errors.New("couldn't read confirmation password from console: " + err.Error())
-		}
-		if password != confirmation {
-			return errors.New("invalid. The two passwords don't match")
-		}
+	if setting.Config.Keys.P2PAddress != "" {
+		return nil
+	}
+	utils.Log("No P2P key specified in config. Attempting to create one...")
 
-		p2pKeyAddress, err := fwtypes.CreateP2PKey(setting.Config.Home.AccountsPath, nickname, password)
-		if err != nil {
-			return errors.New("couldn't create p2p key: " + err.Error())
-		}
+	nickname := "p2pkey"
+	password, err := console.Stdin.PromptPassword("Enter password for p2p key: ")
+	if err != nil {
+		return errors.New("couldn't read password from console: " + err.Error())
+	}
+	confirmation, err := console.Stdin.PromptPassword("Enter password for p2p key again: ")
+	if err != nil {
+		return errors.New("couldn't read confirmation password from console: " + err.Error())
+	}
+	if password != confirmation {
+		return errors.New("invalid. The two passwords don't match")
+	}
 
-		p2pKeyAddressString := fwtypes.P2PAddressBytesToBech32(p2pKeyAddress.Bytes())
-		if p2pKeyAddressString == "" {
-			return errors.New("couldn't convert P2P key address to bech string: ")
-		}
-		setting.Config.Keys.P2PAddress = p2pKeyAddressString
-		setting.Config.Keys.P2PPassword = password
-		err = setting.FlushConfig()
+	p2pPrivKeyHex, err := console.Stdin.PromptInput("Enter p2p private key as a hex (leave blank to generate a new one): ")
+	if err != nil {
+		return errors.New("couldn't read p2p private key: " + err.Error())
+	}
+
+	var p2pKeyAddress fwcryptotypes.Address
+	walletKey, err := loadWalletKey()
+	if err != nil {
+		utils.ErrorLogf("couldn't load wallet info: %v", err.Error())
+	}
+	if err == nil && p2pPrivKeyHex == "" {
+		var created bool
+		p2pKeyAddress, created, err = fwtypes.CreateP2PKeyFromHdPath(setting.Config.Home.AccountsPath, nickname, password, walletKey.Mnemonic, walletKey.Passphrase, walletKey.HdPath)
 		if err != nil {
-			return err
+			return errors.New("couldn't create p2p key from wallet: " + err.Error())
+		}
+		if !created {
+			if err = verifyP2pPassword(p2pKeyAddress, password); err != nil {
+				return errors.New("couldn't verify password of existing p2p key file: " + err.Error())
+			}
 		}
 	}
 
-	return nil
+	if len(p2pKeyAddress) == 0 {
+		if p2pPrivKeyHex == "" {
+			utils.Logf("p2p key will be randomly generated")
+		}
+
+		p2pKeyAddress, err = fwtypes.CreateP2PKey(setting.Config.Home.AccountsPath, nickname, password, p2pPrivKeyHex)
+		if err != nil {
+			return errors.New("couldn't create p2p key: " + err.Error())
+		}
+	}
+
+	p2pKeyAddressString := fwtypes.P2PAddressBytesToBech32(p2pKeyAddress.Bytes())
+	if p2pKeyAddressString == "" {
+		return errors.New("couldn't convert P2P key address to bech string: ")
+	}
+
+	setting.Config.Keys.P2PAddress = p2pKeyAddressString
+	setting.Config.Keys.P2PPassword = password
+	return setting.FlushConfig()
+}
+
+func loadWalletKey() (*fwtypes.AccountKey, error) {
+	if setting.Config.Keys.WalletAddress == "" {
+		return nil, errors.New("no wallet specified in the config file")
+	}
+
+	walletJson, err := os.ReadFile(filepath.Join(setting.Config.Home.AccountsPath, setting.Config.Keys.WalletAddress+".json"))
+	if err != nil {
+		return nil, err
+	}
+
+	password := setting.Config.Keys.WalletPassword
+	if password == "" {
+		password, err = console.Stdin.PromptPassword("Enter wallet password: ")
+		if err != nil {
+			return nil, errors.New("couldn't read wallet password from console: " + err.Error())
+		}
+	}
+	return fwtypes.DecryptKey(walletJson, password, true)
+}
+
+func verifyP2pPassword(p2pKeyAddress fwcryptotypes.Address, password string) error {
+	p2pKeyAddressString := fwtypes.P2PAddressBytesToBech32(p2pKeyAddress.Bytes())
+	p2pKeyJson, err := os.ReadFile(filepath.Join(setting.Config.Home.AccountsPath, p2pKeyAddressString+".json"))
+	if err != nil {
+		return err
+	}
+
+	_, err = fwtypes.DecryptKey(p2pKeyJson, password, false)
+	return err
 }
 
 func NodePP(_ *cobra.Command, _ []string) error {

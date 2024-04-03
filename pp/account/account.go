@@ -21,7 +21,7 @@ func CreateWallet(ctx context.Context, password, name, mnemonic, hdPath string) 
 		}
 		mnemonic = newMnemonic
 	}
-	account, err := fwtypes.CreateWallet(setting.Config.Home.AccountsPath, name, password, mnemonic, "", hdPath)
+	account, created, err := fwtypes.CreateWallet(setting.Config.Home.AccountsPath, name, password, mnemonic, "", hdPath)
 	if utils.CheckError(err) {
 		pp.ErrorLog(ctx, "CreateWallet error", err)
 		return ""
@@ -36,7 +36,17 @@ func CreateWallet(ctx context.Context, password, name, mnemonic, hdPath string) 
 		_ = setting.FlushConfig()
 	}
 	getWalletPublicKey(ctx, filepath.Join(setting.Config.Home.AccountsPath, setting.WalletAddress+".json"), password)
-	utils.Log("Create account success ,", setting.WalletAddress)
+
+	if created {
+		pp.Log(ctx, "save the mnemonic phase properly for future recovery: \n"+
+			"=======================================================================  \n"+
+			mnemonic+"\n"+
+			"======================================================================= \n")
+		pp.Logf(ctx, "Wallet %v has been generated successfully", setting.WalletAddress)
+	} else {
+		pp.Logf(ctx, "Wallet %v already exists", setting.WalletAddress)
+	}
+
 	return setting.WalletAddress
 }
 
