@@ -500,49 +500,32 @@ func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamRe
 	// if the file is being downloaded in an existing download session
 	var result *rpc_api.Result
 	reqId := uuid.New().String()
-	key := fileHash + reqId
 
-	// if there is already downloading session in progress, wait for the result
-	if task.CheckDownloadTask(fileHash, setting.WalletAddress, task.LOCAL_REQID) {
-		success := <-task.SubscribeDownloadResult(key)
-		task.UnsubscribeDownloadResult(key)
+	ctx = core.RegisterRemoteReqId(ctx, task.LOCAL_REQID)
+	req := requests.ReqFileStorageInfoData(ctx, param.FileHandle, "", "", wallet, wpk.Bytes(), wsig, nil, param.ReqTime)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqFileStorageInfo)
+
+	ctx, _ = context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
+	select {
+	case <-ctx.Done():
+		result = &rpc_api.Result{Return: rpc_api.TIME_OUT}
+	case success := <-file.SubscribeDownloadSlice(fileHash):
+		file.UnsubscribeDownloadSlice(fileHash)
 		if !success {
-			return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+			return rpc_api.Result{Return: rpc_api.GENERIC_ERR}
 		}
-	}
-
-	// check if the file is already cached in download folder and if it's valid
-	err = file.CheckDownloadCache(fileHash)
-	if err != nil {
-		// rpc normal download initiate a local download
-		ctx = core.RegisterRemoteReqId(ctx, task.LOCAL_REQID)
-		req := requests.ReqFileStorageInfoData(ctx, param.FileHandle, "", "", wallet, wpk.Bytes(), wsig, nil, param.ReqTime)
-		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqFileStorageInfo)
-		success := <-task.SubscribeDownloadResult(key)
-		task.UnsubscribeDownloadResult(key)
-		if !success {
-			return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+		data, start, end, _ := file.NextRemoteDownloadPacket(fileHash, reqId)
+		if data == nil {
+			return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE}
 		}
-	}
-
-	// check the cached file again before send it to the client
-	err = file.CheckDownloadCache(fileHash)
-	if err != nil {
-		return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
-	}
-
-	// initialize the cursor reading the file from the beginning
-	data, start, end, _ := file.ReadDownloadCachedData(fileHash, reqId)
-	if data == nil {
-		return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE}
-	}
-	result = &rpc_api.Result{
-		Return:      rpc_api.DOWNLOAD_OK,
-		OffsetStart: &start,
-		OffsetEnd:   &end,
-		FileName:    file.GetFileName(fileHash),
-		FileData:    b64.StdEncoding.EncodeToString(data),
-		ReqId:       reqId,
+		result = &rpc_api.Result{
+			Return:      rpc_api.DOWNLOAD_OK,
+			OffsetStart: &start,
+			OffsetEnd:   &end,
+			FileName:    file.GetFileName(fileHash),
+			FileData:    b64.StdEncoding.EncodeToString(data),
+			ReqId:       reqId,
+		}
 	}
 
 	return *result
@@ -663,7 +646,7 @@ func (api *rpcPubApi) DownloadData(ctx context.Context, param rpc_api.ParamDownl
 
 	// download from the cached file
 	var result *rpc_api.Result
-	data, start, end, finished := file.ReadDownloadCachedData(param.FileHash, param.ReqId)
+	data, start, end, finished := file.NextRemoteDownloadPacket(param.FileHash, param.ReqId)
 	if finished {
 		result = &rpc_api.Result{
 			Return: rpc_api.DL_OK_ASK_INFO,
@@ -795,16 +778,15 @@ func (api *rpcPubApi) RequestShare(ctx context.Context, param rpc_api.ParamReqSh
 
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileShareResult
-	var found bool
 
 	for {
 		select {
 		case <-ctx.Done():
 			result = &rpc_api.FileShareResult{Return: rpc_api.TIME_OUT}
 			return *result
-		default:
-			result, found = file.GetFileShareResult(param.Signature.Address + reqId)
-			if result != nil && found {
+		case result = <-file.SubscribeFileShareResult(param.Signature.Address + reqId):
+			file.UnsubscribeFileShareResult(param.Signature.Address + reqId)
+			if result != nil {
 				return *result
 			}
 		}
@@ -834,16 +816,15 @@ func (api *rpcPubApi) RequestListShare(ctx context.Context, param rpc_api.ParamR
 
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileShareResult
-	var found bool
 
 	for {
 		select {
 		case <-ctx.Done():
 			result = &rpc_api.FileShareResult{Return: rpc_api.TIME_OUT}
 			return *result
-		default:
-			result, found = file.GetFileShareResult(param.Signature.Address + reqId)
-			if result != nil && found {
+		case result = <-file.SubscribeFileShareResult(param.Signature.Address + reqId):
+			file.UnsubscribeFileShareResult(param.Signature.Address + reqId)
+			if result != nil {
 				return *result
 			}
 		}
@@ -873,16 +854,15 @@ func (api *rpcPubApi) RequestStopShare(ctx context.Context, param rpc_api.ParamR
 
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileShareResult
-	var found bool
 
 	for {
 		select {
 		case <-ctx.Done():
 			result = &rpc_api.FileShareResult{Return: rpc_api.TIME_OUT}
 			return *result
-		default:
-			result, found = file.GetFileShareResult(param.Signature.Address + reqId)
-			if result != nil && found {
+		case result = <-file.SubscribeFileShareResult(param.Signature.Address + reqId):
+			file.UnsubscribeFileShareResult(param.Signature.Address + reqId)
+			if result != nil {
 				return *result
 			}
 		}
@@ -919,70 +899,41 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 	}
 
 	reqId := uuid.New().String()
-	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
+	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
 	defer cancel()
-	key := param.Signature.Address + reqId
 
-	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
+	reqCtx := core.RegisterRemoteReqId(ctx, task.LOCAL_REQID)
 	req := requests.ReqGetShareFileData(shareLink.ShareLink, shareLink.Password, "", param.Signature.Address,
 		p2pserver.GetP2pServer(reqCtx).GetP2PAddress().String(), wpk.Bytes(), wsig, param.ReqTime)
 	p2pserver.GetP2pServer(reqCtx).SendMessageToSPServer(reqCtx, req, header.ReqGetShareFile)
 
 	// the application gives FileShareResult type of result
-	var res *rpc_api.FileShareResult
-
-	// only in case of "shared file dl started", jump to next step. Otherwise, return.
 	found := false
 	for !found {
 		select {
 		case <-ctx.Done():
 			return rpc_api.Result{Return: rpc_api.TIME_OUT}
-		default:
-			res, found = file.GetFileShareResult(key)
-			if found {
-				if res == nil {
-					return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
-				}
-
-				fileHash := res.FileInfo[0].FileHash
-				// if the file is being downloaded in an existing download session
-				reqId := uuid.New().String()
-				key := fileHash + reqId
-
-				// if there is already downloading session in progress, wait for the result
-				if task.CheckDownloadTask(fileHash, setting.WalletAddress, task.LOCAL_REQID) {
-					success := <-task.SubscribeDownloadResult(key)
-					task.UnsubscribeDownloadResult(key)
-					if !success {
-						return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
-					}
-				}
-
-				// check if the file is already cached in download folder and if it's valid
-				err = file.CheckDownloadCache(fileHash)
-
-				// check the cached file again before send it to the client
-				err = file.CheckDownloadCache(fileHash)
-				if err != nil {
-					return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
-				}
-
-				// initialize the cursor reading the file from the beginning
-				data, start, end, _ := file.ReadDownloadCachedData(fileHash, reqId)
-				if data == nil {
-					return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE}
-				}
-
-				// the result is read, but it's nil
-				return rpc_api.Result{
-					Return:      rpc_api.DOWNLOAD_OK,
-					OffsetStart: &start,
-					OffsetEnd:   &end,
-					FileHash:    fileHash,
-					FileName:    file.GetFileName(fileHash),
-					FileData:    b64.StdEncoding.EncodeToString(data),
-					ReqId:       reqId,
-				}
+		case result := <-file.SubscribeFileShareResult(shareLink.ShareLink):
+			file.UnsubscribeFileShareResult(shareLink.ShareLink)
+			if result == nil {
+				return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+			}
+			fileHash := result.FileInfo[0].FileHash
+			// if the file is being downloaded in an existing download session
+			reqId = uuid.New().String()
+			data, start, end, _ := file.NextRemoteDownloadPacket(fileHash, reqId)
+			if data == nil {
+				return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE}
+			}
+			// the result is read, but it's nil
+			return rpc_api.Result{
+				Return:      rpc_api.DOWNLOAD_OK,
+				OffsetStart: &start,
+				OffsetEnd:   &end,
+				FileHash:    fileHash,
+				FileName:    file.GetFileName(fileHash),
+				FileData:    b64.StdEncoding.EncodeToString(data),
+				ReqId:       reqId,
 			}
 		}
 	}
@@ -1036,22 +987,20 @@ func (api *rpcPubApi) RequestGetVideoShared(ctx context.Context, param rpc_api.P
 		select {
 		case <-ctx.Done():
 			return rpc_api.Result{Return: rpc_api.TIME_OUT}
-		default:
-			res, found = file.GetFileShareResult(key)
-			if found {
-				if res == nil {
-					return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
-				}
+		case res = <-file.SubscribeFileShareResult(key):
+			file.UnsubscribeFileShareResult(key)
+			if res == nil {
+				return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+			}
 
-				fileHash := res.FileInfo[0].FileHash
-				file.SaveRemoteFileHash(fileHash+reqId, "", 0)
-				// if the file is being downloaded in an existing download session
-				// the result is read, but it's nil
-				return rpc_api.Result{
-					Return:   rpc_api.DOWNLOAD_OK,
-					FileHash: fileHash,
-					ReqId:    reqId,
-				}
+			fileHash := res.FileInfo[0].FileHash
+			file.SaveRemoteFileHash(fileHash+reqId, "", 0)
+			// if the file is being downloaded in an existing download session
+			// the result is read, but it's nil
+			return rpc_api.Result{
+				Return:   rpc_api.DOWNLOAD_OK,
+				FileHash: fileHash,
+				ReqId:    reqId,
 			}
 		}
 	}
