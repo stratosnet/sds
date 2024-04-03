@@ -467,19 +467,6 @@ func SetFileListResult(key string, result *rpc.FileListResult) {
 	}
 }
 
-func GetFileShareResult(key string) (*rpc.FileShareResult, bool) {
-	result, loaded := rpcFileShareResult.LoadAndDelete(key)
-	if result != nil && loaded {
-		return result.(*rpc.FileShareResult), loaded
-	}
-	return nil, loaded
-}
-
-func SetFileShareResult(key string, result *rpc.FileShareResult) {
-	if result != nil {
-		rpcFileShareResult.Store(key, result)
-	}
-}
 func GetClearExpiredShareLinksResult(key string) (*rpc.ClearExpiredShareLinksResult, bool) {
 	result, loaded := rpcClearExpiredShareLinksResult.LoadAndDelete(key)
 	if result != nil && loaded {
@@ -506,4 +493,23 @@ func SetQueryOzoneResult(key string, result *rpc.GetOzoneResult) {
 	if result != nil {
 		rpcOzone.Store(key, result)
 	}
+}
+
+func SubscribeFileShareResult(shareLink string) chan *rpc.FileShareResult {
+	event := make(chan *rpc.FileShareResult)
+	downloadShareChan.Store(shareLink, event)
+	return event
+}
+
+func UnsubscribeFileShareResult(key string) {
+	downloadShareChan.Delete(key)
+}
+
+func SetFileShareResult(shareLink string, result *rpc.FileShareResult) {
+	downloadShareChan.Range(func(k, v interface{}) bool {
+		if strings.HasPrefix(k.(string), shareLink) {
+			v.(chan *rpc.FileShareResult) <- result
+		}
+		return true
+	})
 }

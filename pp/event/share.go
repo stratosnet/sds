@@ -2,7 +2,6 @@ package event
 
 import (
 	"context"
-	"strings"
 	"sync"
 	"time"
 
@@ -223,20 +222,16 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 	reqId := core.GetRemoteReqId(ctx)
-	rpcRequested := !strings.HasPrefix(reqId, task.LOCAL_REQID)
+
 	rpcResult := &rpc.FileShareResult{}
 	if target.Result.State == protos.ResultState_RES_FAIL {
 		task.DownloadResult(ctx, target.FileHash, false, "failed ReqGetSharedFile, "+target.Result.Msg)
-		if rpcRequested {
-			file.SetRemoteFileResult(target.FileHash+reqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
-		}
+		file.SetDownloadSliceResult(target.FileHash, false)
 		return
 	}
 	metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_STORAGE_INFO_SP:")
 
-	if rpcRequested {
-		defer file.SetFileShareResult(target.WalletAddress+reqId, rpcResult)
-	}
+	defer file.SetFileShareResult(target.KeyWord, rpcResult)
 
 	newTarget := &protos.RspFileStorageInfo{
 		VisitCer:      target.VisitCer,
@@ -246,7 +241,6 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 		FileHash:      target.FileHash,
 		FileName:      target.FileName,
 		Result:        target.Result,
-		ReqId:         target.ReqId,
 		SavePath:      target.SavePath,
 		FileSize:      target.FileSize,
 		RestAddress:   target.RestAddress,
@@ -257,24 +251,43 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 		TimeStamp:     target.TimeStamp,
 	}
 
-	newTarget.ReqId = reqId
+	newTarget.ReqId = task.LOCAL_REQID
 	pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, reqId)
-	if target.Result.State == protos.ResultState_RES_SUCCESS {
-		task.CleanDownloadFileAndConnMap(ctx, target.FileHash, reqId)
-		task.DownloadFileMap.Store(target.FileHash+reqId, newTarget)
-		task.AddDownloadTask(newTarget)
-		if !rpcRequested {
-			file.StartLocalDownload(target.FileHash)
-		} else {
-			f := rpc.FileInfo{FileHash: target.FileHash, FileName: target.FileName}
-			rpcResult.Return = rpc.SHARED_DL_START
-			rpcResult.FileInfo = append(rpcResult.FileInfo, f)
-		}
-		if crypto.IsVideoStream(target.FileHash) {
-			return
-		}
-		DownloadFileSlices(ctx, newTarget, reqId)
+	if target.Result.State != protos.ResultState_RES_SUCCESS {
+		file.SetDownloadSliceResult(target.FileHash, false)
+		return
 	}
+
+	task.CleanDownloadFileAndConnMap(ctx, target.FileHash, task.LOCAL_REQID)
+	task.DownloadFileMap.Store(target.FileHash+task.LOCAL_REQID, newTarget)
+	task.AddDownloadTask(newTarget)
+	file.StartLocalDownload(target.FileHash)
+	var slice *protos.DownloadSliceInfo
+	var slices []file.DownloadSlice
+	for _, slice = range target.SliceInfo {
+		s := file.DownloadSlice{
+			SliceHash:       slice.SliceStorageInfo.SliceHash,
+			SliceFileOffset: slice.SliceOffset.SliceOffsetStart,
+			SliceSize:       slice.SliceStorageInfo.SliceSize,
+		}
+		slices = append(slices, s)
+	}
+
+	file.SetDownloadFileInfo(target.FileHash, file.DownloadFile{
+		FileHash: target.FileHash,
+		FileSize: target.FileSize,
+		FileName: target.FileName,
+		Slices:   slices,
+	})
+
+	f := rpc.FileInfo{FileHash: target.FileHash, FileName: target.FileName}
+	rpcResult.Return = rpc.SHARED_DL_START
+	rpcResult.FileInfo = append(rpcResult.FileInfo, f)
+
+	if crypto.IsVideoStream(target.FileHash) {
+		return
+	}
+	DownloadFileSlices(ctx, newTarget, reqId)
 }
 
 func GetFilePath(key string) string {

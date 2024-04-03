@@ -218,6 +218,7 @@ message RspFileStorageInfo {
   string encryption_tag = 14;
   string task_id = 15;
   int64  time_stamp = 16;
+  string key_word = 17;
 }
 
 message ReqFileReplicaInfo {
