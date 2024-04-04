@@ -233,24 +233,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 
 	defer file.SetFileShareResult(target.KeyWord, rpcResult)
 
-	newTarget := &protos.RspFileStorageInfo{
-		VisitCer:      target.VisitCer,
-		P2PAddress:    target.P2PAddress,
-		WalletAddress: target.WalletAddress,
-		SliceInfo:     target.SliceInfo,
-		FileHash:      target.FileHash,
-		FileName:      target.FileName,
-		Result:        target.Result,
-		SavePath:      target.SavePath,
-		FileSize:      target.FileSize,
-		RestAddress:   target.RestAddress,
-		NodeSign:      target.NodeSign,
-		SpP2PAddress:  target.SpP2PAddress,
-		EncryptionTag: target.EncryptionTag,
-		TaskId:        target.TaskId,
-		TimeStamp:     target.TimeStamp,
-	}
-
+	newTarget := &target
 	newTarget.ReqId = task.LOCAL_REQID
 	pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, reqId)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
