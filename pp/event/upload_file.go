@@ -373,14 +373,11 @@ func (UploadStreamFileHandler) PreUpload(ctx context.Context, filePath, encrypti
 	fileSize := uint64(info.Size())
 	fileHash := file.GetFileHashForVideoStream(filePath, encryptionTag)
 
-	sliceSize := setting.DefaultSliceBlockSize
-
-	var sliceDuration float64
-	sliceDuration = math.Floor(float64(duration) * float64(sliceSize) / float64(fileSize))
-	sliceDuration = math.Min(float64(setting.DefaultHlsSegmentLength), sliceDuration)
+	targetSliceSize := float64(setting.DefaultSliceBlockSize) / 3
+	sliceDuration := math.Floor(math.Max(1, float64(duration)/float64(fileSize)*targetSliceSize))
 	sliceCount := uint64(math.Ceil(float64(duration)/sliceDuration)) + setting.DefaultHlsSegmentBuffer + 1
 
-	file.VideoToHls(ctx, fileHash, file.GetFilePath(fileHash))
+	file.VideoToHls(ctx, fileHash, file.GetFilePath(fileHash), int(sliceDuration))
 
 	hlsInfo, err := file.GetHlsInfo(fileHash, sliceCount)
 	if err != nil {
