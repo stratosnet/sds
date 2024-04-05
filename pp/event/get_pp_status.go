@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	PP_STATUE_CACHE_KEY    = "pp_status"
+	PP_STATUS_CACHE_KEY    = "pp_status"
 	PP_STATUS_CACHE_EXPIRE = 4 * 60 // seconds
 )
 
@@ -101,14 +101,15 @@ func ResetPPStatusCache(ctx context.Context, isActive uint32, state int32, initT
 		initTier:    initTier,
 		ongoingTier: ongoingTier,
 		weightScore: weightScore,
+		isVerified:  isVerified,
 	}
-	ppStatusCache.Store(PP_STATUE_CACHE_KEY, newState)
+	ppStatusCache.Store(PP_STATUS_CACHE_KEY, newState)
 	pp.DebugLogf(ctx, "pp status cache is reset to: %v", newState)
 	return newState
 }
 
 func GetPPStatusCache() *PPStatusInfo {
-	value, ok := ppStatusCache.Load(PP_STATUE_CACHE_KEY)
+	value, ok := ppStatusCache.Load(PP_STATUS_CACHE_KEY)
 	if !ok {
 		return nil
 	}
