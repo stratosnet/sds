@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stratosnet/sds/pp/metrics"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/stratosnet/sds/framework/client/cf"
@@ -16,7 +17,6 @@ import (
 	"github.com/stratosnet/sds/framework/crypto"
 	"github.com/stratosnet/sds/framework/crypto/encryption"
 	"github.com/stratosnet/sds/framework/crypto/encryption/hdkey"
-	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/framework/msg/header"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"

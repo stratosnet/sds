@@ -9,11 +9,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/stratosnet/sds/pp/metrics"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/framework/crypto"
-	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/framework/msg/header"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"

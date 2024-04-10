@@ -13,10 +13,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stratosnet/sds/pp/metrics"
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/framework/crypto"
-	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/framework/msg/header"
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"

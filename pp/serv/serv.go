@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/stratosnet/sds/pp/metrics"
 
-	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/account"
 	"github.com/stratosnet/sds/pp/api"

@@ -13,10 +13,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
+	"github.com/stratosnet/sds/pp/metrics"
 
 	"github.com/stratosnet/sds/framework/core"
 	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
-	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/framework/msg"
 	"github.com/stratosnet/sds/framework/msg/header"
 	fwtypes "github.com/stratosnet/sds/framework/types"

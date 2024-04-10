@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/stratosnet/sds/pp/metrics"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/stratosnet/sds/framework/client/cf"
@@ -19,7 +20,6 @@ import (
 	"github.com/stratosnet/sds/framework/crypto"
 	"github.com/stratosnet/sds/framework/crypto/encryption"
 	"github.com/stratosnet/sds/framework/crypto/encryption/hdkey"
-	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/framework/msg/header"
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
