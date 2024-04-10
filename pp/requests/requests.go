@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
-	"github.com/stratosnet/sds/pp/metrics"
 
 	"github.com/stratosnet/sds/framework/core"
 	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"
@@ -22,6 +21,7 @@ import (
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/metrics"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"

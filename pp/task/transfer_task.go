@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/pp/metrics"
 
 	"github.com/stratosnet/sds/framework/crypto"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/metrics"
 	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
