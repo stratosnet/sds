@@ -231,18 +231,22 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	}
 	metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_STORAGE_INFO_SP:")
 
-	defer file.SetFileShareResult(target.KeyWord, rpcResult)
+	key := target.KeyWord
+	if reqId != file.LOCAL_TAG {
+		key = key + reqId
+	}
+	defer file.SetFileShareResult(key, rpcResult)
 
 	newTarget := &target
-	newTarget.ReqId = task.LOCAL_REQID
+	newTarget.ReqId = reqId
 	pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, reqId)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		file.SetDownloadSliceResult(target.FileHash, false)
 		return
 	}
 
-	task.CleanDownloadFileAndConnMap(ctx, target.FileHash, task.LOCAL_REQID)
-	task.DownloadFileMap.Store(target.FileHash+task.LOCAL_REQID, newTarget)
+	task.CleanDownloadFileAndConnMap(ctx, target.FileHash, reqId)
+	task.DownloadFileMap.Store(target.FileHash+reqId, newTarget)
 	task.AddDownloadTask(newTarget)
 	file.StartLocalDownload(target.FileHash)
 	var slice *protos.DownloadSliceInfo

@@ -505,9 +505,9 @@ func UnsubscribeFileShareResult(key string) {
 	downloadShareChan.Delete(key)
 }
 
-func SetFileShareResult(shareLink string, result *rpc.FileShareResult) {
+func SetFileShareResult(key string, result *rpc.FileShareResult) {
 	downloadShareChan.Range(func(k, v interface{}) bool {
-		if strings.HasPrefix(k.(string), shareLink) {
+		if strings.HasPrefix(k.(string), key) {
 			v.(chan *rpc.FileShareResult) <- result
 		}
 		return true

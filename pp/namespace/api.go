@@ -972,7 +972,7 @@ func (api *rpcPubApi) RequestGetVideoShared(ctx context.Context, param rpc_api.P
 	reqId := uuid.New().String()
 	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
 	defer cancel()
-	key := param.Signature.Address + reqId
+	key := shareLink.ShareLink + reqId
 
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
 	req := requests.ReqGetShareFileData(shareLink.ShareLink, shareLink.Password, "", param.Signature.Address,
