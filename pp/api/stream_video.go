@@ -506,10 +506,10 @@ func getStreamInfo(ctx context.Context, fileHash, reqId string) (*StreamInfo, *p
 
 	hlsInfo, err := getHlsInfo(ctx, fInfo)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get hls info!")
+		return nil, nil, errors.Wrap(err, "failed to get hls info!")
 	}
 	if hlsInfo == nil {
-		return nil, errors.New("failed to get hls info!")
+		return nil, nil, errors.New("failed to get hls info!")
 	}
 	segmentToSliceInfo := make(map[string]*protos.DownloadSliceInfo, 0)
 	for segment := range hlsInfo.SegmentToSlice {
