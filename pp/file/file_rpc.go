@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/framework/metrics"
 	"github.com/stratosnet/sds/pp/api/rpc"
+	"github.com/stratosnet/sds/pp/metrics"
 	"github.com/stratosnet/sds/sds-msg/protos"
 )
 

@@ -14,7 +14,6 @@ import (
 
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/framework/crypto"
-	"github.com/stratosnet/sds/framework/metrics"
 	fwtypes "github.com/stratosnet/sds/framework/types"
 	"github.com/stratosnet/sds/framework/utils"
 	msgtypes "github.com/stratosnet/sds/sds-msg/types"
@@ -25,6 +24,7 @@ import (
 	"github.com/stratosnet/sds/pp/account"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/metrics"
 	"github.com/stratosnet/sds/pp/namespace/stratoschain"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/requests"

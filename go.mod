@@ -19,10 +19,11 @@ require (
 	github.com/multiformats/go-multihash v0.2.3
 	github.com/pelletier/go-toml v1.9.5
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v1.17.0
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.6.1
-	github.com/stratosnet/sds/framework v0.0.0-20240403142322-1b21be65b54e
+	github.com/stratosnet/sds/framework v0.0.0-20240410194048-af86f5a241d1
 	github.com/stratosnet/sds/sds-msg v0.0.0-20240402154855-7d3bd1c42ab1
 	github.com/stratosnet/sds/tx-client v0.0.0-20240402154855-7d3bd1c42ab1
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
@@ -62,7 +63,6 @@ require (
 	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/peterh/liner v1.2.1 // indirect
-	github.com/prometheus/client_golang v1.17.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
