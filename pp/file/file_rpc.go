@@ -55,8 +55,6 @@ var (
 	// key(walletAddr + reqid): value(file list result)
 	rpcClearExpiredShareLinksResult = &sync.Map{}
 
-	rpcFileShareResult = &sync.Map{}
-
 	// key(wallet + reqid) : value(*rpc.GetOzoneResult)
 	rpcOzone = &sync.Map{}
 
@@ -197,7 +195,9 @@ func SaveRemoteFileData(key, fileName string, data []byte, offset uint64) error 
 		FileName:    fileName,
 	}
 
-	SetRemoteFileResult(key, result)
+	if err := SetRemoteFileResult(key, result); err != nil {
+		return err
+	}
 	return WaitDownloadSliceDone(key)
 }
 
@@ -414,7 +414,7 @@ func UnsubscribeDownloadFileInfo(key string) {
 }
 
 func GetRemoteFileInfo(key, reqId string) uint64 {
-	SetRemoteFileResult(key, rpc.Result{ReqId: reqId, Return: rpc.DL_OK_ASK_INFO})
+	_ = SetRemoteFileResult(key, rpc.Result{ReqId: reqId, Return: rpc.DL_OK_ASK_INFO})
 	var fileSize uint64
 	parentCtx := context.Background()
 	ctx, cancel := context.WithTimeout(parentCtx, RpcWaitTimeout)

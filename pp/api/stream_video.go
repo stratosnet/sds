@@ -191,7 +191,7 @@ func streamSharedVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	walletSign, reqTime, err := getSignature(req, shareLink)
+	walletSign, reqTime, _ := getSignature(req, shareLink)
 
 	reqGetSharedMsg := reqGetSharedMsg(pptypes.GetShareFile{ShareLink: shareLink, Password: password}, walletSign, reqTime)
 	res := namespace.RpcPubApi().RequestGetVideoShared(ctx, reqGetSharedMsg)

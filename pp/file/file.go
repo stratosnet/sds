@@ -842,20 +842,14 @@ func WaitDownloadSlice(fileHash, reqId string) bool {
 }
 
 func CheckRemoteFileDownloadComplete(fileHash, reqid string, fileSize uint64) bool {
-	d, found := downloadMap.Load(fileHash + reqid)
-	if !found {
-
-	}
+	d, _ := downloadMap.Load(fileHash + reqid)
 	var size uint64
 	for _, slice := range d.(DownloadFileSlice).SlicesToDownload {
 		if slice.Handled {
 			size = size + slice.SliceSize
 		}
 	}
-	if size == fileSize {
-		return true
-	}
-	return false
+	return size == fileSize
 }
 
 func NextRemoteDownloadPacket(fileHash, reqid string) ([]byte, uint64, uint64, bool) {

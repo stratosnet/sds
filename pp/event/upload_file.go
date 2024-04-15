@@ -121,7 +121,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		}
 
 		if file.IsFileRpcRemote(target.FileHash) {
-			file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: target.Result.Msg})
+			_ = file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: target.Result.Msg})
 		} else {
 			file.ClearFileMap(target.FileHash)
 		}
@@ -146,7 +146,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 
 	// tell the rpc client, uploading to sds network has successfully started.
 	if file.IsFileRpcRemote(target.FileHash) {
-		file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: rpc.SUCCESS})
+		_ = file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: rpc.SUCCESS})
 	}
 
 	if isCover {

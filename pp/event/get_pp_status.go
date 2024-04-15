@@ -173,9 +173,9 @@ func FormatPPStatusInfo(ctx context.Context, ppStatus *PPStatusInfo, isCache boo
 
 	var msgTitle string
 	if isCache {
-		msgTitle = fmt.Sprintf("*** current node status (cached) ***\n")
+		msgTitle = "*** current node status (cached) ***\n"
 	} else {
-		msgTitle = fmt.Sprintf("*** current node status ***\n")
+		msgTitle = "*** current node status ***\n"
 	}
 
 	msgStr := fmt.Sprintf(msgTitle+

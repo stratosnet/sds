@@ -139,7 +139,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	if target.Result.State == protos.ResultState_RES_FAIL {
 		task.DownloadResult(ctx, target.FileHash, false, "failed ReqFileStorageInfo, "+target.Result.Msg)
 		if rpcRequested {
-			file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
+			_ = file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
 		}
 		return
 	}
@@ -175,7 +175,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	})
 	file.SetDownloadSliceResult(target.FileHash, true)
 	if crypto.IsVideoStream(target.FileHash) {
-		file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.DOWNLOAD_OK, FileHash: target.FileHash})
+		_ = file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.DOWNLOAD_OK, FileHash: target.FileHash})
 		return
 	}
 	if !rpcRequested {

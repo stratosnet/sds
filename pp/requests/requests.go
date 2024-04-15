@@ -8,11 +8,11 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/stratosnet/sds/framework/core"
 	fwcryptotypes "github.com/stratosnet/sds/framework/crypto/types"

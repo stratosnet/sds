@@ -75,10 +75,7 @@ func (handler *DownloadTimeoutHandler) CanDelete(rspMessage *msg.RelayMsgBuf) bo
 
 func (handler *DownloadTimeoutHandler) Update(key string) bool {
 	_, ok := task.GetDownloadTask(key)
-	if ok {
-		return true
-	}
-	return false
+	return ok
 }
 
 func (handler *DownloadTimeoutHandler) GetType() int {

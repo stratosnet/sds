@@ -20,6 +20,9 @@ const (
 
 func genConfig(cmd *cobra.Command, _ []string) error {
 	_, configPath, err := common.GetPaths(cmd, false)
+	if err != nil {
+		return err
+	}
 
 	err = setting.LoadConfig(configPath)
 	if err != nil {

@@ -86,6 +86,10 @@ func NodePreRunE(cmd *cobra.Command, _ []string) error {
 
 func LoadConfig(cmd *cobra.Command) (homePath, configPath string, err error) {
 	homePath, configPath, err = GetPaths(cmd, true)
+	if err != nil {
+		utils.ErrorLog("failed to get 'home' path for the node")
+		return
+	}
 
 	setting.SetIPCEndpoint(homePath)
 
