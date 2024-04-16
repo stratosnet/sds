@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 type onStartLogFunc func(*Server)
@@ -53,8 +53,8 @@ func LogReadOption(logOpen bool) ServerVolRecOption {
 	}
 }
 
-// OnWriteOption
-func OnWriteOption(logOpen bool) ServerVolRecOption {
+// LogWriteOption
+func LogWriteOption(logOpen bool) ServerVolRecOption {
 	return func(o *volRecOpts) {
 		o.logWrite = logOpen
 		o.writeAtom = utils.CreateAtomicInt64(0)

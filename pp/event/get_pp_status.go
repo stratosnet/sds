@@ -8,20 +8,36 @@ import (
 	"time"
 
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/msg/header"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	ppTypes "github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 	"github.com/stratosnet/sds/utils/environment"
 )
 
-// RspGetPPStatus
+const (
+	PP_STATUS_CACHE_KEY    = "pp_status"
+	PP_STATUS_CACHE_EXPIRE = 4 * 60 // seconds
+)
+
+// cached pp status, expired in 4 minutes
+var ppStatusCache = utils.NewAutoCleanMap(time.Duration(PP_STATUS_CACHE_EXPIRE) * time.Second)
+
+type PPStatusInfo struct {
+	isActive    uint32
+	state       int32
+	initTier    uint32
+	ongoingTier uint32
+	weightScore uint32
+	isVerified  bool
+}
+
 func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspGetPPStatus
 	if err := VerifyMessage(ctx, header.RspGetPPStatus, &target); err != nil {
@@ -34,7 +50,7 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	rpcResult := &rpc.StatusResult{Return: rpc.SUCCESS}
 	reqId := core.GetRemoteReqId(ctx)
 	if reqId != "" {
-		defer pp.SetRPCResult(p2pserver.GetP2pServer(ctx).GetP2PAddress()+reqId, rpcResult)
+		defer pp.SetRPCResult(p2pserver.GetP2pServer(ctx).GetP2PAddress().String()+reqId, rpcResult)
 	}
 	pp.DebugLogf(ctx, "get GetPPStatus RSP, activation status = %v", target.IsActive)
 	setSoftMemoryCap(target.OngoingTier)
@@ -51,43 +67,74 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	setting.State = target.IsActive
-	if setting.State == ppTypes.PP_ACTIVE {
+	if setting.State == msgtypes.PP_ACTIVE {
 		setting.IsPP = true
 		setting.IsPPSyncedWithSP = true
 	}
 
-	rpcResult.Message = formatRspGetPPStatus(ctx, &target)
+	newPPStatus := ResetPPStatusCache(
+		ctx,
+		target.GetIsActive(),
+		target.GetState(),
+		target.GetInitTier(),
+		target.GetOngoingTier(),
+		target.GetWeightScore(),
+		target.GetIsVerified(),
+	)
+	rpcResult.Message = FormatPPStatusInfo(ctx, newPPStatus, false)
 
-	if target.IsActive == ppTypes.PP_ACTIVE {
+	if target.IsActive == msgtypes.PP_ACTIVE {
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_ACTIVATED)
 	} else {
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATUS_INACTIVE)
 	}
 
-	if target.InitPpList {
-		network.GetPeer(ctx).InitPPList(ctx)
-	} else {
-		if target.State == int32(protos.PPState_SUSPEND) {
-			network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATUS_SUSPEND)
-		}
+	if target.State == int32(protos.PPState_SUSPEND) {
+		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATUS_SUSPEND)
 	}
 }
 
-func formatRspGetPPStatus(ctx context.Context, response *protos.RspGetPPStatus) string {
+func ResetPPStatusCache(ctx context.Context, isActive uint32, state int32, initTier uint32, ongoingTier uint32, weightScore uint32, isVerified bool) *PPStatusInfo {
+	newState := &PPStatusInfo{
+		isActive:    isActive,
+		state:       state,
+		initTier:    initTier,
+		ongoingTier: ongoingTier,
+		weightScore: weightScore,
+		isVerified:  isVerified,
+	}
+	ppStatusCache.Store(PP_STATUS_CACHE_KEY, newState)
+	pp.DebugLogf(ctx, "pp status cache is reset to: %v", newState)
+	return newState
+}
+
+func GetPPStatusCache() *PPStatusInfo {
+	value, ok := ppStatusCache.Load(PP_STATUS_CACHE_KEY)
+	if !ok {
+		return nil
+	}
+	return value.(*PPStatusInfo)
+}
+
+func FormatPPStatusInfo(ctx context.Context, ppStatus *PPStatusInfo, isCache bool) string {
 	activation, state := "", ""
 
-	switch response.IsActive {
-	case ppTypes.PP_ACTIVE:
-		activation = "Active"
-	case ppTypes.PP_INACTIVE:
+	switch ppStatus.isActive {
+	case msgtypes.PP_ACTIVE:
+		if ppStatus.isVerified {
+			activation = "Active"
+		} else {
+			activation = "Waiting for verification"
+		}
+	case msgtypes.PP_INACTIVE:
 		activation = "Inactive"
-	case ppTypes.PP_UNBONDING:
+	case msgtypes.PP_UNBONDING:
 		activation = "Unbonding"
 	default:
 		activation = "Unknown"
 	}
 
-	switch response.State {
+	switch ppStatus.state {
 	case int32(protos.PPState_OFFLINE):
 		state = protos.PPState_OFFLINE.String()
 		setting.OnlineTime = 0
@@ -124,9 +171,16 @@ func formatRspGetPPStatus(ctx context.Context, response *protos.RspGetPPStatus) 
 		spStatus = fmt.Sprintf("%v (%v)", spInfo.GetRemoteP2pAddress(), spInfo.GetName())
 	}
 
-	msgStr := fmt.Sprintf("*** current node status ***\n"+
+	var msgTitle string
+	if isCache {
+		msgTitle = "*** current node status (cached) ***\n"
+	} else {
+		msgTitle = "*** current node status ***\n"
+	}
+
+	msgStr := fmt.Sprintf(msgTitle+
 		"Activation: %v | Registration Status: %v | Mining: %v | Initial tier: %v | Ongoing tier: %v | Weight score: %v | Meta node: %v",
-		activation, regStatStr, state, response.InitTier, response.OngoingTier, response.WeightScore, spStatus)
+		activation, regStatStr, state, ppStatus.initTier, ppStatus.ongoingTier, ppStatus.weightScore, spStatus)
 	pp.Log(ctx, msgStr)
 	return msgStr
 }

@@ -6,16 +6,16 @@ import (
 	"time"
 
 	"github.com/alex023/clock"
+
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/msg/header"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
-	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 const (
@@ -80,10 +80,6 @@ func RspStopMaintenance(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	if setting.Config.Node.AutoStart {
-		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_MAINTANENCE_STOP)
-		return
-	}
 }
 
 func taskMonitorFunc(ctx context.Context) func() {

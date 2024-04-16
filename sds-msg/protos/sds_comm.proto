@@ -1,0 +1,178 @@
+syntax = "proto3";
+
+//for future protoc-gen-go requirement
+option go_package = "github.com/stratosnet/sds/sds-msg/protos";
+
+// j
+package protos;
+
+
+message Result {
+    ResultState state = 1;
+    string msg = 2;
+}
+
+enum ResultState {
+    RES_SUCCESS = 0; 
+    RES_FAIL = 1;
+}
+
+enum DownloadWrongType {
+    LOSESLICE = 0;
+    OVERTIME = 1;
+}
+
+enum UploadType {
+    NEW_UPLOAD = 0;
+    BACKUP = 1;
+}
+
+enum FileSortType {
+    DEF  = 0;  // default
+    TIME = 1;  // time
+    SIZE = 2;  // file size
+    NAME = 3;  // name alphabet
+}
+
+enum MsgType {
+    DEFAULT = 0;
+}
+
+message PPBaseInfo {
+     string p2p_address = 1;
+     string wallet_address = 2;
+     string network_address = 3;
+     string rest_address = 4;
+     string beneficiary_address = 5;
+}
+
+message SPBaseInfo {
+     string p2p_address = 1;
+     string p2p_pub_key = 2;
+     string network_address = 3;
+}
+
+message FileInfo { 
+     uint64 file_size = 1;
+     string file_hash = 2;
+     string file_name = 3;
+     uint64 create_time = 4;
+     bool   is_directory = 5;
+     string storage_path = 6;
+     bool   is_private = 7;
+     string owner_wallet_address = 8;
+     string share_link = 9;
+     uint64 sort_id = 10;
+     uint64 duration = 11;
+     string encryption_tag = 12;
+}
+
+message SliceHashAddr {
+  string slice_hash = 1;
+  uint64 slice_number = 2;
+  uint64 slice_size = 3;
+  SliceOffset slice_offset = 4;
+  PPBaseInfo pp_info = 5;
+}
+
+message SliceOffsetInfo {
+     string slice_hash = 1;
+     SliceOffset slice_offset = 2;
+     SliceOffset encrypted_slice_offset = 3;
+}
+message SliceOffset {
+     uint64 slice_offset_start = 1;
+     uint64 slice_offset_end = 2;
+}
+
+
+message FileIndexes{
+    string file_path = 1; //  sdm://account/fileHash
+    string p2p_address = 2;
+    string wallet_address = 3;
+    string save_path = 4;
+    string save_as = 5;
+}
+
+message DownloadSliceInfo {
+  SliceStorageInfo slice_storage_info = 1;
+  uint64 slice_number = 2;
+  PPBaseInfo storage_pp_info = 3;
+  PPBaseInfo backups_pp_info = 4;
+  bool visit_result = 5;
+  string task_id = 6;
+  SliceOffset slice_offset = 7;
+}
+
+message SliceStorageInfo {
+  uint64 slice_size = 1;
+  string slice_hash = 2;
+}
+
+message EncryptedSlice {
+    uint32 hdkey_nonce = 1;
+    uint64 aes_nonce = 2;
+    bytes  data = 3;
+    uint64 raw_size = 4;
+}
+
+message ShareLinkInfo{
+    string name     = 1;
+    string file_hash     = 2;
+    int64 creation_time     = 3;
+    uint64 file_size     = 4;
+    int64 exp_time = 5;
+    string share_id      = 6;
+    bool   is_directory = 7;
+    string share_link      = 8;    
+    bool is_private = 9;
+    string share_link_password = 10;
+    string owner_wallet_address = 11;
+}
+
+message CpuStat {
+    double total_used_percent = 1;
+    int64 num_cores = 2;
+}
+
+message MemoryStat {
+    int64 mem_used = 1;
+    int64 mem_total = 2;
+    int64 swap_mem_used = 3;
+    int64 swap_mem_total = 4;
+}
+
+message DiskStat {
+    int64 root_used = 1;
+    int64 root_total = 2;
+}
+
+message BandwidthStat {
+    int64 used = 1;
+    int64 total = 2;
+}
+
+enum PPState {
+    OFFLINE = 0;
+    ONLINE = 1;
+    SUSPEND = 2;
+    MAINTENANCE = 3;
+}
+
+enum SpMaintenanceType {
+    CONSENSUS = 0;
+    OTHER = 1;
+}
+
+enum SignatureType {
+    WALLET = 0;
+    P2P = 1;
+}
+
+enum FileUploadState {
+  UNKNOWN = 0;
+  UPLOADING = 1;
+  FAILED = 2;
+  FINISHED = 3;
+  CONFIRMING = 4;
+}

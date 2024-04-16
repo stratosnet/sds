@@ -3,24 +3,24 @@ package serv
 import (
 	"context"
 	"strconv"
-
-	"github.com/stratosnet/sds/utils/environment"
+	"strings"
 
 	"github.com/pkg/errors"
 
-	"github.com/stratosnet/sds/metrics"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/account"
 	"github.com/stratosnet/sds/pp/api"
 	"github.com/stratosnet/sds/pp/api/rest"
 	"github.com/stratosnet/sds/pp/event"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/metrics"
 	"github.com/stratosnet/sds/pp/namespace"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/rpc"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/utils/environment"
 )
 
 // BaseServer base pp server
@@ -129,15 +129,10 @@ func (bs *BaseServer) startHttpRPC() error {
 		return err
 	}
 
-	allowModuleList := []string{"user"}
-	// if config
-	if setting.Config.Node.Connectivity.AllowOwnerRpc {
-		allowModuleList = append(allowModuleList, "owner")
-	}
-
+	allowModuleList := strings.Split(setting.Config.Node.Connectivity.RpcNamespaces, ",")
 	var config = namespace.HttpConfig{
 		CorsAllowedOrigins: []string{""},
-		Vhosts:             []string{"localhost"},
+		Vhosts:             []string{""},
 		Modules:            allowModuleList,
 	}
 
@@ -201,7 +196,7 @@ func (bs *BaseServer) startP2pServer() error {
 		return errors.Wrap(err, "failed init p2p server ")
 	}
 
-	err := utils.InitIdWorker(bs.p2pServ.GetP2PAddrInTypeAddress()[0])
+	err := utils.InitIdWorker(bs.p2pServ.GetP2PAddress().Bytes()[0])
 	if err != nil {
 		utils.FatalLogfAndExit(-4, "Fatal error: "+err.Error())
 	}
@@ -215,6 +210,7 @@ func (bs *BaseServer) startP2pServer() error {
 	ctx = context.WithValue(ctx, types.PP_NETWORK_KEY, bs.ppNetwork)
 	bs.p2pServ.AddConnConntextKey(types.PP_NETWORK_KEY)
 
+	bs.p2pServ.SetOptionFunctions(event.TimoutMap.OnWrite, nil, event.TimoutMap.OnHandle)
 	bs.p2pServ.Start(ctx)
 	_, _ = bs.p2pServ.ConnectToSP(ctx) // Ignore error if we can't connect to any SPs
 	bs.ppNetwork.StartPP(ctx)

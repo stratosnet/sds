@@ -1,21 +1,23 @@
 package rpc
 
 import (
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 const (
-	GENERIC_ERR           string = "-1"
-	SIGNATURE_FAILURE     string = "-3"
-	WRONG_FILE_SIZE       string = "-4"
-	TIME_OUT              string = "-5"
-	FILE_REQ_FAILURE      string = "-6"
-	WRONG_INPUT           string = "-7"
-	WRONG_PP_ADDRESS      string = "-8"
-	INTERNAL_DATA_FAILURE string = "-9"
-	INTERNAL_COMM_FAILURE string = "-10"
-	WRONG_FILE_INFO       string = "-11"
-	WRONG_WALLET_ADDRESS  string = "-12"
+	GENERIC_ERR                   string = "-1"
+	SIGNATURE_FAILURE             string = "-3"
+	WRONG_FILE_SIZE               string = "-4"
+	TIME_OUT                      string = "-5"
+	FILE_REQ_FAILURE              string = "-6"
+	WRONG_INPUT                   string = "-7"
+	WRONG_PP_ADDRESS              string = "-8"
+	INTERNAL_DATA_FAILURE         string = "-9"
+	INTERNAL_COMM_FAILURE         string = "-10"
+	WRONG_FILE_INFO               string = "-11"
+	WRONG_WALLET_ADDRESS          string = "-12"
+	CONFLICT_WITH_ANOTHER_SESSION string = "-13"
+	SESSION_STOPPED               string = "-14"
 
 	UPLOAD_DATA     string = "1"
 	DOWNLOAD_OK     string = "2"
@@ -33,14 +35,17 @@ type ParamReqUploadFile struct {
 	DesiredTier     uint32    `json:"desired_tier"`
 	AllowHigherTier bool      `json:"allow_higher_tier"`
 	ReqTime         int64     `json:"req_time"`
+	SequenceNumber  string    `json:"sequencenumber"`
 }
 
 // upload: upload file data
 type ParamUploadData struct {
-	FileHash  string    `json:"filehash"`
-	Data      string    `json:"data"`
-	Signature Signature `json:"signature"`
-	ReqTime   int64     `json:"req_time"`
+	FileHash       string    `json:"filehash"`
+	Data           string    `json:"data"`
+	Signature      Signature `json:"signature"`
+	ReqTime        int64     `json:"req_time"`
+	SequenceNumber string    `json:"sequencenumber"`
+	Stop           bool      `json:"stop,omitempty"`
 }
 
 // get current file status

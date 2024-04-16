@@ -12,19 +12,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	"github.com/stratosnet/sds/utils/encryption"
-	"github.com/stratosnet/sds/utils/types"
-	tmed25519 "github.com/tendermint/tendermint/crypto/ed25519"
-
-	"github.com/stratosnet/sds/utils"
-
 	"github.com/alex023/clock"
+	"github.com/pkg/errors"
+
+	"github.com/stratosnet/sds/framework/core"
+	fwed25519 "github.com/stratosnet/sds/framework/crypto/ed25519"
+	"github.com/stratosnet/sds/framework/crypto/encryption"
+	"github.com/stratosnet/sds/framework/metrics"
+	"github.com/stratosnet/sds/framework/msg"
+	"github.com/stratosnet/sds/framework/msg/header"
+	fwtypes "github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 var (
@@ -47,7 +45,9 @@ type MsgHandler struct {
 }
 
 type onConnectFunc func(core.WriteCloser) bool
-type onMessageFunc func(msg.RelayMsgBuf, core.WriteCloser)
+type onWriteFunc func(context.Context, *msg.RelayMsgBuf)
+type onReadFunc func(*msg.RelayMsgBuf)
+type onHandleFunc func(context.Context, *msg.RelayMsgBuf)
 type onCloseFunc func(core.WriteCloser)
 type onErrorFunc func(core.WriteCloser)
 type ContextKV struct {
@@ -55,19 +55,22 @@ type ContextKV struct {
 	Value interface{}
 }
 type options struct {
-	onConnect  onConnectFunc
-	onMessage  onMessageFunc
-	onClose    onCloseFunc
-	onError    onErrorFunc
-	bufferSize int
-	reconnect  bool // only ClientConn
-	heartClose bool
-	logOpen    bool
-	minAppVer  uint16
-	p2pAddress string
-	serverIp   net.IP
-	serverPort uint16
-	contextkv  []ContextKV
+	onConnect   onConnectFunc
+	onWrite     onWriteFunc
+	onRead      onReadFunc
+	onHandle    onHandleFunc
+	onClose     onCloseFunc
+	onError     onErrorFunc
+	bufferSize  int
+	reconnect   bool // only ClientConn
+	heartClose  bool
+	logOpen     bool
+	minAppVer   uint16
+	p2pAddress  string
+	serverIp    net.IP
+	serverPort  uint16
+	contextkv   []ContextKV
+	readTimeout int64
 }
 
 // ClientOption client configuration
@@ -179,6 +182,12 @@ func ContextKVOption(kv []ContextKV) ClientOption {
 	}
 }
 
+func ReadDeadlineOption(timeout int64) ClientOption {
+	return func(o *options) {
+		o.readTimeout = timeout
+	}
+}
+
 func Mylog(b bool, module string, v ...interface{}) {
 	if b {
 		utils.DebugLogfWithCalldepth(5, "Client Conn: "+module+"%v", v...)
@@ -259,12 +268,18 @@ func (cc *ClientConn) GetPort() string {
 func (cc *ClientConn) GetLocalAddr() string {
 	cc.mu.Lock()
 	defer cc.mu.Unlock()
+	if cc.spbConn == nil || cc.spbConn.(*net.TCPConn) == nil || cc.spbConn.LocalAddr() == nil {
+		return ""
+	}
 	return cc.spbConn.LocalAddr().String()
 }
 
 func (cc *ClientConn) GetRemoteAddr() string {
 	cc.mu.Lock()
 	defer cc.mu.Unlock()
+	if cc.spbConn == nil || cc.spbConn.(*net.TCPConn) == nil || cc.spbConn.RemoteAddr() == nil {
+		return ""
+	}
 	return cc.spbConn.RemoteAddr().String()
 }
 
@@ -316,9 +331,9 @@ func (cc *ClientConn) handshake() error {
 	}
 
 	// Create tmp key
-	tmpPrivKeyBytes := ed25519.NewKey()
-	tmpPrivKey := ed25519.PrivKeyBytesToPrivKey(tmpPrivKeyBytes)
-	tmpPubKeyBytes := ed25519.PrivKeyBytesToPubKeyBytes(tmpPrivKeyBytes)
+	tmpPrivKey := fwed25519.GenPrivKey()
+	tmpPrivKeyBytes := tmpPrivKey.Bytes()
+	tmpPubKeyBytes := tmpPrivKey.PubKey().Bytes()
 
 	// Write tmp key to conn
 	handshakeSignature, err := tmpPrivKey.Sign([]byte(core.HandshakeMessage))
@@ -333,16 +348,17 @@ func (cc *ClientConn) handshake() error {
 	var tmpKeyMsg []byte
 	select {
 	case tmpKeyMsg = <-handshakeChan:
-		if len(tmpKeyMsg) < tmed25519.PubKeySize+tmed25519.SignatureSize {
+		if len(tmpKeyMsg) < fwed25519.PubKeySize+fwed25519.SignatureSize {
 			return errors.Errorf("Handshake message too small (%v bytes)", len(tmpKeyMsg))
 		}
 	case <-time.After(utils.HandshakeTimeOut * time.Second):
 		return errors.New("Timed out when reading from server channel")
 	}
 
-	peerPubKeyBytes := tmpKeyMsg[:tmed25519.PubKeySize]
-	peerPubKey := ed25519.PubKeyBytesToPubKey(peerPubKeyBytes)
-	peerSignature := tmpKeyMsg[tmed25519.PubKeySize:]
+	peerPubKeyBytes := tmpKeyMsg[:fwed25519.PubKeySize]
+
+	peerPubKey := fwed25519.PubKeyFromBytes(peerPubKeyBytes)
+	peerSignature := tmpKeyMsg[fwed25519.PubKeySize:]
 	if !peerPubKey.VerifySignature([]byte(core.HandshakeMessage), peerSignature) {
 		return errors.New("Invalid signature in tmp key from peer")
 	}
@@ -369,7 +385,7 @@ func (cc *ClientConn) handshake() error {
 		return err
 	}
 	cc.remoteP2pAddress = string(p2pAddressBytes)
-	if _, err = types.P2pAddressFromBech(cc.remoteP2pAddress); err != nil {
+	if _, err = fwtypes.P2PAddressFromBech32(cc.remoteP2pAddress); err != nil {
 		return errors.Wrap(err, "incorrect P2pAddress")
 	}
 
@@ -596,7 +612,9 @@ func asyncWrite(c *ClientConn, m *msg.RelayMsgBuf, ctx context.Context) (err err
 	m.PacketId = core.GetPacketIdFromContext(ctx)
 
 	sendCh <- m
-	core.TimoutMap.Store(ctx, m.MSGHead.ReqId, m)
+	if c.opts.onWrite != nil {
+		c.opts.onWrite(ctx, m)
+	}
 
 	return
 }
@@ -605,7 +623,6 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	var (
 		spbConn   net.Conn
 		cDone     <-chan struct{}
-		onMessage onMessageFunc
 		handlerCh chan MsgHandler
 		message   *msg.RelayMsgBuf
 		cc        *ClientConn
@@ -613,7 +630,6 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 	cc = c.(*ClientConn)
 	spbConn = c.(*ClientConn).spbConn
 	cDone = c.(*ClientConn).ctx.Done()
-	onMessage = c.(*ClientConn).opts.onMessage
 	handlerCh = c.(*ClientConn).handlerCh
 
 	defer func() {
@@ -652,7 +668,11 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			return
 		default:
 			recvStart := time.Now().UnixMilli()
-			_ = spbConn.SetReadDeadline(time.Now().Add(time.Duration(utils.ReadTimeOut) * time.Second))
+			deadline := time.Duration(utils.DefReadTimeOut) * time.Second
+			if cc.opts.readTimeout != 0 {
+				deadline = time.Duration(cc.opts.readTimeout) * time.Second
+			}
+			_ = spbConn.SetReadDeadline(time.Now().Add(deadline))
 			if listenHeader {
 				// listen to the header
 				headerBytes, n, err = core.Unpack(spbConn, key, utils.MessageBeatLen)
@@ -751,18 +771,16 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 						message.MSGData = utils.RequestBuffer()[:posEnd-posData]
 						copy(message.MSGData[:], msgBuf[posData:posEnd])
 					}
+					if cc.opts.onRead != nil {
+						cc.opts.onRead(message)
+					}
 
 					handler := core.GetHandlerFunc(cmd)
 					if handler == nil {
-						if onMessage != nil {
-							onMessage(*message, c)
+						if msgType := header.GetMsgTypeFromId(msgH.Cmd); msgType != nil {
+							Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for message: "+msgType.Name)
 						} else {
-							if msgType := header.GetMsgTypeFromId(msgH.Cmd); msgType != nil {
-								Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, "no handler or onMessage() found for message: "+msgType.Name)
-							} else {
-								Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, fmt.Sprintf("no handler or onMessage() found for an invalid message: %d", cmd))
-							}
-
+							Mylog(cc.opts.logOpen, LOG_MODULE_READLOOP, fmt.Sprintf("no handler or onMessage() found for an invalid message: %d", cmd))
 						}
 						msgH.Len = 0
 						i = 0
@@ -936,12 +954,14 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 				utils.DebugLogf("enter handlerCh, cumulative cost_time= %d ms", time.Now().UnixMilli()-msgHandler.recvStart)
 			}
 			msg, handler, recvStart := msgHandler.message, msgHandler.handler, msgHandler.recvStart
-			core.TimoutMap.DeleteByRspMsg(&msg)
 			ctxWithParentReqId := core.CreateContextWithParentReqId(ctx, msg.MSGHead.ReqId)
 			ctxWithRecvStart := core.CreateContextWithRecvStartTime(ctxWithParentReqId, recvStart)
 			ctx = core.CreateContextWithMessage(ctxWithRecvStart, &msg)
 			ctx = core.CreateContextWithNetID(ctx, netID)
 			ctx = core.CreateContextWithSrcP2pAddr(ctx, c.(*ClientConn).remoteP2pAddress)
+			if cc.opts.onHandle != nil {
+				cc.opts.onHandle(ctx, &msg)
+			}
 			if msgType := header.GetMsgTypeFromId(msgHandler.message.MSGHead.Cmd); msgType != nil {
 				log = msgType.Name
 			}
@@ -958,9 +978,21 @@ func OnConnectOption(cb func(core.WriteCloser) bool) ClientOption {
 	}
 }
 
-func OnMessageOption(cb func(msg.RelayMsgBuf, core.WriteCloser)) ClientOption {
+func OnWriteOption(cb func(context.Context, *msg.RelayMsgBuf)) ClientOption {
 	return func(o *options) {
-		o.onMessage = cb
+		o.onWrite = cb
+	}
+}
+
+func OnReadOption(cb func(*msg.RelayMsgBuf)) ClientOption {
+	return func(o *options) {
+		o.onRead = cb
+	}
+}
+
+func OnHandleOption(cb func(context.Context, *msg.RelayMsgBuf)) ClientOption {
+	return func(o *options) {
+		o.onHandle = cb
 	}
 }
 

@@ -1,19 +1,20 @@
 package api
 
 import (
-	ed25519crypto "crypto/ed25519"
-	mbase "github.com/multiformats/go-multibase"
-	mh "github.com/multiformats/go-multihash"
+	"fmt"
 	"testing"
 
 	"github.com/ipfs/go-cid"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	mbase "github.com/multiformats/go-multibase"
+	mh "github.com/multiformats/go-multihash"
+
+	"github.com/stratosnet/sds/framework/crypto"
+	fwed25519 "github.com/stratosnet/sds/framework/crypto/ed25519"
+	"github.com/stratosnet/sds/framework/msg/header"
+	fwtypes "github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/crypto/ed25519"
-	//"github.com/tendermint/tendermint/libs/bech32"
-	"github.com/cosmos/cosmos-sdk/types/bech32"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 func init() {
@@ -40,16 +41,16 @@ func TestVerifySignatureMissingSPInfo(t *testing.T) {
 }
 
 func setup(t *testing.T) (*StreamReqBody, string, []byte) {
-	bechPrefix := "stsdsp2p"
 
-	spP2pPrivateKey := ed25519.NewKey()
-	spP2pAddr := ed25519.PrivKeyBytesToAddress(spP2pPrivateKey)
-	spP2pAddrString, err := spP2pAddr.ToBech(bechPrefix)
-	if err != nil {
-		t.Fatal(err)
+	spP2pPrivateKey := fwed25519.GenPrivKey()
+	spP2pAddr := spP2pPrivateKey.PubKey().Address()
+	spP2pAddrString := fwtypes.P2PAddressBytesToBech32(spP2pAddr.Bytes())
+	if spP2pAddrString == "" {
+		t.Fatal(fmt.Errorf("p2p address convert failed"))
 	}
-	spP2pPubKey := ed25519.PrivKeyBytesToPubKey(spP2pPrivateKey)
-	spP2pPubKeyString, err := bech32.ConvertAndEncode(bechPrefix, spP2pPubKey.Bytes())
+
+	spP2pPubKey := spP2pPrivateKey.PubKey()
+	spP2pPubKeyString, err := fwtypes.P2PPubKeyToBech32(spP2pPubKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +59,7 @@ func setup(t *testing.T) (*StreamReqBody, string, []byte) {
 	data := []byte("some kind of data")
 
 	filehash, _ := mh.Sum(data, mh.KECCAK_256, 20)
-	fileCid := cid.NewCidV1(uint64(utils.VIDEO_CODEC), filehash)
+	fileCid := cid.NewCidV1(uint64(crypto.VIDEO_CODEC), filehash)
 	encoder, _ := mbase.NewEncoder(mbase.Base32hex)
 	fh := fileCid.Encode(encoder)
 	reqBody := &StreamReqBody{
@@ -68,10 +69,17 @@ func setup(t *testing.T) (*StreamReqBody, string, []byte) {
 		Sign:         nil,
 		SliceInfo:    &protos.DownloadSliceInfo{SliceNumber: 0},
 	}
-	sliceHash := utils.CalcSliceHash(data, reqBody.FileHash, reqBody.SliceInfo.SliceNumber)
+	sliceHash, err := crypto.CalcSliceHash(data, reqBody.FileHash, reqBody.SliceInfo.SliceNumber)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	toSign := []byte(reqBody.P2PAddress + reqBody.FileHash + header.ReqDownloadSlice.Name)
-	signature := ed25519crypto.Sign(spP2pPrivateKey, toSign)
+	signature, err := spP2pPrivateKey.Sign(toSign)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	reqBody.Sign = signature
 
 	return reqBody, sliceHash, data

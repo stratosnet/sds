@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 const (
@@ -23,7 +23,7 @@ func (p *Network) tryRegister(ctx context.Context) func() {
 	return func() {
 		if state := p.GetStateFromFsm(); state.Id == STATE_REGISTERING {
 			utils.DebugLog("Send register and set next try")
-			p.RegisterToSP(ctx, true)
+			p.RegisterToSP(ctx)
 
 			p.reloadRegisterRetry += 1
 			reloadInterval := MIN_RELOAD_REGISTER_INTERVAL*p.reloadRegisterRetry + rand.Intn(MIN_RELOAD_REGISTER_INTERVAL)

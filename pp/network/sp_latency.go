@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/msg/header"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 type CandidateSp struct {
@@ -77,9 +77,9 @@ func (p *Network) SpLatencyCheck(ctx context.Context) func() {
 			}
 			if spConn != nil {
 				start := time.Now().UnixNano()
-				p.StorePingTimeMap(server, start, true)
+				p.StorePingTimeMap(server, start)
 				pb := &protos.ReqSpLatencyCheck{
-					P2PAddressPp:     p2pserver.GetP2pServer(ctx).GetP2PAddress(),
+					P2PAddressPp:     p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
 					NetworkAddressSp: server,
 				}
 				_ = p2pserver.GetP2pServer(ctx).SendMessage(ctx, spConn, pb, header.ReqSpLatencyCheck)

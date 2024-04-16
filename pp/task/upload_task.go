@@ -7,11 +7,13 @@ import (
 
 	"github.com/alex023/clock"
 	"github.com/pkg/errors"
-	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/msg/protos"
+
+	"github.com/stratosnet/sds/framework/crypto"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/file"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/pp/metrics"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 // UploadSliceTask represents a slice upload task that is in progress
@@ -87,10 +89,15 @@ func CreateBackupFileTask(target *protos.RspBackupStatus, fn func(ctx context.Co
 		return nil
 	}
 
+	fileCRC, err := crypto.CalcFileCRC32(file.GetFilePath(target.FileHash))
+	if err != nil {
+		utils.ErrorLog(err)
+	}
+
 	task := &UploadFileTask{
 		rspUploadFile:     nil,
 		rspBackupFile:     target,
-		fileCRC:           utils.CalcFileCRC32(file.GetFilePath(target.FileHash)),
+		fileCRC:           fileCRC,
 		uploadType:        protos.UploadType_BACKUP,
 		destinations:      make(map[string]*SlicesPerDestination),
 		concurrentUploads: 0,
@@ -122,10 +129,15 @@ func CreateUploadFileTask(target *protos.RspUploadFile, fn func(ctx context.Cont
 		return nil
 	}
 
+	fileCRC, err := crypto.CalcFileCRC32(file.GetFilePath(target.FileHash))
+	if err != nil {
+		utils.ErrorLog(err)
+	}
+
 	task := &UploadFileTask{
 		rspUploadFile:     make(map[int]*protos.RspUploadFile),
 		rspBackupFile:     nil,
-		fileCRC:           utils.CalcFileCRC32(file.GetFilePath(target.FileHash)),
+		fileCRC:           fileCRC,
 		uploadType:        protos.UploadType_NEW_UPLOAD,
 		destinations:      make(map[string]*SlicesPerDestination),
 		concurrentUploads: 0,

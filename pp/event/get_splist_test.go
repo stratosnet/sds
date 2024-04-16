@@ -4,8 +4,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stratosnet/sds/msg/protos"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 const (

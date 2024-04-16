@@ -8,16 +8,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/alex023/clock"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
+
 	"github.com/stratosnet/sds/cmd/common"
+	fwtypes "github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/console"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/console"
 )
 
 const (
@@ -54,7 +55,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"                                                               e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/v05ahm50ugfjrgd3ga8mqi6bqka32ks3dooe1p9g\n" +
 		"sharefile <filehash> <duration> <is_private>                   share an uploaded file\n" +
 		"allshare                                                       list all shared files\n" +
-		"getsharefile <sharelink> <password>                            download a shared file, need to consume ozone\n" +
+		"getsharefile sds://<sharelink>/<password>                      download a shared file, need to consume ozone\n" +
 		"cancelshare <shareID>                                          cancel a shared file\n" +
 		"clearexpshare                                                  clear all expired share links\n" +
 		"ver                                                            version\n" +
@@ -65,6 +66,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"getoz <walletAddress>                                          get current ozone balance\n" +
 		"status                                                         get current resource node status\n" +
 		"filestatus <filehash>                                          get current state of an uploaded file\n" +
+		"backupstatus <filehash>                                        get backup status of an file\n" +
 		"maintenance start <duration>                                   put the node in maintenance mode for the requested duration (in seconds)\n" +
 		"maintenance stop                                               stop the current maintenance\n" +
 		"downgradeinfo                                                  get information of last downgrade happened on this pp node\n" +
@@ -92,7 +94,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	}
 
 	newwallet := func(line string, param []string) bool {
-		err := utils.SetupWallet(setting.Config.Home.AccountsPath, setting.HDPath, updateWalletConfig)
+		err := fwtypes.SetupWallet(setting.Config.Home.AccountsPath, setting.HDPath, setting.Bip39Passphrase, updateWalletConfig)
 		if err != nil {
 			fmt.Println(err)
 			return false
@@ -100,8 +102,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		return true
 	}
 
-	start := func(line string, param []string) bool {
-		return callRpc(c, terminalId, "start", param)
+	startMining := func(line string, param []string) bool {
+		return callRpc(c, terminalId, "startMining", param)
 	}
 
 	registerPP := func(line string, param []string) bool {
@@ -244,7 +246,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("wallets", wallets, false)
 	console.Mystdin.RegisterProcessFunc("getoz", getoz, true)
 	console.Mystdin.RegisterProcessFunc("newwallet", newwallet, false)
-	console.Mystdin.RegisterProcessFunc("startmining", start, true)
+	console.Mystdin.RegisterProcessFunc("startmining", startMining, true)
 	console.Mystdin.RegisterProcessFunc("rp", registerPP, true)
 	console.Mystdin.RegisterProcessFunc("registerpeer", registerPP, true)
 	console.Mystdin.RegisterProcessFunc("activate", activate, true)
@@ -333,7 +335,8 @@ func terminal(cmd *cobra.Command, args []string) {
 }
 
 func terminalPreRunE(cmd *cobra.Command, args []string) error {
-	return common.LoadConfig(cmd)
+	_, _, err := common.LoadConfig(cmd)
+	return err
 }
 
 func callRpc(c *rpc.Client, terminalId string, line string, param []string) bool {
