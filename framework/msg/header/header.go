@@ -134,8 +134,8 @@ const (
 	MSG_ID_RSP_REPORT_NODESTATUS
 	MSG_ID_REQ_SP_STATUS
 	MSG_ID_RSP_SP_STATUS
-	MSG_ID_REQ_TRANSFER_BLS_SIGNATURE
-	MSG_ID_RSP_TRANSFER_BLS_SIGNATURE
+	MSG_ID_REQ_BLS_SIGNATURE
+	MSG_ID_RSP_BLS_SIGNATURE
 
 	MSG_ID_RSP_BADVERSION
 	MSG_ID_NOTICE_SP_UNDERMAINTENANCE
@@ -262,10 +262,10 @@ var (
 	ReqReportNodeStatus MsgType
 	RspReportNodeStatus MsgType
 	// Check status of SP node
-	ReqSpStatus             MsgType
-	RspSpStatus             MsgType
-	ReqTransferBLSSignature MsgType
-	RspTransferBLSSignature MsgType
+	ReqSpStatus     MsgType
+	RspSpStatus     MsgType
+	ReqBLSSignature MsgType
+	RspBLSSignature MsgType
 
 	RspBadVersion            MsgType
 	NoticeSpUnderMaintenance MsgType
@@ -413,8 +413,8 @@ func init() {
 	// Check status of SP node
 	registerOneMessageType(&ReqSpStatus, MSG_ID_REQ_SP_STATUS, "ReqSpSta")
 	registerOneMessageType(&RspSpStatus, MSG_ID_RSP_SP_STATUS, "RspSpSta")
-	registerOneMessageType(&ReqTransferBLSSignature, MSG_ID_REQ_TRANSFER_BLS_SIGNATURE, "ReqTrBLS")
-	registerOneMessageType(&RspTransferBLSSignature, MSG_ID_RSP_TRANSFER_BLS_SIGNATURE, "RspTrBLS")
+	registerOneMessageType(&ReqBLSSignature, MSG_ID_REQ_BLS_SIGNATURE, "ReqBLS")
+	registerOneMessageType(&RspBLSSignature, MSG_ID_RSP_BLS_SIGNATURE, "RspBLS")
 
 	registerOneMessageType(&RspBadVersion, MSG_ID_RSP_BADVERSION, "RspBdVer")
 	registerOneMessageType(&NoticeSpUnderMaintenance, MSG_ID_NOTICE_SP_UNDERMAINTENANCE, "NotMtnc")
@@ -514,8 +514,8 @@ func GetReqIdFromRspId(reqId uint8) uint8 {
 		return MSG_ID_REQ_REPORT_NODESTATUS
 	case MSG_ID_RSP_SP_STATUS:
 		return MSG_ID_REQ_SP_STATUS
-	case MSG_ID_RSP_TRANSFER_BLS_SIGNATURE:
-		return MSG_ID_REQ_TRANSFER_BLS_SIGNATURE
+	case MSG_ID_RSP_BLS_SIGNATURE:
+		return MSG_ID_REQ_BLS_SIGNATURE
 	case MSG_ID_RSP_CLEAR_EXPIRED_SHARE_LINKS:
 		return MSG_ID_REQ_CLEAR_EXPIRED_SHARE_LINKS
 	default:
