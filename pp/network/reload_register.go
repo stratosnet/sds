@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	MIN_RELOAD_REGISTER_INTERVAL = 60
-	MAX_RELOAD_REGISTER_INTERVAL = 600
+	MIN_RELOAD_REGISTER_INTERVAL = 30
+	MAX_RELOAD_REGISTER_INTERVAL = 300
 )
 
 // StartStatusReportToSP to start a timer scheduling reporting Node Status to SP
@@ -34,6 +34,7 @@ func (p *Network) tryRegister(ctx context.Context) func() {
 
 			p.ppPeerClock.AddJobWithInterval(time.Second*time.Duration(reloadInterval), p.tryRegister(ctx))
 		} else {
+			p.reloadRegisterRetry = 0
 			utils.DebugLog("Register process done, no more retry")
 		}
 	}
