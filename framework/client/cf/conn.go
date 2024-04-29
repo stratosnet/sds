@@ -787,10 +787,6 @@ func readLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 						listenHeader = true
 						continue
 					}
-					// TO BE DELETED
-					if message.MSGHead.Cmd == header.RspDownloadSlice.Id || message.MSGHead.Cmd == header.RspTransferDownload.Id {
-						utils.DebugLogf("before going into handlerCh, cumulative cost_time= %d ms", time.Now().UnixMilli()-recvStart)
-					}
 					handlerCh <- MsgHandler{*message, handler, recvStart}
 
 					i = 0
@@ -949,10 +945,6 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			Mylog(cc.opts.logOpen, LOG_MODULE_HANDLELOOP, "closes by conn")
 			return
 		case msgHandler := <-handlerCh:
-			// TO BE DELETED
-			if msgHandler.message.MSGHead.Cmd == header.RspDownloadSlice.Id || msgHandler.message.MSGHead.Cmd == header.RspTransferDownload.Id {
-				utils.DebugLogf("enter handlerCh, cumulative cost_time= %d ms", time.Now().UnixMilli()-msgHandler.recvStart)
-			}
 			msg, handler, recvStart := msgHandler.message, msgHandler.handler, msgHandler.recvStart
 			ctxWithParentReqId := core.CreateContextWithParentReqId(ctx, msg.MSGHead.ReqId)
 			ctxWithRecvStart := core.CreateContextWithRecvStartTime(ctxWithParentReqId, recvStart)
