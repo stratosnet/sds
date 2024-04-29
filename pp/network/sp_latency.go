@@ -89,17 +89,16 @@ func (p *Network) SpLatencyCheck(ctx context.Context) func() {
 			}
 			return true
 		})
-		p.ppPeerClock.AddJobRepeat(time.Second*utils.LatencyCheckSpListTimeout, 1, p.ChooseSpToConnectTo(ctx))
+		p.ppPeerClock.AddJobRepeat(time.Second*utils.LatencyCheckSpListTimeout, 1, p.CloseAlternateSpConns(ctx))
 	}
 }
 
-func (p *Network) ChooseSpToConnectTo(ctx context.Context) func() {
+func (p *Network) CloseAlternateSpConns(ctx context.Context) func() {
 	return func() {
 		mtx.Lock()
 		defer mtx.Unlock()
 		// clear buffered spConn
 		spConnsToClose := p2pserver.GetP2pServer(ctx).GetBufferedSpConns()
-		pp.DebugLog(ctx, "ChooseSpToConnectTo")
 		pp.DebugLogf(ctx, "There are %v spConn", len(spConnsToClose))
 		for _, spConn := range spConnsToClose {
 			if p2pserver.GetP2pServer(ctx).SpConnValid() && spConn.GetName() == p2pserver.GetP2pServer(ctx).GetSpName() {
@@ -109,6 +108,15 @@ func (p *Network) ChooseSpToConnectTo(ctx context.Context) func() {
 				spConn.Close()
 			}
 		}
+		p2pserver.GetP2pServer(ctx).ClearBufferedSpConns()
+	}
+}
+
+func (p *Network) ChangeSp(ctx context.Context) func() {
+	return func() {
+		mtx.Lock()
+		defer mtx.Unlock()
+		// clear buffered spConn
 		if len(candidateSps) == 0 {
 			pp.ErrorLog(ctx, "No candidate optimal SP")
 			return
@@ -116,12 +124,17 @@ func (p *Network) ChooseSpToConnectTo(ctx context.Context) func() {
 		sort.Slice(candidateSps, func(i, j int) bool {
 			return candidateSps[i].SpResponseTimeCost < candidateSps[j].SpResponseTimeCost
 		})
-		nSpsConsidered := utils.LatencyCheckTopSpsConsidered // Select from top 3 SPs
+		nSpsConsidered := utils.LatencyCheckTopSpsConsidered // Select from top n SPs
 		if nSpsConsidered > len(candidateSps) {
 			nSpsConsidered = len(candidateSps)
 		}
 
 		selectedSp := rand.Intn(nSpsConsidered)
+		// exclude the current SP
+		if p2pserver.GetP2pServer(ctx).GetSpConn().GetName() == candidateSps[selectedSp].NetworkAddr {
+			selectedSp = (selectedSp + 1) % nSpsConsidered
+		}
+		utils.DebugLog("ChooseSpToConnectTo, ", candidateSps[selectedSp].NetworkAddr)
 		p2pserver.GetP2pServer(ctx).ConfirmOptSP(ctx, candidateSps[selectedSp].NetworkAddr)
 	}
 }

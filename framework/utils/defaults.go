@@ -8,7 +8,7 @@ const (
 	HandshakeTimeOut             = 5               // in seconds
 	MessageBeatLen               = 4 * 1024 * 1024 // in bytes
 	LatencyCheckSpListInterval   = 24 * 3600       // in seconds
-	LatencyCheckSpListTimeout    = 3               // in seconds
+	LatencyCheckSpListTimeout    = 5               // in seconds
 	LatencyCheckTopSpsConsidered = 3               // number of SPs
 
 	PpMinTier = 0
