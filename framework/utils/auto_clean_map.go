@@ -57,6 +57,15 @@ func (m *AutoCleanMap) Load(key interface{}) (interface{}, bool) {
 	}
 }
 
+func (m *AutoCleanMap) LoadWithoutPushDelete(key interface{}) (interface{}, bool) {
+	if value, ok := m.myMap.Load(key); ok {
+		myValue := value.(*MyValue)
+		return myValue.value, true
+	} else {
+		return nil, false
+	}
+}
+
 func (m *AutoCleanMap) Delete(key interface{}) {
 	if value, ok := m.myMap.Load(key); ok {
 		myValue := value.(*MyValue)

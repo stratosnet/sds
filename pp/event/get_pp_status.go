@@ -23,7 +23,7 @@ import (
 
 const (
 	PP_STATUS_CACHE_KEY    = "pp_status"
-	PP_STATUS_CACHE_EXPIRE = 4 * 60 // seconds
+	PP_STATUS_CACHE_EXPIRE = 90 // seconds
 )
 
 // cached pp status, expired in 4 minutes
@@ -109,7 +109,7 @@ func ResetPPStatusCache(ctx context.Context, isActive uint32, state int32, initT
 }
 
 func GetPPStatusCache() *PPStatusInfo {
-	value, ok := ppStatusCache.Load(PP_STATUS_CACHE_KEY)
+	value, ok := ppStatusCache.LoadWithoutPushDelete(PP_STATUS_CACHE_KEY)
 	if !ok {
 		return nil
 	}
