@@ -23,19 +23,18 @@ const (
 	AttributeKeyCandidateNetworkAddress = "candidate_network_address"
 	AttributeKeyVoterNetworkAddress     = "voter_network_address"
 	AttributeKeyCandidateStatus         = "candidate_status"
-
-	AttributeKeyUnbondingMatureTime = "unbonding_mature_time"
-
-	AttributeKeyOZoneLimitChanges     = "ozone_limit_changes"
-	AttributeKeyInitialDeposit        = "initial_deposit"
-	AttributeKeyCurrentDeposit        = "current_deposit"
-	AttributeKeyAvailableTokenBefore  = "available_token_before"
-	AttributeKeyAvailableTokenAfter   = "available_token_after"
-	AttributeKeyDepositDelta          = "deposit_delta"
-	AttributeKeyDepositToRemove       = "deposit_to_remove"
-	AttributeKeyIncrDeposit           = "incr_deposit"
-	AttributeKeyEffectiveDepositAfter = "effective_deposit_after"
-	AttributeKeyIsUnsuspended         = "is_unsuspended"
+	AttributeKeyBeneficiaryAddress      = "beneficiary_address"
+	AttributeKeyUnbondingMatureTime     = "unbonding_mature_time"
+	AttributeKeyOZoneLimitChanges       = "ozone_limit_changes"
+	AttributeKeyInitialDeposit          = "initial_deposit"
+	AttributeKeyCurrentDeposit          = "current_deposit"
+	AttributeKeyAvailableTokenBefore    = "available_token_before"
+	AttributeKeyAvailableTokenAfter     = "available_token_after"
+	AttributeKeyDepositDelta            = "deposit_delta"
+	AttributeKeyDepositToRemove         = "deposit_to_remove"
+	AttributeKeyIncrDeposit             = "incr_deposit"
+	AttributeKeyEffectiveDepositAfter   = "effective_deposit_after"
+	AttributeKeyIsUnsuspended           = "is_unsuspended"
 
 	// pot module ---------------------------------------------------------
 

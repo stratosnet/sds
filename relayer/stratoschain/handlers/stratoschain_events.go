@@ -32,6 +32,7 @@ var cache *utils.AutoCleanMap // Cache with a TTL to make sure each event is onl
 func init() {
 	Handlers = make(map[string]func(coretypes.ResultEvent))
 	Handlers[types.MSG_TYPE_CREATE_RESOURCE_NODE] = CreateResourceNodeMsgHandler()
+	Handlers[types.MSG_TYPE_UPDATE_RESOURCE_NODE] = UpdateResourceNodeMsgHandler()
 	Handlers[types.MSG_TYPE_UPDATE_RESOURCE_NODE_DEPOSIT] = UpdateResourceNodeDepositMsgHandler()
 	Handlers[types.MSG_TYPE_REMOVE_RESOURCE_NODE] = UnbondingResourceNodeMsgHandler()
 	//Handlers["complete_unbonding_resource_node"] = CompleteUnbondingResourceNodeMsgHandler()
@@ -167,6 +168,52 @@ func CreateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
 		}
 
 		err := postToSP("/pp/activated", req)
+		if err != nil {
+			utils.ErrorLog(err)
+			return
+		}
+	}
+}
+
+func UpdateResourceNodeMsgHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
+		txHash := getTxHash(result)
+		eventDataTx, ok := result.Data.(comettypes.EventDataTx)
+		if !ok {
+			utils.ErrorLogf("result data is the wrong type in UpdateResourceNodeMsgHandler: %T", result.Data)
+			return
+		}
+		requiredAttributes := []string{
+			AttributeKeySender,
+			AttributeKeyNetworkAddress,
+			AttributeKeyBeneficiaryAddress,
+		}
+		processedEvents, initialEventCount := processEvents(eventDataTx.Result.Events, EventTypeUpdateResourceNode, requiredAttributes)
+
+		key := getCacheKey(requiredAttributes, processedEvents, txHash)
+		if _, ok := cache.Load(key); ok {
+			utils.DebugLogf("Event update_resource_node was already handled for tx [%v]. Ignoring...", txHash)
+			return
+		}
+		cache.Store(key, true)
+
+		req := &relay.UpdatePPBeneficiaryAddrReq{}
+		for _, event := range processedEvents {
+			req.PPList = append(req.PPList, &protos.ReqUpdatePPBeneficiaryAddr{
+				P2PAddress:         event[AttributeKeyNetworkAddress],
+				BeneficiaryAddress: event[AttributeKeyBeneficiaryAddress],
+			})
+		}
+
+		if len(req.PPList) != initialEventCount {
+			utils.ErrorLogf("updatedInfo PP message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+				len(req.PPList), initialEventCount-len(processedEvents), len(processedEvents)-len(req.PPList))
+		}
+		if len(req.PPList) == 0 {
+			return
+		}
+
+		err := postToSP("/pp/updateBeneficiaryAddress", req)
 		if err != nil {
 			utils.ErrorLog(err)
 			return

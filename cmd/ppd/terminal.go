@@ -37,8 +37,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"help                                                           show all the commands\n" +
 		"wallets                                                        acquire all wallet wallets' address\n" +
 		"newwallet                                                      create new wallet, input password in prompt\n" +
-		"registerpeer                                                   register peer to index node\n" +
-		"rp                                                             register peer to index node\n" +
+		"registerpeer                                                   register peer to sp node\n" +
+		"rp                                                             register peer to sp node\n" +
 		"activate <amount> <fee> optional<gas>                          send transaction to stchain to become an active PP node\n" +
 		"updateDeposit <depositDelta> <fee> optional<gas>               send transaction to stchain to update active pp's deposit\n" +
 		"deactivate <fee> optional<gas>                                 send transaction to stchain to stop being an active PP node\n" +
@@ -72,7 +72,10 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"downgradeinfo                                                  get information of last downgrade happened on this pp node\n" +
 		"performancemeasure                                             turn on performance measurement log for 60 seconds\n" +
 		"withdraw <amount> <fee> optional<targetAddr> optional<gas>     withdraw matured reward (from address is the configured node wallet)\n" +
-		"send <toAddress> <amount> <fee> optional<gas>                  sending coins to another account (from address is the configured node wallet)\n"
+		"send <toAddress> <amount> <fee> optional<gas>                  sending coins to another account (from address is the configured node wallet)\n" +
+		"updateinfo [--moniker=<moniker>] [--identity=<identity>] [--website=<website>]\n" +
+		"           [--security_contact=<security_contact>] [--details=<details>] <--fee=fee> <--gas=gas>\n" +
+		"                                                               update pp node info\n"
 
 	terminalId := uuid.New().String()
 
@@ -231,6 +234,10 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		return callRpc(c, terminalId, "send", param)
 	}
 
+	updateInfo := func(line string, param []string) bool {
+		return callRpc(c, terminalId, "updateInfo", param)
+	}
+
 	nc := make(chan utils.LogMsg)
 	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription", terminalId)
 	if err != nil {
@@ -287,6 +294,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("CheckReplica", checkReplica, true)
 	console.Mystdin.RegisterProcessFunc("withdraw", withdraw, true)
 	console.Mystdin.RegisterProcessFunc("send", send, true)
+	console.Mystdin.RegisterProcessFunc("updateinfo", updateInfo, true)
 
 	if isExec {
 		exit := false

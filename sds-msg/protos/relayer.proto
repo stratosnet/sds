@@ -36,6 +36,12 @@ message RspActivatedPP {
   Result result = 1;
 }
 
+message ReqUpdatePPBeneficiaryAddr {
+  string p2p_address = 1;
+  string beneficiary_address = 2;
+}
+
+
 message ReqUpdatedDepositPP {
   string p2p_address = 1;
   string ozone_limit_changes = 2;
