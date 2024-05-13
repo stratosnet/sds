@@ -2,12 +2,6 @@ module github.com/stratosnet/sds/relayer
 
 go 1.19
 
-replace (
-	github.com/stratosnet/sds/framework => ../framework
-	github.com/stratosnet/sds/sds-msg => ../sds-msg
-	github.com/stratosnet/sds/tx-client => ../tx-client
-)
-
 require (
 	cosmossdk.io/api v0.7.2
 	cosmossdk.io/math v1.2.0
@@ -17,10 +11,10 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rs/cors v1.8.2
 	github.com/spf13/cobra v1.6.1
-	github.com/stratosnet/sds/framework v0.0.0-20240430125605-7657fe4df128
-	github.com/stratosnet/sds/sds-msg v0.0.0-20240430125605-7657fe4df128
-	github.com/stratosnet/sds/tx-client v0.0.0-20240320190424-be603269f7db
-	github.com/stratosnet/stratos-chain/api v0.0.0-20240509181009-bd41bd06c905
+	github.com/stratosnet/sds/framework v0.0.0-20240430133946-5356542f135a
+	github.com/stratosnet/sds/sds-msg v0.0.0-20240509213443-382ee18e997c
+	github.com/stratosnet/sds/tx-client v0.0.0-20240513180650-12dd71f93c35
+	github.com/stratosnet/stratos-chain/api v0.0.0-20240509211914-ee516857645d
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
 )
