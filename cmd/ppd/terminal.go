@@ -75,7 +75,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"send <toAddress> <amount> <fee> optional<gas>                  sending coins to another account (from address is the configured node wallet)\n" +
 		"updateinfo [--moniker=<moniker>] [--identity=<identity>] [--website=<website>]\n" +
 		"           [--security_contact=<security_contact>] [--details=<details>] <--fee=fee> <--gas=gas>\n" +
-		"                                                               update pp node info\n"
+		"                                                               update pp node info, including the beneficiary address from config file\n"
 
 	terminalId := uuid.New().String()
 
