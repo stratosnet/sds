@@ -37,8 +37,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"help                                                           show all the commands\n" +
 		"wallets                                                        acquire all wallet wallets' address\n" +
 		"newwallet                                                      create new wallet, input password in prompt\n" +
-		"registerpeer                                                   register peer to sp node\n" +
-		"rp                                                             register peer to sp node\n" +
+		"registerpeer                                                   register peer to meta node\n" +
+		"rp                                                             register peer to meta node\n" +
 		"activate <amount> <fee> optional<gas>                          send transaction to stchain to become an active PP node\n" +
 		"updateDeposit <depositDelta> <fee> optional<gas>               send transaction to stchain to update active pp's deposit\n" +
 		"deactivate <fee> optional<gas>                                 send transaction to stchain to stop being an active PP node\n" +

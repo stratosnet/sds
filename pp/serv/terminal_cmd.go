@@ -1101,7 +1101,7 @@ func (api *terminalCmd) UpdateInfo(ctx context.Context, param []string) (CmdResu
 	website := ""
 	securityContact := ""
 	details := ""
-	fee := txclienttypes.Coin{}
+	var fee txclienttypes.Coin
 	var gas uint64
 	txFee := txclienttypes.TxFee{
 		Simulate: true,
