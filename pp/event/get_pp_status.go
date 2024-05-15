@@ -196,6 +196,7 @@ func setSoftMemoryCap(tier uint32) {
 			debug.SetMemoryLimit(setting.SoftRamLimitTier2Dev)
 		default:
 			debug.SetMemoryLimit(setting.SoftRamLimitTier2Dev)
+
 		}
 	} else {
 		switch tier {
@@ -209,4 +210,5 @@ func setSoftMemoryCap(tier uint32) {
 			debug.SetMemoryLimit(setting.SoftRamLimitTier2)
 		}
 	}
+	utils.DebugLog("#*#*#*#*#* just set the soft memory limit to:", debug.SetMemoryLimit(-1))
 }
