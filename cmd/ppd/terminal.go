@@ -43,11 +43,12 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"updateDeposit <depositDelta> <fee> optional<gas>               send transaction to stchain to update active pp's deposit\n" +
 		"deactivate <fee> optional<gas>                                 send transaction to stchain to stop being an active PP node\n" +
 		"startmining                                                    start mining\n" +
-		"prepay <amount> <fee> optional<beneficiary> <gas>              prepay stos to get ozone\n" +
-		"put <filepath> optional<isEncrypted> optional<nodeTier>        \n" +
-		"               optional<allowHigherTier>                       upload file, need to consume ozone\n" +
-		"putstream <filepath> optional<isEncrypted> optional<nodeTier>  \n" +
-		"                     optional<allowHigherTier>                 upload video file for streaming, need to consume ozone. (alpha version, encode format config impossible)\n" +
+		"prepay <--amount=amount> <--fee=fee> [--beneficiary=<beneficiary>] [--gas=<gas>]\n" +
+		"                                                               prepay stos to get ozone\n" +
+		"put <--filepath=filepath> [--isEncrypted=<isEncrypted>] [--nodeTier=<nodeTier>] [--allowHigherTier=<allowHigherTier>]\n" +
+		"                                                               upload file, need to consume ozone\n" +
+		"putstream <--filepath=filepath> [--nodeTier=<nodeTier>] [--allowHigherTier=<allowHigherTier>]\n" +
+		"                                                               upload video file for streaming, need to consume ozone. (alpha version, encode format config impossible)\n" +
 		"list <filename>                                                query uploaded file by self\n" +
 		"list <page id>                                                 query all files owned by the wallet, paginated\n" +
 		"delete <filehash>                                              delete file\n" +
@@ -71,10 +72,11 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"maintenance stop                                               stop the current maintenance\n" +
 		"downgradeinfo                                                  get information of last downgrade happened on this pp node\n" +
 		"performancemeasure                                             turn on performance measurement log for 60 seconds\n" +
-		"withdraw <amount> <fee> optional<targetAddr> optional<gas>     withdraw matured reward (from address is the configured node wallet)\n" +
+		"withdraw <--amount=amount> <--fee=fee> [--targetAddr=<targetAddr>] [--gas=<gas>]\n" +
+		"                                                               withdraw matured reward (from address is the configured node wallet)\n" +
 		"send <toAddress> <amount> <fee> optional<gas>                  sending coins to another account (from address is the configured node wallet)\n" +
-		"updateinfo [--moniker=<moniker>] [--identity=<identity>] [--website=<website>]\n" +
-		"           [--security_contact=<security_contact>] [--details=<details>] <--fee=fee> <--gas=gas>\n" +
+		"updateinfo <--fee=fee> [--moniker=<moniker>] [--identity=<identity>] [--website=<website>]\n" +
+		"           [--security_contact=<security_contact>] [--details=<details>] [--gas=<gas>]\n" +
 		"                                                               update pp node info, including the beneficiary address from config file\n"
 
 	terminalId := uuid.New().String()
