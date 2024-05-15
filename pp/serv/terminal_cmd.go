@@ -1089,3 +1089,63 @@ func (api *terminalCmd) Send(ctx context.Context, param []string) (CmdResult, er
 
 	return CmdResult{Msg: DefaultMsg}, nil
 }
+
+func (api *terminalCmd) UpdateInfo(ctx context.Context, param []string) (CmdResult, error) {
+	terminalId, param, err := getTerminalIdFromParam(param)
+	if err != nil {
+		return CmdResult{Msg: ""}, err
+	}
+
+	moniker := ""
+	identity := ""
+	website := ""
+	securityContact := ""
+	details := ""
+	var fee txclienttypes.Coin
+	var gas uint64
+	txFee := txclienttypes.TxFee{
+		Simulate: true,
+	}
+
+	for _, p := range param {
+		if !strings.Contains(p, "=") {
+			continue
+		}
+
+		kv := strings.SplitN(p, "=", 2)
+		switch kv[0] {
+		case "--moniker":
+			moniker = kv[1]
+		case "--identity":
+			identity = kv[1]
+		case "--website":
+			website = kv[1]
+		case "--security_contact":
+			securityContact = kv[1]
+		case "--details":
+			details = kv[1]
+		case "--fee":
+			feeStr := kv[1]
+			fee, err = txclienttypes.ParseCoinNormalized(feeStr)
+			if err != nil {
+				return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
+			}
+			txFee.Fee = fee
+		case "--gas":
+			gasStr := kv[1]
+			gas, err = strconv.ParseUint(gasStr, 10, 64)
+			if err != nil {
+				return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be a positive integer")
+			}
+			txFee.Gas = gas
+		}
+	}
+
+	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
+
+	if err = stratoschain.UpdateResourceNode(ctx, moniker, identity, website, securityContact, details, txFee); err != nil {
+		return CmdResult{Msg: ""}, err
+	}
+
+	return CmdResult{Msg: DefaultMsg}, nil
+}

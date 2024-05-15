@@ -308,3 +308,18 @@ type ServiceStatusResult struct {
 	Return  string `json:"return"`
 	Message string `json:"message"`
 }
+
+type ParamReqUpdatePPInfo struct {
+	Moniker         string `json:"moniker"`
+	Identity        string `json:"identity"`
+	Website         string `json:"website"`
+	SecurityContact string `json:"security_contact"`
+	Details         string `json:"details"`
+	Fee             string `json:"fee"`
+	Gas             uint64 `json:"gas"`
+}
+
+type UpdatePPInfoResult struct {
+	Return  string `json:"return"`
+	Message string `json:"message"`
+}

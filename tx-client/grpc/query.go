@@ -45,6 +45,23 @@ func QueryAccount(address string) (*authv1beta1.BaseAccount, error) {
 	return account, err
 }
 
+func QueryResourceNode(p2pAddress string) (*registerv1.ResourceNode, error) {
+	conn, err := CreateGrpcConn()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	client := registerv1.NewQueryClient(conn)
+	ctx := context.Background()
+	req := registerv1.QueryResourceNodeRequest{NetworkAddr: p2pAddress}
+	resp, err := client.ResourceNode(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.GetNode(), nil
+}
+
 func QueryResourceNodeState(p2pAddress string) (state types.ResourceNodeState, err error) {
 	state = types.ResourceNodeState{
 		IsActive:  msgtypes.PP_INACTIVE,
@@ -56,15 +73,11 @@ func QueryResourceNodeState(p2pAddress string) (state types.ResourceNodeState, e
 	}
 	defer conn.Close()
 
-	client := registerv1.NewQueryClient(conn)
-	ctx := context.Background()
-	req := registerv1.QueryResourceNodeRequest{NetworkAddr: p2pAddress}
-	resp, err := client.ResourceNode(ctx, &req)
+	resourceNode, err := QueryResourceNode(p2pAddress)
 	if err != nil {
 		return state, err
 	}
 
-	resourceNode := resp.GetNode()
 	if resourceNode.GetNetworkAddress() != p2pAddress {
 		return state, nil
 	}

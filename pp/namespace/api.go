@@ -1345,3 +1345,47 @@ func (api *rpcPubApi) RequestServiceStatus(ctx context.Context, param rpc_api.Pa
 	rpcResult.Message = msgStr
 	return *rpcResult
 }
+
+func (api *rpcPrivApi) RequestUpdatePPInfo(ctx context.Context, param rpc_api.ParamReqUpdatePPInfo) rpc_api.UpdatePPInfoResult {
+	metrics.RpcReqCount.WithLabelValues("RequestUpdatePPInfo").Inc()
+	var err error
+	_, err = fwtypes.WalletAddressFromBech32(setting.WalletAddress)
+	if err != nil {
+		return rpc_api.UpdatePPInfoResult{Return: rpc_api.WRONG_WALLET_ADDRESS}
+	}
+	fee, err := txclienttypes.ParseCoinNormalized(param.Fee)
+	if err != nil {
+		return rpc_api.UpdatePPInfoResult{Return: rpc_api.WRONG_INPUT}
+	}
+	txFee := txclienttypes.TxFee{
+		Fee:      fee,
+		Simulate: true,
+	}
+	if param.Gas > 0 {
+		txFee.Gas = param.Gas
+		txFee.Simulate = false
+	}
+
+	reqId := uuid.New().String()
+	ctx = core.RegisterRemoteReqId(ctx, reqId)
+	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
+	defer cancel()
+
+	err = stratoschain.UpdateResourceNode(ctx, param.Moniker, param.Identity, param.Website, param.SecurityContact, param.Details, txFee)
+	if err != nil {
+		return rpc_api.UpdatePPInfoResult{Return: rpc_api.WRONG_INPUT}
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			result := &rpc_api.UpdatePPInfoResult{Return: rpc_api.TIME_OUT}
+			return *result
+		default:
+			result, found := pp.GetUpdatePPInfoResult(setting.WalletAddress + reqId)
+			if result != nil && found {
+				return *result
+			}
+		}
+	}
+}
