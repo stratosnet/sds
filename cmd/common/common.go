@@ -248,7 +248,7 @@ func NodePP(_ *cobra.Command, _ []string) error {
 		return errors.New(utils.FormatError(err))
 	}
 
-	debug.SetMemoryLimit(setting.SoftRamLimitTier2)
+	debug.SetMemoryLimit(setting.SoftRamLimit)
 	err = BaseServer.Start()
 	defer BaseServer.Stop()
 	if err != nil {
