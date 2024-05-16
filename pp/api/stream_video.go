@@ -172,7 +172,10 @@ func streamVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, getSig
 	ret, _ := json.Marshal(streamInfo)
 	_, _ = w.Write(ret)
 
-	cacheVideoSlices(ctx, streamInfo)
+	twoSlicesReadyCh := make(chan bool)
+	go cacheVideoSlices(ctx, streamInfo, twoSlicesReadyCh)
+	<-twoSlicesReadyCh
+	close(twoSlicesReadyCh)
 }
 
 func streamSharedVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, getSignature func(req *http.Request, shareLink string) (*rpc_api.Signature, int64, error)) {
@@ -215,7 +218,10 @@ func streamSharedVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, 
 	ret, _ := json.Marshal(streamInfo)
 	_, _ = w.Write(ret)
 
-	cacheVideoSlices(ctx, streamInfo)
+	twoSlicesReadyCh := make(chan bool)
+	go cacheVideoSlices(ctx, streamInfo, twoSlicesReadyCh)
+	<-twoSlicesReadyCh
+	close(twoSlicesReadyCh)
 }
 
 func checkVideoCached(folderPath string) (bool, *StreamInfo) {
