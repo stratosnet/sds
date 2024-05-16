@@ -486,7 +486,7 @@ func cacheVideoSlices(ctx context.Context, streamInfo *StreamInfo, twoSlicesRead
 
 func getVideoSlicesInfoSortedByName(streamInfo *StreamInfo) []*protos.DownloadSliceInfo {
 	var sliceKeys []string
-	for key, _ := range streamInfo.SegmentToSliceInfo {
+	for key := range streamInfo.SegmentToSliceInfo {
 		sliceKeys = append(sliceKeys, key)
 	}
 
