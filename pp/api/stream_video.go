@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -159,7 +160,7 @@ func streamVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, getSig
 		return
 	}
 
-	streamInfo, fileInfo, err := getStreamInfo(ctx, fileHash, res.ReqId)
+	streamInfo, _, err := getStreamInfo(ctx, fileHash, res.ReqId)
 	_ = cacheStreamInfo(fileHash, streamInfo)
 
 	if err != nil {
@@ -171,7 +172,10 @@ func streamVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, getSig
 	ret, _ := json.Marshal(streamInfo)
 	_, _ = w.Write(ret)
 
-	cacheVideoSlices(ctx, fileInfo)
+	twoSlicesReadyCh := make(chan bool)
+	go cacheVideoSlices(ctx, streamInfo, twoSlicesReadyCh)
+	<-twoSlicesReadyCh
+	close(twoSlicesReadyCh)
 }
 
 func streamSharedVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, getSignature func(req *http.Request, shareLink string) (*rpc_api.Signature, int64, error)) {
@@ -202,7 +206,7 @@ func streamSharedVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	streamInfo, fileInfo, err := getStreamInfo(ctx, res.FileHash, res.ReqId)
+	streamInfo, _, err := getStreamInfo(ctx, res.FileHash, res.ReqId)
 	_ = cacheStreamInfo(shareLink, streamInfo)
 
 	if err != nil {
@@ -214,7 +218,10 @@ func streamSharedVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, 
 	ret, _ := json.Marshal(streamInfo)
 	_, _ = w.Write(ret)
 
-	cacheVideoSlices(ctx, fileInfo)
+	twoSlicesReadyCh := make(chan bool)
+	go cacheVideoSlices(ctx, streamInfo, twoSlicesReadyCh)
+	<-twoSlicesReadyCh
+	close(twoSlicesReadyCh)
 }
 
 func checkVideoCached(folderPath string) (bool, *StreamInfo) {
@@ -451,13 +458,8 @@ func parseSliceHash(reqURL *url.URL) string {
 	return reqPath[strings.LastIndex(reqPath, "/")+1:]
 }
 
-func cacheVideoSlices(ctx context.Context, fInfo *protos.RspFileStorageInfo) {
-	slices := make([]*protos.DownloadSliceInfo, len(fInfo.SliceInfo))
-	for i := 0; i < len(fInfo.SliceInfo); i++ {
-		idx := uint64(len(fInfo.SliceInfo)) - fInfo.SliceInfo[i].SliceNumber
-		slices[idx] = fInfo.SliceInfo[i]
-	}
-
+func cacheVideoSlices(ctx context.Context, streamInfo *StreamInfo, twoSlicesReadyCh chan<- bool) {
+	slices := getVideoSlicesInfoSortedByName(streamInfo)
 	cacheCh := make(chan bool, setting.StreamCacheMaxSlice)
 
 	for i := 0; i < setting.StreamCacheMaxSlice; i++ {
@@ -467,16 +469,53 @@ func cacheVideoSlices(ctx context.Context, fInfo *protos.RspFileStorageInfo) {
 	for idx, sliceInfo := range slices {
 		<-cacheCh
 		go func(idx int, sliceInfo *protos.DownloadSliceInfo) {
-			exist, _ := checkSliceExist(fInfo.FileHash, sliceInfo.SliceStorageInfo.SliceHash)
+			exist, _ := checkSliceExist(streamInfo.FileHash, sliceInfo.SliceStorageInfo.SliceHash)
 			if !exist {
-				_, _ = getSliceData(ctx, fInfo.FileHash, fInfo.ReqId, sliceInfo)
+				_, _ = getSliceData(ctx, streamInfo.FileHash, streamInfo.ReqId, sliceInfo)
 			}
 			if idx < len(slices)-setting.StreamCacheMaxSlice {
 				cacheCh <- true
 			}
+			if idx == 1 {
+				twoSlicesReadyCh <- true
+			}
 		}(idx, sliceInfo)
 	}
 	close(cacheCh)
+}
+
+func getVideoSlicesInfoSortedByName(streamInfo *StreamInfo) []*protos.DownloadSliceInfo {
+	var sliceKeys []string
+	for key := range streamInfo.SegmentToSliceInfo {
+		sliceKeys = append(sliceKeys, key)
+	}
+
+	sort.Slice(sliceKeys, func(i, j int) bool {
+		if sliceKeys[i] == streamInfo.HeaderFile {
+			return true
+		}
+		if sliceKeys[j] == streamInfo.HeaderFile {
+			return false
+		}
+		fileNameWithoutExt := func(fileName string) string {
+			return strings.TrimSuffix(fileName, filepath.Ext(fileName))
+		}
+		filename1 := fileNameWithoutExt(sliceKeys[i])
+		filename2 := fileNameWithoutExt(sliceKeys[j])
+
+		num1, err1 := strconv.Atoi(filename1)
+		num2, err2 := strconv.Atoi(filename2)
+		if err1 != nil || err2 != nil {
+			return filename1 < filename2
+		}
+		return num1 < num2
+	})
+
+	var slices []*protos.DownloadSliceInfo
+	for _, key := range sliceKeys {
+		slices = append(slices, streamInfo.SegmentToSliceInfo[key])
+	}
+	return slices
 }
 
 func checkSliceExist(fileHash, sliceHash string) (bool, string) {
