@@ -1207,7 +1207,7 @@ func (api *terminalCmd) UpdateInfo(ctx context.Context, param []string) (CmdResu
 // check required params
 func paramValidation(requiredParams map[string]bool) error {
 	for k, v := range requiredParams {
-		if v == false {
+		if !v {
 			return errors.Errorf("param %v is required.", k)
 		}
 	}
