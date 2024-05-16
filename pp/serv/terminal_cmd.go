@@ -344,7 +344,7 @@ func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, 
 
 	for _, p := range param {
 		if !strings.Contains(p, "=") {
-			continue
+			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
 		}
 
 		kv := strings.SplitN(p, "=", 2)
@@ -373,6 +373,8 @@ func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, 
 				return CmdResult{Msg: ""}, errors.New("invalid param --gas. Should be a positive integer")
 			}
 			txFee.Gas = gas
+		default:
+			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
 		}
 	}
 
@@ -430,7 +432,7 @@ func (api *terminalCmd) Upload(ctx context.Context, param []string) (CmdResult, 
 
 	for _, p := range param {
 		if !strings.Contains(p, "=") {
-			continue
+			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
 		}
 
 		kv := strings.SplitN(p, "=", 2)
@@ -460,6 +462,8 @@ func (api *terminalCmd) Upload(ctx context.Context, param []string) (CmdResult, 
 			if err != nil {
 				return CmdResult{Msg: ""}, errors.Errorf("invalid param --allowHigherTier. Should be true or false: %v ", err.Error())
 			}
+		default:
+			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
 		}
 	}
 
@@ -491,7 +495,7 @@ func (api *terminalCmd) UploadStream(ctx context.Context, param []string) (CmdRe
 
 	for _, p := range param {
 		if !strings.Contains(p, "=") {
-			continue
+			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
 		}
 
 		kv := strings.SplitN(p, "=", 2)
@@ -521,6 +525,8 @@ func (api *terminalCmd) UploadStream(ctx context.Context, param []string) (CmdRe
 			if err != nil {
 				return CmdResult{Msg: ""}, errors.Errorf("invalid param --allowHigherTier. Should be true or false: %v ", err.Error())
 			}
+		default:
+			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
 		}
 	}
 
@@ -1032,7 +1038,7 @@ func (api *terminalCmd) Withdraw(ctx context.Context, param []string) (CmdResult
 
 	for _, p := range param {
 		if !strings.Contains(p, "=") {
-			continue
+			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
 		}
 
 		kv := strings.SplitN(p, "=", 2)
@@ -1061,6 +1067,8 @@ func (api *terminalCmd) Withdraw(ctx context.Context, param []string) (CmdResult
 				return CmdResult{Msg: ""}, errors.New("invalid param --gas. Should be a positive integer")
 			}
 			txFee.Gas = gas
+		default:
+			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
 		}
 	}
 
@@ -1149,7 +1157,7 @@ func (api *terminalCmd) UpdateInfo(ctx context.Context, param []string) (CmdResu
 
 	for _, p := range param {
 		if !strings.Contains(p, "=") {
-			continue
+			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
 		}
 
 		kv := strings.SplitN(p, "=", 2)
@@ -1177,6 +1185,8 @@ func (api *terminalCmd) UpdateInfo(ctx context.Context, param []string) (CmdResu
 				return CmdResult{Msg: ""}, errors.New("invalid param --gas. Should be a positive integer")
 			}
 			txFee.Gas = gas
+		default:
+			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
 		}
 	}
 
