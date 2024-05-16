@@ -45,6 +45,9 @@ build-linux: go.sum
 build-mac: go.sum
 	GOOS=darwin GOARCH=amd64 $(MAKE) build
 
+build-arm: go.sum
+	GOOS=darwin GOARCH=arm64 $(MAKE) build
+
 build-windows: go.sum
 	GOOS=windows GOARCH=amd64 $(MAKE) build
 
