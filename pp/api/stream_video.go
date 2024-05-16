@@ -458,7 +458,33 @@ func parseSliceHash(reqURL *url.URL) string {
 	return reqPath[strings.LastIndex(reqPath, "/")+1:]
 }
 
-func cacheVideoSlices(ctx context.Context, streamInfo *StreamInfo) {
+func cacheVideoSlices(ctx context.Context, streamInfo *StreamInfo, twoSlicesReadyCh chan<- bool) {
+	slices := getVideoSlicesInfoSortedByName(streamInfo)
+	cacheCh := make(chan bool, setting.StreamCacheMaxSlice)
+
+	for i := 0; i < setting.StreamCacheMaxSlice; i++ {
+		cacheCh <- true
+	}
+
+	for idx, sliceInfo := range slices {
+		<-cacheCh
+		go func(idx int, sliceInfo *protos.DownloadSliceInfo) {
+			exist, _ := checkSliceExist(streamInfo.FileHash, sliceInfo.SliceStorageInfo.SliceHash)
+			if !exist {
+				_, _ = getSliceData(ctx, streamInfo.FileHash, streamInfo.ReqId, sliceInfo)
+			}
+			if idx < len(slices)-setting.StreamCacheMaxSlice {
+				cacheCh <- true
+			}
+			if idx == 1 {
+				twoSlicesReadyCh <- true
+			}
+		}(idx, sliceInfo)
+	}
+	close(cacheCh)
+}
+
+func getVideoSlicesInfoSortedByName(streamInfo *StreamInfo) []*protos.DownloadSliceInfo {
 	var sliceKeys []string
 	for key, _ := range streamInfo.SegmentToSliceInfo {
 		sliceKeys = append(sliceKeys, key)
@@ -489,26 +515,7 @@ func cacheVideoSlices(ctx context.Context, streamInfo *StreamInfo) {
 	for _, key := range sliceKeys {
 		slices = append(slices, streamInfo.SegmentToSliceInfo[key])
 	}
-
-	cacheCh := make(chan bool, setting.StreamCacheMaxSlice)
-
-	for i := 0; i < setting.StreamCacheMaxSlice; i++ {
-		cacheCh <- true
-	}
-
-	for idx, sliceInfo := range slices {
-		<-cacheCh
-		go func(idx int, sliceInfo *protos.DownloadSliceInfo) {
-			exist, _ := checkSliceExist(streamInfo.FileHash, sliceInfo.SliceStorageInfo.SliceHash)
-			if !exist {
-				_, _ = getSliceData(ctx, streamInfo.FileHash, streamInfo.ReqId, sliceInfo)
-			}
-			if idx < len(slices)-setting.StreamCacheMaxSlice {
-				cacheCh <- true
-			}
-		}(idx, sliceInfo)
-	}
-	close(cacheCh)
+	return slices
 }
 
 func checkSliceExist(fileHash, sliceHash string) (bool, string) {
