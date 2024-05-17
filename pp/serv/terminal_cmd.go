@@ -328,59 +328,52 @@ func (api *terminalCmd) Prepay(ctx context.Context, param []string) (CmdResult, 
 		return CmdResult{Msg: ""}, err
 	}
 
-	requiredParamsCheck := map[string]bool{
-		"--amount": false,
-		"--fee":    false,
+	if len(param) < 2 {
+		return CmdResult{Msg: ""},
+			errors.New("expecting at least 2 params. Input amount of tokens, fee amount, (optional) --beneficiary, and (optional) --gas")
+	}
+
+	amount, err := txclienttypes.ParseCoinNormalized(param[0])
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token" + err.Error())
+	}
+
+	fee, err := txclienttypes.ParseCoinNormalized(param[1])
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
+	}
+	txFee := txclienttypes.TxFee{
+		Fee:      fee,
+		Simulate: true,
 	}
 
 	// use wallet address as default beneficiary address
 	beneficiaryAddr, _ := fwtypes.WalletAddressFromBech32(setting.WalletAddress)
-	var amount txclienttypes.Coin
-	var fee txclienttypes.Coin
 	var gas uint64
-	txFee := txclienttypes.TxFee{
-		Simulate: true,
-	}
 
-	for _, p := range param {
-		if !strings.Contains(p, "=") {
-			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
+	if len(param) > 2 {
+		for _, p := range param[2:] {
+			if !strings.Contains(p, "=") {
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
+			}
+
+			kv := strings.SplitN(p, "=", 2)
+			switch kv[0] {
+			case "--beneficiary":
+				beneficiaryAddr, err = fwtypes.WalletAddressFromBech32(kv[1])
+				if err != nil {
+					return CmdResult{Msg: ""}, errors.New("invalid param --beneficiary. Should be a valid wallet address" + err.Error())
+				}
+			case "--gas":
+				gas, err = strconv.ParseUint(kv[1], 10, 64)
+				if err != nil {
+					return CmdResult{Msg: ""}, errors.New("invalid param --gas. Should be a positive integer")
+				}
+				txFee.Gas = gas
+			default:
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
+			}
 		}
-
-		kv := strings.SplitN(p, "=", 2)
-		switch kv[0] {
-		case "--amount":
-			amount, err = txclienttypes.ParseCoinNormalized(kv[1])
-			if err != nil {
-				return CmdResult{Msg: ""}, errors.New("invalid param --amount. Should be a valid token" + err.Error())
-			}
-			requiredParamsCheck["--amount"] = true
-		case "--fee":
-			fee, err = txclienttypes.ParseCoinNormalized(kv[1])
-			if err != nil {
-				return CmdResult{Msg: ""}, errors.New("invalid param --fee. Should be a valid token")
-			}
-			txFee.Fee = fee
-			requiredParamsCheck["--fee"] = true
-		case "--beneficiary":
-			beneficiaryAddr, err = fwtypes.WalletAddressFromBech32(kv[1])
-			if err != nil {
-				return CmdResult{Msg: ""}, errors.New("invalid param --beneficiary. Should be a valid wallet address" + err.Error())
-			}
-		case "--gas":
-			gas, err = strconv.ParseUint(kv[1], 10, 64)
-			if err != nil {
-				return CmdResult{Msg: ""}, errors.New("invalid param --gas. Should be a positive integer")
-			}
-			txFee.Gas = gas
-		default:
-			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
-		}
-	}
-
-	err = paramValidation(requiredParamsCheck)
-	if err != nil {
-		return CmdResult{Msg: ""}, err
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
@@ -421,55 +414,50 @@ func (api *terminalCmd) Upload(ctx context.Context, param []string) (CmdResult, 
 		return CmdResult{Msg: ""}, err
 	}
 
-	requiredParamsCheck := map[string]bool{
-		"--filepath": false,
+	if len(param) == 0 {
+		return CmdResult{}, errors.New("input upload file path")
 	}
 
-	var pathStr string
+	pathStr := file.EscapePath(param[0:1])
+	if err = api.validateUploadPath(pathStr); err != nil {
+		return CmdResult{}, err
+	}
+
 	isEncrypted := false
 	desiredTier := uint32(DefaultDesiredUploadTier)
 	allowHigherTier := true
 
-	for _, p := range param {
-		if !strings.Contains(p, "=") {
-			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
-		}
+	if len(param) > 1 {
+		for _, p := range param[1:] {
+			if !strings.Contains(p, "=") {
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
+			}
 
-		kv := strings.SplitN(p, "=", 2)
-		switch kv[0] {
-		case "--filepath":
-			pathStr = file.EscapePath(kv[1:])
-			if err = api.validateUploadPath(pathStr); err != nil {
-				return CmdResult{}, err
+			kv := strings.SplitN(p, "=", 2)
+			switch kv[0] {
+			case "--isEncrypted":
+				isEncrypted, err = strconv.ParseBool(kv[1])
+				if err != nil {
+					return CmdResult{Msg: ""}, errors.Errorf("invalid param --isEncrypted. Should be true or false: %v ", err.Error())
+				}
+			case "--nodeTier":
+				tier, err := strconv.ParseUint(kv[1], 10, 32)
+				if err != nil {
+					return CmdResult{Msg: ""}, errors.Errorf("invalid param --nodeTier. Should be an integer: %v ", err.Error())
+				}
+				if tier <= utils.PpMinTier || tier > utils.PpMaxTier {
+					return CmdResult{Msg: ""}, errors.New("invalid param --nodeTier. Should be between 1 and 3")
+				}
+				desiredTier = uint32(tier)
+			case "--allowHigherTier":
+				allowHigherTier, err = strconv.ParseBool(kv[1])
+				if err != nil {
+					return CmdResult{Msg: ""}, errors.Errorf("invalid param --allowHigherTier. Should be true or false: %v ", err.Error())
+				}
+			default:
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
 			}
-			requiredParamsCheck["--filepath"] = true
-		case "--isEncrypted":
-			isEncrypted, err = strconv.ParseBool(kv[1])
-			if err != nil {
-				return CmdResult{Msg: ""}, errors.Errorf("invalid param --isEncrypted. Should be true or false: %v ", err.Error())
-			}
-		case "--nodeTier":
-			tier, err := strconv.ParseUint(kv[1], 10, 32)
-			if err != nil {
-				return CmdResult{Msg: ""}, errors.Errorf("invalid param --nodeTier. Should be an integer: %v ", err.Error())
-			}
-			if tier <= utils.PpMinTier || tier > utils.PpMaxTier {
-				return CmdResult{Msg: ""}, errors.New("invalid param --nodeTier. Should be between 1 and 3")
-			}
-			desiredTier = uint32(tier)
-		case "--allowHigherTier":
-			allowHigherTier, err = strconv.ParseBool(kv[1])
-			if err != nil {
-				return CmdResult{Msg: ""}, errors.Errorf("invalid param --allowHigherTier. Should be true or false: %v ", err.Error())
-			}
-		default:
-			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
 		}
-	}
-
-	err = paramValidation(requiredParamsCheck)
-	if err != nil {
-		return CmdResult{Msg: ""}, err
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
@@ -484,55 +472,43 @@ func (api *terminalCmd) UploadStream(ctx context.Context, param []string) (CmdRe
 		return CmdResult{Msg: ""}, err
 	}
 
-	requiredParamsCheck := map[string]bool{
-		"--filepath": false,
+	if len(param) == 0 {
+		return CmdResult{}, errors.New("input upload file path")
+	}
+	pathStr := file.EscapePath(param)
+	if err = api.validateUploadPath(pathStr); err != nil {
+		return CmdResult{}, err
 	}
 
-	var pathStr string
-	//isEncrypted := false
 	desiredTier := uint32(DefaultDesiredUploadTier)
 	allowHigherTier := true
 
-	for _, p := range param {
-		if !strings.Contains(p, "=") {
-			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
-		}
+	if len(param) > 1 {
+		for _, p := range param[1:] {
+			if !strings.Contains(p, "=") {
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
+			}
 
-		kv := strings.SplitN(p, "=", 2)
-		switch kv[0] {
-		case "--filepath":
-			pathStr = file.EscapePath(kv[1:])
-			if err = api.validateUploadPath(pathStr); err != nil {
-				return CmdResult{}, err
+			kv := strings.SplitN(p, "=", 2)
+			switch kv[0] {
+			case "--nodeTier":
+				tier, err := strconv.ParseUint(kv[1], 10, 32)
+				if err != nil {
+					return CmdResult{Msg: ""}, errors.Errorf("invalid param --nodeTier. Should be an integer: %v ", err.Error())
+				}
+				if tier <= utils.PpMinTier || tier > utils.PpMaxTier {
+					return CmdResult{Msg: ""}, errors.New("invalid param --nodeTier. Should be between 1 and 3")
+				}
+				desiredTier = uint32(tier)
+			case "--allowHigherTier":
+				allowHigherTier, err = strconv.ParseBool(kv[1])
+				if err != nil {
+					return CmdResult{Msg: ""}, errors.Errorf("invalid param --allowHigherTier. Should be true or false: %v ", err.Error())
+				}
+			default:
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
 			}
-			requiredParamsCheck["--filepath"] = true
-		//case "--isEncrypted":
-		//	isEncrypted, err = strconv.ParseBool(kv[1])
-		//	if err != nil {
-		//		return CmdResult{Msg: ""}, errors.Errorf("invalid param --isEncrypted. Should be true or false: %v ", err.Error())
-		//	}
-		case "--nodeTier":
-			tier, err := strconv.ParseUint(kv[1], 10, 32)
-			if err != nil {
-				return CmdResult{Msg: ""}, errors.Errorf("invalid param --nodeTier. Should be an integer: %v ", err.Error())
-			}
-			if tier <= utils.PpMinTier || tier > utils.PpMaxTier {
-				return CmdResult{Msg: ""}, errors.New("invalid param --nodeTier. Should be between 1 and 3")
-			}
-			desiredTier = uint32(tier)
-		case "--allowHigherTier":
-			allowHigherTier, err = strconv.ParseBool(kv[1])
-			if err != nil {
-				return CmdResult{Msg: ""}, errors.Errorf("invalid param --allowHigherTier. Should be true or false: %v ", err.Error())
-			}
-		default:
-			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
 		}
-	}
-
-	err = paramValidation(requiredParamsCheck)
-	if err != nil {
-		return CmdResult{Msg: ""}, err
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
@@ -1022,59 +998,52 @@ func (api *terminalCmd) Withdraw(ctx context.Context, param []string) (CmdResult
 		return CmdResult{Msg: ""}, err
 	}
 
-	requiredParamsCheck := map[string]bool{
-		"--amount": false,
-		"--fee":    false,
+	if len(param) < 2 {
+		return CmdResult{Msg: ""},
+			errors.New("expecting at least 2 params. Input amount of tokens, fee amount, (optional) --targetAddr, and (optional) --gas")
+	}
+
+	amount, err := txclienttypes.ParseCoinNormalized(param[0])
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("invalid amount param. Should be a valid token")
+	}
+
+	fee, err := txclienttypes.ParseCoinNormalized(param[1])
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
+	}
+	txFee := txclienttypes.TxFee{
+		Fee:      fee,
+		Simulate: true,
 	}
 
 	// use wallet address as default target address
 	targetAddr, _ := fwtypes.WalletAddressFromBech32(setting.WalletAddress)
-	var amount txclienttypes.Coin
-	var fee txclienttypes.Coin
 	var gas uint64
-	txFee := txclienttypes.TxFee{
-		Simulate: true,
-	}
 
-	for _, p := range param {
-		if !strings.Contains(p, "=") {
-			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
+	if len(param) > 2 {
+		for _, p := range param[2:] {
+			if !strings.Contains(p, "=") {
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
+			}
+
+			kv := strings.SplitN(p, "=", 2)
+			switch kv[0] {
+			case "--targetAddr":
+				targetAddr, err = fwtypes.WalletAddressFromBech32(kv[1])
+				if err != nil {
+					return CmdResult{Msg: ""}, errors.New("invalid param --targetAddr. Should be a valid wallet address" + err.Error())
+				}
+			case "--gas":
+				gas, err = strconv.ParseUint(kv[1], 10, 64)
+				if err != nil {
+					return CmdResult{Msg: ""}, errors.New("invalid param --gas. Should be a positive integer")
+				}
+				txFee.Gas = gas
+			default:
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
+			}
 		}
-
-		kv := strings.SplitN(p, "=", 2)
-		switch kv[0] {
-		case "--amount":
-			amount, err = txclienttypes.ParseCoinNormalized(kv[1])
-			if err != nil {
-				return CmdResult{Msg: ""}, errors.New("invalid param --amount. Should be a valid token" + err.Error())
-			}
-			requiredParamsCheck["--amount"] = true
-		case "--fee":
-			fee, err = txclienttypes.ParseCoinNormalized(kv[1])
-			if err != nil {
-				return CmdResult{Msg: ""}, errors.New("invalid param --fee. Should be a valid token")
-			}
-			txFee.Fee = fee
-			requiredParamsCheck["--fee"] = true
-		case "--targetAddr":
-			targetAddr, err = fwtypes.WalletAddressFromBech32(kv[1])
-			if err != nil {
-				return CmdResult{Msg: ""}, errors.New("invalid param --targetAddr. Should be a valid wallet address" + err.Error())
-			}
-		case "--gas":
-			gas, err = strconv.ParseUint(kv[1], 10, 64)
-			if err != nil {
-				return CmdResult{Msg: ""}, errors.New("invalid param --gas. Should be a positive integer")
-			}
-			txFee.Gas = gas
-		default:
-			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
-		}
-	}
-
-	err = paramValidation(requiredParamsCheck)
-	if err != nil {
-		return CmdResult{Msg: ""}, err
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
@@ -1140,8 +1109,18 @@ func (api *terminalCmd) UpdateInfo(ctx context.Context, param []string) (CmdResu
 		return CmdResult{Msg: ""}, err
 	}
 
-	requiredParamsCheck := map[string]bool{
-		"--fee": false,
+	if len(param) < 1 {
+		return CmdResult{Msg: ""},
+			errors.New("expecting at least 1 param. Input fee amount and other optional params")
+	}
+
+	fee, err := txclienttypes.ParseCoinNormalized(param[0])
+	if err != nil {
+		return CmdResult{Msg: ""}, errors.New("invalid fee param. Should be a valid token")
+	}
+	txFee := txclienttypes.TxFee{
+		Fee:      fee,
+		Simulate: true,
 	}
 
 	moniker := ""
@@ -1149,48 +1128,38 @@ func (api *terminalCmd) UpdateInfo(ctx context.Context, param []string) (CmdResu
 	website := ""
 	securityContact := ""
 	details := ""
-	var fee txclienttypes.Coin
 	var gas uint64
-	txFee := txclienttypes.TxFee{
-		Simulate: true,
-	}
 
-	for _, p := range param {
-		if !strings.Contains(p, "=") {
-			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
-		}
+	if len(param) > 1 {
+		for _, p := range param[1:] {
+			if !strings.Contains(p, "=") {
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
+			}
 
-		kv := strings.SplitN(p, "=", 2)
-		switch kv[0] {
-		case "--fee":
-			fee, err = txclienttypes.ParseCoinNormalized(kv[1])
-			if err != nil {
-				return CmdResult{Msg: ""}, errors.New("invalid param --fee. Should be a valid token")
+			kv := strings.SplitN(p, "=", 2)
+			switch kv[0] {
+			case "--moniker":
+				moniker = kv[1]
+			case "--identity":
+				identity = kv[1]
+			case "--website":
+				website = kv[1]
+			case "--security_contact":
+				securityContact = kv[1]
+			case "--details":
+				details = kv[1]
+			case "--gas":
+				gas, err = strconv.ParseUint(kv[1], 10, 64)
+				if err != nil {
+					return CmdResult{Msg: ""}, errors.New("invalid param --gas. Should be a positive integer")
+				}
+				txFee.Gas = gas
+			default:
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
 			}
-			txFee.Fee = fee
-			requiredParamsCheck["--fee"] = true
-		case "--moniker":
-			moniker = kv[1]
-		case "--identity":
-			identity = kv[1]
-		case "--website":
-			website = kv[1]
-		case "--security_contact":
-			securityContact = kv[1]
-		case "--details":
-			details = kv[1]
-		case "--gas":
-			gas, err = strconv.ParseUint(kv[1], 10, 64)
-			if err != nil {
-				return CmdResult{Msg: ""}, errors.New("invalid param --gas. Should be a positive integer")
-			}
-			txFee.Gas = gas
-		default:
-			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
 		}
 	}
 
-	err = paramValidation(requiredParamsCheck)
 	if err != nil {
 		return CmdResult{Msg: ""}, err
 	}
@@ -1202,14 +1171,4 @@ func (api *terminalCmd) UpdateInfo(ctx context.Context, param []string) (CmdResu
 	}
 
 	return CmdResult{Msg: DefaultMsg}, nil
-}
-
-// check required params
-func paramValidation(requiredParams map[string]bool) error {
-	for k, v := range requiredParams {
-		if !v {
-			return errors.Errorf("param %v is required.", k)
-		}
-	}
-	return nil
 }
