@@ -41,6 +41,11 @@ func (bs *BaseServer) Start() error {
 
 	utils.Logf("initializing resource node with environment=%v...", environment.GetEnvironment())
 
+	err = bs.startRamMonitor()
+	if err != nil {
+		return err
+	}
+
 	err = bs.startP2pServer()
 	if err != nil {
 		return err
@@ -187,6 +192,12 @@ func (bs *BaseServer) startMonitor() error {
 		return err
 	}
 	bs.monitorServ = monitorServer
+	return nil
+}
+
+func (bs *BaseServer) startRamMonitor() error {
+	SetSoftMemoryCap()
+	CheckGCStats()()
 	return nil
 }
 

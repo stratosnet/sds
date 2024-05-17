@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -59,13 +58,9 @@ func RequestBuffer() []byte {
 	globalBufferPool.mutex.Lock()
 	if len(globalBufferPool.pool) == 0 {
 		if job == nil {
-			fmt.Println("Adding Job")
 			job, _ = timer.AddJobWithInterval(BufferPoolRefillInterval*time.Second, refillPool())
 		} else {
-			fmt.Println("Updating Job")
-			if !timer.UpdateJobTimeout(job, BufferPoolRefillInterval*time.Second) {
-				fmt.Println("failed updating job")
-			}
+			timer.UpdateJobTimeout(job, BufferPoolRefillInterval*time.Second)
 		}
 	}
 	globalBufferPool.mutex.Unlock()
@@ -101,10 +96,13 @@ func (bp *bufferPool) releaseBuffer(buffer []byte) {
 	bp.mutex.Lock()
 	defer bp.mutex.Unlock()
 
-	if cap(buffer) == bp.bufferSize && len(bp.pool) < bp.poolMaxSize {
-		bp.pool <- buffer
-	} else {
-		ErrorLogf("Buffer[addr=%v] not released, ACTUAL: len(buffer) = %d, cap(buffer) = %d, EXPECTED: cap(buffer) = %d, len(bp.pool) = %d, bp.poolMaxSize = %d",
-			&buffer[0:globalBufferPool.bufferSize][0], len(buffer), cap(buffer), bp.bufferSize, len(bp.pool), bp.poolMaxSize)
+	if cap(buffer) != bp.bufferSize {
+		ErrorLogf("release buffer at %v with wrong capaity %v ", &buffer[0:globalBufferPool.bufferSize][0], len(buffer))
+		return
 	}
+	if len(bp.pool) >= bp.poolMaxSize {
+		ErrorLogf("buffer pool is full when release buffer at %v, current pool size %v ", &buffer[0:globalBufferPool.bufferSize][0], len(bp.pool))
+		return
+	}
+	bp.pool <- buffer
 }

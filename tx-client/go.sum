@@ -139,10 +139,10 @@ github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible h1
 github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
 github.com/spaolacci/murmur3 v1.1.0 h1:7c1g84S4BPRrfL5Xrdp6fOJ206sU9y293DDHaoy0bLI=
 github.com/spaolacci/murmur3 v1.1.0/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
-github.com/stratosnet/sds/framework v0.0.0-20240430133946-5356542f135a h1:bM9BjC5r/asYzHo39M+QyJDacE01mGDlpalm7Q7Njt4=
-github.com/stratosnet/sds/framework v0.0.0-20240430133946-5356542f135a/go.mod h1:20P4dI5j3/EkmMk602vgz6RFQ9qhVMHqOV2WbJ0r2Do=
-github.com/stratosnet/sds/sds-msg v0.0.0-20240509213443-382ee18e997c h1:an/e1QfTwgVkLl/oyDop1xcRLPNiiBVYuzEnOuzvnfw=
-github.com/stratosnet/sds/sds-msg v0.0.0-20240509213443-382ee18e997c/go.mod h1:Kka5l0sHUjpWmCnGCZieLs/6hrprDITb0me+oiljBe4=
+github.com/stratosnet/sds/framework v0.0.0-20240517140802-ca2d9bede58e h1:MeTKj2wkh5zTkrcnccBdnXIa9vQyv8zkB1V0kO74d3M=
+github.com/stratosnet/sds/framework v0.0.0-20240517140802-ca2d9bede58e/go.mod h1:20P4dI5j3/EkmMk602vgz6RFQ9qhVMHqOV2WbJ0r2Do=
+github.com/stratosnet/sds/sds-msg v0.0.0-20240517140802-ca2d9bede58e h1:wyzvIYoU8boCONChZn0h7Jz3H3PX0c1Llr2pYh4lDN0=
+github.com/stratosnet/sds/sds-msg v0.0.0-20240517140802-ca2d9bede58e/go.mod h1:Kka5l0sHUjpWmCnGCZieLs/6hrprDITb0me+oiljBe4=
 github.com/stratosnet/stratos-chain/api v0.0.0-20240509211914-ee516857645d h1:P8M04b8QW8L7Yne97+SkztbUVTa0j/7gCstI4xaIMKo=
 github.com/stratosnet/stratos-chain/api v0.0.0-20240509211914-ee516857645d/go.mod h1:FN6crwtoVjf2errz8Nsj0y/zRxuIRtxs5w8qLHKVBqA=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

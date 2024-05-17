@@ -3,7 +3,6 @@ package event
 import (
 	"context"
 	"fmt"
-	"runtime/debug"
 	"strings"
 	"time"
 
@@ -18,7 +17,6 @@ import (
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/sds-msg/protos"
 	msgtypes "github.com/stratosnet/sds/sds-msg/types"
-	"github.com/stratosnet/sds/utils/environment"
 )
 
 const (
@@ -53,7 +51,6 @@ func RspGetPPStatus(ctx context.Context, conn core.WriteCloser) {
 		defer pp.SetRPCResult(p2pserver.GetP2pServer(ctx).GetP2PAddress().String()+reqId, rpcResult)
 	}
 	pp.DebugLogf(ctx, "get GetPPStatus RSP, activation status = %v", target.IsActive)
-	setSoftMemoryCap(target.OngoingTier)
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		utils.ErrorLog(target.Result.Msg)
 		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE
@@ -183,30 +180,4 @@ func FormatPPStatusInfo(ctx context.Context, ppStatus *PPStatusInfo, isCache boo
 		activation, regStatStr, state, ppStatus.initTier, ppStatus.ongoingTier, ppStatus.weightScore, spStatus)
 	pp.Log(ctx, msgStr)
 	return msgStr
-}
-
-func setSoftMemoryCap(tier uint32) {
-	if environment.IsDev() {
-		switch tier {
-		case 0:
-			debug.SetMemoryLimit(setting.SoftRamLimitTier0Dev)
-		case 1:
-			debug.SetMemoryLimit(setting.SoftRamLimitTier1Dev)
-		case 2:
-			debug.SetMemoryLimit(setting.SoftRamLimitTier2Dev)
-		default:
-			debug.SetMemoryLimit(setting.SoftRamLimitTier2Dev)
-		}
-	} else {
-		switch tier {
-		case 0:
-			debug.SetMemoryLimit(setting.SoftRamLimitTier0)
-		case 1:
-			debug.SetMemoryLimit(setting.SoftRamLimitTier1)
-		case 2:
-			debug.SetMemoryLimit(setting.SoftRamLimitTier2)
-		default:
-			debug.SetMemoryLimit(setting.SoftRamLimitTier2)
-		}
-	}
 }
