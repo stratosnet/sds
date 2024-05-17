@@ -1160,10 +1160,6 @@ func (api *terminalCmd) UpdateInfo(ctx context.Context, param []string) (CmdResu
 		}
 	}
 
-	if err != nil {
-		return CmdResult{Msg: ""}, err
-	}
-
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
 
 	if err = stratoschain.UpdateResourceNode(ctx, moniker, identity, website, securityContact, details, txFee); err != nil {
