@@ -303,3 +303,15 @@ func BuildSendMsg(senderAddress fwtypes.WalletAddress, toAddress fwtypes.WalletA
 		},
 	}
 }
+
+func BuildUpdateResourceNodeMsg(networkAddress fwtypes.P2PAddress, ownerAddress, beneficiaryAddress fwtypes.WalletAddress,
+	description *registerv1.Description, nodeType uint32) *registerv1.MsgUpdateResourceNode {
+
+	return &registerv1.MsgUpdateResourceNode{
+		Description:        description,
+		BeneficiaryAddress: beneficiaryAddress.String(),
+		NetworkAddress:     networkAddress.String(),
+		OwnerAddress:       ownerAddress.String(),
+		NodeType:           nodeType,
+	}
+}

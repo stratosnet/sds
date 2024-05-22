@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"syscall"
 	"time"
 )
 
@@ -295,6 +296,11 @@ func DetailLogf(template string, v ...interface{}) {
 func FatalLogfAndExit(exitCode int, template string, v ...interface{}) {
 	MyLogger.LogDepth(Fatal, 4, fmt.Sprintf(template, v...))
 	os.Exit(exitCode)
+}
+
+func FatalLogfAndTerminate(template string, v ...interface{}) {
+	MyLogger.LogDepth(Fatal, 4, fmt.Sprintf(template, v...))
+	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
 }
 
 // CheckError  TODO This is a bad way to call error log, as you cannot know where this method is called in your error log

@@ -37,17 +37,18 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"help                                                           show all the commands\n" +
 		"wallets                                                        acquire all wallet wallets' address\n" +
 		"newwallet                                                      create new wallet, input password in prompt\n" +
-		"registerpeer                                                   register peer to index node\n" +
-		"rp                                                             register peer to index node\n" +
+		"registerpeer                                                   register peer to meta node\n" +
+		"rp                                                             register peer to meta node\n" +
 		"activate <amount> <fee> optional<gas>                          send transaction to stchain to become an active PP node\n" +
 		"updateDeposit <depositDelta> <fee> optional<gas>               send transaction to stchain to update active pp's deposit\n" +
 		"deactivate <fee> optional<gas>                                 send transaction to stchain to stop being an active PP node\n" +
 		"startmining                                                    start mining\n" +
-		"prepay <amount> <fee> optional<beneficiary> <gas>              prepay stos to get ozone\n" +
-		"put <filepath> optional<isEncrypted> optional<nodeTier>        \n" +
-		"               optional<allowHigherTier>                       upload file, need to consume ozone\n" +
-		"putstream <filepath> optional<isEncrypted> optional<nodeTier>  \n" +
-		"                     optional<allowHigherTier>                 upload video file for streaming, need to consume ozone. (alpha version, encode format config impossible)\n" +
+		"prepay <amount> <fee> [--beneficiary=<beneficiary>] [--gas=<gas>]\n" +
+		"                                                               prepay stos to get ozone\n" +
+		"put <filepath> [--isEncrypted=<isEncrypted>] [--nodeTier=<nodeTier>] [--allowHigherTier=<allowHigherTier>]\n" +
+		"                                                               upload file, need to consume ozone\n" +
+		"putstream <filepath> [--nodeTier=<nodeTier>] [--allowHigherTier=<allowHigherTier>]\n" +
+		"                                                               upload video file for streaming, need to consume ozone. (alpha version, encode format config impossible)\n" +
 		"list <filename>                                                query uploaded file by self\n" +
 		"list <page id>                                                 query all files owned by the wallet, paginated\n" +
 		"delete <filehash>                                              delete file\n" +
@@ -71,8 +72,12 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"maintenance stop                                               stop the current maintenance\n" +
 		"downgradeinfo                                                  get information of last downgrade happened on this pp node\n" +
 		"performancemeasure                                             turn on performance measurement log for 60 seconds\n" +
-		"withdraw <amount> <fee> optional<targetAddr> optional<gas>     withdraw matured reward (from address is the configured node wallet)\n" +
-		"send <toAddress> <amount> <fee> optional<gas>                  sending coins to another account (from address is the configured node wallet)\n"
+		"withdraw <amount> <fee> [--targetAddr=<targetAddr>] [--gas=<gas>]\n" +
+		"                                                               withdraw matured reward (from address is the configured node wallet)\n" +
+		"send <toAddress> <amount> <fee> optional<gas>                  sending coins to another account (from address is the configured node wallet)\n" +
+		"updateinfo <fee> [--moniker=<moniker>] [--identity=<identity>] [--website=<website>]\n" +
+		"           [--security_contact=<security_contact>] [--details=<details>] [--gas=<gas>]\n" +
+		"                                                               update pp node info, including the beneficiary address from config file\n"
 
 	terminalId := uuid.New().String()
 
@@ -231,6 +236,10 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		return callRpc(c, terminalId, "send", param)
 	}
 
+	updateInfo := func(line string, param []string) bool {
+		return callRpc(c, terminalId, "updateInfo", param)
+	}
+
 	nc := make(chan utils.LogMsg)
 	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription", terminalId)
 	if err != nil {
@@ -287,6 +296,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("CheckReplica", checkReplica, true)
 	console.Mystdin.RegisterProcessFunc("withdraw", withdraw, true)
 	console.Mystdin.RegisterProcessFunc("send", send, true)
+	console.Mystdin.RegisterProcessFunc("updateinfo", updateInfo, true)
 
 	if isExec {
 		exit := false

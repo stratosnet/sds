@@ -10,6 +10,10 @@ type ActivatedPPReq struct {
 	PPList []*protos.ReqActivatedPP `json:"pp_list"`
 }
 
+type UpdatePPBeneficiaryAddrReq struct {
+	PPList []*protos.ReqUpdatePPBeneficiaryAddr `json:"pp_list"`
+}
+
 type UpdatedDepositPPReq struct {
 	PPList []*protos.ReqUpdatedDepositPP `json:"pp_list"`
 }

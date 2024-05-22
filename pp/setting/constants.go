@@ -36,13 +36,9 @@ const (
 	SpamThresholdSpSignLatency   = 60 // in second
 	SpamThresholdSliceOperations = 6 * time.Hour
 
-	SoftRamLimitTier0     = int64(3 * units.GiB)
-	SoftRamLimitTier1     = int64(7 * units.GiB)
-	SoftRamLimitTier2     = int64(15 * units.GiB)
+	SoftRamLimit          = int64(15 * units.GiB)
+	SoftRamLimitDev       = int64(1500 * units.MiB)
 	SoftRamLimitUnlimited = math.MaxInt64
-	SoftRamLimitTier0Dev  = int64(300 * units.MiB)
-	SoftRamLimitTier1Dev  = int64(500 * units.MiB)
-	SoftRamLimitTier2Dev  = int64(700 * units.MiB)
 
 	DefaultHlsSegmentBuffer = 4
 	DefaultHlsSegmentLength = 10
