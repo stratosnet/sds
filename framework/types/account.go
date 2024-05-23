@@ -120,12 +120,10 @@ func CreateP2PKey(dir, nickname, password, privateKeyHex string) (fwcryptotypes.
 
 // CreateP2PKeyFromHdPath uses a wallet mnemonic to create a P2P key to be used by one of the SDS nodes, and saves the key data into the dir folder
 func CreateP2PKeyFromHdPath(dir, nickname, password, mnemonic, bip39Passphrase, hdPath string) (p2pAddress fwcryptotypes.Address, newlyCreated bool, err error) {
-	secpPrivateKeyBytes, err := fwsecp256k1.Derive(mnemonic, bip39Passphrase, hdPath)
+	privateKey, err := GenerateP2pKeyFromHdPath(mnemonic, bip39Passphrase, hdPath)
 	if err != nil {
 		return nil, false, err
 	}
-
-	privateKey := fwed25519.GenPrivKeyFromSecret(secpPrivateKeyBytes)
 
 	p2pAddress = privateKey.PubKey().Address()
 	exists, err := KeyExists(dir, P2PAddressBytesToBech32(p2pAddress.Bytes()))
@@ -135,6 +133,16 @@ func CreateP2PKeyFromHdPath(dir, nickname, password, mnemonic, bip39Passphrase, 
 
 	_, err = saveAccountKey(dir, nickname, password, mnemonic, bip39Passphrase, hdPath, scryptN, scryptP, privateKey, false)
 	return p2pAddress, true, err
+}
+
+// GenerateP2pKeyFromHdPath uses a wallet mnemonic to create a P2P key, but doesn't store it anywhere
+func GenerateP2pKeyFromHdPath(mnemonic, bip39Passphrase, hdPath string) (*fwed25519.PrivKey, error) {
+	secpPrivateKeyBytes, err := fwsecp256k1.Derive(mnemonic, bip39Passphrase, hdPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return fwed25519.GenPrivKeyFromSecret(secpPrivateKeyBytes), nil
 }
 
 func saveAccountKey(dir, nickname, password, mnemonic, bip39Passphrase, hdPath string, scryptN, scryptP int,
