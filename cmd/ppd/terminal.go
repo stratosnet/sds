@@ -39,9 +39,9 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"newwallet                                                      create new wallet, input password in prompt\n" +
 		"registerpeer                                                   register peer to meta node\n" +
 		"rp                                                             register peer to meta node\n" +
-		"activate <amount> <fee> optional<gas>                          send transaction to stchain to become an active PP node\n" +
-		"updateDeposit <depositDelta> <fee> optional<gas>               send transaction to stchain to update active pp's deposit\n" +
-		"deactivate <fee> optional<gas>                                 send transaction to stchain to stop being an active PP node\n" +
+		"activate <amount> <fee> [--gas=<gas>]                          send transaction to stchain to become an active PP node\n" +
+		"updateDeposit <depositDelta> <fee> [--gas=<gas>]               send transaction to stchain to update active pp's deposit\n" +
+		"deactivate <fee> [--gas=<gas>]                                 send transaction to stchain to stop being an active PP node\n" +
 		"startmining                                                    start mining\n" +
 		"prepay <amount> <fee> [--beneficiary=<beneficiary>] [--gas=<gas>]\n" +
 		"                                                               prepay stos to get ozone\n" +
@@ -74,7 +74,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"performancemeasure                                             turn on performance measurement log for 60 seconds\n" +
 		"withdraw <amount> <fee> [--targetAddr=<targetAddr>] [--gas=<gas>]\n" +
 		"                                                               withdraw matured reward (from address is the configured node wallet)\n" +
-		"send <toAddress> <amount> <fee> optional<gas>                  sending coins to another account (from address is the configured node wallet)\n" +
+		"send <toAddress> <amount> <fee> [--gas=<gas>]                  sending coins to another account (from address is the configured node wallet)\n" +
 		"updateinfo <fee> [--moniker=<moniker>] [--identity=<identity>] [--website=<website>]\n" +
 		"           [--security_contact=<security_contact>] [--details=<details>] [--gas=<gas>]\n" +
 		"                                                               update pp node info, including the beneficiary address from config file\n"
