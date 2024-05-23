@@ -1,10 +1,13 @@
 package common
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"runtime/debug"
+	"strconv"
+	"strings"
 	"syscall"
 
 	sdkmath "cosmossdk.io/math"
@@ -24,6 +27,10 @@ const (
 	Home              string = "home"
 	Config            string = "config"
 	DefaultConfigPath string = "./config/config.toml"
+
+	P2pMethodWallet = 0
+	P2pMethodHex    = 1
+	P2pMethodRandom = 2
 )
 
 var BaseServer = &serv.BaseServer{}
@@ -152,7 +159,7 @@ func SetupP2PKey() error {
 	if setting.Config.Keys.P2PAddress != "" {
 		return nil
 	}
-	utils.Log("No P2P key specified in config. Attempting to create one...")
+	utils.Log("No p2p key specified in config. Attempting to create one...")
 
 	nickname := "p2pkey"
 	password, err := console.Stdin.PromptPassword("Enter password for p2p key: ")
@@ -167,48 +174,125 @@ func SetupP2PKey() error {
 		return errors.New("invalid. The two passwords don't match")
 	}
 
-	p2pPrivKeyHex, err := console.Stdin.PromptInput("Enter p2p private key as a hex (leave blank to generate a new one): ")
-	if err != nil {
-		return errors.New("couldn't read p2p private key: " + err.Error())
-	}
-
 	var p2pKeyAddress fwcryptotypes.Address
-	walletKey, err := loadWalletKey()
-	if err != nil {
-		utils.ErrorLogf("couldn't load wallet info: %v", err.Error())
-	}
-	if err == nil && p2pPrivKeyHex == "" {
-		var created bool
-		p2pKeyAddress, created, err = fwtypes.CreateP2PKeyFromHdPath(setting.Config.Home.AccountsPath, nickname, password, walletKey.Mnemonic, walletKey.Passphrase, walletKey.HdPath)
+	for len(p2pKeyAddress) == 0 {
+		method, err := selectP2pCreationMethod()
 		if err != nil {
-			return errors.New("couldn't create p2p key from wallet: " + err.Error())
+			return errors.New("couldn't read p2p key creation method from console: " + err.Error())
 		}
-		if !created {
-			if err = verifyP2pPassword(p2pKeyAddress, password); err != nil {
-				return errors.New("couldn't verify password of existing p2p key file: " + err.Error())
+		switch method {
+		case P2pMethodWallet:
+			p2pKeyAddress, err = createP2pKeyFromWallet(nickname, password)
+			if err != nil {
+				utils.ErrorLogf("couldn't create p2p key from wallet: %v", err.Error())
+				continue
+			}
+
+		case P2pMethodHex:
+			p2pPrivKeyHex, err := console.Stdin.PromptInput("Enter p2p private key as a hex: ")
+			if err != nil {
+				utils.ErrorLogf("couldn't read p2p private key: %v", err.Error())
+				continue
+			}
+
+			p2pKeyAddress, err = fwtypes.CreateP2PKey(setting.Config.Home.AccountsPath, nickname, password, p2pPrivKeyHex)
+			if err != nil {
+				return errors.New("couldn't create p2p key: " + err.Error())
+			}
+
+		case P2pMethodRandom:
+			p2pKeyAddress, err = fwtypes.CreateP2PKey(setting.Config.Home.AccountsPath, nickname, password, "")
+			if err != nil {
+				return errors.New("couldn't create p2p key: " + err.Error())
 			}
 		}
 	}
 
-	if len(p2pKeyAddress) == 0 {
-		if p2pPrivKeyHex == "" {
-			utils.Logf("p2p key will be randomly generated")
-		}
-
-		p2pKeyAddress, err = fwtypes.CreateP2PKey(setting.Config.Home.AccountsPath, nickname, password, p2pPrivKeyHex)
-		if err != nil {
-			return errors.New("couldn't create p2p key: " + err.Error())
-		}
-	}
-
-	p2pKeyAddressString := fwtypes.P2PAddressBytesToBech32(p2pKeyAddress.Bytes())
-	if p2pKeyAddressString == "" {
-		return errors.New("couldn't convert P2P key address to bech string: ")
+	p2pKeyAddressString, err := p2pKeyAddressToString(p2pKeyAddress)
+	if err != nil {
+		return err
 	}
 
 	setting.Config.Keys.P2PAddress = p2pKeyAddressString
 	setting.Config.Keys.P2PPassword = password
 	return setting.FlushConfig()
+}
+
+func selectP2pCreationMethod() (int, error) {
+	prompt := fmt.Sprintf("How should the p2p key be generated?  " +
+		"1) From the wallet  " +
+		"2) From a hex-encoded private key  " +
+		"3) Randomly: ")
+
+	for {
+		choiceStr, err := console.Stdin.PromptInput(prompt)
+		if err != nil {
+			return 0, err
+		}
+		choiceStr = strings.TrimSpace(choiceStr)
+		if len(choiceStr) < 1 {
+			continue
+		}
+		choice, err := strconv.ParseInt(choiceStr[0:1], 10, 64)
+		if err != nil {
+			return 0, err
+		}
+
+		switch choice {
+		case 1:
+			return P2pMethodWallet, nil
+		case 2:
+			return P2pMethodHex, nil
+		case 3:
+			return P2pMethodRandom, nil
+		}
+	}
+}
+
+func createP2pKeyFromWallet(nickname, password string) (fwcryptotypes.Address, error) {
+	walletKey, err := loadWalletKey()
+	if err != nil {
+		return nil, err
+	}
+
+	confirmed := false
+	hdPath := setting.HDPathP2p
+	hdPathStart := hdPath[:strings.LastIndex(hdPath, "/")]
+	hdPathEnd := hdPath[strings.LastIndex(hdPath, "/")+1:]
+	for !confirmed {
+		hdPath = hdPathStart + "/" + hdPathEnd
+		p2pPrivateKey, err := fwtypes.GenerateP2pKeyFromHdPath(walletKey.Mnemonic, walletKey.Passphrase, hdPath)
+		if err != nil {
+			return nil, err
+		}
+		p2pKeyAddress := p2pPrivateKey.PubKey().Address()
+		p2pKeyAddressString, err := p2pKeyAddressToString(p2pKeyAddress)
+		if err != nil {
+			return nil, err
+		}
+		confirmed, err = console.Stdin.PromptConfirm(fmt.Sprintf("Use the HD path (%v) to generate the p2p key (%v)?", hdPath, p2pKeyAddressString))
+		if err != nil {
+			return nil, err
+		}
+		if !confirmed {
+			hdPathEnd, err = console.Stdin.PromptInput(fmt.Sprintf("What should the last number of the HD path be instead? (currently %v): ", hdPathEnd))
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	p2pKeyAddress, created, err := fwtypes.CreateP2PKeyFromHdPath(setting.Config.Home.AccountsPath, nickname, password, walletKey.Mnemonic, walletKey.Passphrase, hdPath)
+	if err != nil {
+		return nil, err
+	}
+	if !created {
+		if err = verifyP2pPassword(p2pKeyAddress, password); err != nil {
+			return nil, errors.New("couldn't verify password of existing p2p key file: " + err.Error())
+		}
+	}
+
+	return p2pKeyAddress, nil
 }
 
 func loadWalletKey() (*fwtypes.AccountKey, error) {
@@ -232,7 +316,10 @@ func loadWalletKey() (*fwtypes.AccountKey, error) {
 }
 
 func verifyP2pPassword(p2pKeyAddress fwcryptotypes.Address, password string) error {
-	p2pKeyAddressString := fwtypes.P2PAddressBytesToBech32(p2pKeyAddress.Bytes())
+	p2pKeyAddressString, err := p2pKeyAddressToString(p2pKeyAddress)
+	if err != nil {
+		return err
+	}
 	p2pKeyJson, err := os.ReadFile(filepath.Join(setting.Config.Home.AccountsPath, p2pKeyAddressString+".json"))
 	if err != nil {
 		return err
@@ -240,6 +327,14 @@ func verifyP2pPassword(p2pKeyAddress fwcryptotypes.Address, password string) err
 
 	_, err = fwtypes.DecryptKey(p2pKeyJson, password, false)
 	return err
+}
+
+func p2pKeyAddressToString(p2pKeyAddress fwcryptotypes.Address) (string, error) {
+	p2pKeyAddressString := fwtypes.P2PAddressBytesToBech32(p2pKeyAddress.Bytes())
+	if p2pKeyAddressString == "" {
+		return "", errors.New("couldn't convert P2P key address to bech string")
+	}
+	return p2pKeyAddressString, nil
 }
 
 func NodePP(_ *cobra.Command, _ []string) error {

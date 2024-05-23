@@ -134,7 +134,6 @@ func createWallet(nickname, password, mnemonic, hdPath string) (string, error) {
 	return walletKeyAddressString, nil
 }
 
-// createP2pKey will attempt to create
 func createP2pKey(password, mnemonic, hdPath, privateKey string, newP2pKey bool) (string, error) {
 	if len(findP2pKeyFiles()) > 0 && !newP2pKey {
 		fmt.Println("there is already a p2p key")

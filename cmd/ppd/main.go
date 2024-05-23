@@ -104,7 +104,7 @@ func getAccountCmd() *cobra.Command {
 	cmd.Flags().StringP(nicknameFlag, "n", "wallet", "name of wallet")
 	cmd.Flags().BoolP(savePassFlag, "s", false, "save wallet password to configuration file")
 	cmd.Flags().String(p2pPassFlag, "aaa", "p2p password, optional")
-	cmd.Flags().Bool(newP2pKeyFlag, false, "create a new p2p key even if there exists one already")
+	cmd.Flags().Bool(newP2pKeyFlag, false, "create a new p2p key even if one already exists")
 	cmd.Flags().String(hdPathP2pFlag, setting.HDPathP2p, "hd-path for the new p2p key")
 	cmd.Flags().String(p2pPrivKeyFlag, "", "Hex-encoded p2p private key, optional")
 	return cmd
