@@ -9,11 +9,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/stratosnet/sds/metrics"
-
 	"github.com/alex023/clock"
-	"github.com/stratosnet/sds/msg"
-	"github.com/stratosnet/sds/utils"
+
+	"github.com/stratosnet/sds/framework/metrics"
+	"github.com/stratosnet/sds/framework/msg"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 var (
@@ -25,18 +25,24 @@ func init() {
 }
 
 type onConnectFunc func(WriteCloser) bool
-type onMessageFunc func(msg.RelayMsgBuf, WriteCloser)
+type onWriteFunc func(context.Context, *msg.RelayMsgBuf)
+type onReadFunc func(*msg.RelayMsgBuf)
+type onHandleFunc func(context.Context, *msg.RelayMsgBuf)
 type onCloseFunc func(WriteCloser)
 type onErrorFunc func(WriteCloser)
+type onBadAppVerFunc func(version uint16, cmd uint8, minAppVer uint16) []byte
 type ContextKV struct {
 	Key   interface{}
 	Value interface{}
 }
 type options struct {
 	onConnect      onConnectFunc
-	onMessage      onMessageFunc
+	onWrite        onWriteFunc
+	onRead         onReadFunc
+	onHandle       onHandleFunc
 	onClose        onCloseFunc
 	onError        onErrorFunc
+	onBadAppVer    onBadAppVerFunc
 	bufferSize     int
 	logOpen        bool
 	maxConnections int
@@ -44,6 +50,7 @@ type options struct {
 	minAppVersion  uint16
 	p2pAddress     string
 	contextkv      []ContextKV
+	readTimeout    int64
 }
 
 type ServerOption func(*options)
@@ -282,9 +289,21 @@ func OnConnectOption(cb func(WriteCloser) bool) ServerOption {
 	}
 }
 
-func OnMessageOption(cb func(msg.RelayMsgBuf, WriteCloser)) ServerOption {
+func OnWriteOption(cb onWriteFunc) ServerOption {
 	return func(o *options) {
-		o.onMessage = cb
+		o.onWrite = cb
+	}
+}
+
+func OnReadOption(cb onReadFunc) ServerOption {
+	return func(o *options) {
+		o.onRead = cb
+	}
+}
+
+func OnHandleOption(cb onHandleFunc) ServerOption {
+	return func(o *options) {
+		o.onHandle = cb
 	}
 }
 
@@ -297,6 +316,12 @@ func OnCloseOption(cb func(WriteCloser)) ServerOption {
 func OnErrorOption(cb func(WriteCloser)) ServerOption {
 	return func(o *options) {
 		o.onError = cb
+	}
+}
+
+func OnBadAppVerOption(cb func(uint16, uint8, uint16) []byte) ServerOption {
+	return func(o *options) {
+		o.onBadAppVer = cb
 	}
 }
 
@@ -348,6 +373,11 @@ func P2pAddressOption(p2pAddress string) ServerOption {
 	}
 }
 
+func ReadDeadlineOption(timeout int64) ServerOption {
+	return func(o *options) {
+		o.readTimeout = timeout
+	}
+}
 func (s *Server) Unicast(ctx context.Context, netid int64, msg *msg.RelayMsgBuf) error {
 	v, ok := s.conns.Load(netid)
 	if ok {

@@ -81,3 +81,11 @@ func GetSendResult(key string) (*rpc.SendResult, bool) {
 	}
 	return nil, loaded
 }
+
+func GetUpdatePPInfoResult(key string) (*rpc.UpdatePPInfoResult, bool) {
+	result, loaded := rpcResultMap.LoadAndDelete(key)
+	if result != nil && loaded {
+		return result.(*rpc.UpdatePPInfoResult), loaded
+	}
+	return nil, loaded
+}

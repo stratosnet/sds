@@ -10,9 +10,10 @@ import (
 
 	"github.com/pelletier/go-toml"
 	"github.com/pkg/errors"
+
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/relay/stratoschain/grpc"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/tx-client/grpc"
 )
 
 var (
@@ -82,10 +83,11 @@ type HomeConfig struct {
 }
 
 type KeysConfig struct {
-	P2PAddress     string `toml:"p2p_address" comment:"Address of the P2P key. Eg: \"stsdsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\""`
-	P2PPassword    string `toml:"p2p_password"`
-	WalletAddress  string `toml:"wallet_address" comment:"Address of the stratos wallet. Eg: \"stxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\""`
-	WalletPassword string `toml:"wallet_password"`
+	P2PAddress         string `toml:"p2p_address" comment:"Address of the P2P key. Eg: \"stsdsxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\""`
+	P2PPassword        string `toml:"p2p_password"`
+	WalletAddress      string `toml:"wallet_address" comment:"Address of the stratos wallet. Eg: \"stxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\""`
+	WalletPassword     string `toml:"wallet_password"`
+	BeneficiaryAddress string `toml:"beneficiary_address" comment:"Address for receiving reward. Eg: \"stxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\""`
 }
 
 type ConnectivityConfig struct {
@@ -95,11 +97,10 @@ type ConnectivityConfig struct {
 	NetworkPort    string     `toml:"network_port" comment:"Main port for communication on the network. Must be open to the internet. Eg: \"18081\""`
 	MetricsPort    string     `toml:"metrics_port" comment:"Port for prometheus metrics"`
 	RpcPort        string     `toml:"rpc_port" comment:"Port for the JSON-RPC api. See https://docs.thestratos.org/docs-resource-node/sds-rpc-for-file-operation/"`
-	AllowOwnerRpc  bool       `toml:"allow_owner_rpc" comment:"Enable the node owner RPC API. This API can manipulate the node status and sign txs with the local wallet. Do not open this to the internet  Eg: false"`
+	RpcNamespaces  string     `toml:"rpc_namespaces" comment:"Namespaces enabled in the RPC API. Eg: \"user,owner\""`
 }
 
 type NodeConfig struct {
-	AutoStart    bool               `toml:"auto_start" comment:"Should the node start mining automatically? Eg: true"` // TODO: review usage. Not actually used to start mining automatically
 	Debug        bool               `toml:"debug" comment:"Should debug info be printed out in logs? Eg: false"`
 	MaxDiskUsage uint64             `toml:"max_disk_usage" comment:"When not 0, limit disk usage to this amount (in megabytes) Eg: 7629394 = 8 * 1000 * 1000 * 1000 * 1000 / 1024 / 1024  (8TB) "`
 	Connectivity ConnectivityConfig `toml:"connectivity"`
@@ -241,7 +242,7 @@ func FlushConfig() error {
 	return utils.WriteTomlConfig(Config, ConfigPath)
 }
 
-func defaultConfig() *config {
+func DefaultConfig() *config {
 	return &config{
 		Version: VersionConfig{AppVer: AppVersion, MinAppVer: MinAppVersion, Show: Version},
 		Blockchain: BlockchainConfig{
@@ -257,13 +258,13 @@ func defaultConfig() *config {
 			StoragePath:  "./storage",
 		},
 		Keys: KeysConfig{
-			P2PAddress:     "",
-			P2PPassword:    "",
-			WalletAddress:  "",
-			WalletPassword: "",
+			P2PAddress:         "",
+			P2PPassword:        "",
+			WalletAddress:      "",
+			WalletPassword:     "",
+			BeneficiaryAddress: "",
 		},
 		Node: NodeConfig{
-			AutoStart:    true,
 			Debug:        false,
 			MaxDiskUsage: 8 * 1000 * 1000 * 1000 * 1000 / 1024 / 1024, // 8TB,
 			Connectivity: ConnectivityConfig{
@@ -277,7 +278,7 @@ func defaultConfig() *config {
 				NetworkPort:    "18081",
 				MetricsPort:    "18181",
 				RpcPort:        "18281",
-				AllowOwnerRpc:  false,
+				RpcNamespaces:  "user",
 			},
 		},
 		Monitor: MonitorConfig{
@@ -306,13 +307,13 @@ func defaultConfig() *config {
 }
 
 func GenDefaultConfig() error {
-	Config = defaultConfig()
+	Config = DefaultConfig()
 	return FlushConfig()
 }
 
 // formalizePaths checks if the configuration is using default paths, and if so, add in the node root path. It also makes all paths absolute
 func formalizePaths() (err error) {
-	defaultValues := defaultConfig()
+	defaultValues := DefaultConfig()
 
 	Config.Home.AccountsPath, err = formalizePath(Config.Home.AccountsPath, defaultValues.Home.AccountsPath)
 	if err != nil {

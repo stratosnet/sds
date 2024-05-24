@@ -12,20 +12,20 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/stratosnet/sds/framework/client/cf"
-	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/pp/p2pserver"
-
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/crypto"
+	"github.com/stratosnet/sds/framework/crypto/encryption"
+	"github.com/stratosnet/sds/framework/crypto/encryption/hdkey"
+	"github.com/stratosnet/sds/framework/msg/header"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/metrics"
+	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/encryption"
-	"github.com/stratosnet/sds/utils/encryption/hdkey"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 const (
@@ -127,9 +127,9 @@ func (drc *downRecvCostTime) AddCostTime(tkSliceHashKey string, costTime int64) 
 	}
 	if costTime > 0 {
 		drc.dataMap.Store(tkSliceHashKey, totalCostTime)
+		utils.DebugLogf("--- downRecvCostTime.AddCostTime --- add %d ms from newly received packet, total: %d ms",
+			costTime, totalCostTime)
 	}
-	utils.DebugLogf("--- downRecvCostTime.AddCostTime --- add %d ms from newly received packet, total: %d ms",
-		costTime, totalCostTime)
 	return totalCostTime
 }
 
@@ -338,7 +338,7 @@ func RspDownloadSlice(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
-	dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress, fileReqId)
+	dTask, ok := task.GetDownloadTask(target.FileHash + target.WalletAddress + fileReqId)
 	if !ok {
 		utils.DebugLog("current task is stopped！！！！！！！！！！！！！！！！！！！！！！！！！！")
 		return
@@ -487,7 +487,15 @@ func receivedSlice(ctx context.Context, target *protos.RspDownloadSlice, fInfo *
 func SendReportDownloadResult(ctx context.Context, target *protos.RspDownloadSlice, costTime int64, isPP bool) *protos.ReqReportDownloadResult {
 	utils.DebugLog("ReportDownloadResult report result target.fileHash = ", target.FileHash)
 	req := requests.ReqReportDownloadResultData(ctx, target, costTime, isPP)
-	p2pserver.GetP2pServer(ctx).SendMessageDirectToSPOrViaPP(ctx, req, header.ReqReportDownloadResult)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqReportDownloadResult)
+	return req
+}
+
+// SendReportDownloadResultForLocallyFoundSlice  PP-SP OR StoragePP-SP
+func SendReportDownloadResultForLocallyFoundSlice(ctx context.Context, fileStorageInfoSP *protos.RspFileStorageInfo, target *protos.DownloadSliceInfo, isPP bool) *protos.ReqReportDownloadResult {
+	utils.DebugLogf("SendReportDownloadResultForLocallyFoundSlice report result target.sliceHash = %v, taskId = %v", target.SliceStorageInfo.SliceHash, target.TaskId)
+	req := requests.ReqReportDownloadResultDataForLocallyFoundSlice(ctx, fileStorageInfoSP, target, isPP)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqReportDownloadResult)
 	return req
 }
 
@@ -499,7 +507,7 @@ func SendReportStreamingResult(ctx context.Context, target *protos.RspDownloadSl
 func DownloadFileSlices(ctx context.Context, target *protos.RspFileStorageInfo, reqId string) {
 	utils.DebugLog("DownloadFileSlice(&target)", target)
 	fileSize := uint64(0)
-	dTask, _ := task.GetDownloadTask(target.FileHash, target.WalletAddress, reqId)
+	dTask, _ := task.GetDownloadTask(target.FileHash + target.WalletAddress + reqId)
 	for _, sliceInfo := range target.SliceInfo {
 		fileSize += sliceInfo.SliceOffset.SliceOffsetEnd - sliceInfo.SliceOffset.SliceOffsetStart
 	}
@@ -510,6 +518,7 @@ func DownloadFileSlices(ctx context.Context, target *protos.RspFileStorageInfo, 
 		TotalSize:      int64(fileSize),
 		DownloadedSize: 0,
 	}
+	slicesLocallyFound := make([]*protos.DownloadSliceInfo, 0)
 	if !file.CheckFileExisting(ctx, target.FileHash, target.FileName, target.SavePath, target.EncryptionTag, reqId) {
 		pp.Log(ctx, "download starts: ")
 		task.DownloadSpeedOfProgress.Store(target.FileHash+reqId, sp)
@@ -520,6 +529,7 @@ func DownloadFileSlices(ctx context.Context, target *protos.RspFileStorageInfo, 
 				task.DownloadProgress(ctx, target.FileHash, reqId, slice.SliceOffset.SliceOffsetEnd-slice.SliceOffset.SliceOffsetStart)
 				task.CleanDownloadTask(ctx, target.FileHash, slice.SliceStorageInfo.SliceHash, target.WalletAddress, reqId)
 				setDownloadSliceSuccess(ctx, slice.SliceStorageInfo.SliceHash, dTask)
+				slicesLocallyFound = append(slicesLocallyFound, slice)
 			} else {
 				re = "request for slice data sent"
 				req := requests.ReqDownloadSliceData(ctx, target, slice)
@@ -533,6 +543,13 @@ func DownloadFileSlices(ctx context.Context, target *protos.RspFileStorageInfo, 
 	} else {
 		task.DownloadResult(ctx, target.FileHash, false, "file exists already.")
 		task.DeleteDownloadTask(target.FileHash, target.WalletAddress, target.ReqId)
+		slicesLocallyFound = append(slicesLocallyFound, target.SliceInfo...)
+	}
+	if len(slicesLocallyFound) > 0 {
+		// report locally found slices to sp
+		for _, slice := range slicesLocallyFound {
+			SendReportDownloadResultForLocallyFoundSlice(ctx, target, slice, false)
+		}
 	}
 }
 
@@ -545,7 +562,7 @@ func SendReqDownloadSlice(ctx context.Context, fileHash string, sliceInfo *proto
 	err := p2pserver.GetP2pServer(ctx).SendMessageByCachedConn(ctx, key, networkAddress, req, header.ReqDownloadSlice, nil)
 	if err != nil {
 		pp.ErrorLogf(ctx, "Failed to create connection with %v: %v", networkAddress, utils.FormatError(err))
-		if dTask, ok := task.GetDownloadTask(fileHash, req.RspFileStorageInfo.WalletAddress, fileReqId); ok {
+		if dTask, ok := task.GetDownloadTask(fileHash + req.RspFileStorageInfo.WalletAddress + fileReqId); ok {
 			setDownloadSliceFail(ctx, sliceInfo.SliceStorageInfo.SliceHash, req.RspFileStorageInfo.TaskId, fileReqId, dTask)
 		}
 	}
@@ -588,7 +605,7 @@ func decryptSliceData(dataToDecrypt []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	key, err := hdkey.MasterKeyForSliceEncryption(setting.WalletPrivateKey, encryptedSlice.HdkeyNonce)
+	key, err := hdkey.MasterKeyForSliceEncryption(setting.WalletPrivateKey.Bytes(), encryptedSlice.HdkeyNonce)
 	if err != nil {
 		utils.ErrorLog("Couldn't generate slice encryption master key", err)
 		return nil, err
@@ -602,12 +619,17 @@ func verifyDownloadSliceHash(fileHash string, sliceNumber uint64, slice *protos.
 	for _, buffer := range buffers {
 		data = append(data, buffer...)
 	}
-	return slice.SliceStorageInfo.SliceHash == utils.CalcSliceHash(data, fileHash, sliceNumber)
+	sliceHash, err := crypto.CalcSliceHash(data, fileHash, sliceNumber)
+	if err != nil {
+		utils.ErrorLog(err)
+		return false
+	}
+
+	return slice.SliceStorageInfo.SliceHash == sliceHash
 }
 
 func setDownloadSliceSuccess(ctx context.Context, sliceHash string, dTask *task.DownloadTask) {
 	dTask.SetSliceSuccess(sliceHash)
-	CheckAndSendRetryMessage(ctx, dTask)
 }
 
 func setDownloadSliceFail(ctx context.Context, sliceHash, taskId, fileReqId string, dTask *task.DownloadTask) {

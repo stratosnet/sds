@@ -6,12 +6,12 @@ import (
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/msg/header"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 func NoticeSpUnderMaintenance(ctx context.Context, conn core.WriteCloser) {
@@ -41,7 +41,7 @@ func NoticeSpUnderMaintenance(ctx context.Context, conn core.WriteCloser) {
 			// record SpMaintenance
 			triggerSpSwitch := p2pserver.GetP2pServer(ctx).RecordSpMaintenance(target.SpP2PAddress, time.Now())
 			if triggerSpSwitch {
-				network.GetPeer(ctx).SpLatencyCheck(ctx)()
+				network.GetPeer(ctx).ChangeSp(ctx)()
 			}
 		}
 	}

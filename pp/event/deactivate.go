@@ -3,22 +3,21 @@ package event
 import (
 	"context"
 
-	sdktx "github.com/cosmos/cosmos-sdk/types/tx"
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/msg/header"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/pp/types"
-	"github.com/stratosnet/sds/relay/stratoschain/grpc"
-	"github.com/stratosnet/sds/utils"
-	utiltypes "github.com/stratosnet/sds/utils/types"
+	"github.com/stratosnet/sds/pp/tx"
+	"github.com/stratosnet/sds/sds-msg/protos"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
+	txclienttypes "github.com/stratosnet/sds/tx-client/types"
 )
 
 // Deactivate Request that an active PP node becomes inactive
-func Deactivate(ctx context.Context, txFee utiltypes.TxFee) error {
+func Deactivate(ctx context.Context, txFee txclienttypes.TxFee) error {
 	deactivateReq, err := reqDeactivateData(ctx, txFee)
 	if err != nil {
 		pp.ErrorLog(ctx, "Couldn't build PP deactivate request: "+err.Error())
@@ -49,12 +48,12 @@ func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 
 	setting.State = target.ActivationState
 
-	if target.ActivationState == types.PP_INACTIVE {
+	if target.ActivationState == msgtypes.PP_INACTIVE {
 		pp.Log(ctx, "Current node is already inactive")
 		return
 	}
 
-	err := grpc.BroadcastTx(target.Tx, sdktx.BroadcastMode_BROADCAST_MODE_BLOCK)
+	err := tx.BroadcastTx(target.Tx)
 	if err != nil {
 		pp.ErrorLog(ctx, "The deactivation transaction couldn't be broadcast", err)
 	} else {
@@ -64,13 +63,13 @@ func RspDeactivate(ctx context.Context, conn core.WriteCloser) {
 
 // NoticeUnbondingPP Notice when this PP node unbonded all its deposit
 func NoticeUnbondingPP(ctx context.Context, conn core.WriteCloser) {
-	setting.State = types.PP_UNBONDING
+	setting.State = msgtypes.PP_UNBONDING
 	pp.Log(ctx, "Deactivation submitted, all tokens are being unbonded(taking around 180 days to complete)"+
 		"\n --- This node will be forced to suspend very soon! ---")
 }
 
 // NoticeDeactivatedPP Notice when this PP node was successfully deactivated after threshold period (180 days)
 func NoticeDeactivatedPP(ctx context.Context, conn core.WriteCloser) {
-	setting.State = types.PP_INACTIVE
+	setting.State = msgtypes.PP_INACTIVE
 	pp.Log(ctx, "This PP node is now deactivated")
 }

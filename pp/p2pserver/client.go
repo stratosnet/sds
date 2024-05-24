@@ -12,9 +12,9 @@ import (
 
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg"
+	"github.com/stratosnet/sds/framework/msg"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
 )
 
 type offline struct {
@@ -26,6 +26,13 @@ func (p *P2pServer) initClient() {
 	p.offlineChan = make(chan *offline, 2)
 	p.cachedConnMap = &sync.Map{}
 	p.connMap = make(map[string]*cf.ClientConn)
+}
+
+func (p *P2pServer) SetOptionFunctions(write func(context.Context, *msg.RelayMsgBuf), read func(*msg.RelayMsgBuf),
+	handle func(context.Context, *msg.RelayMsgBuf)) {
+	p.onWriteFunc = write
+	p.onReadFunc = read
+	p.onHandleFunc = handle
 }
 
 func (p *P2pServer) NewClientToMainSp(ctx context.Context, server string) error {
@@ -53,37 +60,35 @@ func (p *P2pServer) newClient(ctx context.Context, server string, heartbeat, rec
 		utils.Log("on error")
 	})
 	onClose := cf.OnCloseOption(func(c core.WriteCloser) {
-		utils.Log("on close", c.(*cf.ClientConn).GetName())
-		p.clientMutex.Lock()
-		delete(p.connMap, c.(*cf.ClientConn).GetName())
-		p.clientMutex.Unlock()
-
-		if p.ppConn != nil {
-			if p.ppConn == c.(*cf.ClientConn) {
-				utils.DebugLog("lost gateway PP conn, delete and change to new PP")
-				select {
-				case p.offlineChan <- &offline{
-					IsSp:           false,
-					NetworkAddress: p.ppConn.GetRemoteAddr(),
-				}:
-				default:
-					break
-				}
-			}
+		cc, ok := c.(*cf.ClientConn)
+		if !ok {
+			utils.DebugLogf("Closing client conn %v. The conn object is invalid", server)
+			return
+		}
+		if cc == nil {
+			utils.DebugLogf("Closing client conn %v. The conn object is nil", server)
+			return
 		}
 
-		if p.mainSpConn != nil {
-			if p.mainSpConn.GetName() == c.(*cf.ClientConn).GetName() {
-				utils.DebugLog("lost SP conn, name: ", p.mainSpConn.GetName(), " netId is ", p.mainSpConn.GetNetID())
-				p.mainSpConn = nil
-				select {
-				case p.offlineChan <- &offline{
-					IsSp: true,
-				}:
-				default:
-					break
-				}
-			}
+		utils.Log("on close", cc.GetName())
+		p.clientMutex.Lock()
+		delete(p.connMap, cc.GetName())
+		p.clientMutex.Unlock()
+
+		offlineInfo := &offline{
+			IsSp:           false,
+			NetworkAddress: cc.GetRemoteAddr(),
+		}
+		if p.mainSpConn != nil && p.mainSpConn.GetName() == cc.GetName() {
+			utils.DebugLog("lost SP conn, name: ", p.mainSpConn.GetName(), " netId is ", p.mainSpConn.GetNetID())
+			p.mainSpConn = nil
+			offlineInfo.IsSp = true
+		}
+
+		select {
+		case p.offlineChan <- offlineInfo:
+		default:
+			break
 		}
 	})
 
@@ -102,13 +107,14 @@ func (p *P2pServer) newClient(ctx context.Context, server string, heartbeat, rec
 		onConnect,
 		onError,
 		onClose,
-		cf.OnMessageOption(func(msg msg.RelayMsgBuf, c core.WriteCloser) {}),
+		cf.OnWriteOption(p.onWriteFunc),
+		cf.OnHandleOption(p.onHandleFunc),
 		cf.BufferSizeOption(100),
 		cf.ReconnectOption(reconnect),
 		cf.HeartCloseOption(!heartbeat),
 		cf.LogOpenOption(true),
 		cf.MinAppVersionOption(setting.Config.Version.MinAppVer),
-		cf.P2pAddressOption(p.GetP2PAddress()),
+		cf.P2pAddressOption(p.GetP2PAddress().String()),
 		cf.ServerIpOption(setting.NetworkIP),
 		serverPortOpt,
 		cf.ContextKVOption(ckv),
@@ -159,10 +165,6 @@ func (p *P2pServer) CleanUpConnMap(fileHash string) {
 	})
 }
 
-func (p *P2pServer) SetPpClientConn(ppConn *cf.ClientConn) {
-	p.ppConn = ppConn
-}
-
 func (p *P2pServer) ReadOfflineChan() chan *offline {
 	return p.offlineChan
 }
@@ -210,10 +212,6 @@ func (p *P2pServer) RangeCachedConn(prefix string, rf func(k, v interface{}) boo
 
 func (p *P2pServer) GetSpConn() *cf.ClientConn {
 	return p.mainSpConn
-}
-
-func (p *P2pServer) GetPpConn() *cf.ClientConn {
-	return p.ppConn
 }
 
 // RecordSpMaintenance return boolean flag of switching to new SP

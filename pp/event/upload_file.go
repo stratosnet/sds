@@ -7,27 +7,30 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/stratosnet/sds/framework/client/cf"
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/crypto"
+	"github.com/stratosnet/sds/framework/crypto/encryption"
+	"github.com/stratosnet/sds/framework/crypto/encryption/hdkey"
+	"github.com/stratosnet/sds/framework/msg/header"
+	fwtypes "github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/metrics"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/encryption"
-	"github.com/stratosnet/sds/utils/encryption/hdkey"
-	"github.com/stratosnet/sds/utils/types"
-	"google.golang.org/protobuf/proto"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 var (
@@ -118,7 +121,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		}
 
 		if file.IsFileRpcRemote(target.FileHash) {
-			file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: target.Result.Msg})
+			_ = file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: target.Result.Msg})
 		} else {
 			file.ClearFileMap(target.FileHash)
 		}
@@ -143,7 +146,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 
 	// tell the rpc client, uploading to sds network has successfully started.
 	if file.IsFileRpcRemote(target.FileHash) {
-		file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: rpc.SUCCESS})
+		_ = file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: rpc.SUCCESS})
 	}
 
 	if isCover {
@@ -176,7 +179,7 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 	}
 
 	// verify sp address
-	if !types.VerifyP2pAddrBytes(spP2pPubkey, target.SpP2PAddress) {
+	if !fwtypes.VerifyP2pAddrBytes(spP2pPubkey.Bytes(), target.SpP2PAddress) {
 		pp.ErrorLog(ctx, "failed verifying sp's p2p address")
 		return
 	}
@@ -186,34 +189,21 @@ func RspBackupStatus(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	pp.Logf(ctx, "Backup status for file %s: the number of replica is %d", target.FileHash, target.Replicas)
+	pp.Logf(ctx, "Backup status for file %s: current_replica is %d, desired_replica is %d, ongoing_backups is %d, delete_origin is %v, need_reupload is %v",
+		target.FileHash, target.Replicas, target.DesiredReplicas, target.OngoingBackups,
+		strconv.FormatBool(target.DeleteOriginTmp), strconv.FormatBool(target.NeedReupload))
 	if target.DeleteOriginTmp {
 		pp.Logf(ctx, "Backup is finished for file %s, delete all the temporary slices", target.FileHash)
 		file.DeleteTmpFileSlices(ctx, target.FileHash)
 		return
 	}
 
-	if len(target.Slices) == 0 {
-		ScheduleReqBackupStatus(ctx, target.FileHash)
+	if target.NeedReupload {
+		pp.Logf(ctx, "No available replicas remains for the file %s, re-upload it if you still want to use it, "+
+			"please be kindly noted that you won't be charged for re-uploading this file", target.FileHash)
 		return
 	}
-
-	pp.Logf(ctx, "Start re-uploading slices for the file  %s", target.FileHash)
-	totalSize := int64(0)
-	for _, slice := range target.Slices {
-		totalSize += int64(slice.GetSliceSize())
-	}
-	uploadTask := task.CreateBackupFileTask(target, uploadTaskHelper)
-	p2pserver.GetP2pServer(ctx).CleanUpConnMap("upload#" + target.FileHash)
-	task.UploadFileTaskMap.Store(target.FileHash, uploadTask)
-	p := &task.UploadProgress{
-		Total:     totalSize,
-		HasUpload: 0,
-	}
-	task.UploadProgressMap.Store(target.FileHash, p)
-
-	// Start uploading
-	startUploadTask(ctx, target.FileHash, uploadTask)
+	pp.Logf(ctx, "No need to re-upload slices for the file  %s", target.FileHash)
 }
 
 func startUploadTask(ctx context.Context, fileHash string, uploadTask *task.UploadFileTask) {
@@ -330,7 +320,7 @@ func encryptSliceData(rawData []byte) ([]byte, error) {
 	}
 	aesNonce := rand.Uint64()
 
-	key, err := hdkey.MasterKeyForSliceEncryption(setting.WalletPrivateKey, hdKeyNonce)
+	key, err := hdkey.MasterKeyForSliceEncryption(setting.WalletPrivateKey.Bytes(), hdKeyNonce)
 	if err != nil {
 		return nil, err
 	}
@@ -383,14 +373,11 @@ func (UploadStreamFileHandler) PreUpload(ctx context.Context, filePath, encrypti
 	fileSize := uint64(info.Size())
 	fileHash := file.GetFileHashForVideoStream(filePath, encryptionTag)
 
-	sliceSize := setting.DefaultSliceBlockSize
-
-	var sliceDuration float64
-	sliceDuration = math.Floor(float64(duration) * float64(sliceSize) / float64(fileSize))
-	sliceDuration = math.Min(float64(setting.DefaultHlsSegmentLength), sliceDuration)
+	videoSegmentNum := math.Sqrt(10*math.Max(1, float64(fileSize)/float64(setting.DefaultSliceBlockSize)) - 9)
+	sliceDuration := math.Ceil(float64(duration) / videoSegmentNum)
 	sliceCount := uint64(math.Ceil(float64(duration)/sliceDuration)) + setting.DefaultHlsSegmentBuffer + 1
 
-	file.VideoToHls(ctx, fileHash, file.GetFilePath(fileHash))
+	file.VideoToHls(ctx, fileHash, file.GetFilePath(fileHash), int(sliceDuration))
 
 	hlsInfo, err := file.GetHlsInfo(fileHash, sliceCount)
 	if err != nil {
@@ -432,7 +419,11 @@ func (UploadStreamFileHandler) PreUpload(ctx context.Context, filePath, encrypti
 				return nil, nil, errors.Wrap(err, "Couldn't encrypt slice data")
 			}
 		}
-		sliceHash := utils.CalcSliceHash(data, fileHash, sliceNumber)
+		sliceHash, err := crypto.CalcSliceHash(data, fileHash, sliceNumber)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to calc slice hash")
+		}
+
 		err = file.SaveTmpSliceData(fileHash, sliceHash, data)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "failed to save to temp file")
@@ -449,7 +440,7 @@ func (UploadStreamFileHandler) PreUpload(ctx context.Context, filePath, encrypti
 		}
 		slices = append(slices, slice)
 		totalSize += sliceSize
-		err := file.SaveTmpSliceData(fileHash, sliceHash, data)
+		err = file.SaveTmpSliceData(fileHash, sliceHash, data)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -500,7 +491,10 @@ func (UploadRawFileHandler) PreUpload(ctx context.Context, filePath, encryptionT
 				return nil, nil, errors.Wrap(err, "Couldn't encrypt slice data")
 			}
 		}
-		sliceHash := utils.CalcSliceHash(data, fileHash, sliceNumber)
+		sliceHash, err := crypto.CalcSliceHash(data, fileHash, sliceNumber)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to calc slice hash")
+		}
 		err = file.SaveTmpSliceData(fileHash, sliceHash, data)
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "failed to save to temp file")

@@ -4,12 +4,11 @@ import (
 	"context"
 
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
-	"github.com/stratosnet/sds/pp/network"
+	"github.com/stratosnet/sds/framework/msg/header"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/requests"
-	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 func RspStateChange(ctx context.Context, conn core.WriteCloser) {
@@ -28,10 +27,5 @@ func RspStateChange(ctx context.Context, conn core.WriteCloser) {
 		utils.Log("State change hasn't been completed")
 		return
 	}
-	if setting.Config.Node.AutoStart {
-		utils.Log("State change has been completed, will start registering automatically")
-		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_STATE_OFFLINE)
-		return
-	}
-	utils.Log("State change has been completed, please register you node manually")
+	pp.Log(ctx, "State change has been completed, please start mining.")
 }

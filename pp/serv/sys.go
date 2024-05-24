@@ -3,15 +3,18 @@ package serv
 import (
 	"context"
 	"encoding/json"
+	"runtime/debug"
 	"time"
 
 	"github.com/alex023/clock"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/mem"
+	"github.com/stratosnet/sds/utils/environment"
+
 	"github.com/stratosnet/sds/framework/client/cf"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
 )
 
 var myClock = clock.NewClock()
@@ -19,6 +22,45 @@ var job clock.Job
 
 var dumpClock = clock.NewClock()
 var dumpJob clock.Job
+
+var lastGcCount int64
+var consecutiveGcOverTriggered int
+
+const (
+	INVALID_MEM_LIMIT_FOR_READING  = -1
+	CHECK_GCSTATS_INTERVAL         = 30 * time.Second
+	THRESHOLD_GC_OVER_TRIGGERED    = 30
+	THRESHOLD_NUM_CONSEC_STAY_HIGH = 3
+)
+
+func SetSoftMemoryCap() {
+	if environment.IsDev() {
+		debug.SetMemoryLimit(setting.SoftRamLimitDev)
+	} else {
+		debug.SetMemoryLimit(setting.SoftRamLimit)
+	}
+	utils.DebugLog("the ram limit is set to ", debug.SetMemoryLimit(INVALID_MEM_LIMIT_FOR_READING))
+}
+
+func CheckGCStats() func() {
+	return func() {
+		gcStats := &debug.GCStats{}
+		debug.ReadGCStats(gcStats)
+		if gcStats.NumGC-lastGcCount > THRESHOLD_GC_OVER_TRIGGERED {
+			consecutiveGcOverTriggered++
+			if consecutiveGcOverTriggered >= THRESHOLD_NUM_CONSEC_STAY_HIGH {
+				consecutiveGcOverTriggered = 0
+				utils.FatalLogfAndTerminate("Fatal error: RAM usage exceeds the limit for too long")
+			}
+		} else {
+			consecutiveGcOverTriggered = 0
+		}
+
+		lastGcCount = gcStats.NumGC
+		utils.DebugLogf("GC Stats: last seen(%v), number of gc(%v), ", gcStats.LastGC.Unix(), gcStats.NumGC)
+		myClock.AddJobWithInterval(CHECK_GCSTATS_INTERVAL, CheckGCStats())
+	}
+}
 
 func StartDumpTrafficLog(ctx context.Context) {
 	logJobInterval := setting.Config.Traffic.LogInterval
@@ -71,12 +113,7 @@ func dumpTrafficLog(ctx context.Context) func() {
 				serverInbound = ps.GetP2pServer().GetInboundAndReset()
 				serverOutbound = ps.GetP2pServer().GetOutboundAndReset()
 			}
-			conn := ps.GetPpConn()
-			if conn != nil {
-				clientInbound += conn.GetInboundAndReset()
-				clientOutbound += conn.GetOutboundAndReset()
-			}
-			conn = ps.GetSpConn()
+			conn := ps.GetSpConn()
 			if conn != nil {
 				clientInbound += conn.GetInboundAndReset()
 				clientOutbound += conn.GetOutboundAndReset()
@@ -171,12 +208,7 @@ func monitor(ctx context.Context) func() {
 				r += ps.GetP2pServer().GetSecondReadFlow()
 				w += ps.GetP2pServer().GetSecondWriteFlow()
 			}
-			conn := ps.GetPpConn()
-			if conn != nil {
-				r += conn.GetSecondReadFlow()
-				w += conn.GetSecondWriteFlow()
-			}
-			conn = ps.GetSpConn()
+			conn := ps.GetSpConn()
 			if conn != nil {
 				r += conn.GetSecondReadFlow()
 				w += conn.GetSecondWriteFlow()

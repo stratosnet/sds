@@ -14,9 +14,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
 )
 
 const HLS_SEGMENT_FILENAME = "%d.ts"
@@ -45,14 +45,14 @@ func GetVideoDuration(path string) (uint64, error) {
 	return uint64(math.Ceil(length)), nil
 }
 
-func VideoToHls(ctx context.Context, fileHash, filePath string) bool {
+func VideoToHls(ctx context.Context, fileHash, filePath string, sliceDuration int) bool {
 	videoTmpFolder := GetVideoTmpFolder(fileHash)
 	if _, err := os.Stat(videoTmpFolder); os.IsNotExist(err) {
 		_ = os.Mkdir(videoTmpFolder, fs.ModePerm)
 	}
 	hlsSegmentFileName := videoTmpFolder + "/" + HLS_SEGMENT_FILENAME
 	hlsHeaderFileName := videoTmpFolder + "/" + HLS_HEADER_FILENAME
-	transformCmd := exec.Command("ffmpeg", "-i", filePath, "-codec:", "copy", "-start_number", "0", "-hls_time", "10",
+	transformCmd := exec.Command("ffmpeg", "-i", filePath, "-codec:", "copy", "-start_number", "0", "-hls_time", strconv.Itoa(sliceDuration),
 		"-hls_list_size", "0", "-f", "hls", "-hls_segment_filename", hlsSegmentFileName, hlsHeaderFileName)
 	stderr, _ := transformCmd.StderrPipe()
 	_ = transformCmd.Start()

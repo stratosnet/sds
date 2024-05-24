@@ -3,7 +3,7 @@ package core
 import (
 	"sync"
 
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 type connPool struct {
