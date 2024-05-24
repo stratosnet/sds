@@ -144,7 +144,7 @@ func (api *terminalCmd) Activate(ctx context.Context, param []string) (CmdResult
 	}
 
 	if len(param) < 2 {
-		return CmdResult{Msg: ""}, errors.New("expecting at least 2 params. Input amount of tokens, fee amount and (optionally) gas amount")
+		return CmdResult{Msg: ""}, errors.New("expecting at least 2 params. Input amount of tokens, fee amount and (optionally) --gas")
 	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
 	amount, err := txclienttypes.ParseCoinNormalized(param[0])
@@ -160,13 +160,27 @@ func (api *terminalCmd) Activate(ctx context.Context, param []string) (CmdResult
 		Fee:      fee,
 		Simulate: true,
 	}
+
+	var gas uint64
+
 	if len(param) > 2 {
-		gas, err := strconv.ParseUint(param[2], 10, 64)
-		if err != nil {
-			return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be a positive integer")
+		for _, p := range param[2:] {
+			if !strings.Contains(p, "=") {
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
+			}
+
+			kv := strings.SplitN(p, "=", 2)
+			switch kv[0] {
+			case "--gas":
+				gas, err = strconv.ParseUint(kv[1], 10, 64)
+				if err != nil {
+					return CmdResult{Msg: ""}, errors.New("invalid param --gas. Should be a positive integer")
+				}
+				txFee.Gas = gas
+			default:
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
+			}
 		}
-		txFee.Gas = gas
-		txFee.Simulate = false
 	}
 
 	switch state := network.GetPeer(ctx).GetStateFromFsm(); state.Id {
@@ -192,7 +206,7 @@ func (api *terminalCmd) UpdateDeposit(ctx context.Context, param []string) (CmdR
 
 	if len(param) < 2 {
 		return CmdResult{Msg: ""}, errors.New("expecting at least 2 params. Input amount of depositDelta, fee amount, " +
-			"(optional) gas amount")
+			"(optional) --gas")
 	}
 
 	depositDelta, err := txclienttypes.ParseCoinNormalized(param[0])
@@ -217,13 +231,26 @@ func (api *terminalCmd) UpdateDeposit(ctx context.Context, param []string) (CmdR
 		Simulate: true,
 	}
 
-	if len(param) == 3 {
-		gas, err := strconv.ParseUint(param[2], 10, 64)
-		if err != nil {
-			return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be a positive integer")
+	var gas uint64
+
+	if len(param) > 2 {
+		for _, p := range param[2:] {
+			if !strings.Contains(p, "=") {
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
+			}
+
+			kv := strings.SplitN(p, "=", 2)
+			switch kv[0] {
+			case "--gas":
+				gas, err = strconv.ParseUint(kv[1], 10, 64)
+				if err != nil {
+					return CmdResult{Msg: ""}, errors.New("invalid param --gas. Should be a positive integer")
+				}
+				txFee.Gas = gas
+			default:
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
+			}
 		}
-		txFee.Gas = gas
-		txFee.Simulate = false
 	}
 
 	if !setting.IsPP {
@@ -291,7 +318,7 @@ func (api *terminalCmd) Deactivate(ctx context.Context, param []string) (CmdResu
 	}
 
 	if len(param) < 1 {
-		return CmdResult{Msg: ""}, errors.New("expecting at least 1 param. Input fee amount and (optional) gas amount")
+		return CmdResult{Msg: ""}, errors.New("expecting at least 1 param. Input fee amount and (optional) --gas")
 	}
 
 	fee, err := txclienttypes.ParseCoinNormalized(param[0])
@@ -302,13 +329,26 @@ func (api *terminalCmd) Deactivate(ctx context.Context, param []string) (CmdResu
 		Fee:      fee,
 		Simulate: true,
 	}
+	var gas uint64
+
 	if len(param) > 1 {
-		gas, err := strconv.ParseUint(param[1], 10, 64)
-		if err != nil {
-			return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be a positive integer")
+		for _, p := range param[1:] {
+			if !strings.Contains(p, "=") {
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
+			}
+
+			kv := strings.SplitN(p, "=", 2)
+			switch kv[0] {
+			case "--gas":
+				gas, err = strconv.ParseUint(kv[1], 10, 64)
+				if err != nil {
+					return CmdResult{Msg: ""}, errors.New("invalid param --gas. Should be a positive integer")
+				}
+				txFee.Gas = gas
+			default:
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
+			}
 		}
-		txFee.Gas = gas
-		txFee.Simulate = false
 	}
 
 	if setting.State == msgtypes.PP_INACTIVE {
@@ -1063,7 +1103,7 @@ func (api *terminalCmd) Send(ctx context.Context, param []string) (CmdResult, er
 
 	if len(param) < 3 {
 		return CmdResult{Msg: ""},
-			errors.New("expecting at least 3 params. Input amount of tokens, to address, fee amount,and (optional) gas amount")
+			errors.New("expecting at least 3 params. Input amount of tokens, to address, fee amount,and (optional) --gas")
 	}
 
 	toAddr, err := fwtypes.WalletAddressFromBech32(param[0])
@@ -1085,13 +1125,26 @@ func (api *terminalCmd) Send(ctx context.Context, param []string) (CmdResult, er
 		Simulate: true,
 	}
 
-	if len(param) == 4 {
-		gas, err := strconv.ParseUint(param[3], 10, 64)
-		if err != nil {
-			return CmdResult{Msg: ""}, errors.New("invalid gas param. Should be a positive integer")
+	var gas uint64
+
+	if len(param) > 3 {
+		for _, p := range param[3:] {
+			if !strings.Contains(p, "=") {
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p)
+			}
+
+			kv := strings.SplitN(p, "=", 2)
+			switch kv[0] {
+			case "--gas":
+				gas, err = strconv.ParseUint(kv[1], 10, 64)
+				if err != nil {
+					return CmdResult{Msg: ""}, errors.New("invalid param --gas. Should be a positive integer")
+				}
+				txFee.Gas = gas
+			default:
+				return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
+			}
 		}
-		txFee.Gas = gas
-		txFee.Simulate = false
 	}
 
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
