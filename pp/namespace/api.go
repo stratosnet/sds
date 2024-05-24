@@ -908,12 +908,13 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 	p2pserver.GetP2pServer(reqCtx).SendMessageToSPServer(reqCtx, req, header.ReqGetShareFile)
 
 	// the application gives FileShareResult type of result
+	key := shareLink.ShareLink + task.LOCAL_REQID
 	found := false
 	for !found {
 		select {
 		case <-ctx.Done():
 			return rpc_api.Result{Return: rpc_api.TIME_OUT}
-		case result := <-file.SubscribeFileShareResult(shareLink.ShareLink):
+		case result := <-file.SubscribeFileShareResult(key):
 			file.UnsubscribeFileShareResult(shareLink.ShareLink)
 			if result == nil {
 				return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
