@@ -11,7 +11,7 @@ import (
 
 func StartHTTPServ(ctx context.Context) {
 	httpServ := httpserv.MyNewHTTPServ(setting.Config.Streaming.RestPort)
-	httpServ.MyRoute("/getOzone/", api.GetOzone)
+	httpServ.MyRoute("/getOzone/", corsHandler(api.GetOzone))
 	httpServ.MyRoute("/prepareVideoFileCache/", corsHandler(api.PrepareVideoFileCache))
 	httpServ.MyRoute("/prepareSharedVideoFileCache/", corsHandler(api.PrepareSharedVideoFileCache))
 	httpServ.MyRoute("/getVideoSliceCache/", corsHandler(api.GetVideoSliceCache))
