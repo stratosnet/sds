@@ -1,0 +1,13 @@
+[
+  {
+    "linkType": "filehash",
+    "fileHash": "<file hash>",
+    "fileName": "<file name 1>"
+  },
+  {
+    "linkType": "sharelink",
+    "shareLink": "<share link>",
+    "sharePassword": "<share password>",
+    "fileName": "<file name 2>"
+  }
+]
