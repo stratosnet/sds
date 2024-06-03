@@ -67,7 +67,6 @@ const StreamPlayer = () => {
         if (keyPair?.privateKey != null) {
             signature = await stratosSdk.crypto.hdVault.keyUtils.signWithPrivateKey(message, keyPair.privateKey);
         }
-        console.log(keyPair)
 
         const requestOptions = {
             method: "POST",
