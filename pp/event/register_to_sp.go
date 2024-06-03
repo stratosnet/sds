@@ -5,15 +5,15 @@ import (
 	"context"
 
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/msg/header"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 // RspRegister  PP -> SP, SP -> PP, PP -> P
@@ -28,9 +28,7 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 	pp.Log(ctx, "target.RspRegister", target.P2PAddress)
-	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress() {
-		pp.Log(ctx, "transfer RspRegister to: ", target.P2PAddress)
-		p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServByP2pAddress(ctx, target.P2PAddress, core.MessageFromContext(ctx))
+	if target.P2PAddress != p2pserver.GetP2pServer(ctx).GetP2PAddress().String() {
 		return
 	}
 
@@ -40,6 +38,7 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		pp.Log(ctx, "Register failed", target.Result.Msg)
+		pp.Log(ctx, "startmining will automatically retry in a few minutes, please wait...")
 		return
 	}
 
@@ -47,9 +46,6 @@ func RspRegister(ctx context.Context, conn core.WriteCloser) {
 	setting.IsPPSyncedWithSP = true
 	pp.DebugLog(ctx, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@", p2pserver.GetP2pServer(ctx).GetConnectionName(conn))
 	setting.IsPP = target.IsPP
-	if !setting.IsPP {
-		reportDHInfoToPP(ctx)
-	}
 	if setting.IsPP {
 		network.GetPeer(ctx).StartMining(ctx)
 	}
@@ -68,7 +64,7 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 	rpcResult := &rpc.StartMiningResult{}
 	reqId := core.GetRemoteReqId(ctx)
 	if reqId != "" {
-		defer pp.SetRPCResult(p2pserver.GetP2pServer(ctx).GetP2PAddress()+reqId, rpcResult)
+		defer pp.SetRPCResult(p2pserver.GetP2pServer(ctx).GetP2PAddress().String()+reqId, rpcResult)
 	}
 	if target.Result.State != protos.ResultState_RES_SUCCESS {
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_MINING_NOT_STARTED)

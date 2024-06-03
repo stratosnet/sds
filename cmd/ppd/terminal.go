@@ -8,16 +8,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/alex023/clock"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
+
 	"github.com/stratosnet/sds/cmd/common"
+	fwtypes "github.com/stratosnet/sds/framework/types"
+	"github.com/stratosnet/sds/framework/utils"
+	"github.com/stratosnet/sds/framework/utils/console"
 	"github.com/stratosnet/sds/pp/serv"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/rpc"
-	"github.com/stratosnet/sds/utils"
-	"github.com/stratosnet/sds/utils/console"
 )
 
 const (
@@ -36,17 +37,18 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"help                                                           show all the commands\n" +
 		"wallets                                                        acquire all wallet wallets' address\n" +
 		"newwallet                                                      create new wallet, input password in prompt\n" +
-		"registerpeer                                                   register peer to index node\n" +
-		"rp                                                             register peer to index node\n" +
-		"activate <amount> <fee> optional<gas>                          send transaction to stchain to become an active PP node\n" +
-		"updateDeposit <depositDelta> <fee> optional<gas>               send transaction to stchain to update active pp's deposit\n" +
-		"deactivate <fee> optional<gas>                                 send transaction to stchain to stop being an active PP node\n" +
+		"registerpeer                                                   register peer to meta node\n" +
+		"rp                                                             register peer to meta node\n" +
+		"activate <amount> <fee> [--gas=<gas>]                          send transaction to stchain to become an active PP node\n" +
+		"updateDeposit <depositDelta> <fee> [--gas=<gas>]               send transaction to stchain to update active pp's deposit\n" +
+		"deactivate <fee> [--gas=<gas>]                                 send transaction to stchain to stop being an active PP node\n" +
 		"startmining                                                    start mining\n" +
-		"prepay <amount> <fee> optional<beneficiary> <gas>              prepay stos to get ozone\n" +
-		"put <filepath> optional<isEncrypted> optional<nodeTier>        \n" +
-		"               optional<allowHigherTier>                       upload file, need to consume ozone\n" +
-		"putstream <filepath> optional<isEncrypted> optional<nodeTier>  \n" +
-		"                     optional<allowHigherTier>                 upload video file for streaming, need to consume ozone. (alpha version, encode format config impossible)\n" +
+		"prepay <amount> <fee> [--beneficiary=<beneficiary>] [--gas=<gas>]\n" +
+		"                                                               prepay stos to get ozone\n" +
+		"put <filepath> [--isEncrypted=<isEncrypted>] [--nodeTier=<nodeTier>] [--allowHigherTier=<allowHigherTier>]\n" +
+		"                                                               upload file, need to consume ozone\n" +
+		"putstream <filepath> [--nodeTier=<nodeTier>] [--allowHigherTier=<allowHigherTier>]\n" +
+		"                                                               upload video file for streaming, need to consume ozone. (alpha version, encode format config impossible)\n" +
 		"list <filename>                                                query uploaded file by self\n" +
 		"list <page id>                                                 query all files owned by the wallet, paginated\n" +
 		"delete <filehash>                                              delete file\n" +
@@ -54,7 +56,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"                                                               e.g: get sdm://st1jn9skjsnxv26mekd8eu8a8aquh34v0m4mwgahg/v05ahm50ugfjrgd3ga8mqi6bqka32ks3dooe1p9g\n" +
 		"sharefile <filehash> <duration> <is_private>                   share an uploaded file\n" +
 		"allshare                                                       list all shared files\n" +
-		"getsharefile <sharelink> <password>                            download a shared file, need to consume ozone\n" +
+		"getsharefile sds://<sharelink>/<password>                      download a shared file, need to consume ozone\n" +
 		"cancelshare <shareID>                                          cancel a shared file\n" +
 		"clearexpshare                                                  clear all expired share links\n" +
 		"ver                                                            version\n" +
@@ -65,12 +67,17 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"getoz <walletAddress>                                          get current ozone balance\n" +
 		"status                                                         get current resource node status\n" +
 		"filestatus <filehash>                                          get current state of an uploaded file\n" +
+		"backupstatus <filehash>                                        get backup status of an file\n" +
 		"maintenance start <duration>                                   put the node in maintenance mode for the requested duration (in seconds)\n" +
 		"maintenance stop                                               stop the current maintenance\n" +
 		"downgradeinfo                                                  get information of last downgrade happened on this pp node\n" +
 		"performancemeasure                                             turn on performance measurement log for 60 seconds\n" +
-		"withdraw <amount> <fee> optional<targetAddr> optional<gas>     withdraw matured reward (from address is the configured node wallet)\n" +
-		"send <toAddress> <amount> <fee> optional<gas>                  sending coins to another account (from address is the configured node wallet)\n"
+		"withdraw <amount> <fee> [--targetAddr=<targetAddr>] [--gas=<gas>]\n" +
+		"                                                               withdraw matured reward (from address is the configured node wallet)\n" +
+		"send <toAddress> <amount> <fee> [--gas=<gas>]                  sending coins to another account (from address is the configured node wallet)\n" +
+		"updateinfo <fee> [--moniker=<moniker>] [--identity=<identity>] [--website=<website>]\n" +
+		"           [--security_contact=<security_contact>] [--details=<details>] [--gas=<gas>]\n" +
+		"                                                               update pp node info, including the beneficiary address from config file\n"
 
 	terminalId := uuid.New().String()
 
@@ -92,7 +99,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	}
 
 	newwallet := func(line string, param []string) bool {
-		err := utils.SetupWallet(setting.Config.Home.AccountsPath, setting.HDPath, updateWalletConfig)
+		err := fwtypes.SetupWallet(setting.Config.Home.AccountsPath, setting.HDPath, setting.Bip39Passphrase, updateWalletConfig)
 		if err != nil {
 			fmt.Println(err)
 			return false
@@ -100,8 +107,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		return true
 	}
 
-	start := func(line string, param []string) bool {
-		return callRpc(c, terminalId, "start", param)
+	startMining := func(line string, param []string) bool {
+		return callRpc(c, terminalId, "startMining", param)
 	}
 
 	registerPP := func(line string, param []string) bool {
@@ -229,6 +236,10 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		return callRpc(c, terminalId, "send", param)
 	}
 
+	updateInfo := func(line string, param []string) bool {
+		return callRpc(c, terminalId, "updateInfo", param)
+	}
+
 	nc := make(chan utils.LogMsg)
 	sub, err := c.Subscribe(context.Background(), "sdslog", nc, "logSubscription", terminalId)
 	if err != nil {
@@ -244,7 +255,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("wallets", wallets, false)
 	console.Mystdin.RegisterProcessFunc("getoz", getoz, true)
 	console.Mystdin.RegisterProcessFunc("newwallet", newwallet, false)
-	console.Mystdin.RegisterProcessFunc("startmining", start, true)
+	console.Mystdin.RegisterProcessFunc("startmining", startMining, true)
 	console.Mystdin.RegisterProcessFunc("rp", registerPP, true)
 	console.Mystdin.RegisterProcessFunc("registerpeer", registerPP, true)
 	console.Mystdin.RegisterProcessFunc("activate", activate, true)
@@ -285,6 +296,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 	console.Mystdin.RegisterProcessFunc("CheckReplica", checkReplica, true)
 	console.Mystdin.RegisterProcessFunc("withdraw", withdraw, true)
 	console.Mystdin.RegisterProcessFunc("send", send, true)
+	console.Mystdin.RegisterProcessFunc("updateinfo", updateInfo, true)
 
 	if isExec {
 		exit := false
@@ -333,7 +345,8 @@ func terminal(cmd *cobra.Command, args []string) {
 }
 
 func terminalPreRunE(cmd *cobra.Command, args []string) error {
-	return common.LoadConfig(cmd)
+	_, _, err := common.LoadConfig(cmd)
+	return err
 }
 
 func callRpc(c *rpc.Client, terminalId string, line string, param []string) bool {

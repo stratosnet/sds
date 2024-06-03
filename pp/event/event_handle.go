@@ -5,7 +5,7 @@ import (
 	"context"
 
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
+	"github.com/stratosnet/sds/framework/msg/header"
 )
 
 type VerifierFunc func(context.Context, header.MsgType, interface{}) error
@@ -30,7 +30,6 @@ func VerifyMessage(ctx context.Context, msgType header.MsgType, target interface
 func RegisterAllEventHandlers() {
 
 	// pp--(req)--sp--(*rsp*)--pp
-	registerEvent(header.RspGetPPList, RspGetPPList, SpRspVerifier)
 	registerEvent(header.RspGetSPList, RspGetSPList, SpRspVerifier)
 	registerEvent(header.RspGetPPStatus, RspGetPPStatus, SpRspVerifier)
 	registerEvent(header.RspGetPPDowngradeInfo, RspGetPPDowngradeInfo, SpRspVerifier)
@@ -50,7 +49,7 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspReportUploadSliceResult, RspReportUploadSliceResult, SpRspVerifier)
 	registerEvent(header.RspRegisterNewPP, RspRegisterNewPP, SpRspVerifier)
 	registerEvent(header.RspReportDownloadResult, RspReportDownloadResult, SpRspVerifier)
-	registerEvent(header.RspUploadSlicesWrong, RspUploadSlicesWrong, SpRspVerifier)
+	registerEvent(header.RspUploadSlicesWrong, RspUploadSlicesWrong, RspUploadFileWithNoReqIdVerifier)
 	registerEvent(header.RspReportBackupSliceResult, RspReportBackupSliceResult, SpRspVerifier)
 	registerEvent(header.RspFileBackupStatus, RspBackupStatus, RspBackupStatusVerifier)
 	registerEvent(header.RspFileStorageInfo, RspFileStorageInfo, RspFileStorageInfoVerifier)
@@ -59,7 +58,7 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspDownloadFileWrong, RspDownloadFileWrong, RspFileStorageInfoVerifier)
 	registerEvent(header.RspShareLink, RspShareLink, SpRspVerifier)
 	registerEvent(header.RspShareFile, RspShareFile, SpRspVerifier)
-	registerEvent(header.RspGetShareFile, RspGetShareFile, SpRspVerifier)
+	registerEvent(header.RspGetShareFile, RspGetShareFile, RspFileStorageInfoVerifier)
 	registerEvent(header.RspDeleteShare, RspDeleteShare, SpRspVerifier)
 	registerEvent(header.RspSpLatencyCheck, RspSpLatencyCheck, SpRspVerifier)
 	registerEvent(header.RspDeleteFile, RspDeleteFile, SpRspVerifier)
@@ -80,8 +79,6 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspDownloadSlice, RspDownloadSlice, PpRspVerifier)
 	registerEvent(header.ReqTransferDownload, ReqTransferDownload, NoticeFileSliceBackupVerifier)
 	registerEvent(header.RspTransferDownload, RspTransferDownload, nil)
-	registerEvent(header.ReqPpLatencyCheck, ReqPpLatencyCheck, nil)
-	registerEvent(header.RspPpLatencyCheck, RspPpLatencyCheck, PpRspVerifier)
 
 	// pp--(*msg*)--pp
 	registerEvent(header.ReqClearDownloadTask, ReqClearDownloadTask, nil)
@@ -101,5 +98,5 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.ReqGetHDInfo, ReqGetHDInfo, nil)
 	registerEvent(header.RspGetHDInfo, RspGetHDInfo, nil)
 
-	core.RegisterTimeoutHandler(header.ReqDownloadSlice, &DownloadTimeoutHandler{})
+	RegisterTimeoutHandler(header.ReqDownloadSlice, &DownloadTimeoutHandler{})
 }

@@ -3,7 +3,7 @@ package network
 import (
 	"context"
 
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 const (
@@ -34,6 +34,7 @@ const (
 	STATE_REGISTERED
 	STATE_MAINTANENCE
 	STATE_SUSPENDED
+	STATE_OFFLINE
 	NUMBER_STATE
 )
 
@@ -64,6 +65,7 @@ var (
 		{Id: STATE_REGISTERED, Name: "STATE_REGISTERED"},
 		{Id: STATE_MAINTANENCE, Name: "STATE_MAINTANENCE"},
 		{Id: STATE_SUSPENDED, Name: "STATE_SUSPENDED"},
+		{Id: STATE_OFFLINE, Name: "STATE_OFFLINE"},
 	}
 )
 
@@ -84,7 +86,7 @@ func (n *Network) InitFsm() {
 		el = append(el, e_list[e])
 	}
 	var fsmTable = []fsmTableItem{
-		{STATE_INIT, EVENT_GET_SP_LIST, utils.TransitionItem{NewState: STATE_GOT_SP_LIST, Action: n.GetPPStatusInitPPList}},
+		{STATE_INIT, EVENT_GET_SP_LIST, utils.TransitionItem{NewState: STATE_GOT_SP_LIST, Action: n.GetPPStatusFromSP}},
 
 		{STATE_GOT_SP_LIST, EVENT_SP_NO_PP_IN_STORE, utils.TransitionItem{NewState: STATE_NOT_CREATED}},
 		{STATE_GOT_SP_LIST, EVENT_RCV_STATUS_INACTIVE, utils.TransitionItem{NewState: STATE_NOT_ACTIVATED}},
@@ -94,7 +96,7 @@ func (n *Network) InitFsm() {
 
 		{STATE_NOT_ACTIVATED, EVENT_RCV_RSP_ACTIVATED, utils.TransitionItem{NewState: STATE_NOT_REGISTERED}},
 
-		{STATE_NOT_REGISTERED, EVENT_RCV_STATE_OFFLINE, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}},
+		{STATE_NOT_REGISTERED, EVENT_RCV_STATE_OFFLINE, utils.TransitionItem{NewState: STATE_OFFLINE}},
 		{STATE_NOT_REGISTERED, EVENT_START_MINING, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}},
 
 		{STATE_REGISTERING, EVENT_RCV_RSP_FIRST_NODE_STATUS, utils.TransitionItem{NewState: STATE_REGISTERED}},
@@ -103,14 +105,16 @@ func (n *Network) InitFsm() {
 		{STATE_REGISTERED, EVENT_CONN_RECONN, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}},
 		{STATE_REGISTERED, EVENT_RCV_SUSPENDED_STATE, utils.TransitionItem{NewState: STATE_SUSPENDED}},
 		{STATE_REGISTERED, EVENT_MAINTANENCE_START, utils.TransitionItem{NewState: STATE_MAINTANENCE}},
-		{STATE_REGISTERED, EVENT_RCV_STATE_OFFLINE, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}},
+		{STATE_REGISTERED, EVENT_RCV_STATE_OFFLINE, utils.TransitionItem{NewState: STATE_OFFLINE}},
 		{STATE_REGISTERED, EVENT_RCV_STATUS_SUSPEND, utils.TransitionItem{NewState: STATE_SUSPENDED}},
 
 		{STATE_MAINTANENCE, EVENT_MAINTANENCE_STOP, utils.TransitionItem{NewState: STATE_REGISTERING}},
 
-		{STATE_SUSPENDED, EVENT_RCV_STATE_OFFLINE, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}},
+		{STATE_SUSPENDED, EVENT_RCV_STATE_OFFLINE, utils.TransitionItem{NewState: STATE_OFFLINE}},
 		{STATE_SUSPENDED, EVENT_START_MINING, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}},
 		{STATE_SUSPENDED, EVENT_RCV_MINING_NOT_STARTED, utils.TransitionItem{NewState: STATE_NOT_REGISTERED}},
+
+		{STATE_OFFLINE, EVENT_START_MINING, utils.TransitionItem{NewState: STATE_REGISTERING, Action: n.StartRegisterToSp}},
 	}
 
 	_ = n.fsm.InitFsm(sl, el, func(fsm *utils.Fsm) {

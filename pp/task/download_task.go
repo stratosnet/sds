@@ -14,14 +14,15 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/stratosnet/sds/metrics"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/crypto"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
+	"github.com/stratosnet/sds/pp/metrics"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 const LOCAL_REQID string = "local"
@@ -145,17 +146,19 @@ type DownloadSliceData struct {
 }
 
 func AddDownloadTask(target *protos.RspFileStorageInfo) {
+	failedSlice := make(map[string]bool)
 	SliceInfoMap := make(map[string]*protos.DownloadSliceInfo)
 	for _, dlSliceInfo := range target.SliceInfo {
 		key := dlSliceInfo.SliceStorageInfo.SliceHash
 		SliceInfoMap[key] = dlSliceInfo
+		failedSlice[key] = true
 	}
 	dTask := &DownloadTask{
 		WalletAddress: target.WalletAddress,
 		FileHash:      target.FileHash,
 		VisitCer:      target.VisitCer,
 		sliceInfo:     SliceInfoMap,
-		FailedSlice:   make(map[string]bool),
+		FailedSlice:   failedSlice,
 		SuccessSlice:  make(map[string]bool),
 		FailedPPNodes: make(map[string]*protos.PPBaseInfo),
 		SliceCount:    len(target.SliceInfo),
@@ -184,14 +187,14 @@ func GetDownloadTaskWithSliceReqId(fileHash, walletAddress, sliceReqId string) (
 	return dTask, true
 }
 
-func GetDownloadTask(fileHash, walletAddress, fileReqId string) (*DownloadTask, bool) {
-	task, ok := DownloadTaskMap.Load(fileHash + walletAddress + fileReqId)
+func GetDownloadTask(key string) (*DownloadTask, bool) {
+	task, ok := DownloadTaskMap.Load(key)
 	if !ok {
 		return nil, false
 	}
 	dTask, ok := task.(*DownloadTask)
 	if !ok {
-		utils.ErrorLog("failed to parse the download task for the file ", fileHash)
+		utils.ErrorLog("failed to parse the download task for the file ", key)
 		return nil, false
 	}
 	return dTask, true
@@ -209,7 +212,7 @@ func CleanDownloadTask(ctx context.Context, fileHash, sliceHash, walletAddress, 
 		utils.DebugLogf("PP reported, clean slice task")
 
 		if downloadTask.GetNumberOfSliceInfo() <= 0 {
-			pp.DebugLog(ctx, "PP reported, clean all slice task")
+			utils.DebugLog("PP reported, clean all slice task")
 			DownloadTaskMap.Delete(fileHash + walletAddress + fileReqId)
 		}
 	}
@@ -237,7 +240,7 @@ func CancelDownloadTask(fileHash string) {
 }
 
 func GetDownloadSlice(target *protos.ReqDownloadSlice, slice *protos.DownloadSliceInfo) *DownloadSliceData {
-	size, buffers, err := file.ReadSliceData(slice.SliceStorageInfo.SliceHash)
+	size, buffers, err := file.ReadSliceData(target.RspFileStorageInfo.FileHash, slice.SliceStorageInfo.SliceHash)
 	if err != nil {
 		utils.ErrorLog("Failed getting slice data ", err.Error())
 		return nil
@@ -257,7 +260,7 @@ func GetDownloadSlice(target *protos.ReqDownloadSlice, slice *protos.DownloadSli
 		}
 	}
 	dSlice := &DownloadSliceData{
-		FileCrc: utils.CalcCRC32OfSlices(buffers),
+		FileCrc: crypto.CalcCRC32OfSlices(buffers),
 		Data:    buffers,
 		RawSize: rawSize,
 	}
@@ -394,7 +397,7 @@ func CheckRemoteDownloadOver(ctx context.Context, fileHash, fileReqId string) {
 	size := file.GetRemoteFileInfo(key, fileReqId)
 	utils.DebugLogf("size: %v", size)
 	metrics.DownloadPerformanceLogNow(fileHash + ":RCV_RPC_DOWNLOAD_DONE:")
-	file.SetRemoteFileResult(key, rpc.Result{Return: rpc.SUCCESS})
+	_ = file.SetRemoteFileResult(key, rpc.Result{Return: rpc.SUCCESS})
 	CleanDownloadFileAndConnMap(ctx, fileHash, fileReqId)
 }
 

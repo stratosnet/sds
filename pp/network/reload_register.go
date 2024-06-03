@@ -5,12 +5,12 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 const (
-	MIN_RELOAD_REGISTER_INTERVAL = 60
-	MAX_RELOAD_REGISTER_INTERVAL = 600
+	MIN_RELOAD_REGISTER_INTERVAL = 30
+	MAX_RELOAD_REGISTER_INTERVAL = 300
 )
 
 // StartStatusReportToSP to start a timer scheduling reporting Node Status to SP
@@ -23,7 +23,7 @@ func (p *Network) tryRegister(ctx context.Context) func() {
 	return func() {
 		if state := p.GetStateFromFsm(); state.Id == STATE_REGISTERING {
 			utils.DebugLog("Send register and set next try")
-			p.RegisterToSP(ctx, true)
+			p.RegisterToSP(ctx)
 
 			p.reloadRegisterRetry += 1
 			reloadInterval := MIN_RELOAD_REGISTER_INTERVAL*p.reloadRegisterRetry + rand.Intn(MIN_RELOAD_REGISTER_INTERVAL)
@@ -34,6 +34,7 @@ func (p *Network) tryRegister(ctx context.Context) func() {
 
 			p.ppPeerClock.AddJobWithInterval(time.Second*time.Duration(reloadInterval), p.tryRegister(ctx))
 		} else {
+			p.reloadRegisterRetry = 0
 			utils.DebugLog("Register process done, no more retry")
 		}
 	}

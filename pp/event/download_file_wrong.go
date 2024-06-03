@@ -4,14 +4,14 @@ import (
 	"context"
 
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/msg/header"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/task"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 func CheckAndSendRetryMessage(ctx context.Context, dTask *task.DownloadTask) {
@@ -33,7 +33,7 @@ func CheckAndSendRetryMessage(ctx context.Context, dTask *task.DownloadTask) {
 // RspFileStorageInfo SP-PP , PP-P
 func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 	// PP check whether itself is the storage PP, if not transfer
-	utils.Log("get，RspDownloadFileWrong")
+	utils.Log("get RspDownloadFileWrong")
 	var target protos.RspFileStorageInfo
 	if err := VerifyMessage(ctx, header.RspDownloadFileWrong, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
@@ -49,7 +49,7 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 		pp.DebugLog(ctx, "file hash", target.FileHash)
 		if target.Result.State == protos.ResultState_RES_SUCCESS {
 			pp.Log(ctx, "download starts: ")
-			dTask, ok := task.GetDownloadTask(target.FileHash, target.WalletAddress, fileReqId)
+			dTask, ok := task.GetDownloadTask(target.FileHash + target.WalletAddress + fileReqId)
 			if !ok {
 				pp.DebugLog(ctx, "cannot find the download task")
 				return
@@ -66,14 +66,13 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 					setDownloadSliceSuccess(ctx, slice.SliceStorageInfo.SliceHash, dTask)
 					task.DownloadProgress(ctx, target.FileHash, fileReqId, slice.SliceOffset.SliceOffsetEnd-slice.SliceOffset.SliceOffsetStart)
 				} else {
-					pp.DebugLog(ctx, "request download data")
+					dTask.AddFailedSlice(slice.SliceStorageInfo.SliceHash)
 					task.DownloadSliceProgress.Store(slice.TaskId+slice.SliceStorageInfo.SliceHash+fileReqId, uint64(0))
 					req := requests.ReqDownloadSliceData(ctx, &target, slice)
 					newCtx := createAndRegisterSliceReqId(ctx, fileReqId)
 					SendReqDownloadSlice(newCtx, target.FileHash, slice, req, fileReqId)
 				}
 			}
-			pp.DebugLog(ctx, "DownloadFileSlice(&target)", &target)
 		} else {
 			task.DeleteDownloadTask(target.FileHash, target.WalletAddress, task.LOCAL_REQID)
 			task.DownloadResult(ctx, target.FileHash, false, target.Result.Msg)

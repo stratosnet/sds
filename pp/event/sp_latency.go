@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"github.com/stratosnet/sds/framework/core"
-	"github.com/stratosnet/sds/msg/header"
-	"github.com/stratosnet/sds/msg/protos"
+	"github.com/stratosnet/sds/framework/msg/header"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/network"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
-	"github.com/stratosnet/sds/utils"
+	"github.com/stratosnet/sds/sds-msg/protos"
 )
 
 // RspSpLatencyCheck message RspSpLatencyCheck's handler
@@ -30,10 +30,10 @@ func RspSpLatencyCheck(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 
-	if start, ok := network.GetPeer(ctx).LoadPingTimeMap(response.NetworkAddressSp, true); ok {
+	if start, ok := network.GetPeer(ctx).LoadPingTimeMap(response.NetworkAddressSp); ok {
 		timeCost := rspTime - start
 		updateOptimalSp(ctx, timeCost, &response)
-		network.GetPeer(ctx).DeletePingTimeMap(response.NetworkAddressSp, true)
+		network.GetPeer(ctx).DeletePingTimeMap(response.NetworkAddressSp)
 	}
 }
 

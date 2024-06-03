@@ -1,0 +1,99 @@
+<head>
+  <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet"/>
+
+  <!-- If you'd like to support IE8 (for Video.js versions prior to v7) -->
+  <!-- <script src="https://vjs.zencdn.net/ie8/1.1.2/videojs-ie8.min.js"></script> -->
+  <style>
+    .center-screen {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      min-height: 100vh;
+    }
+  </style>
+</head>
+
+<body>
+<div class="center-screen">
+  <video-js
+          id=vid1 width=1200 height=600 class="vjs-default-skin" controls
+  >
+  </video-js>
+</div>
+
+<script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
+<script>
+  const url = "localhost"
+  const restPort =  9601 //corresponds to the rest api port in the config of pp node
+  const fileHash = "";
+  const ownerWalletAddress = "";
+  const pubKey = ""
+  let streamInfo;
+
+  httpGetAsync(`http://${url}:${restPort}/getOzone/${ownerWalletAddress}`, function(ozoneText) {
+    const ozoneInfo = JSON.parse(ozoneText);
+    const nowSec = Math.floor(Date.now() / 1000);
+    const signMessage = fileHash + ownerWalletAddress + ozoneInfo.sequenceNumber + nowSec
+    // TODO sign the message with private key
+    const reqBody = JSON.stringify({
+      pubKey: pubKey,
+      walletAddress: ownerWalletAddress,
+      signature: "",
+      reqTime: nowSec
+    });
+    httpPostAsync(`http://${url}:${restPort}/prepareVideoFileCache/${ownerWalletAddress}/${fileHash}`, reqBody, function(videoInfoText) {
+      streamInfo = JSON.parse(videoInfoText);
+      playVideo();
+    });
+  });
+
+  function playVideo() {
+    var player = videojs('vid1');
+    videojs.Hls.xhr.beforeRequest = function (options) {
+      const videoSegment = options.uri.split('/').pop();
+      const sliceInfo = getSliceInfo(videoSegment);
+      options.uri = `http://${url}:${restPort}/getVideoSliceCache/${sliceInfo.slice_storage_info.slice_hash}`
+      options.method = 'POST';
+      options.body = JSON.stringify({
+        fileHash,
+        fileReqId: streamInfo.req_id,
+        sliceInfo,
+      })
+      return options;
+    };
+    player.ready(function () {
+      player.src({
+        src: `http://${url}:${restPort}/getVideoSliceCache/${streamInfo.header_file}`,
+        type: 'application/x-mpegURL',
+      });
+    });
+    player.play();
+  }
+
+  function getSliceInfo(videoSegment) {
+    return streamInfo.segment_to_slice_info[videoSegment]
+  }
+
+  function httpGetAsync(theUrl, callback){
+    const xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() {
+      if (xmlHttp.readyState === 4 && xmlHttp.status === 200)
+        callback(xmlHttp.responseText);
+    }
+    xmlHttp.open("GET", theUrl, true); // true for asynchronous
+    xmlHttp.send(null);
+  }
+
+  function httpPostAsync(theUrl, body, callback)
+  {
+    const xmlHttp = new XMLHttpRequest();
+    xmlHttp.onreadystatechange = function() {
+      if (xmlHttp.readyState === 4 && xmlHttp.status === 200)
+        callback(xmlHttp.responseText);
+    }
+    xmlHttp.open("POST", theUrl, true); // true for asynchronous
+    xmlHttp.send(body);
+  }
+</script>
+</body>
