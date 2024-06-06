@@ -41,6 +41,18 @@ func (r *Redis) Get(key string, data interface{}) error {
 	return json.Unmarshal([]byte(res), data)
 }
 
+func (r *Redis) GetRaw(key string) (string, error) {
+
+	if key == "" {
+		return "", errors.New("key is nil")
+	}
+	raw, err := r.Client.Get(key).Result()
+	if err != nil {
+		return "", err
+	}
+	return raw, nil
+}
+
 // Set
 func (r *Redis) Set(key string, value interface{}, expire time.Duration) error {
 
@@ -59,6 +71,15 @@ func (r *Redis) Set(key string, value interface{}, expire time.Duration) error {
 	}
 
 	return errors.New("key or value is nil")
+}
+
+// Set
+func (r *Redis) GetKeyList(prefix string) []string {
+	return r.Client.Keys(prefix + "*").Val()
+}
+
+func (r *Redis) Append(key, value string) error {
+	return r.Client.Append(key, value).Err()
 }
 
 // Expire
