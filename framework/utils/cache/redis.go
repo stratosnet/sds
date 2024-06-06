@@ -14,10 +14,14 @@ type Redis struct {
 	Client *redis.Client
 }
 
-// IsOK pings the redis server and check server's pong response
+// IsOK pings the redis server and check server's pong response, and clean the data
 func (r *Redis) IsOK() error {
 
 	if pong, err := r.Client.Ping().Result(); err == nil && pong == "PONG" {
+		return nil
+	}
+
+	if err := r.Client.FlushAll(); err != nil {
 		return nil
 	}
 
