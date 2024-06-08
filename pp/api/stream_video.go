@@ -6,6 +6,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/ipfs/go-cid"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 	"io"
 	"net/http"
 	"net/url"
@@ -16,9 +19,6 @@ import (
 	"strings"
 	"time"
 
-	msgtypes "github.com/stratosnet/sds/sds-msg/types"
-
-	"github.com/ipfs/go-cid"
 	"github.com/pkg/errors"
 
 	"github.com/stratosnet/sds/framework/crypto"
@@ -43,11 +43,27 @@ const (
 	streamInfoFile = "streamInfo"
 )
 
-type StreamInfoBody struct {
+var (
+	//TODO to be replaced by other map implementation that has similar feature
+	RequestInfoMap = utils.NewAutoCleanMap(1 * time.Hour)
+)
+
+type StreamInfoRequest struct {
 	PubKey        string `json:"pubKey"`
 	WalletAddress string `json:"walletAddress"`
 	Signature     string `json:"signature"`
 	ReqTime       int64  `json:"reqTime"`
+}
+
+type StreamInfoResponse struct {
+	HeaderFile string `json:"headerFile"`
+	ReqId      string `json:"reqId"`
+}
+
+type StreamInfo struct {
+	HeaderFile         string                               `json:"header_file"`
+	FileHash           string                               `json:"file_hash"`
+	SegmentToSliceInfo map[string]*protos.DownloadSliceInfo `json:"segment_to_slice_info"`
 }
 
 type StreamReqBody struct {
@@ -62,23 +78,6 @@ type StreamReqBody struct {
 	FileReqId     string
 	FileTimestamp int64
 	SliceInfo     *protos.DownloadSliceInfo
-}
-
-type StreamInfo struct {
-	HeaderFile         string                               `json:"header_file"`
-	FileHash           string                               `json:"file_hash"`
-	ReqId              string                               `json:"req_id"`
-	SegmentToSliceInfo map[string]*protos.DownloadSliceInfo `json:"segment_to_slice_info"`
-}
-
-type SliceInfo struct {
-	SliceHash string
-	TaskId    string
-}
-
-type SharedFileInfo struct {
-	FileHash     string
-	OwnerAddress string
 }
 
 type OzoneInfo struct {
@@ -133,16 +132,17 @@ func streamVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, getSig
 		return
 	}
 
-	if cached, streamInfo := checkVideoCached(fileHash); cached {
-		ret, _ := json.Marshal(streamInfo)
-		_, _ = w.Write(ret)
-		return
-	}
-
 	walletSign, reqTime, err := getSignature(req, fileHash)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
+		return
+	}
+
+	if cached, streamInfo := checkVideoCached(fileHash, walletSign.Address); cached {
+		reqId := uuid.New().String()
+		RequestInfoMap.Store(reqId, streamInfo)
+		respondStreamInfoRequest(w, streamInfo.HeaderFile, reqId)
 		return
 	}
 
@@ -160,20 +160,21 @@ func streamVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, getSig
 		return
 	}
 
-	streamInfo, _, err := getStreamInfo(ctx, fileHash, res.ReqId)
-	_ = cacheStreamInfo(fileHash, streamInfo)
-
+	reqId := res.ReqId
+	streamInfo, _, err := getStreamInfo(ctx, fileHash, reqId)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
 		return
 	}
 
-	ret, _ := json.Marshal(streamInfo)
-	_, _ = w.Write(ret)
+	RequestInfoMap.Store(reqId, streamInfo)
+	_ = cacheStreamInfo(fileHash, walletSign.Address, streamInfo)
+
+	respondStreamInfoRequest(w, streamInfo.HeaderFile, reqId)
 
 	twoSlicesReadyCh := make(chan bool)
-	go cacheVideoSlices(ctx, streamInfo, twoSlicesReadyCh)
+	go cacheVideoSlices(ctx, streamInfo, reqId, twoSlicesReadyCh)
 	<-twoSlicesReadyCh
 	close(twoSlicesReadyCh)
 }
@@ -189,16 +190,17 @@ func streamSharedVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, 
 
 	shareLink, password, _ := parseShareLink(req.RequestURI)
 
-	if cached, streamInfo := checkVideoCached(shareLink); cached {
-		ret, _ := json.Marshal(streamInfo)
-		_, _ = w.Write(ret)
-		return
-	}
-
 	walletSign, reqTime, err := getSignature(req, shareLink)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
+		return
+	}
+
+	if cached, streamInfo := checkVideoCached(shareLink, walletSign.Address); cached {
+		reqId := uuid.New().String()
+		RequestInfoMap.Store(reqId, streamInfo)
+		respondStreamInfoRequest(w, streamInfo.HeaderFile, reqId)
 		return
 	}
 
@@ -211,35 +213,45 @@ func streamSharedVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	streamInfo, _, err := getStreamInfo(ctx, res.FileHash, res.ReqId)
-	_ = cacheStreamInfo(shareLink, streamInfo)
-
+	reqId := res.ReqId
+	streamInfo, _, err := getStreamInfo(ctx, res.FileHash, reqId)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
 		return
 	}
 
-	ret, _ := json.Marshal(streamInfo)
-	_, _ = w.Write(ret)
+	_ = cacheStreamInfo(shareLink, walletSign.Address, streamInfo)
+	RequestInfoMap.Store(reqId, streamInfo)
+
+	respondStreamInfoRequest(w, streamInfo.HeaderFile, reqId)
 
 	twoSlicesReadyCh := make(chan bool)
-	go cacheVideoSlices(ctx, streamInfo, twoSlicesReadyCh)
+	go cacheVideoSlices(ctx, streamInfo, reqId, twoSlicesReadyCh)
 	<-twoSlicesReadyCh
 	close(twoSlicesReadyCh)
 }
 
-func checkVideoCached(folderPath string) (bool, *StreamInfo) {
-	exists, fileInfoPath := checkSliceExist(folderPath, streamInfoFile)
+func respondStreamInfoRequest(w http.ResponseWriter, headerFile, reqId string) {
+	resp := StreamInfoResponse{
+		HeaderFile: headerFile,
+		ReqId:      reqId,
+	}
+	ret, _ := json.Marshal(resp)
+	_, _ = w.Write(ret)
+}
+
+func checkVideoCached(fileLink, walletAddress string) (bool, *StreamInfo) {
+	exists, fileInfoPath := checkStreamInfoExist(fileLink, walletAddress)
 	if !exists {
 		return false, nil
 	}
-	fileInfoData, err := file.GetWholeFileData(fileInfoPath)
+	streamInfoRaw, err := file.GetWholeFileData(fileInfoPath)
 	if err != nil {
 		return false, nil
 	}
 	streamInfo := &StreamInfo{}
-	if err = json.Unmarshal(fileInfoData, streamInfo); err != nil {
+	if err = json.Unmarshal(streamInfoRaw, streamInfo); err != nil {
 		return false, nil
 	}
 	for _, slice := range streamInfo.SegmentToSliceInfo {
@@ -305,14 +317,6 @@ func streamVideoP2P(w http.ResponseWriter, req *http.Request) {
 
 func streamVideoP2PHelper(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	sliceHash := parseSliceHash(req.URL)
-
-	body, err := verifyStreamReqBody(req)
-	if err != nil {
-		w.WriteHeader(setting.FAILCode)
-		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, err.Error()).ToBytes())
-		return
-	}
 
 	if setting.State == msgtypes.PP_ACTIVE {
 		w.WriteHeader(setting.FAILCode)
@@ -320,15 +324,49 @@ func streamVideoP2PHelper(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	utils.DebugLog("Send request to retrieve the slice ", sliceHash)
+	reqPath := req.URL.Path
+	pathParams := strings.Split(reqPath, "/")
+	if len(pathParams) < 4 {
+		w.WriteHeader(setting.FAILCode)
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "bad request").ToBytes())
+		return
+	}
 
-	data, err := getSliceData(ctx, body.FileHash, body.FileReqId, body.SliceInfo)
+	reqId := pathParams[2]
+	segment := pathParams[3]
+
+	value, ok := RequestInfoMap.Load(reqId)
+	if !ok {
+		w.WriteHeader(setting.FAILCode)
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "session expired").ToBytes())
+		return
+	}
+
+	var streamInfo *StreamInfo
+	streamInfo = value.(*StreamInfo)
+
+	sliceInfo, ok := streamInfo.SegmentToSliceInfo[segment]
+	if !ok {
+		w.WriteHeader(setting.FAILCode)
+		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "unable to find segment's info").ToBytes())
+		return
+	}
+
+	utils.DebugLog("Send request to retrieve the slice ", sliceInfo.SliceStorageInfo.SliceHash)
+
+	data, err := getSliceData(ctx, streamInfo.FileHash, reqId, sliceInfo)
 	if err != nil {
 		utils.ErrorLog("failed to get video slice ", err)
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get video slice").ToBytes())
 		return
 	}
+	if segment == streamInfo.HeaderFile {
+		w.Header().Set("Content-Type", "application/x-mpegURL")
+	} else if segment != "" {
+		w.Header().Set("Content-Type", "video/MP2T")
+	}
+	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
 	_, _ = w.Write(data)
 }
 
@@ -463,7 +501,7 @@ func parseSliceHash(reqURL *url.URL) string {
 	return reqPath[strings.LastIndex(reqPath, "/")+1:]
 }
 
-func cacheVideoSlices(ctx context.Context, streamInfo *StreamInfo, twoSlicesReadyCh chan<- bool) {
+func cacheVideoSlices(ctx context.Context, streamInfo *StreamInfo, reqId string, twoSlicesReadyCh chan<- bool) {
 	slices := getVideoSlicesInfoSortedByName(streamInfo)
 	cacheCh := make(chan bool, setting.StreamCacheMaxSlice)
 
@@ -476,7 +514,7 @@ func cacheVideoSlices(ctx context.Context, streamInfo *StreamInfo, twoSlicesRead
 		go func(idx int, sliceInfo *protos.DownloadSliceInfo) {
 			exist, _ := checkSliceExist(streamInfo.FileHash, sliceInfo.SliceStorageInfo.SliceHash)
 			if !exist {
-				_, _ = getSliceData(ctx, streamInfo.FileHash, streamInfo.ReqId, sliceInfo)
+				_, _ = getSliceData(ctx, streamInfo.FileHash, reqId, sliceInfo)
 			}
 			if idx < len(slices)-setting.StreamCacheMaxSlice {
 				cacheCh <- true
@@ -528,9 +566,19 @@ func checkSliceExist(fileHash, sliceHash string) (bool, string) {
 	return file.CheckFilePathEx(slicePath), slicePath
 }
 
+func checkStreamInfoExist(fileLink, walletAddress string) (bool, string) {
+	streamInfoPath := getStreamInfoPath(fileLink, walletAddress)
+	return file.CheckFilePathEx(streamInfoPath), streamInfoPath
+}
+
 func getSlicePath(folderName, sliceHash string) string {
 	folder := filepath.Join(file.GetTmpDownloadPath(), setting.VideoPath, folderName)
 	return filepath.Join(folder, sliceHash)
+}
+
+func getStreamInfoPath(fileLink, walletAddress string) string {
+	folder := filepath.Join(file.GetTmpDownloadPath(), setting.VideoPath, streamInfoFile, fileLink+"_"+walletAddress)
+	return filepath.Join(folder, streamInfoFile)
 }
 
 func getStreamInfo(ctx context.Context, fileHash, reqId string) (*StreamInfo, *protos.RspFileStorageInfo, error) {
@@ -562,14 +610,13 @@ func getStreamInfo(ctx context.Context, fileHash, reqId string) (*StreamInfo, *p
 	}
 	streamInfo := &StreamInfo{
 		FileHash:           fileHash,
-		ReqId:              reqId,
 		HeaderFile:         hlsInfo.HeaderFile,
 		SegmentToSliceInfo: segmentToSliceInfo,
 	}
 	return streamInfo, fInfo, nil
 }
 
-func cacheStreamInfo(folderPath string, streamInfo *StreamInfo) error {
+func cacheStreamInfo(fileLink, walletAddress string, streamInfo *StreamInfo) error {
 	SegmentToSliceInfo := make(map[string]*protos.DownloadSliceInfo, len(streamInfo.SegmentToSliceInfo))
 	for key, slice := range streamInfo.SegmentToSliceInfo {
 		SegmentToSliceInfo[key] = &protos.DownloadSliceInfo{
@@ -580,14 +627,13 @@ func cacheStreamInfo(folderPath string, streamInfo *StreamInfo) error {
 	cachedStreamInfo := StreamInfo{
 		HeaderFile:         streamInfo.HeaderFile,
 		FileHash:           streamInfo.FileHash,
-		ReqId:              streamInfo.ReqId,
 		SegmentToSliceInfo: SegmentToSliceInfo,
 	}
-	slicePath := getSlicePath(folderPath, streamInfoFile)
+	streamInfoPath := getStreamInfoPath(fileLink, walletAddress)
 	rawData, _ := json.Marshal(cachedStreamInfo)
-	fileMg, err := os.OpenFile(slicePath, os.O_CREATE|os.O_RDWR, 0600)
+	fileMg, err := os.OpenFile(streamInfoPath, os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
-		fileMg, err = file.CreateFolderAndReopenFile(filepath.Dir(slicePath), filepath.Base(slicePath))
+		fileMg, err = file.CreateFolderAndReopenFile(filepath.Dir(streamInfoPath), filepath.Base(streamInfoPath))
 		if err != nil {
 			return err
 		}
@@ -643,7 +689,7 @@ func getSliceData(ctx context.Context, fileHash, reqId string, sliceInfo *protos
 }
 
 func getWalletSignFromRequest(req *http.Request, keyword string) (*rpc_api.Signature, int64, error) {
-	body, err := verifyStreamInfoBody(req)
+	body, err := verifyStreamInfoReqBody(req)
 	if err != nil {
 		return nil, 0, errors.New("failed to parse request body")
 	}
@@ -707,7 +753,7 @@ func verifyStreamReqBody(req *http.Request) (*StreamReqBody, error) {
 	return &reqBody, nil
 }
 
-func verifyStreamInfoBody(req *http.Request) (*StreamInfoBody, error) {
+func verifyStreamInfoReqBody(req *http.Request) (*StreamInfoRequest, error) {
 	body, err := io.ReadAll(req.Body)
 	defer req.Body.Close()
 
@@ -715,7 +761,7 @@ func verifyStreamInfoBody(req *http.Request) (*StreamInfoBody, error) {
 		return nil, err
 	}
 
-	var reqBody StreamInfoBody
+	var reqBody StreamInfoRequest
 	err = json.Unmarshal(body, &reqBody)
 
 	if err != nil {

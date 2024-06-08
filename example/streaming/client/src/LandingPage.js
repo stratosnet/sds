@@ -6,9 +6,10 @@ import videoLinkType from "./LinkType";
 import LinkType from "./LinkType";
 
 const LandingPage = () => {
-    const [customLinkType, setCustomLinkType] = React.useState(LinkType.FILE_HASH)
-    const [customLink, setCustomLink] = React.useState("")
-    const [sharePassword, setSharePassword] = React.useState("")
+    const [linkList, setLinkList] = React.useState(myVideos);
+    const [customLinkType, setCustomLinkType] = React.useState(LinkType.FILE_HASH);
+    const [customLink, setCustomLink] = React.useState("");
+    const [sharePassword, setSharePassword] = React.useState("");
     const navigate = useNavigate();
 
     function handleCustomLinkClick() {
@@ -28,6 +29,19 @@ const LandingPage = () => {
         }
     }
 
+    React.useEffect(() => {
+        async function fetchLinks() {
+            const url = process.env.REACT_APP_NODE_SIGN_URL;
+            if (!url) {
+                return;
+            }
+            const resp = await fetch(`${url}/api/link-list`)
+            const moreLinks = await resp.json()
+            setLinkList([...linkList, ...moreLinks])
+        }
+        fetchLinks();
+    }, [])
+
     return <div className="link-table">
         <table>
             <tbody>
@@ -37,7 +51,7 @@ const LandingPage = () => {
                 <th>File Name</th>
             </tr>
             {
-                myVideos.map(link => {
+                linkList.map(link => {
                     if (link.linkType === videoLinkType.FILE_HASH) {
                         return <tr key={link.fileHash}>
                             <td>

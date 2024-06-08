@@ -1,16 +1,20 @@
 import React, { useState, createContext, useEffect } from "react";
 import * as stratosSdk from "@stratos-network/stratos-sdk.js";
 
-export const KeyPairContext = createContext(null);
+export const KeyPairContext = createContext({});
 
 const KeyPairContextProvider = (props) => {
     const [keyPair, setKeyPair] = useState(null);
+    const [walletAddress, setWalletAddress] = useState(null);
 
     async function initKeyPair () {
-        const mnemonic = process.env.REACT_APP_MNEMONIC;
+        const mnemonic = process.env.REACT_APP_WALLET_MNEMONIC;
         const password = process.env.REACT_APP_WALLET_PASSWORD;
-
         const hdPathIndex = 0;
+
+        if (!mnemonic) {
+            return null
+        }
 
         const phrase = stratosSdk.crypto.hdVault.mnemonic.convertStringToArray(mnemonic);
         const masterKeySeedInfo = await stratosSdk.crypto.hdVault.keyManager.createMasterKeySeed(
@@ -28,11 +32,17 @@ const KeyPairContextProvider = (props) => {
     }
 
     useEffect(() => {
-        initKeyPair().then(key => setKeyPair(key))
+        const walletAddress = process.env.REACT_APP_WALLET_ADDRESS;
+        initKeyPair().then(key => {
+            if (key?.address === walletAddress) {
+                setKeyPair(key);
+            }
+            setWalletAddress(walletAddress);
+        });
     }, []);
 
     return(
-        <KeyPairContext.Provider value={keyPair}>
+        <KeyPairContext.Provider value={{keyPair, walletAddress}}>
             {props.children}
         </KeyPairContext.Provider>
     )
