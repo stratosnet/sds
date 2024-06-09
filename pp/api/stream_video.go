@@ -342,9 +342,7 @@ func streamVideoP2PHelper(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var streamInfo *StreamInfo
-	streamInfo = value.(*StreamInfo)
-
+	streamInfo := value.(*StreamInfo)
 	sliceInfo, ok := streamInfo.SegmentToSliceInfo[segment]
 	if !ok {
 		w.WriteHeader(setting.FAILCode)
