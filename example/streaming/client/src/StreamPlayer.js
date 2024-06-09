@@ -157,9 +157,8 @@ const StreamPlayer = () => {
         autoplay: false,
         controls: true,
         responsive: true,
-        width: 1280,
-        height: 730,
         withCredentials: false,
+        nativeControlsForTouch: true,
         html5: {
             vhs: {
                 withCredentials: false,
@@ -168,19 +167,22 @@ const StreamPlayer = () => {
     };
 
     return (
-        (isReady &&
-            <div className="center-player">
-                <VideoJS
-                    options={{
-                        ...videoJsOptions,
-                        sources: {
-                            src: `${getVideoUrl("/getVideoSliceCache")}/${streamInfo.reqId}/${streamInfo.headerFile}`,
-                            type: "application/x-mpegURL",
-                        }
-                    }}
-                    onReady={handlePlayerReady}
-                />
-            </div>
+        (isReady
+            ? <div className="video-js-responsive-container vjs-hd">
+                    <VideoJS
+                        options={{
+                            ...videoJsOptions,
+                            sources: {
+                                src: `${getVideoUrl("/getVideoSliceCache")}/${streamInfo.reqId}/${streamInfo.headerFile}`,
+                                type: "application/x-mpegURL",
+                            }
+                        }}
+                        onReady={handlePlayerReady}
+                    />
+                </div>
+            : <div className="center">
+                    <div className="loader"/>
+              </div>
         )
     );
 }
