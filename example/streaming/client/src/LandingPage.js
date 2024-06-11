@@ -110,8 +110,8 @@ const LandingPage = () => {
         </div>
         <div>
             <p>
-                To setup your own web site that plays videos in SDS Network, please check out our guide
-                <a href="https://github.com/stratosnet/sds/blob/dev/example/streaming/README.md">here</a>
+                To setup your own web site that plays videos in SDS Network, please check out our
+                guide <a href="https://github.com/stratosnet/sds/blob/dev/example/streaming/README.md">here</a>
             </p>
         </div>
     </div>
