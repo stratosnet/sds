@@ -44,21 +44,29 @@
     100% { transform: rotate(360deg); }
 }
 
-.link-table {
+.container {
     margin: 100px auto;
     display: flex;
-    justify-content: center;
     align-items: center;
-    text-align: center;
+    text-align: left;
+    flex-direction: column;
+}
+
+.link-table {
 
     table {
         border-collapse: collapse;
-        width: 50%;
+        margin: 0 auto;
         text-align: left;
     }
 
     tr {
         border-bottom: 1px solid #ddd;
+    }
+
+    th,
+    td {
+        padding: 0 10px;
     }
 
     input {

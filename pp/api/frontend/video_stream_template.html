@@ -35,30 +35,13 @@
     })
 
     function playVideo() {
-        var player = videojs('vid1');
-        videojs.Hls.xhr.beforeRequest = function (options) {
-            const videoSegment = options.uri.split('/').pop();
-            const sliceInfo = getSliceInfo(videoSegment);
-            options.uri = `http://${url}:${internalPort}/streamVideo/${sliceInfo.slice_storage_info.slice_hash}`
-            options.method = 'POST';
-            options.body = JSON.stringify({
-                fileHash,
-                fileReqId: streamInfo.req_id,
-                sliceInfo,
-            })
-            return options;
-        };
+        const player = videojs('vid1');
         player.ready(function () {
             player.src({
-                src: `http://${url}:${internalPort}/streamVideo/${streamInfo.header_file}`,
+                src: `http://${url}:${internalPort}/streamVideo/${streamInfo.reqId}/${streamInfo.headerFile}`,
                 type: 'application/x-mpegURL',
             });
         });
-        player.play();
-    }
-
-    function getSliceInfo(videoSegment) {
-        return streamInfo.segment_to_slice_info[videoSegment]
     }
 
     function httpGetAsync(theUrl, callback)

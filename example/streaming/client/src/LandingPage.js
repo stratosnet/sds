@@ -42,68 +42,78 @@ const LandingPage = () => {
         fetchLinks();
     }, [])
 
-    return <div className="link-table">
-        <table>
-            <tbody>
-            <tr>
-                <th>Link Type</th>
-                <th>Link</th>
-                <th>File Name</th>
-            </tr>
-            {
-                linkList.map(link => {
-                    if (link.linkType === videoLinkType.FILE_HASH) {
-                        return <tr key={link.fileHash}>
-                            <td>
-                                File Hash (owned file)
-                            </td>
-                            <td>
-                                <Link to={`/video/${link.linkType}/${link.fileHash}`}>{link.fileHash}</Link>
-                            </td>
-                            <td>
-                                {link.fileName}
-                            </td>
-                        </tr>
-                    } else if (link.linkType === videoLinkType.SHARE_LINK) {
-                        return <tr key={link.shareLink}>
-                            <td>
-                                Share Link
-                            </td>
-                            <td>
-                                <Link
-                                    to={`/video/${link.linkType}/${link.shareLink}?pw=${link.sharePassword}`}>{link.shareLink}</Link>
-                            </td>
-                            <td>
-                                {link.fileName}
-                            </td>
-                        </tr>
-                    }
-                })
-            }
-            <tr style={{height: "50px"}}>
-                <td>
-                    <select name="linkType" onChange={e => setCustomLinkType(e.target.value)} value={customLinkType}>
-                        <option value={LinkType.FILE_HASH}>File Hash</option>
-                        <option value={LinkType.SHARE_LINK}>Share Link</option>
-                    </select>
-                </td>
-                <td>
-                    <div style={{display: "flex"}}>
-                        Link <input size={36} name="link" value={customLink}
-                                    onChange={e => setCustomLink(e.target.value)}></input>
-                        {customLinkType === LinkType.SHARE_LINK &&
-                            <div>Password <input size={5} name="sharePassword" value={sharePassword}
-                                                 onChange={e => setSharePassword(e.target.value)}></input></div>}
-                    </div>
-                </td>
-                <td>
-                    <button disabled={customLink == null || customLink.length === 0}
-                            onClick={() => handleCustomLinkClick()}>GO
-                    </button>
-                </td>
-            </tr>
-            </tbody>
-        </table>
+    return <div className="container">
+        <div className="link-table">
+            <table>
+                <tbody>
+                <tr>
+                    <th>Link Type</th>
+                    <th>Link</th>
+                    <th>File Name</th>
+                </tr>
+                {
+                    linkList.map(link => {
+                        if (link.linkType === videoLinkType.FILE_HASH) {
+                            return <tr key={link.fileHash}>
+                                <td>
+                                    File Hash (owned file)
+                                </td>
+                                <td>
+                                    <Link to={`/video/${link.linkType}/${link.fileHash}`}>{link.fileHash}</Link>
+                                </td>
+                                <td>
+                                    {link.fileName}
+                                </td>
+                            </tr>
+                        } else if (link.linkType === videoLinkType.SHARE_LINK) {
+                            return <tr key={link.shareLink}>
+                                <td>
+                                    Share Link
+                                </td>
+                                <td>
+                                    <Link
+                                        to={`/video/${link.linkType}/${link.shareLink}?pw=${link.sharePassword}`}>{link.shareLink}</Link>
+                                </td>
+                                <td>
+                                    {link.fileName}
+                                </td>
+                            </tr>
+                        }
+                    })
+                }
+                <tr style={{height: "50px"}}>
+                    <td>
+                        <select name="linkType" onChange={e => setCustomLinkType(e.target.value)}
+                                value={customLinkType}>
+                            <option value={LinkType.FILE_HASH}>File Hash</option>
+                            <option value={LinkType.SHARE_LINK}>Share Link</option>
+                        </select>
+                    </td>
+                    <td>
+                        <div style={{display: "flex"}}>
+                            Link <input size={customLinkType === LinkType.SHARE_LINK ? 20 : 38} name="link"
+                                        value={customLink}
+                                        onChange={e => setCustomLink(e.target.value)}></input>
+                            {customLinkType === LinkType.SHARE_LINK &&
+                                <div>Password <input size={5} name="sharePassword" value={sharePassword}
+                                                     onChange={e => setSharePassword(e.target.value)}></input></div>}
+                        </div>
+                    </td>
+                    <td>
+                        <button disabled={customLink == null || customLink.length === 0}
+                                onClick={() => handleCustomLinkClick()}>GO
+                        </button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div>
+            <p>
+                To setup your own web site that plays videos in SDS Network, please check out our guide
+                <a href="https://github.com/stratosnet/sds/blob/dev/example/streaming/README.md">here</a>
+            </p>
+        </div>
     </div>
 };
 
