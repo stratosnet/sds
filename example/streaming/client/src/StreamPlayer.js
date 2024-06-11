@@ -13,11 +13,15 @@ const networkInfo = {
     serviceToken: process.env.REACT_APP_SERVICE_TOKEN
 }
 
-function getVideoUrl(path) {
+function getVideoUrl(api, ...parameters) {
+    let apiUrl = `${networkInfo.videoServiceUrl}/${api}`;
     if (networkInfo.serviceToken) {
-        return `${networkInfo.videoServiceUrl}${path}/${networkInfo.serviceToken}`
+        apiUrl =  `${apiUrl}/${networkInfo.serviceToken}`;
     }
-    return `${networkInfo.videoServiceUrl}${path}`
+    if (parameters.length === 0) {
+        return apiUrl;
+    }
+    return `${apiUrl}/${[...parameters].join("/")}`;
 }
 
 const StreamPlayer = () => {
@@ -33,7 +37,7 @@ const StreamPlayer = () => {
 
     async function fetchStreamInfo() {
         const fileHash = params.link;
-        const ozoneResp = await fetch(getVideoUrl(`/getOzone/${walletAddress}`));
+        const ozoneResp = await fetch(getVideoUrl("getOzone", walletAddress));
         const ozoneInfo = await ozoneResp.json();
         const reqTime = Math.floor(Date.now() / 1000);
 
@@ -58,14 +62,14 @@ const StreamPlayer = () => {
             })
         };
 
-        const streamInfoResp = await fetch(getVideoUrl(`/prepareVideoFileCache/${walletAddress}/${fileHash}`), requestOptions);
+        const streamInfoResp = await fetch(getVideoUrl("prepareVideoFileCache", walletAddress, fileHash), requestOptions);
         return await streamInfoResp.json()
     }
 
     async function fetchStreamInfoByShareLink() {
         const shareLink = params.link;
         const sharePassword = searchParams.get("pw")
-        const ozoneResp = await fetch(getVideoUrl(`/getOzone/${walletAddress}`));
+        const ozoneResp = await fetch(getVideoUrl("getOzone", walletAddress));
         const ozoneInfo = await ozoneResp.json();
         const reqTime = Math.floor(Date.now() / 1000);
 
@@ -90,7 +94,7 @@ const StreamPlayer = () => {
             })
         };
 
-        const streamInfoResp = await fetch(getVideoUrl(`/prepareSharedVideoFileCache/${shareLink}`) + `?password=${sharePassword}`, requestOptions);
+        const streamInfoResp = await fetch(getVideoUrl("prepareSharedVideoFileCache", shareLink) + `?password=${sharePassword}`, requestOptions);
         return await streamInfoResp.json()
     }
 
@@ -173,7 +177,7 @@ const StreamPlayer = () => {
                         options={{
                             ...videoJsOptions,
                             sources: {
-                                src: `${getVideoUrl("/getVideoSliceCache")}/${streamInfo.reqId}/${streamInfo.headerFile}`,
+                                src: getVideoUrl("getVideoSliceCache", streamInfo.reqId, streamInfo.headerFile),
                                 type: "application/x-mpegURL",
                             }
                         }}
