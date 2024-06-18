@@ -127,7 +127,7 @@ func (p *Network) ChangeSp(ctx context.Context) {
 	defer mtx.Unlock()
 
 	if len(candidateSps) == 0 {
-		pp.ErrorLog(ctx, "No candidate optimal SP")
+		pp.DebugLog(ctx, "No optimal SP candidates. The connection to the current SP will be closed")
 		if spConn := p2pserver.GetP2pServer(ctx).GetSpConn(); spConn != nil {
 			spConn.ClientClose(true)
 		}

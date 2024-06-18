@@ -73,5 +73,5 @@ func (p *P2pServer) ConfirmOptSP(ctx context.Context, spNetworkAddr string) {
 
 	pp.DebugLog(ctx, "current sp ", spName, " to be altered to new optimal SP ", spNetworkAddr)
 	optimalSpNetworkAddr = spNetworkAddr
-	p.mainSpConn.ClientClose(true)
+	go p.mainSpConn.ClientClose(true)
 }
