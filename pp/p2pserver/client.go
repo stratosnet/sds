@@ -22,6 +22,12 @@ type offline struct {
 	NetworkAddress string
 }
 
+type lastReconnectRecord struct {
+	SpP2PAddress                string
+	Time                        time.Time
+	NextAllowableReconnectInSec int64
+}
+
 func (p *P2pServer) initClient() {
 	p.offlineChan = make(chan *offline, 2)
 	p.cachedConnMap = &sync.Map{}
@@ -79,7 +85,7 @@ func (p *P2pServer) newClient(ctx context.Context, server string, heartbeat, rec
 			IsSp:           false,
 			NetworkAddress: cc.GetRemoteAddr(),
 		}
-		if p.mainSpConn != nil && p.mainSpConn.GetName() == cc.GetName() {
+		if p.SpConnValid() && p.mainSpConn.GetName() == cc.GetName() {
 			utils.DebugLog("lost SP conn, name: ", p.mainSpConn.GetName(), " netId is ", p.mainSpConn.GetNetID())
 			p.mainSpConn = nil
 			offlineInfo.IsSp = true
@@ -174,7 +180,7 @@ func (p *P2pServer) SpConnValid() bool {
 }
 
 func (p *P2pServer) GetSpName() string {
-	if p.mainSpConn == nil {
+	if !p.SpConnValid() {
 		return "{NA} Invalid SpConn"
 	}
 	return p.mainSpConn.GetName()
@@ -216,34 +222,41 @@ func (p *P2pServer) GetSpConn() *cf.ClientConn {
 
 // RecordSpMaintenance return boolean flag of switching to new SP
 func (p *P2pServer) RecordSpMaintenance(spP2pAddress string, recordTime time.Time) bool {
-	if p.SPMaintenanceMap == nil {
-		p.resetSPMaintenanceMap(spP2pAddress, recordTime, MIN_RECONNECT_INTERVAL_THRESHOLD)
-		return true
-	}
-	if value, ok := p.SPMaintenanceMap.Load(LAST_RECONNECT_KEY); ok {
-		lastRecord := value.(*LastReconnectRecord)
-		if time.Now().Before(lastRecord.Time.Add(time.Duration(lastRecord.NextAllowableReconnectInSec) * time.Second)) {
-			// if new maintenance rsp incoming in between the interval, extend the KV by storing it again (not changing value)
-			p.SPMaintenanceMap.Store(LAST_RECONNECT_KEY, lastRecord)
+	if value, ok := p.SPMaintenanceMap.Load(spP2pAddress); ok {
+		lastRecord := value.(lastReconnectRecord)
+		if !lastRecord.canReconnect() {
 			return false
 		}
-		// if new maintenance rsp incoming beyond the interval, reset the map and modify the NextAllowableReconnectInSec
+
 		nextReconnectInterval := int64(math.Min(MAX_RECONNECT_INTERVAL_THRESHOLD,
 			float64(lastRecord.NextAllowableReconnectInSec*RECONNECT_INTERVAL_MULTIPLIER)))
-		p.resetSPMaintenanceMap(spP2pAddress, recordTime, nextReconnectInterval)
+		p.SPMaintenanceMap.Store(spP2pAddress, lastReconnectRecord{
+			SpP2PAddress:                spP2pAddress,
+			Time:                        recordTime,
+			NextAllowableReconnectInSec: nextReconnectInterval,
+		})
 		return true
 	}
-	p.resetSPMaintenanceMap(spP2pAddress, recordTime, MIN_RECONNECT_INTERVAL_THRESHOLD)
+
+	p.SPMaintenanceMap.Store(spP2pAddress, lastReconnectRecord{
+		SpP2PAddress:                spP2pAddress,
+		Time:                        recordTime,
+		NextAllowableReconnectInSec: MIN_RECONNECT_INTERVAL_THRESHOLD,
+	})
 	return true
 }
 
-func (p *P2pServer) resetSPMaintenanceMap(spP2pAddress string, recordTime time.Time, nextReconnectInterval int64) {
-	// reset the interval to 60s
-	p.SPMaintenanceMap = nil
-	p.SPMaintenanceMap = utils.NewAutoCleanMap(time.Duration(nextReconnectInterval) * time.Second)
-	p.SPMaintenanceMap.Store(LAST_RECONNECT_KEY, &LastReconnectRecord{
-		SpP2PAddress:                spP2pAddress,
-		Time:                        recordTime,
-		NextAllowableReconnectInSec: nextReconnectInterval,
-	})
+func (p *P2pServer) CanConnectToSp(p2pAddress string) bool {
+	if value, ok := p.SPMaintenanceMap.Load(p2pAddress); ok {
+		lastRecord := value.(lastReconnectRecord)
+		if lastRecord.SpP2PAddress == p2pAddress && !lastRecord.canReconnect() {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (l lastReconnectRecord) canReconnect() bool {
+	return time.Now().After(l.Time.Add(time.Duration(l.NextAllowableReconnectInSec) * time.Second))
 }
