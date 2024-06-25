@@ -30,17 +30,10 @@ const (
 	PP_LOG_INBOUND  = true
 	PP_LOG_OUTBOUND = true
 
-	LAST_RECONNECT_KEY               = "last_reconnect"
 	MIN_RECONNECT_INTERVAL_THRESHOLD = 60  // seconds
 	MAX_RECONNECT_INTERVAL_THRESHOLD = 600 // seconds
 	RECONNECT_INTERVAL_MULTIPLIER    = 2
 )
-
-type LastReconnectRecord struct {
-	SpP2PAddress                string
-	Time                        time.Time
-	NextAllowableReconnectInSec int64
-}
 
 type P2pServer struct {
 	// server for pp to serve event messages
@@ -59,7 +52,7 @@ type P2pServer struct {
 	// mainSpConn super node connection
 	mainSpConn *cf.ClientConn
 
-	// SPMaintenanceMap stores records of SpUnderMaintenance, K - SpP2pAddress, V - list of MaintenanceRecord
+	// SPMaintenanceMap stores records of SpUnderMaintenance, K - SpP2pAddress, V - lastReconnectRecord
 	SPMaintenanceMap *utils.AutoCleanMap
 
 	// cachedConnMap upload connection
@@ -99,6 +92,7 @@ func (p *P2pServer) Init() error {
 	p.p2pPrivKey = p2pKey.PrivateKey
 	p.p2pPubKey = p.p2pPrivKey.PubKey()
 	p.p2pAddress = fwtypes.P2PAddress(p.p2pPubKey.Address())
+	p.SPMaintenanceMap = utils.NewAutoCleanMap(time.Duration(MAX_RECONNECT_INTERVAL_THRESHOLD) * time.Second)
 	return nil
 }
 

@@ -72,6 +72,9 @@ func getTerminalCmd() *cobra.Command {
 		Short:   "execute the command to node demon",
 		PreRunE: terminalPreRunE,
 		Run:     execute,
+		FParseErrWhitelist: cobra.FParseErrWhitelist{
+			UnknownFlags: true,
+		},
 	}
 	execCmd.Flags().BoolP(verboseFlag, "v", false, "output logs")
 	cmd.AddCommand(execCmd)
