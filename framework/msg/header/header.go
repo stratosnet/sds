@@ -63,6 +63,7 @@ const (
 	MSG_ID_RSP_PREPAID
 	MSG_ID_REQ_MINING
 	MSG_ID_RSP_MINING
+	MSG_ID_NOTICE_RELOCATE_SP
 	MSG_ID_REQ_START_MAINTENANCE
 	MSG_ID_RSP_START_MAINTENANCE
 	MSG_ID_REQ_STOP_MAINTENANCE
@@ -182,8 +183,10 @@ var (
 	RspPrepay  MsgType
 	ReqPrepaid MsgType
 	RspPrepaid MsgType
-	ReqMining  MsgType
-	RspMining  MsgType
+
+	ReqMining        MsgType
+	RspMining        MsgType
+	NoticeRelocateSp MsgType
 
 	ReqStartMaintenance MsgType
 	RspStartMaintenance MsgType
@@ -329,8 +332,10 @@ func init() {
 	registerOneMessageType(&RspPrepay, MSG_ID_RSP_PREPAY, "RspPrpay")   // response for a PP node sending a prepay transaction
 	registerOneMessageType(&ReqPrepaid, MSG_ID_REQ_PREPAID, "ReqPrpad") // request when a PP node prepay transaction was successful
 	registerOneMessageType(&RspPrepaid, MSG_ID_RSP_PREPAID, "RspPrpad") // response when a PP node prepay transaction was successful
-	registerOneMessageType(&ReqMining, MSG_ID_REQ_MINING, "ReqMin")     // request to mining
-	registerOneMessageType(&RspMining, MSG_ID_RSP_MINING, "RspMin")     //  response to mining
+
+	registerOneMessageType(&ReqMining, MSG_ID_REQ_MINING, "ReqMin")                  // request to mining
+	registerOneMessageType(&RspMining, MSG_ID_RSP_MINING, "RspMin")                  //  response to mining
+	registerOneMessageType(&NoticeRelocateSp, MSG_ID_NOTICE_RELOCATE_SP, "NotRelSp") // notice to relocate to another SP
 
 	registerOneMessageType(&ReqStartMaintenance, MSG_ID_REQ_START_MAINTENANCE, "ReqStMtn")
 	registerOneMessageType(&RspStartMaintenance, MSG_ID_RSP_START_MAINTENANCE, "RspStMtn")
