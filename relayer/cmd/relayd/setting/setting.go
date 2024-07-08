@@ -10,9 +10,9 @@ var Config *config
 var HomePath string
 
 const (
-	VERSION     = "v0.11.0"
-	APP_VER     = 11
-	MIN_APP_VER = 11
+	VERSION     = "v0.12.0"
+	APP_VER     = 12
+	MIN_APP_VER = 12
 )
 
 type connectionRetries struct {
