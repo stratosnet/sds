@@ -87,6 +87,7 @@ func RegisterAllEventHandlers() {
 	// sp--(*msg*)--pp
 	registerEvent(header.NoticeFileSliceBackup, NoticeFileSliceBackup, NoticeFileSliceBackupVerifier)
 	registerEvent(header.NoticeSpUnderMaintenance, NoticeSpUnderMaintenance, SpAddressVerifier)
+	registerEvent(header.NoticeRelocateSp, NoticeRelocateSp, SpAddressVerifier)
 
 	// pp1--(req)--pp2--(rspa)--pp1--(*rspb*)--pp2
 	registerEvent(header.RspTransferDownloadResult, RspTransferDownloadResult, nil)
