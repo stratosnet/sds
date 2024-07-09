@@ -12,13 +12,13 @@ Before starting the project, user needs to set up wallet as well as network info
 the `.env.template` file to `.env` and input the required variables accordingly.
 
 ```
-#wallet address of the user that is logging in
+#wallet address of the user that is logging in (mandatory)
 REACT_APP_WALLET_ADDRESS=
 
-#mnemonic of the user that is logging in, could be empty if a backend server is setup for signing message
+#mnemonic of the user that is logging in, could be empty if a backend server is setup for signing message (optional, when not given, a backend server is needed)
 REACT_APP_WALLET_MNEMONIC=
 
-#your login logic to check and verify the password or pin
+#your login logic to check and verify the password or pin (optional, when not given, a backend server is needed)
 REACT_APP_WALLET_PASSWORD=
 
 #url to the rest api of the sds node
