@@ -153,8 +153,8 @@ github.com/stratosnet/sds/framework v0.0.0-20240522153956-2c0193243442 h1:6lAosw
 github.com/stratosnet/sds/framework v0.0.0-20240522153956-2c0193243442/go.mod h1:nuOItdDWY4QNxvHQQnc8SkIjikccc55iFOmGB8MBCg8=
 github.com/stratosnet/sds/sds-msg v0.0.0-20240522153956-2c0193243442 h1:jU5X7Csrz29SQaLqXJPuYDopC+e1UsBQ1qfraoiEW/g=
 github.com/stratosnet/sds/sds-msg v0.0.0-20240522153956-2c0193243442/go.mod h1:Kka5l0sHUjpWmCnGCZieLs/6hrprDITb0me+oiljBe4=
-github.com/stratosnet/stratos-chain/api v0.0.0-20240509211914-ee516857645d h1:P8M04b8QW8L7Yne97+SkztbUVTa0j/7gCstI4xaIMKo=
-github.com/stratosnet/stratos-chain/api v0.0.0-20240509211914-ee516857645d/go.mod h1:FN6crwtoVjf2errz8Nsj0y/zRxuIRtxs5w8qLHKVBqA=
+github.com/stratosnet/stratos-chain/api v0.0.0-20240711220534-c9cbef9fd8e4 h1:ci6Hgh39u4FjCV9t+YIohc53v/gE1IpgxUpTTo4ggSY=
+github.com/stratosnet/stratos-chain/api v0.0.0-20240711220534-c9cbef9fd8e4/go.mod h1:FN6crwtoVjf2errz8Nsj0y/zRxuIRtxs5w8qLHKVBqA=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
 github.com/stretchr/objx v0.5.0/go.mod h1:Yh+to48EsGEfYuaHDzXPcE3xhTkx73EhmCGUpEOglKo=
