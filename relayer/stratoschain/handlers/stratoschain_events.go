@@ -46,7 +46,7 @@ func init() {
 	Handlers[types.MSG_TYPE_VOLUME_REPORT] = VolumeReportHandler()
 	Handlers[types.MSG_TYPE_SLASHING_RESOURCE_NODE] = SlashingResourceNodeHandler()
 	Handlers[types.MSG_TYPE_UPDATE_EFFECTIVE_DEPOSIT] = UpdateEffectiveDepositHandler()
-	Handlers[types.MSG_TYPE_EVM_TX] = HandleEvmTx()
+	Handlers[types.MSG_TYPE_EVM_TX] = EvmTxHandler()
 
 	cache = utils.NewAutoCleanMap(time.Minute)
 }
@@ -810,12 +810,12 @@ func processPrePayEvent(requiredAttributes []string, processedEvents []map[strin
 	}
 }
 
-func HandleEvmTx() func(event coretypes.ResultEvent) {
+func EvmTxHandler() func(event coretypes.ResultEvent) {
 	return func(result coretypes.ResultEvent) {
 		txHash := getTxHash(result)
 		eventDataTx, ok := result.Data.(comettypes.EventDataTx)
 		if !ok {
-			utils.ErrorLogf("result data is the wrong type in PrepayMsgHandler: %T", result.Data)
+			utils.ErrorLogf("result data is the wrong type in EvmTxHandler: %T", result.Data)
 			return
 		}
 
