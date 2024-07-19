@@ -819,51 +819,47 @@ func EvmTxHandler() func(event coretypes.ResultEvent) {
 			return
 		}
 
-		processedEvents, initialEventCount, evmTxEventType := processEvmTxEvents(eventDataTx.Result.Events)
-		requiredAttributes := EvmTxSupportEvents[evmTxEventType].([]string)
+		processedEvent, evmTxEventType := processEvmTxEvents(eventDataTx.Result.Events)
+		if processedEvent == nil {
+			if evmTxEventType == "" {
+				utils.ErrorLogf("no known events to process in EvmTxHandler for tx %v", txHash)
+			} else {
+				utils.ErrorLogf("missing attributes to process %v event in EvmTxHandler for tx %v", evmTxEventType, txHash)
+			}
+			return
+		}
 
 		switch evmTxEventType {
 		case EventTypePrepay:
-			processPrePayEvent(requiredAttributes, processedEvents, txHash, initialEventCount)
+			processPrePayEvent(EvmTxRequiredAttributes[evmTxEventType], []map[string]string{processedEvent}, txHash, 1)
 		}
 	}
 }
 
-// Evm tx contains only 1 type of msg
+// Evm txs contain only 1 msg each
 func processEvmTxEvents(events []abcitypes.Event) (
-	processedEvents []map[string]string, initialEventCount int, evmTxEventType string) {
+	processedEvent map[string]string, evmTxEventType string) {
 
-	var requiredAttributes []string
-	initialEventCount = 0
 	for _, event := range events {
-		attrs, ok := EvmTxSupportEvents[event.Type]
+		requiredAttributes, ok := EvmTxRequiredAttributes[event.Type]
 		if !ok {
 			continue
 		}
-		initialEventCount++
 
-		evmTxEventType = event.Type
-		requiredAttributes = attrs.([]string)
-
-		processedEvent := make(map[string]string)
+		processedEvent = make(map[string]string)
 		for _, attribute := range event.Attributes {
 			processedEvent[attribute.Key] = attribute.Value
 		}
 
-		missingAttribute := false
 		for _, attribute := range requiredAttributes {
 			if _, ok = processedEvent[attribute]; !ok {
-				missingAttribute = true
-				break
+				return nil, event.Type
 			}
 		}
-		if missingAttribute {
-			continue
-		}
 
-		processedEvents = append(processedEvents, processedEvent)
+		return processedEvent, event.Type
 	}
-	return
+	return nil, ""
 }
 
 func postToSP(endpoint string, data interface{}) error {

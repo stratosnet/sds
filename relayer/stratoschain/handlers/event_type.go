@@ -69,11 +69,11 @@ const (
 	AttributeKeySender = "sender"
 )
 
-var EvmTxSupportEvents map[string]interface{}
+var EvmTxRequiredAttributes map[string][]string
 
 func init() {
-	EvmTxSupportEvents = map[string]interface{}{
-		EventTypePrepay: []string{
+	EvmTxRequiredAttributes = map[string][]string{
+		EventTypePrepay: {
 			AttributeKeySender,
 			AttributeKeyBeneficiary,
 			AttributeKeyPurchasedNoz,
