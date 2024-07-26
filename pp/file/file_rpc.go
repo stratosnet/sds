@@ -19,8 +19,6 @@ const NUMBER_OF_UPLOAD_CHAN_BUFFER = 5
 var (
 	reFileMutex sync.Mutex
 
-	upSliceMutex sync.Mutex
-
 	fileEventMutex sync.Mutex
 
 	sliceEventMutex sync.Mutex
@@ -91,9 +89,6 @@ func UnsubscribeGetRemoteFileData(key string) {
 }
 
 func CacheRemoteFileData(fileHash string, offset *protos.SliceOffset, folderName, fileName string, writeFromStartOffset bool) error {
-	upSliceMutex.Lock()
-	defer upSliceMutex.Unlock()
-
 	// compose event, as well notify the remote user
 	r := &rpc.Result{
 		Return:      rpc.UPLOAD_DATA,
