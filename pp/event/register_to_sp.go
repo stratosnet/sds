@@ -76,7 +76,7 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 
 	pp.Log(ctx, "start mining")
 	if p2pserver.GetP2pServer(ctx).GetP2pServer() == nil {
-		go p2pserver.GetP2pServer(ctx).StartListenServer(ctx, setting.Config.Node.Connectivity.NetworkPort)
+		go p2pserver.GetP2pServer(ctx).StartListenServer(ctx, setting.GetP2pServerPort())
 	}
 	pp.DebugLog(ctx, "Start reporting node status to SP")
 	// trigger 1 stat report immediately
