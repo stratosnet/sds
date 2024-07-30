@@ -22,7 +22,7 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/spf13/cobra v1.6.1
-	github.com/stratosnet/sds/framework v0.0.0-20240628130422-4448d6147364
+	github.com/stratosnet/sds/framework v0.0.0-20240730230828-b83f36b54f4b
 	github.com/stratosnet/sds/sds-msg v0.0.0-20240628130422-4448d6147364
 	github.com/stratosnet/sds/tx-client v0.0.0-20240725194703-e4a8b75b91f5
 	github.com/stratosnet/stratos-chain/api v0.0.0-20240509211914-ee516857645d
