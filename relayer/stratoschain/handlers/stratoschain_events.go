@@ -46,6 +46,7 @@ func init() {
 	Handlers[types.MSG_TYPE_VOLUME_REPORT] = VolumeReportHandler()
 	Handlers[types.MSG_TYPE_SLASHING_RESOURCE_NODE] = SlashingResourceNodeHandler()
 	Handlers[types.MSG_TYPE_UPDATE_EFFECTIVE_DEPOSIT] = UpdateEffectiveDepositHandler()
+	Handlers[types.MSG_TYPE_EVM_TX] = EvmTxHandler()
 
 	cache = utils.NewAutoCleanMap(time.Minute)
 }
@@ -551,35 +552,7 @@ func PrepayMsgHandler() func(event coretypes.ResultEvent) {
 		}
 		processedEvents, initialEventCount := processEvents(eventDataTx.Result.Events, EventTypePrepay, requiredAttributes)
 
-		key := getCacheKey(requiredAttributes, processedEvents, txHash)
-		if _, ok := cache.Load(key); ok {
-			utils.DebugLogf("Event Prepay was already handled for tx [%v]. Ignoring...", txHash)
-			return
-		}
-		cache.Store(key, true)
-
-		req := &relay.PrepaidReq{}
-		for _, event := range processedEvents {
-			req.WalletList = append(req.WalletList, &protos.ReqPrepaid{
-				WalletAddress: event[AttributeKeyBeneficiary],
-				PurchasedUoz:  event[AttributeKeyPurchasedNoz],
-				TxHash:        txHash,
-			})
-		}
-
-		if len(req.WalletList) != initialEventCount {
-			utils.ErrorLogf("Prepay message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
-				len(req.WalletList), initialEventCount-len(processedEvents), len(processedEvents)-len(req.WalletList))
-		}
-		if len(req.WalletList) == 0 {
-			return
-		}
-
-		err := postToSP("/pp/prepaid", req)
-		if err != nil {
-			utils.ErrorLog(err)
-			return
-		}
+		processPrePayEvent(requiredAttributes, processedEvents, txHash, initialEventCount)
 	}
 }
 
@@ -803,6 +776,90 @@ func UpdateEffectiveDepositHandler() func(event coretypes.ResultEvent) {
 			return
 		}
 	}
+}
+
+func processPrePayEvent(requiredAttributes []string, processedEvents []map[string]string, txHash string, initialEventCount int) {
+	key := getCacheKey(requiredAttributes, processedEvents, txHash)
+	if _, ok := cache.Load(key); ok {
+		utils.DebugLogf("Event Prepay was already handled for tx [%v]. Ignoring...", txHash)
+		return
+	}
+	cache.Store(key, true)
+
+	req := &relay.PrepaidReq{}
+	for _, event := range processedEvents {
+		req.WalletList = append(req.WalletList, &protos.ReqPrepaid{
+			WalletAddress: event[AttributeKeyBeneficiary],
+			PurchasedUoz:  event[AttributeKeyPurchasedNoz],
+			TxHash:        txHash,
+		})
+	}
+
+	if len(req.WalletList) != initialEventCount {
+		utils.ErrorLogf("Prepay message handler couldn't process all events (success: %v  missing_attribute: %v  invalid_attribute: %v",
+			len(req.WalletList), initialEventCount-len(processedEvents), len(processedEvents)-len(req.WalletList))
+	}
+	if len(req.WalletList) == 0 {
+		return
+	}
+
+	err := postToSP("/pp/prepaid", req)
+	if err != nil {
+		utils.ErrorLog(err)
+		return
+	}
+}
+
+func EvmTxHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
+		txHash := getTxHash(result)
+		eventDataTx, ok := result.Data.(comettypes.EventDataTx)
+		if !ok {
+			utils.ErrorLogf("result data is the wrong type in EvmTxHandler: %T", result.Data)
+			return
+		}
+
+		processedEvent, evmTxEventType := processEvmTxEvents(eventDataTx.Result.Events)
+		if processedEvent == nil {
+			if evmTxEventType == "" {
+				utils.ErrorLogf("no known events to process in EvmTxHandler for tx %v", txHash)
+			} else {
+				utils.ErrorLogf("missing attributes to process %v event in EvmTxHandler for tx %v", evmTxEventType, txHash)
+			}
+			return
+		}
+
+		switch evmTxEventType {
+		case EventTypePrepay:
+			processPrePayEvent(EvmTxRequiredAttributes[evmTxEventType], []map[string]string{processedEvent}, txHash, 1)
+		}
+	}
+}
+
+// Evm txs contain only 1 msg each
+func processEvmTxEvents(events []abcitypes.Event) (
+	processedEvent map[string]string, evmTxEventType string) {
+
+	for _, event := range events {
+		requiredAttributes, ok := EvmTxRequiredAttributes[event.Type]
+		if !ok {
+			continue
+		}
+
+		processedEvent = make(map[string]string)
+		for _, attribute := range event.Attributes {
+			processedEvent[attribute.Key] = attribute.Value
+		}
+
+		for _, attribute := range requiredAttributes {
+			if _, ok = processedEvent[attribute]; !ok {
+				return nil, event.Type
+			}
+		}
+
+		return processedEvent, event.Type
+	}
+	return nil, ""
 }
 
 func postToSP(endpoint string, data interface{}) error {
