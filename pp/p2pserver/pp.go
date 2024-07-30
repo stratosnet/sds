@@ -163,7 +163,7 @@ func (p *P2pServer) Start(ctx context.Context) {
 
 	ctx = p.initQuitChs(ctx)
 	setting.SetMyNetworkAddress()
-	go p.StartListenServer(ctx, setting.Config.Node.Connectivity.NetworkPort)
+	go p.StartListenServer(ctx, setting.GetP2pServerPort())
 	p.initClient()
 }
 
