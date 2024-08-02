@@ -42,6 +42,11 @@ message RspMining {
   Result result = 1;
 }
 
+message NoticeRelocateSp {
+  string     p2p_address_pp = 1;
+  SPBaseInfo to_sp = 2;
+}
+
 message ReqStartMaintenance {
   PPBaseInfo address = 1;
   uint64 duration = 2;
@@ -434,56 +439,6 @@ message RspDeleteFile {
   string file_hash = 3;
   Result result = 4;
 }
-
-
-// file transfer commented out for backup logic redesign QB-897
-/*
-// SP notify new PP to get file from storing PP，slice info are included
-// new pp transfer to old pp, slice infos are not included,
-message ReqTransferNotice {
-  SliceStorageInfo slice_storage_info = 1;
-  string transfer_cer = 2;
-  bool from_sp = 3;
-  PPBaseInfo storage_pp_info = 4;
-  bool deleteOrigin = 5;
-  string sp_p2p_address = 6;
-}
-message RspTransferNotice {
-  Result result = 1;
-  string transfer_cer = 2;
-  PPBaseInfo storage_pp_info = 3;
-  string sp_p2p_address = 4;
-}
-
-//  storagePP-SP
-message ReqValidateTransferCer {
-  string transfer_cer = 1;
-  PPBaseInfo new_pp = 2;
-  PPBaseInfo original_pp = 3;
-  string sp_p2p_address = 4;
-}
-//  SP-PP PP-PP
-message RspValidateTransferCer {
-  Result result = 1;
-  string transfer_cer = 2;
-  string new_pp_p2p_address = 3;
-  string sp_p2p_address = 4;
-}
-
-message ReqReportTransferResult {
-  string transfer_cer = 1;
-  PPBaseInfo new_pp = 2;
-  Result result = 3;
-  bool is_new = 4;
-  bool origin_deleted = 5;
-  string sp_p2p_address = 6;
-}
-message RspReportTransferResult {
-  Result result = 1;
-  string transfer_cer = 2;
-  string new_pp_p2p_address = 3;
-}
-*/
 
 // the message that is sent to the pp which will pull the
 // slice from another pp which stores the file slice

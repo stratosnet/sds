@@ -23,5 +23,7 @@ const (
 	MSG_TYPE_WITHDRAW               = "/stratos.pot.v1.MsgWithdraw"
 	MSG_TYPE_SLASHING_RESOURCE_NODE = "/stratos.pot.v1.MsgSlashingResourceNode"
 
+	MSG_TYPE_EVM_TX = "/stratos.evm.v1.MsgEthereumTx"
+
 	MSG_TYPE_SEND = "/cosmos.bank.v1beta1.MsgSend"
 )

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -17,10 +18,12 @@ func main() {
 	startCmd := getStartCmd()
 	configCmd := getGenConfigCmd()
 	syncCmd := getSyncCmd()
+	versionCmd := getVersionCmd()
 
 	rootCmd.AddCommand(startCmd)
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(syncCmd)
+	rootCmd.AddCommand(versionCmd)
 
 	err := rootCmd.Execute()
 	if err != nil {
@@ -102,5 +105,17 @@ func getSyncCmd() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().StringP(Home, "r", dir, "home path for the relayd process")
+	return cmd
+}
+
+func getVersionCmd() *cobra.Command {
+	version := setting.VERSION
+	cmd := &cobra.Command{
+		Use:   "version",
+		Short: "get version of the build",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(version)
+		},
+	}
 	return cmd
 }

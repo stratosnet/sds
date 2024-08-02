@@ -621,7 +621,7 @@ func (coins DecCoins) Sort() DecCoins {
 // ParseDecCoin parses a decimal coin from a string, returning an error if
 // invalid. An empty string is considered invalid.
 func ParseDecCoin(coinStr string) (coin DecCoin, err error) {
-	coinStr = strings.TrimSpace(coinStr)
+	coinStr = strings.ToLower(strings.TrimSpace(coinStr))
 
 	matches := reDecCoin.FindStringSubmatch(coinStr)
 	if matches == nil {

@@ -50,7 +50,7 @@ func GetQuitChannel() chan os.Signal {
 func RootPreRunE(cmd *cobra.Command, _ []string) error {
 	homePath, err := cmd.Flags().GetString(Home)
 	if err != nil {
-		utils.ErrorLog("failed to get 'home' path for the node")
+		fmt.Println("failed to get 'home' path for the node")
 		return err
 	}
 	homePath, err = utils.Absolute(homePath)

@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/stratosnet/sds/cmd/common"
-	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/setting"
 )
 
@@ -40,7 +39,7 @@ func getRootCmd() *cobra.Command {
 
 	dir, err := os.Getwd()
 	if err != nil {
-		utils.ErrorLog("failed to get working directory")
+		fmt.Println("failed to get working directory")
 		panic(err)
 	}
 

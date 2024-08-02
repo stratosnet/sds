@@ -50,6 +50,8 @@ const (
 	INIT_WAIT_TIMEOUT time.Duration = 15 * time.Second
 
 	SIGNATURE_INFO_TTL = 10 * time.Minute
+
+	UPLOAD_SLICE_LOCAL_HANDLE_TIME = 60 * time.Second
 )
 
 var (
@@ -302,7 +304,7 @@ func (api *rpcPubApi) UploadData(ctx context.Context, param rpc_api.ParamUploadD
 	}
 
 	// second part: let the server decide what will be the next step
-	newctx, cancel := context.WithTimeout(context.Background(), WAIT_TIMEOUT)
+	newctx, cancel := context.WithTimeout(context.Background(), UPLOAD_SLICE_LOCAL_HANDLE_TIME)
 	defer cancel()
 
 	select {

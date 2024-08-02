@@ -37,11 +37,19 @@ var MonitorInitialToken string
 
 // SetMyNetworkAddress set the PP's NetworkAddress according to the internal/external config in config file and the network config from OS
 func SetMyNetworkAddress() {
+	defer func() {
+		if NetworkAddress == "" {
+			utils.ErrorLog("NetworkAddress is empty")
+		} else {
+			utils.Log("setting.NetworkAddress", NetworkAddress)
+		}
+	}()
+
 	var netAddr string = ""
 	if Config.Node.Connectivity.Internal {
 		addrs, err := net.InterfaceAddrs()
 		if err != nil {
-			utils.ErrorLog(err)
+			utils.ErrorLog(utils.FormatError(err))
 		}
 		for _, address := range addrs {
 			if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
@@ -61,11 +69,28 @@ func SetMyNetworkAddress() {
 			netAddr = ip.String()
 		}
 	}
-
-	if netAddr != "" {
-		NetworkAddress = netAddr + ":" + Config.Node.Connectivity.NetworkPort
-		RestAddress = netAddr + ":" + Config.Streaming.RestPort
-		NetworkIP = net.ParseIP(netAddr)
+	if netAddr == "" {
+		return
 	}
-	utils.Log("setting.NetworkAddress", NetworkAddress)
+
+	NetworkIP = net.ParseIP(netAddr)
+	if NetworkIP == nil {
+		ipList, err := net.LookupIP(netAddr)
+		if err != nil {
+			utils.ErrorLog(utils.FormatError(err))
+		}
+		if len(ipList) == 0 {
+			return
+		}
+		NetworkIP = ipList[0]
+	}
+	NetworkAddress = NetworkIP.String() + ":" + Config.Node.Connectivity.NetworkPort
+	RestAddress = NetworkIP.String() + ":" + Config.Streaming.RestPort
+}
+
+func GetP2pServerPort() string {
+	if Config.Node.Connectivity.LocalPort == "" {
+		return Config.Node.Connectivity.NetworkPort
+	}
+	return Config.Node.Connectivity.LocalPort
 }

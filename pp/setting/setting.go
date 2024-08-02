@@ -93,8 +93,9 @@ type KeysConfig struct {
 type ConnectivityConfig struct {
 	SeedMetaNode   SPBaseInfo `toml:"seed_meta_node" comment:"The first meta node to connect to when starting the node"`
 	Internal       bool       `toml:"internal" comment:"Is the node running on an internal network? Eg: false"`
-	NetworkAddress string     `toml:"network_address" comment:"IP address of the node. Eg: \"127.0.0.1\""`
+	NetworkAddress string     `toml:"network_address" comment:"Domain name or IP address of the node. Eg: \"127.0.0.1\""`
 	NetworkPort    string     `toml:"network_port" comment:"Main port for communication on the network. Must be open to the internet. Eg: \"18081\""`
+	LocalPort      string     `toml:"local_port" comment:"(Optional)If not empty, the node will listen to this port locally, but other nodes will still use the network_port to connect to this node"`
 	MetricsPort    string     `toml:"metrics_port" comment:"Port for prometheus metrics"`
 	RpcPort        string     `toml:"rpc_port" comment:"Port for the JSON-RPC api. See https://docs.thestratos.org/docs-resource-node/sds-rpc-for-file-operation/"`
 	RpcNamespaces  string     `toml:"rpc_namespaces" comment:"Namespaces enabled in the RPC API. Eg: \"user,owner\""`
@@ -276,6 +277,7 @@ func DefaultConfig() *config {
 				Internal:       false,
 				NetworkAddress: "127.0.0.1",
 				NetworkPort:    "18081",
+				LocalPort:      "",
 				MetricsPort:    "18181",
 				RpcPort:        "18281",
 				RpcNamespaces:  "user",
