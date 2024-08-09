@@ -87,6 +87,13 @@ type ParamDownloadFileInfo struct {
 	ReqId    string `json:"reqid"`
 }
 
+// delete file
+type ParamReqDeleteFile struct {
+	FileHash  string    `json:"filehash"`
+	Signature Signature `json:"signature"`
+	ReqTime   int64     `json:"req_time"`
+}
+
 // list: request file list
 type ParamReqFileList struct {
 	Signature Signature `json:"signature"`
