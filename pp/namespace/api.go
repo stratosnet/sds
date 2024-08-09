@@ -676,6 +676,39 @@ func (api *rpcPubApi) DownloadedFileInfo(ctx context.Context, param rpc_api.Para
 	return rpc_api.Result{Return: rpc_api.SUCCESS}
 }
 
+func (api *rpcPubApi) RequestDeleteFile(ctx context.Context, param rpc_api.ParamReqDeleteFile) rpc_api.Result {
+	fileHash := param.FileHash
+	walletAddr := param.Signature.Address
+	pubkey := param.Signature.Pubkey
+	signature := param.Signature.Signature
+	reqTime := param.ReqTime
+
+	// verify if wallet and public key match
+	if !fwtypes.VerifyWalletAddr(pubkey, walletAddr) {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
+	if !fwtypes.VerifyWalletSign(pubkey, signature, msgutils.DeleteShareWalletSignMessage(fileHash, walletAddr, reqTime)) {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+	pk, _ := fwtypes.WalletPubKeyFromBech32(pubkey)
+	sigByte, _ := hex.DecodeString(signature)
+
+	event.DeleteFile(ctx, fileHash, walletAddr, pk.Bytes(), sigByte, reqTime)
+	// wait for result, SUCCESS or some failure
+	select {
+	case <-ctx.Done():
+		result := &rpc_api.Result{Return: rpc_api.TIME_OUT}
+		return *result
+	case result := <-file.SubscribeFileDeleteResult(fileHash):
+		file.UnsubscribeFileDeleteResult(fileHash)
+		if result != nil {
+			return *result
+		}
+	}
+	return rpc_api.Result{Return: rpc_api.GENERIC_ERR}
+}
+
 func (api *rpcPubApi) RequestList(ctx context.Context, param rpc_api.ParamReqFileList) rpc_api.FileListResult {
 	metrics.RpcReqCount.WithLabelValues("RequestList").Inc()
 

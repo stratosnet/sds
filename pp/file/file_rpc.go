@@ -49,6 +49,9 @@ var (
 	// gracefully close download session
 	rpcDownSessionClosing = &sync.Map{}
 
+	// file deletion
+	rpcFileDeleteChan = &sync.Map{}
+
 	// key(walletAddr + reqid): value(file list result)
 	rpcFileListResult = &sync.Map{}
 
@@ -509,6 +512,25 @@ func SetFileShareResult(key string, result *rpc.FileShareResult) {
 	downloadShareChan.Range(func(k, v interface{}) bool {
 		if strings.HasPrefix(k.(string), key) {
 			v.(chan *rpc.FileShareResult) <- result
+		}
+		return true
+	})
+}
+
+func SubscribeFileDeleteResult(fileHash string) chan *rpc.Result {
+	event := make(chan *rpc.Result)
+	rpcFileDeleteChan.Store(fileHash, event)
+	return event
+}
+
+func UnsubscribeFileDeleteResult(key string) {
+	rpcFileDeleteChan.Delete(key)
+}
+
+func SetFileDeleteResult(key string, result *rpc.Result) {
+	rpcFileDeleteChan.Range(func(k, v interface{}) bool {
+		if strings.HasPrefix(k.(string), key) {
+			v.(chan *rpc.Result) <- result
 		}
 		return true
 	})

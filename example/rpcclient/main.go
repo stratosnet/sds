@@ -167,6 +167,11 @@ func main() {
 		Short: "download a file",
 		RunE:  get,
 	}
+	deleteCmd := &cobra.Command{
+		Use:   "delete",
+		Short: "delete a file",
+		RunE:  delete,
+	}
 
 	listCmd := &cobra.Command{
 		Use:   "list",
@@ -249,6 +254,7 @@ func main() {
 	rootCmd.AddCommand(putstreamCmd)
 	rootCmd.AddCommand(filestatusCmd)
 	rootCmd.AddCommand(getCmd)
+	rootCmd.AddCommand(deleteCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(shareCmd)
 	rootCmd.AddCommand(listsharedCmd)

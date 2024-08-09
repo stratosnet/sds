@@ -7,6 +7,8 @@ import (
 	"github.com/stratosnet/sds/framework/msg/header"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
+	rpc_api "github.com/stratosnet/sds/pp/api/rpc"
+	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
@@ -34,8 +36,10 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 	}
 
 	if target.Result.State == protos.ResultState_RES_SUCCESS {
+		file.SetFileDeleteResult(target.FileHash, &rpc_api.Result{Return: rpc_api.SUCCESS})
 		pp.Log(ctx, "delete success ", target.Result.Msg)
 	} else {
+		file.SetFileDeleteResult(target.FileHash, &rpc_api.Result{Return: target.Result.Msg})
 		pp.Log(ctx, "delete failed ", target.Result.Msg)
 	}
 }

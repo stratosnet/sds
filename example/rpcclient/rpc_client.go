@@ -559,6 +559,89 @@ func get(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func reqDeleteMsg(hash string) []byte {
+	nowSec := time.Now().Unix()
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.DeleteShareWalletSignMessage(hash, WalletAddress, nowSec)))
+	if err != nil {
+		return nil
+	}
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
+	if err != nil {
+		return nil
+	}
+
+	// param
+	var params = []rpc.ParamReqDeleteFile{}
+	params = append(params, rpc.ParamReqDeleteFile{
+		FileHash: hash,
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
+		},
+		ReqTime: nowSec,
+	})
+
+	pm, e := json.Marshal(params)
+	if e != nil {
+		utils.ErrorLog("failed marshal param for ReqUploadFile")
+		return nil
+	}
+
+	// wrap to the json-rpc message
+	return wrapJsonRpc("user_requestDeleteFile", pm)
+}
+
+func delete(cmd *cobra.Command, args []string) error {
+	// compose "request file download" request
+	fileHash := args[0]
+	r := reqDeleteMsg(fileHash)
+	if r == nil {
+		return nil
+	}
+	utils.Log("- request deleting the file (method: user_requestDeleteFile)")
+	// http request-respond
+	body := httpRequest(r)
+	if body == nil {
+		utils.ErrorLog("json marshal error")
+		return nil
+	}
+
+	// handle rsp
+	var rsp jsonrpcMessage
+	err := json.Unmarshal(body, &rsp)
+	if err != nil {
+		return nil
+	}
+
+	var res rpc.Result
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+		utils.ErrorLog("unmarshal failed")
+		return nil
+	}
+
+	err = json.Unmarshal(body, &rsp)
+	if err != nil {
+		return nil
+	}
+
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+		utils.ErrorLog("unmarshal failed")
+		return nil
+	}
+
+	if res.Return == rpc.SUCCESS {
+		utils.Log("- received response (return: SUCCESS)")
+	} else {
+		utils.Log("- received response (return: ", res.Return, ")")
+	}
+	utils.Log("- downloading is done")
+	return nil
+}
+
 func reqListMsg(page uint64) []byte {
 	nowSec := time.Now().Unix()
 	// signature
