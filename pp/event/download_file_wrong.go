@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	ResendFailedDownloadDelay     = 5  // Seconds
-	ResendFailedDownloadTimeLimit = 30 // Seconds. If this time has elapsed since the start of the download task, don't resend the ReqDownloadFileWrong
+	ResendFailedDownloadDelay     = 5   // Seconds
+	ResendFailedDownloadTimeLimit = 120 // Seconds. If this time has elapsed since the start of the download task, don't resend the ReqDownloadFileWrong
 )
 
 func CheckAndSendRetryMessage(ctx context.Context, dTask *task.DownloadTask) {
