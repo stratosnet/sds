@@ -39,4 +39,5 @@ func RspReportNodeStatus(ctx context.Context, conn core.WriteCloser) {
 		utils.DebugLog("@#@#@#@#@#@#@#@#@#@#@#@#@#@#")
 		network.GetPeer(ctx).RunFsm(ctx, network.EVENT_RCV_RSP_FIRST_NODE_STATUS)
 	}
+	network.GetPeer(ctx).NodeStatusResponded(ctx)
 }
