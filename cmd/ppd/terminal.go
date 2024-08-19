@@ -337,6 +337,8 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 }
 
 func execute(cmd *cobra.Command, args []string) {
+	fmt.Println("args:", args)
+	args = strings.Split(args[0], " ")
 	run(cmd, args, true)
 }
 
