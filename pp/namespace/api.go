@@ -233,6 +233,10 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 	case result := <-fileEventCh:
 		file.UnsubscribeRemoteFileEvent(fileHash)
 		if result != nil {
+			if result.Return == rpc_api.UPLOAD_DATA {
+				f := fileUploadOffset{PacketFileOffset: *result.OffsetEnd, SliceFileOffset: *result.OffsetEnd}
+				fileOffset.Store(fileHash, f)
+			}
 			result = ResultHook(result, fileHash)
 			return *result
 		} else {
