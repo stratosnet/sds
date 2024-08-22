@@ -67,16 +67,17 @@ type VideoCacheTask struct {
 
 // DownloadTask signal task convert sliceHash list to map
 type DownloadTask struct {
-	TaskId        string // file task id
-	WalletAddress string
-	FileHash      string
-	VisitCer      string
-	sliceInfo     map[string]*protos.DownloadSliceInfo
-	FailedSlice   map[string]bool
-	SuccessSlice  map[string]bool
-	FailedPPNodes map[string]*protos.PPBaseInfo
-	SliceCount    int
-	taskMutex     sync.RWMutex
+	TaskId         string // file task id
+	WalletAddress  string
+	FileHash       string
+	VisitCer       string
+	sliceInfo      map[string]*protos.DownloadSliceInfo
+	FailedSlice    map[string]bool
+	SuccessSlice   map[string]bool
+	FailedPPNodes  map[string]*protos.PPBaseInfo
+	SliceCount     int
+	StartTimestamp int64
+	taskMutex      sync.RWMutex
 }
 
 func (task *DownloadTask) DeleteSliceInfo(sliceHash string) {
@@ -154,15 +155,16 @@ func AddDownloadTask(target *protos.RspFileStorageInfo) {
 		failedSlice[key] = true
 	}
 	dTask := &DownloadTask{
-		WalletAddress: target.WalletAddress,
-		FileHash:      target.FileHash,
-		VisitCer:      target.VisitCer,
-		sliceInfo:     SliceInfoMap,
-		FailedSlice:   failedSlice,
-		SuccessSlice:  make(map[string]bool),
-		FailedPPNodes: make(map[string]*protos.PPBaseInfo),
-		SliceCount:    len(target.SliceInfo),
-		TaskId:        target.TaskId,
+		WalletAddress:  target.WalletAddress,
+		FileHash:       target.FileHash,
+		VisitCer:       target.VisitCer,
+		sliceInfo:      SliceInfoMap,
+		FailedSlice:    failedSlice,
+		SuccessSlice:   make(map[string]bool),
+		FailedPPNodes:  make(map[string]*protos.PPBaseInfo),
+		SliceCount:     len(target.SliceInfo),
+		TaskId:         target.TaskId,
+		StartTimestamp: time.Now().Unix(),
 	}
 	DownloadTaskMap.Store((target.FileHash + target.WalletAddress + target.ReqId), dTask)
 	metrics.TaskCount.WithLabelValues("download").Inc()
