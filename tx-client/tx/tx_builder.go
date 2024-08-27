@@ -27,6 +27,59 @@ import (
 	"github.com/stratosnet/sds/tx-client/types/tx/signing"
 )
 
+func CreateAndSimulateMultiMsgTx(msgs []*anypb.Any, txFee types.TxFee, memo string,
+	signatureKeys []*types.SignatureKey, chainId string, gasAdjustment float64) ([]byte, error) {
+
+	txConfig, unsignedTx := CreateTxConfigAndTxBuilder()
+	setMsgInfosToTxBuilder(unsignedTx, msgs, txFee.Fee, txFee.Gas, memo)
+
+	unsignedMsgs := make([]*types.UnsignedMsg, 0)
+	for _, msg := range msgs {
+		unsignedMsgs = append(unsignedMsgs, &types.UnsignedMsg{
+			Msg: msg, SignatureKeys: signatureKeys, Type: msg.TypeUrl,
+		})
+	}
+
+	txBytes, err := BuildTxBytes(txConfig, unsignedTx, chainId, unsignedMsgs)
+	if err != nil {
+		return nil, err
+	}
+
+	if txFee.Simulate {
+		gasInfo, err := grpc.Simulate(txBytes)
+		if err != nil {
+			return nil, errors.Wrap(fmt.Errorf("failed to get gasInfo from chain"), err.Error())
+		}
+		unsignedTx.AuthInfo.Fee.GasLimit = uint64(float64(gasInfo.GasUsed) * gasAdjustment)
+
+		txBytes, err = BuildTxBytes(txConfig, unsignedTx, chainId, unsignedMsgs)
+		if err != nil {
+			return nil, errors.Wrap(fmt.Errorf("failed to build txBytes"), err.Error())
+		}
+	}
+	return txBytes, nil
+
+}
+
+func setMsgInfosToTxBuilder(unsignedTx *txv1beta1.Tx, txMsgs []*anypb.Any, fee types.Coin, gas uint64, memo string) {
+	unsignedTx.Body = &txv1beta1.TxBody{
+		Messages: txMsgs,
+		Memo:     memo,
+	}
+	unsignedTx.AuthInfo = &txv1beta1.AuthInfo{
+		Fee: &txv1beta1.Fee{
+			Amount: []*basev1beta1.Coin{
+				{
+					Denom:  fee.Denom,
+					Amount: fee.Amount.String(),
+				},
+			},
+			GasLimit: gas,
+		},
+	}
+	return
+}
+
 func CreateAndSimulateTx(msg *anypb.Any, txFee types.TxFee, memo string,
 	signatureKeys []*types.SignatureKey, chainId string, gasAdjustment float64) ([]byte, error) {
 
