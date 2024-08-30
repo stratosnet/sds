@@ -15,7 +15,7 @@ func GetFileDownloadWalletSignMessage(fileHash, walletAddr, sn string, timestamp
 }
 
 // GetFileReplicaInfoWalletSignMessage replica info: wallet sign message for get file replica info request from the (rpc or cmd) user
-func GetFileReplicaInfoWalletSignMessage(fileHash, walletAddr string, timestamp int64) string {
+func GetFileReplicaInfoWalletSignMessage(fileHash, walletAddr, sn string, timestamp int64) string {
 	return fileHash + walletAddr + strconv.FormatInt(timestamp, 10)
 }
 

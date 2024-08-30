@@ -194,26 +194,15 @@ func GetFileReplicaInfo(ctx context.Context, path string, replicaIncreaseNum uin
 		fwutils.DebugLog("invalid path length")
 		return
 	}
-	_, _, fileHash, _, err := fwtypes.ParseFileHandle(path)
-	if err != nil {
-		pp.ErrorLog(ctx, "please input correct file link, eg: sdm://address/fileHash|filename(optional)")
-		return
-	}
 	pp.DebugLog(ctx, "path:", path)
 
 	nowSec := time.Now().Unix()
-	// sign the wallet signature by wallet private key
-	wsignMsg := msgutils.GetFileReplicaInfoWalletSignMessage(fileHash, setting.WalletAddress, nowSec)
-	wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
-	if err != nil {
+	spP2pAddress := p2pserver.GetP2pServer(ctx).GetP2PAddress().String()
+	req := requests.ReqFileReplicaInfo(path, setting.WalletAddress, spP2pAddress, replicaIncreaseNum, setting.WalletPublicKey.Bytes(), nil, nowSec)
+	if err := ReqGetWalletOzForReplicas(ctx, setting.WalletAddress, task.LOCAL_REQID, req); err != nil {
+		pp.ErrorLog(ctx, err)
 		return
 	}
-
-	req := requests.ReqFileReplicaInfo(
-		path, setting.WalletAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
-		replicaIncreaseNum, setting.WalletPublicKey.Bytes(), wsign, nowSec,
-	)
-	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqFileReplicaInfo)
 }
 
 func RspFileReplicaInfo(ctx context.Context, conn core.WriteCloser) {
