@@ -13,15 +13,22 @@ const networkInfo = {
     serviceToken: process.env.REACT_APP_SERVICE_TOKEN
 }
 
-function getVideoUrl(api, ...parameters) {
+function getVideoUrl(api, pathParams = [], query = [], tokenPosition = "query") {
     let apiUrl = `${networkInfo.videoServiceUrl}/${api}`;
-    if (networkInfo.serviceToken) {
+    let queryParams = [...query];
+    if (networkInfo.serviceToken && tokenPosition === "query") {
+        queryParams.push(`token=${networkInfo.serviceToken}`)
+    }
+    if (networkInfo.serviceToken && tokenPosition === "path") {
         apiUrl =  `${apiUrl}/${networkInfo.serviceToken}`;
     }
-    if (parameters.length === 0) {
-        return apiUrl;
+    if (pathParams.length > 0) {
+        apiUrl = `${apiUrl}/${pathParams.join("/")}`
     }
-    return `${apiUrl}/${[...parameters].join("/")}`;
+    if (queryParams.length > 0) {
+        apiUrl = `${apiUrl}?${queryParams.join("&")}`
+    }
+    return apiUrl;
 }
 
 const StreamPlayer = () => {
@@ -37,7 +44,7 @@ const StreamPlayer = () => {
 
     async function fetchStreamInfo() {
         const fileHash = params.link;
-        const ozoneResp = await fetch(getVideoUrl("getOzone", walletAddress));
+        const ozoneResp = await fetch(getVideoUrl("getOzone", [walletAddress]));
         const ozoneInfo = await ozoneResp.json();
         const reqTime = Math.floor(Date.now() / 1000);
 
@@ -62,14 +69,14 @@ const StreamPlayer = () => {
             })
         };
 
-        const streamInfoResp = await fetch(getVideoUrl("prepareVideoFileCache", walletAddress, fileHash), requestOptions);
+        const streamInfoResp = await fetch(getVideoUrl("prepareVideoFileCache", [walletAddress, fileHash]), requestOptions);
         return await streamInfoResp.json()
     }
 
     async function fetchStreamInfoByShareLink() {
         const shareLink = params.link;
         const sharePassword = searchParams.get("pw")
-        const ozoneResp = await fetch(getVideoUrl("getOzone", walletAddress));
+        const ozoneResp = await fetch(getVideoUrl("getOzone", [walletAddress]));
         const ozoneInfo = await ozoneResp.json();
         const reqTime = Math.floor(Date.now() / 1000);
 
@@ -94,7 +101,7 @@ const StreamPlayer = () => {
             })
         };
 
-        const streamInfoResp = await fetch(getVideoUrl("prepareSharedVideoFileCache", shareLink) + `?password=${sharePassword}`, requestOptions);
+        const streamInfoResp = await fetch(getVideoUrl("prepareSharedVideoFileCache", [shareLink], [`password=${sharePassword}`]), requestOptions);
         return await streamInfoResp.json()
     }
 
@@ -177,7 +184,7 @@ const StreamPlayer = () => {
                         options={{
                             ...videoJsOptions,
                             sources: {
-                                src: getVideoUrl("getVideoSliceCache", streamInfo.reqId, streamInfo.headerFile),
+                                src: getVideoUrl("getVideoSliceCache", [streamInfo.reqId, streamInfo.headerFile], [], "path"),
                                 type: "application/x-mpegURL",
                             }
                         }}
