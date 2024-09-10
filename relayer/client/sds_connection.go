@@ -51,6 +51,7 @@ func newSdsConnection(client *MultiClient) *sdsConnection {
 }
 
 func (s *sdsConnection) stop() {
+	utils.DebugLog("sdsConnection.Stop ... ")
 	if s.once == nil {
 		return
 	}
