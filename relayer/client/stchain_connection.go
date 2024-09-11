@@ -58,7 +58,8 @@ func newStchainConnection(client *MultiClient) *stchainConnection {
 	}
 
 	wsclient.OnReconnect(s.onReconnect)(s.ws)
-
+	wsclient.PingPeriod(30 * time.Second)(s.ws)
+	wsclient.WriteWait(25 * time.Second)(s.ws)
 	return s
 }
 
@@ -132,10 +133,10 @@ func (s *stchainConnection) readerLoop() {
 			}
 			msgType := ""
 			n, err := fmt.Sscanf(result.Query, "message.action='%v'", &msgType)
-			msgType = strings.TrimRight(msgType, "'")
 			if n <= 0 && err != nil {
-
+				continue
 			}
+			msgType = strings.TrimRight(msgType, "'")
 
 			handler, ok := handlers.Handlers[msgType]
 			if ok && handler != nil {
