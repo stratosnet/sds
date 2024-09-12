@@ -117,7 +117,7 @@ func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb p
 }
 
 func (p *P2pServer) SendMessageToSPServer(ctx context.Context, pb proto.Message, cmd header.MsgType) {
-	if p.mainSpConn != nil {
+	if p.SpConnValid() {
 		_ = p.SendMessage(ctx, p.mainSpConn, pb, cmd)
 	}
 }

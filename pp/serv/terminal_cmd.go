@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/framework/crypto"
 	fwtypes "github.com/stratosnet/sds/framework/types"
@@ -987,7 +986,7 @@ func (api *terminalCmd) Maintenance(ctx context.Context, param []string) (CmdRes
 	return CmdResult{Msg: DefaultMsg}, nil
 }
 
-func (api *terminalCmd) CheckReplica(ctx context.Context, param []string) (CmdResult, error) {
+func (api *terminalCmd) Replica(ctx context.Context, param []string) (CmdResult, error) {
 	terminalId, param, err := getTerminalIdFromParam(param)
 	if err != nil {
 		return CmdResult{Msg: ""}, err

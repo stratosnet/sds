@@ -23,6 +23,7 @@ import (
 var (
 	uploadRequestMap       = &sync.Map{}
 	downloadRequestMap     = &sync.Map{}
+	replicasRequestMap     = &sync.Map{}
 	getShareFileRequestMap = &sync.Map{}
 )
 
@@ -47,6 +48,12 @@ func ReqGetWalletOzForDownload(ctx context.Context, walletAddr, reqId string, do
 
 func ReqGetWalletOzForGetShareFile(ctx context.Context, walletAddr, reqId string, getShareFileReq *protos.ReqGetShareFile) error {
 	getShareFileRequestMap.Store(core.GetReqIdFromContext(ctx), getShareFileReq)
+	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqGetWalletOzData(walletAddr, reqId), header.ReqGetWalletOz)
+	return nil
+}
+
+func ReqGetWalletOzForReplicas(ctx context.Context, walletAddr, reqId string, replicaReq *protos.ReqFileReplicaInfo) error {
+	replicasRequestMap.Store(core.GetReqIdFromContext(ctx), replicaReq)
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqGetWalletOzData(walletAddr, reqId), header.ReqGetWalletOz)
 	return nil
 }
@@ -113,6 +120,22 @@ func RspGetWalletOz(ctx context.Context, conn core.WriteCloser) {
 		return
 	}
 
+	if reqMsg, loaded := replicasRequestMap.LoadAndDelete(requests.GetReqIdFromMessage(ctx)); loaded {
+		rmsg := reqMsg.(*protos.ReqFileReplicaInfo)
+		_, _, fileHash, _, err := fwtypes.ParseFileHandle(rmsg.FilePath)
+		if err != nil {
+			return
+		}
+		// sign the wallet signature by wallet private key
+		wsignMsg := msgutils.GetFileReplicaInfoWalletSignMessage(fileHash, setting.WalletAddress, target.SequenceNumber, rmsg.ReqTime)
+		wsign, err := setting.WalletPrivateKey.Sign([]byte(wsignMsg))
+		if err != nil {
+			return
+		}
+		rmsg.Signature.Signature = wsign
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, rmsg, header.ReqFileReplicaInfo)
+		return
+	}
 	pp.Logf(ctx, "get GetWalletOz RSP, the current ozone balance of %v = %v, %s, %v", target.GetWalletAddress(), target.GetWalletOz(), target.SequenceNumber, reqId)
 	rpcResult.Return = rpc.SUCCESS
 	rpcResult.Ozone = target.WalletOz

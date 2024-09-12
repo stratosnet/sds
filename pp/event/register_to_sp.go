@@ -57,6 +57,7 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 	var target protos.RspMining
 	if err := VerifyMessage(ctx, header.RspMining, &target); err != nil {
 		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
 	}
 	if !requests.UnmarshalData(ctx, &target) {
 		return
@@ -75,10 +76,34 @@ func RspMining(ctx context.Context, conn core.WriteCloser) {
 
 	pp.Log(ctx, "start mining")
 	if p2pserver.GetP2pServer(ctx).GetP2pServer() == nil {
-		go p2pserver.GetP2pServer(ctx).StartListenServer(ctx, setting.Config.Node.Connectivity.NetworkPort)
+		go p2pserver.GetP2pServer(ctx).StartListenServer(ctx, setting.GetP2pServerPort())
 	}
 	pp.DebugLog(ctx, "Start reporting node status to SP")
 	// trigger 1 stat report immediately
 	network.GetPeer(ctx).ReportNodeStatus(ctx)
 	rpcResult.Return = rpc.SUCCESS
+}
+
+// NoticeRelocateSp An SP wants this node to switch to a different SP
+func NoticeRelocateSp(ctx context.Context, conn core.WriteCloser) {
+	var target protos.NoticeRelocateSp
+	if err := VerifyMessage(ctx, header.NoticeRelocateSp, &target); err != nil {
+		utils.ErrorLog("failed verifying the message, ", err.Error())
+		return
+	}
+	if !requests.UnmarshalData(ctx, &target) {
+		pp.DebugLog(ctx, "Cannot unmarshal SP relocation notice")
+		return
+	}
+	if target.P2PAddressPp != p2pserver.GetP2pServer(ctx).GetP2PAddress().String() {
+		return
+	}
+	if target.ToSp == nil {
+		pp.DebugLog(ctx, "Target SP is missing in NoticeRelocateSp")
+		return
+	}
+
+	p2pServer := p2pserver.GetP2pServer(ctx)
+	pp.Logf(ctx, "Received a notice to switch to SP %v (%v). Current SP is %v", target.ToSp.NetworkAddress, target.ToSp.P2PAddress, p2pServer.GetSpName())
+	p2pServer.ConfirmOptSP(ctx, target.ToSp.NetworkAddress)
 }

@@ -41,8 +41,8 @@ func startRunE(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	defer multiClient.Stop()
 	defer os.Exit(1)
+	defer multiClient.Stop()
 
 	err = multiClient.Start()
 	if err != nil {

@@ -18,9 +18,12 @@ type Config struct {
 type Cache interface {
 	IsOK() error
 	Get(key string, data interface{}) error
+	GetRaw(key string) (string, error)
 	Delete(key string) error
 	Set(key string, value interface{}, expire time.Duration) error
 	Expire(key string, expire time.Duration) error
 	EnQueue(key string, value interface{}) error
 	DeQueue(key string) (interface{}, error)
+	GetKeyList(prefix string) []string
+	Append(key, value string) error
 }

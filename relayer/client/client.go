@@ -79,6 +79,7 @@ func (m *MultiClient) Start() error {
 }
 
 func (m *MultiClient) Stop() {
+	utils.DebugLogf("MultiClient.Stop ... ")
 	m.once.Do(func() {
 		m.cancel()
 		m.sdsConn.stop()

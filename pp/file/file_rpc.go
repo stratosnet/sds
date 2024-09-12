@@ -19,8 +19,6 @@ const NUMBER_OF_UPLOAD_CHAN_BUFFER = 5
 var (
 	reFileMutex sync.Mutex
 
-	upSliceMutex sync.Mutex
-
 	fileEventMutex sync.Mutex
 
 	sliceEventMutex sync.Mutex
@@ -48,6 +46,9 @@ var (
 
 	// gracefully close download session
 	rpcDownSessionClosing = &sync.Map{}
+
+	// file deletion
+	rpcFileDeleteChan = &sync.Map{}
 
 	// key(walletAddr + reqid): value(file list result)
 	rpcFileListResult = &sync.Map{}
@@ -91,9 +92,6 @@ func UnsubscribeGetRemoteFileData(key string) {
 }
 
 func CacheRemoteFileData(fileHash string, offset *protos.SliceOffset, folderName, fileName string, writeFromStartOffset bool) error {
-	upSliceMutex.Lock()
-	defer upSliceMutex.Unlock()
-
 	// compose event, as well notify the remote user
 	r := &rpc.Result{
 		Return:      rpc.UPLOAD_DATA,
@@ -509,6 +507,25 @@ func SetFileShareResult(key string, result *rpc.FileShareResult) {
 	downloadShareChan.Range(func(k, v interface{}) bool {
 		if strings.HasPrefix(k.(string), key) {
 			v.(chan *rpc.FileShareResult) <- result
+		}
+		return true
+	})
+}
+
+func SubscribeFileDeleteResult(fileHash string) chan *rpc.Result {
+	event := make(chan *rpc.Result)
+	rpcFileDeleteChan.Store(fileHash, event)
+	return event
+}
+
+func UnsubscribeFileDeleteResult(key string) {
+	rpcFileDeleteChan.Delete(key)
+}
+
+func SetFileDeleteResult(key string, result *rpc.Result) {
+	rpcFileDeleteChan.Range(func(k, v interface{}) bool {
+		if strings.HasPrefix(k.(string), key) {
+			v.(chan *rpc.Result) <- result
 		}
 		return true
 	})
