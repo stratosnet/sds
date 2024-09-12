@@ -83,12 +83,13 @@ type StreamReqBody struct {
 type OzoneInfo struct {
 	WalletAddress  string `json:"walletAddress"`
 	SequenceNumber string `json:"sequenceNumber"`
+	Ozone          string `json:"ozone"`
 }
 
 func GetOzone(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	walletAddress := parseGetOZoneWalletAddress(req.URL)
-	sn, err := handleGetOzone(ctx, walletAddress)
+	sn, ozone, err := handleGetOzone(ctx, walletAddress)
 	if err != nil {
 		w.WriteHeader(setting.FAILCode)
 		_, _ = w.Write(httpserv.NewErrorJson(setting.FAILCode, "failed to get ozone").ToBytes())
@@ -97,6 +98,7 @@ func GetOzone(w http.ResponseWriter, req *http.Request) {
 	ret, _ := json.Marshal(OzoneInfo{
 		WalletAddress:  walletAddress,
 		SequenceNumber: sn,
+		Ozone:          ozone,
 	})
 	_, _ = w.Write(ret)
 }
@@ -705,7 +707,7 @@ func getWalletSignFromRequest(req *http.Request, keyword string) (*rpc_api.Signa
 }
 
 func getWalletSignFromLocal(req *http.Request, keyword string) (*rpc_api.Signature, int64, error) {
-	sn, err := handleGetOzone(req.Context(), setting.WalletAddress)
+	sn, _, err := handleGetOzone(req.Context(), setting.WalletAddress)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -853,7 +855,7 @@ func reqGetSharedMsg(shareLink pptypes.GetShareFile, walletSign *rpc_api.Signatu
 	}
 }
 
-func handleGetOzone(ctx context.Context, walletAddress string) (string, error) {
+func handleGetOzone(ctx context.Context, walletAddress string) (string, string, error) {
 	utils.Log("- request ozone balance (method: user_requestGetOzone)")
 	res := namespace.RpcPubApi().RequestGetOzone(ctx, rpc_api.ParamReqGetOzone{
 		WalletAddr: walletAddress,
@@ -868,5 +870,5 @@ func handleGetOzone(ctx context.Context, walletAddress string) (string, error) {
 		utils.Log("- received response (return: ", res.Return, ")")
 	}
 
-	return res.SequenceNumber, nil
+	return res.SequenceNumber, res.Ozone, nil
 }

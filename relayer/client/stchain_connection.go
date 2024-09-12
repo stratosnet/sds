@@ -3,214 +3,152 @@ package client
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/cometbft/cometbft/rpc/client/http"
+	cmtjson "github.com/cometbft/cometbft/libs/json"
+	tmlog "github.com/cometbft/cometbft/libs/log"
+	cmtpubsub "github.com/cometbft/cometbft/libs/pubsub"
 	coretypes "github.com/cometbft/cometbft/rpc/core/types"
+	wsclient "github.com/cometbft/cometbft/rpc/jsonrpc/client"
 	comettypes "github.com/cometbft/cometbft/types"
 	"github.com/pkg/errors"
-
-	"github.com/stratosnet/sds/framework/utils"
-
 	"github.com/stratosnet/sds/relayer/cmd/relayd/setting"
-	"github.com/stratosnet/sds/relayer/stratoschain"
+
+	"github.com/cometbft/cometbft/libs/service"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/relayer/stratoschain/handlers"
+)
+
+const (
+	ENABLE_WSCLIENT_LOG = false
 )
 
 // stchainConnection is used to subscribe to stratos-chain events and receive messages via websocket
 type stchainConnection struct {
-	client *MultiClient
-
+	service.BaseService
+	client                *MultiClient
 	stratosEventsChannels *sync.Map
-
-	cancel context.CancelFunc
-	ctx    context.Context
-	once   *sync.Once
-	wg     *sync.WaitGroup
-	mux    sync.Mutex
-}
-
-type websocketSubscription struct {
-	channel <-chan coretypes.ResultEvent
-	client  *http.HTTP
-	query   string
+	ws                    *wsclient.WSClient
 }
 
 func newStchainConnection(client *MultiClient) *stchainConnection {
-	return &stchainConnection{
-		client:                client,
-		stratosEventsChannels: &sync.Map{},
-	}
-}
-
-func (s *stchainConnection) stop() {
-	if s.once == nil {
-		return
-	}
-
-	s.once.Do(func() {
-		s.cancel()
-
-		s.stratosEventsChannels.Range(func(k, v interface{}) bool {
-			subscription, ok := v.(websocketSubscription)
-			if !ok {
-				return false
-			}
-
-			s.wg.Add(1)
-			go func() {
-				defer s.wg.Done()
-
-				if subscription.client == nil {
-					return
-				}
-
-				err := subscription.client.Unsubscribe(context.Background(), "", subscription.query)
-				if err != nil {
-					utils.ErrorLog("couldn't unsubscribe from "+subscription.query, err)
-				} else {
-					utils.DetailLog("unsubscribed from " + subscription.query)
-				}
-				_ = subscription.client.Stop()
-			}()
-			return false
-		})
-
-		s.wg.Wait()
-		utils.Log("stchain connection has been stopped")
-	})
-}
-
-func (s *stchainConnection) refresh() {
-	if !s.mux.TryLock() {
-		return // Refresh procedure already started
-	}
-	defer s.mux.Unlock()
-
-	s.stop() // Stop the connection if it was started before
-
-	s.ctx, s.cancel = context.WithCancel(s.client.Ctx)
-	s.once = &sync.Once{}
-	s.wg = &sync.WaitGroup{}
-
-	s.wg.Add(1)
-	defer s.wg.Done()
-
-	// Schedule next connection refresh
-	if setting.Config.StratosChain.ConnectionRetries.RefreshInterval > 0 {
-		s.wg.Add(1)
-		go func() {
-			defer s.wg.Done()
-
-			select {
-			case <-time.After(time.Duration(setting.Config.StratosChain.ConnectionRetries.RefreshInterval) * time.Second):
-				utils.Logf("stchain connection has been alive for a long time and will be refreshed")
-				go s.refresh()
-			case <-s.ctx.Done():
-				return
-			}
-		}()
-	}
-
-	// Connect to stratos-chain in a loop
-	i := 0
-	for ; i < setting.Config.StratosChain.ConnectionRetries.Max; i++ {
-		if s.ctx.Err() != nil {
-			return
-		}
-
-		if i != 0 {
-			time.Sleep(time.Millisecond * time.Duration(setting.Config.StratosChain.ConnectionRetries.SleepDuration))
-		}
-
-		err := s.subscribeToStratosChainEvents()
-		if err != nil {
-			utils.ErrorLog(err)
-			continue
-		}
-
-		utils.Log("Successfully subscribed to events from stratos-chain")
-		return
-	}
-
-	// This is reached when we couldn't establish the connection to the stratos-chain
-	if i == setting.Config.StratosChain.ConnectionRetries.Max {
-		utils.ErrorLog("Couldn't connect to stratos-chain after many tries. Relayd will shutdown")
-	} else {
-		utils.ErrorLog("Couldn't subscribe to stratos-chain events through websockets. Relayd will shutdown")
-	}
-	s.client.cancel() // Cancel global context
-}
-
-func (s *stchainConnection) stratosSubscriptionReaderLoop(subscription websocketSubscription, handler func(coretypes.ResultEvent)) {
-	s.wg.Add(1)
-
-	defer func() {
-		if r := recover(); r != nil {
-			utils.ErrorLog("Recovering from panic in stratos-chain subscription reader loop", r)
-		}
-
-		s.wg.Done()
-		go s.refresh()
-	}()
-
-	for {
-		select {
-		case <-s.ctx.Done():
-			return
-		case message, ok := <-subscription.channel:
-			if !ok {
-				utils.Log("The stratos-chain events websocket channel has been closed")
-				return
-			}
-			utils.Logf("Received a new message of type [%v] from stratos-chain!", subscription.query)
-			cleanEventStrings(message)
-			handler(message)
-		}
-	}
-}
-
-func (s *stchainConnection) subscribeToStratosChain(msgType string) error {
-	handler, ok := handlers.Handlers[msgType]
-	if !ok {
-		return errors.Errorf("Cannot subscribe to message [%v] in stratos-chain: missing handler function", msgType)
-	}
-
-	query := fmt.Sprintf("message.action='%v'", msgType)
-	if _, ok := s.stratosEventsChannels.Load(query); ok {
+	url, err := utils.ParseUrl(setting.Config.StratosChain.WebsocketServer)
+	if err != nil {
 		return nil
 	}
 
-	client, err := stratoschain.DialWebsocket(setting.Config.StratosChain.WebsocketServer)
+	wsClient, err := wsclient.NewWS(url.String(true, true, false, false), "/websocket")
 	if err != nil {
-		return err
+		return nil
 	}
 
-	out, err := client.Subscribe(context.Background(), "", query, 20)
-	if err != nil {
-		return errors.New("failed to subscribe to query in stratos-chain: " + err.Error())
+	s := &stchainConnection{
+		client:                client,
+		stratosEventsChannels: &sync.Map{},
+		ws:                    wsClient,
 	}
 
-	subscription := websocketSubscription{
-		channel: out,
-		client:  client,
-		query:   query,
+	if ENABLE_WSCLIENT_LOG {
+		logger := tmlog.NewTMLogger(tmlog.NewSyncWriter(os.Stdout))
+		logger.With("module", "stchain-channel")
+		s.ws.SetLogger(logger)
 	}
-	s.stratosEventsChannels.Store(query, subscription)
-	go s.stratosSubscriptionReaderLoop(subscription, handler)
 
-	return nil
+	wsclient.OnReconnect(s.onReconnect)(s.ws)
+	wsclient.PingPeriod(30 * time.Second)(s.ws)
+	wsclient.WriteWait(25 * time.Second)(s.ws)
+	return s
 }
 
-func (s *stchainConnection) subscribeToStratosChainEvents() error {
+func (s *stchainConnection) subscribeAllQueries() error {
+	utils.DebugLog("==== subscribe queries ====")
 	for msgType := range handlers.Handlers {
-		err := s.subscribeToStratosChain(msgType)
+		_, ok := handlers.Handlers[msgType]
+		if !ok {
+			return errors.Errorf("Cannot subscribe to message [%v] in stratos-chain: missing handler function", msgType)
+		}
+		query := fmt.Sprintf("message.action='%v'", msgType)
+		utils.DebugLog("subscribe:", query)
+		err := s.ws.Subscribe(context.Background(), query)
 		if err != nil {
 			return err
 		}
 	}
+	utils.DebugLog("==== end sub queries ====")
 	return nil
+}
+
+func (s *stchainConnection) onReconnect() {
+	// wsclient doesn't take care of the re-subscription operation when reconnect to ws conn
+	err := s.subscribeAllQueries()
+	if err != nil {
+		utils.ErrorLog("Failed subscribing queries:", err.Error())
+	}
+}
+
+func (s *stchainConnection) start() error {
+	s.ws.OnStart()
+	if err := s.subscribeAllQueries(); err != nil {
+		utils.ErrorLog("Failed subscribing queries:", err.Error())
+	}
+	utils.Log("Successfully subscribed to events from stratos-chain")
+	go s.readerLoop()
+	return nil
+}
+
+func (s *stchainConnection) stop() {
+	utils.DebugLog("stchainConnection.Stop ... ")
+	s.ws.Stop()
+}
+
+func (s *stchainConnection) readerLoop() {
+	for {
+		select {
+		case resp, ok := <-s.ws.ResponsesCh:
+			if !ok {
+				return
+			}
+			if resp.Error != nil {
+				utils.ErrorLog("WS error", resp.Error.Error())
+				// Error can be ErrAlreadySubscribed or max client (subscriptions per
+				// client) reached or CometBFT exited.
+				// We can ignore ErrAlreadySubscribed, but need to retry in other
+				// cases.
+				if !strings.Contains(resp.Error.Error(), cmtpubsub.ErrAlreadySubscribed.Error()) {
+					// Resubscribe after 1 second to give CometBFT time to restart (if
+					// crashed).
+					time.Sleep(1 * time.Second)
+					s.subscribeAllQueries()
+				}
+				continue
+			}
+			result := new(coretypes.ResultEvent)
+			err := cmtjson.Unmarshal(resp.Result, result)
+			if err != nil {
+				//Logger.Error("failed to unmarshal response", "err", err)
+				continue
+			}
+			msgType := ""
+			n, err := fmt.Sscanf(result.Query, "message.action='%v'", &msgType)
+			if n <= 0 && err != nil {
+				continue
+			}
+			msgType = strings.TrimRight(msgType, "'")
+
+			handler, ok := handlers.Handlers[msgType]
+			if ok && handler != nil {
+				cleanEventStrings(*result)
+				handler(*result)
+			}
+		}
+	}
+}
+
+func (s *stchainConnection) refresh() {
+	s.start()
 }
 
 func cleanEventStrings(resultEvent coretypes.ResultEvent) {
