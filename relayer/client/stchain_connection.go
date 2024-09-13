@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	ENABLE_WSCLIENT_LOG = false
+	ENABLE_WSCLIENT_LOG = true
 )
 
 // stchainConnection is used to subscribe to stratos-chain events and receive messages via websocket
