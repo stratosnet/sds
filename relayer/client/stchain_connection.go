@@ -141,6 +141,7 @@ func (s *stchainConnection) readerLoop() {
 			handler, ok := handlers.Handlers[msgType]
 			if ok && handler != nil {
 				cleanEventStrings(*result)
+				utils.Logf("Received a new message of type [%v] from stratos-chain!", msgType)
 				handler(*result)
 			}
 		}
