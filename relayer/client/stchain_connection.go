@@ -121,7 +121,7 @@ func (s *stchainConnection) readerLoop() {
 					// Resubscribe after 1 second to give CometBFT time to restart (if
 					// crashed).
 					time.Sleep(1 * time.Second)
-					s.subscribeAllQueries()
+					go s.subscribeAllQueries()
 				}
 				continue
 			}
