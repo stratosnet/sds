@@ -121,7 +121,7 @@ func (s *stchainConnection) readerLoop() {
 					// Resubscribe after 1 second to give CometBFT time to restart (if
 					// crashed).
 					time.Sleep(1 * time.Second)
-					s.subscribeAllQueries()
+					go s.subscribeAllQueries()
 				}
 				continue
 			}
@@ -141,6 +141,7 @@ func (s *stchainConnection) readerLoop() {
 			handler, ok := handlers.Handlers[msgType]
 			if ok && handler != nil {
 				cleanEventStrings(*result)
+				utils.Logf("Received a new message of type [%v] from stratos-chain!", msgType)
 				handler(*result)
 			}
 		}
