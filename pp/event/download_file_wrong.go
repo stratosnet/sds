@@ -73,7 +73,7 @@ func RspDownloadFileWrong(ctx context.Context, conn core.WriteCloser) {
 			if file.CheckSliceExisting(target.FileHash, target.FileName, slice.SliceStorageInfo.SliceHash, fileReqId) {
 				pp.Log(ctx, "slice exist already,", slice.SliceStorageInfo.SliceHash)
 				setDownloadSliceSuccess(ctx, slice.SliceStorageInfo.SliceHash, dTask)
-				task.DownloadProgress(ctx, target.FileHash, fileReqId, slice.SliceOffset.SliceOffsetEnd-slice.SliceOffset.SliceOffsetStart)
+				task.DownloadProgress(ctx, target.FileHash, fileReqId, 0)
 			} else {
 				dTask.AddFailedSlice(slice.SliceStorageInfo.SliceHash)
 				task.DownloadSliceProgress.Store(slice.TaskId+slice.SliceStorageInfo.SliceHash+fileReqId, uint64(0))
