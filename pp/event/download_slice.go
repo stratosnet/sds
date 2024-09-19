@@ -519,26 +519,24 @@ func DownloadFileSlices(ctx context.Context, target *protos.RspFileStorageInfo, 
 		DownloadedSize: 0,
 	}
 	slicesLocallyFound := make([]*protos.DownloadSliceInfo, 0)
+	needRequest := make([]*protos.DownloadSliceInfo, 0)
 	if !file.CheckFileExisting(ctx, target.FileHash, target.FileName, target.SavePath, target.EncryptionTag, reqId) {
 		pp.Log(ctx, "download starts: ")
 		task.DownloadSpeedOfProgress.Store(target.FileHash+reqId, sp)
 		for _, slice := range target.SliceInfo {
-			var re string
 			if file.CheckSliceExisting(target.FileHash, target.FileName, slice.SliceStorageInfo.SliceHash, reqId) {
-				re = "slice exists"
 				task.DownloadProgress(ctx, target.FileHash, reqId, slice.SliceOffset.SliceOffsetEnd-slice.SliceOffset.SliceOffsetStart)
 				task.CleanDownloadTask(ctx, target.FileHash, slice.SliceStorageInfo.SliceHash, target.WalletAddress, reqId)
 				setDownloadSliceSuccess(ctx, slice.SliceStorageInfo.SliceHash, dTask)
 				slicesLocallyFound = append(slicesLocallyFound, slice)
 			} else {
-				re = "request for slice data sent"
-				req := requests.ReqDownloadSliceData(ctx, target, slice)
-				newCtx := createAndRegisterSliceReqId(ctx, reqId)
-				SendReqDownloadSlice(newCtx, target.FileHash, slice, req, reqId)
+				needRequest = append(needRequest, slice)
 			}
-			utils.DebugLog("slice info ======= \ntaskid: ", slice.TaskId,
-				"\nslicehash: ", slice.SliceStorageInfo.SliceHash,
-				"\nslicenumber: ", slice.SliceNumber, "\n result:", re)
+		}
+		for _, slice := range needRequest {
+			req := requests.ReqDownloadSliceData(ctx, target, slice)
+			newCtx := createAndRegisterSliceReqId(ctx, reqId)
+			SendReqDownloadSlice(newCtx, target.FileHash, slice, req, reqId)
 		}
 	} else {
 		task.DownloadResult(ctx, target.FileHash, false, "file exists already.")
