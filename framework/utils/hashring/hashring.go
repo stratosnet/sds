@@ -27,6 +27,16 @@ func (n *Node) GetID() string {
 	return n.id
 }
 
+// SetID will only set the ID if it's missing
+func (n *Node) SetID(ID string) {
+	if n == nil {
+		return
+	}
+	if n.id == "" {
+		n.id = ID
+	}
+}
+
 func (n *Node) SetDiskUsage(diskSize, freeDisk uint64) {
 	if n == nil {
 		return
@@ -72,7 +82,11 @@ func (r *HashRing) AddNode(id string, node *Node) {
 		return
 	}
 
+	if id == "" {
+		id = node.id
+	}
 	node.id = id
+
 	if node.Weight == 0 {
 		node.Weight = 1
 	}
