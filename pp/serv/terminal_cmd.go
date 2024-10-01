@@ -29,7 +29,6 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	pptypes "github.com/stratosnet/sds/pp/types"
 )
 
 const (
@@ -753,9 +752,23 @@ func (api *terminalCmd) SharePath(ctx context.Context, param []string) (CmdResul
 	if private == 1 {
 		isPrivate = true
 	}
+	ipfsCid := ""
+	if len(param) == 3 {
+		p3 := param[3]
+		if !strings.Contains(p3, "=") {
+			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p3)
+		}
+		kv := strings.SplitN(p3, "=", 2)
+		switch kv[0] {
+		case "--ipfsCid":
+			ipfsCid = kv[1]
+		default:
+			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
+		}
+	}
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
 	// if len(str1) == setting.FILEHASHLEN { //
-	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
+	// 	event.ReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
 	nowSec := time.Now().Unix()
 	if !crypto.ValidateHash(param[0]) {
@@ -768,8 +781,8 @@ func (api *terminalCmd) SharePath(ctx context.Context, param []string) (CmdResul
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
 	}
-	event.GetReqShareFile(ctx, "", param[0], setting.WalletAddress, int64(shareDuration), isPrivate,
-		setting.WalletPublicKey.Bytes(), wsign, nowSec)
+	event.ReqShareFile(ctx, "", param[0], setting.WalletAddress, int64(shareDuration), isPrivate,
+		setting.WalletPublicKey.Bytes(), wsign, nowSec, ipfsCid)
 	// }
 	return CmdResult{Msg: DefaultMsg}, nil
 }
@@ -804,6 +817,26 @@ func (api *terminalCmd) ShareFile(ctx context.Context, param []string) (CmdResul
 	if private == 1 {
 		isPrivate = true
 	}
+
+	ipfsCid := ""
+	utils.DebugLog("len of param:", len(param))
+	if len(param) == 4 {
+		p3 := param[3]
+		if !strings.Contains(p3, "=") {
+			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", p3)
+		}
+		kv := strings.SplitN(p3, "=", 2)
+		switch kv[0] {
+		case "--ipfsCid":
+			if len(kv[1]) != fwtypes.IpfsShareLinkLength {
+				return CmdResult{Msg: ""}, errors.Errorf("wrong length param %v.", kv[0])
+			}
+			ipfsCid = kv[1]
+		default:
+			return CmdResult{Msg: ""}, errors.Errorf("invalid param %v.", kv[0])
+		}
+	}
+
 	ctx = pp.CreateReqIdAndRegisterRpcLogger(ctx, terminalId)
 	nowSec := time.Now().Unix()
 	// sign the wallet signature by wallet private key
@@ -812,10 +845,9 @@ func (api *terminalCmd) ShareFile(ctx context.Context, param []string) (CmdResul
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
 	}
-	event.GetReqShareFile(ctx, param[0], "", setting.WalletAddress, int64(shareDuration), isPrivate,
-		setting.WalletPublicKey.Bytes(), wsign, nowSec)
+	event.ReqShareFile(ctx, param[0], "", setting.WalletAddress, int64(shareDuration), isPrivate, setting.WalletPublicKey.Bytes(), wsign, nowSec, ipfsCid)
 	// if len(str1) == setting.FILEHASHLEN { //
-	// 	event.GetReqShareFile("", str1, "", int64(time), isPrivate, nil)
+	// 	event.ReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
 	// }
 	return CmdResult{Msg: DefaultMsg}, nil
@@ -885,11 +917,11 @@ func (api *terminalCmd) GetShareFile(ctx context.Context, param []string) (CmdRe
 	}
 
 	nowSec := time.Now().Unix()
-	shareLink, err := pptypes.ParseShareLink(param[0])
+	shareLink, err := fwtypes.ParseShareLink(param[0])
 	if err != nil {
 		return CmdResult{Msg: ""}, err
 	}
-	event.GetShareFile(ctx, shareLink.ShareLink, shareLink.Password, "", setting.WalletAddress, setting.WalletPublicKey.Bytes(), nil, nowSec)
+	event.GetShareFile(ctx, shareLink.Link, shareLink.Password, "", setting.WalletAddress, setting.WalletPublicKey.Bytes(), nil, nowSec)
 
 	return CmdResult{Msg: DefaultMsg}, nil
 }

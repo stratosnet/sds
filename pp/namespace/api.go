@@ -34,7 +34,6 @@ import (
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	pptypes "github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/rpc"
 )
 
@@ -813,8 +812,8 @@ func (api *rpcPubApi) RequestShare(ctx context.Context, param rpc_api.ParamReqSh
 		result := &rpc_api.FileShareResult{Return: rpc_api.SIGNATURE_FAILURE + ", wrong wallet signature"}
 		return *result
 	}
-	event.GetReqShareFile(reqCtx, param.FileHash, "", param.Signature.Address, param.Duration, param.PrivateFlag,
-		wpk.Bytes(), wsig, param.ReqTime)
+	event.ReqShareFile(reqCtx, param.FileHash, "", param.Signature.Address, param.Duration, param.PrivateFlag,
+		wpk.Bytes(), wsig, param.ReqTime, param.IpfsCid)
 
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileShareResult
@@ -932,7 +931,7 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
-	shareLink, err := pptypes.ParseShareLink(param.ShareLink)
+	shareLink, err := fwtypes.ParseShareLink(param.ShareLink)
 	if err != nil {
 		utils.ErrorLog("wrong share link")
 		return rpc_api.Result{Return: rpc_api.WRONG_INPUT}
@@ -942,19 +941,19 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 	defer cancel()
 
 	reqCtx := core.RegisterRemoteReqId(ctx, task.LOCAL_REQID)
-	req := requests.ReqGetShareFileData(shareLink.ShareLink, shareLink.Password, "", param.Signature.Address,
+	req := requests.ReqGetShareFileData(shareLink.Link, shareLink.Password, "", param.Signature.Address,
 		p2pserver.GetP2pServer(reqCtx).GetP2PAddress().String(), wpk.Bytes(), wsig, param.ReqTime)
 	p2pserver.GetP2pServer(reqCtx).SendMessageToSPServer(reqCtx, req, header.ReqGetShareFile)
 
 	// the application gives FileShareResult type of result
-	key := shareLink.ShareLink + task.LOCAL_REQID
+	key := shareLink.Link + task.LOCAL_REQID
 	found := false
 	for !found {
 		select {
 		case <-ctx.Done():
 			return rpc_api.Result{Return: rpc_api.TIME_OUT}
 		case result := <-file.SubscribeFileShareResult(key):
-			file.UnsubscribeFileShareResult(shareLink.ShareLink)
+			file.UnsubscribeFileShareResult(shareLink.Link)
 			if result == nil {
 				return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
 			}
@@ -1003,7 +1002,7 @@ func (api *rpcPubApi) RequestGetVideoShared(ctx context.Context, param rpc_api.P
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
-	shareLink, err := pptypes.ParseShareLink(param.ShareLink)
+	shareLink, err := fwtypes.ParseShareLink(param.ShareLink)
 	if err != nil {
 		utils.ErrorLog("wrong share link")
 		return rpc_api.Result{Return: rpc_api.WRONG_INPUT}
@@ -1012,10 +1011,10 @@ func (api *rpcPubApi) RequestGetVideoShared(ctx context.Context, param rpc_api.P
 	reqId := uuid.New().String()
 	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
 	defer cancel()
-	key := shareLink.ShareLink + reqId
+	key := shareLink.Link + reqId
 
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
-	req := requests.ReqGetShareFileData(shareLink.ShareLink, shareLink.Password, "", param.Signature.Address,
+	req := requests.ReqGetShareFileData(shareLink.Link, shareLink.Password, "", param.Signature.Address,
 		p2pserver.GetP2pServer(reqCtx).GetP2PAddress().String(), wpk.Bytes(), wsig, param.ReqTime)
 	p2pserver.GetP2pServer(reqCtx).SendMessageToSPServer(reqCtx, req, header.ReqGetShareFile)
 
