@@ -39,14 +39,14 @@ func GetAllShareLink(ctx context.Context, walletAddr string, page uint64, wallet
 	}
 }
 
-func GetReqShareFile(ctx context.Context, fileHash, pathHash, walletAddr string, shareTime int64, isPrivate bool,
-	walletPubkey, wsign []byte, reqTime int64) {
+func ReqShareFile(ctx context.Context, fileHash, pathHash, walletAddr string, shareTime int64, isPrivate bool,
+	walletPubkey, wsign []byte, reqTime int64, ipfsCid string) {
 	if setting.CheckLogin() {
 		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(
 			ctx,
 			requests.ReqShareFileData(
 				fileHash, pathHash, walletAddr, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
-				isPrivate, shareTime, walletPubkey, wsign, reqTime,
+				isPrivate, shareTime, walletPubkey, wsign, reqTime, ipfsCid,
 			),
 			header.ReqShareFile,
 		)

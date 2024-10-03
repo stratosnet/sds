@@ -6,9 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/ipfs/go-cid"
-	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 	"io"
 	"net/http"
 	"net/url"
@@ -18,6 +15,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/ipfs/go-cid"
+	msgtypes "github.com/stratosnet/sds/sds-msg/types"
 
 	"github.com/pkg/errors"
 
@@ -36,7 +37,6 @@ import (
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/setting"
 	"github.com/stratosnet/sds/pp/task"
-	pptypes "github.com/stratosnet/sds/pp/types"
 )
 
 const (
@@ -206,7 +206,7 @@ func streamSharedVideoInfoCacheHelper(w http.ResponseWriter, req *http.Request, 
 		return
 	}
 
-	reqGetSharedMsg := reqGetSharedMsg(pptypes.GetShareFile{ShareLink: shareLink, Password: password}, walletSign, reqTime)
+	reqGetSharedMsg := reqGetSharedMsg(fwtypes.ShareDataMeshId{Link: shareLink, Password: password}, walletSign, reqTime)
 	res := namespace.RpcPubApi().RequestGetVideoShared(ctx, reqGetSharedMsg)
 
 	if res.Return != rpc_api.DOWNLOAD_OK {
@@ -847,7 +847,7 @@ func reqDownloadDataMsg(fileHash, reqId string, sliceInfo *protos.DownloadSliceI
 	}
 }
 
-func reqGetSharedMsg(shareLink pptypes.GetShareFile, walletSign *rpc_api.Signature, nowSec int64) rpc_api.ParamReqGetShared {
+func reqGetSharedMsg(shareLink fwtypes.ShareDataMeshId, walletSign *rpc_api.Signature, nowSec int64) rpc_api.ParamReqGetShared {
 	return rpc_api.ParamReqGetShared{
 		Signature: *walletSign,
 		ReqTime:   nowSec,
