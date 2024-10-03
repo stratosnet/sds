@@ -1,363 +1,233 @@
 package hashring
 
-// hashring for consistency
-// two improvement
-// 1. add virtual node: when delete a node, have better distribution of load to other node
-// 2. add red-black tree structure, improving search node efficiency
-//
-
 import (
 	"fmt"
-	"strconv"
-	"strings"
 	"sync"
 
-	"github.com/HuKeping/rbtree"
 	"github.com/stratosnet/sds/framework/crypto"
 
 	"github.com/stratosnet/sds/framework/utils"
 )
 
 type Node struct {
-	ID        string
 	Host      string
 	Rest      string
 	Data      *sync.Map
 	DiskUsage float64
+	Weight    float64
+
+	id          string
+	onlineIndex int // -1 if node is offline
 }
 
-func (n *Node) nodeKey() string {
-	return n.ID + "#" + n.Host
+func (n *Node) GetID() string {
+	if n == nil {
+		return ""
+	}
+	return n.id
+}
+
+// SetID will only set the ID if it's missing
+func (n *Node) SetID(ID string) {
+	if n == nil {
+		return
+	}
+	if n.id == "" {
+		n.id = ID
+	}
 }
 
 func (n *Node) SetDiskUsage(diskSize, freeDisk uint64) {
+	if n == nil {
+		return
+	}
 	if diskSize <= 0 || freeDisk <= 0 {
 		n.DiskUsage = 1
 	}
 	n.DiskUsage = float64(diskSize-freeDisk) / float64(diskSize)
 }
 
-// Less of rbtree
-func (n *Node) Less(than rbtree.Item) bool {
-	return crypto.CalcCRC32([]byte(n.ID)) < crypto.CalcCRC32([]byte(than.(*Node).ID))
+func (n *Node) IsOnline() bool {
+	return n != nil && n.onlineIndex > -1
 }
 
-// VNode virtual node
-type VNode struct {
-	Index  uint32 // index, crc32 of hashkey
-	NodeID string
+func (n *Node) String() string {
+	if n == nil {
+		return "nil"
+	}
+	return fmt.Sprintf("ID=%v Online=%v Weight=%v Host=%v Rest=%v DiskUsage=%v",
+		n.id, n.IsOnline(), n.Weight, n.Host, n.Rest, n.DiskUsage)
 }
 
-// Less of rbtree
-func (vn *VNode) Less(than rbtree.Item) bool {
-	return vn.Index < than.(*VNode).Index
+type nodeKey struct {
+	id     string
+	weight float64
+}
+
+func (k nodeKey) Weight() float64 {
+	return k.weight
 }
 
 type HashRing struct {
-	VRing           *rbtree.Rbtree
-	NRing           *rbtree.Rbtree
-	Nodes           *sync.Map // map(NodeID => *Node)
-	NodeStatus      *sync.Map // map(NodeID => status)
-	NodeCount       uint32
-	NodeOkCount     uint32
-	NumberOfVirtual uint32
+	nodes       map[string]*Node     // key = id
+	onlineNodes []utils.WeightedItem // []*nodeKey
 	sync.Mutex
 }
 
-func (r *HashRing) AddNode(node *Node) {
+func (r *HashRing) AddNode(id string, node *Node) {
 	r.Lock()
 	defer r.Unlock()
 
-	var numberOfNode uint32 = 1
-	if r.NumberOfVirtual > 0 {
-		numberOfNode = r.NumberOfVirtual
+	if node == nil {
+		return
 	}
 
-	for i := uint32(0); i < numberOfNode; i++ {
-		index := calcIndex(virtualKey(node.ID, i))
-		r.VRing.Insert(&VNode{Index: index, NodeID: node.ID})
+	if id == "" {
+		id = node.id
 	}
+	node.id = id
 
-	if _, exists := r.Nodes.Load(node.ID); !exists {
-		r.NodeCount++
-		r.NodeStatus.Store(node.ID, false)
+	if node.Weight == 0 {
+		node.Weight = 1
 	}
-	r.Nodes.Store(node.ID, node)
+	node.onlineIndex = -1
 
-	r.NRing.Insert(node)
+	r.nodes[id] = node
 }
 
-func (r *HashRing) RemoveNode(nodeID string) bool {
+func (r *HashRing) RemoveNode(ID string) {
 	r.Lock()
 	defer r.Unlock()
 
-	val, ok := r.Nodes.Load(nodeID)
+	node, ok := r.nodes[ID]
 	if !ok {
-		return true
-	}
-	node := val.(*Node)
-
-	if r.IsOnline(nodeID) {
-		r.NodeOkCount--
+		return
 	}
 
-	var numberOfNode uint32 = 1
-	if r.NumberOfVirtual > 0 {
-		numberOfNode = r.NumberOfVirtual
-	}
-
-	for i := uint32(0); i < numberOfNode; i++ {
-		index := calcIndex(virtualKey(node.ID, i))
-		r.VRing.Delete(&VNode{Index: index, NodeID: node.ID})
-	}
-
-	r.Nodes.Delete(node.ID)
-	r.NodeStatus.Delete(node.ID)
-
-	r.NRing.Delete(node)
-
-	r.NodeCount--
-	return true
+	delete(r.nodes, ID)
+	r.removeFromOnlineList(node)
 }
 
 func (r *HashRing) Node(ID string) *Node {
-	if node, ok := r.Nodes.Load(ID); ok {
-		return node.(*Node)
-	}
-	return nil
+	return r.nodes[ID]
 }
 
 func (r *HashRing) IsOnline(ID string) bool {
-	online, ok := r.NodeStatus.Load(ID)
-	return ok && online.(bool)
-}
-
-func (r *HashRing) SetOffline(ID string) {
-	r.Lock()
-	defer r.Unlock()
-
-	if online, ok := r.NodeStatus.Load(ID); ok && online.(bool) {
-		r.NodeStatus.Store(ID, false)
-		r.NodeOkCount--
-
-	}
+	return r.Node(ID).IsOnline()
 }
 
 func (r *HashRing) SetOnline(ID string) {
 	r.Lock()
 	defer r.Unlock()
 
-	if online, ok := r.NodeStatus.Load(ID); ok && !online.(bool) {
-		r.NodeOkCount++
-		r.NodeStatus.Store(ID, true)
-	}
-}
-
-// RandomGetNodes return random nodes from the hashring
-func (r *HashRing) RandomGetNodes(num int) []*Node {
-	if r.NodeOkCount <= 0 {
-		return nil
-	}
-
-	if r.NodeOkCount < uint32(num) {
-		num = int(r.NodeOkCount)
-	}
-
-	nodes := make([]*Node, num)
-
-	ids := make([]string, 0)
-	r.NodeStatus.Range(func(key, value interface{}) bool {
-		id := key.(string)
-		ok := value.(bool)
-		if ok {
-			ids = append(ids, id)
-		}
-		return true
-	})
-
-	indexes := utils.GenerateRandomNumber(0, len(ids), num)
-
-	for i, idx := range indexes {
-		if node, ok := r.Nodes.Load(ids[idx]); ok {
-			nodes[i] = node.(*Node)
-		}
-	}
-
-	return nodes
-}
-
-// GetNode calculates an index from the given key, and returns a node selected using this index
-func (r *HashRing) GetNode(key string) (uint32, string) {
-	keyIndex := calcIndex(key)
-	return r.GetNodeByIndex(keyIndex)
-}
-
-// GetNodeExcludedNodeIDs calculates an index from the given key, and returns a node selected using this index.
-// The nodes with IDs specified by NodeIDs will be excluded. If setOffline is true, the excluded nodes will become offline.
-func (r *HashRing) GetNodeExcludedNodeIDs(key string, NodeIDs []string, setOffline bool) (uint32, string) {
-	if len(NodeIDs) <= 0 {
-		return r.GetNode(key)
-	}
-
-	if uint32(len(NodeIDs)) >= r.NodeCount || r.NodeCount <= 0 {
-		return 0, ""
-	}
-
-	var temporaryOffline []string
-	for _, id := range NodeIDs {
-		if r.IsOnline(id) {
-			temporaryOffline = append(temporaryOffline, id)
-			r.SetOffline(id)
-		}
-	}
-
-	index, id := r.GetNode(key)
-
-	if !setOffline {
-		for _, offlineId := range temporaryOffline {
-			r.SetOnline(offlineId)
-		}
-	}
-	return index, id
-
-	//tmpRing := New(r.NumberOfVirtual)
-	//r.Nodes.Range(func(key, value interface{}) bool {
-	//	node := value.(*Node)
-	//	if !utils.StrInSlices(NodeIDs, node.ID) {
-	//		tmpRing.AddNode(&Node{
-	//			ID:   node.ID,
-	//			Host: node.Host,
-	//		})
-	//	}
-	//	return true
-	//})
-	//
-	//if tmpRing.NodeCount > 0 {
-	//	return tmpRing.GetNode(key)
-	//}
-
-}
-
-// GetNodeUpDownNodes get upstream of downstream of node
-func (r *HashRing) GetNodeUpDownNodes(NodeID string) (string, string) {
-	online, ok := r.NodeStatus.Load(NodeID)
-	if NodeID == "" || !ok || !online.(bool) || r.NodeCount <= 0 {
-		return "", ""
-	}
-
-	if r.NRing.Len() <= 1 {
-		return "", ""
-	}
-
-	up := r.NRing.Max().(*Node).ID
-	down := r.NRing.Min().(*Node).ID
-
-	r.NRing.Descend(&Node{ID: NodeID}, func(item rbtree.Item) bool {
-		if crypto.CalcCRC32([]byte(NodeID)) == crypto.CalcCRC32([]byte(item.(*Node).ID)) {
-			return true
-		}
-		up = item.(*Node).ID
-		return false
-	})
-
-	r.NRing.Ascend(&Node{ID: NodeID}, func(item rbtree.Item) bool {
-		if crypto.CalcCRC32([]byte(NodeID)) == crypto.CalcCRC32([]byte(item.(*Node).ID)) {
-			return true
-		}
-		down = item.(*Node).ID
-		return false
-	})
-
-	return up, down
-}
-
-func (r *HashRing) GetNodeByIndex(keyIndex uint32) (uint32, string) {
-
-	if r.VRing.Len() <= 0 {
-		return 0, ""
-	}
-
-	minVNodeOfRing := r.VRing.Min().(*VNode)
-
-	vNode := minVNodeOfRing
-
-	r.VRing.Ascend(&VNode{Index: keyIndex}, func(item rbtree.Item) bool {
-		vNode = item.(*VNode)
-		if online, ok := r.NodeStatus.Load(vNode.NodeID); ok && !online.(bool) {
-			return true
-		}
-		return false
-	})
-
-	if online, ok := r.NodeStatus.Load(vNode.NodeID); ok && !online.(bool) {
-		r.VRing.Ascend(minVNodeOfRing, func(item rbtree.Item) bool {
-			vNode = item.(*VNode)
-			if online, ok := r.NodeStatus.Load(vNode.NodeID); ok && !online.(bool) {
-				return true
-			}
-			return false
-		})
-	}
-
-	return vNode.Index, vNode.NodeID
-}
-
-// PrintNodes print all non-virtual nodes
-func (r *HashRing) PrintNodes() {
-
-	if r.NodeCount <= 0 {
-		fmt.Println("nodes is empty")
+	node := r.Node(ID)
+	if node == nil || node.IsOnline() {
 		return
 	}
 
-	r.Nodes.Range(func(key, value interface{}) bool {
-		node := value.(*Node)
-		fmt.Println(strings.Repeat("=", 30))
-		fmt.Println("NodeID:", node.ID)
-		fmt.Println("NodeHost:", node.Host)
-		fmt.Println("NodeKey :", node.nodeKey())
-		fmt.Println()
-		return true
+	node.onlineIndex = len(r.onlineNodes)
+	r.onlineNodes = append(r.onlineNodes, &nodeKey{
+		id:     node.id,
+		weight: node.Weight,
 	})
 }
 
-// TraversalVRing traverse virtual rbtree
-func (r *HashRing) TraversalVRing() {
-	r.VRing.Ascend(r.VRing.Min(), func(item rbtree.Item) bool {
-		fmt.Printf("vNode %d => %s\n", item.(*VNode).Index, item.(*VNode).NodeID)
-		return true
-	})
+func (r *HashRing) SetOffline(ID string) {
+	r.Lock()
+	defer r.Unlock()
+
+	r.removeFromOnlineList(r.Node(ID))
 }
 
-// TraversalNRing traverse non-virtual rbtree
-func (r *HashRing) TraversalNRing() {
-	r.NRing.Ascend(r.NRing.Min(), func(item rbtree.Item) bool {
-		fmt.Printf("Node %d => %s\n", crypto.CalcCRC32([]byte(item.(*Node).ID)), item.(*Node).ID)
-		return true
-	})
+func (r *HashRing) removeFromOnlineList(node *Node) {
+	if node == nil {
+		return
+	}
+	if !node.IsOnline() {
+		return
+	}
+
+	if len(r.onlineNodes) <= 1 {
+		r.onlineNodes = nil
+	} else {
+		lastElement := r.onlineNodes[len(r.onlineNodes)-1].(*nodeKey)
+		r.onlineNodes[node.onlineIndex] = lastElement
+		r.nodes[lastElement.id].onlineIndex = node.onlineIndex
+		r.onlineNodes = r.onlineNodes[:len(r.onlineNodes)-1]
+	}
+
+	node.onlineIndex = -1
 }
 
 func (r *HashRing) UpdateNodeDiskUsage(ID string, diskSize, freeDisk uint64) {
-	node := r.Node(ID)
-	if node != nil {
-		node.SetDiskUsage(diskSize, freeDisk)
+	r.Node(ID).SetDiskUsage(diskSize, freeDisk)
+}
+
+func (r *HashRing) NodeCount() uint32 {
+	return uint32(len(r.nodes))
+}
+
+func (r *HashRing) NodeOkCount() uint32 {
+	return uint32(len(r.onlineNodes))
+}
+
+// RandomNode uses the given seed to select a random online node
+// If the seed is empty, it will use a cryptographically secure random seed
+func (r *HashRing) RandomNode(seed string) (string, *Node) {
+	_, node := utils.WeightedRandomSelect(r.onlineNodes, seed)
+	selectedID := node.(*nodeKey).id
+	return selectedID, r.Node(selectedID)
+}
+
+// RandomNodeExcludedIDs uses the given seed to select a random online node, while excluding specified nodes
+// If the seed is empty, it will use a cryptographically secure random seed
+func (r *HashRing) RandomNodeExcludedIDs(excludedIDs []string, seed string) (string, *Node) {
+	exclusionMap := make(map[string]bool)
+	for _, exclusion := range excludedIDs {
+		exclusionMap[exclusion] = true
 	}
+
+	var filteredNodes []utils.WeightedItem
+	for _, node := range r.onlineNodes {
+		if !exclusionMap[node.(*nodeKey).id] {
+			filteredNodes = append(filteredNodes, node)
+		}
+	}
+
+	_, node := utils.WeightedRandomSelect(filteredNodes, seed)
+	selectedID := node.(*nodeKey).id
+	return selectedID, r.Node(selectedID)
 }
 
-func New(numOfVNode uint32) *HashRing {
-	r := new(HashRing)
-	r.Nodes = new(sync.Map)
-	r.NodeStatus = new(sync.Map)
-	r.NodeCount = 0
-	r.NumberOfVirtual = numOfVNode
+// RandomNodes return random nodes from the hashring
+// If the seed is empty, it will use a cryptographically secure random seed
+func (r *HashRing) RandomNodes(num int, seed string) []*Node {
+	_, nodes := utils.WeightedRandomSelectMultiple(r.onlineNodes, num, seed)
 
-	r.VRing = rbtree.New()
-	r.NRing = rbtree.New()
-	return r
+	var selectedNodes []*Node
+	for _, node := range nodes {
+		selectedNodes = append(selectedNodes, r.Node(node.(*nodeKey).id))
+	}
+	return selectedNodes
 }
 
-func virtualKey(nodeID string, index uint32) string {
-	return "node#" + nodeID + "#" + strconv.FormatUint(uint64(index), 10)
+func (r *HashRing) String() string {
+	if r.NodeCount() <= 0 {
+		return "Empty hashring"
+	}
+	str := ""
+	for _, node := range r.nodes {
+		str += fmt.Sprintln(node)
+	}
+	return str
+}
+
+func New() *HashRing {
+	return &HashRing{
+		nodes:       make(map[string]*Node),
+		onlineNodes: nil,
+		Mutex:       sync.Mutex{},
+	}
 }
 
 func hashKey(key string) string {

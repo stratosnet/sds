@@ -3,10 +3,7 @@ package utils
 import (
 	"bytes"
 	"crypto/md5"
-	cryptorand "crypto/rand"
-	"encoding/binary"
 	"encoding/hex"
-	"math/rand"
 	"regexp"
 	"strconv"
 	"strings"
@@ -14,15 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/stratosnet/sds/framework/crypto"
 )
-
-func init() {
-	var seed [8]byte
-	_, err := cryptorand.Read(seed[:])
-	if err != nil {
-		panic("cannot set random seed from cryptographically secure random number")
-	}
-	rand.Seed(int64(binary.LittleEndian.Uint64(seed[:])))
-}
 
 // Camel2Snake
 // eg. HelloWorld => hello_world
@@ -95,7 +83,6 @@ func LcFirst(str string) string {
 	return ""
 }
 
-// ConvertCoronaryUtf8
 func ConvertCoronaryUtf8(in string) string {
 	s := []byte(in)
 	reg := regexp.MustCompile(`\\[0-7]{3}`)
@@ -108,7 +95,6 @@ func ConvertCoronaryUtf8(in string) string {
 	return string(out)
 }
 
-// StrInSlices
 func StrInSlices(slices []string, key string) bool {
 	if len(slices) > 0 {
 		for _, k := range slices {
@@ -118,42 +104,6 @@ func StrInSlices(slices []string, key string) bool {
 		}
 	}
 	return false
-}
-
-// GenerateRandomNumber generate (count) random numbers between (start) to (end).
-func GenerateRandomNumber(start int, end int, count int) []int {
-	spread := end - start
-	if end < start || spread < count || count == 0 {
-		return nil
-	}
-
-	nums := make([]int, count)
-	taken := make(map[int]bool)
-	for i := 0; i < count; i++ {
-		num := 0
-		for {
-			num = rand.Intn(spread) + start
-			if !taken[num] {
-				break
-			}
-		}
-		taken[num] = true
-		nums[i] = num
-	}
-
-	return nums
-}
-
-// GetRandomString between [0-9a-zA-Z]
-func GetRandomString(length int) string {
-	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	bytes := []byte(str)
-	result := []byte{}
-
-	for i := 0; i < length; i++ {
-		result = append(result, bytes[rand.Intn(len(bytes))])
-	}
-	return string(result)
 }
 
 func GetMD5(data string) string {
@@ -178,7 +128,6 @@ func Get16MD5(data string) string {
 	return ""
 }
 
-// Get8BitUUID
 func Get8BitUUID() string {
 	chars := []string{
 		"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
