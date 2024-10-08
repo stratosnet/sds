@@ -24,7 +24,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/stratosnet/sds/framework v0.0.0-20241001145417-96154d80c375
 	github.com/stratosnet/sds/sds-msg v0.0.0-20241001145417-96154d80c375
-	github.com/stratosnet/sds/tx-client v0.0.0-20241001145417-96154d80c375
+	github.com/stratosnet/sds/tx-client v0.0.0-20241008122654-7783d84cbea7
 	github.com/stratosnet/stratos-chain/api v0.0.0-20240509211914-ee516857645d
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	google.golang.org/protobuf v1.31.0
