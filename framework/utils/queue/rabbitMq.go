@@ -15,9 +15,9 @@ type Queue struct {
 	msgs    <-chan amqp.Delivery
 }
 
-func NewQueue() *Queue {
+func NewQueue(url string) *Queue {
 	q := &Queue{}
-	q.conn, _ = amqp.Dial("amqp://guest:guest@localhost:5672/")
+	q.conn, _ = amqp.Dial(url)
 	q.channel, _ = q.conn.Channel()
 	err := q.channel.ExchangeDeclare(
 		QUEUE_NAME, // name
