@@ -10,6 +10,7 @@ import (
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp"
 	"github.com/stratosnet/sds/pp/setting"
+	"github.com/stratosnet/sds/tx-client/grpc"
 )
 
 func CreateWallet(ctx context.Context, password, name, mnemonic, hdPath string) string {
@@ -74,7 +75,7 @@ func GetWalletAddress(ctx context.Context) error {
 			setting.WalletAddress = walletAddress
 
 			// get beneficiary address after get the wallet address
-			err = getBeneficiaryAddress(walletAddress)
+			err = getBeneficiaryAddress(ctx, walletAddress)
 			if err != nil {
 				return err
 			}
@@ -86,7 +87,7 @@ func GetWalletAddress(ctx context.Context) error {
 	return errors.New("could not find the account file corresponds to the configured wallet address")
 }
 
-func getBeneficiaryAddress(walletAddressBech32 string) error {
+func getBeneficiaryAddress(ctx context.Context, walletAddressBech32 string) error {
 	if setting.Config.Keys.BeneficiaryAddress == "" {
 		setting.BeneficiaryAddress = walletAddressBech32
 	} else {
@@ -95,6 +96,15 @@ func getBeneficiaryAddress(walletAddressBech32 string) error {
 			return errors.New("invalid beneficiary address")
 		}
 		setting.BeneficiaryAddress = setting.Config.Keys.BeneficiaryAddress
+
+		// Print warning msg if beneficiary address has changed
+		ppInfo, err := grpc.QueryResourceNode(setting.Config.Keys.P2PAddress)
+		if err != nil {
+			return nil
+		}
+		if ppInfo.BeneficiaryAddress != "" && ppInfo.BeneficiaryAddress != setting.BeneficiaryAddress {
+			pp.ErrorLogf(ctx, "Beneficiary address is different in the config [%v] and on the chain [%v]. Please use the `updateinfo` cmd", setting.BeneficiaryAddress, ppInfo.BeneficiaryAddress)
+		}
 	}
 	return nil
 }

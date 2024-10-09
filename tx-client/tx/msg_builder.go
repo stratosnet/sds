@@ -120,7 +120,7 @@ func BuildUpdateEffectiveDepositMsg(spP2pAddress []fwtypes.P2PAddress, spWalletA
 // Stratos-chain 'register' module
 
 func BuildCreateResourceNodeMsg(nodeType msgtypes.NodeType, p2pPubKey fwcryptotypes.PubKey, depositAmount txclienttypes.Coin,
-	ownerAddress fwtypes.WalletAddress) (*registerv1.MsgCreateResourceNode, error) {
+	ownerAddress, beneficiaryAddress fwtypes.WalletAddress) (*registerv1.MsgCreateResourceNode, error) {
 
 	if nodeType == 0 {
 		nodeType = msgtypes.STORAGE
@@ -141,7 +141,8 @@ func BuildCreateResourceNodeMsg(nodeType msgtypes.NodeType, p2pPubKey fwcryptoty
 			Denom:  depositAmount.Denom,
 			Amount: depositAmount.Amount.String(),
 		},
-		OwnerAddress: ownerAddress.String(),
+		OwnerAddress:       ownerAddress.String(),
+		BeneficiaryAddress: beneficiaryAddress.String(),
 		Description: &registerv1.Description{
 			Moniker: p2pAddress.String(),
 		},
