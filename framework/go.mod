@@ -3,7 +3,6 @@ module github.com/stratosnet/sds/framework
 go 1.19
 
 require (
-	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
 	github.com/Nik-U/pbc v0.0.0-20181205041846-3e516ca0c5d6
 	github.com/alex023/clock v0.0.0-20191208111215-c265f1b2ab18
 	github.com/bgadrian/go-mnemonic v0.0.0-20170924142112-3188dc747a1b
@@ -31,6 +30,7 @@ require (
 	github.com/peterh/liner v1.2.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.17.0
+	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/shirou/gopsutil/v3 v3.24.4
 	github.com/stretchr/testify v1.9.0
@@ -45,6 +45,7 @@ require (
 require (
 	filippo.io/edwards25519 v1.0.0 // indirect
 	git.sr.ht/~sbinet/gg v0.3.1 // indirect
+	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
