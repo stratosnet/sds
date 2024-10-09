@@ -6,6 +6,7 @@ import (
 
 const (
 	QUEUE_NAME = "database_topics"
+	EXCHANGE   = "all_actions"
 )
 
 // Redis client
@@ -35,7 +36,7 @@ func NewQueue(url string) *Queue {
 }
 
 func (q *Queue) Subscribe(action string) error {
-	err := q.channel.QueueBind(QUEUE_NAME, action, "all_actions", false, nil)
+	err := q.channel.QueueBind(QUEUE_NAME, action, EXCHANGE, false, nil)
 	if err != nil {
 		return err
 	}
@@ -45,4 +46,12 @@ func (q *Queue) Subscribe(action string) error {
 
 func (q *Queue) GetMsg() <-chan amqp.Delivery {
 	return q.msgs
+}
+
+func (q *Queue) Publish(action string, body []byte) error {
+	return q.channel.Publish(EXCHANGE, action, false, false,
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        body,
+		})
 }
