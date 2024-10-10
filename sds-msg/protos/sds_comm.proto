@@ -159,6 +159,13 @@ enum PPState {
     MAINTENANCE = 3;
 }
 
+enum PPTierLevel {
+  UNQUALIFIED = 0;
+  PC = 1;
+  SPECIAL_BUILD = 2;
+  CABINET = 3;
+}
+
 enum SpMaintenanceType {
     CONSENSUS = 0;
     OTHER = 1;
