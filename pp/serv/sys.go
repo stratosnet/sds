@@ -57,7 +57,7 @@ func CheckGCStats() func() {
 		}
 
 		lastGcCount = gcStats.NumGC
-		utils.DebugLogf("GC Stats: last seen(%v), number of gc(%v), ", gcStats.LastGC.Unix(), gcStats.NumGC)
+		utils.DetailLogf("GC Stats: last seen(%v), number of gc(%v), ", gcStats.LastGC.Unix(), gcStats.NumGC)
 		myClock.AddJobWithInterval(CHECK_GCSTATS_INTERVAL, CheckGCStats())
 	}
 }
