@@ -516,6 +516,10 @@ func ReqDownloadSliceData(ctx context.Context, target *protos.RspFileStorageInfo
 }
 
 func ReqRegisterNewPPData(ctx context.Context, walletAddr string, walletPubkey, wsig []byte, reqTime int64) *protos.ReqRegisterNewPP {
+	utils.DebugLog("************************************************")
+	utils.DebugLog("storage path:", setting.Config.Home.StoragePath)
+	size, _ := utils.GetDiskUsage(setting.Config.Home.StoragePath)
+	utils.DebugLog("disk size:", size)
 	sysInfo := utils.GetSysInfo(setting.Config.Home.StoragePath)
 	sysInfo.DiskSize = setting.GetDiskSizeSoftCap(sysInfo.DiskSize)
 	walletSign := &protos.Signature{
