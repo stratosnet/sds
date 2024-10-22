@@ -150,7 +150,10 @@ func (r *HashRing) removeFromOnlineList(node *Node) {
 	if len(r.onlineNodes) <= 1 {
 		r.onlineNodes = nil
 	} else {
-		lastElement := r.onlineNodes[len(r.onlineNodes)-1].(*nodeKey)
+		lastElement, ok := r.onlineNodes[len(r.onlineNodes)-1].(*nodeKey)
+		if !ok {
+			return
+		}
 		r.onlineNodes[node.onlineIndex] = lastElement
 		r.nodes[lastElement.id].onlineIndex = node.onlineIndex
 		r.onlineNodes = r.onlineNodes[:len(r.onlineNodes)-1]
@@ -175,7 +178,11 @@ func (r *HashRing) NodeOkCount() uint32 {
 // If the seed is empty, it will use a cryptographically secure random seed
 func (r *HashRing) RandomNode(seed string) (string, *Node) {
 	_, node := utils.WeightedRandomSelect(r.onlineNodes, seed)
-	selectedID := node.(*nodeKey).id
+	key, ok := node.(*nodeKey)
+	if !ok {
+		return "", nil
+	}
+	selectedID := key.id
 	return selectedID, r.Node(selectedID)
 }
 
@@ -189,13 +196,21 @@ func (r *HashRing) RandomNodeExcludedIDs(excludedIDs []string, seed string) (str
 
 	var filteredNodes []utils.WeightedItem
 	for _, node := range r.onlineNodes {
-		if !exclusionMap[node.(*nodeKey).id] {
+		key, ok := node.(*nodeKey)
+		if !ok {
+			continue
+		}
+		if !exclusionMap[key.id] {
 			filteredNodes = append(filteredNodes, node)
 		}
 	}
 
 	_, node := utils.WeightedRandomSelect(filteredNodes, seed)
-	selectedID := node.(*nodeKey).id
+	key, ok := node.(*nodeKey)
+	if !ok {
+		return "", nil
+	}
+	selectedID := key.id
 	return selectedID, r.Node(selectedID)
 }
 
@@ -206,7 +221,11 @@ func (r *HashRing) RandomNodes(num int, seed string) []*Node {
 
 	var selectedNodes []*Node
 	for _, node := range nodes {
-		selectedNodes = append(selectedNodes, r.Node(node.(*nodeKey).id))
+		key, ok := node.(*nodeKey)
+		if !ok {
+			continue
+		}
+		selectedNodes = append(selectedNodes, r.Node(key.id))
 	}
 	return selectedNodes
 }
