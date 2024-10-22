@@ -21,7 +21,12 @@ func reqActivateData(ctx context.Context, amount txclienttypes.Coin, txFee txcli
 		return nil, err
 	}
 
-	txMsg, err := txclienttx.BuildCreateResourceNodeMsg(msgtypes.STORAGE, p2pserver.GetP2pServer(ctx).GetP2PPublicKey(), amount, ownerAddress)
+	beneficiaryAddress, err := fwtypes.WalletAddressFromBech32(setting.BeneficiaryAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	txMsg, err := txclienttx.BuildCreateResourceNodeMsg(msgtypes.STORAGE, p2pserver.GetP2pServer(ctx).GetP2PPublicKey(), amount, ownerAddress, beneficiaryAddress)
 	if err != nil {
 		return nil, err
 	}

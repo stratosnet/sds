@@ -20,7 +20,6 @@ import (
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/file"
-	pptypes "github.com/stratosnet/sds/pp/types"
 	"github.com/stratosnet/sds/sds-msg/protos"
 	msgutils "github.com/stratosnet/sds/sds-msg/utils"
 )
@@ -1205,14 +1204,14 @@ func reqGetSharedMsg(shareLink, sn string) []byte {
 	// param
 	nowSec := time.Now().Unix()
 
-	parsedLink, err := pptypes.ParseShareLink(shareLink)
+	parsedLink, err := fwtypes.ParseShareLink(shareLink)
 	if err != nil {
 		utils.ErrorLog("failed to parse share link")
 		return nil
 	}
 
 	// signature
-	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetDownloadShareFileWalletSignMessage(parsedLink.ShareLink, WalletAddress, sn, nowSec)))
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetDownloadShareFileWalletSignMessage(parsedLink.Link, WalletAddress, sn, nowSec)))
 	if err != nil {
 		return nil
 	}

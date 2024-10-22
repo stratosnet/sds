@@ -23,6 +23,10 @@ func (api *rpcApi) Account(ctx context.Context, walletAddress string) (*authv1be
 	return grpc.QueryAccount(walletAddress)
 }
 
+func (api *rpcApi) ResourceNode(ctx context.Context, p2pAddress string) (*registerv1.ResourceNode, error) {
+	return grpc.QueryResourceNode(p2pAddress)
+}
+
 func (api *rpcApi) ResourceNodeState(ctx context.Context, p2pAddress string) (state types.ResourceNodeState, err error) {
 	return grpc.QueryResourceNodeState(p2pAddress)
 }
