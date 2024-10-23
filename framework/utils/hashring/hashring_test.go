@@ -26,6 +26,9 @@ func TestGetNodeExcludedNodeIDs(t *testing.T) {
 		require.Equal(t, "id#0", nodeId)
 		require.Equal(t, uint32(5), ring.NodeOkCount())
 	}
+	nodeId, node := ring.RandomNodeExcludedIDs([]string{"id#0", "id#1", "id#2", "id#3", "id#4"}, "")
+	require.Equal(t, nodeId, "")
+	require.Nil(t, node)
 }
 
 func TestHashringNodeCount(t *testing.T) {
