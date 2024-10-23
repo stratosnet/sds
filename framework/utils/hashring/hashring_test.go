@@ -56,6 +56,41 @@ func TestHashringNodeCount(t *testing.T) {
 	require.Equal(t, uint32(0), ring.NodeOkCount())
 }
 
+func TestHashringRemoveNode(t *testing.T) {
+	ring := New()
+	ring.AddNode("node1", &Node{})
+	ring.RemoveNode("node1")
+	require.Equal(t, uint32(0), ring.NodeCount())
+
+	ring.AddNode("node1", &Node{})
+	ring.SetOnline("node1")
+	ring.RemoveNode("node1")
+	require.Equal(t, uint32(0), ring.NodeCount())
+	require.Equal(t, uint32(0), ring.NodeOkCount())
+
+	ring.AddNode("node1", &Node{})
+	ring.AddNode("node2", &Node{})
+	ring.SetOnline("node1")
+	ring.SetOnline("node2")
+	ring.RemoveNode("node1")
+	require.Equal(t, uint32(1), ring.NodeCount())
+	require.Equal(t, uint32(1), ring.NodeOkCount())
+	ring.RemoveNode("node2")
+	require.Equal(t, uint32(0), ring.NodeCount())
+	require.Equal(t, uint32(0), ring.NodeOkCount())
+
+	ring.AddNode("node1", &Node{})
+	ring.AddNode("node2", &Node{})
+	ring.SetOnline("node1")
+	ring.SetOnline("node2")
+	ring.RemoveNode("node2")
+	require.Equal(t, uint32(1), ring.NodeCount())
+	require.Equal(t, uint32(1), ring.NodeOkCount())
+	ring.RemoveNode("node1")
+	require.Equal(t, uint32(0), ring.NodeCount())
+	require.Equal(t, uint32(0), ring.NodeOkCount())
+}
+
 func TestRandomTrends(t *testing.T) {
 	baseId := "stsdsp2p1faej5w4q6hgnt0ft598dlm408g4p747ymg5jq6"
 	numNode := 10

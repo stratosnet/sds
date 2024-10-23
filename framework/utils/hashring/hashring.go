@@ -104,8 +104,8 @@ func (r *HashRing) RemoveNode(ID string) {
 		return
 	}
 
-	delete(r.nodes, ID)
 	r.removeFromOnlineList(node)
+	delete(r.nodes, ID)
 }
 
 func (r *HashRing) Node(ID string) *Node {
@@ -154,8 +154,12 @@ func (r *HashRing) removeFromOnlineList(node *Node) {
 		if !ok {
 			return
 		}
-		r.onlineNodes[node.onlineIndex] = lastElement
-		r.nodes[lastElement.id].onlineIndex = node.onlineIndex
+		if lastElement.id != node.id {
+			// node is not the last element. Switch both nodes
+			r.onlineNodes[node.onlineIndex] = lastElement
+			r.nodes[lastElement.id].onlineIndex = node.onlineIndex
+		}
+		// Discard last element
 		r.onlineNodes = r.onlineNodes[:len(r.onlineNodes)-1]
 	}
 
