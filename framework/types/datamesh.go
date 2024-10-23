@@ -14,7 +14,8 @@ const (
 	FileHandleLength   = 88
 
 	SHARED_DATA_MESH_PROTOCOL = "sds://"
-	NormalShareLinkLength     = 23
+	NormalShareLinkLength     = 16
+	ExtendedShareLinkLength   = 23
 	IpfsShareLinkLength       = 46
 	IpfsCidPrefix             = "Qm"
 )
@@ -92,10 +93,10 @@ type ShareDataMeshId struct {
 }
 
 func SetShareLink(shareId, randCode string) *ShareDataMeshId {
-	if len(shareId) == IpfsShareLinkLength {
+	if randCode == "" {
 		return &ShareDataMeshId{Link: shareId}
 	}
-	return &ShareDataMeshId{Link: fmt.Sprintf("%s_%s", shareId, randCode)}
+	return &ShareDataMeshId{Link: fmt.Sprintf("%s_%s", randCode, shareId)}
 }
 
 func CheckIpfsCid(cid string) bool {
@@ -112,7 +113,7 @@ func ParseShareLink(getShareString string) (*ShareDataMeshId, error) {
 
 	parts := strings.Split(getShareString[len(SHARED_DATA_MESH_PROTOCOL):], "/")
 
-	if len(parts) == 0 || (len(parts[0]) != NormalShareLinkLength && len(parts[0]) != IpfsShareLinkLength) {
+	if len(parts) == 0 || (len(parts[0]) != NormalShareLinkLength && len(parts[0]) != IpfsShareLinkLength && len(parts[0]) != ExtendedShareLinkLength) {
 		return nil, errors.New("share link length is not correct")
 	}
 
@@ -136,12 +137,18 @@ func (s ShareDataMeshId) Parse() (shareId, randCode string) {
 	if len(s.Link) == IpfsShareLinkLength {
 		return s.Link, ""
 	}
+
 	if len(s.Link) == NormalShareLinkLength {
+		return s.Link, ""
+	}
+
+	if len(s.Link) == ExtendedShareLinkLength {
 		args := strings.Split(s.Link, "_")
 		if len(args) >= 2 {
-			return args[0], args[1]
+			return args[1], args[0]
 		}
 	}
+
 	return "", ""
 }
 
