@@ -1,11 +1,12 @@
 package types
 
 import (
+	"encoding/hex"
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
-
 	"github.com/stratosnet/sds/framework/crypto"
 )
 
@@ -14,9 +15,16 @@ const (
 	FileHandleLength   = 88
 
 	SHARED_DATA_MESH_PROTOCOL = "sds://"
-	NormalShareLinkLength     = 23
-	IpfsShareLinkLength       = 46
-	IpfsCidPrefix             = "Qm"
+
+	// xxxxxxxxxxxxxxxx_xxxxxxxxx_xxxxxx
+	NormalShareLinkV2Length = 16 + 1*(1+10) + 1 + 6
+
+	// xxxxxx_xxxxxxxxxxxxxxxx or xxxxxxxxxxxxxxxx_xxxxxx
+	NormalShareLinkV1Length = 16 + 0*(1*10) + 1 + 6
+
+	// ipfs cid: 46 bytes
+	IpfsShareLinkLength = 46
+	IpfsCidPrefix       = "Qm"
 )
 
 type DataMeshId struct {
@@ -91,11 +99,18 @@ type ShareDataMeshId struct {
 	Password string
 }
 
+func GenerateNormalShareLinkV2() string {
+	// uuid is a 32 byte []byte. Here it is restructured to xxxxxxxxxxxxxxxx_xxxxxxxxx_xxxxxx.
+	uuid := uuid.New()
+	dst := make([]byte, 32)
+	hex.Encode(dst, []byte(uuid[:]))
+	return fmt.Sprintf("%s_%s_%s", dst[:16], dst[16:26], dst[26:32])
+}
 func SetShareLink(shareId, randCode string) *ShareDataMeshId {
-	if len(shareId) == IpfsShareLinkLength {
+	if randCode == "" {
 		return &ShareDataMeshId{Link: shareId}
 	}
-	return &ShareDataMeshId{Link: fmt.Sprintf("%s_%s", shareId, randCode)}
+	return &ShareDataMeshId{Link: fmt.Sprintf("%s_%s", randCode, shareId)}
 }
 
 func CheckIpfsCid(cid string) bool {
@@ -112,7 +127,7 @@ func ParseShareLink(getShareString string) (*ShareDataMeshId, error) {
 
 	parts := strings.Split(getShareString[len(SHARED_DATA_MESH_PROTOCOL):], "/")
 
-	if len(parts) == 0 || (len(parts[0]) != NormalShareLinkLength && len(parts[0]) != IpfsShareLinkLength) {
+	if len(parts) == 0 || (len(parts[0]) != NormalShareLinkV2Length && len(parts[0]) != IpfsShareLinkLength && len(parts[0]) != NormalShareLinkV1Length) {
 		return nil, errors.New("share link length is not correct")
 	}
 
@@ -136,12 +151,18 @@ func (s ShareDataMeshId) Parse() (shareId, randCode string) {
 	if len(s.Link) == IpfsShareLinkLength {
 		return s.Link, ""
 	}
-	if len(s.Link) == NormalShareLinkLength {
+
+	if len(s.Link) == NormalShareLinkV2Length {
+		return s.Link, ""
+	}
+
+	if len(s.Link) == NormalShareLinkV1Length {
 		args := strings.Split(s.Link, "_")
 		if len(args) >= 2 {
-			return args[0], args[1]
+			return args[1], args[0]
 		}
 	}
+
 	return "", ""
 }
 
