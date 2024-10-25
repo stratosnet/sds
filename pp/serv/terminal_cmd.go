@@ -999,7 +999,8 @@ func (api *terminalCmd) Maintenance(ctx context.Context, param []string) (CmdRes
 		if err != nil {
 			return CmdResult{Msg: ""}, errors.New("second parameter should be the maintenance duration (in seconds)")
 		}
-		duration = parsedDuration
+
+		duration = uint64(time.Duration(parsedDuration) * time.Second)
 	}
 
 	// Execute request
