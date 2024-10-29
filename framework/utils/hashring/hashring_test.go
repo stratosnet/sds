@@ -26,6 +26,9 @@ func TestGetNodeExcludedNodeIDs(t *testing.T) {
 		require.Equal(t, "id#0", nodeId)
 		require.Equal(t, uint32(5), ring.NodeOkCount())
 	}
+	nodeId, node := ring.RandomNodeExcludedIDs([]string{"id#0", "id#1", "id#2", "id#3", "id#4"}, "")
+	require.Equal(t, nodeId, "")
+	require.Nil(t, node)
 }
 
 func TestHashringNodeCount(t *testing.T) {
@@ -50,6 +53,41 @@ func TestHashringNodeCount(t *testing.T) {
 	ring.SetOffline("node3")
 	ring.RemoveNode("node3")
 	require.Equal(t, uint32(1), ring.NodeCount())
+	require.Equal(t, uint32(0), ring.NodeOkCount())
+}
+
+func TestHashringRemoveNode(t *testing.T) {
+	ring := New()
+	ring.AddNode("node1", &Node{})
+	ring.RemoveNode("node1")
+	require.Equal(t, uint32(0), ring.NodeCount())
+
+	ring.AddNode("node1", &Node{})
+	ring.SetOnline("node1")
+	ring.RemoveNode("node1")
+	require.Equal(t, uint32(0), ring.NodeCount())
+	require.Equal(t, uint32(0), ring.NodeOkCount())
+
+	ring.AddNode("node1", &Node{})
+	ring.AddNode("node2", &Node{})
+	ring.SetOnline("node1")
+	ring.SetOnline("node2")
+	ring.RemoveNode("node1")
+	require.Equal(t, uint32(1), ring.NodeCount())
+	require.Equal(t, uint32(1), ring.NodeOkCount())
+	ring.RemoveNode("node2")
+	require.Equal(t, uint32(0), ring.NodeCount())
+	require.Equal(t, uint32(0), ring.NodeOkCount())
+
+	ring.AddNode("node1", &Node{})
+	ring.AddNode("node2", &Node{})
+	ring.SetOnline("node1")
+	ring.SetOnline("node2")
+	ring.RemoveNode("node2")
+	require.Equal(t, uint32(1), ring.NodeCount())
+	require.Equal(t, uint32(1), ring.NodeOkCount())
+	ring.RemoveNode("node1")
+	require.Equal(t, uint32(0), ring.NodeCount())
 	require.Equal(t, uint32(0), ring.NodeOkCount())
 }
 

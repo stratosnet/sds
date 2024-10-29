@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/stratosnet/sds/framework/crypto"
-
 	"github.com/stratosnet/sds/framework/utils"
 )
 
@@ -104,23 +102,29 @@ func (r *HashRing) RemoveNode(ID string) {
 		return
 	}
 
-	delete(r.nodes, ID)
 	r.removeFromOnlineList(node)
+	delete(r.nodes, ID)
 }
 
 func (r *HashRing) Node(ID string) *Node {
+	r.Lock()
+	defer r.Unlock()
+
 	return r.nodes[ID]
 }
 
 func (r *HashRing) IsOnline(ID string) bool {
-	return r.Node(ID).IsOnline()
+	r.Lock()
+	defer r.Unlock()
+
+	return r.nodes[ID].IsOnline()
 }
 
 func (r *HashRing) SetOnline(ID string) {
 	r.Lock()
 	defer r.Unlock()
 
-	node := r.Node(ID)
+	node := r.nodes[ID]
 	if node == nil || node.IsOnline() {
 		return
 	}
@@ -136,7 +140,7 @@ func (r *HashRing) SetOffline(ID string) {
 	r.Lock()
 	defer r.Unlock()
 
-	r.removeFromOnlineList(r.Node(ID))
+	r.removeFromOnlineList(r.nodes[ID])
 }
 
 func (r *HashRing) removeFromOnlineList(node *Node) {
@@ -150,9 +154,16 @@ func (r *HashRing) removeFromOnlineList(node *Node) {
 	if len(r.onlineNodes) <= 1 {
 		r.onlineNodes = nil
 	} else {
-		lastElement := r.onlineNodes[len(r.onlineNodes)-1].(*nodeKey)
-		r.onlineNodes[node.onlineIndex] = lastElement
-		r.nodes[lastElement.id].onlineIndex = node.onlineIndex
+		lastElement, ok := r.onlineNodes[len(r.onlineNodes)-1].(*nodeKey)
+		if !ok {
+			return
+		}
+		if lastElement.id != node.id {
+			// node is not the last element. Switch both nodes
+			r.onlineNodes[node.onlineIndex] = lastElement
+			r.nodes[lastElement.id].onlineIndex = node.onlineIndex
+		}
+		// Discard last element
 		r.onlineNodes = r.onlineNodes[:len(r.onlineNodes)-1]
 	}
 
@@ -160,28 +171,47 @@ func (r *HashRing) removeFromOnlineList(node *Node) {
 }
 
 func (r *HashRing) UpdateNodeDiskUsage(ID string, diskSize, freeDisk uint64) {
-	r.Node(ID).SetDiskUsage(diskSize, freeDisk)
+	r.Lock()
+	defer r.Unlock()
+
+	r.nodes[ID].SetDiskUsage(diskSize, freeDisk)
 }
 
 func (r *HashRing) NodeCount() uint32 {
+	r.Lock()
+	defer r.Unlock()
+
 	return uint32(len(r.nodes))
 }
 
 func (r *HashRing) NodeOkCount() uint32 {
+	r.Lock()
+	defer r.Unlock()
+
 	return uint32(len(r.onlineNodes))
 }
 
 // RandomNode uses the given seed to select a random online node
 // If the seed is empty, it will use a cryptographically secure random seed
 func (r *HashRing) RandomNode(seed string) (string, *Node) {
+	r.Lock()
+	defer r.Unlock()
+
 	_, node := utils.WeightedRandomSelect(r.onlineNodes, seed)
-	selectedID := node.(*nodeKey).id
-	return selectedID, r.Node(selectedID)
+	key, ok := node.(*nodeKey)
+	if !ok {
+		return "", nil
+	}
+	selectedID := key.id
+	return selectedID, r.nodes[selectedID]
 }
 
 // RandomNodeExcludedIDs uses the given seed to select a random online node, while excluding specified nodes
 // If the seed is empty, it will use a cryptographically secure random seed
 func (r *HashRing) RandomNodeExcludedIDs(excludedIDs []string, seed string) (string, *Node) {
+	r.Lock()
+	defer r.Unlock()
+
 	exclusionMap := make(map[string]bool)
 	for _, exclusion := range excludedIDs {
 		exclusionMap[exclusion] = true
@@ -189,30 +219,48 @@ func (r *HashRing) RandomNodeExcludedIDs(excludedIDs []string, seed string) (str
 
 	var filteredNodes []utils.WeightedItem
 	for _, node := range r.onlineNodes {
-		if !exclusionMap[node.(*nodeKey).id] {
+		key, ok := node.(*nodeKey)
+		if !ok {
+			continue
+		}
+		if !exclusionMap[key.id] {
 			filteredNodes = append(filteredNodes, node)
 		}
 	}
 
 	_, node := utils.WeightedRandomSelect(filteredNodes, seed)
-	selectedID := node.(*nodeKey).id
-	return selectedID, r.Node(selectedID)
+	key, ok := node.(*nodeKey)
+	if !ok {
+		return "", nil
+	}
+	selectedID := key.id
+	return selectedID, r.nodes[selectedID]
 }
 
 // RandomNodes return random nodes from the hashring
 // If the seed is empty, it will use a cryptographically secure random seed
 func (r *HashRing) RandomNodes(num int, seed string) []*Node {
+	r.Lock()
+	defer r.Unlock()
+
 	_, nodes := utils.WeightedRandomSelectMultiple(r.onlineNodes, num, seed)
 
 	var selectedNodes []*Node
 	for _, node := range nodes {
-		selectedNodes = append(selectedNodes, r.Node(node.(*nodeKey).id))
+		key, ok := node.(*nodeKey)
+		if !ok {
+			continue
+		}
+		selectedNodes = append(selectedNodes, r.nodes[key.id])
 	}
 	return selectedNodes
 }
 
 func (r *HashRing) String() string {
-	if r.NodeCount() <= 0 {
+	r.Lock()
+	defer r.Unlock()
+
+	if len(r.nodes) <= 0 {
 		return "Empty hashring"
 	}
 	str := ""
@@ -228,16 +276,4 @@ func New() *HashRing {
 		onlineNodes: nil,
 		Mutex:       sync.Mutex{},
 	}
-}
-
-func hashKey(key string) string {
-	return crypto.CalcHash([]byte(key))
-}
-
-func hashToCRC32(hashInString string) uint32 {
-	return crypto.CalcCRC32([]byte(hashInString))
-}
-
-func calcIndex(key string) uint32 {
-	return hashToCRC32(hashKey(key))
 }
