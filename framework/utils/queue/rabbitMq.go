@@ -1,8 +1,8 @@
 package queue
 
 import (
+	"github.com/pkg/errors"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/stratosnet/sds/framework/utils"
 )
 
 const (
@@ -18,12 +18,12 @@ type Queue struct {
 	msgs    <-chan amqp.Delivery
 }
 
-func NewQueue(url string) *Queue {
+func NewQueue(url string) (*Queue, error) {
 	q := &Queue{}
 	var err error
 	q.conn, err = amqp.Dial(url)
 	if err != nil {
-		return nil
+		return nil, errors.Wrap(err, "failed dialing rabbitMq server")
 	}
 	q.channel, _ = q.conn.Channel()
 	err = q.channel.ExchangeDeclare(
@@ -36,13 +36,13 @@ func NewQueue(url string) *Queue {
 		nil,      // arguments
 	)
 	if err != nil {
-
+		return nil, errors.Wrap(err, "failed declaring the exchange in rabbitMq")
 	}
 
-	return q
+	return q, nil
 }
 
-func (q *Queue) DeclareQueue(name string) {
+func (q *Queue) DeclareQueue(name string) error {
 	var err error
 	q.queue, err = q.channel.QueueDeclare(
 		name,  // name
@@ -52,9 +52,7 @@ func (q *Queue) DeclareQueue(name string) {
 		false, // no-wait
 		nil,   // arguments
 	)
-	if err != nil {
-		utils.DebugLog(err.Error())
-	}
+	return err
 }
 
 func (q *Queue) GetQueueName() string {
