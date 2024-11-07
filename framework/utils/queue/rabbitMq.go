@@ -2,6 +2,7 @@ package queue
 
 import (
 	amqp "github.com/rabbitmq/amqp091-go"
+	"github.com/stratosnet/sds/framework/utils"
 )
 
 const (
@@ -37,19 +38,31 @@ func NewQueue(url string) *Queue {
 	if err != nil {
 
 	}
-	q.queue, _ = q.channel.QueueDeclare(
-		"",    // name
+
+	return q
+}
+
+func (q *Queue) DeclareQueue(name string) {
+	var err error
+	q.queue, err = q.channel.QueueDeclare(
+		name,  // name
 		false, // durable
 		false, // delete when unused
 		true,  // exclusive
 		false, // no-wait
 		nil,   // arguments
 	)
-	return q
+	if err != nil {
+		utils.DebugLog(err.Error())
+	}
 }
 
-func (q *Queue) Subscribe(action string) error {
-	err := q.channel.QueueBind(q.queue.Name, action, EXCHANGE, false, nil)
+func (q *Queue) GetQueueName() string {
+	return q.queue.Name
+}
+
+func (q *Queue) Subscribe(key string) error {
+	err := q.channel.QueueBind(q.queue.Name, key, EXCHANGE, false, nil)
 	if err != nil {
 		return err
 	}
@@ -66,8 +79,8 @@ func (q *Queue) GetMsg() <-chan amqp.Delivery {
 	return q.msgs
 }
 
-func (q *Queue) Publish(action string, body []byte) error {
-	return q.channel.Publish(EXCHANGE, action, false, false,
+func (q *Queue) Publish(key string, body []byte) error {
+	return q.channel.Publish(EXCHANGE, key, false, false,
 		amqp.Publishing{
 			ContentType: "text/plain",
 			Body:        body,
