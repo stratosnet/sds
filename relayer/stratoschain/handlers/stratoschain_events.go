@@ -39,6 +39,7 @@ func init() {
 	Handlers[types.MSG_TYPE_CREATE_META_NODE] = CreateMetaNodeMsgHandler()
 	Handlers[types.MSG_TYPE_UPDATE_META_NODE_DEPOSIT] = UpdateMetaNodeDepositMsgHandler()
 	Handlers[types.MSG_TYPE_REMOVE_META_NODE] = UnbondingMetaNodeMsgHandler()
+	Handlers[types.MSG_TYPE_KICK_META_NODE_VOTE] = UnbondingMetaNodeMsgHandler()
 	//Handlers["complete_unbonding_meta_node"] = CompleteUnbondingMetaNodeMsgHandler()
 	Handlers[types.MSG_TYPE_META_NODE_REG_VOTE] = MetaNodeVoteMsgHandler()
 	Handlers[types.MSG_TYPE_PREPAY] = PrepayMsgHandler()
