@@ -9,6 +9,7 @@ const (
 	MSG_TYPE_UPDATE_META_NODE                 = "/stratos.register.v1.MsgUpdateMetaNode"
 	MSG_TYPE_UPDATE_META_NODE_DEPOSIT         = "/stratos.register.v1.MsgUpdateMetaNodeDeposit"
 	MSG_TYPE_REMOVE_META_NODE                 = "/stratos.register.v1.MsgRemoveMetaNode"
+	MSG_TYPE_KICK_META_NODE_VOTE              = "/stratos.register.v1.MsgKickMetaNodeVote"
 	MSG_TYPE_META_NODE_REG_VOTE               = "/stratos.register.v1.MsgMetaNodeRegistrationVote"
 	MSG_TYPE_UPDATE_EFFECTIVE_DEPOSIT         = "/stratos.register.v1.MsgUpdateEffectiveDeposit"
 	MSG_TYPE_UNBONDING_RESOURCE_NODE          = "/stratos.register.v1.EventUnBondingResourceNode"
