@@ -50,7 +50,7 @@ func CheckGCStats() func() {
 			consecutiveGcOverTriggered++
 			if consecutiveGcOverTriggered >= THRESHOLD_NUM_CONSEC_STAY_HIGH {
 				consecutiveGcOverTriggered = 0
-				utils.FatalLogfAndTerminate("Fatal error: RAM usage exceeds the limit for too long")
+				utils.FatalLogfAndExit(-5, "Fatal error: RAM usage exceeds the limit for too long")
 			}
 		} else {
 			consecutiveGcOverTriggered = 0
