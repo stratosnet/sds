@@ -104,19 +104,23 @@ func ResultHook(r *rpc_api.Result, fileHash string) *rpc_api.Result {
 	if r.Return == rpc_api.UPLOAD_DATA {
 		start := *r.OffsetStart
 		end := *r.OffsetEnd
+		var f fileUploadOffset
+		var e uint64
 		// have to cut the requested data block into smaller pieces when the size is greater than the limit
 		if end-start > FILE_DATA_SAFE_SIZE {
-			f := fileUploadOffset{PacketFileOffset: start + FILE_DATA_SAFE_SIZE, SliceFileOffset: end}
-			fileOffset.Store(fileHash, f)
-
-			e := start + FILE_DATA_SAFE_SIZE
-			nr := &rpc_api.Result{
-				Return:      r.Return,
-				OffsetStart: &start,
-				OffsetEnd:   &e,
-			}
-			return nr
+			f = fileUploadOffset{PacketFileOffset: start + FILE_DATA_SAFE_SIZE, SliceFileOffset: end}
+			e = start + FILE_DATA_SAFE_SIZE
+		} else {
+			f = fileUploadOffset{PacketFileOffset: end, SliceFileOffset: end}
+			e = end
 		}
+		fileOffset.Store(fileHash, f)
+		nr := &rpc_api.Result{
+			Return:      r.Return,
+			OffsetStart: &start,
+			OffsetEnd:   &e,
+		}
+		return nr
 	}
 	return r
 }
