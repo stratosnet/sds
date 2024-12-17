@@ -957,7 +957,7 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 		case <-ctx.Done():
 			return rpc_api.Result{Return: rpc_api.TIME_OUT}
 		case result := <-file.SubscribeFileShareResult(key):
-			file.UnsubscribeFileShareResult(shareLink.Link)
+			file.UnsubscribeFileShareResult(key)
 			if result == nil {
 				return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
 			}
