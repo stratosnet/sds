@@ -504,12 +504,11 @@ func UnsubscribeFileShareResult(key string) {
 }
 
 func SetFileShareResult(key string, result *rpc.FileShareResult) {
-	downloadShareChan.Range(func(k, v interface{}) bool {
-		if strings.HasPrefix(k.(string), key) {
-			v.(chan *rpc.FileShareResult) <- result
-		}
-		return true
-	})
+	v, ok := downloadShareChan.Load(key)
+	if !ok {
+		return
+	}
+	v.(chan *rpc.FileShareResult) <- result
 }
 
 func SubscribeFileDeleteResult(fileHash string) chan *rpc.Result {
@@ -523,10 +522,9 @@ func UnsubscribeFileDeleteResult(key string) {
 }
 
 func SetFileDeleteResult(key string, result *rpc.Result) {
-	rpcFileDeleteChan.Range(func(k, v interface{}) bool {
-		if strings.HasPrefix(k.(string), key) {
-			v.(chan *rpc.Result) <- result
-		}
-		return true
-	})
+	v, ok := rpcFileDeleteChan.Load(key)
+	if !ok {
+		return
+	}
+	v.(chan *rpc.Result) <- result
 }
