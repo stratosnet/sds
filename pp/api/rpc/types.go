@@ -164,6 +164,7 @@ type Result struct {
 	OffsetEnd      *uint64 `json:"offsetend,omitempty"`
 	FileHash       string  `json:"filehash,omitempty"`
 	FileName       string  `json:"filename,omitempty"`
+	FileSize       uint64  `json:"filesize,omitempty"`
 	FileData       string  `json:"filedata,omitempty"`
 	SequenceNumber string  `json:"sequencenumber,omitempty"`
 }

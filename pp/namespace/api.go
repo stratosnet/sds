@@ -967,8 +967,8 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 		if data == nil {
 			return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE}
 		}
-		// the result is read, but it's nil
-		return rpc_api.Result{
+
+		re := rpc_api.Result{
 			Return:      rpc_api.DOWNLOAD_OK,
 			OffsetStart: &start,
 			OffsetEnd:   &end,
@@ -977,6 +977,10 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 			FileData:    b64.StdEncoding.EncodeToString(data),
 			ReqId:       reqId,
 		}
+		if len(result.FileInfo) != 0 {
+			re.FileSize = result.FileInfo[0].FileSize
+		}
+		return re
 	}
 }
 
