@@ -105,8 +105,8 @@ type ParamReqFileList struct {
 type ParamReqShareFile struct {
 	FileHash    string    `json:"filehash"`
 	Signature   Signature `json:"signature"`
-	Duration    int64     `json:"duration"`
-	PrivateFlag bool      `json:"bool"`
+	Duration    int64     `json:"duration,omitempty"`
+	PrivateFlag bool      `json:"private_flag,omitempty"`
 	ReqTime     int64     `json:"req_time"`
 	IpfsCid     string    `json:"ipfs_cid,omitempty"`
 }
@@ -164,6 +164,7 @@ type Result struct {
 	OffsetEnd      *uint64 `json:"offsetend,omitempty"`
 	FileHash       string  `json:"filehash,omitempty"`
 	FileName       string  `json:"filename,omitempty"`
+	FileSize       uint64  `json:"filesize,omitempty"`
 	FileData       string  `json:"filedata,omitempty"`
 	SequenceNumber string  `json:"sequencenumber,omitempty"`
 }
