@@ -221,18 +221,16 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 	reqId := core.GetRemoteReqId(ctx)
-
 	rpcResult := &rpc.FileShareResult{}
+	key := target.KeyWord + reqId
+	defer file.SetFileShareResult(key, rpcResult)
+
 	if target.Result.State == protos.ResultState_RES_FAIL {
 		task.DownloadResult(ctx, target.FileHash, false, "failed ReqGetSharedFile, "+target.Result.Msg)
-		file.SetDownloadSliceResult(target.FileHash, false)
+		rpcResult.Return = target.Result.Msg
 		return
 	}
 	metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_STORAGE_INFO_SP:")
-
-	key := target.KeyWord + reqId
-
-	defer file.SetFileShareResult(key, rpcResult)
 
 	newTarget := &target
 	newTarget.ReqId = reqId
