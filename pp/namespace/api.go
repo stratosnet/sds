@@ -960,6 +960,9 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 		if result == nil {
 			return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
 		}
+		if result.Return != rpc_api.SUCCESS && result.Return != rpc_api.SHARED_DL_START {
+			return rpc_api.Result{Return: result.Return}
+		}
 		fileHash := result.FileInfo[0].FileHash
 		// if the file is being downloaded in an existing download session
 		reqId := uuid.New().String()
