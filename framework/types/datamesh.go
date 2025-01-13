@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	cid2 "github.com/ipfs/go-cid"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/crypto"
 )
@@ -21,10 +22,6 @@ const (
 
 	// xxxxxx_xxxxxxxxxxxxxxxx or xxxxxxxxxxxxxxxx_xxxxxx
 	NormalShareLinkV1Length = 16 + 0*(1*10) + 1 + 6
-
-	// ipfs cid: 46 bytes
-	IpfsShareLinkLength = 46
-	IpfsCidPrefix       = "Qm"
 )
 
 type DataMeshId struct {
@@ -113,11 +110,9 @@ func SetShareLink(shareId, randCode string) *ShareDataMeshId {
 	return &ShareDataMeshId{Link: fmt.Sprintf("%s_%s", randCode, shareId)}
 }
 
-func CheckIpfsCid(cid string) bool {
-	if len(cid) == IpfsShareLinkLength && strings.HasPrefix(cid, IpfsCidPrefix) {
-		return true
-	}
-	return false
+func CheckIpfsCid(cid string) error {
+	_, err := cid2.Decode(cid)
+	return err
 }
 
 func ParseShareLink(getShareString string) (*ShareDataMeshId, error) {
@@ -127,8 +122,8 @@ func ParseShareLink(getShareString string) (*ShareDataMeshId, error) {
 
 	parts := strings.Split(getShareString[len(SHARED_DATA_MESH_PROTOCOL):], "/")
 
-	if len(parts) == 0 || (len(parts[0]) != NormalShareLinkV2Length && len(parts[0]) != IpfsShareLinkLength && len(parts[0]) != NormalShareLinkV1Length) {
-		return nil, errors.New("share link length is not correct")
+	if len(parts) == 0 {
+		return nil, errors.New("wrong share link: empty")
 	}
 
 	if len(parts) == 1 {
@@ -148,7 +143,9 @@ func (s ShareDataMeshId) Parse() (shareId, randCode string) {
 	if s.Link == "" {
 		return "", ""
 	}
-	if len(s.Link) == IpfsShareLinkLength {
+	// Ipfs sharelink
+	_, err := cid2.Decode(s.Link)
+	if err == nil {
 		return s.Link, ""
 	}
 

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	cid2 "github.com/ipfs/go-cid"
 	"github.com/pkg/errors"
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/framework/crypto"
@@ -828,7 +829,8 @@ func (api *terminalCmd) ShareFile(ctx context.Context, param []string) (CmdResul
 		kv := strings.SplitN(p3, "=", 2)
 		switch kv[0] {
 		case "--ipfsCid":
-			if len(kv[1]) != fwtypes.IpfsShareLinkLength {
+			_, err := cid2.Decode(kv[1])
+			if err != nil {
 				return CmdResult{Msg: ""}, errors.Errorf("wrong length param %v.", kv[0])
 			}
 			ipfsCid = kv[1]
