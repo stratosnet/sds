@@ -115,6 +115,10 @@ func CheckIpfsCid(cid string) error {
 	return err
 }
 
+func DecodeCid(cid string) (cid2.Cid, error) {
+	return cid2.Decode(cid)
+}
+
 func ParseShareLink(getShareString string) (*ShareDataMeshId, error) {
 	if getShareString[:len(SHARED_DATA_MESH_PROTOCOL)] != SHARED_DATA_MESH_PROTOCOL {
 		return nil, errors.New("invalid get shared file link prefix, expected " + SHARED_DATA_MESH_PROTOCOL)
