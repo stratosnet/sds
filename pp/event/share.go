@@ -227,7 +227,8 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 
 	if target.Result.State == protos.ResultState_RES_FAIL {
 		task.DownloadResult(ctx, target.FileHash, false, "failed ReqGetSharedFile, "+target.Result.Msg)
-		rpcResult.Return = target.Result.Msg
+		rpcResult.Return = rpc.INTERNAL_DATA_FAILURE
+		rpcResult.Detail = target.Result.Msg
 		return
 	}
 	metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_STORAGE_INFO_SP:")
