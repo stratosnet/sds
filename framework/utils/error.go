@@ -60,15 +60,15 @@ func FormatError(err error) string {
 	trace = append(topFrames, trace...)
 
 	if len(topFrames) > 0 {
-		str += ": wrapped by "
+		str += "  [WRAP]"
 	}
 	for i, f := range trace {
 		if i == len(topFrames) {
-			str += " caused by "
+			str += "  [CAUSE]"
 		} else if i != 0 {
 			str += "->"
 		}
-		str += fmt.Sprintf("[%n|%v]", f, f)
+		str += fmt.Sprintf("(%n|%v)", f, f)
 	}
 
 	return str
