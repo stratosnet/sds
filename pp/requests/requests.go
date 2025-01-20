@@ -840,10 +840,10 @@ func ReqNodeStatusData(p2pAddress string) *protos.ReqReportNodeStatus {
 	return req
 }
 
-func ReqStartMaintenance(ctx context.Context, duration uint64) *protos.ReqStartMaintenance {
+func ReqStartMaintenance(ctx context.Context, durationInSec uint64) *protos.ReqStartMaintenance {
 	return &protos.ReqStartMaintenance{
 		Address:  p2pserver.GetP2pServer(ctx).GetPPInfo(),
-		Duration: duration,
+		Duration: durationInSec,
 	}
 }
 
