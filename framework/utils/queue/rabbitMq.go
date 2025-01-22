@@ -75,12 +75,13 @@ func (q *Queue) DeclareQueue(name string) error {
 	var err error
 	args := amqp.Table{ // queue args
 		amqp.QueueMaxLenArg:   10,
+		amqp.QueueTypeArg:     amqp.QueueTypeQuorum,
 		amqp.QueueOverflowArg: amqp.QueueOverflowRejectPublish,
 	}
 
 	q.queue, err = q.channel.QueueDeclare(
 		name,  // name
-		false, // durable
+		true,  // durable
 		false, // delete when unused
 		false, // exclusive
 		false, // no-wait
