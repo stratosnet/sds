@@ -70,7 +70,7 @@ func run(cmd *cobra.Command, args []string, isExec bool) {
 		"filestatus <filehash>                                          get current state of an uploaded file\n" +
 		"backupstatus <filehash>                                        get backup status of an file\n" +
 		"maintenance start <duration>                                   put the node in maintenance mode for the requested duration (in seconds)\n" +
-		"maintenance stop                                               stop the current maintenance\n" +
+		"maintenance stop                                               stop the current maintenance, restart pp is required after this command is executed\n" +
 		"downgradeinfo                                                  get information of last downgrade happened on this pp node\n" +
 		"replicas                                                       check or set the expect replicas of a file\n" +
 		"performancemeasure                                             turn on performance measurement log for 60 seconds\n" +
