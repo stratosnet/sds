@@ -159,6 +159,7 @@ type ParamReqGetOzone struct {
 // result for all upload and download messages
 type Result struct {
 	Return         string  `json:"return"`
+	Detail         string  `json:"detail,omitempty"`
 	ReqId          string  `json:"reqid,omitempty"`
 	OffsetStart    *uint64 `json:"offsetstart,omitempty"`
 	OffsetEnd      *uint64 `json:"offsetend,omitempty"`
@@ -186,6 +187,7 @@ type FileListResult struct {
 
 type FileShareResult struct {
 	Return         string     `json:"return"`
+	Detail         string     `json:"detail,omitempty"`
 	ShareId        string     `json:"shareid,omitempty"`
 	ShareLink      string     `json:"sharelink,omitempty"`
 	FileInfo       []FileInfo `json:"fileinfo,omitempty"`
