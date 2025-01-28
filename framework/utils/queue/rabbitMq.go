@@ -14,61 +14,79 @@ const (
 	EXCHANGE_IMPORT      = "data_migration"
 )
 
-// Redis client
+type queueParameters struct {
+	url          string
+	exchangeName string
+	noWait       bool
+}
+
+// RabbitMQ client
 type Queue struct {
 	conn    *amqp.Connection
 	channel *amqp.Channel
 	queue   amqp.Queue
 	dlqueue amqp.Queue
 	msgs    <-chan amqp.Delivery
+	params  queueParameters
 }
 
 func NewQueue(url string) (*Queue, error) {
-	q := &Queue{}
-	var err error
-	q.conn, err = amqp.Dial(url)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed dialing rabbitMq server")
+	q := &Queue{
+		params: queueParameters{
+			url:          url,
+			exchangeName: EXCHANGE,
+			noWait:       false,
+		},
 	}
-	q.channel, _ = q.conn.Channel()
-	err = q.channel.ExchangeDeclare(
-		EXCHANGE,           // name
-		amqp.ExchangeTopic, // type
-		true,               // durable
-		false,              // auto-deleted
-		false,              // internal
-		false,              // no-wait
-		nil,                // arguments
-	)
+	err := q.connect()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed declaring the exchange in rabbitMq")
+		return nil, err
 	}
-
 	return q, nil
 }
 
 func NewQueueWithParams(url string, exchangeName string, noWait bool) (*Queue, error) {
-	q := &Queue{}
-	var err error
-	q.conn, err = amqp.Dial(url)
+	q := &Queue{
+		params: queueParameters{
+			url:          url,
+			exchangeName: exchangeName,
+			noWait:       noWait,
+		},
+	}
+	err := q.connect()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed dialing rabbitMq server")
+		return nil, err
+	}
+	return q, nil
+}
+
+func (q *Queue) connect() error {
+	var err error
+	q.conn, err = amqp.Dial(q.params.url)
+	if err != nil {
+		return errors.Wrap(err, "failed dialing RabbitMQ server")
 	}
 	q.channel, _ = q.conn.Channel()
 	err = q.channel.ExchangeDeclare(
-		exchangeName,       // name
-		amqp.ExchangeTopic, // type
-		true,               // durable
-		false,              // auto-deleted
-		false,              // internal
-		noWait,             // no-wait
-		nil,                // arguments
+		q.params.exchangeName, // name
+		amqp.ExchangeTopic,    // type
+		true,                  // durable
+		false,                 // auto-deleted
+		false,                 // internal
+		q.params.noWait,       // no-wait
+		nil,                   // arguments
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed declaring the exchange in rabbitMq")
+		return errors.Wrap(err, "failed declaring the exchange in RabbitMQ")
 	}
+	return nil
+}
 
-	return q, nil
+func (q *Queue) Reconnect() error {
+	if q.conn != nil {
+		_ = q.conn.Close()
+	}
+	return q.connect()
 }
 
 func (q *Queue) DeclareQueue(name string) error {
@@ -104,7 +122,7 @@ func (q *Queue) DeclareDeadLetterQueue(key string) error {
 		nil,                  // arguments
 	)
 	if err != nil {
-		return errors.Wrap(err, "failed declaring the exchange in rabbitMq")
+		return errors.Wrap(err, "failed declaring the exchange in RabbitMQ")
 	}
 
 	args := amqp.Table{ // queue args
