@@ -24,8 +24,8 @@ type Queue struct {
 	queue         amqp.Queue
 	dlqueue       amqp.Queue
 	msgs          <-chan amqp.Delivery
-	NotifyClose   chan *amqp.Error
-	notifyConfirm chan amqp.Confirmation
+	connNotify    chan *amqp.Error
+	channelNotify chan *amqp.Error
 	done          chan bool
 	isConnected   bool
 }
@@ -62,32 +62,37 @@ func NewQueueWithParams(url string, exchangeName string, noWait bool) *Queue {
 
 func (q *Queue) handleReconnect(url string, exchangeName string, noWait bool) {
 	for {
-		q.isConnected = false
-		utils.Log("connecting to RabbitMq")
-		for !q.connect(url, exchangeName, noWait) {
-			utils.Log("Failed to connect to RabbitMq. Retrying...")
-			time.Sleep(RECONNECT_INTERVAL)
+		if !q.isConnected {
+			for !q.connect(url, exchangeName, noWait) {
+				utils.DebugLog("Attempting to connect to RabbitMq...")
+				time.Sleep(RECONNECT_INTERVAL)
+			}
 		}
+
 		select {
 		case <-q.done:
 			return
-		case <-q.NotifyClose:
+		case <-q.channelNotify:
+			q.isConnected = false
+		case <-q.connNotify:
+			q.isConnected = false
 		}
+		time.Sleep(RECONNECT_INTERVAL)
 	}
 }
 
 func (q *Queue) connect(url string, exchangeName string, noWait bool) bool {
 	conn, err := amqp.Dial(url)
 	if err != nil {
-		utils.ErrorLogf("RabbitMq connect error: %v", err)
+		utils.ErrorLogf("Failed to connect to RabbitMq: %v", err)
 		return false
 	}
 	ch, err := conn.Channel()
 	if err != nil {
-		utils.ErrorLogf("RabbitMq connect error: %v", err)
+		utils.ErrorLogf("Failed to open RabbitMq channel: %v", err)
 		return false
 	}
-	err = q.channel.ExchangeDeclare(
+	err = ch.ExchangeDeclare(
 		exchangeName,       // name
 		amqp.ExchangeTopic, // type
 		true,               // durable
@@ -97,27 +102,28 @@ func (q *Queue) connect(url string, exchangeName string, noWait bool) bool {
 		nil,                // arguments
 	)
 	if err != nil {
-		utils.ErrorLogf("failed declaring the exchange in RabbitMq: %v", err)
+		utils.ErrorLogf("Failed declaring the exchange in RabbitMq: %v", err)
 		return false
 	}
 
-	q.changeConnection(conn, ch)
+	q.setConnection(conn, ch)
 	q.isConnected = true
+	utils.Log("Connected to RabbitMq")
 	return true
 }
 
-func (q *Queue) changeConnection(connection *amqp.Connection, channel *amqp.Channel) {
+func (q *Queue) setConnection(connection *amqp.Connection, channel *amqp.Channel) {
 	q.conn = connection
 	q.channel = channel
-	q.NotifyClose = make(chan *amqp.Error)
-	q.notifyConfirm = make(chan amqp.Confirmation)
-	q.channel.NotifyClose(q.NotifyClose)
-	q.channel.NotifyPublish(q.notifyConfirm)
+	q.connNotify = make(chan *amqp.Error)
+	q.channelNotify = make(chan *amqp.Error)
+	q.conn.NotifyClose(q.connNotify)
+	q.channel.NotifyClose(q.channelNotify)
 }
 
 func (q *Queue) Close() error {
 	if !q.isConnected {
-		return errors.New("close connection error: RabbitMq connection already closed")
+		return errors.New("Close connection error: RabbitMq connection already closed")
 	}
 	q.done <- true
 	err := q.channel.Close()
@@ -128,6 +134,7 @@ func (q *Queue) Close() error {
 	if err != nil {
 		return err
 	}
+	close(q.done)
 	q.isConnected = false
 	return nil
 }
@@ -165,7 +172,7 @@ func (q *Queue) DeclareDeadLetterQueue(key string) error {
 		nil,                  // arguments
 	)
 	if err != nil {
-		return errors.Wrap(err, "failed declaring the exchange in RabbitMq")
+		return errors.Wrap(err, "Failed declaring the exchange in RabbitMq")
 	}
 
 	args := amqp.Table{ // queue args
