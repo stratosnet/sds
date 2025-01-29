@@ -22,12 +22,14 @@ type queueParameters struct {
 
 // RabbitMQ client
 type Queue struct {
-	conn    *amqp.Connection
-	channel *amqp.Channel
-	queue   amqp.Queue
-	dlqueue amqp.Queue
-	msgs    <-chan amqp.Delivery
-	params  queueParameters
+	conn          *amqp.Connection
+	channel       *amqp.Channel
+	queue         amqp.Queue
+	dlqueue       amqp.Queue
+	msgs          <-chan amqp.Delivery
+	params        queueParameters
+	connNotify    chan *amqp.Error
+	channelNotify chan *amqp.Error
 }
 
 func NewQueue(url string) (*Queue, error) {
@@ -79,6 +81,11 @@ func (q *Queue) connect() error {
 	if err != nil {
 		return errors.Wrap(err, "failed declaring the exchange in RabbitMQ")
 	}
+	q.connNotify = make(chan *amqp.Error)
+	q.channelNotify = make(chan *amqp.Error)
+	q.conn.NotifyClose(q.connNotify)
+	q.channel.NotifyClose(q.channelNotify)
+
 	return nil
 }
 
@@ -162,31 +169,39 @@ func (q *Queue) Subscribe(key string) error {
 	return nil
 }
 
-func (q *Queue) GetMsg() <-chan amqp.Delivery {
+func (q *Queue) GetConnNotify() chan *amqp.Error {
+	return q.connNotify
+}
+
+func (q *Queue) GetChannelNotify() chan *amqp.Error {
+	return q.channelNotify
+}
+
+func (q *Queue) GetMsg() (<-chan amqp.Delivery, error) {
 	var err error
 	q.msgs, err = q.channel.Consume(q.queue.Name, "", true, false, false, false, nil)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return q.msgs
+	return q.msgs, nil
 }
 
-func (q *Queue) GetDLMsg() <-chan amqp.Delivery {
+func (q *Queue) GetDLMsg() (<-chan amqp.Delivery, error) {
 	var err error
 	q.msgs, err = q.channel.Consume(q.dlqueue.Name, "", false, false, false, false, nil)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return q.msgs
+	return q.msgs, nil
 }
 
-func (q *Queue) GetMsgWithManualAck() <-chan amqp.Delivery {
+func (q *Queue) GetMsgWithManualAck() (<-chan amqp.Delivery, error) {
 	var err error
 	q.msgs, err = q.channel.Consume(q.queue.Name, "", false, false, false, false, nil)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return q.msgs
+	return q.msgs, nil
 }
 
 func (q *Queue) Publish(key string, body []byte) error {
