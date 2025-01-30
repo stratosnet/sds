@@ -82,9 +82,15 @@ func (q *Queue) connect() error {
 	if err != nil {
 		return errors.Wrap(err, "failed declaring the exchange in RabbitMQ")
 	}
-	q.connNotify = make(chan *amqp.Error)
-	q.channelNotify = make(chan *amqp.Error)
-	q.channelReturn = make(chan amqp.Return)
+	if q.connNotify == nil {
+		q.connNotify = make(chan *amqp.Error) // Don't recreate chan on reconnect
+	}
+	if q.channelNotify == nil {
+		q.channelNotify = make(chan *amqp.Error) // Don't recreate chan on reconnect
+	}
+	if q.channelReturn == nil {
+		q.channelReturn = make(chan amqp.Return) // Don't recreate chan on reconnect
+	}
 	q.conn.NotifyClose(q.connNotify)
 	q.channel.NotifyClose(q.channelNotify)
 	q.channel.NotifyReturn(q.channelReturn)
