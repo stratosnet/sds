@@ -205,7 +205,7 @@ func (q *Queue) GetMsgWithManualAck() (<-chan amqp.Delivery, error) {
 }
 
 func (q *Queue) Publish(key string, body []byte) error {
-	return q.channel.Publish(EXCHANGE, key, false, false,
+	return q.channel.Publish(EXCHANGE, key, true, false,
 		amqp.Publishing{
 			ContentType: "text/plain",
 			Body:        body,
@@ -214,7 +214,7 @@ func (q *Queue) Publish(key string, body []byte) error {
 
 func (q *Queue) SendDeadLetter(key string, body []byte, retry_count int32) error {
 	expiration := strconv.FormatInt(int64(retry_count^2*10000), 10)
-	return q.channel.Publish(DEAD_LETTER_EXCHANGE, key, false, false,
+	return q.channel.Publish(DEAD_LETTER_EXCHANGE, key, true, false,
 		amqp.Publishing{
 			DeliveryMode: 2, //persistent
 			Headers:      amqp.Table{"retry_count": retry_count},
