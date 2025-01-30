@@ -30,6 +30,7 @@ type Queue struct {
 	params        queueParameters
 	connNotify    chan *amqp.Error
 	channelNotify chan *amqp.Error
+	channelReturn chan amqp.Return
 }
 
 func NewQueue(url string) (*Queue, error) {
@@ -83,8 +84,10 @@ func (q *Queue) connect() error {
 	}
 	q.connNotify = make(chan *amqp.Error)
 	q.channelNotify = make(chan *amqp.Error)
+	q.channelReturn = make(chan amqp.Return)
 	q.conn.NotifyClose(q.connNotify)
 	q.channel.NotifyClose(q.channelNotify)
+	q.channel.NotifyReturn(q.channelReturn)
 
 	return nil
 }
@@ -175,6 +178,10 @@ func (q *Queue) GetConnNotify() chan *amqp.Error {
 
 func (q *Queue) GetChannelNotify() chan *amqp.Error {
 	return q.channelNotify
+}
+
+func (q *Queue) GetChannelReturn() chan amqp.Return {
+	return q.channelReturn
 }
 
 func (q *Queue) GetMsg() (<-chan amqp.Delivery, error) {
