@@ -256,6 +256,18 @@ func (r *HashRing) RandomNodes(num int, seed string) []*Node {
 	return selectedNodes
 }
 
+func (r *HashRing) GetOnlineNodeIDs() []string {
+	var list []string
+	for _, node := range r.onlineNodes {
+		key, ok := node.(*nodeKey)
+		if !ok {
+			continue
+		}
+		list = append(list, key.id)
+	}
+	return list
+}
+
 func (r *HashRing) String() string {
 	r.Lock()
 	defer r.Unlock()

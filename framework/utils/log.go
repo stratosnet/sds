@@ -210,6 +210,9 @@ func (l *Logger) LogDepth(level LogLevel, calldepth int, v ...interface{}) {
 }
 
 func (l *CombinedLogger) Log(level LogLevel, v ...interface{}) {
+	if l == nil {
+		return
+	}
 	if l.stdLogger != nil {
 		l.stdLogger.Log(level, v...)
 	}
@@ -219,6 +222,9 @@ func (l *CombinedLogger) Log(level LogLevel, v ...interface{}) {
 }
 
 func (l *CombinedLogger) LogDepth(level LogLevel, calldepth int, v ...interface{}) {
+	if l == nil {
+		return
+	}
 	if l.stdLogger != nil {
 		l.stdLogger.LogDepth(level, calldepth, v...)
 	}
@@ -227,9 +233,68 @@ func (l *CombinedLogger) LogDepth(level LogLevel, calldepth int, v ...interface{
 	}
 }
 
+func (l *CombinedLogger) InfoLog(v ...interface{}) {
+	if l == nil {
+		return
+	}
+	l.LogDepth(Info, 4, v...)
+}
+
+func (l *CombinedLogger) InfoLogf(template string, v ...interface{}) {
+	if l == nil {
+		return
+	}
+	l.LogDepth(Info, 4, fmt.Sprintf(template, v...))
+}
+
 func (l *CombinedLogger) ErrorLog(v ...interface{}) {
 	//l.Log(Error, v...)
+	if l == nil {
+		return
+	}
 	l.LogDepth(Error, 4, v...)
+}
+
+func (l *CombinedLogger) ErrorLogf(template string, v ...interface{}) {
+	if l == nil {
+		return
+	}
+	l.LogDepth(Error, 4, fmt.Errorf(template, v...))
+}
+
+func (l *CombinedLogger) WarnLog(v ...interface{}) {
+	if l == nil {
+		return
+	}
+	l.LogDepth(Warn, 4, v...)
+}
+
+func (l *CombinedLogger) DebugLog(v ...interface{}) {
+	if l == nil {
+		return
+	}
+	l.LogDepth(Debug, 4, v...)
+}
+
+func (l *CombinedLogger) DebugLogf(template string, v ...interface{}) {
+	if l == nil {
+		return
+	}
+	l.LogDepth(Debug, 4, fmt.Sprintf(template, v...))
+}
+
+func (l *CombinedLogger) DetailLog(v ...interface{}) {
+	if l == nil {
+		return
+	}
+	l.LogDepth(Detail, 4, v...)
+}
+
+func (l *CombinedLogger) DetailLogf(template string, v ...interface{}) {
+	if l == nil {
+		return
+	}
+	l.LogDepth(Detail, 4, fmt.Sprintf(template, v...))
 }
 
 //func ClearRpcLogger() {
