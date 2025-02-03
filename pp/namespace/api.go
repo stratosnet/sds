@@ -704,18 +704,19 @@ func (api *rpcPubApi) RequestDeleteFile(ctx context.Context, param rpc_api.Param
 	sigByte, _ := hex.DecodeString(signature)
 
 	event.DeleteFile(ctx, fileHash, walletAddr, pk.Bytes(), sigByte, reqTime)
+	defer file.UnsubscribeFileDeleteResult(fileHash)
 	// wait for result, SUCCESS or some failure
 	select {
 	case <-ctx.Done():
 		result := &rpc_api.Result{Return: rpc_api.TIME_OUT}
 		return *result
 	case result := <-file.SubscribeFileDeleteResult(fileHash):
-		file.UnsubscribeFileDeleteResult(fileHash)
 		if result != nil {
 			return *result
+		} else {
+			return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
 		}
 	}
-	return rpc_api.Result{Return: rpc_api.GENERIC_ERR}
 }
 
 func (api *rpcPubApi) RequestList(ctx context.Context, param rpc_api.ParamReqFileList) rpc_api.FileListResult {
@@ -822,16 +823,16 @@ func (api *rpcPubApi) RequestShare(ctx context.Context, param rpc_api.ParamReqSh
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileShareResult
 
-	for {
-		select {
-		case <-ctx.Done():
-			result = &rpc_api.FileShareResult{Return: rpc_api.TIME_OUT}
+	defer file.UnsubscribeFileShareResult(param.Signature.Address + reqId)
+	select {
+	case <-ctx.Done():
+		result = &rpc_api.FileShareResult{Return: rpc_api.TIME_OUT}
+		return *result
+	case result = <-file.SubscribeFileShareResult(param.Signature.Address + reqId):
+		if result != nil {
 			return *result
-		case result = <-file.SubscribeFileShareResult(param.Signature.Address + reqId):
-			file.UnsubscribeFileShareResult(param.Signature.Address + reqId)
-			if result != nil {
-				return *result
-			}
+		} else {
+			return rpc_api.FileShareResult{Return: rpc_api.INTERNAL_DATA_FAILURE}
 		}
 	}
 }
@@ -860,16 +861,16 @@ func (api *rpcPubApi) RequestListShare(ctx context.Context, param rpc_api.ParamR
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileShareResult
 
-	for {
-		select {
-		case <-ctx.Done():
-			result = &rpc_api.FileShareResult{Return: rpc_api.TIME_OUT}
+	defer file.UnsubscribeFileShareResult(param.Signature.Address + reqId)
+	select {
+	case <-ctx.Done():
+		result = &rpc_api.FileShareResult{Return: rpc_api.TIME_OUT}
+		return *result
+	case result = <-file.SubscribeFileShareResult(param.Signature.Address + reqId):
+		if result != nil {
 			return *result
-		case result = <-file.SubscribeFileShareResult(param.Signature.Address + reqId):
-			file.UnsubscribeFileShareResult(param.Signature.Address + reqId)
-			if result != nil {
-				return *result
-			}
+		} else {
+			return rpc_api.FileShareResult{Return: rpc_api.INTERNAL_DATA_FAILURE}
 		}
 	}
 }
@@ -898,16 +899,16 @@ func (api *rpcPubApi) RequestStopShare(ctx context.Context, param rpc_api.ParamR
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileShareResult
 
-	for {
-		select {
-		case <-ctx.Done():
-			result = &rpc_api.FileShareResult{Return: rpc_api.TIME_OUT}
+	defer file.UnsubscribeFileShareResult(param.Signature.Address + reqId)
+	select {
+	case <-ctx.Done():
+		result = &rpc_api.FileShareResult{Return: rpc_api.TIME_OUT}
+		return *result
+	case result = <-file.SubscribeFileShareResult(param.Signature.Address + reqId):
+		if result != nil {
 			return *result
-		case result = <-file.SubscribeFileShareResult(param.Signature.Address + reqId):
-			file.UnsubscribeFileShareResult(param.Signature.Address + reqId)
-			if result != nil {
-				return *result
-			}
+		} else {
+			return rpc_api.FileShareResult{Return: rpc_api.INTERNAL_DATA_FAILURE}
 		}
 	}
 }
@@ -951,36 +952,39 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 
 	// the application gives FileShareResult type of result
 	key := shareLink.Link + task.LOCAL_REQID
-	found := false
-	for !found {
-		select {
-		case <-ctx.Done():
-			return rpc_api.Result{Return: rpc_api.TIME_OUT}
-		case result := <-file.SubscribeFileShareResult(key):
-			file.UnsubscribeFileShareResult(shareLink.Link)
-			if result == nil {
-				return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
-			}
-			fileHash := result.FileInfo[0].FileHash
-			// if the file is being downloaded in an existing download session
-			reqId := uuid.New().String()
-			data, start, end, _ := file.NextRemoteDownloadPacket(fileHash, reqId)
-			if data == nil {
-				return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE}
-			}
-			// the result is read, but it's nil
-			return rpc_api.Result{
-				Return:      rpc_api.DOWNLOAD_OK,
-				OffsetStart: &start,
-				OffsetEnd:   &end,
-				FileHash:    fileHash,
-				FileName:    file.GetFileName(fileHash),
-				FileData:    b64.StdEncoding.EncodeToString(data),
-				ReqId:       reqId,
-			}
+	defer file.UnsubscribeFileShareResult(key)
+	select {
+	case <-ctx.Done():
+		return rpc_api.Result{Return: rpc_api.TIME_OUT}
+	case result := <-file.SubscribeFileShareResult(key):
+		if result == nil {
+			return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
 		}
+		if result.Return != rpc_api.SUCCESS && result.Return != rpc_api.SHARED_DL_START {
+			return rpc_api.Result{Return: result.Return, Detail: result.Detail}
+		}
+		fileHash := result.FileInfo[0].FileHash
+		// if the file is being downloaded in an existing download session
+		reqId := uuid.New().String()
+		data, start, end, _ := file.NextRemoteDownloadPacket(fileHash, reqId)
+		if data == nil {
+			return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE}
+		}
+
+		re := rpc_api.Result{
+			Return:      rpc_api.DOWNLOAD_OK,
+			OffsetStart: &start,
+			OffsetEnd:   &end,
+			FileHash:    fileHash,
+			FileName:    file.GetFileName(fileHash),
+			FileData:    b64.StdEncoding.EncodeToString(data),
+			ReqId:       reqId,
+		}
+		if len(result.FileInfo) != 0 {
+			re.FileSize = result.FileInfo[0].FileSize
+		}
+		return re
 	}
-	return rpc_api.Result{Return: rpc_api.TIME_OUT}
 }
 
 func (api *rpcPubApi) RequestGetVideoShared(ctx context.Context, param rpc_api.ParamReqGetShared) rpc_api.Result {
@@ -1025,29 +1029,24 @@ func (api *rpcPubApi) RequestGetVideoShared(ctx context.Context, param rpc_api.P
 	// the application gives FileShareResult type of result
 	var res *rpc_api.FileShareResult
 
-	found := false
-	for !found {
-		select {
-		case <-ctx.Done():
-			return rpc_api.Result{Return: rpc_api.TIME_OUT}
-		case res = <-file.SubscribeFileShareResult(key):
-			file.UnsubscribeFileShareResult(key)
-			if res == nil {
-				return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
-			}
-
-			fileHash := res.FileInfo[0].FileHash
-			file.SaveRemoteFileHash(fileHash+reqId, "", 0)
-			// if the file is being downloaded in an existing download session
-			// the result is read, but it's nil
-			return rpc_api.Result{
-				Return:   rpc_api.DOWNLOAD_OK,
-				FileHash: fileHash,
-				ReqId:    reqId,
-			}
+	defer file.UnsubscribeFileShareResult(key)
+	select {
+	case <-ctx.Done():
+		return rpc_api.Result{Return: rpc_api.TIME_OUT}
+	case res = <-file.SubscribeFileShareResult(key):
+		if res == nil {
+			return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+		}
+		fileHash := res.FileInfo[0].FileHash
+		file.SaveRemoteFileHash(fileHash+reqId, "", 0)
+		// if the file is being downloaded in an existing download session
+		// the result is read, but it's nil
+		return rpc_api.Result{
+			Return:   rpc_api.DOWNLOAD_OK,
+			FileHash: fileHash,
+			ReqId:    reqId,
 		}
 	}
-	return rpc_api.Result{Return: rpc_api.TIME_OUT}
 }
 
 func (api *rpcPubApi) RequestGetOzone(ctx context.Context, param rpc_api.ParamReqGetOzone) rpc_api.GetOzoneResult {

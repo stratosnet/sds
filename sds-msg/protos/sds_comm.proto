@@ -159,6 +159,13 @@ enum PPState {
     MAINTENANCE = 3;
 }
 
+enum PPTierLevel {
+  UNQUALIFIED = 0;
+  PC = 1;
+  SPECIAL_BUILD = 2;
+  CABINET = 3;
+}
+
 enum SpMaintenanceType {
     CONSENSUS = 0;
     OTHER = 1;
@@ -175,4 +182,21 @@ enum FileUploadState {
   FAILED = 2;
   FINISHED = 3;
   CONFIRMING = 4;
+}
+
+enum PPWeightIncrEvent {
+  UPLOAD_SUCCESS = 0;
+  DOWNLOAD_SUCCESS = 1;
+  BACKUP_SUCCESS = 2;
+  STATUS_REPORT_SUCCESS = 3;
+  TRANSFER_SUCCESS = 4;
+}
+
+enum PPWeightDecrEvent {
+  UPLOAD_FAIL = 0;
+  DOWNLOAD_FAIL = 1;
+  BACKUP_FAIL = 2;
+  STATUS_REPORT_FAIL = 3;
+  INBOUND_SPEED_STAT_FAIL = 4;
+  OUTBOUND_SPEED_STAT_FAIL = 5;
 }

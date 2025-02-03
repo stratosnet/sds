@@ -158,7 +158,7 @@ func RspShareFile(ctx context.Context, conn core.WriteCloser) {
 		rpcResult.ShareLink = target.ShareLink
 	} else {
 		pp.ErrorLog(ctx, "share file failed:", target.Result.Msg)
-		rpcResult.Return = rpc.INTERNAL_COMM_FAILURE
+		rpcResult.Return = target.Result.Msg
 	}
 }
 
@@ -221,20 +221,17 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 		return
 	}
 	reqId := core.GetRemoteReqId(ctx)
-
 	rpcResult := &rpc.FileShareResult{}
+	key := target.KeyWord + reqId
+	defer file.SetFileShareResult(key, rpcResult)
+
 	if target.Result.State == protos.ResultState_RES_FAIL {
 		task.DownloadResult(ctx, target.FileHash, false, "failed ReqGetSharedFile, "+target.Result.Msg)
-		file.SetDownloadSliceResult(target.FileHash, false)
+		rpcResult.Return = rpc.INTERNAL_DATA_FAILURE
+		rpcResult.Detail = target.Result.Msg
 		return
 	}
 	metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_STORAGE_INFO_SP:")
-
-	key := target.KeyWord
-	if reqId != file.LOCAL_TAG {
-		key = key + reqId
-	}
-	defer file.SetFileShareResult(key, rpcResult)
 
 	newTarget := &target
 	newTarget.ReqId = reqId
@@ -266,7 +263,7 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 		Slices:   slices,
 	})
 
-	f := rpc.FileInfo{FileHash: target.FileHash, FileName: target.FileName}
+	f := rpc.FileInfo{FileHash: target.FileHash, FileName: target.FileName, FileSize: target.FileSize}
 	rpcResult.Return = rpc.SHARED_DL_START
 	rpcResult.FileInfo = append(rpcResult.FileInfo, f)
 

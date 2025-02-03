@@ -105,8 +105,8 @@ type ParamReqFileList struct {
 type ParamReqShareFile struct {
 	FileHash    string    `json:"filehash"`
 	Signature   Signature `json:"signature"`
-	Duration    int64     `json:"duration"`
-	PrivateFlag bool      `json:"bool"`
+	Duration    int64     `json:"duration,omitempty"`
+	PrivateFlag bool      `json:"private_flag,omitempty"`
 	ReqTime     int64     `json:"req_time"`
 	IpfsCid     string    `json:"ipfs_cid,omitempty"`
 }
@@ -159,11 +159,13 @@ type ParamReqGetOzone struct {
 // result for all upload and download messages
 type Result struct {
 	Return         string  `json:"return"`
+	Detail         string  `json:"detail,omitempty"`
 	ReqId          string  `json:"reqid,omitempty"`
 	OffsetStart    *uint64 `json:"offsetstart,omitempty"`
 	OffsetEnd      *uint64 `json:"offsetend,omitempty"`
 	FileHash       string  `json:"filehash,omitempty"`
 	FileName       string  `json:"filename,omitempty"`
+	FileSize       uint64  `json:"filesize,omitempty"`
 	FileData       string  `json:"filedata,omitempty"`
 	SequenceNumber string  `json:"sequencenumber,omitempty"`
 }
@@ -185,6 +187,7 @@ type FileListResult struct {
 
 type FileShareResult struct {
 	Return         string     `json:"return"`
+	Detail         string     `json:"detail,omitempty"`
 	ShareId        string     `json:"shareid,omitempty"`
 	ShareLink      string     `json:"sharelink,omitempty"`
 	FileInfo       []FileInfo `json:"fileinfo,omitempty"`
