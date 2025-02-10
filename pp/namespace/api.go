@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -56,6 +57,8 @@ const (
 var (
 	fileOffset       = &sync.Map{}
 	signatureInfoMap = utils.NewAutoCleanMap(SIGNATURE_INFO_TTL)
+	nfup             atomic.Int64
+	wait             = make(chan bool)
 )
 
 type fileUploadOffset struct {
@@ -149,7 +152,12 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 		signature: param.Signature,
 		reqTime:   reqTime,
 	})
-
+	const MAX_NUMBER_FILE_UPLOAD_AT_SAME_TIME = 20
+	nfup.Add(1)
+	waitNumber := nfup.Load()
+	if waitNumber >= 2 {
+		<-wait
+	}
 	// fetch file slices from remote client and send upload request to sp
 	fetchRemoteFileAndReqUpload := func() {
 		metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_CLIENT")
@@ -157,7 +165,12 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 		fileSize := uint64(param.FileSize)
 		sliceSize := uint64(setting.MaxSliceSize)
 		sliceCount := uint64(math.Ceil(float64(fileSize) / float64(sliceSize)))
-
+		defer func() {
+			wait <- true
+		}()
+		defer func() {
+			nfup.Add(-1)
+		}()
 		defer signatureInfoMap.Delete(fileHash)
 		defer fileOffset.Delete(fileHash)
 		var slices []*protos.SliceHashAddr
@@ -258,6 +271,7 @@ func (api *rpcPubApi) UploadData(ctx context.Context, param rpc_api.ParamUploadD
 	reqTime := param.ReqTime
 	stop := param.Stop
 
+	//time.Sleep(1 * time.Second)
 	// verify if wallet and public key match
 	if !fwtypes.VerifyWalletAddr(pubkey, walletAddr) {
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
