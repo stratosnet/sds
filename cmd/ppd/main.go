@@ -17,12 +17,14 @@ func main() {
 	configCmd := getGenConfigCmd()
 	verCmd := getVersionCmd()
 	exportCmd := getExportCmd()
+	cleanCmd := getCleanCmd()
 
 	rootCmd.AddCommand(nodeCmd)
 	rootCmd.AddCommand(terminalCmd)
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(verCmd)
 	rootCmd.AddCommand(exportCmd)
+	rootCmd.AddCommand(cleanCmd)
 
 	err := rootCmd.Execute()
 	if err != nil {
@@ -54,6 +56,16 @@ func getNodeCmd() *cobra.Command {
 		Short:   "start the node",
 		PreRunE: common.NodePreRunE,
 		RunE:    common.NodePP,
+	}
+	return nodeCmd
+}
+
+func getCleanCmd() *cobra.Command {
+	nodeCmd := &cobra.Command{
+		Use:     "clean",
+		Short:   "clean storage",
+		PreRunE: genConfig,
+		RunE:    cleanStorage,
 	}
 	return nodeCmd
 }
