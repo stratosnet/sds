@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -51,11 +52,15 @@ const (
 	SIGNATURE_INFO_TTL = 10 * time.Minute
 
 	UPLOAD_SLICE_LOCAL_HANDLE_TIME = 60 * time.Second
+
+	MAX_NUMBER_FILE_UPLOAD_AT_SAME_TIME = 20
 )
 
 var (
 	fileOffset       = &sync.Map{}
 	signatureInfoMap = utils.NewAutoCleanMap(SIGNATURE_INFO_TTL)
+	nfup             atomic.Int64
+	wait             = make(chan bool)
 )
 
 type fileUploadOffset struct {
@@ -150,6 +155,11 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 		reqTime:   reqTime,
 	})
 
+	nfup.Add(1)
+	waitNumber := nfup.Load()
+	if waitNumber >= MAX_NUMBER_FILE_UPLOAD_AT_SAME_TIME {
+		<-wait
+	}
 	// fetch file slices from remote client and send upload request to sp
 	fetchRemoteFileAndReqUpload := func() {
 		metrics.UploadPerformanceLogNow(param.FileHash + ":RCV_REQ_UPLOAD_CLIENT")
@@ -157,7 +167,12 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 		fileSize := uint64(param.FileSize)
 		sliceSize := uint64(setting.MaxSliceSize)
 		sliceCount := uint64(math.Ceil(float64(fileSize) / float64(sliceSize)))
-
+		defer func() {
+			wait <- true
+		}()
+		defer func() {
+			nfup.Add(-1)
+		}()
 		defer signatureInfoMap.Delete(fileHash)
 		defer fileOffset.Delete(fileHash)
 		var slices []*protos.SliceHashAddr
