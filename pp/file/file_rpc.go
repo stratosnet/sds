@@ -119,7 +119,7 @@ func CacheRemoteFileData(fileHash string, offset *protos.SliceOffset, folderName
 OuterFor:
 	for {
 		parentCtx := context.Background()
-		ctx, cancel := context.WithTimeout(parentCtx, RpcWaitTimeout)
+		ctx, cancel := context.WithTimeout(parentCtx, 15*time.Minute)
 
 		select {
 		case <-ctx.Done():

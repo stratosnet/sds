@@ -137,7 +137,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 	pubkey := param.Signature.Pubkey
 	signature := param.Signature.Signature
 	reqTime := param.ReqTime
-
+	utils.DebugLog("UP ###### RequestUpload:", param.FileName, param.FileHash)
 	// verify if wallet and public key match
 	if !fwtypes.VerifyWalletAddr(pubkey, walletAddr) {
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
@@ -158,6 +158,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 	nfup.Add(1)
 	waitNumber := nfup.Load()
 	if waitNumber >= MAX_NUMBER_FILE_UPLOAD_AT_SAME_TIME {
+		utils.DebugLog("TEST*** file:", param.FileName, "wait as", waitNumber)
 		<-wait
 	}
 	// fetch file slices from remote client and send upload request to sp
@@ -182,13 +183,15 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 			tmpSliceName := uuid.NewString()
 			var rawData []byte
 			var err error
-			if file.CacheRemoteFileData(fileHash, sliceOffset, fileHash, tmpSliceName, false) != nil {
+			if err = file.CacheRemoteFileData(fileHash, sliceOffset, fileHash, tmpSliceName, false); err != nil {
+				utils.ErrorLog("Error wait for file data:", err.Error(), param.FileName)
 				return
 			}
 
 			rawData, err = file.GetSliceDataFromTmp(fileHash, tmpSliceName)
 			if err != nil {
 				_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
+				utils.ErrorLog("Error get slice data from tmp:", err.Error(), param.FileName)
 				return
 			}
 
@@ -196,6 +199,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 			sliceHash, err := crypto.CalcSliceHash(rawData, fileHash, sliceNumber)
 			if err != nil {
 				_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
+				utils.ErrorLog("Error calc slice hash:", err.Error(), param.FileName)
 				return
 			}
 
@@ -211,6 +215,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 			err = file.RenameTmpFile(fileHash, tmpSliceName, sliceHash)
 			if err != nil {
 				_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
+				utils.ErrorLog("Error rename tmp file:", err.Error(), param.FileName)
 				return
 			}
 		}
@@ -272,6 +277,7 @@ func (api *rpcPubApi) UploadData(ctx context.Context, param rpc_api.ParamUploadD
 	signature := param.Signature.Signature
 	reqTime := param.ReqTime
 	stop := param.Stop
+	utils.DebugLog("UP ###### UploadData:", param.FileHash)
 
 	// verify if wallet and public key match
 	if !fwtypes.VerifyWalletAddr(pubkey, walletAddr) {
@@ -294,6 +300,7 @@ func (api *rpcPubApi) UploadData(ctx context.Context, param rpc_api.ParamUploadD
 	// go on asking from the client
 	fuo, found := fileOffset.Load(fileHash)
 	if stop || !found {
+		utils.ErrorLog("Error get slice data from tmp:", param.Stop, fileHash)
 		return rpc_api.Result{Return: rpc_api.SESSION_STOPPED}
 	}
 	fo := fuo.(fileUploadOffset)
