@@ -481,12 +481,12 @@ func CheckSliceExisting(fileHash, fileName, sliceHash, fileReqId string) bool {
 		return false
 	}
 	reader := csv.NewReader(csvFile)
-	hashs, err := reader.ReadAll()
-	if len(hashs) == 0 || err != nil {
+	hashes, err := reader.ReadAll()
+	if len(hashes) == 0 || err != nil {
 		return false
 	}
 
-	for _, item := range hashs {
+	for _, item := range hashes {
 		if len(item) > 0 {
 			if item[0] == sliceHash {
 				return true
@@ -768,11 +768,11 @@ func rangeCsvFile(fileHash, fileName string, f func(sliceInCsv string)) bool {
 		return false
 	}
 	reader := csv.NewReader(csvFile)
-	hashs, err := reader.ReadAll()
-	if len(hashs) == 0 || err != nil {
+	hashes, err := reader.ReadAll()
+	if len(hashes) == 0 || err != nil {
 		return false
 	}
-	for _, hash := range hashs {
+	for _, hash := range hashes {
 		if len(hash) > 0 {
 			f(hash[0])
 		}
