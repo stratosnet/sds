@@ -71,15 +71,15 @@ func SignatureDataFromProto(descData *signingv1beta1.SignatureDescriptor_Data) S
 		}
 	case *signingv1beta1.SignatureDescriptor_Data_Multi_:
 		multi := descData.Multi
-		datas := make([]SignatureData, len(multi.Signatures))
+		data := make([]SignatureData, len(multi.Signatures))
 
 		for j, d := range multi.Signatures {
-			datas[j] = SignatureDataFromProto(d)
+			data[j] = SignatureDataFromProto(d)
 		}
 
 		return &MultiSignatureData{
 			BitArray:   multi.Bitarray,
-			Signatures: datas,
+			Signatures: data,
 		}
 	default:
 		panic(fmt.Errorf("unexpected case %+v", descData))
