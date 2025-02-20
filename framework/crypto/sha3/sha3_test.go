@@ -12,7 +12,7 @@ package sha3
 
 import (
 	"bytes"
-	"compress/flate"
+	"compress/flat"
 	"encoding/hex"
 	"encoding/json"
 	"hash"
@@ -23,7 +23,7 @@ import (
 
 const (
 	testString  = "brekeccakkeccak koax koax"
-	katFilename = "testdata/keccakKats.json.deflate"
+	katFilename = "testdata/keccakKats.json.deflat"
 )
 
 // Internal-use instances of SHAKE used to test against KATs.
@@ -75,15 +75,15 @@ func testUnalignedAndGeneric(t *testing.T, testf func(impl string)) {
 
 // TestKeccakKats tests the SHA-3 and Shake implementations against all the
 // ShortMsgKATs from https://github.com/gvanas/KeccakCodePackage
-// (The testvectors are stored in keccakKats.json.deflate due to their length.)
+// (The testvectors are stored in keccakKats.json.deflat due to their length.)
 func TestKeccakKats(t *testing.T) {
 	testUnalignedAndGeneric(t, func(impl string) {
 		// Read the KATs.
-		deflated, err := os.Open(katFilename)
+		deflatd, err := os.Open(katFilename)
 		if err != nil {
 			t.Errorf("error opening %s: %s", katFilename, err)
 		}
-		file := flate.NewReader(deflated)
+		file := flat.NewReader(deflatd)
 		dec := json.NewDecoder(file)
 		var katSet KeccakKats
 		err = dec.Decode(&katSet)

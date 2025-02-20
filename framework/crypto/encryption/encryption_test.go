@@ -39,7 +39,7 @@ func TestAESEncryption(t *testing.T) {
 		t.Fatal("Using a different key or nonce should generate a different ciphertext")
 	}
 	if bytes.Equal(message, ciphertext) {
-		t.Fatal("The encrypted message should not equl the original message")
+		t.Fatal("The encrypted message should not equal the original message")
 	}
 
 	plaintext, err := DecryptAES(key, ciphertext, 42, false)
