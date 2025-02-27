@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/api/rpc"
 	"github.com/stratosnet/sds/pp/metrics"
 	"github.com/stratosnet/sds/sds-msg/protos"
@@ -58,6 +59,9 @@ var (
 
 	// key(wallet + reqid) : value(*rpc.GetOzoneResult)
 	rpcOzone = &sync.Map{}
+
+	// key(filehash) : value(*rpc.ParamUploadSign)
+	rpcFileUploadSign = &sync.Map{}
 
 	// wait for the next request from client per message
 	RpcWaitTimeout time.Duration
@@ -527,4 +531,19 @@ func SetFileDeleteResult(key string, result *rpc.Result) {
 		return
 	}
 	v.(chan *rpc.Result) <- result
+}
+
+func SubscribeFileUploadSign(fileHash string) chan *rpc.ParamUploadSign {
+	sign := make(chan *rpc.ParamUploadSign)
+	rpcFileUploadSign.Store(fileHash, sign)
+	return sign
+}
+
+func SetFileUploadSign(sig *rpc.ParamUploadSign, fileHash string) {
+	utils.DebugLog("FILEHASH:", fileHash)
+	v, ok := rpcFileUploadSign.Load(fileHash)
+	if !ok {
+		return
+	}
+	v.(chan *rpc.ParamUploadSign) <- sig
 }

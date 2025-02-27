@@ -100,6 +100,65 @@ func uploadDataMsg(hash, data, sn string) []byte {
 	return wrapJsonRpc("user_uploadData", pm)
 }
 
+func uploadSignMsg(hash, sn string) []byte {
+	nowSec := time.Now().Unix()
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetFileUploadWalletSignMessage(hash, WalletAddress, sn, nowSec)))
+	if err != nil {
+		return nil
+	}
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
+	if err != nil {
+		return nil
+	}
+
+	pa := []rpc.ParamUploadSign{{
+		FileHash: hash,
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
+		},
+		ReqTime:        nowSec,
+		SequenceNumber: sn,
+	}}
+	pm, e := json.Marshal(pa)
+	if e != nil {
+		utils.ErrorLog("json marshal error", e)
+	}
+
+	return wrapJsonRpc("user_uploadSign", pm)
+}
+
+func getFileStatusMsg(hash, sn string) []byte {
+	nowSec := time.Now().Unix()
+	// signature
+	sign, err := WalletPrivateKey.Sign([]byte(msgutils.GetFileStatusWalletSignMessage(hash, WalletAddress, nowSec)))
+	if err != nil {
+		return nil
+	}
+	wpk, err := fwtypes.WalletPubKeyToBech32(WalletPublicKey)
+	if err != nil {
+		return nil
+	}
+
+	pa := []rpc.ParamGetFileStatus{{
+		FileHash: hash,
+		Signature: rpc.Signature{
+			Address:   WalletAddress,
+			Pubkey:    wpk,
+			Signature: hex.EncodeToString(sign),
+		},
+		ReqTime: nowSec,
+	}}
+	pm, e := json.Marshal(pa)
+	if e != nil {
+		utils.ErrorLog("json marshal error", e)
+	}
+
+	return wrapJsonRpc("user_getFileStatus", pm)
+}
+
 func put(cmd *cobra.Command, args []string) error {
 	sn, err := handleGetOzone()
 	if err != nil {
@@ -174,11 +233,68 @@ func put(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 	}
-	if res.Return == rpc.SUCCESS {
-		utils.Log("- received response (return: SUCCESS)")
-	} else {
+	if res.Return != rpc.SUCCESS {
 		utils.Log("- received response (return: ", res.Return, ")")
+		return nil
 	}
+
+	utils.Log("- finished uploading data to pp node")
+	sn, err = handleGetOzone()
+	if err != nil {
+		return err
+	}
+
+	r = uploadSignMsg(hash, sn)
+	if r == nil {
+		return nil
+	}
+
+	// http request-respond
+	body = httpRequest(r)
+	if body == nil {
+		utils.ErrorLog("http no response")
+		return nil
+	}
+	// Handle rsp
+	err = json.Unmarshal(body, &rsp)
+	if err != nil {
+		utils.ErrorLog("unmarshal failed")
+		return nil
+	}
+	err = json.Unmarshal(rsp.Result, &res)
+	if err != nil {
+		utils.ErrorLog("unmarshal failed")
+		return nil
+	}
+	fsr := rpc.FileStatusResult{FileUploadState: protos.FileUploadState_UNKNOWN}
+
+	for fsr.FileUploadState != protos.FileUploadState_FINISHED {
+		r = getFileStatusMsg(hash, sn)
+		if r == nil {
+			return nil
+		}
+
+		// http request-respond
+		body = httpRequest(r)
+		if body == nil {
+			utils.ErrorLog("http no response")
+			return nil
+		}
+		// Handle rsp
+		err = json.Unmarshal(body, &rsp)
+		if err != nil {
+			utils.ErrorLog("unmarshal failed")
+			return nil
+		}
+
+		err = json.Unmarshal(rsp.Result, &fsr)
+		if err != nil {
+			utils.ErrorLog("unmarshal failed")
+			return nil
+		}
+		time.Sleep(5 * time.Second)
+	}
+
 	utils.Log("- uploading is done")
 	return nil
 }

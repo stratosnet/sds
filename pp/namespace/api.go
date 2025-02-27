@@ -57,20 +57,14 @@ const (
 )
 
 var (
-	fileOffset       = &sync.Map{}
-	signatureInfoMap = utils.NewAutoCleanMap(SIGNATURE_INFO_TTL)
-	nfup             atomic.Int64
-	wait             = make(chan bool)
+	uploadOffset = &sync.Map{}
+	nfup         atomic.Int64
+	wait         = make(chan bool)
 )
 
 type fileUploadOffset struct {
 	PacketFileOffset uint64
 	SliceFileOffset  uint64
-}
-
-type signatureInfo struct {
-	signature rpc_api.Signature
-	reqTime   int64
 }
 
 type rpcPubApi struct {
@@ -119,7 +113,7 @@ func ResultHook(r *rpc_api.Result, fileHash string) *rpc_api.Result {
 			f = fileUploadOffset{PacketFileOffset: end, SliceFileOffset: end}
 			e = end
 		}
-		fileOffset.Store(fileHash, f)
+		uploadOffset.Store(fileHash, f)
 		nr := &rpc_api.Result{
 			Return:      r.Return,
 			OffsetStart: &start,
@@ -145,15 +139,9 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 	if !fwtypes.VerifyWalletSign(pubkey, signature, msgutils.GetFileUploadWalletSignMessage(fileHash, walletAddr, param.SequenceNumber, reqTime)) {
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
-	if _, ok := signatureInfoMap.Load(fileHash); ok {
+	if _, ok := uploadOffset.Load(fileHash); ok {
 		return rpc_api.Result{Return: rpc_api.CONFLICT_WITH_ANOTHER_SESSION}
 	}
-
-	// Store initial signature info
-	signatureInfoMap.Store(fileHash, signatureInfo{
-		signature: param.Signature,
-		reqTime:   reqTime,
-	})
 
 	nfup.Add(1)
 	waitNumber := nfup.Load()
@@ -173,8 +161,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 		defer func() {
 			nfup.Add(-1)
 		}()
-		defer signatureInfoMap.Delete(fileHash)
-		defer fileOffset.Delete(fileHash)
+		defer uploadOffset.Delete(fileHash)
 		var slices []*protos.SliceHashAddr
 		for sliceNumber := uint64(1); sliceNumber <= sliceCount; sliceNumber++ {
 			sliceOffset := requests.GetSliceOffset(sliceNumber, sliceCount, sliceSize, fileSize)
@@ -214,17 +201,23 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 				return
 			}
 		}
-		fileOffset.Delete(fileHash)
+		uploadOffset.Delete(fileHash)
+		_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.SUCCESS})
 
-		// Get latest signature info and reqTime
-		if info, found := signatureInfoMap.Load(fileHash); found {
-			sigInfo := info.(signatureInfo)
-			signature = sigInfo.signature.Signature
-			reqTime = sigInfo.reqTime
+		var s rpc_api.Signature
+		c, cancel := context.WithTimeout(context.Background(), INIT_WAIT_TIMEOUT)
+		defer cancel()
+		utils.DebugLog("LISTEN:", fileHash)
+		select {
+		case <-c.Done():
+			return
+		case sign := <-file.SubscribeFileUploadSign(fileHash):
+			s = sign.Signature
+			reqTime = sign.ReqTime
 		}
 
 		// start to upload file
-		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, reqTime,
+		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, s.Signature, reqTime,
 			slices, false, param.DesiredTier, param.AllowHigherTier, 0)
 		if err != nil {
 			_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
@@ -247,13 +240,12 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 	case <-ctx.Done():
 		result := &rpc_api.Result{Return: rpc_api.TIME_OUT}
 		return *result
-	// since request for uploading a file has been invoked, wait for application's reply then return the result back to the rpc client
 	case result := <-fileEventCh:
 		file.UnsubscribeRemoteFileEvent(fileHash)
 		if result != nil {
 			if result.Return == rpc_api.UPLOAD_DATA {
 				f := fileUploadOffset{PacketFileOffset: *result.OffsetEnd, SliceFileOffset: *result.OffsetEnd}
-				fileOffset.Store(fileHash, f)
+				uploadOffset.Store(fileHash, f)
 			}
 			result = ResultHook(result, fileHash)
 			return *result
@@ -281,18 +273,12 @@ func (api *rpcPubApi) UploadData(ctx context.Context, param rpc_api.ParamUploadD
 		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
 	}
 
-	// Update signature info every time new data is received
-	signatureInfoMap.Store(param.FileHash, signatureInfo{
-		signature: param.Signature,
-		reqTime:   param.ReqTime,
-	})
-
 	content := param.Data
 	var dec []byte
 
 	// first part: if the amount of bytes server requested haven't been finished,
 	// go on asking from the client
-	fuo, found := fileOffset.Load(fileHash)
+	fuo, found := uploadOffset.Load(fileHash)
 	if stop || !found {
 		return rpc_api.Result{Return: rpc_api.SESSION_STOPPED}
 	}
@@ -309,7 +295,7 @@ func (api *rpcPubApi) UploadData(ctx context.Context, param rpc_api.ParamUploadD
 		}
 
 		fo.PacketFileOffset = fo.PacketFileOffset + FILE_DATA_SAFE_SIZE
-		fileOffset.Store(fileHash, fo)
+		uploadOffset.Store(fileHash, fo)
 		return nr
 	}
 	if fo.PacketFileOffset < fo.SliceFileOffset {
@@ -321,7 +307,7 @@ func (api *rpcPubApi) UploadData(ctx context.Context, param rpc_api.ParamUploadD
 			OffsetEnd:   &end,
 		}
 		fo.PacketFileOffset = fo.SliceFileOffset
-		fileOffset.Store(fileHash, fo)
+		uploadOffset.Store(fileHash, fo)
 		return nr
 	}
 
@@ -346,6 +332,37 @@ func (api *rpcPubApi) UploadData(ctx context.Context, param rpc_api.ParamUploadD
 	}
 }
 
+func (api *rpcPubApi) UploadSign(ctx context.Context, param rpc_api.ParamUploadSign) rpc_api.Result {
+	fileHash := param.FileHash
+	walletAddr := param.Signature.Address
+	pubkey := param.Signature.Pubkey
+	signature := param.Signature.Signature
+	reqTime := param.ReqTime
+
+	// verify if wallet and public key match
+	if !fwtypes.VerifyWalletAddr(pubkey, walletAddr) {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+	if !fwtypes.VerifyWalletSign(pubkey, signature, msgutils.GetFileUploadWalletSignMessage(fileHash, walletAddr, param.SequenceNumber, reqTime)) {
+		return rpc_api.Result{Return: rpc_api.SIGNATURE_FAILURE}
+	}
+
+	file.SetFileUploadSign(&param, fileHash)
+
+	// second part: let the server decide what will be the next step
+	newctx, cancel := context.WithTimeout(context.Background(), UPLOAD_SLICE_LOCAL_HANDLE_TIME)
+	defer cancel()
+
+	result := &rpc_api.Result{}
+	select {
+	case <-newctx.Done():
+		result.Return = rpc_api.TIME_OUT
+	// since a slice has been passed to the application, wait for application's reply then return the result back to the rpc client
+	case result = <-file.SubscribeRemoteFileEvent(fileHash):
+	}
+	return *result
+}
+
 func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.ParamReqUploadFile) rpc_api.Result {
 	metrics.RpcReqCount.WithLabelValues("RequestUploadStream").Inc()
 	fileHash := param.FileHash
@@ -353,12 +370,6 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 	pubkey := param.Signature.Pubkey
 	signature := param.Signature.Signature
 	reqTime := param.ReqTime
-
-	// Store initial signature info
-	signatureInfoMap.Store(fileHash, signatureInfo{
-		signature: param.Signature,
-		reqTime:   reqTime,
-	})
 
 	// fetch file slices from remote client and send upload request to sp
 	fetchRemoteFileAndReqUpload := func() {
@@ -396,13 +407,6 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 		if err != nil {
 			_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
 			return
-		}
-
-		// Get latest signature info and reqTime
-		if info, found := signatureInfoMap.Load(fileHash); found {
-			sigInfo := info.(signatureInfo)
-			signature = sigInfo.signature.Signature
-			reqTime = sigInfo.reqTime
 		}
 
 		// start to upload file
@@ -719,6 +723,11 @@ func (api *rpcPubApi) RequestDeleteFile(ctx context.Context, param rpc_api.Param
 	sigByte, _ := hex.DecodeString(signature)
 
 	event.DeleteFile(ctx, fileHash, walletAddr, pk.Bytes(), sigByte, reqTime)
+
+	// wait for the result
+	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
+	defer cancel()
+
 	defer file.UnsubscribeFileDeleteResult(fileHash)
 	// wait for result, SUCCESS or some failure
 	select {
