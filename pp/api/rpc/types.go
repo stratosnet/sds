@@ -48,6 +48,14 @@ type ParamUploadData struct {
 	Stop           bool      `json:"stop,omitempty"`
 }
 
+// upload: upload sign
+type ParamUploadSign struct {
+	FileHash       string    `json:"filehash"`
+	Signature      Signature `json:"signature"`
+	SequenceNumber string    `json:"sequencenumber"`
+	ReqTime        int64     `json:"req_time"`
+}
+
 // get current file status
 type ParamGetFileStatus struct {
 	FileHash  string    `json:"filehash"`

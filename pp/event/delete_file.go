@@ -37,7 +37,7 @@ func RspDeleteFile(ctx context.Context, conn core.WriteCloser) {
 
 	if target.Result.State == protos.ResultState_RES_SUCCESS {
 		file.SetFileDeleteResult(target.FileHash, &rpc_api.Result{Return: rpc_api.SUCCESS})
-		pp.Log(ctx, "delete success ", target.Result.Msg)
+		pp.Log(ctx, "delete success ", target.FileHash)
 	} else {
 		file.SetFileDeleteResult(target.FileHash, &rpc_api.Result{Return: target.Result.Msg})
 		pp.Log(ctx, "delete failed ", target.Result.Msg)
