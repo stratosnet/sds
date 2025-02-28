@@ -7,7 +7,10 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/stratosnet/sds/cmd/common"
+	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/setting"
 )
 
@@ -17,9 +20,30 @@ const DEFAULT_UNIX_TIME = 1738601804
 func cleanStorage(cmd *cobra.Command, _ []string) error {
 	var s string
 
+	// double check whether the configuration of storage_path is from the configuration file or not. If not, return an error.
+	_, configPath, err := common.GetPaths(cmd, false)
+	if err != nil {
+		return err
+	}
+
+	if _, err = os.Stat(configPath); os.IsNotExist(err) {
+		fmt.Println("The config at location", configPath, "does not exist")
+		return err
+	}
+	setting.Config.Home.StoragePath = ""
+	err = utils.LoadTomlConfig(setting.Config, configPath)
+	if err != nil {
+		fmt.Println("Failed load configurations from the config file")
+		return err
+	}
+	if setting.Config.Home.StoragePath == "" {
+		fmt.Println("Storage_path is not configured in the configuration file")
+		return errors.New("storage path is not configured")
+	}
+
 	r := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Print("Please confirm to clean the old data in storage: [Y/n]")
+		fmt.Printf("Please confirm to clean the old data in storage %s: [Y/n]", setting.Config.Home.StoragePath)
 		s, _ = r.ReadString('\n')
 		ss := strings.Split(s, "\n")
 		if ss[0] == "N" || ss[0] == "n" {
