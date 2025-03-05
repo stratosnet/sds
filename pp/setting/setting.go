@@ -347,8 +347,8 @@ func formalizePaths() (err error) {
 
 func formalizePath(path, defaultValue string) (newPath string, err error) {
 	newPath = path
-	if path == defaultValue {
-		newPath = filepath.Join(rootPath, path)
+	if path == defaultValue || path == "" {
+		newPath = filepath.Join(rootPath, defaultValue)
 	}
 
 	// Make the path absolute (it won't consider the home flag)
