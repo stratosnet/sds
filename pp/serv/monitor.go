@@ -212,7 +212,7 @@ func (api *monitorApi) GetOnlineState(ctx context.Context, param ParamMonitor) (
 	}, nil
 }
 
-// GetNodeDetail the deatils of the node
+// GetNodeDetail the details of the node
 func (api *monitorApi) GetNodeDetails(ctx context.Context, param ParamMonitor) (*MonitorResult, error) {
 	if _, found := subscribedIds.Load(param.SubId); !found {
 		return nil, errors.New("client hasn't subscribed to the service")
