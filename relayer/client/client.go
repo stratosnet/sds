@@ -24,6 +24,7 @@ type MultiClient struct {
 
 	WalletAddress    fwtypes.WalletAddress
 	WalletPrivateKey fwcryptotypes.PrivKey
+	NewBlockChan     chan bool
 }
 
 // connection is a generic interface for a client connection to an external service (sds or stchain)
@@ -36,9 +37,10 @@ func NewClient(spHomePath string) (*MultiClient, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	newClient := &MultiClient{
-		cancel: cancel,
-		Ctx:    ctx,
-		once:   &sync.Once{},
+		cancel:       cancel,
+		Ctx:          ctx,
+		once:         &sync.Once{},
+		NewBlockChan: make(chan bool),
 	}
 
 	newClient.sdsConn = newSdsConnection(newClient)

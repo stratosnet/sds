@@ -212,9 +212,14 @@ func (s *sdsConnection) txBroadcasterLoop() {
 
 	s.txBroadcasterChan = make(chan txclienttypes.UnsignedMsg, setting.Config.StratosChain.Broadcast.ChannelSize)
 
+	recentBroadcast := false
 	var unsignedMsgs []*txclienttypes.UnsignedMsg
 	broadcastTxs := func() {
 		utils.Logf("Tx broadcaster loop will try to broadcast %v msgs %v", len(unsignedMsgs), countMsgsByType(unsignedMsgs))
+		if recentBroadcast {
+			<-s.client.NewBlockChan
+			recentBroadcast = false
+		}
 
 		var unsignedSdkMsgs []*anypb.Any
 		txConfig, unsignedTx := tx.CreateTxConfigAndTxBuilder()
@@ -265,7 +270,7 @@ func (s *sdsConnection) txBroadcasterLoop() {
 			utils.ErrorLog("couldn't broadcast transaction", err)
 			return
 		}
-
+		recentBroadcast = true
 	}
 
 	timeOver := time.After(txBroadcastMaxInterval * time.Millisecond)

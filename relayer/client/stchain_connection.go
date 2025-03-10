@@ -24,6 +24,7 @@ import (
 
 const (
 	ENABLE_WSCLIENT_LOG = false
+	NEW_BLOCK_QUERY     = "tm.event='NewBlock'"
 )
 
 // stchainConnection is used to subscribe to stratos-chain events and receive messages via websocket
@@ -65,6 +66,11 @@ func newStchainConnection(client *MultiClient) *stchainConnection {
 
 func (s *stchainConnection) subscribeAllQueries() error {
 	utils.DebugLog("==== subscribe queries ====")
+	err := s.ws.Subscribe(context.Background(), NEW_BLOCK_QUERY)
+	if err != nil {
+		return err
+	}
+
 	for msgType := range handlers.Handlers {
 		_, ok := handlers.Handlers[msgType]
 		if !ok {
@@ -129,6 +135,14 @@ func (s *stchainConnection) readerLoop() {
 			err := cmtjson.Unmarshal(resp.Result, result)
 			if err != nil {
 				//Logger.Error("failed to unmarshal response", "err", err)
+				continue
+			}
+			// Notify tx broadcaster that a new block was processed
+			if result.Query == NEW_BLOCK_QUERY {
+				select {
+				case s.client.NewBlockChan <- true:
+				default:
+				}
 				continue
 			}
 			msgType := ""
