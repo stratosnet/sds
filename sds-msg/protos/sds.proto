@@ -480,6 +480,67 @@ message RspReportBackupSliceResult {
   string slice_hash = 3;
 }
 
+message NoticeFileSliceVerify {
+  string           task_id = 1;
+  string           file_hash = 2;
+  SliceStorageInfo slice_storage_info = 3;
+  uint64           slice_number = 4;
+  PPBaseInfo       pp_info = 5; // p2p which stores the file slice
+  string           sp_p2p_address = 6;
+  bool             delete_origin = 7;
+  bytes            node_sign = 8;
+  bytes            pubkey = 9;
+  string           to_p2p_address = 10;
+  int64            time_stamp = 11;
+}
+
+message ReqVerifyDownload {
+  NoticeFileSliceVerify notice_file_slice_verify = 1;
+  PPBaseInfo            new_pp = 2;
+  string                p2p_address = 3;
+}
+
+message RspVerifyDownload {
+  string task_id = 1;
+  bytes  data = 2;
+  uint64 offset = 3;
+  uint64 slice_size = 4;
+  Result result = 5;
+  string sp_p2p_address = 6;
+  string slice_hash = 7;
+  string p2p_address = 8;
+  uint64 slice_number = 9;
+}
+
+message ReqReportVerifyResult {
+  string     task_id = 1;
+  string     file_hash = 2;
+  string     slice_hash = 3;
+  bool       backup_success = 4;
+  bool       is_receiver = 5;
+  bool       origin_deleted = 6;
+  uint64     slice_number = 7;
+  uint64     slice_size = 8;
+  PPBaseInfo pp_info = 9;
+  string     sp_p2p_address = 10;
+  int64      cost_time = 11;
+  string     pp_p2p_address = 12;
+  string     opponent_p2p_address = 13;
+  string     p2p_address = 14;
+}
+message RspReportVerifyResult {
+  string task_id = 1;
+  Result result = 2;
+  string slice_hash = 3;
+}
+
+message RspVerifyDownloadResult {
+  string task_id = 1;
+  Result result = 2;
+  string sp_p2p_address = 3;
+  string slice_hash = 4;
+}
+
 message ReqBackupStatus {
   string task_id = 1;
   string file_hash = 2;
@@ -516,6 +577,7 @@ message RspTransferDownload {
   string sp_p2p_address = 6;
   string slice_hash = 7;
   string p2p_address = 8;
+  uint64 slice_number = 9;
 }
 
 message RspTransferDownloadResult {

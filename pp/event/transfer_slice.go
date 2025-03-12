@@ -64,6 +64,7 @@ func NoticeFileSliceBackup(ctx context.Context, conn core.WriteCloser) {
 		AlreadySize:        uint64(0),
 		LastTouchTime:      time.Now().Unix(),
 	}
+
 	task.AddTransferTask(target.TaskId, target.SliceStorageInfo.SliceHash, tTask)
 
 	//if the connection returns error, send a ReqTransferDownloadWrong message to sp to report the failure
