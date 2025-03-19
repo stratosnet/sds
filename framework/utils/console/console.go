@@ -6,7 +6,7 @@ import (
 	"github.com/stratosnet/sds/framework/utils/cmd"
 )
 
-// getPassPhrase retrieves the password associated with an account, either fetched
+// GetPassPhrase retrieves the password associated with an account, either fetched
 // from a list of preloaded passphrases, or requested interactively from the user.
 func GetPassPhrase(prompt string, confirmation bool, i int) string {
 	// Otherwise prompt the user for the password
