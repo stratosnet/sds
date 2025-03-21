@@ -1,11 +1,17 @@
 package utils
 
 import (
+	"bytes"
 	"os"
 	"strconv"
+	"text/template"
 
 	"github.com/pelletier/go-toml/v2"
 	"gopkg.in/yaml.v2"
+)
+
+var (
+	configTemplate *template.Template
 )
 
 func LoadYamlConfig(s interface{}, path string) error {
@@ -58,4 +64,23 @@ func ParseTomlValue(data string) (interface{}, error) {
 		return valFloat, nil
 	}
 	return strconv.ParseBool(data)
+}
+
+// WriteTomlConfigByTemplate renders config using the template and writes it to
+// configFilePath.
+func WriteTomlConfigByTemplate(configFilePath string, config interface{}, customTemplate string) (err error) {
+	tmpl := template.New("appConfigFileTemplate")
+
+	configTemplate, err = tmpl.Parse(customTemplate)
+	if err != nil {
+		return
+	}
+
+	var buffer bytes.Buffer
+	err = configTemplate.Execute(&buffer, config)
+	if err != nil {
+		return
+	}
+
+	return os.WriteFile(configFilePath, buffer.Bytes(), 0644)
 }
