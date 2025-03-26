@@ -64,12 +64,7 @@ func SaveVerifyData(target *protos.RspVerifyDownload) (bool, error) {
 	if !ok {
 		return false, errors.New("failed to update task")
 	}
-	sliceSize, err := file.GetSliceSize(tTask.SliceStorageInfo.SliceHash)
-	if err != nil {
-		return false, errors.Wrap(err, "failed getting slice size")
-	}
-	if uint64(sliceSize) < tTask.SliceStorageInfo.SliceSize || // check size of local file
-		tTask.AlreadySize < target.SliceSize { // AlreadySize < SliceSize
+	if tTask.AlreadySize < target.SliceSize { // AlreadySize < SliceSize
 		return false, nil
 	}
 	utils.DebugLogf("whole slice received, sliceHash=%v", tTask.SliceStorageInfo.SliceHash)
