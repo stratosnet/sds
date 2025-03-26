@@ -143,6 +143,12 @@ const (
 	MSG_ID_REQ_CLEAR_EXPIRED_SHARE_LINKS
 	MSG_ID_RSP_CLEAR_EXPIRED_SHARE_LINKS
 	MSG_ID_NOTICE_RELOCATE_SP
+	MSG_ID_NOTICE_FILESLICE_VERIFY
+	MSG_ID_REQ_VERIFY_DOWNLOAD
+	MSG_ID_RSP_VERIFY_DOWNLOAD
+	MSG_ID_REQ_VERIFY_RESULT
+	MSG_ID_RSP_VERIFY_RESULT
+	MSG_ID_RSP_VERIFY_DOWNLOAD_RESULT
 	NUMBER_MESSAGE_TYPES
 )
 
@@ -242,6 +248,13 @@ var (
 	RspTransferDownloadWrong MsgType
 
 	RspTransferDownloadResult MsgType
+
+	NoticeFileSliceVerify   MsgType
+	ReqVerifyDownload       MsgType
+	RspVerifyDownload       MsgType
+	ReqReportVerifyResult   MsgType
+	RspReportVerifyResult   MsgType
+	RspVerifyDownloadResult MsgType
 
 	ReqReportBackupSliceResult MsgType
 	RspReportBackupSliceResult MsgType
@@ -390,6 +403,13 @@ func init() {
 	registerOneMessageType(&ReqTransferDownloadWrong, MSG_ID_REQ_TRANSFER_DOWNLOAD_WRONG, "ReqTDW")
 	registerOneMessageType(&RspTransferDownloadWrong, MSG_ID_RSP_TRANSFER_DOWNLOAD_WRONG, "RspTDW")
 
+	registerOneMessageType(&NoticeFileSliceVerify, MSG_ID_NOTICE_FILESLICE_VERIFY, "NotFSV")
+	registerOneMessageType(&ReqVerifyDownload, MSG_ID_REQ_VERIFY_DOWNLOAD, "ReqVdl")
+	registerOneMessageType(&RspVerifyDownload, MSG_ID_RSP_VERIFY_DOWNLOAD, "RspVdl")
+	registerOneMessageType(&ReqReportVerifyResult, MSG_ID_REQ_VERIFY_RESULT, "ReqVR")
+	registerOneMessageType(&RspReportVerifyResult, MSG_ID_RSP_VERIFY_RESULT, "RspVR")
+	registerOneMessageType(&RspVerifyDownloadResult, MSG_ID_RSP_VERIFY_DOWNLOAD_RESULT, "RspVdlR")
+
 	registerOneMessageType(&RspTransferDownloadResult, MSG_ID_RSP_TRANSFER_DOWNLOAD_RESULT, "RspTdlR")
 
 	registerOneMessageType(&ReqReportBackupSliceResult, MSG_ID_REQ_REPORT_BACKUP_SLICE_RESULT, "ReqRBSR")
@@ -498,6 +518,8 @@ func GetReqIdFromRspId(reqId uint8) uint8 {
 		return MSG_ID_REQ_TRANSFER_DOWNLOAD
 	case MSG_ID_RSP_TRANSFER_DOWNLOAD_WRONG:
 		return MSG_ID_REQ_TRANSFER_DOWNLOAD_WRONG
+	case MSG_ID_RSP_VERIFY_DOWNLOAD:
+		return MSG_ID_RSP_VERIFY_DOWNLOAD
 	case MSG_ID_RSP_REPORT_BACKUP_SLICE_RESULT:
 		return MSG_ID_REQ_REPORT_BACKUP_SLICE_RESULT
 	case MSG_ID_RSP_FILE_BACKUP_STATUS:

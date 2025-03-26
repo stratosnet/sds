@@ -8,8 +8,8 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-beta.3
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/pkg/errors v0.9.1
-	github.com/stratosnet/sds/framework v0.0.0-20241128173650-053ecefad7f6
-	github.com/stratosnet/sds/sds-msg v0.0.0-20241128173650-053ecefad7f6
+	github.com/stratosnet/sds/framework v0.0.0-20250326145022-00c1aa4d6d5d
+	github.com/stratosnet/sds/sds-msg v0.0.0-20250326145022-00c1aa4d6d5d
 	github.com/stratosnet/stratos-chain/api v0.0.0-20240509211914-ee516857645d
 	github.com/stretchr/testify v1.9.0
 	google.golang.org/grpc v1.58.3
@@ -62,7 +62,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb // indirect
-	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/net v0.17.0 // indirect; indirectq
 	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
