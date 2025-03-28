@@ -92,9 +92,12 @@ message RspDeactivatedSP {
 }
 
 message ReqPrepaid {
-  string wallet_address = 1;
+  string wallet_address = 1; // sender address
   string purchased_uoz = 2;
   string tx_hash = 3;
+  string beneficiary_address = 4;
+  string merkle_root = 5;
+  string commitment = 6;
 }
 
 message RelayMessage {

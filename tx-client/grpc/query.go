@@ -197,3 +197,23 @@ func SimPrepay(amount types.Coin) (*sdsv1.QuerySimPrepayResponse, error) {
 	}
 	return resp, nil
 }
+
+// QueryMerkleRoot queries the merkle root associated with the given commitment (hex string)
+func QueryMerkleRoot(commitment string) (*registerv1.QueryMerkleRootResponse, error) {
+	conn, err := CreateGrpcConn()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	client := registerv1.NewQueryClient(conn)
+	ctx := context.Background()
+	req := registerv1.QueryMerkleRootRequest{
+		Commitment: commitment,
+	}
+	resp, err := client.MerkleRoot(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}

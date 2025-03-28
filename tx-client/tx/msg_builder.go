@@ -26,7 +26,7 @@ import (
 // Stratos-chain 'pot' module
 
 func BuildVolumeReportMsg(traffic []*txclienttypes.Traffic, reporterAddress fwtypes.P2PAddress, reporterOwnerAddress fwtypes.WalletAddress, epoch uint64,
-	reportReference string, blsTxDataHash, blsSignature []byte, blsPubKeys [][]byte) (*potv1.MsgVolumeReport, []byte, error) {
+	reportReference string, blsTxDataHash, blsSignature []byte, blsPubKeys [][]byte, merkleProofData *potv1.MerkleProofData) (*potv1.MsgVolumeReport, []byte, error) {
 
 	aggregatedVolume := make(map[string]uint64)
 	for _, trafficRecord := range traffic {
@@ -64,6 +64,7 @@ func BuildVolumeReportMsg(traffic []*txclienttypes.Traffic, reporterAddress fwty
 		ReportReference: reportReference,
 		ReporterOwner:   fwtypes.WalletAddressBytesToBech32(reporterOwnerAddress),
 		BLSSignature:    blsSignatureInfo,
+		MerkleProofData: merkleProofData,
 	}
 
 	msgBytes, err := utils.GetVolumeReportMsgBytes(volumeReportMsg)

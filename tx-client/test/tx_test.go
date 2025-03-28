@@ -114,7 +114,7 @@ func testVolumeReport(t *testing.T, senderKey fwcryptotypes.PrivKey, metaP2PPriv
 		metaP2PAddrs[i] = fwtypes.P2PAddress(metaP2PPrivKey.PubKey().Address())
 	}
 
-	msg, _, err := tx.BuildVolumeReportMsg(traffic, metaP2PAddrs[0], senderAddr, 1, "report_reference", nil, nil, nil)
+	msg, _, err := tx.BuildVolumeReportMsg(traffic, metaP2PAddrs[0], senderAddr, 1, "report_reference", nil, nil, nil, nil)
 	require.NoError(t, err)
 
 	// ------------------------ bls sign start ------------------------
@@ -221,7 +221,7 @@ func testCreateResourceNode(t *testing.T, senderKey fwcryptotypes.PrivKey) {
 	}
 	senderAddr := fwtypes.WalletAddress(senderKey.PubKey().Address())
 
-	msg, err := tx.BuildCreateResourceNodeMsg(msgtypes.STORAGE, p2pKey.PubKey(), depositAmt, senderAddr)
+	msg, err := tx.BuildCreateResourceNodeMsg(msgtypes.STORAGE, p2pKey.PubKey(), depositAmt, senderAddr, senderAddr)
 	require.NoError(t, err)
 	signatureKeys := []*txclienttypes.SignatureKey{
 		{Address: senderAddr.String(), PrivateKey: senderKey.Bytes(), Type: txclienttypes.SignatureSecp256k1},

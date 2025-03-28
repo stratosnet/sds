@@ -5,11 +5,13 @@ import (
 
 	authv1beta1 "cosmossdk.io/api/cosmos/auth/v1beta1"
 	abciv1beta1 "cosmossdk.io/api/cosmos/base/abci/v1beta1"
-	"github.com/stratosnet/sds/tx-client/grpc"
-	"github.com/stratosnet/sds/tx-client/types"
+
 	potv1 "github.com/stratosnet/stratos-chain/api/stratos/pot/v1"
 	registerv1 "github.com/stratosnet/stratos-chain/api/stratos/register/v1"
 	sdsv1 "github.com/stratosnet/stratos-chain/api/stratos/sds/v1"
+
+	"github.com/stratosnet/sds/tx-client/grpc"
+	"github.com/stratosnet/sds/tx-client/types"
 )
 
 type rpcApi struct {
@@ -46,4 +48,8 @@ func (api *rpcApi) VolumeReport(ctx context.Context, epoch int64) (*potv1.QueryV
 
 func (api *rpcApi) NozSupply(ctx context.Context) (*sdsv1.QueryNozSupplyResponse, error) {
 	return grpc.QueryNozSupply()
+}
+
+func (api *rpcApi) MerkleRoot(ctx context.Context, commitment string) (*registerv1.QueryMerkleRootResponse, error) {
+	return grpc.QueryMerkleRoot(commitment)
 }
