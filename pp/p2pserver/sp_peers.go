@@ -84,6 +84,9 @@ func (p *P2pServer) SendMessage(ctx context.Context, conn core.WriteCloser, pb p
 	case header.MSG_ID_RSP_TRANSFER_DOWNLOAD:
 		msgBuf.MSGData = pb.(*protos.RspTransferDownload).Data
 		pb.(*protos.RspTransferDownload).Data = nil
+	case header.MSG_ID_RSP_VERIFY_DOWNLOAD:
+		msgBuf.MSGData = pb.(*protos.RspVerifyDownload).Data
+		pb.(*protos.RspVerifyDownload).Data = nil
 	}
 
 	if strings.HasPrefix(cmd.Name, "Req") {

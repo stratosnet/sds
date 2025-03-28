@@ -79,6 +79,8 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspDownloadSlice, RspDownloadSlice, PpRspVerifier)
 	registerEvent(header.ReqTransferDownload, ReqTransferDownload, NoticeFileSliceBackupVerifier)
 	registerEvent(header.RspTransferDownload, RspTransferDownload, nil)
+	registerEvent(header.ReqVerifyDownload, ReqVerifyDownload, nil)
+	registerEvent(header.RspVerifyDownload, RspVerifyDownload, nil)
 
 	// pp--(*msg*)--pp
 	registerEvent(header.ReqClearDownloadTask, ReqClearDownloadTask, nil)
@@ -86,11 +88,13 @@ func RegisterAllEventHandlers() {
 
 	// sp--(*msg*)--pp
 	registerEvent(header.NoticeFileSliceBackup, NoticeFileSliceBackup, NoticeFileSliceBackupVerifier)
+	registerEvent(header.NoticeFileSliceVerify, NoticeFileSliceVerify, nil)
 	registerEvent(header.NoticeSpUnderMaintenance, NoticeSpUnderMaintenance, SpAddressVerifier)
 	registerEvent(header.NoticeRelocateSp, NoticeRelocateSp, SpAddressVerifier)
 
 	// pp1--(req)--pp2--(rspa)--pp1--(*rspb*)--pp2
 	registerEvent(header.RspTransferDownloadResult, RspTransferDownloadResult, nil)
+	registerEvent(header.RspVerifyDownloadResult, RspVerifyDownloadResult, nil)
 
 	// framework--(*msg*)--pp
 	registerEvent(header.RspBadVersion, RspBadVersion, nil)
