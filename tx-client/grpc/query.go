@@ -179,3 +179,21 @@ func QueryNozSupply() (*sdsv1.QueryNozSupplyResponse, error) {
 	}
 	return resp, nil
 }
+
+// SimPrepay simulate the prepay and get the estimated noz
+func SimPrepay(amount types.Coin) (*sdsv1.QuerySimPrepayResponse, error) {
+	conn, err := CreateGrpcConn()
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	client := sdsv1.NewQueryClient(conn)
+	ctx := context.Background()
+	req := sdsv1.QuerySimPrepayRequest{Amount: amount.String()}
+	resp, err := client.SimPrepay(ctx, &req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}

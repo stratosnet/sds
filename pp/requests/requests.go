@@ -558,6 +558,46 @@ func ReqTransferDownloadData(ctx context.Context, notice *protos.NoticeFileSlice
 	}
 }
 
+func ReqVerifyDownloadData(ctx context.Context, notice *protos.NoticeFileSliceVerify) *msg.RelayMsgBuf {
+
+	protoMsg := &protos.ReqVerifyDownload{
+		NoticeFileSliceVerify: notice,
+		NewPp:                 p2pserver.GetP2pServer(ctx).GetPPInfo(),
+		P2PAddress:            p2pserver.GetP2pServer(ctx).GetP2PAddress().String(),
+	}
+	body, err := proto.Marshal(protoMsg)
+	if err != nil {
+		utils.ErrorLog(err)
+	}
+	return &msg.RelayMsgBuf{
+		MSGHead: PPMsgHeader(uint32(len(body)), header.ReqVerifyDownload),
+		MSGBody: body,
+	}
+}
+
+func RspVerifyDownload(data []byte, taskId, sliceHash, spP2pAddress, p2pAddress string, offset, sliceSize uint64) *protos.RspVerifyDownload {
+	return &protos.RspVerifyDownload{
+		Data:         data,
+		TaskId:       taskId,
+		Offset:       offset,
+		SliceSize:    sliceSize,
+		SpP2PAddress: spP2pAddress,
+		SliceHash:    sliceHash,
+		P2PAddress:   p2pAddress,
+	}
+}
+
+func RspVerifyDownloadResultData(taskId, sliceHash, spP2pAddress string) *protos.RspVerifyDownloadResult {
+	return &protos.RspVerifyDownloadResult{
+		TaskId: taskId,
+		Result: &protos.Result{
+			State: protos.ResultState_RES_SUCCESS,
+		},
+		SpP2PAddress: spP2pAddress,
+		SliceHash:    sliceHash,
+	}
+}
+
 func ReqTransferDownloadWrongData(ctx context.Context, notice *protos.NoticeFileSliceBackup) *protos.ReqTransferDownloadWrong {
 	return &protos.ReqTransferDownloadWrong{
 		TaskId:           notice.TaskId,
@@ -920,6 +960,8 @@ func UnmarshalData(ctx context.Context, target interface{}) bool {
 			target.(*protos.RspDownloadSlice).Data = msgBuf.MSGData
 		case reflect.TypeOf(&protos.RspTransferDownload{}):
 			target.(*protos.RspTransferDownload).Data = msgBuf.MSGData
+		case reflect.TypeOf(&protos.RspVerifyDownload{}):
+			target.(*protos.RspVerifyDownload).Data = msgBuf.MSGData
 		}
 	}
 	return ret
