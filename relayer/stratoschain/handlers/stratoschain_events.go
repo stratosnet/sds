@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"math/big"
@@ -790,13 +791,24 @@ func processPrePayEvent(requiredAttributes []EventAttribute, processedEvents []m
 
 	req := &relay.PrepaidReq{}
 	for _, event := range processedEvents {
+		merkleRoot, err := base64.StdEncoding.DecodeString(event[EventAttribute{EventTypeMerkleDataUpdated, AttributeKeyRoot}])
+		if err != nil {
+			utils.ErrorLogf("Invalid merkle root in the prepay message from stratos-chain: %v", err)
+			continue
+		}
+		commitment, err := base64.StdEncoding.DecodeString(event[EventAttribute{EventTypeMerkleDataUpdated, AttributeKeyCommitment}])
+		if err != nil {
+			utils.ErrorLogf("Invalid commitment in the prepay message from stratos-chain: %v", err)
+			continue
+		}
+
 		req.WalletList = append(req.WalletList, &protos.ReqPrepaid{
 			WalletAddress:      event[EventAttribute{EventTypePrepay, AttributeKeySender}],
 			PurchasedUoz:       event[EventAttribute{EventTypePrepay, AttributeKeyPurchasedNoz}],
 			TxHash:             txHash,
 			BeneficiaryAddress: event[EventAttribute{EventTypePrepay, AttributeKeyBeneficiary}],
-			MerkleRoot:         event[EventAttribute{EventTypeMerkleDataUpdated, AttributeKeyRoot}],
-			Commitment:         event[EventAttribute{EventTypeMerkleDataUpdated, AttributeKeyCommitment}],
+			MerkleRoot:         hex.EncodeToString(merkleRoot),
+			Commitment:         hex.EncodeToString(commitment),
 		})
 	}
 
@@ -836,7 +848,7 @@ func EvmTxHandler() func(event coretypes.ResultEvent) {
 
 		switch evmTxMsgType {
 		case types.MSG_TYPE_PREPAY:
-			processPrePayEvent(EvmTxRequiredAttributes[types.MSG_TYPE_PREPAY], processedMsgs, txHash, 1)
+			processPrePayEvent(EvmTxRequiredAttributes[evmTxMsgType], processedMsgs, txHash, 1)
 		}
 	}
 }
@@ -844,25 +856,18 @@ func EvmTxHandler() func(event coretypes.ResultEvent) {
 // Evm txs contain only 1 msg each
 func processEvmTxEvents(events []abcitypes.Event) ([]map[EventAttribute]string, string) {
 	msgType := ""
-EventLoop:
 	for _, event := range events {
 		// Try to identify the msg type
-		if event.Type != EventTypeMessage {
-			continue
-		}
-		for _, attribute := range event.Attributes {
-			if attribute.Key != AttributeKeyAction {
-				continue
-			}
-			msgType = attribute.Value
-			break EventLoop
+		if event.Type == EventTypePrepay {
+			msgType = types.MSG_TYPE_PREPAY
+			break
 		}
 	}
 	if msgType == "" {
 		return nil, ""
 	}
 
-	processedMsgs, _ := processEvents(events, msgType, EvmTxRequiredAttributes[msgType])
+	processedMsgs, _ := processEvents(events, types.MSG_TYPE_EVM_TX, EvmTxRequiredAttributes[msgType])
 	return processedMsgs, msgType
 }
 
