@@ -125,6 +125,16 @@ func (p *P2pServer) SendMessageToSPServer(ctx context.Context, pb proto.Message,
 	}
 }
 
+func (p *P2pServer) SendMessageToPPServ(ctx context.Context, addr string, msgBuf *msg.RelayMsgBuf,
+	failureHandler func(context.Context, proto.Message, header.MsgType), message proto.Message, cmd header.MsgType) {
+	go func() {
+		err := p.TransferSendMessageToPPServ(ctx, addr, msgBuf)
+		if err != nil {
+			utils.ErrorLog("failed sending message to the peer pp,", err.Error())
+			failureHandler(ctx, message, cmd)
+		}
+	}()
+}
 func (p *P2pServer) TransferSendMessageToPPServ(ctx context.Context, addr string, msgBuf *msg.RelayMsgBuf) error {
 	newCtx := core.CreateContextWithParentReqIdAsReqId(ctx)
 	cmd := header.GetMsgTypeFromId(msgBuf.MSGHead.Cmd)

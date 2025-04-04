@@ -68,10 +68,8 @@ func NoticeFileSliceBackup(ctx context.Context, conn core.WriteCloser) {
 	task.AddTransferTask(target.TaskId, target.SliceStorageInfo.SliceHash, tTask)
 
 	//if the connection returns error, send a ReqTransferDownloadWrong message to sp to report the failure
-	err := p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServ(ctx, target.PpInfo.NetworkAddress, requests.ReqTransferDownloadData(ctx, target))
-	if err != nil {
-		p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, requests.ReqTransferDownloadWrongData(ctx, target), header.ReqTransferDownloadWrong)
-	}
+	p2pserver.GetP2pServer(ctx).SendMessageToPPServ(ctx, target.PpInfo.NetworkAddress, requests.ReqTransferDownloadData(ctx, target),
+		p2pserver.GetP2pServer(ctx).SendMessageToSPServer, requests.ReqTransferDownloadWrongData(ctx, target), header.ReqTransferDownloadWrong)
 }
 
 // ReqTransferDownload Another PP wants to download a slice from the current PP
