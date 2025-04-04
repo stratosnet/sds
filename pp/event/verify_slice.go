@@ -44,11 +44,11 @@ func NoticeFileSliceVerify(ctx context.Context, conn core.WriteCloser) {
 		LastTouchTime:      time.Now().Unix(),
 	}
 	task.AddVerifyTask(target.TaskId, target.SliceStorageInfo.SliceHash, tTask)
-
-	err := p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServ(ctx, target.PpInfo.NetworkAddress, requests.ReqVerifyDownloadData(ctx, target))
-	if err != nil {
-		utils.ErrorLog("failed sending message to the peer pp,", err.Error())
-	}
+	go p2pserver.GetP2pServer(ctx).TransferSendMessageToPPServ(ctx, target.PpInfo.NetworkAddress, requests.ReqVerifyDownloadData(ctx, target))
+	//err :=
+	//if err != nil {
+	//	utils.ErrorLog("failed sending message to the peer pp,", err.Error())
+	//}
 }
 
 func ReqVerifyDownload(ctx context.Context, conn core.WriteCloser) {
