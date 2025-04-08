@@ -70,7 +70,7 @@ func RequestBuffersForSlice(size int64) [][]byte {
 	var buffers [][]byte
 	var start int64
 
-	for start = 0; start <= size; start += setting.MaxData {
+	for start = 0; start < size; start += setting.MaxData {
 		var end int64
 		if start+int64(setting.MaxData) > size {
 			end = size
