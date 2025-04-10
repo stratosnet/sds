@@ -2,9 +2,10 @@ package utils
 
 import (
 	"github.com/cosmos/gogoproto/proto"
-	fwcrypto "github.com/stratosnet/sds/framework/crypto"
 
 	potv1 "github.com/stratosnet/stratos-chain/api/stratos/pot/v1"
+
+	fwcrypto "github.com/stratosnet/sds/framework/crypto"
 )
 
 func GetVolumeReportMsgBytes(msg *potv1.MsgVolumeReport) ([]byte, error) {
@@ -19,6 +20,7 @@ func GetBLSSignBytes(msg *potv1.MsgVolumeReport) ([]byte, error) {
 		ReportReference: msg.GetReportReference(),
 		ReporterOwner:   msg.GetReporterOwner(),
 		BLSSignature:    &potv1.BLSSignatureInfo{},
+		MerkleProofData: msg.GetMerkleProofData(),
 	}
 
 	msgBytes, err := GetVolumeReportMsgBytes(newMsg)

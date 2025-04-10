@@ -1,5 +1,9 @@
 package handlers
 
+import (
+	"github.com/stratosnet/sds/relayer/stratoschain/types"
+)
+
 const (
 	// register module ---------------------------------------------------------
 
@@ -15,6 +19,8 @@ const (
 	EventTypeUpdateMetaNode                = "stratos.register.v1.EventUpdateMetaNode"
 	EventTypeUpdateMetaNodeDeposit         = "stratos.register.v1.EventUpdateMetaNodeDeposit"
 	EventTypeMetaNodeRegistrationVote      = "stratos.register.v1.EventMetaNodeRegistrationVote"
+	EventTypeMerkleDataUpdated             = "stratos.register.v1.EventMerkleDataUpdated"
+	EventTypeCommitmentAckowledged         = "stratos.register.v1.EventCommitmentAcknowledged"
 
 	AttributeKeyResourceNode            = "resource_node"
 	AttributeKeyMetaNode                = "meta_node"
@@ -35,6 +41,8 @@ const (
 	AttributeKeyIncrDeposit             = "incr_deposit"
 	AttributeKeyEffectiveDepositAfter   = "effective_deposit_after"
 	AttributeKeyIsUnsuspended           = "is_unsuspended"
+	AttributeKeyRoot                    = "root"
+	AttributeKeyCommitment              = "commitment"
 
 	// pot module ---------------------------------------------------------
 
@@ -66,17 +74,27 @@ const (
 
 	// sdk modules ---------------------------------------------------------
 
+	EventTypeMessage = "message"
+
 	AttributeKeySender = "sender"
+	AttributeKeyAction = "action"
 )
 
-var EvmTxRequiredAttributes map[string][]string
+type EventAttribute struct {
+	EventType string
+	Attribute string
+}
+
+var EvmTxRequiredAttributes map[string][]EventAttribute
 
 func init() {
-	EvmTxRequiredAttributes = map[string][]string{
-		EventTypePrepay: {
-			AttributeKeySender,
-			AttributeKeyBeneficiary,
-			AttributeKeyPurchasedNoz,
+	EvmTxRequiredAttributes = map[string][]EventAttribute{
+		types.MSG_TYPE_PREPAY: {
+			{EventTypePrepay, AttributeKeySender},
+			{EventTypePrepay, AttributeKeyBeneficiary},
+			{EventTypePrepay, AttributeKeyPurchasedNoz},
+			{EventTypeMerkleDataUpdated, AttributeKeyRoot},
+			{EventTypeMerkleDataUpdated, AttributeKeyCommitment},
 		},
 	}
 }
