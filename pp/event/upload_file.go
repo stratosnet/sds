@@ -121,7 +121,7 @@ func RspUploadFile(ctx context.Context, _ core.WriteCloser) {
 		}
 
 		if file.IsFileRpcRemote(target.FileHash) {
-			_ = file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: target.Result.Msg})
+			_ = file.SetRemoteFileResult(target.FileHash, rpc.Result{Return: rpc.INTERNAL_DATA_FAILURE, Detail: target.Result.Msg})
 		} else {
 			file.ClearFileMap(target.FileHash)
 		}

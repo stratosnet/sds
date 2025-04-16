@@ -236,11 +236,6 @@ func RspGetShareFile(ctx context.Context, _ core.WriteCloser) {
 	newTarget := &target
 	newTarget.ReqId = reqId
 	pp.DebugLog(ctx, "file hash, reqid:", target.FileHash, reqId)
-	if target.Result.State != protos.ResultState_RES_SUCCESS {
-		file.SetDownloadSliceResult(target.FileHash, false)
-		return
-	}
-
 	task.CleanDownloadFileAndConnMap(ctx, target.FileHash, reqId)
 	task.DownloadFileMap.Store(target.FileHash+reqId, newTarget)
 	task.AddDownloadTask(newTarget)

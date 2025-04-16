@@ -10,12 +10,12 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/pkg/errors"
+	"github.com/stratosnet/sds/pp/api/rpc"
 	"golang.org/x/exp/mmap"
 
 	"github.com/stratosnet/sds/framework/crypto"
@@ -358,7 +358,7 @@ func SaveDownloadProgress(ctx context.Context, sliceHash, fileName, fileHash, sa
 	}
 	writer.Flush()
 
-	SetDownloadSliceResult(fileHash, true)
+	SetDownloadSliceResult(fileHash, &rpc.Result{Return: rpc.DOWNLOAD_OK})
 	if err = writer.Error(); err != nil {
 		pp.ErrorLog(ctx, "flush error,", err.Error())
 	}
@@ -833,9 +833,9 @@ func WaitDownloadSlice(fileHash, reqId string) bool {
 	if CheckRemoteFileDownloadComplete(fileHash, reqId, fileInfo.FileSize) {
 		return false
 	}
-	done := <-SubscribeDownloadSlice(fileHash)
+	result := <-SubscribeDownloadSlice(fileHash)
 	UnsubscribeDownloadSlice(fileHash)
-	if done {
+	if result.Return == rpc.DOWNLOAD_OK {
 		UpdateDownloadSlices(fileInfo, reqId)
 	}
 	return true
@@ -930,23 +930,4 @@ func NextRemoteDownloadPacket(fileHash, reqid string) ([]byte, uint64, uint64, b
 
 	return data, start, end, finished
 
-}
-
-func SubscribeDownloadSlice(key string) chan bool {
-	event := make(chan bool)
-	downloadSliceChan.Store(key, event)
-	return event
-}
-
-func UnsubscribeDownloadSlice(key string) {
-	downloadSliceChan.Delete(key)
-}
-
-func SetDownloadSliceResult(fileHash string, result bool) {
-	downloadSliceChan.Range(func(k, v interface{}) bool {
-		if strings.HasPrefix(k.(string), fileHash) {
-			v.(chan bool) <- result
-		}
-		return true
-	})
 }

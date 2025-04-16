@@ -175,14 +175,13 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 
 			rawData, err = file.GetSliceDataFromTmp(fileHash, tmpSliceName)
 			if err != nil {
-				_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
+				_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE, Detail: "failed reading slice data from cache" + err.Error()})
 				return
 			}
 
-			//Encrypt slice data if required
 			sliceHash, err := crypto.CalcSliceHash(rawData, fileHash, sliceNumber)
 			if err != nil {
-				_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
+				_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE, Detail: "failed calculating slice hash" + err.Error()})
 				return
 			}
 
@@ -197,7 +196,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 
 			err = file.RenameTmpFile(fileHash, tmpSliceName, sliceHash)
 			if err != nil {
-				_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
+				_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE, Detail: "failed renaming slice cache file" + err.Error()})
 				return
 			}
 		}
@@ -220,7 +219,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, s.Signature, reqTime,
 			slices, false, param.DesiredTier, param.AllowHigherTier, 0)
 		if err != nil {
-			_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
+			_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE, Detail: "failed request upload file" + err.Error()})
 			return
 		}
 		metrics.UploadPerformanceLogNow(param.FileHash + ":SND_REQ_UPLOAD_SP")
@@ -250,7 +249,7 @@ func (api *rpcPubApi) RequestUpload(ctx context.Context, param rpc_api.ParamReqU
 			result = ResultHook(result, fileHash)
 			return *result
 		} else {
-			result = &rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+			result = &rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE, Detail: "failed result with no specific reason"}
 			return *result
 		}
 	}
@@ -326,7 +325,7 @@ func (api *rpcPubApi) UploadData(ctx context.Context, param rpc_api.ParamUploadD
 			result = ResultHook(result, fileHash)
 			return *result
 		} else {
-			result = &rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+			result = &rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE, Detail: "failed result with no specific reason"}
 			return *result
 		}
 	}
@@ -360,6 +359,9 @@ func (api *rpcPubApi) UploadSign(ctx context.Context, param rpc_api.ParamUploadS
 	// since a slice has been passed to the application, wait for application's reply then return the result back to the rpc client
 	case result = <-file.SubscribeRemoteFileEvent(fileHash):
 	}
+	if result == nil {
+		return rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE, Detail: "failed result with no specific reason"}
+	}
 	return *result
 }
 
@@ -384,7 +386,7 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 			sliceOffset := requests.GetSliceOffset(sliceNumber, sliceCount, sliceSize, fileSize)
 
 			if file.CacheRemoteFileData(fileHash, sliceOffset, file.TMP_FOLDER_VIDEO, fileName, true) != nil {
-				_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
+				_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE, Detail: "failed caching file data"})
 				return
 			}
 		}
@@ -393,19 +395,19 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 		defer os.RemoveAll(tmpFilePath) // remove tmp file no matter what the result is
 		calculatedFileHash, err := crypto.CalcFileHash(tmpFilePath, "", crypto.VIDEO_CODEC)
 		if err != nil {
-			_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
+			_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE, Detail: "failed calculating slice hash" + err.Error()})
 			return
 		}
 
 		if calculatedFileHash != fileHash {
-			_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.WRONG_FILE_INFO})
+			_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.WRONG_FILE_INFO, Detail: "file hash doesn't match"})
 			return
 		}
 
 		fileHandler := event.GetUploadFileHandler(true)
 		fInfo, slices, err := fileHandler.PreUpload(ctx, tmpFilePath, "")
 		if err != nil {
-			_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
+			_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE, Detail: "failed handling pre_upload" + err.Error()})
 			return
 		}
 
@@ -413,7 +415,7 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 		p, err := requests.RequestUploadFile(ctx, fileName, fileHash, fileSize, walletAddr, pubkey, signature, reqTime,
 			slices, false, param.DesiredTier, param.AllowHigherTier, fInfo.Duration)
 		if err != nil {
-			_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE})
+			_ = file.SetRemoteFileResult(fileHash, rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE, Detail: "failed request upload file" + err.Error()})
 			return
 		}
 		metrics.UploadPerformanceLogNow(param.FileHash + ":SND_REQ_UPLOAD_SP")
@@ -440,7 +442,7 @@ func (api *rpcPubApi) RequestUploadStream(ctx context.Context, param rpc_api.Par
 			result = ResultHook(result, fileHash)
 			return *result
 		} else {
-			result = &rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE}
+			result = &rpc_api.Result{Return: rpc_api.INTERNAL_DATA_FAILURE, Detail: "failed result with no specific reason"}
 			return *result
 		}
 	}
@@ -525,7 +527,7 @@ func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamRe
 	}
 
 	// if the file is being downloaded in an existing download session
-	var result *rpc_api.Result
+	//var result *rpc_api.Result
 	reqId := uuid.New().String()
 
 	ctx = core.RegisterRemoteReqId(ctx, task.LOCAL_REQID)
@@ -537,15 +539,15 @@ func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamRe
 
 	select {
 	case <-ctx.Done():
-		result = &rpc_api.Result{Return: rpc_api.TIME_OUT}
-	case success := <-file.SubscribeDownloadSlice(fileHash):
+		return rpc_api.Result{Return: rpc_api.TIME_OUT}
+	case result := <-file.SubscribeDownloadSlice(fileHash):
 		file.UnsubscribeDownloadSlice(fileHash)
-		if !success {
-			return rpc_api.Result{Return: rpc_api.GENERIC_ERR}
+		if result.Return != rpc_api.DOWNLOAD_OK {
+			return *result
 		}
 		data, start, end, _ := file.NextRemoteDownloadPacket(fileHash, reqId)
 		if data == nil {
-			return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE}
+			return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE, Detail: "data is empty"}
 		}
 		result = &rpc_api.Result{
 			Return:      rpc_api.DOWNLOAD_OK,
@@ -555,9 +557,9 @@ func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamRe
 			FileData:    b64.StdEncoding.EncodeToString(data),
 			ReqId:       reqId,
 		}
+		return *result
 	}
 
-	return *result
 }
 
 func (api *rpcPubApi) RequestVideoDownload(ctx context.Context, param rpc_api.ParamReqDownloadFile) rpc_api.Result {
@@ -693,6 +695,7 @@ func (api *rpcPubApi) DownloadData(ctx context.Context, param rpc_api.ParamDownl
 	} else {
 		result = &rpc_api.Result{
 			Return: rpc_api.GENERIC_ERR,
+			Detail: "data is empty",
 		}
 	}
 
@@ -992,7 +995,7 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 		reqId := uuid.New().String()
 		data, start, end, _ := file.NextRemoteDownloadPacket(fileHash, reqId)
 		if data == nil {
-			return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE}
+			return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE, Detail: "data is empty"}
 		}
 
 		re := rpc_api.Result{

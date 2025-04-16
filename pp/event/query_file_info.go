@@ -138,20 +138,13 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 	rpcRequested := !strings.HasPrefix(fileReqId, task.LOCAL_REQID)
 	if target.Result.State == protos.ResultState_RES_FAIL {
 		task.DownloadResult(ctx, target.FileHash, false, "failed ReqFileStorageInfo, "+target.Result.Msg)
-		if rpcRequested {
-			_ = file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.FILE_REQ_FAILURE})
-		}
+		file.SetDownloadSliceResult(target.FileHash, &rpc.Result{Return: rpc.FILE_REQ_FAILURE, Detail: "failed ReqFileStorageInfo" + target.Result.Msg})
 		return
 	}
 	metrics.DownloadPerformanceLogNow(target.FileHash + ":RCV_STORAGE_INFO_SP:")
 
 	newTarget := &target
 	newTarget.ReqId = fileReqId
-	if target.Result.State != protos.ResultState_RES_SUCCESS {
-		file.SetDownloadSliceResult(target.FileHash, false)
-		return
-	}
-
 	task.CleanDownloadFileAndConnMap(ctx, target.FileHash, fileReqId)
 	task.DownloadFileMap.Store(target.FileHash+fileReqId, newTarget)
 	task.AddDownloadTask(newTarget)
@@ -173,7 +166,7 @@ func RspFileStorageInfo(ctx context.Context, conn core.WriteCloser) {
 		FileName: target.FileName,
 		Slices:   slices,
 	})
-	file.SetDownloadSliceResult(target.FileHash, true)
+	file.SetDownloadSliceResult(target.FileHash, &rpc.Result{Return: rpc.DOWNLOAD_OK})
 	if crypto.IsVideoStream(target.FileHash) {
 		_ = file.SetRemoteFileResult(target.FileHash+fileReqId, rpc.Result{Return: rpc.DOWNLOAD_OK, FileHash: target.FileHash})
 		return

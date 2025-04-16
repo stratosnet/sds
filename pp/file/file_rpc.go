@@ -547,3 +547,22 @@ func SetFileUploadSign(sig *rpc.ParamUploadSign, fileHash string) {
 	}
 	v.(chan *rpc.ParamUploadSign) <- sig
 }
+
+func SubscribeDownloadSlice(key string) chan *rpc.Result {
+	event := make(chan *rpc.Result)
+	downloadSliceChan.Store(key, event)
+	return event
+}
+
+func UnsubscribeDownloadSlice(key string) {
+	downloadSliceChan.Delete(key)
+}
+
+func SetDownloadSliceResult(fileHash string, result *rpc.Result) {
+	downloadSliceChan.Range(func(k, v interface{}) bool {
+		if strings.HasPrefix(k.(string), fileHash) {
+			v.(chan *rpc.Result) <- result
+		}
+		return true
+	})
+}
