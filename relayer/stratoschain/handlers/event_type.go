@@ -62,15 +62,17 @@ const (
 
 	// sds module ---------------------------------------------------------
 
-	EventTypeFileUpload = "stratos.sds.v1.EventFileUpload"
-	EventTypePrepay     = "stratos.sds.v1.EventPrePay"
+	EventTypeFileUpload       = "stratos.sds.v1.EventFileUpload"
+	EventTypePrepay           = "stratos.sds.v1.EventPrePay"
+	EventTypeNewFilesUploaded = "stratos.sds.v1.EventNewFilesUploaded"
 
-	AttributeKeyReporter = "reporter"
-	AttributeKeyFileHash = "file_hash"
-	AttributeKeyUploader = "uploader"
-
+	AttributeKeyReporter     = "reporter"
+	AttributeKeyFileHash     = "file_hash"
+	AttributeKeyUploader     = "uploader"
 	AttributeKeyPurchasedNoz = "purchased_noz"
 	AttributeKeyBeneficiary  = "beneficiary"
+	AttributeKeyProofs       = "proofs"
+	AttributeKeyHeight       = "height"
 
 	// sdk modules ---------------------------------------------------------
 

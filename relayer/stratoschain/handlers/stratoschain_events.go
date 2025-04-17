@@ -49,6 +49,7 @@ func init() {
 	Handlers[types.MSG_TYPE_SLASHING_RESOURCE_NODE] = SlashingResourceNodeHandler()
 	Handlers[types.MSG_TYPE_UPDATE_EFFECTIVE_DEPOSIT] = UpdateEffectiveDepositHandler()
 	Handlers[types.MSG_TYPE_EVM_TX] = EvmTxHandler()
+	Handlers[EventTypeNewFilesUploaded] = NewFilesUploadedHandler()
 
 	cache = utils.NewAutoCleanMap(time.Minute)
 }
@@ -853,6 +854,45 @@ func EvmTxHandler() func(event coretypes.ResultEvent) {
 	}
 }
 
+func NewFilesUploadedHandler() func(event coretypes.ResultEvent) {
+	return func(result coretypes.ResultEvent) {
+		txHash := getTxHash(result)
+
+		heightAttrKey := EventTypeNewFilesUploaded + "." + AttributeKeyHeight
+		if len(result.Events[heightAttrKey]) == 0 {
+			utils.ErrorLogf("Attribute %v is missing in event of type NewFilesUploaded", heightAttrKey)
+			return
+		}
+		height, err := strconv.ParseInt(result.Events[heightAttrKey][0], 10, 64)
+		if err != nil {
+			utils.ErrorLogf("Height is invalid in event of type NewFilesUploaded: %v", err)
+			return
+		}
+
+		proofsAttrKey := EventTypeNewFilesUploaded + "." + AttributeKeyProofs
+		if len(result.Events[proofsAttrKey]) == 0 {
+			utils.ErrorLogf("Attribute %v is missing in event of type NewFilesUploaded", proofsAttrKey)
+			return
+		}
+
+		key := getCacheKey(nil, nil, result.Events[proofsAttrKey][0]+result.Events[heightAttrKey][0])
+		if _, ok := cache.Load(key); ok {
+			utils.DebugLogf("Event NewFilesUploaded was already handled for tx [%v]. Ignoring...", txHash)
+			return
+		}
+		cache.Store(key, true)
+
+		err = postToSP("/chain/newfiles", &relay.NewFilesUploadedReq{
+			Height: height,
+			Proofs: result.Events[proofsAttrKey][0],
+		})
+		if err != nil {
+			utils.ErrorLog(err)
+			return
+		}
+	}
+}
+
 // Evm txs contain only 1 msg each
 func processEvmTxEvents(events []abcitypes.Event) ([]map[EventAttribute]string, string) {
 	msgType := ""
@@ -970,8 +1010,8 @@ func processHexPubkey(attribute string) (fwcryptotypes.PubKey, error) {
 	return p2pPubkey, nil
 }
 
-func getCacheKey(requiredAttributes []EventAttribute, processedEvents []map[EventAttribute]string, txHash string) string {
-	rawKey := txHash
+func getCacheKey(requiredAttributes []EventAttribute, processedEvents []map[EventAttribute]string, data string) string {
+	rawKey := data
 	for _, attribute := range requiredAttributes {
 		rawKey += attribute.EventType + attribute.Attribute
 		for _, event := range processedEvents {
