@@ -15,8 +15,8 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/stratosnet/sds/framework v0.0.0-20250331144351-90463900dad7
 	github.com/stratosnet/sds/sds-msg v0.0.0-20250417190528-53d9738b926e
-	github.com/stratosnet/sds/tx-client v0.0.0-20250331144351-90463900dad7
-	github.com/stratosnet/stratos-chain/api v0.0.0-20250325214939-dc6a64549f6d
+	github.com/stratosnet/sds/tx-client v0.0.0-20250417190528-53d9738b926e
+	github.com/stratosnet/stratos-chain/api v0.0.0-20250410142753-a259da8af73e
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
 )
