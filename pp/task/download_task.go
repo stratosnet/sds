@@ -35,8 +35,6 @@ var (
 	DownloadFileMap = utils.NewAutoCleanMap(1 * time.Hour)
 	// DownloadSpeedOfProgress
 	DownloadSpeedOfProgress = &sync.Map{}
-	// key: fileHash + fileReqId; value: chan bool
-	downloadResultChan = &sync.Map{}
 
 	// Slice related maps
 	// DownloadSliceTaskMap resource node download slice task map
@@ -290,7 +288,6 @@ func DownloadResult(ctx context.Context, filehash string, success bool, reason s
 		pp.Log(ctx, "* downloading from slices already downloaded.")
 	}
 	pp.Log(ctx, "******************************************************")
-	SetDownloadResultToRpc(filehash, success)
 }
 
 // DoneDownload
@@ -441,25 +438,4 @@ func addSeqNum2FileName(filePath string, seq int) string {
 	}
 
 	return addSeqNum2FileName(filePath, seq+1)
-}
-
-// SubscribeDownloadResult when download is done, notification is set to subscribers
-func SubscribeDownloadResult(key string) chan bool {
-	event := make(chan bool)
-	downloadResultChan.Store(key, event)
-	return event
-}
-
-// UnsubscribeDownloadResult
-func UnsubscribeDownloadResult(key string) {
-	downloadResultChan.Delete(key)
-}
-
-func SetDownloadResultToRpc(fileHash string, result bool) {
-	downloadResultChan.Range(func(k, v interface{}) bool {
-		if strings.HasPrefix(k.(string), fileHash) {
-			v.(chan bool) <- result
-		}
-		return true
-	})
 }
