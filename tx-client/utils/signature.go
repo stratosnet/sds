@@ -22,6 +22,9 @@ func GetBLSSignBytes(msg *potv1.MsgVolumeReport) ([]byte, error) {
 		BLSSignature:    &potv1.BLSSignatureInfo{},
 		MerkleProofData: msg.GetMerkleProofData(),
 	}
+	if newMsg.MerkleProofData == nil {
+		newMsg.MerkleProofData = &potv1.MerkleProofData{}
+	}
 
 	msgBytes, err := GetVolumeReportMsgBytes(newMsg)
 	if err != nil {
