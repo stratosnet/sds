@@ -125,6 +125,16 @@ func (p *P2pServer) SendMessageToSPServer(ctx context.Context, pb proto.Message,
 	}
 }
 
+func (p *P2pServer) SendMessageToPPServ(ctx context.Context, addr string, msgBuf *msg.RelayMsgBuf,
+	failureHandler func(context.Context, proto.Message, header.MsgType), message proto.Message, cmd header.MsgType) {
+	go func() {
+		err := p.TransferSendMessageToPPServ(ctx, addr, msgBuf)
+		if err != nil {
+			utils.ErrorLog("failed sending message to the peer pp,", err.Error())
+			failureHandler(ctx, message, cmd)
+		}
+	}()
+}
 func (p *P2pServer) TransferSendMessageToPPServ(ctx context.Context, addr string, msgBuf *msg.RelayMsgBuf) error {
 	newCtx := core.CreateContextWithParentReqIdAsReqId(ctx)
 	cmd := header.GetMsgTypeFromId(msgBuf.MSGHead.Cmd)
@@ -241,6 +251,6 @@ func (p *P2pServer) SendMessageByCachedConn(ctx context.Context, key string, net
 func CreateNewContextPacketId(ctx context.Context) (int64, context.Context) {
 	retCtx := ctx
 	packetId, _ := utils.NextSnowFlakeId()
-	utils.DebugLogf("PacketId in new context: %v", strconv.FormatInt(packetId, 10))
+	utils.DetailLogf("PacketId in new context: %v", strconv.FormatInt(packetId, 10))
 	return packetId, core.CreateContextWithPacketId(retCtx, packetId)
 }
