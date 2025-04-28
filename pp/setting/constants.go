@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	Version       = "v0.12.7"
+	Version       = "v0.12.8"
 	AppVersion    = 12
 	MinAppVersion = 12
 
