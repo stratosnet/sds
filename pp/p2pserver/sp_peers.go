@@ -131,7 +131,9 @@ func (p *P2pServer) SendMessageToPPServ(ctx context.Context, addr string, msgBuf
 		err := p.TransferSendMessageToPPServ(ctx, addr, msgBuf)
 		if err != nil {
 			utils.ErrorLog("failed sending message to the peer pp,", err.Error())
-			failureHandler(ctx, message, cmd)
+			if failureHandler != nil {
+				failureHandler(ctx, message, cmd)
+			}
 		}
 	}()
 }
