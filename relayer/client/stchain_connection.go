@@ -111,6 +111,7 @@ func (s *stchainConnection) stop() {
 }
 
 func (s *stchainConnection) readerLoop() {
+EventLoop:
 	for {
 		select {
 		case resp, ok := <-s.ws.ResponsesCh:
@@ -142,6 +143,18 @@ func (s *stchainConnection) readerLoop() {
 				select {
 				case s.client.NewBlockChan <- true:
 				default:
+				}
+				// Check if there is something to handle in the new block event
+				for name := range result.Events {
+					if strings.HasPrefix(name, handlers.EventTypeNewFilesUploaded) {
+						handler, ok := handlers.Handlers[handlers.EventTypeNewFilesUploaded]
+						if ok && handler != nil {
+							cleanEventStrings(*result)
+							utils.Logf("Received a new event of type [%v] from stratos-chain!", handlers.EventTypeNewFilesUploaded)
+							handler(*result)
+						}
+						continue EventLoop
+					}
 				}
 				continue
 			}

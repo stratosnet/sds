@@ -66,6 +66,9 @@ func BuildVolumeReportMsg(traffic []*txclienttypes.Traffic, reporterAddress fwty
 		BLSSignature:    blsSignatureInfo,
 		MerkleProofData: merkleProofData,
 	}
+	if volumeReportMsg.MerkleProofData == nil {
+		volumeReportMsg.MerkleProofData = &potv1.MerkleProofData{}
+	}
 
 	msgBytes, err := utils.GetVolumeReportMsgBytes(volumeReportMsg)
 	if err != nil {

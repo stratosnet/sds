@@ -72,3 +72,8 @@ type UpdatedEffectiveDepositPPReq struct {
 	PPList []UpdatedEffectiveDepositPP `json:"pp_list"`
 	TxHash string                      `json:"tx_hash"`
 }
+
+type NewFilesUploadedReq struct {
+	Height int64  `json:"height"`
+	Proofs string `json:"proofs"`
+}
