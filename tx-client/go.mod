@@ -73,3 +73,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/blake3 v1.1.6 // indirect
 )
+replace github.com/stratosnet/sds/framework => ../framework
+replace github.com/stratosnet/sds/sds-msg => ../sds-msg

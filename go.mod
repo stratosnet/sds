@@ -90,3 +90,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	lukechampine.com/blake3 v1.1.6 // indirect
 )
+replace github.com/stratosnet/sds/framework => ./framework
+replace github.com/stratosnet/sds/sds-msg => ./sds-msg
+replace github.com/stratosnet/sds/tx-client => ./tx-client

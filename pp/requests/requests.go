@@ -758,7 +758,7 @@ func ReqShareLinkData(walletAddr, p2pAddress string, page uint64, walletPubkey, 
 	}
 }
 
-func ReqShareFileData(fileHash, pathHash, walletAddr, p2pAddress string, isPrivate bool, shareTime int64, walletPubkey, wsign []byte, reqTime int64, ipfsCid string) *protos.ReqShareFile {
+func ReqShareFileData(fileHash, pathHash, walletAddr, p2pAddress string, isPrivate bool, shareTime int64, walletPubkey, wsign []byte, reqTime int64, ipfsCid string, metaInfo string) *protos.ReqShareFile {
 	walletSign := &protos.Signature{
 		Address:   walletAddr,
 		Pubkey:    walletPubkey,
@@ -774,6 +774,7 @@ func ReqShareFileData(fileHash, pathHash, walletAddr, p2pAddress string, isPriva
 		PathHash:   pathHash,
 		ReqTime:    reqTime,
 		IpfsCid:    ipfsCid,
+		MetaInfo:   metaInfo,
 	}
 }
 
