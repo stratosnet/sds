@@ -497,9 +497,9 @@ func SetQueryOzoneResult(key string, result *rpc.GetOzoneResult) {
 	}
 }
 
-func SubscribeFileShareResult(shareLink string) chan *rpc.FileShareResult {
+func SubscribeFileShareResult(key string) chan *rpc.FileShareResult {
 	event := make(chan *rpc.FileShareResult)
-	downloadShareChan.Store(shareLink, event)
+	downloadShareChan.Store(key, event)
 	return event
 }
 
