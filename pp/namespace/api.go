@@ -832,6 +832,10 @@ func (api *rpcPubApi) RequestShare(ctx context.Context, param rpc_api.ParamReqSh
 	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
 	defer cancel()
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
+	// validate the length of meta info
+	if len(param.MetaInfo) > fwtypes.MAX_META_INFO_LENGTH {
+		return rpc_api.FileShareResult{Return: rpc_api.WRONG_INPUT + ", invalid meta info"}
+	}
 	// convert wallet pubkey to []byte which format is to be used in protobuf messages
 	wpk, err := fwtypes.WalletPubKeyFromBech32(param.Signature.Pubkey)
 	if err != nil {
@@ -845,7 +849,7 @@ func (api *rpcPubApi) RequestShare(ctx context.Context, param rpc_api.ParamReqSh
 		return *result
 	}
 	event.ReqShareFile(reqCtx, param.FileHash, "", param.Signature.Address, param.Duration, param.PrivateFlag,
-		wpk.Bytes(), wsig, param.ReqTime, param.IpfsCid)
+		wpk.Bytes(), wsig, param.ReqTime, param.IpfsCid, param.MetaInfo)
 
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileShareResult
