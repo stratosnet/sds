@@ -946,19 +946,21 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			return
 		case msgHandler := <-handlerCh:
 			msg, handler, recvStart := msgHandler.message, msgHandler.handler, msgHandler.recvStart
-			ctxWithParentReqId := core.CreateContextWithParentReqId(ctx, msg.MSGHead.ReqId)
-			ctxWithRecvStart := core.CreateContextWithRecvStartTime(ctxWithParentReqId, recvStart)
-			ctx = core.CreateContextWithMessage(ctxWithRecvStart, &msg)
-			ctx = core.CreateContextWithNetID(ctx, netID)
-			ctx = core.CreateContextWithSrcP2pAddr(ctx, c.(*ClientConn).remoteP2pAddress)
-			if cc.opts.onHandle != nil {
-				cc.opts.onHandle(ctx, &msg)
-			}
-			if msgType := header.GetMsgTypeFromId(msgHandler.message.MSGHead.Cmd); msgType != nil {
-				log = msgType.Name
-			}
 			if handler != nil {
-				handler(ctx, c)
+				core.GlobalTaskPool.Job(netID, func() {
+					ctxWithParentReqId := core.CreateContextWithParentReqId(ctx, msg.MSGHead.ReqId)
+					ctxWithRecvStart := core.CreateContextWithRecvStartTime(ctxWithParentReqId, recvStart)
+					ctx = core.CreateContextWithMessage(ctxWithRecvStart, &msg)
+					ctx = core.CreateContextWithNetID(ctx, netID)
+					ctx = core.CreateContextWithSrcP2pAddr(ctx, c.(*ClientConn).remoteP2pAddress)
+					if cc.opts.onHandle != nil {
+						cc.opts.onHandle(ctx, &msg)
+					}
+					if msgType := header.GetMsgTypeFromId(msgHandler.message.MSGHead.Cmd); msgType != nil {
+						log = msgType.Name
+					}
+					handler(ctx, c)
+				})
 			}
 		}
 	}
