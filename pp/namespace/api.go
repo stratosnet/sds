@@ -530,18 +530,17 @@ func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamRe
 	//var result *rpc_api.Result
 	reqId := uuid.New().String()
 
-	ctx = core.RegisterRemoteReqId(ctx, task.LOCAL_REQID)
+	ctx = core.RegisterRemoteReqId(ctx, reqId)
 	req := requests.ReqFileStorageInfoData(ctx, param.FileHandle, "", "", wallet, wpk.Bytes(), wsig, nil, param.ReqTime)
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqFileStorageInfo)
 
 	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
+	defer file.UnsubscribeDownloadSlice(fileHash + reqId)
 	defer cancel()
-
 	select {
 	case <-ctx.Done():
 		return rpc_api.Result{Return: rpc_api.TIME_OUT}
-	case result := <-file.SubscribeDownloadSlice(fileHash):
-		file.UnsubscribeDownloadSlice(fileHash)
+	case result := <-file.SubscribeDownloadSlice(fileHash + reqId):
 		if result.Return != rpc_api.DOWNLOAD_OK {
 			return *result
 		}

@@ -358,7 +358,7 @@ func SaveDownloadProgress(ctx context.Context, sliceHash, fileName, fileHash, sa
 	}
 	writer.Flush()
 
-	SetDownloadSliceResult(fileHash, &rpc.Result{Return: rpc.DOWNLOAD_OK})
+	SetDownloadSliceResult(fileHash+fileReqId, &rpc.Result{Return: rpc.DOWNLOAD_OK})
 	if err = writer.Error(); err != nil {
 		pp.ErrorLog(ctx, "flush error,", err.Error())
 	}
@@ -824,8 +824,8 @@ func WaitDownloadSlice(fileHash, reqId string) bool {
 			fileInfo = f.(DownloadFile)
 			break
 		}
-		<-SubscribeDownloadSlice(fileHash)
-		UnsubscribeDownloadSlice(fileHash)
+		<-SubscribeDownloadSlice(fileHash + reqId)
+		UnsubscribeDownloadSlice(fileHash + reqId)
 	}
 	if UpdateDownloadSlices(fileInfo, reqId) {
 		return true
@@ -833,8 +833,8 @@ func WaitDownloadSlice(fileHash, reqId string) bool {
 	if CheckRemoteFileDownloadComplete(fileHash, reqId, fileInfo.FileSize) {
 		return false
 	}
-	result := <-SubscribeDownloadSlice(fileHash)
-	UnsubscribeDownloadSlice(fileHash)
+	result := <-SubscribeDownloadSlice(fileHash + reqId)
+	UnsubscribeDownloadSlice(fileHash + reqId)
 	if result.Return == rpc.DOWNLOAD_OK {
 		UpdateDownloadSlices(fileInfo, reqId)
 	}
