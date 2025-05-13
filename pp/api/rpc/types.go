@@ -117,6 +117,7 @@ type ParamReqShareFile struct {
 	PrivateFlag bool      `json:"private_flag,omitempty"`
 	ReqTime     int64     `json:"req_time"`
 	IpfsCid     string    `json:"ipfs_cid,omitempty"`
+	MetaInfo    string    `json:"meta_info,omitempty"`
 }
 
 // share: request list shared files

@@ -22,6 +22,8 @@ const (
 
 	// xxxxxx_xxxxxxxxxxxxxxxx or xxxxxxxxxxxxxxxx_xxxxxx
 	NormalShareLinkV1Length = 16 + 0*(1*10) + 1 + 6
+
+	MAX_META_INFO_LENGTH = 40
 )
 
 type DataMeshId struct {

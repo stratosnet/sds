@@ -737,6 +737,7 @@ message ReqShareFile {
   string path_hash = 6;// share whole directory if this field is non-empty
   int64 req_time = 7;
   string ipfs_cid = 8;
+  string meta_info = 9;
 }
 
 message RspShareFile {

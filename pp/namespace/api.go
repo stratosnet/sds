@@ -530,18 +530,17 @@ func (api *rpcPubApi) RequestDownload(ctx context.Context, param rpc_api.ParamRe
 	//var result *rpc_api.Result
 	reqId := uuid.New().String()
 
-	ctx = core.RegisterRemoteReqId(ctx, task.LOCAL_REQID)
+	ctx = core.RegisterRemoteReqId(ctx, reqId)
 	req := requests.ReqFileStorageInfoData(ctx, param.FileHandle, "", "", wallet, wpk.Bytes(), wsig, nil, param.ReqTime)
 	p2pserver.GetP2pServer(ctx).SendMessageToSPServer(ctx, req, header.ReqFileStorageInfo)
 
 	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
+	defer file.UnsubscribeDownloadSlice(fileHash + reqId)
 	defer cancel()
-
 	select {
 	case <-ctx.Done():
 		return rpc_api.Result{Return: rpc_api.TIME_OUT}
-	case result := <-file.SubscribeDownloadSlice(fileHash):
-		file.UnsubscribeDownloadSlice(fileHash)
+	case result := <-file.SubscribeDownloadSlice(fileHash + reqId):
 		if result.Return != rpc_api.DOWNLOAD_OK {
 			return *result
 		}
@@ -832,6 +831,10 @@ func (api *rpcPubApi) RequestShare(ctx context.Context, param rpc_api.ParamReqSh
 	ctx, cancel := context.WithTimeout(ctx, WAIT_TIMEOUT)
 	defer cancel()
 	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
+	// validate the length of meta info
+	if len(param.MetaInfo) > fwtypes.MAX_META_INFO_LENGTH {
+		return rpc_api.FileShareResult{Return: rpc_api.WRONG_INPUT + ", invalid meta info"}
+	}
 	// convert wallet pubkey to []byte which format is to be used in protobuf messages
 	wpk, err := fwtypes.WalletPubKeyFromBech32(param.Signature.Pubkey)
 	if err != nil {
@@ -845,7 +848,7 @@ func (api *rpcPubApi) RequestShare(ctx context.Context, param rpc_api.ParamReqSh
 		return *result
 	}
 	event.ReqShareFile(reqCtx, param.FileHash, "", param.Signature.Address, param.Duration, param.PrivateFlag,
-		wpk.Bytes(), wsig, param.ReqTime, param.IpfsCid)
+		wpk.Bytes(), wsig, param.ReqTime, param.IpfsCid, param.MetaInfo)
 
 	// wait for result, SUCCESS or some failure
 	var result *rpc_api.FileShareResult
@@ -971,14 +974,13 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 
 	ctx, cancel := context.WithTimeout(ctx, INIT_WAIT_TIMEOUT)
 	defer cancel()
-
-	reqCtx := core.RegisterRemoteReqId(ctx, task.LOCAL_REQID)
+	reqId := uuid.New().String()
+	reqCtx := core.RegisterRemoteReqId(ctx, reqId)
 	req := requests.ReqGetShareFileData(shareLink.Link, shareLink.Password, "", param.Signature.Address,
 		p2pserver.GetP2pServer(reqCtx).GetP2PAddress().String(), wpk.Bytes(), wsig, param.ReqTime)
 	p2pserver.GetP2pServer(reqCtx).SendMessageToSPServer(reqCtx, req, header.ReqGetShareFile)
 
-	// the application gives FileShareResult type of result
-	key := shareLink.Link + task.LOCAL_REQID
+	key := shareLink.Link + reqId
 	defer file.UnsubscribeFileShareResult(key)
 	select {
 	case <-ctx.Done():
@@ -991,8 +993,6 @@ func (api *rpcPubApi) RequestGetShared(ctx context.Context, param rpc_api.ParamR
 			return rpc_api.Result{Return: result.Return, Detail: result.Detail}
 		}
 		fileHash := result.FileInfo[0].FileHash
-		// if the file is being downloaded in an existing download session
-		reqId := uuid.New().String()
 		data, start, end, _ := file.NextRemoteDownloadPacket(fileHash, reqId)
 		if data == nil {
 			return rpc_api.Result{Return: rpc_api.FILE_REQ_FAILURE, Detail: "data is empty"}

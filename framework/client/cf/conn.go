@@ -4,6 +4,7 @@ package cf
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"math/rand"
@@ -123,12 +124,17 @@ func ReconnectOption(rec bool) ClientOption {
 	}
 }
 
-func CreateClientConn(netid int64, addr string, opt ...ClientOption) *ClientConn {
+func CreateClientConn(addr string, opt ...ClientOption) *ClientConn {
 	var opts options
 	for _, o := range opt {
 		o(&opts)
 	}
-	return newClientConnWithOptions(netid, addr, opts)
+	ip, _, err := utils.SplitHostPort(addr)
+	if err != nil {
+		return nil
+	}
+
+	return newClientConnWithOptions(int64(binary.LittleEndian.Uint32(ip.To4())), addr, opts)
 }
 
 func MinAppVersionOption(b uint16) ClientOption {
@@ -946,19 +952,21 @@ func handleLoop(c core.WriteCloser, wg *sync.WaitGroup) {
 			return
 		case msgHandler := <-handlerCh:
 			msg, handler, recvStart := msgHandler.message, msgHandler.handler, msgHandler.recvStart
-			ctxWithParentReqId := core.CreateContextWithParentReqId(ctx, msg.MSGHead.ReqId)
-			ctxWithRecvStart := core.CreateContextWithRecvStartTime(ctxWithParentReqId, recvStart)
-			ctx = core.CreateContextWithMessage(ctxWithRecvStart, &msg)
-			ctx = core.CreateContextWithNetID(ctx, netID)
-			ctx = core.CreateContextWithSrcP2pAddr(ctx, c.(*ClientConn).remoteP2pAddress)
-			if cc.opts.onHandle != nil {
-				cc.opts.onHandle(ctx, &msg)
-			}
-			if msgType := header.GetMsgTypeFromId(msgHandler.message.MSGHead.Cmd); msgType != nil {
-				log = msgType.Name
-			}
 			if handler != nil {
-				handler(ctx, c)
+				core.GlobalTaskPool.Job(netID, func() {
+					ctxWithParentReqId := core.CreateContextWithParentReqId(ctx, msg.MSGHead.ReqId)
+					ctxWithRecvStart := core.CreateContextWithRecvStartTime(ctxWithParentReqId, recvStart)
+					ctx = core.CreateContextWithMessage(ctxWithRecvStart, &msg)
+					ctx = core.CreateContextWithNetID(ctx, netID)
+					ctx = core.CreateContextWithSrcP2pAddr(ctx, c.(*ClientConn).remoteP2pAddress)
+					if cc.opts.onHandle != nil {
+						cc.opts.onHandle(ctx, &msg)
+					}
+					if msgType := header.GetMsgTypeFromId(msgHandler.message.MSGHead.Cmd); msgType != nil {
+						log = msgType.Name
+					}
+					handler(ctx, c)
+				})
 			}
 		}
 	}

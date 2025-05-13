@@ -125,7 +125,7 @@ func (p *P2pServer) newClient(ctx context.Context, server string, heartbeat, rec
 		serverPortOpt,
 		cf.ContextKVOption(ckv),
 	}
-	conn := cf.CreateClientConn(0, server, options...)
+	conn := cf.CreateClientConn(server, options...)
 
 	// setting p.mainSpConn earlier than calling conn.Start() to avoid race condition
 	if spconn {

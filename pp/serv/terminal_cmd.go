@@ -783,7 +783,7 @@ func (api *terminalCmd) SharePath(ctx context.Context, param []string) (CmdResul
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
 	}
 	event.ReqShareFile(ctx, "", param[0], setting.WalletAddress, int64(shareDuration), isPrivate,
-		setting.WalletPublicKey.Bytes(), wsign, nowSec, ipfsCid)
+		setting.WalletPublicKey.Bytes(), wsign, nowSec, ipfsCid, "")
 	// }
 	return CmdResult{Msg: DefaultMsg}, nil
 }
@@ -847,7 +847,7 @@ func (api *terminalCmd) ShareFile(ctx context.Context, param []string) (CmdResul
 	if err != nil {
 		return CmdResult{Msg: ""}, errors.New("wallet failed to sign message")
 	}
-	event.ReqShareFile(ctx, param[0], "", setting.WalletAddress, int64(shareDuration), isPrivate, setting.WalletPublicKey.Bytes(), wsign, nowSec, ipfsCid)
+	event.ReqShareFile(ctx, param[0], "", setting.WalletAddress, int64(shareDuration), isPrivate, setting.WalletPublicKey.Bytes(), wsign, nowSec, ipfsCid, "")
 	// if len(str1) == setting.FILEHASHLEN { //
 	// 	event.ReqShareFile("", str1, "", int64(time), isPrivate, nil)
 	// } else {
