@@ -16,7 +16,6 @@ import (
 
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/google/uuid"
-
 	fwcrypto "github.com/stratosnet/sds/framework/crypto"
 )
 
