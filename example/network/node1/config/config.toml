@@ -4,7 +4,7 @@ app_ver = 12
 # Network connections from nodes below this version number will be rejected. Eg: 11
 min_app_ver = 12
 # Formatted version number. Eg: "v0.11.0"
-show = 'v0.12.8'
+show = 'v0.12.9'
 
 # Configuration of the connection to the Stratos blockchain
 [blockchain]
