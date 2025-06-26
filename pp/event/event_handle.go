@@ -81,6 +81,7 @@ func RegisterAllEventHandlers() {
 	registerEvent(header.RspTransferDownload, RspTransferDownload, nil)
 	registerEvent(header.ReqVerifyDownload, ReqVerifyDownload, nil)
 	registerEvent(header.RspVerifyDownload, RspVerifyDownload, nil)
+	registerEvent(header.RspReportVerifyResult, RspVerifyDownloadResult, nil)
 
 	// pp--(*msg*)--pp
 	registerEvent(header.ReqClearDownloadTask, ReqClearDownloadTask, nil)

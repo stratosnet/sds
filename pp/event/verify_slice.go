@@ -7,7 +7,6 @@ import (
 	"github.com/stratosnet/sds/framework/core"
 	"github.com/stratosnet/sds/framework/msg/header"
 	"github.com/stratosnet/sds/framework/utils"
-	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/pp/p2pserver"
 	"github.com/stratosnet/sds/pp/requests"
 	"github.com/stratosnet/sds/pp/setting"
@@ -88,12 +87,20 @@ func ReqVerifyDownload(ctx context.Context, conn core.WriteCloser) {
 		}
 		PacketIdMap.Store(packetId, tkSlice)
 		if int64(dataEnd) > sliceDataLen {
-			_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspVerifyDownload(data, noticeVerify.TaskId, sliceHash,
-				noticeVerify.SpP2PAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(), uint64(dataStart), uint64(sliceDataLen)), header.RspVerifyDownload)
+			_ = p2pserver.GetP2pServer(ctx).SendMessage(
+				newCtx,
+				conn,
+				requests.RspVerifyDownload(data, noticeVerify.TaskId, sliceHash, noticeVerify.SpP2PAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(), uint64(dataStart), uint64(sliceDataLen), noticeVerify.SliceNumber),
+				header.RspVerifyDownload,
+			)
 			return
 		}
-		_ = p2pserver.GetP2pServer(ctx).SendMessage(newCtx, conn, requests.RspVerifyDownload(data, noticeVerify.TaskId, sliceHash,
-			noticeVerify.SpP2PAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(), uint64(dataStart), uint64(sliceDataLen)), header.RspVerifyDownload)
+		_ = p2pserver.GetP2pServer(ctx).SendMessage(
+			newCtx,
+			conn,
+			requests.RspVerifyDownload(data, noticeVerify.TaskId, sliceHash, noticeVerify.SpP2PAddress, p2pserver.GetP2pServer(ctx).GetP2PAddress().String(), uint64(dataStart), uint64(sliceDataLen), noticeVerify.SliceNumber),
+			header.RspVerifyDownload,
+		)
 		dataStart += setting.MaxData
 		dataEnd += setting.MaxData
 		// add AlreadySize to transfer task
@@ -174,28 +181,4 @@ func RspVerifyDownloadResult(ctx context.Context, conn core.WriteCloser) {
 	if !requests.UnmarshalData(ctx, &target) {
 		return
 	}
-
-	tkSliceUID := target.TaskId + target.SliceHash
-	totalCostTime, ok := DownSendCostTimeMap.GetCompletedTotalCostTime(tkSliceUID)
-	if !ok {
-		utils.DebugLog("slice not fully sent out")
-		return
-	}
-
-	if target.Result.State != protos.ResultState_RES_SUCCESS {
-		// Transfer failed
-		SendReportBackupSliceResult(ctx, target.TaskId, target.SliceHash, target.SpP2PAddress, false, false, totalCostTime)
-		return
-	}
-
-	deleteOrigin := false
-	if tTask, ok := task.GetTransferTask(target.TaskId, target.SliceHash); ok && tTask.DeleteOrigin {
-		if err := file.DeleteSlice(tTask.SliceStorageInfo.SliceHash); err == nil {
-			utils.Log("Deleted original slice successfully")
-			deleteOrigin = true
-		} else {
-			utils.ErrorLog("Failed to delete original slice ", err)
-		}
-	}
-	SendReportBackupSliceResult(ctx, target.TaskId, target.SliceHash, target.SpP2PAddress, true, deleteOrigin, totalCostTime)
 }
