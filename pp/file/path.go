@@ -28,6 +28,11 @@ func GetTmpDownloadPath() string {
 	return filepath.Join(getTmpFolderPath(), "download")
 }
 
+// GetTmpVerifyPath path to the download tmp file folder
+func GetTmpVerifyPath() string {
+	return filepath.Join(getTmpFolderPath(), "verify")
+}
+
 func getDownloadTmpFolderPath(fileHash string) string {
 	return filepath.Join(GetTmpDownloadPath(), fileHash)
 }
@@ -70,6 +75,25 @@ func getSlicePath(hash string) (string, error) {
 	s1 := string([]rune(hash)[:8])
 	s2 := string([]rune(hash)[8:10])
 	path := filepath.Join(setting.Config.Home.StoragePath, s1, s2)
+	exist, err := PathExists(path)
+	if err != nil {
+		return "", errors.Wrap(err, "failed checking path")
+	}
+	if !exist {
+		if err = os.MkdirAll(path, os.ModePerm); err != nil {
+			return "", errors.Wrap(err, "failed creating dir")
+		}
+	}
+	return filepath.Join(path, hash), nil
+}
+
+func getVerifySlicePath(hash string) (string, error) {
+	if len(hash) < 10 {
+		return "", errors.New("wrong size of slice hash")
+	}
+	s1 := string([]rune(hash)[:8])
+	s2 := string([]rune(hash)[8:10])
+	path := filepath.Join(GetTmpVerifyPath(), s1, s2)
 	exist, err := PathExists(path)
 	if err != nil {
 		return "", errors.Wrap(err, "failed checking path")

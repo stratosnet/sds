@@ -208,6 +208,14 @@ func GetSliceData(sliceHash string) ([]byte, error) {
 	return GetWholeFileData(slicePath)
 }
 
+func GetVerifySliceData(sliceHash string) ([]byte, error) {
+	slicePath, err := getVerifySlicePath(sliceHash)
+	if err != nil {
+		return nil, err
+	}
+	return GetWholeFileData(slicePath)
+}
+
 func GetWholeFileData(filePath string) ([]byte, error) {
 	rmutex.Lock()
 	defer rmutex.Unlock()
@@ -271,6 +279,28 @@ func SaveTmpSliceData(fileHash, sliceHash string, data []byte) error {
 		return errors.Wrap(err, "error saving file")
 	}
 
+	return nil
+}
+
+func SaveVerifySliceData(data []byte, sliceHash string, offset uint64) error {
+	wmutex.Lock()
+	defer wmutex.Unlock()
+	slicePath, err := getVerifySlicePath(sliceHash)
+	if err != nil {
+		return errors.Wrap(err, "failed getting slice path")
+	}
+	fileMg, err := os.OpenFile(slicePath, os.O_CREATE|os.O_RDWR, 0600)
+	defer func() {
+		_ = fileMg.Close()
+	}()
+	if err != nil {
+		return errors.Wrap(err, "failed opening a file")
+	}
+	_, err = fileMg.WriteAt(data, int64(offset))
+	if err != nil {
+		utils.ErrorLog("error save file")
+		return errors.Wrap(err, "failed writing data")
+	}
 	return nil
 }
 
@@ -499,6 +529,17 @@ func CheckSliceExisting(fileHash, fileName, sliceHash, fileReqId string) bool {
 
 func DeleteSlice(sliceHash string) error {
 	slicePath, err := getSlicePath(sliceHash)
+	if err != nil {
+		return errors.Wrap(err, "failed getting slice path")
+	}
+	if err := os.Remove(slicePath); err != nil {
+		return errors.Wrap(err, "failed removing slice")
+	}
+	return nil
+}
+
+func DeleteVerifySlice(sliceHash string) error {
+	slicePath, err := getVerifySlicePath(sliceHash)
 	if err != nil {
 		return errors.Wrap(err, "failed getting slice path")
 	}
