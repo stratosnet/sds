@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/stratosnet/sds/framework/crypto"
 	"github.com/stratosnet/sds/framework/utils"
 	"github.com/stratosnet/sds/pp/file"
 	"github.com/stratosnet/sds/sds-msg/protos"
@@ -59,6 +60,12 @@ func SaveVerifyData(target *protos.RspVerifyDownload) (bool, error) {
 	if !ok {
 		return false, errors.Errorf("failed getting transfer task - task_id:%v  slice_hash:%v  uploader_p2p_addess:%v", target.TaskId, target.SliceHash, target.P2PAddress)
 	}
+	if target.SliceNumber != 0 {
+		err := file.SaveVerifySliceData(target.Data, tTask.SliceStorageInfo.SliceHash, target.Offset)
+		if err != nil {
+			return false, nil
+		}
+	}
 	// sum up AlreadySize and update task info
 	tTask, ok = AddAlreadySizeToVerifyTask(target.TaskId, target.SliceHash, uint64(len(target.Data)))
 	if !ok {
@@ -68,6 +75,23 @@ func SaveVerifyData(target *protos.RspVerifyDownload) (bool, error) {
 		return false, nil
 	}
 	utils.DebugLogf("whole slice received, sliceHash=%v", tTask.SliceStorageInfo.SliceHash)
+	if target.SliceNumber != 0 {
+		sliceData, err := file.GetVerifySliceData(tTask.SliceStorageInfo.SliceHash)
+		if err != nil {
+			return false, errors.Wrap(err, "Failed getting slice data")
+		}
+
+		sliceHash, err := crypto.CalcSliceHash(sliceData, tTask.FileHash, tTask.SliceNum)
+		_ = file.DeleteVerifySlice(tTask.SliceStorageInfo.SliceHash)
+		if tTask.SliceStorageInfo.SliceHash != sliceHash {
+			return false, errors.New("verify: the whole slice is received, but the content doesn't pass the validation.")
+		}
+		if err != nil {
+			return false, err
+		}
+	}
+
+	utils.DebugLog("verify: the whole slice is received, and it passes slice hash validation.")
 	return true, nil
 
 }

@@ -575,7 +575,7 @@ func ReqVerifyDownloadData(ctx context.Context, notice *protos.NoticeFileSliceVe
 	}
 }
 
-func RspVerifyDownload(data []byte, taskId, sliceHash, spP2pAddress, p2pAddress string, offset, sliceSize uint64) *protos.RspVerifyDownload {
+func RspVerifyDownload(data []byte, taskId, sliceHash, spP2pAddress, p2pAddress string, offset, sliceSize, sliceNumber uint64) *protos.RspVerifyDownload {
 	return &protos.RspVerifyDownload{
 		Data:         data,
 		TaskId:       taskId,
@@ -584,6 +584,7 @@ func RspVerifyDownload(data []byte, taskId, sliceHash, spP2pAddress, p2pAddress 
 		SpP2PAddress: spP2pAddress,
 		SliceHash:    sliceHash,
 		P2PAddress:   p2pAddress,
+		SliceNumber:  sliceNumber,
 	}
 }
 
