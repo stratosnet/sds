@@ -280,7 +280,25 @@ func (s *Server) Stop() {
 	s.cancel()
 	s.mu.Unlock()
 
-	s.wg.Wait()
+	// Channel to signal completion
+	done := make(chan struct{})
+
+	// Wait in a goroutine
+	go func() {
+		s.wg.Wait()
+		close(done)
+	}()
+
+	// Timeout
+	timeout := 30 * time.Second
+
+	select {
+	case <-done:
+		fmt.Println("All goroutines finished before timeout")
+	case <-time.After(timeout):
+		fmt.Println("Timeout reached before goroutines finished")
+	}
+
 }
 
 func OnConnectOption(cb func(WriteCloser) bool) ServerOption {
