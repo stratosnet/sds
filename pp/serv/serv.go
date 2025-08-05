@@ -137,7 +137,7 @@ func (bs *BaseServer) startHttpRPC() error {
 	allowModuleList := strings.Split(setting.Config.Node.Connectivity.RpcNamespaces, ",")
 	var config = namespace.HttpConfig{
 		CorsAllowedOrigins: []string{""},
-		Vhosts:             []string{""},
+		Vhosts:             []string{"localhost", "host.docker.internal"},
 		Modules:            allowModuleList,
 	}
 
