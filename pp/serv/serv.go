@@ -135,9 +135,10 @@ func (bs *BaseServer) startHttpRPC() error {
 	}
 
 	allowModuleList := strings.Split(setting.Config.Node.Connectivity.RpcNamespaces, ",")
+	vh := strings.Split(setting.Config.Node.Connectivity.RpcVhosts, ",")
 	var config = namespace.HttpConfig{
 		CorsAllowedOrigins: []string{""},
-		Vhosts:             []string{""},
+		Vhosts:             vh,
 		Modules:            allowModuleList,
 	}
 

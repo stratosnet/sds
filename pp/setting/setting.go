@@ -99,6 +99,7 @@ type ConnectivityConfig struct {
 	MetricsPort    string     `toml:"metrics_port" comment:"Port for prometheus metrics"`
 	RpcPort        string     `toml:"rpc_port" comment:"Port for the JSON-RPC api. See https://docs.thestratos.org/docs-resource-node/sds-rpc-for-file-operation/"`
 	RpcNamespaces  string     `toml:"rpc_namespaces" comment:"Namespaces enabled in the RPC API. Eg: \"user,owner\""`
+	RpcVhosts      string     `toml:"rpc_allowed_hosts" comment:"RPC server vhosts settings."`
 }
 
 type NodeConfig struct {
