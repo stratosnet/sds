@@ -46,3 +46,10 @@ If your wallet account has ozone, you can try uploading and downloading files on
 > delete <filehash>
 ```
 
+## Upload/Download without get into the docker container
+
+```
+docker exec -it sds-node ppd terminal exec 'put <filepath>'
+
+docker exec -it sds-node ppd terminal exec 'get <sdm://account/filehash> <saveAs>'
+```
