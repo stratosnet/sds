@@ -44,15 +44,15 @@ func init() {
 	}{
 		{"stsds1z96pm5ls0ff2y7y8adpy6r3l8jqeaud7envnqv",
 			"stsdspub1lf769k20k36e4gvnewcwdtfudzj95qk45d5f0p300jmr7e6y73zsdyh25y",
-			"34.82.40.37:8888",
+			"51.161.118.81:8888",
 		},
 		{"stsds10kmygjv7e2t39f6jka6445q20e9lv4a7u3qex3",
 			"stsdspub1srn3qetarx3x6f2x9wqfv3nh2aufxv03ncl5v6jkmyg666scvz6s4xgprq",
-			"34.85.35.57:8888",
+			"51.222.43.137:8888",
 		},
 		{"stsds1ypxg8sj5vn4s4v0w965g4r9g3pt3vlz6wyzx0f",
 			"stsdspub1y6exsr8snwz65ev3pzq6k3yfy2ku3kexqdd0en35dnr8mxc9w6sq5jg6lf",
-			"34.34.149.18:8888",
+			"162.19.58.218:8888",
 		},
 	}
 	rand := time.Now().UnixMilli() % 3
@@ -99,6 +99,7 @@ type ConnectivityConfig struct {
 	MetricsPort    string     `toml:"metrics_port" comment:"Port for prometheus metrics"`
 	RpcPort        string     `toml:"rpc_port" comment:"Port for the JSON-RPC api. See https://docs.thestratos.org/docs-resource-node/sds-rpc-for-file-operation/"`
 	RpcNamespaces  string     `toml:"rpc_namespaces" comment:"Namespaces enabled in the RPC API. Eg: \"user,owner\""`
+	RpcVhosts      string     `toml:"rpc_allowed_hosts" comment:"RPC server vhosts settings."`
 }
 
 type NodeConfig struct {
